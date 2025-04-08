@@ -3,11 +3,15 @@
 
 module p3phys
 
+
 use control_mod,          only: theta_hydrostatic_mode,do_predict_nc, do_subgrid_clouds, &
                                 do_prescribed_CCN, precip_off, micro_nccons, p3_autocon_coeff, &
                                 p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, &
                                 p3_qc_accret_expon, p3_wbf_coeff, p3_mincdnc, p3_max_mean_rain_size, &
                                 p3_embryonic_rain_size
+
+use control_mod,          only: theta_hydrostatic_mode, dt_remap_factor
+
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use eos
@@ -21,113 +25,21 @@ use reduction_mod,        only: parallelmax, parallelmin
 use physical_constants,   only: latvap, latice, &
                                 gravit=>g, p0, &
                                 rdry=>rgas, cpdry=>cp, cpv=>cpwater_vapor, cl, cvdry, cvv, &
-                                rvapor=>rwater_vapor, rhow, pi => dd_pi
+                                rvapor=>rwater_vapor, rho_liquidH20, pi => dd_pi
 use hybvcoord_mod,        only: hvcoord_t
 use time_mod,             only: time_at, TimeLevel_t
 use micro_p3,             only: p3_main, p3_init
-use micro_p3_utils,       only: micro_p3_utils_init
 use wv_sat_scream,        only: qv_sat
+
+use time_mod,             only: tstep
+
+use micro_p3_utils,       only: micro_p3_utils_init
 
 implicit none
 
 public :: interface_to_p3
 
 contains
-
-subroutine simple_saturation_adjustment(qv, qc, qcn, theta, p, exner)
-  ! Adjusts air parcels in a column to account for evaporation / condensation of 
-  ! water vapor from / into cloud liquid.  In Eam/Eamxx, this is handled by
-  ! macrophysics.  To use p3 with idealized tests, we need a method
-  ! to compute phase transitions between water vapor and cloud liquid.
-  !
-  ! On input, saturation is defined as qv > qsat.   For saturated parcels, excess
-  ! water vapor is converted to cloud liquid, and potential temperature is updated 
-  ! to account for latent heat release.  For unsaturated parcels, if cloud liquid is present
-  ! it evaporates and potential temperature is updated to account for latent heat uptake. 
-  !
-  ! SIMPLE APPROXIMATION: Note that on output, for a true pseudoadiabatic process, the parcel should be 
-  ! saturated, i.e., qv = qsat.   This "simple" subroutine does not satisfy this constraint. 
-  ! Saturation mixing ratio is temperature-dependent, and here is not updated following the 
-  ! adjustment of potential temperature for latent heat release/uptake.  
-  !
-  ! For future development: Klemp and Willhelmson 1978 and Soong and Ogura 1973 
-  ! define a 2-step process that conserves water mass and satisfies the qv = qsat output 
-  ! constraint by linearizing the saturation mixing ratio formula about the input state. 
-  ! Other techniques, such as iterative methods, could also be used.
-  !
-  ! SIMPLE APPROXIMATION : For new droplet formulation, we assume a constant droplet size
-  ! and determine number based on that size.  All new droplets will have this size; they
-  ! will not be representative of a more realistic droplet size distribution, and
-  ! do not account for aerosols.  The methods from P3's original implementation
-  ! (removed by Eam/Eamxx in favor of macrophysics) can be found in Morrison and Grabowski 2008.
-  !
-  ! TODO: new droplet volume should be a namelist parameter
-  !
-  real(rl), dimension(np, np, nlev), intent(inout) :: qv ! specific humidity [kg water vapor / kg air]
-  real(rl), dimension(np, np, nlev), intent(inout) :: qc ! cloud liquid concentration [ kg liq. water / kg air]
-  real(rl), dimension(np, np, nlev), intent(inout) :: qcn ! cloud droplet number concentration [ # / kg air]
-  real(rl), dimension(np, np, nlev), intent(inout) :: theta ! potential temperature [K]
-  real(rl), dimension(np, np, nlev), intent(in) :: p ! pressure [Pa]
-  real(rl), dimension(np, np, nlev), intent(in) :: exner ! Exner function [1]
-  !
-  ! local variables
-  !
-  integer, parameter :: liquid_or_ice_switch = 0 ! required by qv_sat (0 -> liquid), otherwise unused
-  real(rl) :: qsat ! saturation mixing ratio for water vapor
-  real(rl) :: delta_qv ! specific humidity change amount [kg water / kg air]
-  real(rl) :: delta_qcn ! cloud liquid number change amount [# / kg air]
-  real(rl) :: delta_theta ! potential temperature change amount [K]
-  real(rl) :: gamma ! coefficient for latent heat computation, gamma = Lvap / (Cp * exner)
-  real(rl) :: T ! temperature [K]
-  logical :: is_saturated 
-  integer :: ii, jj, kk
-  real(rl), parameter :: new_droplet_volume = 4.2e-6_rl ! volume of a newly formed droplet [micron^3]
-  real(rl), parameter :: cubic_micron_to_cubic_meter = 1e18_rl ! multiplier to convert from cubic micron to cubic meters
-  
-  
-  do ii=1,np; do jj=1,np; do kk=1,nlev;
-      T = theta(ii,jj,kk) * exner(ii,jj,kk)
-      gamma = latvap / (cpdry * exner(ii,jj,kk))
-      qsat = qv_sat(T, p(ii,jj,kk), liquid_or_ice_switch)
-      is_saturated = (qv(ii,jj,kk) > qsat)
-      delta_qv = qv(ii,jj,kk) - qsat
-      if (is_saturated) then
-        ! delta_qv is positive
-        delta_qcn = delta_qv / rhow * cubic_micron_to_cubic_meter / new_droplet_volume
-        delta_theta = gamma * delta_qv
-        
-        qv(ii,jj,kk) = qv(ii,jj,kk) - delta_qv
-        qc(ii,jj,kk) = qc(ii,jj,kk) + delta_qv
-        qcn(ii,jj,kk) = qcn(ii,jj,kk) + delta_qcn
-        theta(ii,jj,kk) = theta(ii,jj,kk) + delta_theta
-      else
-        ! delta_qv is <= zero; multiply by -1 to work with positive changes
-        delta_qv = -delta_qv
-        if (qc(ii,jj,kk) > 0) then
-          if (qc(ii,jj,kk) < delta_qv) then
-            ! all cloud liquid evaporates, parcel is still unsaturated
-            delta_qv = qc(ii,jj,kk)
-            delta_qcn = qcn(ii,jj,kk)
-          else
-            ! parcel becomes saturated, cloud persists
-            ! define the evaporated number amount to be proportional to the evaporated mass
-            delta_qcn = delta_qv / qc(ii,jj,kk) * qcn(ii,jj,kk)    
-          endif
-          
-          delta_theta = gamma * delta_qv
-          
-          qv(ii,jj,kk) = qv(ii,jj,kk) + delta_qv
-          qcn(ii,jj,kk) = qcn(ii,jj,kk) - delta_qcn
-          qc(ii,jj,kk) = qc(ii,jj,kk) - delta_qv
-          theta(ii,jj,kk) = theta(ii,jj,kk) - delta_theta
-        else
-          ! there wasn't a cloud before, and there still isn't one.
-          qc(ii,jj,kk) = 0
-          qcn(ii,jj,kk) = 0
-        endif
-      endif ! is_saturated
-  enddo; enddo; enddo ! ii; jj; kk;
-end subroutine 
 
 
 subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
@@ -137,7 +49,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
                             rho_h2os, &
                             qsmall, &
                             mincld, &
-                            inv_cp, micro_p3_utils_init
+                            inv_cp
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -280,6 +192,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !    real(rl), parameter ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
 !    real(rl), parameter ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
 
+
 !should depend on a column, but we set to 0 for all of colns
     frzimm_in = 0.0
     frzcnt_in = 0.0
@@ -303,8 +216,9 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     kte=nlev; kts=1;
 
 !this may be wrong counter, do we call forcing only at remap?
+!yes for "not flexible" routine, and the flexible one is disabled for now
     it = tl%nstep;
-    dtime = 1.0; ! figure it later
+    dtime = tstep*dt_remap_factor ! figure it later
 
     !col_location uninited
 
@@ -334,8 +248,6 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt),&
           dp,elem(ie)%state%phinh_i(:,:,:,nt),pnh,hommeexner,hommemu)
 
-    call simple_saturation_adjustment(q1, q2, q3, pottemp, hommepres, hommeexner)
-
     ! ensure positivity
     ! do we need this?
     where(q1<0); q1=0; endwhere
@@ -363,14 +275,18 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     pres = hommepres(ii,jj,:)
 
 !temporary, set 'previous' vars to the current ones
+!INVESTIGATE
+!WRONG
     qv_prev = qv
     T_prev = hommetemp(ii,jj,:)
+
 
 !print *, 'before p3 T_prev', T_prev
 !print *, 'before p3 th', th
 !print *, 'before p3 t_atm', T_atm
 !stop
 ! print *, "Check Arjun's addition:", p3_autocon_coeff, p3_qc_autocon_expon, p3_qc_accret_expon
+
     call p3_main( &
          cldliq(kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
          numliq(kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
@@ -440,8 +356,6 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
          diag_equiv_reflectivity(kts:kte), & !OUT equivalent reflectivity (rain + ice) [dBz]
          diag_ze_rain(kts:kte),diag_ze_ice(kts:kte)) !OUT equivalent reflectivity for rain and ice [dBz]
 
-!print *, 'after th', th
-
 #endif
 #if 1
     temp(:nlev) = th(:nlev)/exner(:nlev)
@@ -457,23 +371,28 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     !numice  = q8(ii,jj,:)
     !rimvol  = q9(ii,jj,:)
 
-    qind=1; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( qv(:)      - q1(ii,jj,:) )/dtime
-    qind=2; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( cldliq(:)  - q2(ii,jj,:) )/dtime
-    qind=3; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numliq(:)  - q3(ii,jj,:) )/dtime
-    qind=4; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( rain(:)    - q4(ii,jj,:) )/dtime
-    qind=5; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numrain(:) - q5(ii,jj,:) )/dtime
-    qind=6; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( ice(:)     - q6(ii,jj,:) )/dtime
-    qind=7; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( qm(:)      - q7(ii,jj,:) )/dtime
-    qind=8; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( numice(:)  - q8(ii,jj,:) )/dtime
-    qind=9; elem(ie)%derived%FQ(ii,jj,:,qind)  = ( rimvol(:)  - q9(ii,jj,:) )/dtime
+    qind=1; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)* ( qv(:)      - q1(ii,jj,:) )/dtime
+    qind=2; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( cldliq(:)  - q2(ii,jj,:) )/dtime
+    qind=3; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( numliq(:)  - q3(ii,jj,:) )/dtime
+    qind=4; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( rain(:)    - q4(ii,jj,:) )/dtime
+    qind=5; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( numrain(:) - q5(ii,jj,:) )/dtime
+    qind=6; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( ice(:)     - q6(ii,jj,:) )/dtime
+    qind=7; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( qm(:)      - q7(ii,jj,:) )/dtime
+    qind=8; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( numice(:)  - q8(ii,jj,:) )/dtime
+    qind=9; elem(ie)%derived%FQ(ii,jj,:,qind)  = pdel(:)*( rimvol(:)  - q9(ii,jj,:) )/dtime
 
-if( (precip_liq_surf > 0.0) .or. (precip_ice_surf > 0.0) ) then
-print *, 'precip', precip_liq_surf, precip_ice_surf
-end if
+    !convert flux m/s into [dp] units, which is [kg / m / s^2]
+    elem(ie)%accum%precip_mass(ii,jj) = (precip_liq_surf + precip_ice_surf)*dtime*rho_liquidH20*gravit
+
+
+!if( (precip_liq_surf > 0.0) .or. (precip_ice_surf > 0.0) ) then
+!print *, 'precip', precip_liq_surf, precip_ice_surf
+!end if
 #if 0
+
 !if (ie == 1) then
 !print *, 'precip', precip_liq_surf, precip_ice_surf
-print *, 'FT', elem(ie)%derived%FT(ii,jj,:)
+!print *, 'FT', elem(ie)%derived%FT(ii,jj,:)
 !do qind = 1, 9
 !!if(maxval(abs( elem(ie)%derived%FQ(ii,jj,:,qind) ),1)> 0.0)then
 !print *, qind, maxval(abs(elem(ie)%derived%FQ(ii,jj,:,qind)),1)
