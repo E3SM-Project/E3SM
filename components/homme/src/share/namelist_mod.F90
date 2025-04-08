@@ -100,7 +100,21 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     vert_remap_q_alg, &
     vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
-    timestep_make_subcycle_parameters_consistent
+    timestep_make_subcycle_parameters_consistent, &
+    do_predict_nc, &
+    do_subgrid_clouds, &
+    do_prescribed_CCN, &
+    precip_off, &
+    micro_nccons, &
+    p3_autocon_coeff, &
+    p3_accret_coeff, &
+    p3_qc_autocon_expon, &
+    p3_nc_autocon_expon, &
+    p3_qc_accret_expon, &
+    p3_wbf_coeff, &
+    p3_mincdnc, &
+    p3_max_mean_rain_size,  &
+    p3_embryonic_rain_size
 
 
 !PLANAR setup
@@ -312,7 +326,21 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hv_theta_thresh,   &
       vert_remap_q_alg, &
       vert_remap_u_alg, &
-      se_fv_phys_remap_alg
+      se_fv_phys_remap_alg, &
+      do_predict_nc, &
+      do_subgrid_clouds, &
+      do_prescribed_CCN, &
+      precip_off, &
+      micro_nccons, &
+      p3_autocon_coeff, &
+      p3_accret_coeff, &
+      p3_qc_autocon_expon, &
+      p3_nc_autocon_expon, &
+      p3_qc_accret_expon, &
+      p3_wbf_coeff, &
+      p3_mincdnc, &
+      p3_max_mean_rain_size,  &
+      p3_embryonic_rain_size
 
 
 #if defined(CAM) || defined(SCREAM)
@@ -456,6 +484,20 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     theta_hydrostatic_mode = .false.   ! default NH
 #endif
 
+    do_predict_nc     = .true.
+    do_subgrid_clouds = .false.
+    do_prescribed_CCN = .false.
+    precip_off = .false.
+    micro_nccons = 1.0 
+    p3_autocon_coeff    = 30500.0
+    p3_accret_coeff     = 117.25   
+    p3_qc_autocon_expon = 3.19     
+    p3_nc_autocon_expon = -1.1     
+    p3_qc_accret_expon  = 1.15     
+    p3_wbf_coeff        = 1.0      
+    p3_mincdnc          = 20000000.0     
+    p3_max_mean_rain_size  = 0.005 
+    p3_embryonic_rain_size = 0.000025 
 
     ! =======================
     ! Read namelist variables
@@ -793,6 +835,21 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(tom_sponge_start,1, MPIreal_t   , par%root,par%comm,ierr)
+
+    call MPI_bcast(do_predict_nc,         1, MPIlogical_t, par%root,par%comm,ierr)
+    call MPI_bcast(do_subgrid_clouds,     1, MPIlogical_t, par%root,par%comm,ierr)
+    call MPI_bcast(do_prescribed_CCN,     1, MPIlogical_t, par%root,par%comm,ierr)
+    call MPI_bcast(precip_off,            1, MPIlogical_t, par%root,par%comm,ierr)
+    call MPI_bcast(micro_nccons,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_autocon_coeff,      1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_accret_coeff,       1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_qc_autocon_expon,   1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_nc_autocon_expon,   1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_qc_accret_expon,    1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_wbf_coeff,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_mincdnc,            1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_max_mean_rain_size, 1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(p3_embryonic_rain_size,1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(dcmip16_mu,      1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(dcmip16_mu_s,    1, MPIreal_t   , par%root,par%comm,ierr)

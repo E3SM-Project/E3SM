@@ -201,8 +201,24 @@ module control_mod
 
   ! Physgrid parameters
   integer, public :: se_fv_phys_remap_alg = 1
-
-
+  
+  ! START: Apr 8, 2025: Added by Arjun
+  ! Autoconversion and accretion parameters
+    logical, public :: do_predict_nc     = .true.        !prognostic droplet concentration or not?
+    logical, public :: do_subgrid_clouds = .false.       !use subgrid cloudiness in tendency calculations?
+    logical, public :: do_prescribed_CCN = .false.       !see eam and micro_p3_init when this variable is true, there is a lot of init
+    logical, public :: precip_off = .false.
+    real (kind=real_kind),  public ::         micro_nccons = 1.0 ! did not find this one anywhere
+    real (kind=real_kind),  public ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
+    real (kind=real_kind),  public ::         p3_accret_coeff     = 117.25   ! IN  accretion coefficient
+    real (kind=real_kind),  public ::         p3_qc_autocon_expon = 3.19     ! IN  autoconversion qc exponent
+    real (kind=real_kind),  public ::         p3_nc_autocon_expon = -1.1     ! IN  autoconversion nc exponent
+    real (kind=real_kind),  public ::         p3_qc_accret_expon  = 1.15     ! IN  autoconversion coefficient
+    real (kind=real_kind),  public ::         p3_wbf_coeff        = 1.0      ! IN  WBF process coefficient
+    real (kind=real_kind),  public ::         p3_mincdnc          = 20000000.0     ! IN  imposing minimal Nc 
+    real (kind=real_kind),  public ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
+    real (kind=real_kind),  public ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
+  ! END: Apr 8, 2025: Added by Arjun
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !

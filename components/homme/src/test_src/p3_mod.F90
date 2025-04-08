@@ -3,7 +3,11 @@
 
 module p3phys
 
-use control_mod,          only: theta_hydrostatic_mode
+use control_mod,          only: theta_hydrostatic_mode,do_predict_nc, do_subgrid_clouds, &
+                                do_prescribed_CCN, precip_off, micro_nccons, p3_autocon_coeff, &
+                                p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, &
+                                p3_qc_accret_expon, p3_wbf_coeff, p3_mincdnc, p3_max_mean_rain_size, &
+                                p3_embryonic_rain_size
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use eos
@@ -261,20 +265,20 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 !OPTIONS, remove them out later
 !most of them are here https://docs.e3sm.org/E3SM/EAM/user-guide/namelist_parameters/#predicted-particle-properties 
-    logical, parameter :: do_predict_nc     = .true.        !prognostic droplet concentration or not?
-    logical, parameter :: do_subgrid_clouds = .false.       !use subgrid cloudiness in tendency calculations?
-    logical, parameter :: do_prescribed_CCN = .false.       !see eam and micro_p3_init when this variable is true, there is a lot of init
-    logical, parameter :: precip_off = .false.       
-    real(rl), parameter ::         micro_nccons = 1.0 ! did not find this one anywhere
-    real(rl), parameter ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
-    real(rl), parameter ::         p3_accret_coeff     = 117.25   ! IN  accretion coefficient
-    real(rl), parameter ::         p3_qc_autocon_expon = 3.19     ! IN  autoconversion qc exponent
-    real(rl), parameter ::         p3_nc_autocon_expon = -1.1     ! IN  autoconversion nc exponent
-    real(rl), parameter ::         p3_qc_accret_expon  = 1.15     ! IN  autoconversion coefficient
-    real(rl), parameter ::         p3_wbf_coeff        = 1.0      ! IN  WBF process coefficient
-    real(rl), parameter ::         p3_mincdnc          = 20000000.0     ! IN  imposing minimal Nc 
-    real(rl), parameter ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
-    real(rl), parameter ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
+!    logical, parameter :: do_predict_nc     = .true.        !prognostic droplet concentration or not?
+!    logical, parameter :: do_subgrid_clouds = .false.       !use subgrid cloudiness in tendency calculations?
+!    logical, parameter :: do_prescribed_CCN = .false.       !see eam and micro_p3_init when this variable is true, there is a lot of init
+!    logical, parameter :: precip_off = .false.       
+!    real(rl), parameter ::         micro_nccons = 1.0 ! did not find this one anywhere
+!    real(rl), parameter ::         p3_autocon_coeff    = 30500.0  ! IN  autoconversion coefficient
+!    real(rl), parameter ::         p3_accret_coeff     = 117.25   ! IN  accretion coefficient
+!    real(rl), parameter ::         p3_qc_autocon_expon = 3.19     ! IN  autoconversion qc exponent
+!    real(rl), parameter ::         p3_nc_autocon_expon = -1.1     ! IN  autoconversion nc exponent
+!   real(rl), parameter ::         p3_qc_accret_expon  = 1.15     ! IN  autoconversion coefficient
+!    real(rl), parameter ::         p3_wbf_coeff        = 1.0      ! IN  WBF process coefficient
+!    real(rl), parameter ::         p3_mincdnc          = 20000000.0     ! IN  imposing minimal Nc 
+!    real(rl), parameter ::         p3_max_mean_rain_size  = 0.005 ! IN  max mean rain size
+!    real(rl), parameter ::         p3_embryonic_rain_size = 0.000025 ! IN  embryonic rain size for autoconversion
 
 !should depend on a column, but we set to 0 for all of colns
     frzimm_in = 0.0
@@ -366,7 +370,7 @@ subroutine interface_to_p3(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !print *, 'before p3 th', th
 !print *, 'before p3 t_atm', T_atm
 !stop
-
+! print *, "Check Arjun's addition:", p3_autocon_coeff, p3_qc_autocon_expon, p3_qc_accret_expon
     call p3_main( &
          cldliq(kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
          numliq(kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
