@@ -34,7 +34,7 @@ void Functions<S,D>
   ir_cldm = min(cld_frac_i,cld_frac_r); // Intersection of ICE and RAIN cloud
   il_cldm = min(cld_frac_i,cld_frac_l); // Intersection of ICE and LIQUID cloud
   lr_cldm = min(cld_frac_l,cld_frac_r); // Intersection of LIQUID and RAIN cloud
-  cld_frac_glaciated = max(0,cld_frac_i - il_cldm); // Fraction (if any) of cell that is occupied by only ice and not liquid cloud
+  cld_frac_glaciated = max(0.0001,cld_frac_i - il_cldm); // Fraction (if any) of cell that is occupied by only ice and not liquid cloud
 
   // Some process rates take place within the intersection of liquid, rain and
   // ice cloud fractions. We calculate the intersection as the minimum between
