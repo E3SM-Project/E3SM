@@ -1,0 +1,6 @@
+ finidat = '$DIN_LOC_ROOT/lnd/clm2/initdata_map/20241204_I20TREAMELMCNPRDCTCBCBGC_ne30pg2_f09_oEC60to30v3.elm.r.2015-01-01-00000.nc'
+ check_finidat_fsurdat_consistency = .false.
+ check_finidat_year_consistency = .false.
+ check_dynpft_consistency = .false.
+ do_budgets = .false.
+ do_harvest = .false.

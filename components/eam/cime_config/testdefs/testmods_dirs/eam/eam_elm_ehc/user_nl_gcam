@@ -1,0 +1,7 @@
+ ehc_eam_co2_emissions = .true.
+ elm_ehc_carbon_scaling = .true.
+ elm_ehc_agyield_scaling = .true.
+ gcam_config = '$DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/configuration/configuration_ssp245_in_E3SM.xml'
+ base_hr_file = '$DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/data/base_f09_20241204_ZATM_annAvgMonthly_2010-2014_hr.csv'
+ base_npp_file = '$DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/data/base_f09_20241204_ZATM_annAvgMonthly_2010-2014_npp.csv'
+ base_pft_file = '$DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/data/base_f09_20241204_ZATM_annAvgMonthly_2010-2014_pft_wt.csv'

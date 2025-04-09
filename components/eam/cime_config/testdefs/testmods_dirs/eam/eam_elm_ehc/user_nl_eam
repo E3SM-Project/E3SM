@@ -1,0 +1,11 @@
+&co2_cycle_nl
+ co2_flag = .true.
+ co2_readFlux_fuel = .false.
+ co2_readFlux_aircraft = .false.
+ co2_readFlux_ocn = .true.
+ co2flux_ocn_file = '/lcrc/group/acme/public_html/e3sm_support/compset_generation/ssp245/ocn/co2_flux/merged_regridded_data/fgco2_CESM2_SSP245_ne30pg2_2015-2100.nc'
+&chem_surfvals_nl
+ co2vmr = 0.000001e-6
+ scenario_ghg = 'RAMPED'
+ bndtvghg = '/lcrc/group/e3sm/ac.dalei.hao/GCAM_E3SM/ghg_concentration_data_SSP245_GCAM/GHG_GCAM_SSP245_Annual_Global_2015-2102_c20240712.nc'
+ co2_conserv_error_tol_per_year = 1.e-5
