@@ -113,7 +113,7 @@ void AtmosphereProcess::run (const double dt) {
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
 
     //energy fixer needs both mass and energy fields that are computed by compute_column_conservation_checks_data(dt_sub)
-    //but this will change with cp*
+    //but this will change with cp* (with cpdry heat_glob const is much easier to compute)
     //actually we do not need mass_before, so mass_before is redundant
 
     //however, we do not want to use column check if the fixer is on. without a correction 
@@ -141,7 +141,7 @@ void AtmosphereProcess::run (const double dt) {
 
     if (has_energy_fixer()){
       //compute_energy_after();
-      //fix_energy();
+      fix_energy(dt_sub);
 
       //if debug recompute new energy and confirm
       //print out diagnostics?
@@ -1149,11 +1149,12 @@ void AtmosphereProcess
   rmg(m_groups_out, m_groups_out_pointers);
 }
 
-void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
+void AtmosphereProcess::compute_column_conservation_checks_data (const double dt)
 {
   EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
                    "Error! User set enable_column_conservation_checks=true, "
-                   "but no conservation check exists.\n");
+                   "or has_energy_fixer=true, "
+                   "but no conservation check class exists.\n");
 
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
@@ -1163,5 +1164,44 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
 }
+
+#if 0
+void AtmosphereProcess::compute_energy_after ()
+{
+  EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
+                   "Error! User set has_energy_fixer=true, "
+                   "but no conservation check class exists.\n");
+
+  // Set dt and compute current mass and energy.
+  const auto& conservation_check =
+      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_conservation.second);
+  //copy current energy/mass to "before" fields
+  conservation_check->save_energy_mass_before()
+
+  conservation_check->compute_current_mass();
+  conservation_check->compute_current_energy();
+}
+#endif
+
+void AtmosphereProcess::fix_energy (const double dt)
+{
+  EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
+                   "Error! User set has_energy_fixer=true, "
+                   "but no conservation check class exists.\n");
+
+  // Set dt and compute current mass and energy.
+  const auto& conservation_check =
+      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_conservation.second);
+
+  //dt is needed to convert flux to change
+  conservation_check->set_dt(dt);
+  conservation_check->global_fixer();
+
+  m_atm_logger->info("EAMxx:: energy fixer, energy error after" + std::to_string(conservation_check->get_echeck()) );
+}
+
+
+
+
 
 } // namespace scream

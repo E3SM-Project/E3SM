@@ -423,7 +423,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto phys_grid_name = phys_grid->name();
-#if 0
+#if 1
   // Get fields needed to run the mass and energy conservation checks. Require that
   // all fields exist.
   EKAT_REQUIRE_MSG (

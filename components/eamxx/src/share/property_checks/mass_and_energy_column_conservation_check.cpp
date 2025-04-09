@@ -280,7 +280,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 }
 
 
-void MassAndEnergyColumnConservationCheck::global_fixer()
+void MassAndEnergyColumnConservationCheck::global_fixer() const
 {
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
@@ -321,11 +321,17 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
 
     // Calculate total mass
     m_new_mass_for_fixer(i) = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
-    m_mass_flux(i) =          compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i))*dt;
+    m_mass_change(i) = compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i))*dt;
     // Calculate total energy
     m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
-    m_energy_flux(i) =          compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
+    m_energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
+
+/// simplify later
+//overwrite the "new" fields with change
+    m_new_energy_for_fixer(i) = m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i);
+//do i need to check glob int for mass as well?    
+
   });
 
   //compute global integrals
@@ -348,17 +354,22 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   f_version.allocate_view();
   auto f_view = f_version.get_view<Real*>();
 
-  //total energy after
+  //reduce m_new_energy_for_fixer
   f_view = m_new_energy_for_fixer;
   horiz_contraction<Real>(res, f_version, m_area, &m_comm);
-  total_energy_after = res.get_view<Real,Host>()();
+  pb_fixer = res.get_view<Real,Host>()();
  
+  //reduce m_new_mass_for_fixer
+  f_view = m_new_mass_for_fixer;
+  horiz_contraction<Real>(res, f_version, m_area, &m_comm);
+  total_mass = res.get_view<Real,Host>()();
+
 //  Real pb_fixer;
 //  Real total_mass, total_energy_before, total_energy_after, total_flux;
 
   using PC = scream::physics::Constants<Real>;
   const Real cpdry = PC::Cpair;
-  pb_fixer = (total_energy_before + total_flux - total_energy_after)/cpdry/total_mass;
+  pb_fixer /= (cpdry*total_mass);
 
   //add the fixer to temperature
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -371,8 +382,9 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const int k){ 
        T_mid_i(k) += pb_fixer;
     });
-  });
+  });//adding fix to T
 
+/////////////////////////////////////// DEBUG
   ////////////////////////////////////////////////////check new energy now
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
@@ -388,8 +400,15 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     // Calculate total energy
     m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
+//overwrite the "new" fields with relative change
+    m_new_energy_for_fixer(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i))/m_current_energy(i);
   });
   //compute global integral
+  //reduce m_new_energy_for_fixer
+  f_view = m_new_energy_for_fixer;
+  horiz_contraction<Real>(res, f_version, m_area, &m_comm);
+  echeck = res.get_view<Real,Host>()();
+
   //print it wrt old energy + flux
 };
 
@@ -477,5 +496,11 @@ compute_energy_boundary_flux_on_column (const Real vapor_flux,
 
   return vapor_flux*(LatVap+LatIce) - (water_flux-ice_flux)*RHO_H2O*LatIce + heat_flux;
 }
+
+Real MassAndEnergyColumnConservationCheck::get_echeck(){
+return echeck;
+}
+
+
 
 } // namespace scream

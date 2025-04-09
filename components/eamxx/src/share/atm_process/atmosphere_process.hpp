@@ -510,7 +510,9 @@ private:
 
   // Compute/store data needed for this processes mass and energy conservation
   // check: dt, tolerance, current mass and energy value per column.
-  void compute_column_conservation_checks_data (const int dt);
+  void compute_column_conservation_checks_data (const double dt);
+
+  void fix_energy (const double dt);
 
   // Run an individual property check. The input property_check_category_name
   void run_property_check (const prop_check_ptr&       property_check,

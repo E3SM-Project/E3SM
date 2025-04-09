@@ -487,6 +487,16 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Initialize Rayleigh friction variables
   rayleigh_friction_init();
+
+  if (has_energy_fixer()) {
+    const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
+    const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
+    const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
+    const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
+    p3_postproc.set_mass_and_energy_fluxes(vapor_flux, water_flux, ice_flux, heat_flux);
+  }
+
+
 }
 
 void HommeDynamics::run_impl (const double dt)
@@ -766,12 +776,11 @@ void HommeDynamics::homme_post_process (const double dt) {
       // Store T at end of the dyn timestep (to back out tendencies later)
       T_prev(ilev) = T_val;
     });
-  });
+  }); //op()
 
   // Apply Rayleigh friction to update temperature and horiz_winds
   rayleigh_friction_apply(dt);
 
-//if in the loop!
   if (has_energy_fixer()) {
 
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
@@ -788,7 +797,7 @@ void HommeDynamics::homme_post_process (const double dt) {
     });
   }; //if fixer
 
-}
+}//homme_post_proc
 
 void HommeDynamics::
 create_helper_field (const std::string& name,
