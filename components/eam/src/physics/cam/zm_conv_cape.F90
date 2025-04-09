@@ -11,10 +11,7 @@ module zm_conv_cape
    implicit none
    private
 
-   public :: compute_dilute_cape       ! ?
-   ! public :: find_mse_max              ! ?
-   ! public :: compute_dilute_parcel     ! ?
-   ! public :: compute_cape_from_parcel  ! ?
+   public :: compute_dilute_cape ! calculate convective available potential energy (CAPE) with dilute parcel ascent
 
    real(r8), parameter :: lcl_pressure_threshold     = 600._r8   ! if LCL pressure is lower => no convection and cape is zero
    real(r8), parameter :: ull_upper_launch_pressure  = 600._r8   ! upper search limit for unrestricted launch level (ULL)
@@ -26,7 +23,6 @@ contains
 
 ! NOTES / to-do
 ! - add arguments for pcols/pver/pverp ?
-! - Create MPI broadcast routines for params and consts
 ! - rename
 !   - mse_max_klev => msemax_klev
 !   - eql_klev     => cldtop_klev
@@ -48,8 +44,8 @@ subroutine compute_dilute_cape( ncol, num_cin, msg, &
                                 zm_const, zm_param, &
                                 iclosure, dcapemx, use_input_parcel_tq, q_mx, t_mx )
    !----------------------------------------------------------------------------
-   ! Purpose: Calculate convective available potential energy (CAPE), lifting 
-   !          condensation level (LCL), and convective top
+   ! Purpose: calculate convective available potential energy (CAPE), lifting
+   !          condensation level (LCL), and convective top with dilute parcel ascent
    ! Method: parcel temperature based on a plume model with constant entrainment
    ! Original Author: Richard Neale - September 2004
    ! References:
