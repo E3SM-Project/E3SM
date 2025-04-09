@@ -79,6 +79,11 @@ module zm_conv
    real(r8) :: zmconv_accr_fac       = unset_r8
    real(r8) :: zmconv_micro_dcs      = unset_r8
 
+   real(r8) :: zmconv_MCSP_heat_coeff = 0._r8
+   real(r8) :: zmconv_MCSP_moisture_coeff = 0._r8
+   real(r8) :: zmconv_MCSP_uwind_coeff = 0._r8
+   real(r8) :: zmconv_MCSP_vwind_coeff = 0._r8
+
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
    real(r8), parameter :: capelmt = 70._r8  ! threshold value for cape for deep convection.
