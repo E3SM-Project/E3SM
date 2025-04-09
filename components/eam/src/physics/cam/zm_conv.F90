@@ -809,7 +809,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    ! DCAPE is the difference in CAPE between the two calls using the same launch level
 
    iclosure = .true.
-   call compute_dilute_cape( ncol, zm_param%num_cin, msg, &
+   call compute_dilute_cape( pcols, ncol, pver, pverp, &
+                             zm_param%num_cin, msg, &
                              q, t, z, p, pf, &
                              pblt, tpert, &
                              tp, qstp, maxi, tl, &
@@ -821,7 +822,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    ! Calculate dcape trigger condition
    if ( .not.is_first_step() .and. zm_param%trig_dcape ) then
       iclosure = .false.
-      call compute_dilute_cape( ncol, zm_param%num_cin, msg, &
+      call compute_dilute_cape( pcols, ncol, pver, pverp, &
+                                zm_param%num_cin, msg, &
                                 q_star, t_star, z, p, pf, &
                                 pblt, tpert, &
                                 tpm1, qstpm1, maxim1, tlm1, &
