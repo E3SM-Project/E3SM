@@ -88,6 +88,13 @@ class MAMOptics final : public MAMGenericInterface {
   mam_coupling::Buffer buffer_;
   // parameters for calcsize
   mam4::modal_aer_opt::CalcsizeData calsize_data_;
+
+  int num_2d_scratch_= 8;
+
+  int get_len_temporary_views();
+  void init_temporary_views();
+  int len_temporary_views_{0};
+
 };  // MAMOptics
 
 }  // namespace scream
