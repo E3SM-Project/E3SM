@@ -2957,6 +2957,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        endif
     enddo
     call t_drvstopf  (trim(timer))
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCpl_r2x_ox'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
 
   end subroutine prep_ocn_calc_r2x_ox
 
