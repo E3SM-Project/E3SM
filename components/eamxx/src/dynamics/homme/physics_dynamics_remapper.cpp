@@ -328,19 +328,10 @@ remap_bwd_impl ()
   update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_tgt_fields);
   update_subfields_views(m_subfield_info_phys,m_phys_repo,m_src_fields);
 
-  using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
-
-  const auto concurrency = KT::ExeSpace().concurrency();
-#ifdef EAMXX_ENABLE_GPU
-  const int num_levs  = m_phys_grid->get_num_vertical_levels();
-  const int team_size = std::min(128,32*(int)ceil(((Real)num_levs)/32));
-#else
-  const int team_size = (concurrency<this->m_num_fields*m_num_phys_cols ? 1 : concurrency/(this->m_num_fields*m_num_phys_cols));
-#endif
-
   // TeamPolicy over m_num_phys_cols*this->m_num_fields. Unlike remap_fwd_impl,
   // here we do not require setting dyn=0, allowing us to extend the TeamPolicy
-  const TeamPolicy policy(this->m_num_fields*m_num_phys_cols,team_size);
+  using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
+  const TeamPolicy policy(this->m_num_fields*m_num_phys_cols,Kokkos::AUTO);
   Kokkos::parallel_for(policy, *this);
   Kokkos::fence();
 }
