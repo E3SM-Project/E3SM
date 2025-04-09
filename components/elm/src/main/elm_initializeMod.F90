@@ -24,6 +24,7 @@ module elm_initializeMod
   use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
+  use iso_c_binding
   !
   !-----------------------------------------
   ! Definition of component types
@@ -48,6 +49,16 @@ module elm_initializeMod
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
   !-----------------------------------------------------------------------
+#ifdef HAVE_MOAB
+  private :: init_moab_land_internal   ! create the full MOAB mesh representation of ELM domain
+  integer :: mlndghostid     ! ID of the MOAB ELM application with ghost-cell regions
+  integer , private :: mblsize, totalmbls
+  integer :: nrecv, totalmblsimp
+
+  real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
+  real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
+#endif
+  !-----------------------------------------------------------------------
 
 contains
 
@@ -69,7 +80,7 @@ contains
     use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
-    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
+    use decompInitMod             , only: decompInit_moab, decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
     use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
@@ -143,8 +154,8 @@ contains
        ! in the following call) for FATES runs
        call ELMFatesGlobals1()
        call update_pft_array_bounds()
-    end if    
-    
+    end if
+
     call elm_petsc_init()
     call init_soil_temperature()
 
@@ -187,10 +198,22 @@ contains
     endif
 
     ! ------------------------------------------------------------------------
+    ! Copy ELM mesh data to MOAB so that we can compute optimal partitions
+    ! and enable ghost halo-layers for each task to describe shared entities.
+    ! Now let us create that MOAB app that represents the full ELM mesh
+    ! ------------------------------------------------------------------------
+    call init_moab_land_internal()
+
+    ! ------------------------------------------------------------------------
     ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
 
+    domain_decomp_type = "moab" ! hard-code it for testing
     select case (trim(domain_decomp_type))
+    case ("moab")
+      !call decompInit_lnd_moab(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
+      call decompInit_moab(mlndghostid, ni, nj, amask)
+      deallocate(amask)
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
@@ -243,15 +266,15 @@ contains
           call shr_sys_flush(iulog)
        endif
 
-       call surfrd_get_topo(ldomain, flndtopo)  
-    endif    
-    
+       call surfrd_get_topo(ldomain, flndtopo)
+    endif
+
     if (fsurdat /= " " .and. use_top_solar_rad) then
        if (masterproc) then
           write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)
 
     endif    
     !-------------------------------------------------------------------------
@@ -268,7 +291,7 @@ contains
     endif
 
     !-------------------------------------------------------------------------
-    
+
     !-------------------------------------------------------------------------
     ! Initialize urban model input (initialize urbinp data structure)
     ! This needs to be called BEFORE the call to surfrd_get_data since
@@ -326,7 +349,7 @@ contains
     if (use_fates) then
        call FatesReadPFTs()
     end if
-    
+
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
@@ -340,7 +363,7 @@ contains
 
     end if
 
-    
+
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
@@ -364,12 +387,12 @@ contains
 
     ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
-    
+
     ! Read topounit information from fsurdat
     if (has_topounit) then
-         call surfrd_topounit_data(begg, endg, fsurdat)         
+         call surfrd_topounit_data(begg, endg, fsurdat)
     end if
-    
+
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties
     call top_as%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! atmospheric state variables (forcings)
@@ -398,7 +421,7 @@ contains
     call initGridCells()
 
     ! Set global seg maps for gridcells, topounits, landlunits, columns and patches
-    !if(max_topounits > 1) then 
+    !if(max_topounits > 1) then
     !   if (create_glacier_mec_landunit) then
     !      call decompInit_gtlcp(ns, ni, nj, ldomain%glcmask,ldomain%num_tunits_per_grd)
     !   else
@@ -417,7 +440,7 @@ contains
     call t_startf('init_filters')
     call allocFilters()
     call t_stopf('init_filters')
-    
+
     nclumps = get_proc_clumps()
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
@@ -599,7 +622,7 @@ contains
     ! ------------------------------------------------------------------------
     ! Initialize time manager
     ! ------------------------------------------------------------------------
-    if (nsrest == nsrStartup) then  
+    if (nsrest == nsrStartup) then
        call timemgr_init()
     else
        call restFile_getfile(file=fnamer, path=pnamer)
@@ -608,14 +631,14 @@ contains
        call restFile_close( ncid=ncid )
        call timemgr_restart()
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Pass model timestep info to FATES
     ! ------------------------------------------------------------------------
     if(use_fates) then
        call ELMFatesTimesteps()
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------
@@ -744,7 +767,7 @@ contains
     end if
 
     call cnstate_vars%initAccBuffer(bounds_proc)
-    
+
     if (use_fates) then
       call alm_fates%InitAccBuffer(bounds_proc)
    end if
@@ -1237,5 +1260,167 @@ contains
 
   end subroutine elm_petsc_init
 
+#ifdef HAVE_MOAB
+  subroutine init_moab_land_internal()!(bounds)
+    use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
+    use shr_kind_mod     , only : CXX => SHR_KIND_CXX
+    use spmdMod     , only: iam  ! rank on the land communicator
+    use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
+    use elm_varcon  , only: re
+    use shr_const_mod, only: SHR_CONST_PI
+    use elm_varctl  ,  only : iulog, fatmlndfrc  ! for messages and domain file name
+    use spmdmod  , only: masterproc, mpicom
+    use controlMod
+    use mpi
+    use iMOAB  , only: iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
+    iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
+    iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
+    iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+
+   !  type(bounds_type) , intent(in)  :: bounds
+   !  integer , intent(in) :: LNDID ! id of the land app
+    integer :: LNDGHOSTID ! id of the ghosted land app
+    integer :: mpigrp_lndcmp ! coupler pes
+
+    integer lsz !  keep local size
+    integer n, nghostlayers ! number of ghost layer regions
+    ! local variables to fill in data
+    ! retrieve everything we need from land domain mct_ldom
+    ! number of vertices is the size of land domain
+    real(r8), pointer :: data(:)  ! temporary
+    integer   dims, i, ierr
+    integer tagtype, numco !, mbtype, block_ID
+    character*100 outfile, wopts
+    character(CXX) ::  tagname ! hold all fields
+    character*32  appname
+    ! TODO: should size it to the number of actual fields we want to exchange
+    ! between ghost layers on the component side
+    integer, dimension(100) :: tag_indices
+    integer, dimension(100) ::  entity_types
+    integer :: topodim, bridgedim
+    integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
+
+   !  if (ldomain%nv < 3)  &
+   !      call endrun('Error: cannot create ELM-MOAB mesh when ldomain%nv < 3.')
+
+    topodim = 2 ! topological dimension = 2: manifold mesh on the sphere
+    bridgedim = 0 ! use vertices = 0 as the bridge (other options: edges = 1)
+    nghostlayers = 0 ! initialize to zero (default)
+
+    ! next define MOAB app for the ghosted one
+    ! We do this so that coupling does not have to deal with halos
+    appname="LNDMBGHOST"//C_NULL_CHAR
+    LNDGHOSTID = 55120!(LNDID*10)
+    ierr = iMOAB_RegisterApplication(appname, mpicom, LNDGHOSTID, mlndghostid)
+    if (ierr > 0 )  &
+       call endrun('Error: cannot register ELM-MOAB halo application')
+    if(masterproc) then
+       write(iulog,*) " "
+       write(iulog,*) "register MOAB application:", trim(appname), "  mlndghostid=", mlndghostid
+       write(iulog,*) " "
+    endif
+
+    if(masterproc) then
+        write(iulog,*) "MOAB is going to read the domain file:", trim(fatmlndfrc)
+    endif
+
+    ierr = iMOAB_LoadMesh( mlndghostid, trim(fatmlndfrc)//C_NULL_CHAR, &
+                          "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;REPARTITION"//C_NULL_CHAR, &
+                          nghostlayers )
+    if (ierr > 0 )  &
+        call endrun('Error: fail to load the domain file for land model')
+
+    nghostlayers = 0 ! TODO: if more than 1-halo layers are needed in ELM, change this value
+    if (masterproc) &
+        write(iulog,*) "ELM-MOAB: generating ", nghostlayers, " ghost layers"
+
+    ! After the ghost cell exchange, the halo regions are computed and
+    ! mesh info will get updated correctly so that we can query the data
+    ierr = iMOAB_DetermineGhostEntities(mlndghostid, topodim, & ! topological dimension
+                                        nghostlayers, &     ! number of ghost layers
+                                        bridgedim )         ! bridge dimension (vertex=0)
+    if (ierr > 0)  &
+        call endrun('Error: failed to generate the ghost layer entities')
+
+#ifdef MOABDEBUG
+      ! write out the full repartitioned mesh file to disk, in parallel
+      outfile = 'wholeLndGhost.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
+      if (ierr > 0 )  &
+        call endrun('Error: fail to write the land mesh file')
+#endif
+
+    ! let us get some information about the partitioned mesh and print
+    ierr = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
+    if (ierr > 0 )  &
+      call endrun('Error: failed to get mesh info ')
+
+    ! set the local size to the total elements
+    lsz = nelem(3)
+
+    ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
+    !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
+    tagtype = 0 ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID:partition:mask'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numco, tag_indices(1) )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to retrieve GLOBAL_ID:partition tag ')
+
+    !  Define and Set Fraction on each mesh
+    tagname='frac:area:aream'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco,  tag_indices(4) )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create frac:area:aream tags')
+
+    ! use data array as a data holder
+    ! Note that loop bounds are typical for locally owned points
+    ! allocate(data(lsz*3))
+    ! do i = 1, lsz
+    !   n = i-1 + bounds%begg
+    !   data(i) = ldomain%frac(n)               ! frac = area fractions
+    !   data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
+    !   data(i+2*lsz) = data(i+lsz)             ! aream = model area
+    ! enddo
+
+    entity_types(:) = 1 ! default: Element-based tags
+
+    ! set the values on the internal mesh, halo values aren't set
+    ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to set frac:area:aream tag ')
+
+    ! ierr = iMOAB_UpdateMeshInfo( mlndghostid )
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to update mesh info ')
+
+    ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
+    ! entity_types(:) = 1 ! default: Element-based tags
+    ! entity_types(1) = 0 ! Vertex-based tags
+    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to synchronize vertex tags for ELM ')
+
+    ! ! synchronize: GLOBAL_ID, frac, area, aream tags defined on elements
+    ! ! in the ghost layers
+    ! entity_types(1) = 1 ! Element-based tags
+    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 8, tag_indices, entity_types)
+    ! if (ierr > 0 )  &
+    !   call endrun('Error: fail to synchronize element tags for ELM ')
+
+    ! deallocate(data)
+
+#ifdef MOABDEBUG
+      ! write out the local mesh file to disk (np tasks produce np files)
+      outfile = 'elm_local_mesh'//CHAR(0)
+      ierr = iMOAB_WriteLocalMesh(mlndghostid, trim(outfile))
+      if (ierr > 0 )  &
+        call endrun('Error: fail to write ELM local meshes in h5m format')
+#endif
+
+  end subroutine init_moab_land_internal
+#endif
 
 end module elm_initializeMod
