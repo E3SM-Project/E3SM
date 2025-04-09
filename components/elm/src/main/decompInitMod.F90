@@ -14,13 +14,13 @@ module decompInitMod
   use elm_varctl      , only : iulog, use_fates
   use elm_varcon      , only : grlnd
   use GridcellType    , only : grc_pp
-  use LandunitType    , only : lun_pp                
-  use TopounitType    , only : top_pp                
-  use ColumnType      , only : col_pp                
+  use LandunitType    , only : lun_pp
+  use TopounitType    , only : top_pp
+  use ColumnType      , only : col_pp
   use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
-  use VegetationType  , only : veg_pp                
+  use VegetationType  , only : veg_pp
   use decompMod
-  use mct_mod  
+  use mct_mod
   use topounit_varcon   , only : max_topounits, has_topounit
   use domainMod         , only: ldomain
   !
@@ -28,6 +28,7 @@ module decompInitMod
   implicit none
   !
   ! !PUBLIC MEMBER FUNCTIONS:
+  public decompInit_moab         ! initializes lnd grid decomposition using MOAB partitioners
   public decompInit_lnd          ! initializes lnd grid decomposition into clumps and processors
   public decompInit_clumps       ! initializes atm grid decomposition into clumps
   public decompInit_gtlcp         ! initializes g,l,c,p decomp info
@@ -41,6 +42,353 @@ module decompInitMod
   !------------------------------------------------------------------------------
 
 contains
+!------------------------------------------------------------------------------
+#ifdef HAVE_MOAB
+  subroutine decompInit_moab(mlndghostid, lni,lnj,amask)
+    !
+    ! !DESCRIPTION:
+    ! This subroutine initializes the land surface decomposition into a clump
+    ! data structure.  This assumes each pe has the same number of clumps
+    ! set by clump_pproc
+    !
+    ! !USES:
+    use elm_varctl, only : nsegspc
+    !use mpi
+
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
+    iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+    !
+    ! !ARGUMENTS:
+    implicit none
+
+#include "mpif.h"
+    integer , intent(in) :: mlndghostid
+    integer , intent(in) :: amask(:)
+    integer , intent(in) :: lni,lnj   ! domain global size
+    !
+    ! !LOCAL VARIABLES:
+    integer :: lns                    ! global domain size
+    integer :: ln,lj                  ! indices
+    integer :: ag,an,ai,aj            ! indices
+    integer :: numg                   ! number of land gridcells
+    logical :: seglen1                ! is segment length one
+    real(r8):: seglen                 ! average segment length
+    real(r8):: rcid                   ! real value of cid
+    integer :: cid,pid                ! indices
+    integer :: n,m,ng                 ! indices
+    integer :: ier                    ! error code
+    integer :: beg,end,lsize,gsize    ! used for gsmap init
+    integer :: oind, gind             ! temporary for owned/ghosted index
+    integer, allocatable :: gindex(:)     ! global index for gsmap init
+    integer, allocatable :: clumpcnt(:)   ! clump index counter
+    integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
+    integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
+    ! MOAB data
+    integer, allocatable :: eglobal_ids(:), eproc_ownership(:), eblock_ids(:)
+    integer :: nvproc, neproc, nvoproc, neoproc, nvgproc, negproc, ngv, nge ! local and global mesh information
+    integer            :: cell_id_offset, cell_begg, cell_endg              ! temporary
+    integer            :: count                         ! temporary
+    integer            :: ncells_per_clump              ! number of grid cells per clump
+    integer            :: remainder                     ! temporary
+    integer, allocatable   :: clump_ncells(:)               ! temporary
+    integer, allocatable   :: clump_begg(:)                 ! temporary
+    integer, allocatable   :: clump_endg(:)                 ! temporary
+    integer, allocatable   :: local_clump_info(:)           ! temporary
+    integer, allocatable   :: global_clump_info(:)          ! temporary
+    integer, allocatable   :: thread_count(:)               ! temporary
+    integer            :: offset                        ! temporary
+    integer            :: cowner                        ! clump owner
+    integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
+    !------------------------------------------------------------------------------
+
+    lns = lni * lnj
+
+    !--- set and verify nclumps ---
+    if (clump_pproc > 0) then
+       nclumps = clump_pproc * npes
+       if (nclumps < npes) then
+          write(iulog,*) 'decompInit_lnd(): Number of gridcell clumps= ',nclumps, &
+               ' is less than the number of processes = ', npes
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
+    else
+       write(iulog,*)'clump_pproc= ',clump_pproc,'  must be greater than 0'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    ! let us get some information about the partitioned mesh and print
+    ier = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
+    if (ier > 0 )  &
+      call endrun('Error: failed to get mesh info ')
+
+    ! set the local size (owned, ghosted) and total entity list (vertices/elements)
+    nvoproc = nverts(1) ! owned vertices
+    nvgproc = nverts(2) ! ghosted vertices
+    nvproc = nverts(3)  ! owned + ghosted vertices
+    neoproc = nelem(1) ! owned elements
+    negproc = nelem(2) ! ghosted elements
+    neproc = nelem(3)   ! owned + ghosted elements
+    cell_id_offset = 0  ! initialize cell_id_offset
+
+    ! now consolidate/reduce data to root and print information
+    ! not really necessary for actual code -- for verbose info only
+    call MPI_Allreduce(nvoproc, ngv, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    call MPI_Allreduce(neoproc, nge, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    if (masterproc) then
+      write(iulog, *)  "decompInit_moab(): Number of gridcell vertices: owned=", nvoproc, &
+                        ", ghosted=", nvgproc, ", global=", ngv
+      write(iulog, *)  "decompInit_moab(): Number of gridcell elements: owned=", neoproc, &
+                        ", ghosted=", negproc, ", global=", nge
+    endif
+
+    ! Determine the cell id offset on each processor
+    call MPI_Scan(neoproc, cell_id_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): MPI_Scan error failed to get cell_id_offset'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+   !  cell_id_offset = cell_id_offset - neoproc
+   !  cell_begg = cell_id_offset
+   !  cell_endg = cell_begg + neproc ! beginning + local-owned + local-ghosted
+
+    ! allocate and initialize procinfo (from decompMod.F90) and clumps
+    ! beg and end indices initialized for simple addition of cells later
+    allocate(procinfo%cid(clump_pproc), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): allocation error for procinfo%cid'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    endif
+    procinfo%nclumps = clump_pproc
+    procinfo%cid(:)  = -1
+    procinfo%ncells  = neproc
+    procinfo%ntunits  = 0
+    procinfo%nlunits = 0
+    procinfo%ncols   = 0
+    procinfo%npfts   = 0
+    procinfo%nCohorts = 0
+    procinfo%begg    = 1
+    procinfo%begt    = 1
+    procinfo%begl    = 1
+    procinfo%begc    = 1
+    procinfo%begp    = 1
+    procinfo%begCohort    = 1
+    procinfo%endg    = 0
+    procinfo%endt    = 0
+    procinfo%endl    = 0
+    procinfo%endc    = 0
+    procinfo%endp    = 0
+    procinfo%endCohort    = 0
+
+    allocate(clumps(nclumps), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): allocation error for clumps'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    clumps(:)%owner   = -1
+    clumps(:)%ncells  = 0
+    clumps(:)%ntunits = 0
+    clumps(:)%nlunits = 0
+    clumps(:)%ncols   = 0
+    clumps(:)%npfts   = 0
+    clumps(:)%nCohorts = 0
+    clumps(:)%begg    = 1
+    clumps(:)%begt    = 1
+    clumps(:)%begl    = 1
+    clumps(:)%begc    = 1
+    clumps(:)%begp    = 1
+    clumps(:)%begCohort    = 1
+    clumps(:)%endg    = 0
+    clumps(:)%endt    = 0
+    clumps(:)%endl    = 0
+    clumps(:)%endc    = 0
+    clumps(:)%endp    = 0
+    clumps(:)%endCohort    = 0
+
+    ! assign clumps to proc round robin
+    cid = 0
+    do n = 1,nclumps
+       pid = mod(n-1,npes)
+       if (pid < 0 .or. pid > npes-1) then
+          write(iulog,*) 'decompInit_moab(): round robin pid error ',n,pid,npes
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+       clumps(n)%owner = pid
+       if (iam == pid) then
+          cid = cid + 1
+          if (cid < 1 .or. cid > clump_pproc) then
+             write(iulog,*) 'decompInit_moab(): round robin pid error ',n,pid,npes
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          endif
+          procinfo%cid(cid) = n
+       endif
+    enddo
+
+    ! count total active land gridcells
+    numg = 0
+    do ln = 1,lns
+       if (amask(ln) == 1) then
+          numg = numg + 1
+       endif
+    enddo
+
+    if (npes > numg) then
+       write(iulog,*) 'decompInit_moab(): Number of processes exceeds number ', &
+            'of land grid cells',npes,numg
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    if (nclumps > numg) then
+       write(iulog,*) 'decompInit_moab(): Number of clumps exceeds number ', &
+            'of land grid cells',nclumps,numg
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+   !  if (numg /= lns) then
+   !     write(iulog,*) trim(subname) // '(): Only implimented for numg == lns '
+   !     call endrun(msg=errMsg(__FILE__, __LINE__))
+   !  end if
+
+    allocate(eglobal_ids(neproc), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): allocation error for eglobal_ids'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(eproc_ownership(neproc), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): allocation error for eproc_ownership'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    allocate(eblock_ids(neproc), stat=ier)
+    if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): allocation error for eblock_ids'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+    ier = iMOAB_GetVisibleElementsInfo( mlndghostid, neproc, &
+                     eglobal_ids, eproc_ownership, eblock_ids )
+    if (ier > 0 )  &
+      call endrun('Error: fail to query information for visible elements')
+
+    ! assign clumps to proc round robin
+    cid = (iam+1)*clump_pproc
+    do n = cid,cid+clump_pproc
+      ! clumps(n)%owner = eproc_ownership(n) ! store the process that owns the cell
+      ! procinfo%cid(cid) = eglobal_ids(n)   ! store the global ID of the cell
+      clumps(n)%owner = iam     ! store the process that owns the clump
+      procinfo%cid(n-cid) = n   ! store the global clump ID
+    enddo
+
+    ! set the begginning and end range for the local array space
+    procinfo%begg = cell_id_offset + 1 - neoproc
+    procinfo%endg = cell_id_offset ! beginning + local-owned + local-ghosted
+
+    !
+    ! Compute information about all clumps on all processors
+    !
+
+    ncells_per_clump = procinfo%ncells/clump_pproc
+    remainder        = procinfo%ncells - ncells_per_clump*clump_pproc
+
+    allocate (clump_ncells      (clump_pproc          ))
+    allocate (clump_begg        (clump_pproc          ))
+    allocate (clump_endg        (clump_pproc          ))
+
+    print *, 'clump_pproc = ', clump_pproc, '; npes = ', npes, '; procinfo%begg = ', procinfo%begg, '; procinfo%endg = ', procinfo%endg
+    allocate (local_clump_info  (1:3*clump_pproc      ))
+    !  allocate (global_clump_info (1:3*clump_pproc*npes ))
+    allocate (global_clump_info (1:800 )) ! for now hardcode it.
+    allocate (thread_count      (1:npes               ))
+
+    clump_ncells(:) = ncells_per_clump
+
+    offset = procinfo%begg
+    do m = 1,clump_pproc
+       if (m-1 < remainder) clump_ncells(m) = clump_ncells(m) + 1
+
+       clump_begg(m) = offset
+       clump_endg(m) = offset + clump_ncells(m) - 1
+       offset        = offset + clump_ncells(m)
+
+       local_clump_info((m-1)*3 + 1) = clump_ncells(m)
+       local_clump_info((m-1)*3 + 2) = clump_begg  (m)
+       local_clump_info((m-1)*3 + 3) = clump_endg  (m)
+    end do
+
+    call MPI_Allgather(local_clump_info, 3*clump_pproc, MPI_INTEGER, &
+         global_clump_info, 3*clump_pproc, MPI_INTEGER, mpicom, ier)
+
+    count = 0
+    thread_count(:) = 0
+    do m = 1, nclumps
+       cowner = clumps(m)%owner
+
+       clumps(m)%ncells = global_clump_info(cowner*3 + thread_count(cowner)*3 + 1)
+       clumps(m)%begg   = global_clump_info(cowner*3 + thread_count(cowner)*3 + 2)
+       clumps(m)%endg   = global_clump_info(cowner*3 + thread_count(cowner)*3 + 3)
+
+       thread_count(cowner) = thread_count(cowner) + 1
+    enddo
+
+    deallocate (clump_ncells      )
+    deallocate (clump_begg        )
+    deallocate (clump_endg        )
+    deallocate (local_clump_info  )
+    deallocate (global_clump_info )
+    deallocate (thread_count      )
+
+    ! Set ldecomp
+    call get_proc_bounds(beg, end)
+    allocate(ldecomp%gdc2glo(beg:end), stat=ier)
+     if (ier /= 0) then
+       write(iulog,*) 'decompInit_moab(): allocation error1 for ldecomp, etc'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    ! set the global ids
+    !  ldecomp%gdc2glo(beg:end) = eglobal_ids(:)
+
+    ! now let us arrange owned elements first and ghosted elements in the end
+    oind = beg
+    gind = beg + neoproc ! offset by owned elements on the process
+    do n = 1, neproc
+      if (eproc_ownership(n) /= iam) then
+         ! found a ghosted element
+         ldecomp%gdc2glo(gind) = eglobal_ids(n)
+         gind = gind + 1
+      else
+         ! found an owned element
+         ldecomp%gdc2glo(oind) = eglobal_ids(n)
+         oind = oind + 1
+      end if
+    enddo
+
+    ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
+    allocate(gindex(beg:end))
+    gindex(:) = ldecomp%gdc2glo(:)
+    lsize = end-beg+1
+    gsize = lni * lnj
+    call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsize, gsize)
+    deallocate(gindex)
+
+    deallocate(eglobal_ids, eproc_ownership, eblock_ids)
+
+    ! Diagnostic output
+    if (masterproc) then
+       write(iulog,*)' Surface Grid Characteristics'
+       write(iulog,*)'   longitude points               = ',lni
+       write(iulog,*)'   latitude points                = ',lnj
+       write(iulog,*)'   total number of active land gridcells = ',numg
+       write(iulog,*)'   total number of global MOAB gridcells = ',nge
+       write(iulog,*)' Decomposition Characteristics'
+       write(iulog,*)'   clumps per process             = ',clump_pproc
+       write(iulog,*)' gsMap Characteristics'
+       write(iulog,*) '  lnd gsmap glo num of segs      = ',mct_gsMap_ngseg(gsMap_lnd_gdc2glo)
+       write(iulog,*)
+    end if
+
+    call shr_sys_flush(iulog)
+
+  end subroutine decompInit_moab
+#endif
 
   !------------------------------------------------------------------------------
   subroutine decompInit_lnd(lni,lnj,amask)
@@ -91,8 +439,8 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! allocate and initialize procinfo (from decompMod.F90) and clumps 
-    ! beg and end indices initialized for simple addition of cells later 
+    ! allocate and initialize procinfo (from decompMod.F90) and clumps
+    ! beg and end indices initialized for simple addition of cells later
 
     allocate(procinfo%cid(clump_pproc), stat=ier)
     if (ier /= 0) then
@@ -145,7 +493,7 @@ contains
     clumps(:)%endp    = 0
     clumps(:)%endCohort    = 0
 
-    ! assign clumps to proc round robin 
+    ! assign clumps to proc round robin
     cid = 0
     do n = 1,nclumps
        pid = mod(n-1,npes)
@@ -171,7 +519,7 @@ contains
           numg = numg + 1
        endif
     enddo
-   
+
     if (npes > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of processes exceeds number ', &
             'of land grid cells',npes,numg
@@ -222,7 +570,7 @@ contains
 
           !--- give gridcell cell to pe that owns cid ---
           !--- this needs to be done to subsequently use function
-          !--- get_proc_bounds(begg,endg) 
+          !--- get_proc_bounds(begg,endg)
           if (iam == clumps(cid)%owner) then
              procinfo%ncells  = procinfo%ncells  + 1
           endif
@@ -394,8 +742,8 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! allocate and initialize procinfo (from decompMod.F90) and clumps 
-    ! beg and end indices initialized for simple addition of cells later 
+    ! allocate and initialize procinfo (from decompMod.F90) and clumps
+    ! beg and end indices initialized for simple addition of cells later
 
     allocate(procinfo%cid(clump_pproc), stat=ier)
     if (ier /= 0) then
@@ -448,7 +796,7 @@ contains
     clumps(:)%endp    = 0
     clumps(:)%endCohort    = 0
 
-    ! assign clumps to proc round robin 
+    ! assign clumps to proc round robin
     cid = 0
     do n = 1,nclumps
        pid = mod(n-1,npes)
@@ -474,7 +822,7 @@ contains
           numg = numg + 1
        endif
     enddo
-   
+
     if (npes > numg) then
        write(iulog,*) 'decompInit_lnd(): Number of processes exceeds number ', &
             'of land grid cells',npes,numg
@@ -498,7 +846,7 @@ contains
     end if
 
     lcid(:) = 0
-    ng = 0    
+    ng = 0
     cur_cid = 1
     numg_for_cur_clump = 0
     max_numg_for_cur_clump = numg_per_clumps + numg_per_clumps_mod
@@ -532,7 +880,7 @@ contains
 
           !--- give gridcell cell to pe that owns cid ---
           !--- this needs to be done to subsequently use function
-          !--- get_proc_bounds(begg,endg) 
+          !--- get_proc_bounds(begg,endg)
           if (iam == clumps(cid)%owner) then
              procinfo%ncells  = procinfo%ncells  + 1
           endif
@@ -692,7 +1040,7 @@ contains
     integer :: ntest
     character(len=32), parameter :: subname = 'decompInit_clumps'
     !------------------------------------------------------------------------------
-    
+
     !--- assign order of subgrid levels in allvecl and allvecg arrays ---
     nlev=6  ! number of subgrid levels
     glev=1  ! gridcell
@@ -708,8 +1056,8 @@ contains
     allocate(allvecl(nclumps,nlev))   ! local  clumps [gcells,topounits,lunits,cols,pfts,cohs]
     allocate(allvecg(nclumps,nlev))   ! global clumps [gcells,topounits,lunits,cols,pfts,cohs]
 
-    ! Determine the number of gridcells, topounits, landunits, columns, pfts, and cohorts 
-    ! on this processor 
+    ! Determine the number of gridcells, topounits, landunits, columns, pfts, and cohorts
+    ! on this processor
     ! Determine number of topounits, landunits, columns and pfts for each global
     ! gridcell index (an) that is associated with the local gridcell index (ln)
     ! More detail: an is the row-major order 1d-index into the global ixj grid.
@@ -718,7 +1066,7 @@ contains
     ilunits=0
     icols=0
     ipfts=0
-    icohorts=0 
+    icohorts=0
 
     allvecg= 0
     allvecl= 0
@@ -736,7 +1084,7 @@ contains
              call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                  ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
           endif
-       else 
+       else
           if (present(glcmask)) then
              call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                  ncohorts=icohorts, glcmask=glcmask(ln))
@@ -745,13 +1093,13 @@ contains
                  ncohorts=icohorts )
           endif
        endif
-       
+
        allvecl(cid,glev) = allvecl(cid,glev) + 1           ! number of gridcells for local clump cid
        allvecl(cid,tlev) = allvecl(cid,tlev) + itunits     ! number of topographic units for local clump cid
        allvecl(cid,llev) = allvecl(cid,llev) + ilunits     ! number of landunits for local clump cid
        allvecl(cid,clev) = allvecl(cid,clev) + icols       ! number of columns for local clump cid
-       allvecl(cid,plev) = allvecl(cid,plev) + ipfts       ! number of pfts for local clump cid 
-       allvecl(cid,hlev) = allvecl(cid,hlev) + icohorts    ! number of cohorts for local clump cid 
+       allvecl(cid,plev) = allvecl(cid,plev) + ipfts       ! number of pfts for local clump cid
+       allvecl(cid,hlev) = allvecl(cid,hlev) + icohorts    ! number of cohorts for local clump cid
     enddo
     call mpi_allreduce(allvecl,allvecg,size(allvecg),MPI_INTEGER,MPI_SUM,mpicom,ier)
 
@@ -782,8 +1130,8 @@ contains
        numCohort = numCohort + icohorts       ! total number of cohorts
 
        !--- give gridcell to cid ---
-       clumps(cid)%ntunits  = clumps(cid)%ntunits  + itunits  
-       clumps(cid)%nlunits     = clumps(cid)%nlunits  + ilunits  
+       clumps(cid)%ntunits  = clumps(cid)%ntunits  + itunits
+       clumps(cid)%nlunits     = clumps(cid)%nlunits  + ilunits
        clumps(cid)%ncols       = clumps(cid)%ncols    + icols
        clumps(cid)%npfts       = clumps(cid)%npfts    + ipfts
        clumps(cid)%nCohorts    = clumps(cid)%nCohorts + icohorts
@@ -1028,7 +1376,7 @@ contains
     character(len=32), parameter :: subname = 'decompInit_gtlcp'
     !------------------------------------------------------------------------------
 
-    !init 
+    !init
 
     call get_proc_bounds(begg, endg, begt, endt, begl, endl, begc, endc, begp, endp, &
          begCohort, endCohort)
@@ -1062,7 +1410,7 @@ contains
     endif
     allocate(coCount(begg:endg))
     coCount(:) = 0
-    allocate(ioff(begg:endg)) 
+    allocate(ioff(begg:endg))
     ioff(:) = 0
 
     ! Determine gcount, tcount, lcount, ccount and pcount
@@ -1085,7 +1433,7 @@ contains
                   ncohorts=icohorts )
           endif
        endif
-       
+
        gcount(gi)  = 1          ! number of gridcells for local gridcell index gi
        tcount(gi)  = itunits ! number of topounits for local gridcell index gi
        lcount(gi)  = ilunits    ! number of landunits for local gridcell index gi
@@ -1117,7 +1465,7 @@ contains
     endif
     call scatter_data_from_master(gstart, arrayglob, grlnd)
 
-    ! tstart for gridcell (n) is the total number of the topounits 
+    ! tstart for gridcell (n) is the total number of the topounits
     ! over gridcells 1->n-1
 
     arrayglob(:) = 0
@@ -1132,8 +1480,8 @@ contains
        enddo
     endif
     call scatter_data_from_master(tstart, arrayglob, grlnd)
-    
-    ! lstart for gridcell (n) is the total number of the landunits 
+
+    ! lstart for gridcell (n) is the total number of the landunits
     ! over gridcells 1->n-1
 
     arrayglob(:) = 0
@@ -1225,7 +1573,7 @@ contains
     do ti = begt,endt
        gi = top_pp%gridcell(ti) !===this is determined internally from how landunits are spread out in memory
        gindex(ti) = tstart(gi) + ioff(gi) !=== the output gindex is ALWAYS the same regardless of how landuntis are spread out in memory
-       ioff(gi)  = ioff(gi) + 1 
+       ioff(gi)  = ioff(gi) + 1
        ! check that this is less than [tstart(gi) + tcount(gi)]
     enddo
     locsize = endt-begt+1
@@ -1240,7 +1588,7 @@ contains
     do li = begl,endl
        gi = lun_pp%gridcell(li) !===this is determined internally from how landunits are spread out in memory
        gindex(li) = lstart(gi) + ioff(gi) !=== the output gindex is ALWAYS the same regardless of how landuntis are spread out in memory
-       ioff(gi)  = ioff(gi) + 1 
+       ioff(gi)  = ioff(gi) + 1
        ! check that this is less than [lstart(gi) + lcount(gi)]
     enddo
     locsize = endl-begl+1
@@ -1255,7 +1603,7 @@ contains
     do ci = begc,endc
        gi = col_pp%gridcell(ci)
        gindex(ci) = cstart(gi) + ioff(gi)
-       ioff(gi) = ioff(gi) + 1 
+       ioff(gi) = ioff(gi) + 1
        ! check that this is less than [cstart(gi) + ccount(gi)]
     enddo
     locsize = endc-begc+1
@@ -1270,7 +1618,7 @@ contains
     do pi = begp,endp
        gi = veg_pp%gridcell(pi)
        gindex(pi) = pstart(gi) + ioff(gi)
-       ioff(gi) = ioff(gi) + 1 
+       ioff(gi) = ioff(gi) + 1
        ! check that this is less than [pstart(gi) + pcount(gi)]
     enddo
     locsize = endp-begp+1
@@ -1331,7 +1679,7 @@ contains
        write(iulog,*)
     end if
 
-    ! Write out clump and proc info, one pe at a time, 
+    ! Write out clump and proc info, one pe at a time,
     ! barrier to control pes overwriting each other on stdout
 
     call shr_sys_flush(iulog)
@@ -2172,8 +2520,8 @@ contains
                 call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
                      ncohorts=icohorts )
              endif
-          endif 
-          
+          endif
+
           data_send((anumg-begg)*nblocks + 1) = itunits
           data_send((anumg-begg)*nblocks + 2) = ilunits
           data_send((anumg-begg)*nblocks + 3) = icols
