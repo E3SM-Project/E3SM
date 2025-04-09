@@ -171,8 +171,8 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
   use physics_types,  only: physics_state
   use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
   use physconst,      only: cpair, gravit, rair, latvap
-  use zm_conv,        only: zm_constants, zm_parameters
-  use zm_conv_parcel, only: buoyan_dilute
+  use zm_conv,        only: zm_const, zm_param
+  use zm_conv_cape,   only: compute_dilute_cape
 
   type(physics_state),intent(in),target:: state
   type(physics_buffer_desc),pointer    :: pbuf(:)
@@ -248,7 +248,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
   !-----------------------------------
   ! Time-independent quantities 
   !-----------------------------------
-  msg = zm_parameters%limcnv - 1  ! limcnv is the top pressure interface level to limit deep convection
+  msg = zm_param%limcnv - 1  ! limcnv is the top pressure interface level to limit deep convection
 
   idx = pbuf_get_index('tpert') ; call pbuf_get_field( pbuf, idx, tpert )
 
@@ -291,20 +291,18 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
   ! and T, qv values at (new) launching level
   !------------------------------------------------------------------------
   iclosure = .true.
-  call buoyan_dilute(lchnk ,ncol,                      &
-                     zm_parameters%num_cin,            &
-                     qv_new, temp_new,                 &
-                     zmid_above_sealevel,              &
-                     pmid_in_hPa, pint_in_hPa,         &
-                     pblt, msg, tpert,                 &
-                     ztp, zqstp, zmx, ztl, zlcl, zlel, &
-                     cape_new_pcl_new_env,             &
-                     zm_constants,                     &
-                     zm_parameters,                    &
-                     iclosure,                         &
-                     use_input_parcel_tq = .false.,    &
-                     q_mx = q_mx_new,                  &
-                     t_mx = t_mx_new                   )
+  call compute_dilute_cape( ncol, zm_param%num_cin, msg,      &
+                            qv_new, temp_new,                 &
+                            zmid_above_sealevel,              &
+                            pmid_in_hPa, pint_in_hPa,         &
+                            pblt, tpert,                      &
+                            ztp, zqstp, zmx, ztl, zlcl, zlel, &
+                            cape_new_pcl_new_env,             &
+                            zm_const, zm_param,               &
+                            iclosure,                         &
+                            use_input_parcel_tq = .false.,    &
+                            q_mx = q_mx_new,                  &
+                            t_mx = t_mx_new                   )
 
   cape_out(:ncol) = cape_new_pcl_new_env(:ncol)
  
@@ -326,21 +324,19 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
     !  - old launching level and parcel T, qv
 
     iclosure = .true.
-    call buoyan_dilute(lchnk ,ncol,                      &
-                       zm_parameters%num_cin,            &
-                       qv_new, temp_new,                 &
-                       zmid_above_sealevel,              &
-                       pmid_in_hPa, pint_in_hPa,         &
-                       pblt, msg, tpert,                 &
-                       ztp, zqstp, zmx, ztl, zlcl, zlel, &
-                       cape_old_pcl_new_env,             &
-                       zm_constants,                     &
-                       zm_parameters,                    &
-                       iclosure,                         &
-                       dcapemx = mx_old,                 &
-                       use_input_parcel_tq = .true.,     &
-                       q_mx = q_mx_old,                  &
-                       t_mx = t_mx_old                   )
+    call compute_dilute_cape( ncol, zm_param%num_cin, msg,      &
+                              qv_new, temp_new,                 &
+                              zmid_above_sealevel,              &
+                              pmid_in_hPa, pint_in_hPa,         &
+                              pblt, tpert,                      &
+                              ztp, zqstp, zmx, ztl, zlcl, zlel, &
+                              cape_old_pcl_new_env,             &
+                              zm_const, zm_param,               &
+                              iclosure,                         &
+                              dcapemx = mx_old,                 &
+                              use_input_parcel_tq = .true.,     &
+                              q_mx = q_mx_old,                  &
+                              t_mx = t_mx_old                   )
 
     ! dCAPEp = CAPE(new parcel, new env) - CAPE( old parcel, new env)
     dcape_out(:ncol,2) = cape_new_pcl_new_env(:ncol) - cape_old_pcl_new_env(:ncol)
