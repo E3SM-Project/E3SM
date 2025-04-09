@@ -50,7 +50,7 @@ void MAMWetscav::set_grids(
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst =
-      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
   // --------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process

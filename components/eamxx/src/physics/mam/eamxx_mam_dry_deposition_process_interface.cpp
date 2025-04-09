@@ -50,7 +50,7 @@ void MAMDryDep::set_grids(
   // layout for 2D (ncol, pcnst)
   constexpr int pcnst = mam4::aero_model::pcnst;
   const FieldLayout vector2d_pcnst =
-      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
   const FieldLayout vector2d_class =
       grid_->get_2d_vector_layout(n_land_type, "class");
 
