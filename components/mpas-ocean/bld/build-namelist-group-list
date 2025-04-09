@@ -20,6 +20,7 @@ my @groups = qw(run_modes
                 self_attraction_loading
                 tidal_potential_forcing
                 frazil_ice
+                iceberg_fluxes
                 land_ice_fluxes
                 advection
                 bottom_drag

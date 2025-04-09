@@ -1646,16 +1646,18 @@ Default: Defined in namelist_defaults.xml
 
 <!-- iceberg_fluxes -->
 
-<entry id="config_iceberg_flux_temperature_ice" type="real"
+<entry id="config_iceberg_flux_cp_ice" type="real"
 	category="iceberg_fluxes" group="iceberg_fluxes">
-Initial temperature of icebergs. If iceberg flux is sourced from snowcapping, should be representative of the average temperature of ice runoff fluxed out the base of the snowpack.
+Energy per kilogram per C needed to raise iceberg temperature 1 C.
+
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_iceberg_flux_cp_ice" type="real"
+<entry id="config_iceberg_flux_temperature_ice" type="real"
 	category="iceberg_fluxes" group="iceberg_fluxes">
-Energy per kilogram per C needed to raise iceberg temperature 1 C.
+Initial temperature of icebergs. If iceberg flux is sourced from snowcapping, should be representative of the average temperature of ice runoff fluxed out the base of the snowpack.
+
 Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
