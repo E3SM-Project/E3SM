@@ -376,9 +376,20 @@ def package_version_ok(pkg, min_version=None):
     Checks that the loaded package's version is >= that the minimum required one.
     If no minimum version is passed, then return True
     """
-    from pkg_resources import parse_version
+    if min_version is not None:
+        try:
+            from pkg_resources import parse_version
 
-    return True if min_version is None else parse_version(pkg.__version__) >= parse_version(min_version)
+            return parse_version(pkg.__version__) >= parse_version(min_version)
+        except ImportError:
+            # Newer versions of python cannot use pkg_resources
+            ensure_packaging()
+            from packaging.version import parse
+
+            return parse(pkg.__version__) >= parse(min_version)
+
+    else:
+        return True
 
 ###############################################################################
 def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
@@ -411,10 +422,11 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
            "Error! Could not find version {} for package {}.".format(min_version,libname))
 
 # We've accepted these outside dependencies
-def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
-def ensure_pylint(): _ensure_pylib_impl("pylint")
-def ensure_psutil(): _ensure_pylib_impl("psutil")
-def ensure_netcdf4(): _ensure_pylib_impl("netCDF4")
+def ensure_yaml():      _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
+def ensure_pylint():    _ensure_pylib_impl("pylint")
+def ensure_psutil():    _ensure_pylib_impl("psutil")
+def ensure_netcdf4():   _ensure_pylib_impl("netCDF4")
+def ensure_packaging(): _ensure_pylib_impl("packaging")
 
 ###############################################################################
 class GoodFormatter(
