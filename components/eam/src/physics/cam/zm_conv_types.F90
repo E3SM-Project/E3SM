@@ -9,12 +9,12 @@ module zm_conv_types
    public :: zm_param_mpi_broadcast    ! broadcast parameter values to all MPI ranks
    
    ! ZM derived types
-   public :: zm_const_t  ! derived type to hold ZM constants
+   public :: zm_const_t ! derived type to hold ZM constants
    public :: zm_param_t ! derived type to hold ZM tunable parameters
 
    ! invalid values for parameter initialization
-   real(r8), parameter :: unset_r8   = huge(1.0_r8)
-   integer , parameter :: unset_int  = huge(1)
+   real(r8), parameter :: unset_r8  = huge(1.0_r8)
+   integer , parameter :: unset_int = huge(1)
 
 !===================================================================================================
 
@@ -63,16 +63,16 @@ subroutine zm_const_set_to_global(zm_const)
    !----------------------------------------------------------------------------
    type(zm_const_t), intent(inout) :: zm_const
    !----------------------------------------------------------------------------
-   zm_const%grav          = gravit
-   zm_const%rdair         = rair
-   zm_const%cpair         = cpair
-   zm_const%cpwv          = cpwv
-   zm_const%cpliq         = cpliq
-   zm_const%rh2o          = rh2o
-   zm_const%tfreez        = tmelt
-   zm_const%latvap        = latvap
-   zm_const%latice        = latice
-   zm_const%epsilo        = epsilo
+   zm_const%grav     = gravit
+   zm_const%rdair    = rair
+   zm_const%cpair    = cpair
+   zm_const%cpwv     = cpwv
+   zm_const%cpliq    = cpliq
+   zm_const%rh2o     = rh2o
+   zm_const%tfreez   = tmelt
+   zm_const%latvap   = latvap
+   zm_const%latice   = latice
+   zm_const%epsilo   = epsilo
 end subroutine zm_const_set_to_global
 
 !===================================================================================================

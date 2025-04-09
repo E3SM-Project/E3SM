@@ -50,7 +50,6 @@ module zm_conv
   public MCSP_moisture_coeff      ! MCSP coefficient setting degree of moisture transport
   public MCSP_uwind_coeff         ! MCSP coefficient setting degree of zonal wind transport
   public MCSP_vwind_coeff         ! MCSP coefficient setting degree of meridional wind transport
-  ! public buoyan_dilute_old
 
 !
 ! PUBLIC: data
