@@ -3612,7 +3612,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 <ul>
 <li>EAMxx stores grid info</li>
 <li>FieldManager stores fields</li>
-<li>Fields have:</li>
+<li>fields have:</li>
 <li>Pointers to actual data</li>
 <li>Units</li>
 <li>Data layout</li>
@@ -3637,7 +3637,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 <span class="w">  </span><span class="c1">//   using PC = scream::physics::Constants&lt;Real&gt;;</span>
 
 <span class="w">  </span><span class="c1">// Specify which grid this process will act upon, typical options are</span>
-<span class="w">  </span><span class="c1">// &quot;Dynamics&quot; or &quot;Physics&quot;. auto m_grid = grids_manager-&gt;get_grid(&quot;Physics&quot;);</span>
+<span class="w">  </span><span class="c1">// &quot;dynamics&quot; or &quot;physics&quot;. auto m_grid = grids_manager-&gt;get_grid(&quot;physics&quot;);</span>
 
 <span class="w">  </span><span class="c1">// When declaring a field for use we need:</span>
 <span class="w">  </span><span class="c1">//</span>
@@ -3671,7 +3671,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 <span class="w">  </span><span class="c1">//     NAME and UNITS are as above</span>
 <span class="w">  </span><span class="c1">//     GRID is the actual grid, typically &quot;m_grid&quot;</span>
 
-<span class="w">  </span><span class="n">m_grid</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;Physics&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">m_grid</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;physics&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="n">m_ncols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_num_local_dofs</span><span class="p">();</span>
 <span class="w">  </span><span class="n">m_nlevs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_grid</span><span class="o">-&gt;</span><span class="n">get_num_vertical_levels</span><span class="p">();</span>
 
@@ -3711,7 +3711,7 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 <span class="cm"> * defined with any actions or functions that are needed at initialization.</span>
 <span class="cm"> *</span>
 <span class="cm"> * Inputs:</span>
-<span class="cm"> *     run_type - an enum which describes the run type.  Initial or Restart</span>
+<span class="cm"> *     run_type - an enum which describes the run type.  initial or restart</span>
 <span class="cm"> *</span>
 <span class="cm"> * can also be empty</span>
 <span class="cm"> */</span>

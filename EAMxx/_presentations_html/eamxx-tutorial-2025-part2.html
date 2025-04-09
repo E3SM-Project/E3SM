@@ -481,7 +481,7 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
 <ul>
 <li>EAMxx stores grid info</li>
 <li>FieldManager stores fields</li>
-<li>Fields have:
+<li>fields have:
 <ul>
 <li>Pointers to actual data</li>
 <li>Units</li>
@@ -525,7 +525,7 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
   <span class="hljs-comment">//   using PC = scream::physics::Constants&lt;Real&gt;;</span>
 
   <span class="hljs-comment">// Specify which grid this process will act upon, typical options are</span>
-  <span class="hljs-comment">// &quot;Dynamics&quot; or &quot;Physics&quot;. auto m_grid = grids_manager-&gt;get_grid(&quot;Physics&quot;);</span>
+  <span class="hljs-comment">// &quot;dynamics&quot; or &quot;physics&quot;. auto m_grid = grids_manager-&gt;get_grid(&quot;physics&quot;);</span>
 
   <span class="hljs-comment">// When declaring a field for use we need:</span>
   <span class="hljs-comment">//</span>
@@ -559,7 +559,7 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
   <span class="hljs-comment">//     NAME and UNITS are as above</span>
   <span class="hljs-comment">//     GRID is the actual grid, typically &quot;m_grid&quot;</span>
 
-  m_grid  = grids_manager-&gt;<span class="hljs-built_in">get_grid</span>(<span class="hljs-string">&quot;Physics&quot;</span>);
+  m_grid  = grids_manager-&gt;<span class="hljs-built_in">get_grid</span>(<span class="hljs-string">&quot;physics&quot;</span>);
   m_ncols = m_grid-&gt;<span class="hljs-built_in">get_num_local_dofs</span>();
   m_nlevs = m_grid-&gt;<span class="hljs-built_in">get_num_vertical_levels</span>();
 
@@ -634,7 +634,7 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
  * defined with any actions or functions that are needed at initialization.
  *
  * Inputs:
- *     run_type - an enum which describes the run type.  Initial or Restart
+ *     run_type - an enum which describes the run type.  initial or restart
  *
  * can also be empty
  */</span>

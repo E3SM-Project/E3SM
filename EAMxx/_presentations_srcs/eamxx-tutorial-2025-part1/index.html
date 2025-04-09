@@ -3467,16 +3467,16 @@ th, td {
 <span class="c1"># the data from $case/namelist_scream.xml. If you want to make some</span>
 <span class="c1"># local changes, you can edit this XML file or use atmchange.</span>
 <span class="c1">################################################################</span>
-<span class="nt">Scorpio</span><span class="p">:</span>
+<span class="nt">scorpio</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">model_restart</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">iotype</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
 <span class="w">    </span><span class="nt">output_control</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">Frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
+<span class="w">      </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
 <span class="w">      </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ndays</span>
 <span class="w">  </span><span class="nt">output_yaml_files</span><span class="p">:</span><span class="w"> </span><span class="kt">!strings</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/run/data/output_file.yaml</span>
 <span class="nt">atmosphere_processes</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Group</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">group</span>
 <span class="w">  </span><span class="nt">atm_procs_list</span><span class="p">:</span><span class="w"> </span><span class="kt">!strings</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sc_import</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">homme</span>
@@ -3486,8 +3486,8 @@ th, td {
 <span class="w">  </span><span class="nt">enable_postcondition_checks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">enable_precondition_checks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">homme</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">BfbHash</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">18</span>
-<span class="w">    </span><span class="nt">Moisture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">moist</span>
+<span class="w">    </span><span class="nt">bfb_hash</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">18</span>
+<span class="w">    </span><span class="nt">moisture</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">moist</span>
 <span class="w">    </span><span class="nt">compute_tendencies</span><span class="p">:</span><span class="w"> </span><span class="kt">!strings</span><span class="w"> </span><span class="p p-Indicator">[]</span>
 <span class="w">    </span><span class="nt">enable_postcondition_checks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="nn">...</span>
@@ -3578,17 +3578,17 @@ th, td {
 </td>
 <td>
 
-<div class="highlight"><pre><span></span><code><span class="nt">Averageing Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Average</span>
-<span class="nt">Fields</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Physics PG2</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">Field Names</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="nt">averaging_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">average</span>
+<span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Q</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLDLIQ</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLDICE</span>
-<span class="nt">Max Snapshots Per File</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="nt">max_snapshots_per_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="nt">filename_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output.scream_monthly.NAME_1</span>
 <span class="nt">output_control</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
 </code></pre></div>
 

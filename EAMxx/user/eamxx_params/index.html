@@ -3319,12 +3319,12 @@
 </ul>
 <h2 id="homme">homme</h2>
 <ul>
-<li>homme::Moisture:  <ul>
+<li>homme::moisture:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
 </li>
-<li>homme::BfbHash:  <ul>
+<li>homme::bfb_hash:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: integer  </li>
 </ul>
@@ -3612,12 +3612,12 @@
 <li>type: real  </li>
 </ul>
 </li>
-<li>shoc::Ckh:  <ul>
+<li>shoc::coeff_kh:  <ul>
 <li>description: Eddy diffusivity coefficient for heat  </li>
 <li>type: real  </li>
 </ul>
 </li>
-<li>shoc::Ckm:  <ul>
+<li>shoc::coeff_km:  <ul>
 <li>description: Eddy diffusivity coefficient for momentum  </li>
 <li>type: real  </li>
 </ul>
@@ -3809,37 +3809,37 @@
 </ul>
 </li>
 </ul>
-<h2 id="cldfraction">cldFraction</h2>
+<h2 id="cld_fraction">cld_fraction</h2>
 <ul>
-<li>cldFraction::number_of_subcycles:  <ul>
+<li>cld_fraction::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
 <li>constraints: gt 0  </li>
 </ul>
 </li>
-<li>cldFraction::enable_precondition_checks:  <ul>
+<li>cld_fraction::enable_precondition_checks:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>cldFraction::enable_postcondition_checks:  <ul>
+<li>cld_fraction::enable_postcondition_checks:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>cldFraction::repair_log_level:  <ul>
+<li>cld_fraction::repair_log_level:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: string  </li>
 <li>valid values: trace,debug,info,warn  </li>
 </ul>
 </li>
-<li>cldFraction::internal_diagnostics_level:  <ul>
+<li>cld_fraction::internal_diagnostics_level:  <ul>
 <li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)  </li>
 <li>type: integer  </li>
 <li>valid values: 0,1,2  </li>
 </ul>
 </li>
-<li>cldFraction::compute_tendencies:  <ul>
+<li>cld_fraction::compute_tendencies:  <ul>
 <li>description: list of computed fields for which this process will back out tendencies  </li>
 <li>type: array(string)  </li>
 </ul>
@@ -4170,12 +4170,12 @@
 </ul>
 <h2 id="mam4_srf_online_emiss">mam4_srf_online_emiss</h2>
 <ul>
-<li>mam4_srf_online_emiss::srf_emis_specifier_for_DMS:  <ul>
+<li>mam4_srf_online_emiss::srf_emis_specifier_for_dms:  <ul>
 <li>description: File containing surface emissions data for DMS  </li>
 <li>type: file  </li>
 </ul>
 </li>
-<li>mam4_srf_online_emiss::srf_emis_specifier_for_SO2:  <ul>
+<li>mam4_srf_online_emiss::srf_emis_specifier_for_so2:  <ul>
 <li>description: File containing surface emissions data for SO2  </li>
 <li>type: file  </li>
 </ul>
@@ -4397,62 +4397,62 @@
 </ul>
 </li>
 </ul>
-<h2 id="mlcorrection">mlcorrection</h2>
+<h2 id="ml_correction">ml_correction</h2>
 <ul>
-<li>mlcorrection::ML_model_path_tq:  <ul>
+<li>ml_correction::ml_model_path_tq:  <ul>
 <li>description: Path to pre-trained ML model for temperature and specific humidity  </li>
 <li>type: string  </li>
 </ul>
 </li>
-<li>mlcorrection::ML_model_path_uv:  <ul>
+<li>ml_correction::ml_model_path_uv:  <ul>
 <li>description: Path to pre-trained ML model for wind fields  </li>
 <li>type: string  </li>
 </ul>
 </li>
-<li>mlcorrection::ML_model_path_sfc_fluxes:  <ul>
+<li>ml_correction::ml_model_path_sfc_fluxes:  <ul>
 <li>description: Path to pre-trained ML model for surface fluxes  </li>
 <li>type: string  </li>
 </ul>
 </li>
-<li>mlcorrection::ML_output_fields:  <ul>
+<li>ml_correction::ml_output_fields:  <ul>
 <li>description: ML correction output variables, the following variables are supported: T_mid,qv,u,v  </li>
 <li>type: array(string)  </li>
 </ul>
 </li>
-<li>mlcorrection::ML_correction_unit_test:  <ul>
+<li>ml_correction::ml_correction_unit_test:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>mlcorrection::number_of_subcycles:  <ul>
+<li>ml_correction::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
 <li>constraints: gt 0  </li>
 </ul>
 </li>
-<li>mlcorrection::enable_precondition_checks:  <ul>
+<li>ml_correction::enable_precondition_checks:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>mlcorrection::enable_postcondition_checks:  <ul>
+<li>ml_correction::enable_postcondition_checks:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>mlcorrection::repair_log_level:  <ul>
+<li>ml_correction::repair_log_level:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: string  </li>
 <li>valid values: trace,debug,info,warn  </li>
 </ul>
 </li>
-<li>mlcorrection::internal_diagnostics_level:  <ul>
+<li>ml_correction::internal_diagnostics_level:  <ul>
 <li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)  </li>
 <li>type: integer  </li>
 <li>valid values: 0,1,2  </li>
 </ul>
 </li>
-<li>mlcorrection::compute_tendencies:  <ul>
+<li>ml_correction::compute_tendencies:  <ul>
 <li>description: list of computed fields for which this process will back out tendencies  </li>
 <li>type: array(string)  </li>
 </ul>
@@ -4494,42 +4494,42 @@
 </ul>
 </li>
 </ul>
-<h2 id="testonly">testOnly</h2>
+<h2 id="test_only">test_only</h2>
 <ul>
-<li>testOnly::my_param:  <ul>
+<li>test_only::my_param:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: array(integer)  </li>
 </ul>
 </li>
-<li>testOnly::number_of_subcycles:  <ul>
+<li>test_only::number_of_subcycles:  <ul>
 <li>description: how many times to subcycle this atm process  </li>
 <li>type: <strong>MISSING</strong>  </li>
 <li>constraints: gt 0  </li>
 </ul>
 </li>
-<li>testOnly::enable_precondition_checks:  <ul>
+<li>test_only::enable_precondition_checks:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>testOnly::enable_postcondition_checks:  <ul>
+<li>test_only::enable_postcondition_checks:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: logical  </li>
 </ul>
 </li>
-<li>testOnly::repair_log_level:  <ul>
+<li>test_only::repair_log_level:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: string  </li>
 <li>valid values: trace,debug,info,warn  </li>
 </ul>
 </li>
-<li>testOnly::internal_diagnostics_level:  <ul>
+<li>test_only::internal_diagnostics_level:  <ul>
 <li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)  </li>
 <li>type: integer  </li>
 <li>valid values: 0,1,2  </li>
 </ul>
 </li>
-<li>testOnly::compute_tendencies:  <ul>
+<li>test_only::compute_tendencies:  <ul>
 <li>description: list of computed fields for which this process will back out tendencies  </li>
 <li>type: array(string)  </li>
 </ul>
@@ -4754,7 +4754,7 @@
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
 </li>
-<li>mac_aero_mic::Type:  <ul>
+<li>mac_aero_mic::type:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
@@ -4762,7 +4762,7 @@
 <li>mac_aero_mic::schedule_type:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
-<li>valid values: Sequential  </li>
+<li>valid values: sequential  </li>
 </ul>
 </li>
 <li>mac_aero_mic::enable_precondition_checks:  <ul>
@@ -4888,7 +4888,7 @@
 <li>type: array(string)  </li>
 </ul>
 </li>
-<li>physics::Type:  <ul>
+<li>physics::type:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
 </ul>
@@ -4896,7 +4896,7 @@
 <li>physics::schedule_type:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
-<li>valid values: Sequential  </li>
+<li>valid values: sequential  </li>
 </ul>
 </li>
 <li>physics::number_of_subcycles:  <ul>
@@ -4935,7 +4935,7 @@
 </ul>
 <h1 id="initial-conditions-parameters">Initial Conditions Parameters</h1>
 <ul>
-<li>initial_conditions::Filename:  <ul>
+<li>initial_conditions::filename:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: file  </li>
 </ul>
@@ -5363,12 +5363,12 @@
 </ul>
 <h1 id="scorpio-parameters">Scorpio Parameters</h1>
 <ul>
-<li>Scorpio::output_yaml_files:  <ul>
+<li>scorpio::output_yaml_files:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: array(string)  </li>
 </ul>
 </li>
-<li>Scorpio::model_restart::iotype:  <ul>
+<li>scorpio::model_restart::iotype:  <ul>
 <li>description: <strong>MISSING</strong>  </li>
 <li>type: <strong>MISSING</strong>  </li>
 </ul>

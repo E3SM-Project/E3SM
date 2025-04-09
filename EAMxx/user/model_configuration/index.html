@@ -3522,14 +3522,14 @@ To specify a parent, the user can prepend the parent name and <code>::</code> to
 will recursively print all sub-elements, properly indented:</p>
 <div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme
 <span class="w">    </span>homme
-<span class="w">        </span>Moisture:<span class="w"> </span>moist
-<span class="w">        </span>BfbHash:<span class="w"> </span><span class="m">18</span>
+<span class="w">        </span>moisture:<span class="w"> </span>moist
+<span class="w">        </span>bfb_hash:<span class="w"> </span><span class="m">18</span>
 <span class="w">        </span>number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">        </span>enable_precondition_checks:<span class="w"> </span><span class="nb">true</span>
 <span class="w">        </span>enable_postcondition_checks:<span class="w"> </span><span class="nb">true</span>
 <span class="w">        </span>repair_log_level:<span class="w"> </span>trace
 <span class="w">        </span>internal_diagnostics_level:<span class="w"> </span><span class="m">0</span>
-<span class="w">        </span>compute_tendencies:<span class="w"> </span>None
+<span class="w">        </span>compute_tendencies:<span class="w"> </span>none
 </code></pre></div>
 <p>It is sometimes desirable to query <em>all</em> the nodes that have a particular name,
 or that contain a particular string.
@@ -3566,13 +3566,13 @@ XML file, which will be displayed with each node indented in its parent scope:</
 <div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--listall
 <span class="w">    </span>namelist_defaults
 <span class="w">        </span>grids_manager
-<span class="w">            </span>Type:<span class="w"> </span>Homme
-<span class="w">            </span>physics_grid_type:<span class="w"> </span>PG2
-<span class="w">            </span>physics_grid_rebalance:<span class="w"> </span>None
+<span class="w">            </span>type:<span class="w"> </span>homme
+<span class="w">            </span>physics_grid_type:<span class="w"> </span>pg2
+<span class="w">            </span>physics_grid_rebalance:<span class="w"> </span>none
 <span class="w">            </span>dynamics_namelist_file_name:<span class="w"> </span>./data/namelist.nl
 <span class="w">            </span>vertical_coordinate_filename:<span class="w"> </span>/some/path/to/coords/file.nc
 <span class="w">        </span>initial_conditions
-<span class="w">            </span>Filename:<span class="w"> </span>/some/path/to/ic/file.nc
+<span class="w">            </span>filename:<span class="w"> </span>/some/path/to/ic/file.nc
 <span class="w">            </span>topography_filename:<span class="w"> </span>/some/path/to/topo/file.nc
 <span class="w">    </span><span class="o">[</span>...<span class="o">]</span>
 </code></pre></div>
@@ -3599,7 +3599,7 @@ allow<span class="w"> </span>multiple<span class="w"> </span>matches.<span class
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::number_of_subcycles
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::tms::number_of_subcycles
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::shoc::number_of_subcycles
-<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cldFraction::number_of_subcycles
+<span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cld_fraction::number_of_subcycles
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::spa::internal_diagnostics_level
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::mac_aero_mic::p3::number_of_subcycles
 <span class="w">    </span>namelist_defaults::atmosphere_processes::physics::rrtmgp::number_of_subcycles
@@ -3620,7 +3620,7 @@ In that case, you can use 'ANY' as a node name:</p>
 <span class="w">    </span>mac_aero_mic::number_of_subcycles:<span class="w"> </span><span class="m">24</span>
 <span class="w">    </span>tms::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>shoc::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
-<span class="w">    </span>cldFraction::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>cld_fraction::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>spa::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>p3::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
@@ -3635,7 +3635,7 @@ $<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"
 <span class="w">    </span>mac_aero_mic::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 <span class="w">    </span>tms::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 <span class="w">    </span>shoc::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
-<span class="w">    </span>cldFraction::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
+<span class="w">    </span>cld_fraction::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 <span class="w">    </span>spa::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 <span class="w">    </span>p3::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 <span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
@@ -3652,7 +3652,7 @@ $<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"
 <span class="w">    </span>mac_aero_mic::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>tms::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>shoc::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
-<span class="w">    </span>cldFraction::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>cld_fraction::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>spa::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>p3::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
@@ -3765,33 +3765,33 @@ since any modification will be lost on the next run of <code>buildnml</code>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
 <span class="nt">filename_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_output</span>
-<span class="nt">Averaging Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Average</span>
-<span class="nt">Max Snapshots Per File</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-<span class="nt">Fields</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Physics</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">Field Names</span><span class="p">:</span>
+<span class="nt">averaging_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">average</span>
+<span class="nt">max_snapshots_per_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="nt">fields</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">physics</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv</span>
-<span class="w">  </span><span class="nt">Dynamics</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">Field Names</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dynamics</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dp3d_dyn</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">omega_dyn</span>
 <span class="nt">output_control</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
+<span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nhours</span>
 </code></pre></div>
 <p>Notice that lists can be equivalently specified in YAML as
-<code>Field Names: [f1, f2, f3]</code>.
+<code>field_names: [f1, f2, f3]</code>.
 The user can specify fields to be outputted from any of the grids on which
 they are available (although most fields are only available on ONE grid).
-In the example above, we requested fields from both the Physics and Dynamics grid.
+In the example above, we requested fields from both the physics and dynamics grid.
 The meaning of the other parameters is as follows:</p>
 <ul>
-<li><code>Averaging Type</code>: how the fields are integrated in time before being saved.
+<li><code>averaging_type</code>: how the fields are integrated in time before being saved.
 Valid options are:<ul>
-<li><code>Instant</code>: no integration, each time frame saved corresponds to
+<li><code>instant</code>: no integration, each time frame saved corresponds to
   instantaneous values of the fields.</li>
-<li><code>Average</code>/<code>Max</code>/<code>Min</code>: the fields undergo the corresponding operation
+<li><code>average</code>/<code>max</code>/<code>min</code>: the fields undergo the corresponding operation
   over the time interval since the last output step (as specified in the
   <code>output_control</code> section).
   In the case above, each snapshot saved to file corresponds to an average
@@ -3802,18 +3802,18 @@ Valid options are:<ul>
 in the run directory.<ul>
 <li>The full filename will be <code>$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc</code>,
   where <code>$timestamp</code> corresponds to the first snapshot saved in the file for
-  <code>Instant</code> output, or the beginning of the first averaging window for the other
+  <code>instant</code> output, or the beginning of the first averaging window for the other
   averaging types.</li>
 <li>If not set, it defaults to <code>$casename.eamxx.h</code>.</li>
 </ul>
 </li>
-<li><code>Max Snapshots Per File</code>: specifies how many time snapshots can be put in a file.<ul>
+<li><code>max_snapshots_per_file</code>: specifies how many time snapshots can be put in a file.<ul>
 <li>Once this number is reached, EAMxx will close the file and open a new one.</li>
 <li>If not set, it defaults to <code>-1</code>, signaling "unlimited storage".</li>
 </ul>
 </li>
-<li><code>Frequency</code>: how many units of time are between two consecutive writes to file.<ul>
-<li>For <code>Instant</code> output the fields are "sampled" at this frequency,
+<li><code>frequency</code>: how many units of time are between two consecutive writes to file.<ul>
+<li>For <code>instant</code> output the fields are "sampled" at this frequency,
   while for other averaging types the fields are "integrated"
   in time over this window</li>
 </ul>
@@ -3916,7 +3916,7 @@ must be remapped before being saved to file.<ul>
 <li>This feature is really only used to save fields on the dynamics grid
   without saving twice the DOFs at the interface of two spectral elements.</li>
 <li>E.g., for a scalar quantity defined only in the horizontal direction,
-  native output from the Dynamics grid would produce arrays of length
+  native output from the dynamics grid would produce arrays of length
   <code>nelems * ngp * ngp</code>, where <code>ngp</code> is the number of Gauss points along
   each axis in the 2D spectral element, and <code>nelems</code> is the number of
   horizontal elements.</li>
@@ -3924,7 +3924,7 @@ must be remapped before being saved to file.<ul>
   element boundary must match the values on the neighboring element,
   resulting in duplicated data.</li>
 <li>By remapping to a "unique" version of the dynamics grid
-  (which in EAMxx is referred to as "Physics GLL"), we can save roughly
+  (which in EAMxx is referred to as "physics_gll"), we can save roughly
   45% of storage.</li>
 <li><strong>Note:</strong> this feature cannot be used along with the
   horizontal/vertical remap.</li>
@@ -3964,7 +3964,7 @@ of the parameter value).</p>
   automatically flush to file.</li>
 </ul>
 </li>
-<li><code>Floating Point Precision</code> (top-level list, <code>string</code>):<ul>
+<li><code>floating_point_precision</code> (top-level list, <code>string</code>):<ul>
 <li>This parameter specifies the precision to be used for floating point
   variables in the output file.</li>
 <li>By default, EAMxx uses single precision.</li>
@@ -3978,27 +3978,17 @@ of the parameter value).</p>
 <li><code>file_max_storage_type</code> (top-level list, <code>string</code>):<ul>
 <li>This parameter determines how the capacity of the file is specified.<ul>
 <li>By default, it is set to <code>num_snapshots</code>, which makes EAMxx read
-<code>Max Snapshots Per File</code> (explained in the first section).</li>
+<code>max_snapshots_per_file</code> (explained in the first section).</li>
 <li>However, the user can specify <code>one_year</code> or <code>one_month</code>,
 which will make EAMxx create one output file per year/month of simulation,
 fitting however many snapshots are needed in each file
 (depending on the output frequency).<ul>
 <li>If <code>one_year</code> or <code>one_month</code> are used, the option
-<code>Max Snapshots Per File</code> is ignored.</li>
+<code>max_snapshots_per_file</code> is ignored.</li>
 </ul>
 </li>
 </ul>
 </li>
-</ul>
-</li>
-<li><code>MPI Ranks in Filename</code> (top-level list, <code>boolean</code>):<ul>
-<li>This option specifies whether the number of MPI ranks in the atmosphere
-  communicator should be put inside the output file name.</li>
-<li>By default, this is <code>false</code>, since it is usually not important.</li>
-<li>This option is mostly important for standalone unit testing, where several
-  versions of the same test (corresponding to different numbers of MPI ranks)
-  are running concurrently, so that different file names are needed to
-  avoid resource contention.</li>
 </ul>
 </li>
 <li><code>iotype</code> (top-level list, <code>string</code>):<ul>
@@ -4015,7 +4005,7 @@ fitting however many snapshots are needed in each file
 </ul>
 </li>
 <li><code>skip_t0_output</code> (<code>output_control</code> sub-list, <code>boolean</code>):<ul>
-<li>This option is relevant only for <code>Instant</code> output, for which fields are
+<li>This option is relevant only for <code>instant</code> output, for which fields are
   also output at the case start time<ul>
 <li>I.e., after initialization but before the beginning of the first timestep).</li>
 </ul>
@@ -4028,7 +4018,7 @@ fitting however many snapshots are needed in each file
   stream listed in the <code>output_yaml_files</code> atmosphere option
   (which can be queried via <code>atmquery output_yaml_files</code>).</li>
 <li>The user can specify a few options, in order to tweak the restart behavior:<ul>
-<li><code>skip_restart_if_rhist_not_found</code> (<code>Restart</code> sublist, boolean):
+<li><code>skip_restart_if_rhist_not_found</code> (<code>restart</code> sublist, boolean):
     this parameter is <code>false</code> by default, but can be set
     to <code>true</code> to make the model start the output stream anew
     (as if this was an initial run) if the proper rhist
@@ -4039,14 +4029,14 @@ fitting however many snapshots are needed in each file
           scratch. If ALL streams should be started anew, you should
           set RUN_TYPE=branch in the case XML settings instead.
     scratch, as if this was an initial run.</li>
-<li><code>filename_prefix</code> (<code>Restart</code> sub-list, <code>string</code>):<ul>
+<li><code>filename_prefix</code> (<code>restart</code> sub-list, <code>string</code>):<ul>
 <li>By default, this parameter is set to match the value of
   <code>filename_prefix</code> from the top-level list.</li>
 <li>This can be set to a different value in case we want to restart
   a previous simulation that was using a different filename prefix.</li>
 </ul>
 </li>
-<li><code>force_new_file</code> (<code>Restart</code> sub-list, <code>boolean</code>):<ul>
+<li><code>force_new_file</code> (<code>restart</code> sub-list, <code>boolean</code>):<ul>
 <li>This parameter allows to start a fresh new output file upon restarts.</li>
 <li>By default, is is set to <code>false</code>, so that EAMxx will attempt to
   resume filling the last produced output file (if any, and if it

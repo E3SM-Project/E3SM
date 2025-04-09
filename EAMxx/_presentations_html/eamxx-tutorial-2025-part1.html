@@ -201,16 +201,16 @@ AtmosphereProcess interface, adding a process, running it</p>
 <span class="hljs-comment"># the data from $case/namelist_scream.xml. If you want to make some</span>
 <span class="hljs-comment"># local changes, you can edit this XML file or use atmchange.</span>
 <span class="hljs-comment">################################################################</span>
-<span class="hljs-attr">Scorpio:</span>
+<span class="hljs-attr">scorpio:</span>
   <span class="hljs-attr">model_restart:</span>
     <span class="hljs-attr">iotype:</span> <span class="hljs-string">default</span>
     <span class="hljs-attr">output_control:</span>
-      <span class="hljs-attr">Frequency:</span> <span class="hljs-number">6</span>
+      <span class="hljs-attr">frequency:</span> <span class="hljs-number">6</span>
       <span class="hljs-attr">frequency_units:</span> <span class="hljs-string">ndays</span>
   <span class="hljs-attr">output_yaml_files:</span> <span class="hljs-type">!strings</span>
   <span class="hljs-bullet">-</span> <span class="hljs-string">/path/to/run/data/output_file.yaml</span>
 <span class="hljs-attr">atmosphere_processes:</span>
-  <span class="hljs-attr">Type:</span> <span class="hljs-string">Group</span>
+  <span class="hljs-attr">type:</span> <span class="hljs-string">group</span>
   <span class="hljs-attr">atm_procs_list:</span> <span class="hljs-type">!strings</span>
   <span class="hljs-bullet">-</span> <span class="hljs-string">sc_import</span>
   <span class="hljs-bullet">-</span> <span class="hljs-string">homme</span>
@@ -220,8 +220,8 @@ AtmosphereProcess interface, adding a process, running it</p>
   <span class="hljs-attr">enable_postcondition_checks:</span> <span class="hljs-literal">true</span>
   <span class="hljs-attr">enable_precondition_checks:</span> <span class="hljs-literal">true</span>
   <span class="hljs-attr">homme:</span>
-    <span class="hljs-attr">BfbHash:</span> <span class="hljs-number">18</span>
-    <span class="hljs-attr">Moisture:</span> <span class="hljs-string">moist</span>
+    <span class="hljs-attr">bfb_hash:</span> <span class="hljs-number">18</span>
+    <span class="hljs-attr">moisture:</span> <span class="hljs-string">moist</span>
     <span class="hljs-attr">compute_tendencies:</span> <span class="hljs-type">!strings</span> []
     <span class="hljs-attr">enable_postcondition_checks:</span> <span class="hljs-literal">true</span>
 <span class="hljs-string">...</span>
@@ -330,17 +330,17 @@ EOF
 </code></pre>
 </td>
 <td>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-yaml"><span class="hljs-attr">Averageing Type:</span> <span class="hljs-string">Average</span>
-<span class="hljs-attr">Fields:</span>
-  <span class="hljs-attr">Physics PG2:</span>
-    <span class="hljs-attr">Field Names:</span>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-yaml"><span class="hljs-attr">averaging_type:</span> <span class="hljs-string">average</span>
+<span class="hljs-attr">fields:</span>
+  <span class="hljs-attr">physics_pg2:</span>
+    <span class="hljs-attr">field_names:</span>
       <span class="hljs-bullet">-</span> <span class="hljs-string">Q</span>
       <span class="hljs-bullet">-</span> <span class="hljs-string">CLDLIQ</span>
       <span class="hljs-bullet">-</span> <span class="hljs-string">CLDICE</span>
-<span class="hljs-attr">Max Snapshots Per File:</span> <span class="hljs-number">1</span>
+<span class="hljs-attr">max_snapshots_per_file:</span> <span class="hljs-number">1</span>
 <span class="hljs-attr">filename_prefix:</span> <span class="hljs-string">output.scream_monthly.NAME_1</span>
 <span class="hljs-attr">output_control:</span>
-  <span class="hljs-attr">Frequency:</span> <span class="hljs-number">1</span>
+  <span class="hljs-attr">frequency:</span> <span class="hljs-number">1</span>
   <span class="hljs-attr">frequency_units:</span> <span class="hljs-string">nmonths</span>
 </code></pre>
 </td>
