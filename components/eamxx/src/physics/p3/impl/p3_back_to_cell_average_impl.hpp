@@ -56,7 +56,8 @@ void Functions<S,D>
     if (runtime_options.use_separate_ice_liq_frac) {
        qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_glaciated);
     } else {
-       qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_i);}    // Sublimation of ice in ice cloud
+       qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_i); // Sublimation of ice in ice cloud
+    }
   nr_ice_shed_tend.set(context, nr_ice_shed_tend * il_cldm); // Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
   qc2qi_hetero_freeze_tend.set(context, qc2qi_hetero_freeze_tend * il_cldm); // Immersion freezing of cloud drops
   qr2qi_collect_tend.set(context, qr2qi_collect_tend * ir_cldm);  // Collection of rain mass by ice
@@ -79,7 +80,8 @@ void Functions<S,D>
   if (runtime_options.use_separate_ice_liq_frac) {
      ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_glaciated);
   } else {  
-     ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_i);}    // Number change due to sublimation of ice
+     ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_i); // Number change due to sublimation of ice
+   }
   qc2qi_berg_tend.set(context, qc2qi_berg_tend * il_cldm); // Bergeron process
   ncheti_cnt.set(context,ncheti_cnt*cld_frac_l);
   qcheti_cnt.set(context, qcheti_cnt*cld_frac_l);
