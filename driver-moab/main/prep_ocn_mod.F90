@@ -794,7 +794,7 @@ contains
 
          type1 = 3 ! fv mesh nowadays
          direction = 1 !
-         context_id = ocn(1)%cplcompid
+         context_id = rmapid ! ocn(1)%cplcompid
          ! this creates a par comm graph between mbrxid and mbrxoid, with ids rof(1)%cplcompid, context ocn(1)%cplcompid
          ! this will be used in send/receive mappers
          ierr = iMOAB_MigrateMapMesh (mbrxid, mbintxro, mbrxoid, mpicom_CPLID, mpigrp_CPLID, &
