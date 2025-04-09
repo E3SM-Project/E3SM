@@ -3090,7 +3090,4 @@ subroutine q1q2_pjr(lchnk   , &
    return
 end subroutine q1q2_pjr
 
-
-
-
 end module zm_conv
