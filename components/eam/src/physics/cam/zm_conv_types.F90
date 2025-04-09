@@ -73,6 +73,7 @@ subroutine zm_const_set_to_global(zm_const)
    zm_const%latvap   = latvap
    zm_const%latice   = latice
    zm_const%epsilo   = epsilo
+   zm_const%zvir     = 1.608_r8 ! use this instead of physconst value to avoid non-BFB diffs
 end subroutine zm_const_set_to_global
 
 !===================================================================================================
