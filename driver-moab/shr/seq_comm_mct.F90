@@ -240,7 +240,7 @@ module seq_comm_mct
   integer, public :: mbrxid   ! iMOAB id of moab rof read from file on coupler pes
 !   integer, public :: mbrmapro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
 !                               ! similar to intx id, oa, la;
-!   integer, public :: mbrxoid  ! iMOAB id for rof migrated to coupler for ocean context (r2o mapping)
+  integer, public :: mbrxoid  ! iMOAB id for rof migrated to coupler for ocean context (r2o mapping)
   integer, public :: mbintxro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
   logical, public :: mbrof_data = .false. ! made true if no rtm mesh, which means data rof ?
   integer, public :: mbintxar ! iMOAB id for intx mesh between atm and river
