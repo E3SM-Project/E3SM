@@ -328,7 +328,7 @@ contains
     ! let us create the point-cloud MOAB mesh that the coupler needs
     call init_moab_land(bounds, LNDID)
     ! now let us create that MOAB app that represents the full ELM mesh
-    call init_moab_land_internal(bounds, LNDID)
+    ! call init_moab_land_internal(bounds, LNDID)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
