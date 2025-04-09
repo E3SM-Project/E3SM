@@ -2943,7 +2943,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(mct_avect), pointer :: r2x_rx
     character(*), parameter  :: subname = '(prep_ocn_calc_r2x_ox)'
     !---------------------------------------------------------------
-
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCpl_Bef_r2x_ox_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
@@ -2960,7 +2967,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 #ifdef MOABDEBUG
    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
       write(lnum,"(I0.2)")num_moab_exports
-      outfile = 'OcnCpl_r2x_ox'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      outfile = 'OcnCpl_r2x_ox_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
    endif
