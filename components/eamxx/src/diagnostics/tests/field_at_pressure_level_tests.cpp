@@ -62,7 +62,7 @@ TEST_CASE("field_at_pressure_level_p2")
   auto gm   = create_gm(comm,ncols,nlevs);
 
   // Create a field manager for testing
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
   auto fm   = get_test_fm(grid);
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 

@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_p3_${POSTFIX}_nudged
-Averaging Type: Instant
-Max Snapshots Per File: 2
-Field Names:
+averaging_type: instant
+max_snapshots_per_file: 2
+field_names:
   - p_mid
   - T_mid
   - qv
@@ -33,6 +33,6 @@ Field Names:
   - nc_nuceat_tend
  
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

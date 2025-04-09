@@ -9,22 +9,22 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
 atmosphere_processes:
-  atm_procs_list: [Dynamics]
-  Dynamics:
-    Type: Homme
-    Moisture: moist
+  atm_procs_list: [dynamics]
+  dynamics:
+    type: homme
+    moisture: moist
 
 grids_manager:
-  Type: Homme
-  physics_grid_type: GLL
+  type: homme
+  physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

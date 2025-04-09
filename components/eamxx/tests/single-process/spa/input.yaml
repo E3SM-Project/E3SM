@@ -14,19 +14,19 @@ atmosphere_processes:
     spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
 
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [Physics]
-  Physics:
+  grids_names: [physics]
+  physics:
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

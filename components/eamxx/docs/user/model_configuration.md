@@ -89,14 +89,14 @@ will recursively print all sub-elements, properly indented:
 ``` {.shell .copy}
 $ ./atmquery homme
     homme
-        Moisture: moist
-        BfbHash: 18
+        moisture: moist
+        bfb_hash: 18
         number_of_subcycles: 1
         enable_precondition_checks: true
         enable_postcondition_checks: true
         repair_log_level: trace
         internal_diagnostics_level: 0
-        compute_tendencies: None
+        compute_tendencies: none
 ```
 
 It is sometimes desirable to query _all_ the nodes that have a particular name,
@@ -142,13 +142,13 @@ XML file, which will be displayed with each node indented in its parent scope:
 $ ./atmquery --listall
     namelist_defaults
         grids_manager
-            Type: Homme
-            physics_grid_type: PG2
-            physics_grid_rebalance: None
+            type: homme
+            physics_grid_type: pg2
+            physics_grid_rebalance: none
             dynamics_namelist_file_name: ./data/namelist.nl
             vertical_coordinate_filename: /some/path/to/coords/file.nc
         initial_conditions
-            Filename: /some/path/to/ic/file.nc
+            filename: /some/path/to/ic/file.nc
             topography_filename: /some/path/to/topo/file.nc
     [...]
 ```
@@ -182,7 +182,7 @@ allow multiple matches. Matches:
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::tms::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::shoc::number_of_subcycles
-    namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cldFraction::number_of_subcycles
+    namelist_defaults::atmosphere_processes::physics::mac_aero_mic::cld_fraction::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::spa::internal_diagnostics_level
     namelist_defaults::atmosphere_processes::physics::mac_aero_mic::p3::number_of_subcycles
     namelist_defaults::atmosphere_processes::physics::rrtmgp::number_of_subcycles
@@ -206,7 +206,7 @@ $ ./atmquery --grep number_of_subcycles
     mac_aero_mic::number_of_subcycles: 24
     tms::number_of_subcycles: 1
     shoc::number_of_subcycles: 1
-    cldFraction::number_of_subcycles: 1
+    cld_fraction::number_of_subcycles: 1
     spa::number_of_subcycles: 1
     p3::number_of_subcycles: 1
     rrtmgp::number_of_subcycles: 1
@@ -221,7 +221,7 @@ $ ./atmquery --grep number_of_subcycles
     mac_aero_mic::number_of_subcycles: 3
     tms::number_of_subcycles: 3
     shoc::number_of_subcycles: 3
-    cldFraction::number_of_subcycles: 3
+    cld_fraction::number_of_subcycles: 3
     spa::number_of_subcycles: 3
     p3::number_of_subcycles: 3
     rrtmgp::number_of_subcycles: 3
@@ -241,7 +241,7 @@ $ ./atmquery --grep number_of_subcycles
     mac_aero_mic::number_of_subcycles: 1
     tms::number_of_subcycles: 1
     shoc::number_of_subcycles: 1
-    cldFraction::number_of_subcycles: 1
+    cld_fraction::number_of_subcycles: 1
     spa::number_of_subcycles: 1
     p3::number_of_subcycles: 1
     rrtmgp::number_of_subcycles: 3
@@ -383,34 +383,34 @@ The following is a basic example of an output request.
 %YAML 1.1
 ---
 filename_prefix: my_output
-Averaging Type: Average
-Max Snapshots Per File: 10
-Fields:
-  Physics:
-    Field Names:
+averaging_type: average
+max_snapshots_per_file: 10
+fields:
+  physics:
+    field_names:
       - T_mid
       - qv
-  Dynamics:
-    Field Names:
+  dynamics:
+    field_names:
       - dp3d_dyn
       - omega_dyn
 output_control:
-  Frequency: 6
+  frequency: 6
   frequency_units: nhours
 ```
 
 Notice that lists can be equivalently specified in YAML as
-`Field Names: [f1, f2, f3]`.
+`field_names: [f1, f2, f3]`.
 The user can specify fields to be outputted from any of the grids on which
 they are available (although most fields are only available on ONE grid).
-In the example above, we requested fields from both the Physics and Dynamics grid.
+In the example above, we requested fields from both the physics and dynamics grid.
 The meaning of the other parameters is as follows:
 
-- `Averaging Type`: how the fields are integrated in time before being saved.
+- `averaging_type`: how the fields are integrated in time before being saved.
 Valid options are:
-      - `Instant`: no integration, each time frame saved corresponds to
+      - `instant`: no integration, each time frame saved corresponds to
       instantaneous values of the fields.
-      - `Average`/`Max`/`Min`: the fields undergo the corresponding operation
+      - `average`/`max`/`min`: the fields undergo the corresponding operation
       over the time interval since the last output step (as specified in the
       `output_control` section).
       In the case above, each snapshot saved to file corresponds to an average
@@ -419,14 +419,14 @@ Valid options are:
 in the run directory.
       - The full filename will be `$prefix.$avgtype.$frequnits_x$freq.$timestamp.nc`,
       where `$timestamp` corresponds to the first snapshot saved in the file for
-      `Instant` output, or the beginning of the first averaging window for the other
+      `instant` output, or the beginning of the first averaging window for the other
       averaging types.
       - If not set, it defaults to `$casename.eamxx.h`.
-- `Max Snapshots Per File`: specifies how many time snapshots can be put in a file.
+- `max_snapshots_per_file`: specifies how many time snapshots can be put in a file.
       - Once this number is reached, EAMxx will close the file and open a new one.
       - If not set, it defaults to `-1`, signaling "unlimited storage".
-- `Frequency`: how many units of time are between two consecutive writes to file.
-      - For `Instant` output the fields are "sampled" at this frequency,
+- `frequency`: how many units of time are between two consecutive writes to file.
+      - For `instant` output the fields are "sampled" at this frequency,
       while for other averaging types the fields are "integrated"
       in time over this window
 - `frequency_units`: units of the output frequency.
@@ -508,7 +508,7 @@ must be remapped before being saved to file.
       - This feature is really only used to save fields on the dynamics grid
       without saving twice the DOFs at the interface of two spectral elements.
       - E.g., for a scalar quantity defined only in the horizontal direction,
-      native output from the Dynamics grid would produce arrays of length
+      native output from the dynamics grid would produce arrays of length
       `nelems * ngp * ngp`, where `ngp` is the number of Gauss points along
       each axis in the 2D spectral element, and `nelems` is the number of
       horizontal elements.
@@ -516,7 +516,7 @@ must be remapped before being saved to file.
       element boundary must match the values on the neighboring element,
       resulting in duplicated data.
       - By remapping to a "unique" version of the dynamics grid
-      (which in EAMxx is referred to as "Physics GLL"), we can save roughly
+      (which in EAMxx is referred to as "physics_gll"), we can save roughly
       45% of storage.
       - **Note:** this feature cannot be used along with the
       horizontal/vertical remap.
@@ -555,7 +555,7 @@ of the parameter value).
       - This option can be helpful for debugging, in case a crash is occurring
       after a certain number of steps, but before the IO library would
       automatically flush to file.
-- `Floating Point Precision` (top-level list, `string`):
+- `floating_point_precision` (top-level list, `string`):
       - This parameter specifies the precision to be used for floating point
       variables in the output file.
       - By default, EAMxx uses single precision.
@@ -565,21 +565,13 @@ of the parameter value).
 - `file_max_storage_type` (top-level list, `string`):
       - This parameter determines how the capacity of the file is specified.
         - By default, it is set to `num_snapshots`, which makes EAMxx read
-        `Max Snapshots Per File` (explained in the first section).
+        `max_snapshots_per_file` (explained in the first section).
         - However, the user can specify `one_year` or `one_month`,
         which will make EAMxx create one output file per year/month of simulation,
         fitting however many snapshots are needed in each file
         (depending on the output frequency).
             - If `one_year` or `one_month` are used, the option
-            `Max Snapshots Per File` is ignored.
-- `MPI Ranks in Filename` (top-level list, `boolean`):
-      - This option specifies whether the number of MPI ranks in the atmosphere
-      communicator should be put inside the output file name.
-      - By default, this is `false`, since it is usually not important.
-      - This option is mostly important for standalone unit testing, where several
-      versions of the same test (corresponding to different numbers of MPI ranks)
-      are running concurrently, so that different file names are needed to
-      avoid resource contention.
+            `max_snapshots_per_file` is ignored.
 - `iotype` (top-level list, `string`):
       - This option allows the user to request a particular format for the
       output file.
@@ -590,7 +582,7 @@ of the parameter value).
       should be added to the output stream.
       - By default, it is `true`.
 - `skip_t0_output` (`output_control` sub-list, `boolean`):
-      - This option is relevant only for `Instant` output, for which fields are
+      - This option is relevant only for `instant` output, for which fields are
       also output at the case start time
           - I.e., after initialization but before the beginning of the first timestep).
       - By default it is set to `false`.
@@ -599,7 +591,7 @@ of the parameter value).
       stream listed in the `output_yaml_files` atmosphere option
       (which can be queried via `atmquery output_yaml_files`).
       - The user can specify a few options, in order to tweak the restart behavior:
-          - `skip_restart_if_rhist_not_found` (`Restart` sublist, boolean):
+          - `skip_restart_if_rhist_not_found` (`restart` sublist, boolean):
             this parameter is `false` by default, but can be set
             to `true` to make the model start the output stream anew
             (as if this was an initial run) if the proper rhist
@@ -610,12 +602,12 @@ of the parameter value).
                   scratch. If ALL streams should be started anew, you should
                   set RUN_TYPE=branch in the case XML settings instead.
             scratch, as if this was an initial run.
-          - `filename_prefix` (`Restart` sub-list, `string`):
+          - `filename_prefix` (`restart` sub-list, `string`):
               - By default, this parameter is set to match the value of
               `filename_prefix` from the top-level list.
               - This can be set to a different value in case we want to restart
               a previous simulation that was using a different filename prefix.
-          - `force_new_file` (`Restart` sub-list, `boolean`):
+          - `force_new_file` (`restart` sub-list, `boolean`):
               - This parameter allows to start a fresh new output file upon restarts.
               - By default, is is set to `false`, so that EAMxx will attempt to
               resume filling the last produced output file (if any, and if it

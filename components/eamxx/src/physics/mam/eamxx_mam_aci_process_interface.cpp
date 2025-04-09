@@ -58,7 +58,7 @@ void MAMAci::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   // set grid for all the inputs and outputs
   // use physics grid
-  grid_ = grids_manager->get_grid("Physics");
+  grid_ = grids_manager->get_grid("physics");
 
   // Name of the grid
   const auto &grid_name = grid_->name();

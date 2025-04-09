@@ -205,7 +205,7 @@ setup_iop_data_manager ()
                    "defined in parameters.\n");
 
   const auto iop_params = m_atm_params.sublist("iop_options");
-  const auto phys_grid = m_grids_manager->get_grid("Physics");
+  const auto phys_grid = m_grids_manager->get_grid("physics");
   const auto nlevs = phys_grid->get_num_vertical_levels();
   const auto hyam = phys_grid->get_geometry_data("hyam");
   const auto hybm = phys_grid->get_geometry_data("hybm");
@@ -236,7 +236,7 @@ void AtmosphereDriver::create_atm_processes()
   // See AtmosphereProcessGroup class documentation for more details.
   auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
   atm_proc_params.rename("EAMxx");
-  atm_proc_params.set("Logger",m_atm_logger);
+  atm_proc_params.set("logger",m_atm_logger);
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
@@ -258,7 +258,7 @@ void AtmosphereDriver::create_grids()
 
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("grids_manager");
-  const std::string& gm_type = gm_params.get<std::string>("Type");
+  const std::string& gm_type = gm_params.get<std::string>("type");
 
   // The GridsManager might load some geometric data from IC file.
   // To avoid having to pass the same data twice in the input file,
@@ -271,9 +271,9 @@ void AtmosphereDriver::create_grids()
     auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
-  } else if (ic_pl.isParameter("Filename")) {
+  } else if (ic_pl.isParameter("filename")) {
     // Initial run, if an IC file is present, pass it.
-    auto filename = ic_pl.get<std::string>("Filename");
+    auto filename = ic_pl.get<std::string>("filename");
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   }
@@ -424,7 +424,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
     return;
   }
 
-  auto phys_grid = m_grids_manager->get_grid("Physics");
+  auto phys_grid = m_grids_manager->get_grid("physics");
   const auto phys_grid_name = phys_grid->name();
 
   // Get fields needed to run the mass and energy conservation checks. Require that
@@ -477,16 +477,16 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =
-      driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "Warning");
+      driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "warning");
 
   CheckFailHandling fail_handling_type;
-  if (fail_handling_type_str == "Warning") {
+  if (fail_handling_type_str == "warning") {
     fail_handling_type = CheckFailHandling::Warning;
-  } else if (fail_handling_type_str == "Fatal") {
+  } else if (fail_handling_type_str == "fatal") {
     fail_handling_type = CheckFailHandling::Fatal;
   } else {
     EKAT_ERROR_MSG("Error! Unknown column_conservation_checks_fail_handling_type parameter. "
-                   "Acceptable types are \"Warning\" and \"Fatal\".\n");
+                   "Acceptable types are \"warning\" and \"fatal\".\n");
   }
 
   // Pass energy checker to the process group to be added
@@ -516,7 +516,7 @@ void AtmosphereDriver::add_additional_column_data_to_property_checks () {
   if (additional_data_fields == vos_t{"NONE"}) return;
 
   // Add requested fields to property checks
-  const auto& grid_name = m_grids_manager->get_grid("Physics")->name();
+  const auto& grid_name = m_grids_manager->get_grid("physics")->name();
   for (auto fname : additional_data_fields) {
     EKAT_REQUIRE_MSG(m_field_mgr->has_field(fname, grid_name),
       "Error! The field " + fname + " is requested for property "
@@ -644,13 +644,13 @@ void AtmosphereDriver::create_fields()
 
   // If the user requested it, we can save a dictionary of the FM fields to file
   if (driver_options_pl.get("save_field_manager_content",false)) {
-    auto grid_name = m_grids_manager->get_grid("Physics")->name();
+    auto grid_name = m_grids_manager->get_grid("physics")->name();
     auto& phys_fields = m_field_mgr->get_repo(grid_name);
     ekat::ParameterList pl_out("field_manager_content");
     pl_out.sublist("provenance") = m_atm_params.sublist("provenance");
     DefaultMetadata std_names;
     std::string desc;
-    desc = "content of the EAMxx FieldManager corresponding to the 'Physics' grid.\n"
+    desc = "content of the EAMxx FieldManager corresponding to the 'physics' grid.\n"
            "The dict keys are the field names as used in EAMxx.\n"
            "For each field, we add the following entries:\n"
            "  - standard_name: the name commonly used to refer to this field in atm sciences (if applicable)\n"
@@ -696,11 +696,11 @@ void AtmosphereDriver::create_output_managers () {
 
   check_ad_status (s_comm_set | s_params_set | s_ts_inited);
 
-  auto& io_params = m_atm_params.sublist("Scorpio");
+  auto& io_params = m_atm_params.sublist("scorpio");
 
   ekat::ParameterList checkpoint_params;
   checkpoint_params.set("frequency_units",std::string("never"));
-  checkpoint_params.set("Frequency",-1);
+  checkpoint_params.set("frequency",-1);
 
   // Create model restart OutputManager first. This OM will be in charge
   // of creating rpointer.atm, while other OM's will simply append to it.
@@ -710,7 +710,7 @@ void AtmosphereDriver::create_output_managers () {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
     params.set<std::string>("filename_prefix",m_casename+".scream");
-    params.set<std::string>("Averaging Type","Instant");
+    params.set<std::string>("averaging_type","instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
     m_restart_output_manager = std::make_shared<OutputManager>();
@@ -720,9 +720,9 @@ void AtmosphereDriver::create_output_managers () {
                                          m_case_t0,
                                          /*is_model_restart_output*/ true);
 
-    // Store the "Output Control" pl of the model restart as the "Checkpoint Control" for all other output streams
+    // Store the "Output Control" pl of the model restart as the "checkpoint_control" for all other output streams
     checkpoint_params.set<std::string>("frequency_units",params.sublist("output_control").get<std::string>("frequency_units"));
-    checkpoint_params.set("Frequency",params.sublist("output_control").get<int>("Frequency"));
+    checkpoint_params.set("frequency",params.sublist("output_control").get<int>("frequency"));
   }
 
   // Create one output manager per output yaml file
@@ -732,16 +732,16 @@ void AtmosphereDriver::create_output_managers () {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
     params.rename(ekat::split(fname,"/").back());
-    auto& checkpoint_pl = params.sublist("Checkpoint Control");
+    auto& checkpoint_pl = params.sublist("checkpoint_control");
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
-    checkpoint_pl.set("Frequency",checkpoint_params.get<int>("Frequency"));
+    checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
     if (not params.isParameter("filename_prefix")) {
       params.set<std::string>("filename_prefix",m_casename+".scream.h");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
-    params.sublist("Restart").set("branch_run",m_branch_run);
+    params.sublist("restart").set("branch_run",m_branch_run);
 
     auto& om = m_output_managers.emplace_back();
     om.initialize(m_atm_comm,
@@ -772,8 +772,8 @@ void AtmosphereDriver::initialize_output_managers () {
     auto output_grids = m_grids_manager->get_grid_names();
 
     // Don't save CGLL fields from ICs to the restart file if we are running with PG2.
-    if (fvphyshack and output_grids.find("Physics GLL")!=output_grids.end()) {
-      output_grids.erase("Physics GLL");
+    if (fvphyshack and output_grids.find("physics_gll")!=output_grids.end()) {
+      output_grids.erase("physics_gll");
     }
 
     m_restart_output_manager->setup(m_field_mgr, output_grids);
@@ -933,7 +933,7 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
   for (auto& gn : m_grids_manager->get_grid_names()) {
-    if (fvphyshack and gn == "Physics GLL") continue;
+    if (fvphyshack and gn == "physics_gll") continue;
     if (not m_field_mgr->has_group("RESTART", gn)) {
       // No field needs to be restarted on this grid.
       continue;
@@ -1083,10 +1083,10 @@ void AtmosphereDriver::set_initial_conditions ()
         // For GLL points, phis corresponds to "PHIS_d" in the
         // topography file. On PG2 grid, dynamics will take care
         // of computing phis, so do not add to initialized fields.
-        if (grid_name == "Physics PG2") {
+        if (grid_name == "physics_pg2") {
           // Skip
-        } else if (grid_name == "Physics GLL" ||
-                   grid_name == "Point Grid") {
+        } else if (grid_name == "physics_gll" ||
+                   grid_name == "point_grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
           this_grid_topo_eamxx_fnames.push_back(fname);
           m_fields_inited[grid_name].push_back(fname);
@@ -1096,14 +1096,14 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (fname == "sgh30") {
         // The eamxx field "sgh30" is called "SGH30" in the
         // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "Physics PG2",
+        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
                         "Error! Requesting sgh30 field on " + grid_name +
-                        " topo file only has sgh30 for Physics PG2.\n");
+                        " topo file only has sgh30 for physics_pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
         m_fields_inited[grid_name].push_back(fname);
       }
-    } else if (not (fvphyshack and grid_name == "Physics PG2")) {
+    } else if (not (fvphyshack and grid_name == "physics_pg2")) {
       // The IC file is written for the GLL grid, so we only load
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
@@ -1115,7 +1115,7 @@ void AtmosphereDriver::set_initial_conditions ()
           this_grid_ic_fnames.push_back(fname);
           m_fields_inited[grid_name].push_back(fname);
         }
-      } else if (fvphyshack and grid_name == "Physics GLL") {
+      } else if (fvphyshack and grid_name == "physics_gll") {
         // [CGLL ICs in pg2] I tried doing something like this in
         // HommeDynamics::set_grids, but I couldn't find the means to get the
         // list of fields. I think the issue is that you can't access group
@@ -1198,9 +1198,9 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& grid_name = grid->name();
       if (ic_fields_names[grid_name].size() > 0 or
 	        topography_eamxx_fields_names[grid_name].size() > 0) {
-        const auto& file_name = grid_name == "Physics GLL"
+        const auto& file_name = grid_name == "physics_gll"
                                 ?
-                                ic_pl.get<std::string>("Filename")
+                                ic_pl.get<std::string>("filename")
                                 :
                                 ic_pl.get<std::string>("topography_filename");
         m_iop_data_manager->setup_io_info(file_name, grid);
@@ -1209,9 +1209,9 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   // If a filename is specified, use it to load inputs on all grids
-  if (ic_pl.isParameter("Filename")) {
+  if (ic_pl.isParameter("filename")) {
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
-    const auto& file_name = ic_pl.get<std::string>("Filename");
+    const auto& file_name = ic_pl.get<std::string>("filename");
     m_atm_logger->info("    [EAMxx] IC filename: " + file_name);
 
     for (const auto& it : m_grids_manager->get_repo()) {
@@ -1315,7 +1315,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
         auto io_grid = grid;
-        if (grid_name=="Physics GLL") {
+        if (grid_name=="physics_gll") {
           using namespace ShortFieldTagsNames;
           auto tmp_grid = io_grid->clone(io_grid->name(),true);
           tmp_grid->reset_field_tag_name(COL,"ncol_d");
@@ -1355,8 +1355,8 @@ void AtmosphereDriver::set_initial_conditions ()
     // Now that ICs are processed, set appropriate fields using IOP file data.
     // Since ICs are loaded on GLL grid, we set those fields only and dynamics
     // will take care of the rest (for PG2 case).
-    if (m_field_mgr->get_grids_manager()->get_grid_names().count("Physics GLL") > 0) {
-      m_iop_data_manager->set_fields_from_iop_data(m_field_mgr, "Physics GLL");
+    if (m_field_mgr->get_grids_manager()->get_grid_names().count("physics_gll") > 0) {
+      m_iop_data_manager->set_fields_from_iop_data(m_field_mgr, "physics_gll");
     }
   }
 
@@ -1367,9 +1367,9 @@ void AtmosphereDriver::set_initial_conditions ()
   if (num_perturb_fields > 0) {
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ...");
 
-    EKAT_REQUIRE_MSG(m_field_mgr->get_grids_manager()->get_grid_names().count("Physics GLL") > 0,
+    EKAT_REQUIRE_MSG(m_field_mgr->get_grids_manager()->get_grid_names().count("physics_gll") > 0,
                      "Error! Random perturbation can only be applied to fields on "
-                     "the GLL grid, but no Physics GLL grid was defined in FieldManager.\n");
+                     "the GLL grid, but no physics GLL grid was defined in FieldManager.\n");
 
     // Setup RNG. There are two relevant params: generate_perturbation_random_seed and
     // perturbation_random_seed. We have 3 cases:
@@ -1401,7 +1401,7 @@ void AtmosphereDriver::set_initial_conditions ()
 
     // Define a level mask using reference pressure and the perturbation_minimum_pressure parameter.
     // This mask dictates which levels we apply a perturbation.
-    const auto gll_grid = m_grids_manager->get_grid("Physics GLL");
+    const auto gll_grid = m_grids_manager->get_grid("physics_gll");
     const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*, Host>();
     const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*, Host>();
     constexpr auto ps0 = physics::Constants<Real>::P0;
@@ -1538,7 +1538,7 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
-    const auto gn = "Physics GLL";
+    const auto gn = "physics_gll";
     m_field_mgr->clean_up(gn);
   }
 

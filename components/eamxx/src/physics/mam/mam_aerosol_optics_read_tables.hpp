@@ -101,11 +101,11 @@ inline void set_parameters_table(
       {"swband", "mode", "refindex_im", "refindex_real", "coef_number"});
 
   rrtmg_params.set<strvec_t>(
-      "Field Names",
+      "field_names",
       {"asmpsw", "extpsw", "abspsw", "absplw", "refindex_real_sw",
        "refindex_im_sw", "refindex_real_lw", "refindex_im_lw"});
 
-  rrtmg_params.set("Skip_Grid_Checks", true);
+  rrtmg_params.set("skip_grid_checks", true);
 
   host_views["refindex_real_sw"] =
       view_1d_host(refindex_real_sw_host.data(), refindex_real_sw_host.size());
@@ -155,7 +155,7 @@ inline void read_rrtmg_table(
   view_3d_host temp_lw_3d_host("temp_absplw_host", coef_number, refindex_real,
                                refindex_im);
 
-  params.set("Filename", table_filename);
+  params.set("filename", table_filename);
   AtmosphereInput rrtmg(params, grid, host_views_1d, layouts);
   rrtmg.read_variables();
   rrtmg.finalize();
@@ -271,10 +271,10 @@ inline void read_water_refindex(const std::string &table_filename,
 
   // here a made a list of variables that I want to read from netcdf files
   ekat::ParameterList params;
-  params.set("Filename", table_filename);
-  params.set("Skip_Grid_Checks", true);
+  params.set("filename", table_filename);
+  params.set("skip_grid_checks", true);
 
-  params.set<strvec_t>("Field Names",
+  params.set<strvec_t>("field_names",
                        {"refindex_im_water_lw", "refindex_im_water_sw",
                         "refindex_real_water_lw", "refindex_real_water_sw"});
   // make a list of host views
@@ -339,8 +339,8 @@ inline void set_refindex_names(std::string surname, ekat::ParameterList &params,
   std::string refindex_real_lw = "refindex_real_" + surname + "_lw";
   std::string refindex_im_lw   = "refindex_im_" + surname + "_lw";
 
-  params.set("Skip_Grid_Checks", true);
-  params.set<strvec_t>("Field Names", {refindex_real_sw, refindex_im_sw,
+  params.set("skip_grid_checks", true);
+  params.set<strvec_t>("field_names", {refindex_real_sw, refindex_im_sw,
                                        refindex_real_lw, refindex_im_lw});
   // allocate host views
   host_views[refindex_real_sw] = view_1d_host(refindex_real_sw, nswbands);

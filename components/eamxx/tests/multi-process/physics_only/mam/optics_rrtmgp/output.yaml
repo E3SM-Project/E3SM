@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
 filename_prefix: mam_optics_rrtmgp_output
-Averaging Type: Instant
-Max Snapshots Per File: 1
-Field Names:
+averaging_type: instant
+max_snapshots_per_file: 1
+field_names:
    # MAM_OPTICS 
   - aero_g_sw
   - aero_ssa_sw
@@ -24,6 +24,6 @@ Field Names:
   - sfc_flux_sw_net
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

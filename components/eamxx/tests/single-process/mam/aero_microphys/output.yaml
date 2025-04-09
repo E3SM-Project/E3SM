@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: mam4_aero_microphys_standalone_output
-Averaging Type: Instant
-Fields:
-  Physics:
-    Field Names:
+averaging_type: instant
+fields:
+  physics:
+    field_names:
       - T_mid
       - O3
       - H2O2
@@ -70,6 +70,6 @@ Fields:
       #- vertical_emission_fields
 
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

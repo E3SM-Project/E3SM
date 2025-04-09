@@ -10,11 +10,11 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mac_mic, mam4_wetscav]
-  schedule_type: Sequential
+  schedule_type: sequential
   mac_mic:
-    atm_procs_list: [shoc,CldFraction,p3]
-    Type: Group
-    schedule_type: Sequential
+    atm_procs_list: [shoc,cld_fraction,p3]
+    type: group
+    schedule_type: sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     p3:
       max_total_ni: 740.0e3
@@ -30,21 +30,21 @@ atmosphere_processes:
       w2tune: 1.0
       length_fac: 0.5
       c_diag_3rd_mom: 7.0
-      Ckh: 0.1
-      Ckm: 0.1
+      coeff_kh: 0.1
+      coeff_km: 0.1
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [Physics GLL]
-  Physics GLL:
-    aliases: [Physics]
+  grids_names: [physics_gll]
+  physics_gll:
+    aliases: [physics]
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:   72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height: 25.0
   phis : 0.1
@@ -71,6 +71,6 @@ initial_conditions:
   hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

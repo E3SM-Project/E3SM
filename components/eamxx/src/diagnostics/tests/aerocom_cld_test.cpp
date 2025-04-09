@@ -13,10 +13,10 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names", vos_t{"point_grid"});
+  auto &pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
+  pl.set("aliases", vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -48,7 +48,7 @@ TEST_CASE("aerocom_cld") {
   int ndiags = aercom_util.size;
 
   auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
@@ -115,10 +115,10 @@ TEST_CASE("aerocom_cld") {
   ekat::ParameterList params;
 
   REQUIRE_THROWS(
-      diag_factory.create("AeroComCld", comm, params));  // No 'AeroComCld Kind'
-  params.set<std::string>("AeroComCld Kind", "Foo");
+      diag_factory.create("AeroComCld", comm, params));  // No 'aero_com_cld_kind'
+  params.set<std::string>("aero_com_cld_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
-                                     params));  // Invalid 'AeroComCld Kind'
+                                     params));  // Invalid 'aero_com_cld_kind'
 
   constexpr int ntests = 3;
   for(int itest = 0; itest < ntests; ++itest) {
@@ -136,7 +136,7 @@ TEST_CASE("aerocom_cld") {
     randomize(ni, engine, pdf);
 
     // Create and set up the diagnostic
-    params.set<std::string>("AeroComCld Kind", "Top");
+    params.set<std::string>("aero_com_cld_kind", "Top");
     auto diag = diag_factory.create("AeroComCld", comm, params);
 
     diag->set_grids(gm);

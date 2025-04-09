@@ -2,12 +2,12 @@
 ---
 filename_prefix: eamxx_output.decadal.3hourlyINST_coarse.h
 iotype: pnetcdf
-Averaging Type: Instant
-Max Snapshots Per File: 8  # one file per day
+averaging_type: instant
+max_snapshots_per_file: 8  # one file per day
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
-Fields:
-  Physics PG2:
-    Field Names:
+fields:
+  physics_pg2:
+    field_names:
     # 2D vars for storm analysis
     - SeaLevelPressure
     - U_at_model_bot
@@ -61,8 +61,7 @@ Fields:
     - U
     - V
 output_control:
-  Frequency: 3
+  frequency: 3
   frequency_units: nhours
-  MPI Ranks in Filename: false
-Restart:
+restart:
   force_new_file: true

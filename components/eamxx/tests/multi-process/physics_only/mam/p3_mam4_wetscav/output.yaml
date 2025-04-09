@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: p3_mam4_wetscav_output
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   - cldfrac_liq
   - bc_a1
   - bc_a3
@@ -61,6 +61,6 @@ Field Names:
   - wetdens
   - qaerwat
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...
