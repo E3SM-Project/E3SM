@@ -280,7 +280,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 }
 
 
-void MassAndEnergyColumnConservationCheck::global_fixer() const
+void MassAndEnergyColumnConservationCheck::global_fixer()
 {
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;

@@ -7,6 +7,7 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_workspace.hpp"
+#include "physics/p3/p3_functions.hpp"
 
 #include <string>
 
@@ -42,6 +43,17 @@ class HommeDynamics : public AtmosphereProcess
 
   using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
   using Workspace = WorkspaceMgr::Workspace;
+
+  using P3F          = p3::Functions<Real, DefaultDevice>;
+  using view_1d_horiz  = typename P3F::view_1d<Real>;
+
+public:
+
+  bool          has_energy_fixer_local = false;
+  view_1d_horiz       vapor_flux;
+  view_1d_horiz       water_flux;
+  view_1d_horiz       ice_flux;
+  view_1d_horiz       heat_flux;
 
 public:
 
@@ -138,6 +150,9 @@ protected:
                             const std::vector<FieldTag>& tags,
                             const std::vector<int>& dims,
                             const std::string& grid);
+
+  void set_fluxes_pointers(const view_1d_horiz& vapor_flux_, const view_1d_horiz& water_flux_,
+                                     const view_1d_horiz& ice_flux_, const view_1d_horiz& heat_flux_);
 
   // Some helper fields.
   std::map<std::string,Field>  m_helper_fields;

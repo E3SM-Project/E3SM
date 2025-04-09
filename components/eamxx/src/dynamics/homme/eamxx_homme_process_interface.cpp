@@ -259,13 +259,25 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   const auto& grid_name = m_phys_grid->name();
   // Boundary flux fields for energy and mass conservation checks
   if (has_energy_fixer()) {
+//do we need this var?
+    has_energy_fixer_local = true;
     add_field<Computed>("vapor_flux", pg_scalar2d, kg/(m2*s), grid_name);
     add_field<Computed>("water_flux", pg_scalar2d, m/s,     grid_name);
     add_field<Computed>("ice_flux",   pg_scalar2d, m/s,     grid_name);
     add_field<Computed>("heat_flux",  pg_scalar2d, W/m2,    grid_name);
   }
 
+}//set_grids
+
+
+void HommeDynamics::set_fluxes_pointers(const view_1d_horiz& vapor_flux_, const view_1d_horiz& water_flux_,
+                                     const view_1d_horiz& ice_flux_, const view_1d_horiz& heat_flux_){
+      vapor_flux = vapor_flux_;
+      water_flux = water_flux_;
+      ice_flux   = ice_flux_;
+      heat_flux  = heat_flux_;
 }
+
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
@@ -493,11 +505,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
     const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
     const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
-    p3_postproc.set_mass_and_energy_fluxes(vapor_flux, water_flux, ice_flux, heat_flux);
+    set_fluxes_pointers(vapor_flux, water_flux, ice_flux, heat_flux);
   }
 
-
-}
+}//initialize_impl
 
 void HommeDynamics::run_impl (const double dt)
 {
