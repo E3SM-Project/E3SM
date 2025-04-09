@@ -155,7 +155,7 @@ subroutine relhum_ice_percent( ncol, pver, tair, pair, qv,  rhi_percent )
 
 end subroutine relhum_ice_percent
 
-subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
+subroutine compute_cape_diags( state, pbuf, pcols, pver, pverp, cape_out, dcape_out )
 !-------------------------------------------------------------------------------------------
 ! Purpose: 
 ! - CAPE, the convecitve available potential energy
@@ -177,6 +177,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
   type(physics_state),intent(in),target:: state
   type(physics_buffer_desc),pointer    :: pbuf(:)
   integer,                  intent(in) :: pver
+  integer,                  intent(in) :: pverp
   integer,                  intent(in) :: pcols
 
   real(r8),                 intent(out) ::  cape_out(pcols)
@@ -291,7 +292,8 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
   ! and T, qv values at (new) launching level
   !------------------------------------------------------------------------
   iclosure = .true.
-  call compute_dilute_cape( ncol, zm_param%num_cin, msg,      &
+  call compute_dilute_cape( pcols, ncol, pver, pverp,         &
+                            zm_param%num_cin, msg,            &
                             qv_new, temp_new,                 &
                             zmid_above_sealevel,              &
                             pmid_in_hPa, pint_in_hPa,         &
@@ -300,7 +302,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
                             cape_new_pcl_new_env,             &
                             zm_const, zm_param,               &
                             iclosure,                         &
-                            use_input_parcel_tq = .false.,    &
+                            use_input_tq_mx = .false.,        &
                             q_mx = q_mx_new,                  &
                             t_mx = t_mx_new                   )
 
@@ -315,16 +317,15 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
     !-----------------------------------------------------------------
     ! dCAPE is the difference between the new CAPE calculated above 
     ! and the old CAPE retrieved from pbuf
-
      dcape_out(:ncol,1) = cape_new_pcl_new_env(:ncol) - cape_old_pcl_old_env(:ncol)
 
     !-----------------------------------------------------------------
     ! Calculate cape_old_pcl_new_env using
     !  - new state (T, qv profiles)
     !  - old launching level and parcel T, qv
-
     iclosure = .true.
-    call compute_dilute_cape( ncol, zm_param%num_cin, msg,      &
+    call compute_dilute_cape( pcols, ncol, pver, pverp,         &
+                              zm_param%num_cin, msg,            &
                               qv_new, temp_new,                 &
                               zmid_above_sealevel,              &
                               pmid_in_hPa, pint_in_hPa,         &
@@ -334,7 +335,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
                               zm_const, zm_param,               &
                               iclosure,                         &
                               dcapemx = mx_old,                 &
-                              use_input_parcel_tq = .true.,     &
+                              use_input_tq_mx = .true.,         &
                               q_mx = q_mx_old,                  &
                               t_mx = t_mx_old                   )
 
