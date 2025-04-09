@@ -762,6 +762,14 @@ contains
          !  endif
           ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not
           ! needed to be on joint comm anymore for the second hop
+               ! for r2o maps maps, we need to have many layers of ghosts on source
+          nghlay = 40  ! number of ghost layers at least 
+          nghlay_tgt = 0
+          ierr   = iMOAB_SetMapGhostLayers( mbintxro, nghlay, nghlay_tgt )
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in setting the number of ghost layers'
+             call shr_sys_abort(subname//' error in setting the number of ghost layers')
+          endif
 
           ! need to compute coverage of rof over ocean, and comm graph for sending from rof to rof over ocean
           ierr = iMOAB_ComputeCoverageMesh( mbrxid, mboxid, mbintxro )
