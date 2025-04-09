@@ -23,4 +23,7 @@ add_subdirectory(nudging)
 if (SCREAM_ENABLE_MAM)
   add_subdirectory(mam)
 endif()
+if (EAMXX_ENABLE_ACE)
+  add_subdirectory(ace)
+endif()
 
