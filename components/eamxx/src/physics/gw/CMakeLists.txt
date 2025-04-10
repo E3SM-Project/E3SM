@@ -9,6 +9,12 @@ set(GW_SRCS
   gw_iso_c.f90
 )
 
+# Add ETI source files if not on CUDA/HIP
+if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
+  list(APPEND GW_SRCS
+  ) # GW ETI SRCS
+endif()
+
 add_library(gw ${GW_SRCS})
 set_target_properties(gw PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
