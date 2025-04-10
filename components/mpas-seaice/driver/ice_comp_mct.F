@@ -412,6 +412,17 @@ contains
     domain % namelist_filename = 'mpassi_in' // trim(inst_suffix)
     domain % streams_filename = 'streams.seaice' // trim(inst_suffix)
 
+    ! open the log for pe0 before reading the namelist
+    if (iam == 0) then
+       domain % logInfo % outputLog % isActive = .true.
+       call mpas_log_open(err=ierr)
+       if ( ierr /= 0 ) then
+          write(iceLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+          call mpas_dmpar_abort(domain % dminfo)
+       end if
+       call mpas_log_write('Reading namelist from file '//trim(domain % namelist_filename))
+    endif
+
     ! Setup namelist variables, and read the namelist
     ierr = domain % core % setup_namelist(domain % configs, domain % namelist_filename, domain % dminfo)
     if ( ierr /= 0 ) then
@@ -422,19 +433,18 @@ contains
     ! Disable output from all but the master task for E3SM unless specified otherwise by config_create_all_logs_in_e3sm
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     call mpas_pool_get_config(domain % configs, 'config_create_all_logs_in_e3sm', config_create_all_logs_in_e3sm)
-    if (config_create_all_logs_in_e3sm) then
-       domain % logInfo % outputLog % isActive = .true.
-    else
-       if (iam /= 0) then
-          domain % logInfo % outputLog % isActive = .false.
-       endif
-    endif
+    if (iam /= 0) then
+       domain % logInfo % outputLog % isActive = .false.
+       if (config_create_all_logs_in_e3sm) then
+          domain % logInfo % outputLog % isActive = .true.
+       end if
 
-    ! After core has had a chance to modify log defaults, open the output log
-    call mpas_log_open(err=ierr)
-    if ( ierr /= 0 ) then
-       write(iceLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
-       call mpas_dmpar_abort(domain % dminfo)
+       ! After core has had a chance to modify log defaults, open the output log
+       call mpas_log_open(err=ierr)
+       if ( ierr /= 0 ) then
+          write(iceLogUnit,*) 'ERROR: log open failed for core ' // trim(domain % core % coreName)
+          call mpas_dmpar_abort(domain % dminfo)
+       end if
     end if
     ! ===========
 

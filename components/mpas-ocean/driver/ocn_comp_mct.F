@@ -421,13 +421,12 @@ contains
     ! Disable output from all but the master task for E3SM unless specified otherwise by config_create_all_logs_in_e3sm
     ! (This overrides the default set by mpas_log_init based on MPAS_DEBUG setting.)
     call mpas_pool_get_config(domain_ptr % configs, 'config_create_all_logs_in_e3sm', config_create_all_logs_in_e3sm)
-    if (config_create_all_logs_in_e3sm) then
+    domain % logInfo % outputLog % isActive = .false.
+    if (iam == 0) then
        domain % logInfo % outputLog % isActive = .true.
-    else
-       if (iam /= 0) then
-          domain % logInfo % outputLog % isActive = .false.
-       endif
-    endif
+    else if (config_create_all_logs_in_e3sm) then
+       domain % logInfo % outputLog % isActive = .true.
+    end if
 
     ! After core has had a chance to modify log defaults, open the output log
     call mpas_log_open(err=ierr)

@@ -549,7 +549,6 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "      use mpas_pool_routines\n");
 	fortprintf(fd2, "      use mpas_io_units\n");
 	fortprintf(fd2, "      use mpas_abort, only : mpas_dmpar_global_abort\n");
-	fortprintf(fd2, "      use mpas_log, only : mpas_log_write\n");
 	fortprintf(fd2, "      implicit none\n");
 	fortprintf(fd2, "      type (mpas_pool_type), intent(inout) :: configPool\n");
 	fortprintf(fd2, "      character (len=*), intent(in) :: namelistFilename\n");
@@ -561,7 +560,6 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "\n");
 	fortprintf(fd2, "      iErr = 0\n");
 	fortprintf(fd2, "      unitNumber = 21\n");
-	fortprintf(fd2, "      call mpas_log_write('Reading namelist from file '//trim(namelistFilename))\n");
 	fortprintf(fd2, "      inquire(file=trim(namelistFilename), exist=nmlExists)\n");
 	fortprintf(fd2, "      if ( .not. nmlExists ) then\n");
 	fortprintf(fd2, "         call mpas_dmpar_global_abort('ERROR: Namelist file '//trim(namelistFilename)//' does not exist.')\n");
@@ -688,32 +686,6 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 				fortprintf(fd, "         call mpas_dmpar_bcast_char(dminfo, %s)\n", nmloptname);
 			}
 		}
-		fortprintf(fd, "         if (ierr < 0) then\n");
-		fortprintf(fd, "            call mpas_log_write('*** Encountered an issue while attempting to read namelist record %s')\n", nmlrecname);
-		fortprintf(fd, "            call mpas_log_write('    The following values will be used for variables in this record:')\n");
-		fortprintf(fd, "            call mpas_log_write(' ')\n");
-		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
-			nmloptname = ezxml_attr(nmlopt_xml, "name");
-			nmlopttype = ezxml_attr(nmlopt_xml, "type");
-
-			if (strncmp(nmlopttype, "character", 1024) == 0) {
-				fortprintf(fd, "            call mpas_log_write('        %s = '//mpas_log_escape_dollars(%s))\n", nmloptname, nmloptname);
-			}
-			else if (strncmp(nmlopttype, "integer", 1024) == 0) {
-				fortprintf(fd, "            call mpas_log_write('        %s = $i', intArgs=(/%s/))\n", nmloptname, nmloptname);
-			}
-			else if (strncmp(nmlopttype, "real", 1024) == 0) {
-				fortprintf(fd, "            call mpas_log_write('        %s = $r', realArgs=(/%s/))\n", nmloptname, nmloptname);
-			}
-			else if (strncmp(nmlopttype, "logical", 1024) == 0) {
-				fortprintf(fd, "            call mpas_log_write('        %s = $l', logicArgs=(/%s/))\n", nmloptname, nmloptname);
-			}
-			else {
-				fortprintf(fd, "            call mpas_log_write('        %s = <unhandled namelist type>')\n", nmloptname);
-			}
-		}
-		fortprintf(fd, "            call mpas_log_write(' ')\n");
-		fortprintf(fd, "         end if\n");
 		fortprintf(fd, "      else if (ierr > 0) then\n");
 		fortprintf(fd, "         call mpas_log_write('Error while reading namelist record %s.', MPAS_LOG_CRIT)\n", nmlrecname);
 		fortprintf(fd, "      end if\n");
