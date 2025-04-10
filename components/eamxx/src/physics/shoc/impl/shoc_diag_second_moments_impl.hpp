@@ -75,6 +75,10 @@ void Functions<S,D>::diag_second_moments(
     const Int nlev_pack = ekat::npack<Spack>(nlev);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
       w_sec(k) = 0;
+    });
+
+    const Int nlevi_pack = ekat::npack<Spack>(nlevi);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevi_pack), [&] (const Int& k) {
       thl_sec(k) = 0;
       qw_sec(k) = 0;
       qwthl_sec(k) = 0;
