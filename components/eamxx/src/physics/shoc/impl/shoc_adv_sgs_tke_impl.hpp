@@ -18,7 +18,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Real&                  dtime,
-  const bool&                  shoc_nosgs_var,
+  const bool&                  shoc_1p5tke,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& sterm_zt,
@@ -47,7 +47,7 @@ void Functions<S,D>
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute buoyant production term
-    if (shoc_nosgs_var){
+    if (shoc_1p5tke){
        // If there is no SGS variability the buoyant production term is closed
        //   as a function of the local moist brunt vaisalla frequency.
        a_prod_bu = -tke(k)*brunt(k);

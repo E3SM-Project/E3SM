@@ -14,7 +14,7 @@ void Functions<S,D>
   const Int& nlev,
   const Int& nlevi,
   const Scalar& c_diag_3rd_mom,
-  const bool& shoc_nosgs_var,
+  const bool& shoc_1p5tke,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& wthl_sec,
@@ -81,7 +81,7 @@ void Functions<S,D>
     if (active_range.any()) {
 
       // If no SGS variability then set to zero everywhere, otherwise compute w3
-      if (shoc_nosgs_var){
+      if (shoc_1p5tke){
           w3(k).set(active_range,0);
       }
       else{

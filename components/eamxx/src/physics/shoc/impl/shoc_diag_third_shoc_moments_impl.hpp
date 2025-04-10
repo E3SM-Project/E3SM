@@ -18,7 +18,7 @@ void Functions<S,D>::diag_third_shoc_moments(
   const Int&                   nlev,
   const Int&                   nlevi,
   const Scalar&                c_diag_3rd_mom,
-  const bool&                  shoc_nosgs_var,
+  const bool&                  shoc_1p5tke,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& wthl_sec,
@@ -51,7 +51,7 @@ void Functions<S,D>::diag_third_shoc_moments(
   team.team_barrier();
 
   // Diagnose the third moment of the vertical-velocity
-  compute_diag_third_shoc_moment(team,nlev,nlevi,c_diag_3rd_mom,shoc_nosgs_var,w_sec,thl_sec,wthl_sec,
+  compute_diag_third_shoc_moment(team,nlev,nlevi,c_diag_3rd_mom,shoc_1p5tke,w_sec,thl_sec,wthl_sec,
                                  tke, dz_zt, dz_zi,isotropy_zi, brunt_zi,
                                  w_sec_zi,thetal_zi,w3);
   team.team_barrier();

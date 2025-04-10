@@ -15,7 +15,7 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::diag_second_moments(
   const MemberType& team, const Int& nlev, const Int& nlevi,
-  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& shoc_nosgs_var,
+  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& shoc_1p5tke,
   const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
   const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
   const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -71,7 +71,7 @@ void Functions<S,D>::diag_second_moments(
   // If there is no SGS variability desired then set the following variances
   //  and covariances to zero.  Doing so, in conjunction with setting w3 to zero
   //  will ensure that SHOC condensation reduces to an all-or-nothing scheme.
-  if (shoc_nosgs_var){
+  if (shoc_1p5tke){
     const Int nlev_pack = ekat::npack<Spack>(nlev);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
       w_sec(k) = 0;

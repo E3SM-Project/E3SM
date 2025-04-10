@@ -13,7 +13,7 @@ void Functions<S,D>
   const MemberType&            team,
   const Int&                   nlev,
   const Scalar&                length_fac,
-  const bool&                  shoc_nosgs_var,
+  const bool&                  shoc_1p5tke,
   const uview_1d<const Spack>& tke,
   const uview_1d<const Spack>& brunt,
   const uview_1d<const Spack>& zt_grid,
@@ -33,7 +33,7 @@ void Functions<S,D>
     const Spack tkes = ekat::sqrt(tke(k));
     const Spack brunt2 = ekat::max(0, brunt(k));
 
-   if (shoc_nosgs_var){
+   if (shoc_1p5tke){
         shoc_mix(k) = dz_zt(k);
         const auto stable_mask = brunt(k) > 0;
         if (stable_mask.any()){
