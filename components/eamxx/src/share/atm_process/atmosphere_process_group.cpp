@@ -20,13 +20,13 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (m_params.get<std::string>("schedule_type") == "Sequential") {
+    if (m_params.get<std::string>("schedule_type") == "sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (m_params.get<std::string>("schedule_type") == "Parallel") {
+    } else if (m_params.get<std::string>("schedule_type") == "parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
       ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'Parallel' and 'Sequential'.\n");
+      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -70,10 +70,10 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     auto& params_i = m_params.sublist(ap_name);
 
     // Get type (defaults to name)
-    const auto& ap_type = params_i.get<std::string>("Type",ap_name);
+    const auto& ap_type = params_i.get<std::string>("type",ap_name);
 
     // Set logger in this ap params
-    params_i.set("Logger",this->m_atm_logger);
+    params_i.set("logger",this->m_atm_logger);
 
     // Create the atm proc
     auto ap = apf.create(ap_type,proc_comm,params_i);
@@ -336,7 +336,7 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
 
       for (const auto& g : proc->get_groups_out()) {
         const auto& grid = m_grids_mgr->get_grid(g.grid_name());
-        for (const auto& f : g.m_fields) {
+        for (const auto& f : g.m_individual_fields) {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
@@ -364,9 +364,82 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
   }
 }
 
+void AtmosphereProcessGroup::pre_process_tracer_requests () {
+  // Create map from tracer name to a vector which contains the field requests for that tracer.
+  std::map<std::string, std::list<FieldRequest>> tracer_requests;
+  auto gather_tracer_requests = [&] (FieldRequest& req) {
+    if (ekat::contains(req.groups, "tracers")) {
+      tracer_requests[req.fid.name()].push_back(req);
+    }
+  };
+  for (auto& req : m_required_field_requests){
+    gather_tracer_requests(req);
+  }
+  for (auto& req : m_computed_field_requests) {
+    gather_tracer_requests(req);
+  }
+
+  // Go through the map entry for each tracer and check that every one
+  // has the same request for turbulence advection, or listed no preference.
+  std::map<std::string, std::string> tracer_advection_type;
+  for (auto& fr : tracer_requests) {
+    auto& reqs = fr.second;
+
+    bool turb_advect_req = false;
+    bool non_turb_advect_req = false;
+    for (auto& req : reqs) {
+      if (ekat::contains(req.groups, "turbulence_advected_tracers")) turb_advect_req = true;
+      if (ekat::contains(req.groups, "non_turbulence_advected_tracers")) non_turb_advect_req = true;
+      if (turb_advect_req and non_turb_advect_req) {
+        // All the info we need to error out, just break request loop
+        break;
+      }
+    }
+
+    if (turb_advect_req and non_turb_advect_req) {
+      std::ostringstream ss;
+      ss << "Error! Incompatible tracer request. Turbulence advection requests not consistent among processes.\n"
+            "  - Tracer name: " + fr.first + "\n"
+            "  - Requests (process name, grid name, turbulence advected request type):\n";
+      for (auto& req : reqs) {
+        const auto turb_advect = ekat::contains(req.groups, "turbulence_advected_tracers");
+        const auto non_turb_advect = ekat::contains(req.groups, "non_turbulence_advected_tracers");
+        std::string turb_advect_info =
+          (turb_advect ?       "DynamicsAndTurbulence" :
+            (non_turb_advect ? "DynamicsOnly" :
+                                "NoPreference"));
+        const auto grid_name = req.fid.get_grid_name();
+        ss << "    - (" + req.calling_process + ", " + grid_name + ", " + turb_advect_info + ")\n";
+      }
+      EKAT_ERROR_MSG(ss.str());
+    } else if (non_turb_advect_req) {
+      tracer_advection_type[fr.first] = "non_turbulence_advected_tracers";
+    } else {
+      tracer_advection_type[fr.first] = "turbulence_advected_tracers";
+    }
+  }
+
+  // Set correct tracer advection type (if not set)
+  auto add_correct_tracer_group = [&] (FieldRequest& req, const std::string& advect_type) {
+    if (not ekat::contains(req.groups, advect_type)) {
+      req.groups.push_back(advect_type);
+    }
+  };
+  for (auto& req : m_required_field_requests){
+    if (ekat::contains(req.groups, "tracers")) {
+      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
+    }
+  }
+  for (auto& req : m_computed_field_requests) {
+    if (ekat::contains(req.groups, "tracers")) {
+      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
+    }
+  }
+}
+
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->initialize(timestamp(),run_type);
+    atm_proc->initialize(start_of_step_ts(),run_type);
 #ifdef SCREAM_HAS_MEMORY_USAGE
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
@@ -385,10 +458,6 @@ void AtmosphereProcessGroup::run_impl (const double dt) {
 }
 
 void AtmosphereProcessGroup::run_sequential (const double dt) {
-  // Get the timestamp at the beginning of the step and advance it.
-  auto ts = timestamp();
-  ts += dt;
-
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
   //  - nobody from outside told this APG to not update timestamps
@@ -523,7 +592,7 @@ set_required_group (const FieldGroup& group) {
   // NOTE: we still check also the groups computed by the previous procs,
   //       in case they contain some of the fields in this group.
   std::set<std::string> computed;
-  for (const auto& it : group.m_fields) {
+  for (const auto& it : group.m_individual_fields) {
     const auto& fn = it.first;
     const auto& fid = it.second->get_header().get_identifier();
     for (int iproc=0; iproc<first_proc_that_needs_group; ++iproc) {

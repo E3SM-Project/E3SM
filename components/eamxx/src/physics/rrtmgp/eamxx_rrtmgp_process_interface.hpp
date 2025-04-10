@@ -2,7 +2,7 @@
 #define SCREAM_RRTMGP_RADIATION_HPP
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/util/ekat_string_utils.hpp"

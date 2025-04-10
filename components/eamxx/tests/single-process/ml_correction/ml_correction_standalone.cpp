@@ -28,8 +28,8 @@ TEST_CASE("ml_correction-stand-alone", "") {
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
   const auto  ml     = ad_params.sublist("atmosphere_processes").sublist("MLCorrection");
-  const auto  ML_model_tq_path = ml.get<std::string>("ML_model_path_tq");
-  const auto  ML_model_uv_path = ml.get<std::string>("ML_model_path_uv");
+  const auto  ML_model_tq_path = ml.get<std::string>("ml_model_path_tq");
+  const auto  ML_model_uv_path = ml.get<std::string>("ml_model_path_uv");
 
   EKAT_ASSERT_MSG(dt > 0, "Error! Time step must be positive.\n");
 
@@ -42,8 +42,8 @@ TEST_CASE("ml_correction-stand-alone", "") {
 
   ad.initialize(atm_comm, ad_params, t0);
 
-  const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& grid = ad.get_grids_manager()->get_grid("physics");
+  const auto& field_mgr = *ad.get_field_mgr();
 
   int num_cols = grid->get_num_local_dofs();
   int num_levs = grid->get_num_vertical_levels();
@@ -64,12 +64,12 @@ TEST_CASE("ml_correction-stand-alone", "") {
   ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
     py::initialize_interpreter();
-  }  
+  }
   py::module sys = pybind11::module::import("sys");
   sys.attr("path").attr("insert")(1, CUSTOM_SYS_PATH);
   auto py_correction = py::module::import("test_correction");
   py::object ML_model_tq = py_correction.attr("get_ML_model")(ML_model_tq_path);
-  py::object ML_model_uv = py_correction.attr("get_ML_model")(ML_model_uv_path);  
+  py::object ML_model_uv = py_correction.attr("get_ML_model")(ML_model_uv_path);
   py::object ob1  = py_correction.attr("modify_view")(
       py::array_t<Real, py::array::c_style | py::array::forcecast>(
           num_cols * num_levs, qv.data(), py::str{}),

@@ -1,8 +1,8 @@
 #include "diagnostics/vertical_layer.hpp"
 
 #include "physics/share/physics_constants.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 namespace scream
 {
@@ -45,7 +45,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto m2 = pow(m,2);
   auto s2 = pow(s,2);
 
-  auto grid  = grids_manager->get_grid("Physics");
+  auto grid  = grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column

@@ -1,8 +1,8 @@
 #ifndef P3_UNIT_TESTS_COMMON_HPP
 #define P3_UNIT_TESTS_COMMON_HPP
 
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "p3_functions.hpp"
 #include "p3_data.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
@@ -83,7 +83,7 @@ struct UnitWrap {
         m_baseline_action(NONE),
         m_fid()
       {
-        Functions::p3_init(); // many tests will need fortran table data
+        Functions::p3_init(); // many tests will need table data
         auto& ts = ekat::TestSession::get();
         if (ts.flags["c"]) {
           m_baseline_action = COMPARE;
@@ -108,10 +108,7 @@ struct UnitWrap {
         }
       }
 
-      ~Base()
-      {
-        scream::p3::P3GlobalForFortran::deinit();
-      }
+      ~Base() {}
 
       std::mt19937_64 get_engine()
       {

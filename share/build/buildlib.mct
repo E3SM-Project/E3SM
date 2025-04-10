@@ -101,6 +101,8 @@ def buildlib(bldroot, installpath, case):
         netcdf_args = f"NETCDF_PATH={os.environ['NETCDF_PATH']} "
     elif "NETCDF_C_PATH" in os.environ:
         netcdf_args = f"NETCDF_PATH={os.environ['NETCDF_C_PATH']} "
+    else:
+        netcdf_args = f" "
 
     config_cmd = f"{mct_path}/configure CC={cc} FC={fc} MPICC={mcc} MPIFC={mfc} FCFLAGS='{fflags}' CPPDEFS='{cppdefs}' CFLAGS='{cflags}' LDFLAGS='{ldflags}' {config_args} {netcdf_args} --srcdir {mct_path}"
 

@@ -2,8 +2,8 @@
 
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -360,7 +360,7 @@ TEST_CASE("coarsening_remap")
   };
   for (int irun=0; irun<5; ++irun) {
     root_print (" -> Run " + std::to_string(irun) + "\n",comm);
-    remap->remap(true);
+    remap->remap_fwd();
 
     // Recall, tgt gid K should be the avg of local src_gids
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {

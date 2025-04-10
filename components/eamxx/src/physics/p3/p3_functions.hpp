@@ -3,7 +3,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/ekat_pack_kokkos.hpp"
 #include "ekat/ekat_workspace.hpp"
@@ -123,6 +123,7 @@ struct Functions
     Scalar rain_selfcollection_breakup_diameter = 0.00028;
     Scalar constant_mu_rain = 1.0;
     Scalar spa_ccn_to_nc_factor = 1.0;
+    Scalar spa_ccn_to_nc_exponent = 1.0;
     Scalar cldliq_to_ice_collection_factor = 0.5;
     Scalar rain_to_ice_collection_factor = 1.0;
     Scalar min_rime_rho = 50.0;
@@ -131,6 +132,11 @@ struct Functions
     Scalar deposition_nucleation_exponent = 0.304;
     Scalar ice_sedimentation_factor = 1.0;
     bool do_ice_production = true;
+    bool set_cld_frac_l_to_one = false;
+    bool set_cld_frac_i_to_one = false;
+    bool set_cld_frac_r_to_one = false;
+    bool use_hetfrz_classnuc   = false;
+    bool use_separate_ice_liq_frac = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -145,6 +151,7 @@ struct Functions
       rain_selfcollection_breakup_diameter = params.get<double>("rain_selfcollection_breakup_diameter", rain_selfcollection_breakup_diameter);
       constant_mu_rain = params.get<double>("constant_mu_rain", constant_mu_rain);
       spa_ccn_to_nc_factor = params.get<double>("spa_ccn_to_nc_factor", spa_ccn_to_nc_factor);
+      spa_ccn_to_nc_exponent = params.get<double>("spa_ccn_to_nc_exponent", spa_ccn_to_nc_exponent);
       cldliq_to_ice_collection_factor = params.get<double>("cldliq_to_ice_collection_factor", cldliq_to_ice_collection_factor);
       rain_to_ice_collection_factor = params.get<double>("rain_to_ice_collection_factor", rain_to_ice_collection_factor);
       min_rime_rho = params.get<double>("min_rime_rho", min_rime_rho);
@@ -153,6 +160,11 @@ struct Functions
       deposition_nucleation_exponent = params.get<double>("deposition_nucleation_exponent", deposition_nucleation_exponent);
       ice_sedimentation_factor = params.get<double>("ice_sedimentation_factor", ice_sedimentation_factor);
       do_ice_production = params.get<bool>("do_ice_production", do_ice_production);
+      set_cld_frac_l_to_one = params.get<bool>("set_cld_frac_l_to_one", set_cld_frac_l_to_one);
+      set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
+      set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
+      use_hetfrz_classnuc   = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
+      use_separate_ice_liq_frac = params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
     }
 
   };
@@ -211,6 +223,12 @@ struct Functions
     view_2d<const Spack> qv_prev;
     // T from previous step [K]
     view_2d<const Spack> t_prev;
+    // Heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
+    view_2d<const Spack> hetfrz_immersion_nucleation_tend;
+    // Heterogeneous freezing by contact nucleation [cm^-3 s^-1]
+    view_2d<const Spack> hetfrz_contact_nucleation_tend;
+    // Heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
+    view_2d<const Spack> hetfrz_deposition_nucleation_tend;
   };
 
   // This struct stores diagnostic outputs computed by P3.
@@ -238,6 +256,8 @@ struct Functions
     view_2d<Spack> precip_total_tend;
     // Evaporation of total precipitation (rain + snow) [kg/kg/s]
     view_2d<Spack> nevapr;
+    // Equivalent radar reflectivity [dBz]
+    view_2d<Spack> diag_equiv_reflectivity;
   };
 
   // This struct stores time stepping and grid-index-related information.
@@ -349,16 +369,16 @@ struct Functions
   // --------- Functions ---------
   //
 
-  // Call from host to initialize the static table entries.
-  static void init_kokkos_tables(
+  // Call to get global tables
+  static void get_global_tables(
     view_2d_table& vn_table_vals, view_2d_table& vm_table_vals, view_2d_table& revap_table_vals,
     view_1d_table& mu_r_table_vals, view_dnu_table& dnu);
 
-  static void init_kokkos_ice_lookup_tables(
+  static void get_global_ice_lookup_tables(
     view_ice_table& ice_table_vals, view_collect_table& collect_table_vals);
 
-  static void p3_init(const bool write_tables = false,
-                      const bool masterproc = false);
+  static P3LookupTables p3_init(const bool write_tables = false,
+                                const bool masterproc = false);
 
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
@@ -379,8 +399,9 @@ struct Functions
                                    Spack& nc_collect_tend, Spack& ncshdc, Spack& nc2ni_immers_freeze_tend,
                                    Spack& nr_collect_tend, Spack& ni_selfcollect_tend, Spack& qv2qi_vapdep_tend,
                                    Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
-                                   Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
-                                   const Smask& context = Smask(true) );
+                                   Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend, Spack& ncheti_cnt, Spack& qcheti_cnt, 
+                                   Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt, Spack& qinuc_cnt, 
+                                   const Smask& context = Smask(true), const P3Runtime& runtime_options = {} );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
@@ -686,7 +707,8 @@ struct Functions
   static void cloud_water_conservation(const Spack& qc, const Scalar dt,
     Spack& qc2qr_autoconv_tend, Spack& qc2qr_accret_tend, Spack &qc2qi_collect_tend, Spack& qc2qi_hetero_freeze_tend,
     Spack& qc2qr_ice_shed_tend, Spack& qc2qi_berg_tend, Spack& qi2qv_sublim_tend, Spack& qv2qi_vapdep_tend,
-    const Smask& context = Smask(true) );
+    Spack& qcheti_cnt, Spack& qicnt, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true),
+    const Spack& cld_frac_l = Spack(), const Spack& cld_frac_i = Spack(), const P3Runtime& runtime_options = {} );
 
   KOKKOS_FUNCTION
   static void rain_water_conservation(
@@ -698,7 +720,8 @@ struct Functions
   static void ice_water_conservation(
     const Spack& qi,const Spack& qv2qi_vapdep_tend,const Spack& qv2qi_nucleat_tend,const Spack& qc2qi_berg_tend, const Spack &qr2qi_collect_tend,
     const Spack &qc2qi_collect_tend,const Spack& qr2qi_immers_freeze_tend,const Spack& qc2qi_hetero_freeze_tend,const Scalar dt,
-    Spack& qi2qv_sublim_tend, Spack& qi2qr_melt_tend,
+    Spack &qinuc_cnt, Spack &qcheti_cnt, Spack &qicnt,
+    Spack& qi2qv_sublim_tend, Spack& qi2qr_melt_tend, const bool& use_hetfrz_classnuc,
     const Smask& context = Smask(true) );
 
   // TODO: comment
@@ -746,6 +769,16 @@ struct Functions
     Spack& qr2qi_immers_freeze_tend, Spack& nr2ni_immers_freeze_tend,
     const P3Runtime& runtime_options,
     const Smask& context = Smask(true) );
+
+  // 
+  KOKKOS_FUNCTION
+  static void ice_classical_nucleation(const Spack& frzimm, const Spack& frzcnt,
+    const Spack& frzdep, const Spack& rho,
+    const Spack& qc_incld, const Spack& nc_incld,
+    const int Iflag,
+    Spack& ncheti_cnt, Spack& qcheti_cnt,
+    Spack& nicnt, Spack& qucnt,
+    Spack& ninuc_cnt, Spack& qinuc_cnt);
 
   // Computes droplet self collection
   KOKKOS_FUNCTION
@@ -813,8 +846,10 @@ struct Functions
     const Spack& qv2qi_vapdep_tend,  const Spack& qv2qi_nucleat_tend,  const Spack& ni_nucleat_tend,  const Spack& ni_selfcollect_tend,
     const Spack& ni_sublim_tend,  const Spack& qc2qi_berg_tend, const Spack& inv_exner,
     const bool do_predict_nc, const Smask& log_wetgrowth, const Scalar dt,
-    const Scalar& nmltratio, const Spack& rho_qm_cloud, Spack& th_atm, Spack& qv, Spack& qi,
-    Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr,
+    const Scalar& nmltratio, const Spack& rho_qm_cloud, 
+    Spack& ncheti_cnt, Spack& nicnt, Spack& ninuc_cnt, Spack& qcheti_cnt, Spack& qicnt, Spack& qinuc_cnt,  
+    Spack& th_atm, Spack& qv, Spack& qi,
+    Spack& ni, Spack& qm, Spack& bm, Spack& qc,  Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
     const Smask& context = Smask(true));
 
   // TODO (comments)
@@ -1122,6 +1157,9 @@ struct Functions
     const bool& do_prescribed_CCN,
     const Scalar& dt,
     const Scalar& inv_dt,
+    const uview_1d<const Spack>& ohetfrz_immersion_nucleation_tend,
+    const uview_1d<const Spack>& ohetfrz_contact_nucleation_tend,
+    const uview_1d<const Spack>& ohetfrz_deposition_nucleation_tend,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
     const view_collect_table& collect_table_vals,
@@ -1200,6 +1238,9 @@ struct Functions
     const bool& do_prescribed_CCN,
     const Scalar& dt,
     const Scalar& inv_dt,
+    const uview_2d<const Spack>& hetfrz_immersion_nucleation_tend,
+    const uview_2d<const Spack>& hetfrz_contact_nucleation_tend,
+    const uview_2d<const Spack>& hetfrz_deposition_nucleation_tend,
     const view_dnu_table& dnu,
     const view_ice_table& ice_table_vals,
     const view_collect_table& collect_table_vals,
@@ -1399,16 +1440,16 @@ struct Functions
 #endif
 
   KOKKOS_FUNCTION
-  static void ice_supersat_conservation(Spack& qidep, Spack& qinuc, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& t_atm, const Real& dt, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const Smask& context = Smask(true));
+  static void ice_supersat_conservation(Spack& qidep, Spack& qinuc, Spack& qinuc_cnt, const Spack& cld_frac_i, const Spack& qv, const Spack& qv_sat_i, const Spack& t_atm, const Real& dt, const Spack& qi2qv_sublim_tend, const Spack& qr2qv_evap_tend, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
-  static void nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Real& dt, Spack& nc_collect_tend, Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend, const Smask& context = Smask(true));
+  static void nc_conservation(const Spack& nc, const Spack& nc_selfcollect_tend, const Real& dt, Spack& nc_collect_tend, Spack& nc2ni_immers_freeze_tend, Spack& nc_accret_tend, Spack& nc2nr_autoconv_tend, Spack& ncheti_cnt, Spack& nicnt, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
   static void nr_conservation(const Spack& nr, const Spack& ni2nr_melt_tend, const Spack& nr_ice_shed_tend, const Spack& ncshdc, const Spack& nc2nr_autoconv_tend, const Real& dt, const Real& nmltratio, Spack& nr_collect_tend, Spack& nr2ni_immers_freeze_tend, Spack& nr_selfcollect_tend, Spack& nr_evap_tend, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
-  static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const Smask& context = Smask(true));
+  static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Spack& ncheti_cnt, const Spack& nicnt, const Spack& ninuc_cnt, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const bool& use_hetfrz_classnuc, const Smask& context = Smask(true));
 
   KOKKOS_FUNCTION
   static void prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Scalar& dt, const Spack& qidep, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context = Smask(true) );
@@ -1416,13 +1457,6 @@ struct Functions
 
 template <typename ScalarT, typename DeviceT>
 constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
-
-extern "C" {
-// decl of fortran function for loading tables from fortran p3. This will
-// continue to be a bit awkward until we have fully ported all of p3.
-void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
-                            Real* revap_table_vals_data, Real* mu_table_data);
-}
 
 } // namespace p3
 } // namespace scream
@@ -1442,6 +1476,7 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_rain_self_collection_impl.hpp"
 # include "p3_impose_max_total_ni_impl.hpp"
 # include "p3_calc_rime_density_impl.hpp"
+# include "p3_ice_classical_nucleation_impl.hpp"
 # include "p3_cldliq_imm_freezing_impl.hpp"
 # include "p3_droplet_self_coll_impl.hpp"
 # include "p3_cloud_sed_impl.hpp"

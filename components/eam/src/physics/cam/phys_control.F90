@@ -182,9 +182,6 @@ logical, public, protected :: use_od_ls = .false.
 logical, public, protected :: use_od_bl = .false.
 logical, public, protected :: use_od_ss = .false.
 logical, public, protected :: use_od_fd = .false.
-real(r8),public, protected :: od_ls_ncleff     = 3._r8 !tunable parameter for oGWD
-real(r8),public, protected :: od_bl_ncd        = 3._r8 !tunable parameter for FBD
-real(r8),public, protected :: od_ss_sncleff    = 1._r8 !tunable parameter for sGWD
 !
 ! Switches that turn on/off individual parameterizations.
 !
@@ -259,7 +256,6 @@ subroutine phys_ctl_readnl(nlfile)
       use_hetfrz_classnuc, use_gw_oro, use_gw_front, use_gw_convect, &
       use_gw_energy_fix, &
       use_od_ls,use_od_bl,use_od_ss,use_od_fd,&
-      od_ls_ncleff,od_bl_ncd,od_ss_sncleff,&
       cld_macmic_num_steps, micro_do_icesupersat, &
       fix_g1_err_ndrop, ssalt_tuning, resus_fix, convproc_do_aer, &
       convproc_do_gas, convproc_method_activate, liqcf_fix, regen_fix, demott_ice_nuc, pergro_mods, pergro_test_active, &
@@ -383,9 +379,6 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_od_bl,                       1 , mpilog,  0, mpicom)
    call mpibcast(use_od_ss,                       1 , mpilog,  0, mpicom)
    call mpibcast(use_od_fd,                       1 , mpilog,  0, mpicom)
-   call mpibcast(od_ls_ncleff,                    1 , mpilog,  0, mpicom)
-   call mpibcast(od_bl_ncd,                       1 , mpilog,  0, mpicom)
-   call mpibcast(od_ss_sncleff,                   1 , mpilog,  0, mpicom)
    call mpibcast(fix_g1_err_ndrop,                1 , mpilog,  0, mpicom)
    call mpibcast(ssalt_tuning,                    1 , mpilog,  0, mpicom)
    call mpibcast(resus_fix,                       1 , mpilog,  0, mpicom)

@@ -1054,6 +1054,19 @@
     </values>
   </entry>
 
+  <entry id="cpl_compute_maps_online" modify_via_xml="CPL_COMPUTE_MAPS_ONLINE">
+    <type>logical</type>
+    <category>expdef</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Logical to turn on computation of coupler maps online at runtime or if false, use the pre-computed
+      offline maps and read from disk.
+    </desc>
+    <values>
+      <value>$CPL_COMPUTE_MAPS_ONLINE</value>
+    </values>
+  </entry>
+
   <entry id="do_budgets" modify_via_xml="BUDGETS">
     <type>logical</type>
     <category>budget</category>

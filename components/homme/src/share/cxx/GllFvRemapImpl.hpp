@@ -39,7 +39,6 @@ struct GllFvRemapImpl {
   enum : int { num_lev_aligned = num_lev_pack*packn };
   enum : int { num_levp_aligned = max_num_lev_pack*packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
-  enum : int { num_work = 12 };
 
   typedef GllFvRemap::Phys1T Phys1T;
   typedef GllFvRemap::Phys2T Phys2T;
@@ -384,24 +383,7 @@ struct GllFvRemapImpl {
   // ||4 f(k) on k = 0:niter-1.
   template <typename Fn> KOKKOS_INLINE_FUNCTION static void
   team_parallel_for_with_linear_index (const MT& team, const int niter, const Fn& fn) {
-    using Kokkos::parallel_for;
-    // 2D -> 1D thread index space. Need to make vector dim the faster for
-    // coalesced memory access on the GPU. Kokkos doesn't expose the number of
-    // threads in a team, so we have to go to the lower-level API here.
-    const int nthr_per_team =
-#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
-      blockDim.x,
-#else
-      1,
-#endif
-      team_niter = (niter + nthr_per_team - 1)/nthr_per_team;
-    assert(OnGpu<ExecSpace>::value || nthr_per_team == 1);
-    parallel_for(Kokkos::TeamThreadRange(team, team_niter), [&] (const int team_idx) {
-      parallel_for(Kokkos::ThreadVectorRange(team, nthr_per_team), [&] (const int vec_idx) {
-        const int k = team_idx*nthr_per_team + vec_idx;
-        if (k >= niter) return;
-        fn(k);
-      }); });
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, niter), fn);
   }
 
   template <typename TTR, typename TVR, typename Fn>

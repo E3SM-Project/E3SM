@@ -4,9 +4,9 @@
 #include "control/surface_coupling_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
-#include "share/io/scream_output_manager.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
@@ -161,7 +161,7 @@ public:
   // NOTE: if already finalized, this is a no-op
   void finalize ();
 
-  field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
+  field_mgr_ptr get_field_mgr () const { return m_field_mgr; }
 
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
@@ -185,24 +185,13 @@ protected:
   void set_initial_conditions ();
   void restart_model ();
 
-  // Read fields from a file when the names of the fields in
-  // EAMxx do not match exactly with the .nc file. Example is
-  // for topography data files, where GLL and PG2 grid have
-  // different naming conventions for phis.
-  void read_fields_from_file (const std::vector<std::string>& field_names_nc,
-                              const std::vector<std::string>& field_names_eamxx,
+  // Read fields from a file
+  void read_fields_from_file (const std::vector<Field>& fields,
                               const std::shared_ptr<const AbstractGrid>& grid,
-                              const std::string& file_name,
-                              const util::TimeStamp& t0);
-  // Read fields from a file when the names of the fields in
-  // EAMxx match with the .nc file.
-  void read_fields_from_file (const std::vector<std::string>& field_names,
-                              const std::shared_ptr<const AbstractGrid>& grid,
-                              const std::string& file_name,
-                              const util::TimeStamp& t0);
+                              const std::string& file_name);
   void register_groups ();
 
-  std::map<std::string,field_mgr_ptr>       m_field_mgrs;
+  field_mgr_ptr                             m_field_mgr;
 
   std::shared_ptr<AtmosphereProcessGroup>   m_atm_process_group;
 
@@ -228,6 +217,7 @@ protected:
   util::TimeStamp                           m_run_t0;
   util::TimeStamp                           m_case_t0;
   RunType                                   m_run_type;
+  bool                                      m_branch_run = false;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;
@@ -264,6 +254,8 @@ protected:
 
   // Current simulation casename
   std::string m_casename;
+  // maps grid name to a vector of its initialized fields
+  std::map<std::string, std::vector<std::string>> m_fields_inited;
 };
 
 }  // namespace control

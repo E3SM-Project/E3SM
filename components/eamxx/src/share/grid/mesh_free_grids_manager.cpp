@@ -1,10 +1,9 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/grid/remap/do_nothing_remapper.hpp"
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -26,10 +25,11 @@ MeshFreeGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p)
 
 MeshFreeGridsManager::remapper_ptr_type
 MeshFreeGridsManager::
-do_create_remapper (const grid_ptr_type from_grid,
-                    const grid_ptr_type to_grid) const
+do_create_remapper (const grid_ptr_type /* from_grid */,
+                    const grid_ptr_type /* to_grid */) const
 {
-  return std::make_shared<DoNothingRemapper>(from_grid,to_grid);
+  EKAT_ERROR_MSG ("Error! MeshFreeGridsManager does not offer any remapper.\n");
+  return nullptr;
 }
 
 void MeshFreeGridsManager::
@@ -210,8 +210,8 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
 
   // Read lat/lon into host views
   ekat::ParameterList lat_lon_reader_pl;
-  lat_lon_reader_pl.set("Filename",filename);
-  lat_lon_reader_pl.set<std::vector<std::string>>("Field Names",{"lat","lon"});
+  lat_lon_reader_pl.set("filename",filename);
+  lat_lon_reader_pl.set<std::vector<std::string>>("field_names",{"lat","lon"});
 
   AtmosphereInput lat_lon_reader(lat_lon_reader_pl, grid, host_views, layouts);
   lat_lon_reader.read_variables();
@@ -272,8 +272,8 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
 
   // Read hyam/hybm into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",filename);
-  vcoord_reader_pl.set<std::vector<std::string>>("Field Names",{"hyam","hybm","hyai","hybi"});
+  vcoord_reader_pl.set("filename",filename);
+  vcoord_reader_pl.set<std::vector<std::string>>("field_names",{"hyam","hybm","hyai","hybi"});
 
   AtmosphereInput vcoord_reader(vcoord_reader_pl,grid, host_views, layouts);
   vcoord_reader.read_variables();
@@ -333,8 +333,8 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
     pl.set("number_of_vertical_levels",num_vertical_levels);
   }
   if (num_global_cols>0) {
-    grids_names.push_back("Point Grid");
-    auto& pl = gm_params.sublist("Point Grid");
+    grids_names.push_back("point_grid");
+    auto& pl = gm_params.sublist("point_grid");
     pl.set("type",std::string("point_grid"));
     pl.set("number_of_global_columns",num_global_cols);
     pl.set("number_of_vertical_levels",num_vertical_levels);

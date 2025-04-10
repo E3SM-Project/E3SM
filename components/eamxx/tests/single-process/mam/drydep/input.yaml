@@ -14,20 +14,21 @@ atmosphere_processes:
     # Fractional land use file
     drydep_remap_file: ""
     fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
+    create_fields_interval_checks: true
 
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [Physics GLL]
-  Physics GLL:
+  grids_names: [physics_gll]
+  physics_gll:
     type: point_grid
-    aliases: [Physics]
+    aliases: [physics]
     number_of_global_columns:   218
     number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   fraction_landuse: 0.2
   w_updraft: 1e-5
@@ -43,6 +44,6 @@ initial_conditions:
   wetdens: 0.15100083211582764E+004
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

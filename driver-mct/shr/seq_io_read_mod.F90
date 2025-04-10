@@ -147,6 +147,11 @@ contains
        name1 = trim(dname)
     endif
     rcode = pio_inq_varid(pioid,trim(name1),varid)
+    if (rcode/=0) then
+       write(logunit,*) subname,'ERROR: variable=',trim(name1),&
+            ' not found in file=',trim(filename)
+       call shr_sys_abort()
+    endif
     rcode = pio_get_var(pioid,varid,idata)
 
   end subroutine seq_io_read_int1d
@@ -270,6 +275,11 @@ contains
     endif
 
     rcode = pio_inq_varid(pioid,trim(name1),varid)
+    if (rcode/=0) then
+       write(logunit,*) subname,'ERROR: variable=',trim(name1),&
+            ' not found in file=',trim(filename)
+       call shr_sys_abort()
+    endif
     rcode = pio_get_var(pioid,varid,rdata)
 
   end subroutine seq_io_read_r81d
@@ -315,6 +325,11 @@ contains
     endif
 
     rcode = pio_inq_varid(pioid,trim(name1),varid)
+    if (rcode/=0) then
+       write(logunit,*) subname,'ERROR: variable=',trim(name1),&
+            ' not found in file=',trim(filename)
+       call shr_sys_abort()
+    endif
     rcode = pio_get_var(pioid,varid,charvar)
     rdata = trim(charvar)
 

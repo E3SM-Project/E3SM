@@ -88,129 +88,21 @@ HorizInterpRemapperBase::
   }
 }
 
-FieldLayout HorizInterpRemapperBase::
-create_src_layout (const FieldLayout& tgt_layout) const
+void HorizInterpRemapperBase::registration_ends_impl ()
 {
-  EKAT_REQUIRE_MSG (m_src_grid!=nullptr,
-      "Error! Cannot create source layout until the source grid has been set.\n");
-
-  EKAT_REQUIRE_MSG (is_valid_tgt_layout(tgt_layout),
-      "[HorizInterpRemapperBase] Error! Input target layout is not valid for this remapper.\n"
-      " - input layout: " + tgt_layout.to_string());
-
-  return create_layout (tgt_layout, m_src_grid);
-}
-
-FieldLayout HorizInterpRemapperBase::
-create_tgt_layout (const FieldLayout& src_layout) const
-{
-  EKAT_REQUIRE_MSG (m_tgt_grid!=nullptr,
-      "Error! Cannot create target layout until the target grid has been set.\n");
-
-  EKAT_REQUIRE_MSG (is_valid_src_layout(src_layout),
-      "[HorizInterpRemapperBase] Error! Input source layout is not valid for this remapper.\n"
-      " - input layout: " + src_layout.to_string());
-
-  return create_layout (src_layout, m_tgt_grid);
-}
-
-FieldLayout HorizInterpRemapperBase::
-create_layout (const FieldLayout& fl_in,
-               const grid_ptr_type& grid) const
-{
-        auto fl_out = FieldLayout::invalid();
-  using namespace ShortFieldTagsNames;
-  const bool midpoints = fl_in.has_tag(LEV);
-  std::vector<std::string> tdims_names;
-  std::string vdim_name;
-  switch (fl_in.type()) {
-    case LayoutType::Scalar0D: [[ fallthrough ]];
-    case LayoutType::Vector0D: [[ fallthrough ]];
-    case LayoutType::Tensor0D:
-      // 0d layouts are the same on all grids
-      fl_out = fl_in;
-      break;
-    case LayoutType::Scalar1D:
-      // 1d layouts require the grid correct number of levs
-      fl_out = grid->get_vertical_layout(midpoints);
-      break;
-    case LayoutType::Vector1D:
-      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
-      fl_out = grid->get_vertical_layout(midpoints,fl_in.get_vector_dim(),vdim_name);
-      break;
-    case LayoutType::Scalar2D:
-      fl_out = grid->get_2d_scalar_layout();
-      break;
-    case LayoutType::Vector2D:
-      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
-      fl_out = grid->get_2d_vector_layout(fl_in.get_vector_dim(),vdim_name);
-      break;
-    case LayoutType::Tensor2D:
-      for (auto idx  : fl_in.get_tensor_components_ids()) {
-        tdims_names.push_back(fl_in.names()[idx]);
-      }
-      fl_out = grid->get_2d_tensor_layout(fl_in.get_tensor_dims(),tdims_names);
-      break;
-    case LayoutType::Scalar3D:
-      fl_out = grid->get_3d_scalar_layout(midpoints);
-      break;
-    case LayoutType::Vector3D:
-      vdim_name = fl_in.names()[fl_in.get_vector_component_idx()];
-      fl_out = grid->get_3d_vector_layout(midpoints,fl_in.get_vector_dim(),vdim_name);
-      break;
-    case LayoutType::Tensor3D:
-      for (auto idx  : fl_in.get_tensor_components_ids()) {
-        tdims_names.push_back(fl_in.names()[idx]);
-      }
-      fl_out = grid->get_3d_tensor_layout(midpoints,fl_in.get_tensor_dims(),tdims_names);
-    default:
-      EKAT_ERROR_MSG ("Layout not supported by HorizInterpRemapperBase:\n"
-                      " - layout: " + fl_in.to_string() + "\n");
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& src_dt = m_src_fields[i].get_header().get_identifier().data_type();
+    const auto& tgt_dt = m_tgt_fields[i].get_header().get_identifier().data_type();
+    EKAT_REQUIRE_MSG (src_dt==DataType::RealType and tgt_dt==DataType::RealType,
+        "Error! HorizInterpRmapperBase requires src/tgt fields to have Real data type.\n"
+        "  - src field name: " + m_src_fields[i].name() + "\n"
+        "  - tgt field name: " + m_tgt_fields[i].name() + "\n"
+        "  - src data type : " + e2str(src_dt) + "\n"
+        "  - tgt data type : " + e2str(tgt_dt) + "\n");
   }
-  return fl_out;
-}
 
-void HorizInterpRemapperBase::do_registration_ends ()
-{
-  if (this->m_num_bound_fields==this->m_num_registered_fields) {
-    create_ov_fields ();
-    setup_mpi_data_structures ();
-  }
-}
-
-void HorizInterpRemapperBase::
-do_register_field (const identifier_type& src, const identifier_type& tgt)
-{
-  constexpr auto COL = ShortFieldTagsNames::COL;
-  EKAT_REQUIRE_MSG (src.get_layout().has_tag(COL),
-      "Error! Cannot register a field without COL tag in RefiningRemapperP2P.\n"
-      "  - field name: " + src.name() + "\n"
-      "  - field layout: " + src.get_layout().to_string() + "\n");
-  m_src_fields.push_back(field_type(src));
-  m_tgt_fields.push_back(field_type(tgt));
-}
-
-void HorizInterpRemapperBase::
-do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
-{
-  EKAT_REQUIRE_MSG (src.data_type()==DataType::RealType,
-      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
-      "  - src field name: " + src.name() + "\n"
-      "  - src field type: " + e2str(src.data_type()) + "\n");
-  EKAT_REQUIRE_MSG (tgt.data_type()==DataType::RealType,
-      "Error! RefiningRemapperRMA only allows fields with RealType data.\n"
-      "  - tgt field name: " + tgt.name() + "\n"
-      "  - tgt field type: " + e2str(tgt.data_type()) + "\n");
-
-  m_src_fields[ifield] = src;
-  m_tgt_fields[ifield] = tgt;
-
-  // If this was the last field to be bound, we can setup the MPI schedule
-  if (this->m_state==RepoState::Closed &&
-      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
-    create_ov_fields ();
-    setup_mpi_data_structures ();
-  }
+  create_ov_fields ();
+  setup_mpi_data_structures ();
 }
 
 void HorizInterpRemapperBase::create_ov_fields ()
@@ -352,7 +244,7 @@ local_mat_vec (const Field& x, const Field& y) const
     }
     default:
     {
-      EKAT_ERROR_MSG("Error::refining_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
+      EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
     }
   }
 }
@@ -367,9 +259,6 @@ void HorizInterpRemapperBase::clean_up ()
   // Reset the state of the base class
   m_state = RepoState::Clean;
   m_num_fields = 0;
-  m_num_registered_fields = 0;
-  m_fields_are_bound.clear();
-  m_num_bound_fields = 0;
 }
 
 std::map<std::string,HorizRemapperData> HorizInterpRemapperBase::s_remapper_data;

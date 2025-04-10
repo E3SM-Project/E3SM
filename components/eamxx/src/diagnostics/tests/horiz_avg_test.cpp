@@ -2,8 +2,8 @@
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
@@ -13,10 +13,10 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names", vos_t{"point_grid"});
+  auto &pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
+  pl.set("aliases", vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -29,10 +29,6 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 TEST_CASE("horiz_avg") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
-  using TeamMember = typename TeamPolicy::member_type;
-  using KT         = ekat::KokkosTypes<DefaultDevice>;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   // A numerical tolerance
   auto tol = std::numeric_limits<Real>::epsilon() * 100;
@@ -49,7 +45,7 @@ TEST_CASE("horiz_avg") {
   const int ngcols    = 6 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ngcols}};

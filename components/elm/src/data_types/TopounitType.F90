@@ -22,20 +22,26 @@ module TopounitType
   type, public :: topounit_physical_properties
 
     ! indices and weights for higher subgrid level (gridcell)
-    integer , pointer :: gridcell   (:) => null() ! index into gridcell level quantities
-    integer , pointer :: topo_grc_ind   (:) => null() ! index of topounit in the grid
-    real(r8), pointer :: wtgcell    (:) => null() ! weight (relative to gridcell)
+    integer , pointer :: gridcell    (:) => null() ! index into gridcell level quantities
+    integer , pointer :: topo_grc_ind(:) => null() ! index of topounit in the grid
+    real(r8), pointer :: wtgcell     (:) => null() ! weight (relative to gridcell)
+
+    ! connections between topounits in a single gridcell, for IM2 hillslope hydrology
+    ! downhill_ti value of -1 indicates that there is no downhill topounit
+    ! uphill_wt is a temporary store for the sum of column weights receiving water from uphill
+    integer , pointer :: downhill_ti (:) => null() ! topounit index for downhill topounit on this gridcell
+    real(r8), pointer :: uphill_wt   (:) => null() ! sum of column weights on topounit in the hydrologyc filter
 
     ! Starting and ending indices for all subgrid types below the landunit level
-    integer , pointer :: lndi       (:) => null() ! beginning landunit index for each topounit
-    integer , pointer :: lndf       (:) => null() ! ending landunit index for each topounit
-    integer , pointer :: nlandunits (:) => null() ! number of landunits for each topounit
-    integer , pointer :: coli       (:) => null() ! beginning column index per landunit
-    integer , pointer :: colf       (:) => null() ! ending column index for each landunit
-    integer , pointer :: ncolumns   (:) => null() ! number of columns for each landunit
-    integer , pointer :: pfti       (:) => null() ! beginning pft index for each landunit
-    integer , pointer :: pftf       (:) => null() ! ending pft index for each landunit
-    integer , pointer :: npfts      (:) => null() ! number of patches for each landunit
+    integer , pointer :: lndi        (:) => null() ! beginning landunit index for each topounit
+    integer , pointer :: lndf        (:) => null() ! ending landunit index for each topounit
+    integer , pointer :: nlandunits  (:) => null() ! number of landunits for each topounit
+    integer , pointer :: coli        (:) => null() ! beginning column index per landunit
+    integer , pointer :: colf        (:) => null() ! ending column index for each landunit
+    integer , pointer :: ncolumns    (:) => null() ! number of columns for each landunit
+    integer , pointer :: pfti        (:) => null() ! beginning pft index for each landunit
+    integer , pointer :: pftf        (:) => null() ! ending pft index for each landunit
+    integer , pointer :: npfts       (:) => null() ! number of patches for each landunit
 
     ! indices into landunit-level arrays for landunits in this topounit (ispval implies
     ! this landunit doesn't exist on this topounit) [1:max_lunit, begt:endt]
@@ -71,18 +77,20 @@ module TopounitType
     integer, intent(in) :: begt   ! beginning topographic unit index
     integer, intent(in) :: endt   ! ending topographic unit index
 
-    allocate(this%gridcell  (begt:endt)) ; this%gridcell  (:) = ispval
-    allocate(this%topo_grc_ind  (begt:endt)) ; this%topo_grc_ind  (:) = ispval
-    allocate(this%wtgcell   (begt:endt)) ; this%wtgcell   (:) = spval
-    allocate(this%lndi      (begt:endt)) ; this%lndi      (:) = ispval
-    allocate(this%lndf      (begt:endt)) ; this%lndf      (:) = ispval
-    allocate(this%nlandunits(begt:endt)) ; this%nlandunits(:) = ispval
-    allocate(this%coli      (begt:endt)) ; this%coli      (:) = ispval
-    allocate(this%colf      (begt:endt)) ; this%colf      (:) = ispval
-    allocate(this%ncolumns  (begt:endt)) ; this%ncolumns  (:) = ispval
-    allocate(this%pfti      (begt:endt)) ; this%pfti      (:) = ispval
-    allocate(this%pftf      (begt:endt)) ; this%pftf      (:) = ispval
-    allocate(this%npfts     (begt:endt)) ; this%npfts     (:) = ispval
+    allocate(this%gridcell    (begt:endt)) ; this%gridcell    (:) = ispval
+    allocate(this%topo_grc_ind(begt:endt)) ; this%topo_grc_ind(:) = ispval
+    allocate(this%wtgcell     (begt:endt)) ; this%wtgcell     (:) = spval
+    allocate(this%downhill_ti (begt:endt)) ; this%downhill_ti (:) = ispval
+    allocate(this%uphill_wt   (begt:endt)) ; this%uphill_wt   (:) = ispval
+    allocate(this%lndi        (begt:endt)) ; this%lndi        (:) = ispval
+    allocate(this%lndf        (begt:endt)) ; this%lndf        (:) = ispval
+    allocate(this%nlandunits  (begt:endt)) ; this%nlandunits  (:) = ispval
+    allocate(this%coli        (begt:endt)) ; this%coli        (:) = ispval
+    allocate(this%colf        (begt:endt)) ; this%colf        (:) = ispval
+    allocate(this%ncolumns    (begt:endt)) ; this%ncolumns    (:) = ispval
+    allocate(this%pfti        (begt:endt)) ; this%pfti        (:) = ispval
+    allocate(this%pftf        (begt:endt)) ; this%pftf        (:) = ispval
+    allocate(this%npfts       (begt:endt)) ; this%npfts       (:) = ispval
 
     allocate(this%landunit_indices(1:max_lunit, begt:endt)); this%landunit_indices(:,:) = ispval
     allocate(this%active      (begt:endt))                     ; this%active      (:)   = .false.
@@ -105,6 +113,8 @@ module TopounitType
     deallocate(this%gridcell    )
     deallocate(this%topo_grc_ind    )
     deallocate(this%wtgcell     )
+    deallocate(this%downhill_ti )
+    deallocate(this%uphill_wt   )
     deallocate(this%lndi        )
     deallocate(this%lndf        )
     deallocate(this%nlandunits  )

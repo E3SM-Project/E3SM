@@ -64,7 +64,7 @@ module ocn_vmix_cvmix
    type(cvmix_shear_params_type)  :: cvmix_shear_params
    type(cvmix_tidal_params_type)  :: cvmix_tidal_params
 
-   logical :: cvmixOn, cvmixConvectionOn, cvmixKPPOn
+   logical :: lnonzero_surf_nonlocal, cvmixOn, cvmixConvectionOn, cvmixKPPOn
    real (kind=RKIND) :: backgroundVisc, backgroundDiff
 
    integer :: cvmixBackgroundChoice        ! user choice of cvmix background scheme
@@ -1061,18 +1061,21 @@ contains
       ! initialize KPP boundary layer scheme
       !
       if (config_use_cvmix_kpp) then
-        if(config_cvmix_kpp_matching.eq."MatchBoth") then
-           call mpas_log_write( &
-              "Use of option MatchBoth is discouraged, use SimpleShapes instead", &
-               MPAS_LOG_WARN)
-        elseif(.not. config_cvmix_kpp_matching.eq."SimpleShapes") then
+        if(.not. config_cvmix_kpp_matching.eq."SimpleShapes" .and. &
+           .not. config_cvmix_kpp_matching.eq."MatchBoth" .and. &
+           .not. config_cvmix_kpp_matching.eq."ParabolicNonLocal") then
            call mpas_log_write( &
               "Unknown value for config_cvmix_kpp_matching., supported values are:" // &
-              "         SimpleShapes or MatchBoth", &
+              "         SimpleShapes or MatchBoth or ParabolicNonLocal", &
               MPAS_LOG_CRIT)
            err = 1
            return
         endif
+
+        lnonzero_surf_nonlocal = .false.
+        if(config_cvmix_kpp_matching .eq."ParabolicNonLocal") then
+           lnonzero_surf_nonlocal = .true.
+        end if
 
         if (trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "NONE" .and. &
             trim(config_cvmix_kpp_langmuir_mixing_opt) .ne. "LWF16" .and. &
@@ -1100,13 +1103,15 @@ contains
         call cvmix_init_kpp ( &
                ri_crit = config_cvmix_kpp_criticalBulkRichardsonNumber, &
                interp_type = config_cvmix_kpp_interpolationOMLType, &
-               interp_type2 = config_cvmix_kpp_interpolationOMLType, &
+               interp_type2 = 'LMD94', &
                lEkman = config_cvmix_kpp_EkmanOBL, &
                lMonOb = config_cvmix_kpp_MonObOBL, &
                MatchTechnique = config_cvmix_kpp_matching, &
                surf_layer_ext = config_cvmix_kpp_surface_layer_extent, &
                langmuir_mixing_str = config_cvmix_kpp_langmuir_mixing_opt, &
                langmuir_entrainment_str = config_cvmix_kpp_langmuir_entrainment_opt, &
+               lnoDGat1 = .true., &
+               lnonzero_surf_nonlocal = lnonzero_surf_nonlocal, &
                lenhanced_diff = config_cvmix_kpp_use_enhanced_diff)
       endif
 

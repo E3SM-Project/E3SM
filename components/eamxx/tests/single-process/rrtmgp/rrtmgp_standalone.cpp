@@ -46,11 +46,11 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   ad.initialize(atm_comm,ad_params,t0);
 
   // Get a pointer to the field manager so we can query fields
-  const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
-  const auto& field_mgr = *ad.get_field_mgr(grid->name());
+  const auto& grid = ad.get_grids_manager()->get_grid("point_grid");
+  const auto& field_mgr = *ad.get_field_mgr();
 
   // Get field managed variables we need to check
-  auto sw_flux_up = field_mgr.get_field("sw_flux_up");
+  auto sw_flux_up = field_mgr.get_field("sw_flux_up", grid->name());
 
   // Create deep copies so that we can check values before and after call to ad.run
   // Note: we have to do some trickery here to make sure the new fields we allocate

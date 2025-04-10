@@ -44,7 +44,7 @@ TEST_CASE("zm-standalone", "") {
   auto& proc_factory = AtmosphereProcessFactory::instance();
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("ZM",&create_atmosphere_process<ZMDeepConvection>);
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  gm_factory.register_product("mesh_free",&create_mesh_free_grids_manager);
   register_diagnostics();
 
   // Create the driver

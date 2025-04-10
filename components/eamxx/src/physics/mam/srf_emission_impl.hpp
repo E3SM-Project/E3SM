@@ -3,7 +3,7 @@
 
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 namespace scream::mam_coupling {
 template <typename S, typename D>
@@ -88,10 +88,8 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
-KOKKOS_INLINE_FUNCTION
-ScalarX srfEmissFunctions<S, D>::linear_interp(const ScalarX &x0,
-                                               const ScalarX &x1,
-                                               const ScalarT &t) {
+KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(
+    const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
 
@@ -190,7 +188,7 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
   // 2. Run the horiz remapper (it is a do-nothing op if srfEmiss data is on
   // same grid as model)
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::horiz_remap");
-  srfEmiss_horiz_interp.remap(/*forward = */ true);
+  srfEmiss_horiz_interp.remap_fwd();
   stop_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file::horiz_remap");
 
   // 3. Copy from the tgt field of the remapper into the srfEmiss_data, padding
@@ -226,11 +224,9 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
   const auto month = ts.get_month() - 1;  // Make it 0-based
   if(month != time_state.current_month) {
     // Update the srfEmiss time state information
-    time_state.current_month = month;
-    time_state.t_beg_month =
-        util::TimeStamp({ts.get_year(), month + 1, 1}, {0, 0, 0})
-            .frac_of_year_in_days();
-    time_state.days_this_month = util::days_in_month(ts.get_year(), month + 1);
+    time_state.current_month   = month;
+    time_state.t_beg_month     = ts.curr_month_beg().frac_of_year_in_days();
+    time_state.days_this_month = ts.days_in_curr_month();
 
     // Copy srfEmiss_end'data into srfEmiss_beg'data, and read in the new
     // srfEmiss_end

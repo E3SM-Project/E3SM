@@ -11,7 +11,9 @@
 #include <memory>
 
 // AMB 2017/06-2020/05 Initial for E3SMv2
-// AMB 2020/05-?       Performance-portable impl
+// AMB 2020/05-2021/01 Performance-portable impl
+// AMB 2021/04         Support doubly-periodic planar mode
+// AMB 2024/04-2025/01 Enhanced trajectory method
 
 namespace homme {
 namespace mpi { //todo Share with cedr.
@@ -20,14 +22,14 @@ class Parallel {
   MPI_Comm comm_;
 public:
   typedef std::shared_ptr<Parallel> Ptr;
-  Parallel(MPI_Comm comm) : comm_(comm) {}
+  Parallel (MPI_Comm comm) : comm_(comm) {}
   MPI_Comm comm () const { return comm_; }
-  Int size() const {
+  Int size () const {
     int sz = 0;
     MPI_Comm_size(comm_, &sz);
     return sz;
   }
-  Int rank() const {
+  Int rank () const {
     int pid = 0;
     MPI_Comm_rank(comm_, &pid);
     return pid;
@@ -85,6 +87,12 @@ int irecv (const Parallel& p, T* buf, int count, int src, int tag, Request* ireq
 int waitany(int count, Request* reqs, int* index, MPI_Status* stats = nullptr);
 int waitall(int count, Request* reqs, MPI_Status* stats = nullptr);
 int wait(Request* req, MPI_Status* stat = nullptr);
+
+template <typename T>
+int all_reduce (const Parallel& p, const T* sendbuf, T* rcvbuf, int count, MPI_Op op) {
+  MPI_Datatype dt = get_type<T>();
+  return MPI_Allreduce(const_cast<T*>(sendbuf), rcvbuf, count, dt, op, p.comm());
+}
 } // namespace mpi
 
 namespace islmpi {
@@ -136,7 +144,7 @@ struct FixedCapList {
     Int n_read = -1;
     for (;;) {
       n_read = *n_vol;
-      if (ko::atomic_compare_exchange_strong(n_vol, n_read, n_read+1))
+      if (n_read == ko::atomic_compare_exchange(n_vol, n_read, n_read+1))
         break;
     }
     return d_[n_read];
@@ -223,6 +231,16 @@ struct FixedCapList {
     return ufcl;
   }
 
+  // Support cleanup of view of views, where FixedCapList is the outer view.
+  SLMM_KIF void nullify () {
+#ifdef COMPOSE_PORT
+    n_ = NT(nullptr);
+#else
+    set_n(0);
+#endif
+    d_ = Array(nullptr, 0);
+  }
+
 private:
   Array d_;
 
@@ -251,6 +269,40 @@ void deep_copy (FixedCapList<T, DTD>& d, const FixedCapList<T, DTS>& s) {
 #endif
 }
 
+template <typename T>
+struct FixedCapListHostOnly {
+  FixedCapListHostOnly (const Int cap = 0) {
+    slmm_assert_high(cap >= 0);
+    reset_capacity(cap);
+  }
+
+  void reset_capacity (const Int cap, const bool also_size = false) {
+    slmm_assert(cap >= 0);
+    d_.resize(cap);
+    n_ = also_size ? cap : 0;
+  }
+
+  Int capacity () const { return d_.size(); }
+  Int size () const { return n_; }
+  Int n () const { return n_; }
+  
+  void clear () { n_ = 0; }
+
+  void inc () { ++n_; slmm_kernel_assert_high(n_ <= static_cast<Int>(d_.size())); }
+  void inc (const Int& dn) { n_ += dn; slmm_kernel_assert_high(n_ <= static_cast<Int>(d_.size())); }
+
+  T& operator() (const Int& i) { slmm_kernel_assert_high(i >= 0 && i < n_); return d_[i]; }
+
+  T* data () { return d_.data(); }  
+  T& back () { slmm_kernel_assert_high(n_ > 0); return d_[n_-1]; }
+  T* begin () { return d_.data(); }
+  T* end () { return d_.data() + n_; }
+
+private:
+  std::vector<T> d_;
+  Int n_;
+};
+
 template <typename DT> struct BufferLayoutArray;
 
 template <typename T, typename DT>
@@ -271,7 +323,7 @@ struct ListOfLists {
     SLMM_KIF Array<T> view () const { return Array<T>(d_, n_); }
 
   private:
-    friend class ListOfLists<T, DT>;
+    friend struct ListOfLists<T, DT>;
     SLMM_KIF List (T* d, const Int& n) : d_(d), n_(n) { slmm_kernel_assert_high(n_ >= 0); }
     T* const d_;
     const Int n_;
@@ -351,7 +403,7 @@ struct ListOfLists {
   const typename Array<Int>::HostMirror& ptr_h_view () const { return ptr_h_; }
 
 private:
-  friend class BufferLayoutArray<DT>;
+  friend struct BufferLayoutArray<DT>;
   Array<T> d_;
   Array<Int> ptr_;
   typename Array<Int>::HostMirror ptr_h_;
@@ -379,7 +431,7 @@ struct BufferLayoutArray {
     }
 
   private:
-    friend class BufferLayoutArray;
+    friend struct BufferLayoutArray;
     SLMM_KIF BufferRankLayoutArray (const typename ListOfLists<LayoutTriple, DT>::List& d,
                                     const Int& nlev)
       : d_(d), nlev_(nlev) {}
@@ -470,6 +522,37 @@ struct RemoteItem {
   short lev, k;
 };
 
+template <typename Datatype, typename DT>
+using Array = ko::View<Datatype, siqk::Layout, DT>;
+
+// The comm and real data associated with an element patch, the set of
+// elements surrounding an owned cell.
+template <typename DT>
+struct ElemData {
+  GidRank* me;                      // the owned cell
+  FixedCapList<GidRank, DT> nbrs;   // the cell's neighbors (but including me)
+  Int nin1halo;                     // nbrs[0:n]
+  FixedCapList<OwnItem, DT> own;    // points whose q are computed with own rank's data
+  FixedCapList<RemoteItem, DT> rmt; // points computed by a remote rank's data
+  Array<Int**, DT> src;             // src(lev,k) = get_src_cell
+  Array<Real**[2], DT> q_extrema;
+  const Real* qdp, * dp;  // the owned cell's data
+  Real* q;
+};
+
+template <typename DT>
+void nullify (ElemData<DT>& ed) {
+  ed.me = nullptr;
+  ed.nbrs.nullify();
+  ed.own.nullify();
+  ed.rmt.nullify();
+  ed.src = decltype(ed.src)(nullptr, 0, 0);
+  ed.q_extrema = decltype(ed.q_extrema)(nullptr, 0, 0);
+  ed.qdp = nullptr;
+  ed.dp = nullptr;
+  ed.q = nullptr;
+}
+
 // Meta and bulk data for the interpolation SL MPI communication pattern.
 template <typename MT = ko::MachineTraits>
 struct IslMpi {
@@ -482,27 +565,10 @@ struct IslMpi {
 
   typedef std::shared_ptr<IslMpi> Ptr;
 
-  template <typename Datatype, typename DT>
-  using Array = ko::View<Datatype, siqk::Layout, DT>;
   template <typename Datatype>
   using ArrayH = ko::View<Datatype, siqk::Layout, HDT>;
   template <typename Datatype>
   using ArrayD = ko::View<Datatype, siqk::Layout, DDT>;
-
-  // The comm and real data associated with an element patch, the set of
-  // elements surrounding an owned cell.
-  template <typename DT>
-  struct ElemData {
-    GidRank* me;                      // the owned cell
-    FixedCapList<GidRank, DT> nbrs;   // the cell's neighbors (but including me)
-    Int nin1halo;                     // nbrs[0:n]
-    FixedCapList<OwnItem, DT> own;    // points whose q are computed with own rank's data
-    FixedCapList<RemoteItem, DT> rmt; // points computed by a remote rank's data
-    Array<Int**, DT> src;             // src(lev,k) = get_src_cell
-    Array<Real**[2], DT> q_extrema;
-    const Real* qdp, * dp;  // the owned cell's data
-    Real* q;
-  };
 
   typedef ElemData<HDT> ElemDataH;
   typedef ElemData<DDT> ElemDataD;
@@ -512,10 +578,17 @@ struct IslMpi {
   const mpi::Parallel::Ptr p;
   const typename Advecter::ConstPtr advecter;
   const Int np, np2, nlev, qsize, qsized, nelemd, halo;
+  const bool traj_3d;
+  const Int traj_nsubstep, dep_points_ndim;
+
+  Real etai_beg, etai_end;
+  ArrayD<Real*> etam;
 
   ElemDataListH ed_h; // this rank's owned cells, indexed by LID
   ElemDataListD ed_d;
-  typename ElemDataListD::Mirror ed_m; // handle managed allocs
+  // Host-side view of device views to retain persistent borrows of the device
+  // memory.
+  typename ElemDataListD::Mirror ed_m;
 
   const typename TracerArrays<MT>::Ptr tracer_arrays;
 
@@ -526,7 +599,7 @@ struct IslMpi {
   BufferLayoutArray<DDT> bla;
 
   // MPI comm data.
-  FixedCapList<mpi::Request, HDT> sendreq, recvreq;
+  FixedCapListHostOnly<mpi::Request> sendreq, recvreq;
   FixedCapList<Int, HDT> recvreq_ri;
   ListOfLists<Real, DDT> sendbuf, recvbuf;
 #ifdef COMPOSE_MPI_ON_HOST
@@ -559,11 +632,14 @@ struct IslMpi {
   Int own_dep_list_len;
 
   IslMpi (const mpi::Parallel::Ptr& ip, const typename Advecter::ConstPtr& advecter,
-          const typename TracerArrays<MT>::Ptr& tracer_arrays_,
-          Int inp, Int inlev, Int iqsize, Int iqsized, Int inelemd, Int ihalo)
+          const typename TracerArrays<MT>::Ptr& itracer_arrays,
+          Int inp, Int inlev, Int iqsize, Int iqsized, Int inelemd, Int ihalo,
+          Int itraj_3d, Int itraj_nsubstep)
     : p(ip), advecter(advecter),
       np(inp), np2(np*np), nlev(inlev), qsize(iqsize), qsized(iqsized), nelemd(inelemd),
-      halo(ihalo), tracer_arrays(tracer_arrays_)
+      halo(ihalo), traj_3d(itraj_3d), traj_nsubstep(itraj_nsubstep),
+      dep_points_ndim(traj_3d && traj_nsubstep > 0 ? 4 : 3),
+      tracer_arrays(itracer_arrays)
   {}
 
   IslMpi(const IslMpi&) = delete;
@@ -586,6 +662,12 @@ struct IslMpi {
       }
     }
 #endif
+    // Nullify view of views on host in serial to prevent deadlock in Kokkos
+    // version >= 4.4.
+    for (int i = 0; i < ed_h.n(); ++i)
+      nullify(ed_h(i));
+    for (int i = 0; i < ed_m.n(); ++i)
+      nullify(ed_m(i));
   }
 };
 
@@ -635,16 +717,17 @@ void wait_on_send (IslMpi<MT>& cm, const bool skip_if_empty = false);
 template <typename MT>
 void recv(IslMpi<MT>& cm, const bool skip_if_empty = false);
 
-const int nreal_per_2int = (2*sizeof(Int) + sizeof(Real) - 1) / sizeof(Real);
-
 template <typename MT>
-void pack_dep_points_sendbuf_pass1(IslMpi<MT>& cm);
+void pack_dep_points_sendbuf_pass1(IslMpi<MT>& cm, const bool trajectory = false);
 template <typename MT>
-void pack_dep_points_sendbuf_pass2(IslMpi<MT>& cm, const DepPoints<MT>& dep_points);
+void pack_dep_points_sendbuf_pass2(IslMpi<MT>& cm, const DepPoints<MT>& dep_points,
+                                   const bool trajectory = false);
 
 template <typename MT>
 void calc_q_extrema(IslMpi<MT>& cm, const Int& nets, const Int& nete);
 
+template <typename MT>
+void calc_rmt_q_pass1(IslMpi<MT>& cm, const bool trajectory = false);
 template <typename MT>
 void calc_rmt_q(IslMpi<MT>& cm);
 template <typename MT>
@@ -681,8 +764,17 @@ void copy_q(IslMpi<MT>& cm, const Int& nets,
 template <typename MT = ko::MachineTraits>
 void step(
   IslMpi<MT>& cm, const Int nets, const Int nete,
-  Real* dep_points_r,            // dep_points(1:3, 1:np, 1:np)
-  Real* q_min_r, Real* q_max_r); // q_{min,max}(1:np, 1:np, lev, 1:qsize, ie-nets+1)
+  Real* dep_points_r,
+  Real* q_min_r, Real* q_max_r);
+
+template <typename MT = ko::MachineTraits>
+void set_hvcoord(IslMpi<MT>& cm, const Real etai_beg, const Real etai_end,
+                 const Real* etam);
+
+template <typename MT = ko::MachineTraits>
+void calc_v_departure(
+  IslMpi<MT>& cm, const Int nets, const Int nete, const Int step, const Real dtsub,
+  Real* dep_points_r, const Real* vnode, Real* vdep);
 
 } // namespace islmpi
 } // namespace homme

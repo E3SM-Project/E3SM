@@ -2,7 +2,7 @@
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <numeric>
 
@@ -133,10 +133,10 @@ get_my_triplets (const std::string& map_file) const
 
   // Create Triplets to export, sorted by gid
   std::map<int,std::vector<Triplet>> io_triplets;
-  auto io_grid_gid2lid = io_grid->get_gid2lid_map();
+  const auto& io_grid_gid2lid = io_grid->get_gid2lid_map();
   for (int i=0; i<nlweights; ++i) {
     auto gid = gids[i];
-    auto io_lid = io_grid_gid2lid[gid];
+    auto io_lid = io_grid_gid2lid.at(gid);
     io_triplets[io_lid].emplace_back(rows[i], cols[i], S[i]);
   }
 
@@ -207,8 +207,8 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
   auto col_grid = refine ? ov_coarse_grid : fine_grid;
   const int num_rows = row_grid->get_num_local_dofs();
 
-  auto col_gid2lid = col_grid->get_gid2lid_map();
-  auto row_gid2lid = row_grid->get_gid2lid_map();
+  const auto& col_gid2lid = col_grid->get_gid2lid_map();
+  const auto& row_gid2lid = row_grid->get_gid2lid_map();
 
   // Sort triplets so that row GIDs appear in the same order as
   // in the row grid. If two row GIDs are the same, use same logic
@@ -234,7 +234,7 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
 
   // Fill col ids and weights
   for (int i=0; i<nnz; ++i) {
-    col_lids_h(i) = col_gid2lid[triplets[i].col];
+    col_lids_h(i) = col_gid2lid.at(triplets[i].col);
     weights_h(i)  = triplets[i].w;
   }
   Kokkos::deep_copy(weights,weights_h);
@@ -243,7 +243,7 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
   // Compute row offsets
   std::vector<int> row_counts(num_rows);
   for (int i=0; i<nnz; ++i) {
-    ++row_counts[row_gid2lid[triplets[i].row]];
+    ++row_counts[row_gid2lid.at(triplets[i].row)];
   }
   std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
   EKAT_REQUIRE_MSG (

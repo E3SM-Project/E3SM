@@ -44,6 +44,7 @@ my @groups = qw(run_modes
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
+                tracer_forcing_freshwatertracers
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
                 tracer_forcing_idealagetracers

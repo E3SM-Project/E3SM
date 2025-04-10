@@ -8,10 +8,14 @@ on:
     paths:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
+      - '.github/actions/test-all-eamxx/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
+      - 'components/eam/src/physics/rrtmgp/**'
       - 'externals/ekat'
+      - 'externals/mam4xx'
+      - 'externals/haero'
       - 'externals/scorpio'
       # second, no to these
       - '!components/eamxx/docs/**'
@@ -52,6 +56,8 @@ env:
   # Submit to cdash only for nightlies or if the user explicitly forced a submission via workflow dispatch
   submit: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.submit) }}
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
+  # Do EKAT testing for nightlies or (TODO: if EKAT label is present)
+  ekat: ${{ github.event_name == 'schedule' }}
 
 jobs:
   gcc-openmp:
@@ -59,7 +65,7 @@ jobs:
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-openmp' || 
+          github.event.inputs.job_to_run == 'gcc-openmp' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
@@ -79,19 +85,20 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
           machine: ghci-snl-cpu
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
+          ekat: ${{ env.ekat }}
   gcc-cuda:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-cuda' || 
+          github.event.inputs.job_to_run == 'gcc-cuda' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
@@ -99,8 +106,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build_type: [sp, dbg, opt]
-    name: gcc-cuda / ${{ matrix.build_type }}
+        test:
+          - build_type: sp
+            SK: OFF
+          - build_type: dbg
+            SK: ON
+          - build_type: opt
+            SK: OFF
+    name: gcc-cuda / ${{ matrix.test.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -140,10 +153,11 @@ jobs:
                   ;;
           esac
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
-          build_type: ${{ matrix.build_type }}
+          build_type: ${{ matrix.test.build_type }}
           machine: ghci-snl-cuda
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
+          ekat: ${{ env.ekat }}

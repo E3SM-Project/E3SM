@@ -20,12 +20,12 @@
  *  The EKAT parameter list contains the following options to control input behavior:
  *  -----
  *  Input Parameters
- *    Filename: STRING
- *    Field Names:   ARRAY OF STRINGS
+ *    filename: STRING
+ *    field_names:   ARRAY OF STRINGS
  *  -----
  *  The meaning of these parameters is the following:
- *   - Filename: the name of the input file to be read.
- *   - Field Names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
+ *   - filename: the name of the input file to be read.
+ *   - field_names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
@@ -61,6 +61,10 @@ public:
                    const std::shared_ptr<const grid_type>& grid,
                    const std::vector<Field>& fields,
                    const bool skip_grid_checks = false);
+  // This constructor only sets the minimal info, deferring initialization
+  // to when set_field_manager/reset_fields and reset_filename are called
+  AtmosphereInput (const std::vector<std::string>& fields_names,
+                   const std::shared_ptr<const grid_type>& grid);
 
   // Due to resource acquisition (in scorpio), avoid copies
   AtmosphereInput (const AtmosphereInput&) = delete;
@@ -71,7 +75,7 @@ public:
 
   // --- Methods --- //
   // Initialize the class for reading into FieldManager-owned fields.
-  //  - params: input parameters (must contain at least "Filename")
+  //  - params: input parameters (must contain at least "filename")
   //  - field_mgr: the FieldManager containing the Field's where the
   //               variables from the input filed will be read into.
   //               Fields can be padded/strided.
@@ -79,7 +83,7 @@ public:
              const std::shared_ptr<const fm_type>& field_mgr);
 
   // Initialize the class for reading into user-provided flattened 1d host views.
-  //  - params: input parameters (must contain at least "Filename")
+  //  - params: input parameters (must contain at least "filename")
   //  - grid: the grid where the variables live
   //  - host_views_1d: the 1d flattened views where data will be read into.
   //                   These views must be contiguous (no padding/striding).
@@ -98,9 +102,11 @@ public:
   // Getters
   std::string get_filename() { return m_filename; } // Simple getter to query the filename for this stream.
 
-  // Expose the ability to set field manager for cases like time_interpolation where we swap fields
-  // between field managers to avoid deep_copy.
+  // Expose the ability to set/reset fields/field_manager for cases like data interpolation,
+  // where we swap pointers but all the scorpio data structures are unchanged.
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
+  void set_fields (const std::vector<Field>& fields);
+  void reset_filename (const std::string& filename);
 
   // Option to add a logger
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {

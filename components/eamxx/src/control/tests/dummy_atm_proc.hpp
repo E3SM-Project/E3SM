@@ -21,7 +21,7 @@ public:
   DummyProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     : AtmosphereProcess(comm, params)
   {
-    m_name = m_params.get<std::string>("Sub Name");
+    m_name = m_params.get<std::string>("sub_name");
     if (m_name=="Group to Group") {
       m_dummy_type = G2G;
     } else {
@@ -38,7 +38,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     using namespace ShortFieldTagsNames;
 
-    m_grid = grids_manager->get_grid(m_params.get<std::string>("Grid Name"));
+    m_grid = grids_manager->get_grid(m_params.get<std::string>("grid_name"));
 
     const auto num_cols = m_grid->get_num_local_dofs();
     const auto num_levs = m_grid->get_num_vertical_levels();
@@ -49,7 +49,7 @@ public:
 
     if (m_dummy_type==A2G) {
       // Check request by field/grid name only works
-      add_field<Required>("A",m_grid->name());
+      add_field<Required>("A",layout,ekat::units::m,m_grid->name());
       add_field<Computed>("B",layout,ekat::units::m,m_grid->name(),"The Group");
       add_field<Computed>("C",layout,ekat::units::m,m_grid->name(),"The Group");
       // These are not used at run time, but we use them to test
@@ -93,8 +93,8 @@ public:
       });
     } else if (m_name=="Group to Group") {
       const auto& g = get_group_out("The Group");
-      const auto view_B = g.m_fields.at("B")->get_view<Real**>();
-      const auto view_C = g.m_fields.at("C")->get_view<Real**>();
+      const auto view_B = g.m_individual_fields.at("B")->get_view<Real**>();
+      const auto view_C = g.m_individual_fields.at("C")->get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -105,8 +105,8 @@ public:
       });
     } else {
       const auto& g = get_group_in("The Group");
-      const auto view_B = g.m_fields.at("B")->get_view<const Real**>();
-      const auto view_C = g.m_fields.at("C")->get_view<const Real**>();
+      const auto view_B = g.m_individual_fields.at("B")->get_view<const Real**>();
+      const auto view_C = g.m_individual_fields.at("C")->get_view<const Real**>();
       const auto view_A = get_field_out("A").get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
@@ -128,7 +128,7 @@ protected:
 
   std::string m_name;
 
-  DummyType     m_dummy_type; 
+  DummyType     m_dummy_type;
 };
 
 } // namespace scream

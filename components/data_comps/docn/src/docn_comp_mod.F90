@@ -29,6 +29,8 @@ module docn_comp_mod
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
   use docn_shr_mod   , only: sst_constant_value ! namelist input
+  use docn_shr_mod   , only: RSO_relax_tau      ! namelist input for relaxed slab ocean (RSO)
+  use docn_shr_mod   , only: RSO_fixed_MLD      ! namelist input for relaxed slab ocean (RSO)
   use docn_shr_mod   , only: nullstr
 
 #ifdef HAVE_MOAB
@@ -69,7 +71,9 @@ module docn_comp_mod
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)   :: kh,kqbot
+  integer(IN)   :: kh,kqbot,kfraz
+  integer(IN)   :: k10uu           ! index for u10
+  integer(IN)   :: kRSO_bckgrd_sst ! index for background SST (relaxed slab ocean)
   integer(IN)   :: index_lat, index_lon
   integer(IN)   :: kmask, kfrac ! frac and mask field indices of docn domain
   integer(IN)   :: ksomask      ! So_omask field index
@@ -93,7 +97,7 @@ module docn_comp_mod
   character(12)   , parameter  :: avofld(1:ktrans) = &
        (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
           "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
-  character(len=*), parameter :: flds_strm = 'strm_h:strm_qbot'
+  character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot:So_t'
   !--------------------------------------------------------------------------
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -281,7 +285,8 @@ CONTAINS
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
-    kq    = mct_aVect_indexRA(o2x,'Fioo_q')
+    kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
+    kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
@@ -294,12 +299,14 @@ CONTAINS
     klwdn  = mct_aVect_indexRA(x2o,'Faxa_lwdn')
     ksnow  = mct_aVect_indexRA(x2o,'Faxa_snow')
     kmelth = mct_aVect_indexRA(x2o,'Fioi_melth')
+    k10uu  = mct_aVect_indexRA(x2o,'So_duu10n')
 
     call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
     call mct_aVect_zero(avstrm)
 
     kh    = mct_aVect_indexRA(avstrm,'strm_h')
     kqbot = mct_aVect_indexRA(avstrm,'strm_qbot')
+    kRSO_bckgrd_sst = mct_aVect_indexRA(avstrm,'So_t')
 
     allocate(somtp(lsize))
     allocate(tfreeze(lsize))
@@ -472,14 +479,17 @@ CONTAINS
        call shr_mpi_bcast(exists,mpicom,'exists')
        call shr_mpi_bcast(exists1,mpicom,'exists1')
 
-       if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
-       if (exists1) then
-          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-          call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
-               trim(rest_file), mpicom, gsmap=gsmap, rf1=somtp, rf1n='somtp', io_format=SDOCN%io_format)
-       else
-          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-       endif
+       if (     trim(datamode) == 'SOM' &       ! Traditional slab ocean
+           .or. trim(datamode) == 'RSO' &       ! Relaxed slab ocean
+           .or. trim(datamode) == 'SOM_AQUAP' & ! Aquaplanet slab ocean
+          ) then
+          if (exists1) then
+             if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
+             call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
+                  trim(rest_file), mpicom, gsmap=gsmap, rf1=somtp, rf1n='somtp', io_format=SDOCN%io_format)
+          else
+             if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
+          endif
        endif
 
        if (exists) then
@@ -562,7 +572,18 @@ CONTAINS
     integer(IN)   :: idt                   ! integer timestep
     real(R8)      :: dt                    ! timestep
     integer(IN)   :: nu                    ! unit number
-    real(R8)      :: hn                    ! h field
+    real(R8)      :: hn                    ! h field - mixed layer depth (MLD)
+    ! relaxed slab ocean mode variables
+    real(R8)      :: RSO_bckgrd_sst        ! background SST 
+    real(R8)      :: RSO_X_cool            ! logistics function weight
+    real(R8)      :: u10                   ! 10 m wind
+    ! relaxed slab ocean fixed parameters
+    integer,  parameter :: RSO_slab_option = 0                  ! Option for setting RSO_X_cool
+    real(R8), parameter :: RSO_R_cool      = 11.75_r8/86400._r8 ! base cooling rate [K/s]
+    real(R8), parameter :: RSO_Tdeep       = 271.0_r8           ! deep water temperature [K]
+    real(R8), parameter :: RSO_dT_o        = 27.0_r8            ! scaling temperature gradient
+    real(R8), parameter :: RSO_h_o         = 30.0_r8            ! scaling mixed layer depth
+
     character(len=18) :: date_str
     character(len=CL) :: local_case_name
     real(R8), parameter :: &
@@ -620,6 +641,8 @@ CONTAINS
        o2x%rAttr(kdhdx,n) = 0.0_R8
        o2x%rAttr(kdhdy,n) = 0.0_R8
        o2x%rAttr(kq   ,n) = 0.0_R8
+! make sure frazil is 0. MPAS-seaice will still use it.
+       o2x%rAttr(kfraz,n) = 0.0_R8
        if (kswp /= 0) then
           o2x%rAttr(kswp ,n) = swp
        end if
@@ -768,6 +791,65 @@ CONTAINS
           enddo
        endif   ! firstcall
 
+    ! Relaxed Slab Ocean based on Zarzycki(2016)
+    ! Zarzycki, C. M., 2016: Tropical Cyclone Intensity Errors Associated with Lack of Two-Way Ocean Coupling in High-Resolution Global Simulations. J. Climate, 29, 8589–8610.
+    ! https://journals.ametsoc.org/view/journals/clim/29/23/jcli-d-16-0273.1.xml
+    case('RSO')
+      lsize = mct_avect_lsize(o2x)
+      do n = 1,SDOCN%nstreams
+        call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,avifld,avofld,rearr)
+      enddo
+      if (firstcall) then
+        do n = 1,lsize
+          if (.not. read_restart) then
+            somtp(n) = o2x%rAttr(kt,n) + TkFrz
+          endif
+          o2x%rAttr(kt,n) = somtp(n)
+          o2x%rAttr(kq,n) = 0.0_R8
+        enddo
+      else   ! firstcall
+        tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+        do n = 1,lsize
+          if (imask(n) /= 0) then
+            !*******************************************************************
+            if (RSO_fixed_MLD>=0) then
+              hn = RSO_fixed_MLD
+            else
+              hn = avstrm%rAttr(kh,n)
+            endif
+            ! Get "background" temperature for relaxation
+            RSO_bckgrd_sst = avstrm%rAttr(kRSO_bckgrd_sst,n) + TkFrz
+            u10 = SQRT(x2o%rAttr(k10uu,n))
+            !*******************************************************************
+            ! Calculate scaling function - see Eq 3 in Zarzycki (2016)
+            if (RSO_slab_option==0) RSO_X_cool = 1._r8/(1._r8+EXP(-0.5_r8*(u10-30._r8)) )                      ! SLAB1
+            if (RSO_slab_option==1) RSO_X_cool =(1._r8/(1._r8+EXP(-0.2_r8*(u10-30._r8)) ))*(u10*2.4_r8/80._r8) ! SLAB2
+            if (RSO_slab_option==2) RSO_X_cool = 0.0_r8                                                        ! THERMO
+            !*******************************************************************
+            ! compute new ocean surface temperature
+            o2x%rAttr(kt,n) = somtp(n) &
+                              ! Thermodynamic terms
+                              +( x2o%rAttr(kswnet,n)        & ! shortwave net
+                                +x2o%rAttr(klwup ,n)        & ! longwave up
+                                +x2o%rAttr(klwdn ,n)        & ! longwave down
+                                +x2o%rAttr(ksen  ,n)        & ! sfc sensible heat flux
+                                +x2o%rAttr(klat  ,n)        & ! sfc latent heat flux
+                                -x2o%rAttr(ksnow ,n)*latice & ! latent heat from snow
+                                -x2o%rAttr(krofi ,n)*latice & ! latent heat from runoff
+                              ) * dt/(cpsw*rhosw*hn) & 
+                              - RSO_X_cool*RSO_R_cool*((somtp(n)-RSO_Tdeep)/RSO_dT_o)*(RSO_h_o/hn)*dt & ! Turb mixing
+                              + (1_r8/RSO_relax_tau)*(RSO_bckgrd_sst - somtp(n))*dt ! Newtonian Relaxation
+            !*******************************************************************
+            ! Ignore ice formed or melt potential
+            o2x%rAttr(kq,n) = 0.0
+            ! Cap SSTs to freezing
+            o2x%rAttr(kt,n) = max( TkFrzSw, o2x%rAttr(kt,n) )
+            ! Save temperature to send back to coupler          
+            somtp(n) = o2x%rAttr(kt,n)
+          endif ! imask /= 0
+        enddo ! lsize
+      endif ! firstcall
+
     case('SOM_AQUAP')
        lsize = mct_avect_lsize(o2x)
        do n = 1,SDOCN%nstreams
@@ -827,6 +909,8 @@ CONTAINS
    call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
 
    call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
    if (kswp /= 0) then
       call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
@@ -912,7 +996,10 @@ CONTAINS
           close(nu)
           call shr_file_freeUnit(nu)
        endif
-       if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
+       if (     trim(datamode) == 'SOM' &       ! Traditional slab ocean
+           .or. trim(datamode) == 'RSO' &       ! Relaxed slab ocean
+           .or. trim(datamode) == 'SOM_AQUAP' & ! Aquaplanet slab ocean
+          ) then
           if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
           call shr_pcdf_readwrite('write', SDOCN%pio_subsystem, SDOCN%io_type,&
                trim(rest_file), mpicom, gsmap, clobber=.true., rf1=somtp,rf1n='somtp')

@@ -30,10 +30,10 @@ void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager
   const auto m2 = pow(m,2);
 
   // Initialize grid from grids manager
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
-  EKAT_REQUIRE_MSG(grid_name=="Physics PG2",
-                   "Error! TMS process can only be used with \"Physics PG2\" physics grid. "
+  EKAT_REQUIRE_MSG(grid_name=="physics_pg2",
+                   "Error! TMS process can only be used with \"physics_pg2\" physics grid. "
                    "Current physics grid is "+grid_name+".\n");
 
   m_ncols = m_grid->get_num_local_dofs(); // Number of columns on this rank

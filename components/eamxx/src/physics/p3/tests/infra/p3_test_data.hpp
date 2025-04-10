@@ -3,7 +3,7 @@
 
 #include "physics/p3/p3_functions.hpp"
 #include "physics/share/physics_test_data.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
 
 #include <array>
@@ -12,71 +12,6 @@
 
 namespace scream {
 namespace p3 {
-
-///////////////////////////////////////////////////////////////////////////////
-
-struct P3InitAP3Data
-{
-  // Must use Host as device, f90 code might not be able to use Device memory
-  using P3F = Functions<Real, HostDevice>;
-  using P3C = typename P3F::P3C;
-
-  using view_ice_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
-  using view_collect_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
-
-  // Need to be LayoutLeft to be fortran compatible
-  view_ice_table ice_table_vals;
-  view_collect_table collect_table_vals;
-
-  P3InitAP3Data() :
-    ice_table_vals("P3InitAP3Data::ice_table_vals"),
-    collect_table_vals("P3InitAP3Data::collect_table_vals")
-  {}
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
-// Singleton for holding the same global data that are maintained in
-// micro_p3, but for use in C++.
-struct P3GlobalForFortran
-{
-  using P3F = Functions<Real, DefaultDevice>;
-
-  using view_1d_table = typename P3F::view_1d_table;
-  using view_2d_table = typename P3F::view_2d_table;
-  using view_ice_table = typename P3F::view_ice_table;
-  using view_collect_table = typename P3F::view_collect_table;
-  using view_dnu_table = typename P3F::view_dnu_table;
-  using P3Runtime = P3F::P3Runtime;
-
-  // All kokkos views must be destructed before Kokkos::finalize
-  static void deinit();
-
-  static const view_1d_table& mu_r_table_vals()   { return get().m_mu_r_table_vals; }
-  static const view_2d_table& vn_table_vals()     { return get().m_vn_table_vals; }
-  static const view_2d_table& vm_table_vals()     { return get().m_vm_table_vals; }
-  static const view_2d_table& revap_table_vals()  { return get().m_revap_table_vals; }
-  static const view_ice_table& ice_table_vals()       { return get().m_ice_table_vals; }
-  static const view_collect_table& collect_table_vals() { return get().m_collect_table_vals; }
-  static const view_dnu_table& dnu()         { return get().m_dnu; }
-
-  P3GlobalForFortran() = delete;
-  ~P3GlobalForFortran() = delete;
-  P3GlobalForFortran(const P3GlobalForFortran&) = delete;
-  P3GlobalForFortran& operator=(const P3GlobalForFortran&) = delete;
-
- private:
-  struct Views {
-    view_1d_table m_mu_r_table_vals;
-    view_2d_table m_vn_table_vals, m_vm_table_vals, m_revap_table_vals;
-    view_ice_table m_ice_table_vals;
-    view_collect_table m_collect_table_vals;
-    view_dnu_table m_dnu;
-  };
-
-  static const Views& get();
-  static std::shared_ptr<Views> s_views;
-};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -152,6 +87,8 @@ struct BackToCellAverageData
        nc_nuceat_tend, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend,
        nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend,
        qc2qi_berg_tend;
+  Real ncheti_cnt=0, qcheti_cnt=0, nicnt=0, qicnt=0, ninuc_cnt=0, qinuc_cnt=0;
+  bool use_hetfrz_classnuc=false, context=true;
 
   // This populates all fields with test data within [0,1].
   void randomize(std::mt19937_64& engine);
@@ -171,6 +108,8 @@ struct CloudWaterConservationData
 
   //output
   Real qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend;
+  Real qcheti_cnt=0, qicnt=0;
+  bool use_hetfrz_classnuc=false, context=true;
 
   PTD_RW_SCALARS_ONLY(8, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend);
 };
@@ -190,9 +129,12 @@ struct IceWaterConservationData
 {
   //inputs
   Real qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt;
-
   //output
   Real qi2qv_sublim_tend, qi2qr_melt_tend;
+
+  Real qinuc_cnt=0, qcheti_cnt=0, qicnt=0;
+  bool use_hetfrz_classnuc=false, context=true;
+
 
   PTD_RW_SCALARS_ONLY(2, qi2qv_sublim_tend, qi2qr_melt_tend);
 };
@@ -538,9 +480,11 @@ struct P3UpdatePrognosticIceData
     ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, inv_exner, latent_heat_sublim, latent_heat_fusion;
   bool do_predict_nc, log_wetgrowth;
   Real dt, nmltratio, rho_qm_cloud;
+  Real ncheti_cnt=0, nicnt=0, ninuc_cnt=0, qcheti_cnt=0, qicnt=0, qinuc_cnt=0;
 
   // In/outs
   Real th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr;
+  bool use_hetfrz_classnuc=false, context=true;
 
   PTD_RW_SCALARS_ONLY(10, th_atm, qv, qi, ni, qm, bm, qc, nc, qr, nr);
 };
@@ -806,6 +750,8 @@ struct P3MainData : public PhysicsTestData
   Real* pres, *dz, *nc_nuceat_tend, *nccn_prescribed, *ni_activated, *dpres, *inv_exner, *cld_frac_i, *cld_frac_l, *cld_frac_r, *inv_qc_relvar, *qv_prev, *t_prev;
   Real dt;
   bool do_predict_nc, do_prescribed_CCN;
+  bool use_hetfrz_classnuc=false;
+  Real* hetfrz_immersion_nucleation_tend, *hetfrz_contact_nucleation_tend, *hetfrz_deposition_nucleation_tend;
 
   // In/out
   Real* qc, *nc, *qr, *nr, *qi, *qm, *ni, *bm, *qv, *th_atm;
@@ -828,6 +774,9 @@ struct IceSupersatConservationData {
   // Inputs/Outputs
   Real qidep, qinuc;
 
+  bool use_hetfrz_classnuc=false, context=true;
+  Real qinuc_cnt=0;
+
   void randomize(std::mt19937_64& engine);
 
   PTD_RW_SCALARS_ONLY(2, qidep, qinuc);
@@ -839,6 +788,8 @@ struct NcConservationData {
 
   // Inputs/Outputs
   Real nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend;
+  Real ncheti_cnt=0, nicnt=0;
+  bool use_hetfrz_classnuc=false, context=true;
 
   void randomize(std::mt19937_64& engine);
 
@@ -860,6 +811,8 @@ struct NrConservationData {
 struct NiConservationData {
   // Inputs
   Real ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, dt;
+  Real ncheti_cnt=0, nicnt=0, ninuc_cnt=0;
+  bool use_hetfrz_classnuc=false, context=true;
 
   // Inputs/Outputs
   Real ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend;
@@ -881,8 +834,6 @@ struct PreventLiqSupersaturationData {
 
   PTD_RW_SCALARS_ONLY(2, qi2qv_sublim_tend, qr2qv_evap_tend);
 };
-
-void p3_init_a(P3InitAP3Data& d);
 
 /**
  * Convenience functions for calling p3 routines from the host with scalar data.
@@ -938,6 +889,7 @@ void p3_main_part1_host(
 
 void p3_main_part2_host(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir, bool do_predict_nc, bool do_prescribed_CCN, Real dt, Real inv_dt,
+  const Real *hetfrz_immersion_nucleation_tend, const Real *hetfrz_contact_nucleation_tend, const Real *hetfrz_deposition_nucleation_tend,
   Real* pres, Real* dpres, Real* dz, Real* nc_nuceat_tend, Real* inv_exner, Real* exner, Real* inv_cld_frac_l, Real* inv_cld_frac_i, Real* inv_cld_frac_r, Real* ni_activated, Real* inv_qc_relvar, Real* cld_frac_i, Real* cld_frac_l, Real* cld_frac_r, Real* qv_prev, Real* t_prev,
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
@@ -957,7 +909,7 @@ Int p3_main_host(
   Real* qi, Real* qm, Real* ni, Real* bm, Real* pres, Real* dz,
   Real* nc_nuceat_tend, Real* nccn_prescribed, Real* ni_activated, Real* inv_qc_relvar, Int it, Real* precip_liq_surf,
   Real* precip_ice_surf, Int its, Int ite, Int kts, Int kte, Real* diag_eff_radius_qc,
-  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, Real* dpres, Real* inv_exner,
+  Real* diag_eff_radius_qi, Real* diag_eff_radius_qr, Real* rho_qi, bool do_predict_nc, bool do_prescribed_CCN, bool use_hetfrz_classnuc, Real* dpres, Real* inv_exner,
   Real* qv2qi_depos_tend, Real* precip_liq_flux, Real* precip_ice_flux, Real* cld_frac_r, Real* cld_frac_l, Real* cld_frac_i,
   Real* liq_ice_exchange, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* qv_prev, Real* t_prev);
 

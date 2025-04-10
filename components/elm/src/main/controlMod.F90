@@ -313,6 +313,9 @@ contains
        lateral_connectivity, domain_decomp_type
 
     namelist /elm_inparm/ &
+         use_IM2_hillslope_hydrology
+
+    namelist /elm_inparm/ &
          use_petsc_thermal_model
 
     namelist /elm_inparm/ &
@@ -332,14 +335,17 @@ contains
          lnd_rof_coupling_nstep
 
     namelist /elm_inparm/ &
-         snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
-    
-    namelist /elm_inparm/ & 
+         snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
+
+    namelist /elm_inparm/ &
          use_modified_infil
 
     namelist /elm_inparm/ &
          use_fan, fan_mode, fan_to_bgc_veg, nh4_ads_coef
 
+   ! NGEE Arctic options
+   namelist /elm_inparm/ &
+         use_polygonal_tundra, use_arctic_init
     ! ----------------------------------------------------------------------
     ! Default values
     ! ----------------------------------------------------------------------
@@ -943,6 +949,9 @@ contains
     call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
 
+    ! hillslope connectivity via topounits
+    call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     ! bgc & pflotran interface
     call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1001,6 +1010,10 @@ contains
     ! use modified infiltration scheme in surface water storage
     call mpi_bcast (use_modified_infil, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    !NGEE Arctic options
+    call mpi_bcast (use_polygonal_tundra, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_arctic_init, 1, MPI_LOGICAL, 0, mpicom, ier)
+
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -1054,6 +1067,7 @@ contains
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
+    write(iulog,*) '    use_IM2_hillslope_hydrology = ', use_IM2_hillslope_hydrology
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
     write(iulog,*) 'input data files:'
@@ -1280,6 +1294,10 @@ contains
        write(iulog,*) ' nh4_ads_coef = ', nh4_ads_coef
        write(iulog,*) ' fan_to_bgc_veg = ', fan_to_bgc_veg
     end if
+
+    ! NGEE Arctic options
+    if (use_polygonal_tundra) write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
+    if (use_arctic_init) write(iulog, *)      '    use_arctic_init    ='     , use_arctic_init
 
   end subroutine control_print
 

@@ -1,10 +1,9 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/grid/remap/do_nothing_remapper.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <ekat/util/ekat_lin_interp.hpp>
 #include <ekat/util/ekat_math_utils.hpp>
@@ -60,7 +59,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -329,13 +328,8 @@ void Nudging::run_impl (const double dt)
   using view_1d       = KT::view_1d<PackT>;
   using view_2d       = KT::view_2d<PackT>;
 
-  // Have to add dt because first time iteration is at 0 seconds where you will
-  // not have any data from the field. The timestamp is only iterated at the
-  // end of the full step in scream.
-  auto ts = timestamp()+dt;
-
   // Perform time interpolation
-  m_time_interp.perform_time_interpolation(ts);
+  m_time_interp.perform_time_interpolation(end_of_step_ts());
 
   // If the input data contains "masked" values (sometimes also called "filled" values),
   // the horiz remapping would smear them around. To prevent that, we need to "cure"
@@ -393,7 +387,7 @@ void Nudging::run_impl (const double dt)
   }
 
   // Perform horizontal remap (if needed)
-  m_horiz_remapper->remap(true);
+  m_horiz_remapper->remap_fwd();
 
   // bypass copy_and_pad and vert_interp for skip_vert_interpolation:
   if (m_skip_vert_interpolation) {

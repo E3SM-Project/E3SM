@@ -87,7 +87,7 @@ protected:
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column
   // parameterizations nested inside the horizontal element grid. The grid names
-  // are "Physics PGN", where N in practice is 2. The name of each routine is
+  // are "physics_pgn", where N in practice is 2. The name of each routine is
   // fv_phys_X, where X is the name of an existing HommeDynamics routine. If
   // fv_phys is not being used, each of these routines does an immediate exit,
   // so it's OK to always call the routine.
@@ -98,7 +98,7 @@ protected:
   void fv_phys_set_grids();
   void fv_phys_requested_buffer_size_in_bytes() const;
   void fv_phys_initialize_impl();
-  void fv_phys_dyn_to_fv_phys(const bool restart = false);
+  void fv_phys_dyn_to_fv_phys(const util::TimeStamp& t, const bool restart = false);
   void fv_phys_pre_process();
   void fv_phys_post_process();
   // See [rrtmgp active gases] in eamxx_homme_fv_phys.cpp.
@@ -110,7 +110,7 @@ protected:
   void rayleigh_friction_apply (const Real dt) const;
 
 public:
-  // Fast boolean function returning whether Physics PGN is being used.
+  // Fast boolean function returning whether physics PGN is being used.
   bool fv_phys_active() const;
   struct GllFvRemapTmp;
   void remap_dyn_to_fv_phys(GllFvRemapTmp* t = nullptr) const;

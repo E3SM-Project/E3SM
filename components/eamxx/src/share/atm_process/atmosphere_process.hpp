@@ -176,14 +176,14 @@ public:
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::set<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
-  const std::set<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-  const std::set<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::set<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
+  const std::list<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
+  const std::list<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
+  const std::list<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
+  const std::list<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
-  //       the bundled field (if present) will be added as required fields for this atm proc.
+  //       the monolithic field (if present) will be added as required fields for this atm proc.
   //       See field_group.hpp for more info about groups of fields.
   const std::list<Field>& get_fields_in  () const { return m_fields_in;  }
   const std::list<Field>& get_fields_out () const { return m_fields_out; }
@@ -272,12 +272,15 @@ public:
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
 
-  // For internal diagnostics and debugging.
-  void print_global_state_hash(const std::string& label, const bool in = true,
-                               const bool out = true, const bool internal = true,
+  // Print a global hash of internal fields (useful for debugging non-bfbness)
+  // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
+  // the array will be hashed and reported as an additional entry
+  void print_global_state_hash(const std::string& label, const TimeStamp& t,
+                               const bool in = true, const bool out = true, const bool internal = true,
                                const Real* mem = nullptr, const int nmem = 0) const;
+
   // For BFB tracking in production simulations.
-  void print_fast_global_state_hash(const std::string& label) const;
+  void print_fast_global_state_hash(const std::string& label, const TimeStamp& t) const;
 
   // Set IOP object
   virtual void set_iop_data_manager(const iop_data_ptr& iop_data_manager) {
@@ -289,9 +292,13 @@ public:
   }
 
 protected:
-
   // Sends a message to the atm log
   void log (const LogLevel lev, const std::string& msg) const;
+
+  // Like the above, but ALWAYS sends the message (regardless of logger log level)
+  void log (const std::string& msg) const {
+    log(m_atm_logger->log_level(),msg);
+  }
 
   int get_num_subcycles () const { return m_num_subcycles; }
   int get_subcycle_iter () const { return m_subcycle_iter; }
@@ -352,24 +359,34 @@ protected:
   // Specialization for add_field to tracer group
   template<RequestType RT>
   void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
-                   const ekat::units::Units& u, const int ps = 1)
-  { add_field<RT>(name, grid->get_3d_scalar_layout(true), u, grid->name(), "tracers", ps); }
+                   const ekat::units::Units& u,
+                   const int ps = 1,
+                   const TracerAdvection tracer_advection = TracerAdvection::NoPreference)
+  {
+    std::list<std::string> tracer_groups;
+    tracer_groups.push_back("tracers");
+    if (tracer_advection==TracerAdvection::DynamicsAndTurbulence) {
+      tracer_groups.push_back("turbulence_advected_tracers");
+    } else if (tracer_advection==TracerAdvection::DynamicsOnly) {
+      tracer_groups.push_back("non_turbulence_advected_tracers");
+    }
+
+    FieldIdentifier fid(name, grid->get_3d_scalar_layout(true), u, grid->name());
+    FieldRequest req(fid, tracer_groups, ps);
+    req.calling_process = this->name();
+
+    add_field<RT>(req);
+  }
 
   // Group requests
   template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid, const int ps, const Bundling b,
-                  const DerivationType t, const std::string& src_name, const std::string& src_grid,
-                  const std::list<std::string>& excl = {})
-  { add_group<RT>(GroupRequest(name,grid,ps,b,t,src_name,src_grid,excl)); }
-
-  template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const Bundling b = Bundling::NotNeeded)
+                  const MonolithicAlloc b = MonolithicAlloc::NotRequired)
   { add_group<RT> (GroupRequest(name,grid_name,b)); }
 
   template<RequestType RT>
   void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const Bundling b = Bundling::NotNeeded)
+                  const int pack_size, const MonolithicAlloc b = MonolithicAlloc::NotRequired)
   { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
 
   template<RequestType RT>
@@ -381,14 +398,14 @@ protected:
 
     switch (RT) {
       case Required:
-        m_required_field_requests.emplace(req);
+        m_required_field_requests.push_back(req);
         break;
       case Computed:
-        m_computed_field_requests.emplace(req);
+        m_computed_field_requests.push_back(req);
         break;
       case Updated:
-        m_required_field_requests.emplace(req);
-        m_computed_field_requests.emplace(req);
+        m_required_field_requests.push_back(req);
+        m_computed_field_requests.push_back(req);
         break;
     }
   }
@@ -401,14 +418,14 @@ protected:
         "Error! Invalid request type in call to add_group.\n");
     switch (RT) {
       case Required:
-        m_required_group_requests.emplace(req);
+        m_required_group_requests.push_back(req);
         break;
       case Computed:
-        m_computed_group_requests.emplace(req);
+        m_computed_group_requests.push_back(req);
         break;
       case Updated:
-        m_required_group_requests.emplace(req);
-        m_computed_group_requests.emplace(req);
+        m_required_group_requests.push_back(req);
+        m_computed_group_requests.push_back(req);
         break;
     }
   }
@@ -424,7 +441,10 @@ protected:
   virtual void finalize_impl(/* what inputs? */) = 0;
 
   // This provides access to this process's timestamp.
-  const TimeStamp& timestamp() const { return m_time_stamp; }
+  // NOTE: start_of_step_ts/end_of_step_ts are the TimeStamp at the start/end
+  //       of the current subcycle (at run time).
+  const TimeStamp& start_of_step_ts() const { return m_start_of_step_ts; }
+  const TimeStamp& end_of_step_ts() const { return m_end_of_step_ts; }
 
   // These three methods modify the FieldTracking of the input field (see field_tracking.hpp)
   void update_time_stamps ();
@@ -548,12 +568,6 @@ private:
   strmap_t<strmap_t<Field*>> m_fields_out_pointers;
   strmap_t<strmap_t<Field*>> m_internal_fields_pointers;
 
-  // The list of in/out field/group requests.
-  std::set<FieldRequest>   m_required_field_requests;
-  std::set<FieldRequest>   m_computed_field_requests;
-  std::set<GroupRequest>   m_required_group_requests;
-  std::set<GroupRequest>   m_computed_group_requests;
-
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
@@ -571,9 +585,9 @@ private:
   };
   ColumnConservationCheckData m_column_conservation_check_data;
 
-  // This process's copy of the timestamp, which is set on initialization and
-  // updated during stepping.
-  TimeStamp m_time_stamp;
+  // This process's copy of the timestamps (current, as well as beg/end of step)
+  TimeStamp m_start_of_step_ts;
+  TimeStamp m_end_of_step_ts;
 
   // The number of times this process needs to be subcycled
   int m_num_subcycles = 1;
@@ -598,6 +612,12 @@ protected:
 
   // IOP object
   iop_data_ptr m_iop_data_manager;
+
+  // The list of in/out field/group requests.
+  std::list<FieldRequest>   m_required_field_requests;
+  std::list<FieldRequest>   m_computed_field_requests;
+  std::list<GroupRequest>   m_required_group_requests;
+  std::list<GroupRequest>   m_computed_group_requests;
 };
 
 // ================= IMPLEMENTATION ================== //

@@ -5,7 +5,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 namespace scream {
 
@@ -34,7 +34,7 @@ TEST_CASE("field_at_height")
   int num_global_cols = ncols*comm.size();
   auto gm = create_mesh_free_grids_manager(comm,0,0,nlevs,num_global_cols);
   gm->build_grids();
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   const auto m = ekat::units::m;
   // Create input data test fields

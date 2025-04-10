@@ -2,12 +2,12 @@
 ---
 filename_prefix: eamxx_output.decadal.6hourlyAVG_coarse.h
 iotype: pnetcdf
-Averaging Type: Average
-Max Snapshots Per File: 4  # one file per day
-horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc 
-Fields:
-  Physics PG2:
-    Field Names:
+averaging_type: average
+max_snapshots_per_file: 4  # one file per day
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
+fields:
+  physics_pg2:
+    field_names:
     # Full 3D Profile
     - p3_T_mid_tend
     - shoc_T_mid_tend
@@ -41,8 +41,7 @@ Fields:
     - SW_flux_dn_at_model_top
     - LW_flux_up_at_model_top
 output_control:
-  Frequency: 6
+  frequency: 6
   frequency_units: nhours
-  MPI Ranks in Filename: false
-Restart:
+restart:
   force_new_file: true

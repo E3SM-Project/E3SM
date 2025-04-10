@@ -15,8 +15,6 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
   EKAT_REQUIRE_MSG (unique->is_unique(),
       "Error! GridImportExport unique grid is not unique.\n");
 
-  using gid_type = AbstractGrid::gid_type;
-
   m_unique = unique;
   m_overlapped = overlapped;
   m_comm = unique->get_comm();
@@ -153,22 +151,19 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
   Kokkos::deep_copy(m_export_lids,m_export_lids_h);
 
   // Compute counts per pid
-  {
-    m_num_exports_per_pid = view_1d<int>("",m_comm.size());
-    m_num_exports_per_pid_h = Kokkos::create_mirror_view(m_num_exports_per_pid);
-    for (size_t i=0; i<m_export_pids.size(); ++i) {
-      ++m_num_exports_per_pid_h[m_export_pids_h[i]];
-    }
-    Kokkos::deep_copy(m_num_exports_per_pid,m_num_exports_per_pid_h);
+  m_num_exports_per_pid = view_1d<int>("",m_comm.size());
+  m_num_exports_per_pid_h = Kokkos::create_mirror_view(m_num_exports_per_pid);
+  for (size_t i=0; i<m_export_pids.size(); ++i) {
+    ++m_num_exports_per_pid_h[m_export_pids_h[i]];
   }
-  {
-    m_num_imports_per_pid = view_1d<int>("",m_comm.size());
-    m_num_imports_per_pid_h = Kokkos::create_mirror_view(m_num_imports_per_pid);
-    for (size_t i=0; i<m_import_pids.size(); ++i) {
-      ++m_num_imports_per_pid_h[m_import_pids_h[i]];
-    }
-    Kokkos::deep_copy(m_num_imports_per_pid,m_num_imports_per_pid_h);
+  Kokkos::deep_copy(m_num_exports_per_pid,m_num_exports_per_pid_h);
+
+  m_num_imports_per_pid = view_1d<int>("",m_comm.size());
+  m_num_imports_per_pid_h = Kokkos::create_mirror_view(m_num_imports_per_pid);
+  for (size_t i=0; i<m_import_pids.size(); ++i) {
+    ++m_num_imports_per_pid_h[m_import_pids_h[i]];
   }
+  Kokkos::deep_copy(m_num_imports_per_pid,m_num_imports_per_pid_h);
 }
 
 } // namespace scream

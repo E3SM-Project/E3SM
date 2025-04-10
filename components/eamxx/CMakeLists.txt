@@ -97,6 +97,7 @@ option (Kokkos_ENABLE_SERIAL "" ON)
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
+set (SYCL_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_CUDA)
@@ -106,12 +107,19 @@ if (Kokkos_ENABLE_CUDA)
   set (CUDA_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
-# Determine if this is a Cuda build.
+# Determine if this is a HIP build.
 if (Kokkos_ENABLE_HIP)
   # Add CUDA as a language for CUDA builds
   enable_language(HIP)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
   set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
+endif ()
+
+# Determine if this is a sycl build.
+if (Kokkos_ENABLE_SYCL)
+  #enable_language(SYCL)
+  set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
+  set (SYCL_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
 if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
@@ -178,7 +186,7 @@ elseif(MACH)
 endif()
 
 set(DEFAULT_SMALL_KERNELS FALSE)
-if (Kokkos_ENABLE_HIP)
+if (Kokkos_ENABLE_HIP OR Kokkos_ENABLE_SYCL)
   set(DEFAULT_SMALL_KERNELS TRUE)
 endif()
 
@@ -197,7 +205,13 @@ set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to n
 set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
 set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
-option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
+
+if (Kokkos_ENABLE_SYCL)
+  option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" OFF)
+else()
+  option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
+endif()
+
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for ALL components that support them")
 set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for P3 only")
 set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels for SHOC only")
@@ -208,12 +222,12 @@ endif()
 # Add RRTMGP settings. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
 # to turn on the RRTMGP internal checks here as well, via
 #     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
-# and then adding to scream_config.h:
+# and then adding to eamxx_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
 
-option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" TRUE)
-option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" FALSE)
+option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" FALSE)
+option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" TRUE)
 if (SCREAM_RRTMGP_ENABLE_YAKL)
   add_definitions("-DRRTMGP_ENABLE_YAKL")
 endif()
@@ -401,7 +415,7 @@ if (NOT SCREAM_LIB_ONLY)
 
   # All baselines tests will add a line to the baseline_list file,
   # specifyiing the full name of the baseline they generated.
-  # When test-all-scream has to generate new baselines, it will run
+  # When test-all-eamxx has to generate new baselines, it will run
   # ctest -L baseline_gen, and then read this file to find out all the
   # baseline files to copy into the baseline directory
   set (SCREAM_TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
@@ -556,10 +570,10 @@ if (SCREAM_DOUBLE_PRECISION)
 endif()
 
 # This must be done using add_definitions because it is used to determine
-# whether to include scream_config.h.
+# whether to include eamxx_config.h.
 add_definitions(-DSCREAM_CONFIG_IS_CMAKE)
 
-# Hooks for testing test-all-scream within test-scripts
+# Hooks for testing test-all-eamxx within test-scripts
 if ($ENV{SCREAM_FORCE_BUILD_FAIL})
   add_definitions(-DSCREAM_FORCE_BUILD_FAIL)
 endif()
@@ -578,20 +592,17 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
     add_subdirectory(tests)
   endif()
 
-  # Generate scream_config.h and scream_config.f
+  # Generate eamxx_config.h and eamxx_config.f
   include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 
-  # Build any tools in the scripts/ dir.
-  add_subdirectory(scripts)
-
-  # Generate scream_config.h and scream_config.f
+  # Generate eamxx_config.h and eamxx_config.f
   include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder

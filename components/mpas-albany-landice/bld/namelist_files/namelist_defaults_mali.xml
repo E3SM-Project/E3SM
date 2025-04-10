@@ -98,7 +98,7 @@
 <config_temperature_profile_variability_period>1.0</config_temperature_profile_variability_period>
 <config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
 <config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
-<config_front_mass_bal_grounded>'none'</config_front_mass_bal_grounded>
+<config_front_mass_bal_grounded>'ismip6'</config_front_mass_bal_grounded>
 <config_use_3d_thermal_forcing_for_face_melt>.false.</config_use_3d_thermal_forcing_for_face_melt>
 <config_beta_ocean_thermal_forcing>1.18</config_beta_ocean_thermal_forcing>
 <config_add_ocean_thermal_forcing>0.0</config_add_ocean_thermal_forcing>
@@ -106,6 +106,10 @@
 <config_subglacial_discharge_coefficient>3.0e-4</config_subglacial_discharge_coefficient>
 <config_subglacial_discharge_intercept>0.15</config_subglacial_discharge_intercept>
 <config_uniform_face_melt_rate>0.0</config_uniform_face_melt_rate>
+<config_ocean_data_extrapolation>.false.</config_ocean_data_extrapolation>
+<config_ocean_data_extrap_ncells_extra>10</config_ocean_data_extrap_ncells_extra>
+<config_invalid_value_TF>1.0e36</config_invalid_value_TF>
+<config_weight_value_cell>0.9</config_weight_value_cell>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>

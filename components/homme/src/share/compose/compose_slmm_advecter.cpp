@@ -83,6 +83,6 @@ void Advecter<MT>::sync_to_device() {
   deep_copy<MT>(local_mesh_d_, local_mesh_m_, local_mesh_h_);
 }
 
-template class Advecter<>;
+template struct Advecter<>;
 
 } // namespace slmm

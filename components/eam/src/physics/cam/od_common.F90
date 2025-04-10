@@ -13,8 +13,9 @@ use shr_sys_mod,   only: shr_sys_flush
 use ppgrid,        only: pcols, pver, begchunk, endchunk
 use cam_logfile,   only: iulog
 use cam_abortutils,only: endrun
+use spmd_utils,    only: masterproc
 use pio,           only: file_desc_t
-use phys_control,  only: use_od_ls, use_od_bl, use_od_ss, od_ls_ncleff, od_bl_ncd, od_ss_sncleff
+use phys_control,  only: use_od_ls, use_od_bl, use_od_ss
 use physics_buffer,only: dtype_r8, physics_buffer_desc, pbuf_get_chunk
 use physics_buffer,only: pbuf_get_index, pbuf_get_field, pbuf_add_field, pbuf_set_field
 
@@ -23,6 +24,7 @@ private
 save
 
 ! Public interface.
+public :: oro_drag_readnl
 public :: oro_drag_register
 public :: oro_drag_init
 public :: oro_drag_interface
@@ -40,7 +42,61 @@ integer :: oro_drag_asymmetry_idx = -1 ! Asymmetry
 integer :: oro_drag_efflength_idx = -1 ! Effective length
 integer :: oro_drag_ribulk_idx    = -1 ! bulk richardson number (calculated in CLUBB)
 
+!tunable parameter to the od schemes
+real(r8),public, protected :: od_ls_ncleff = 3._r8 !tunable parameter for oGWD
+real(r8),public, protected :: od_bl_ncd    = 3._r8 !tunable parameter for FBD
+real(r8),public, protected :: od_ss_sncleff= 1._r8 !tunable parameter for sGWD
+
 contains
+
+!==========================================================================
+
+subroutine oro_drag_readnl(nlfile)   
+  
+  use namelist_utils,  only: find_group_name
+  use units,           only: getunit, freeunit
+  use mpishorthand
+
+  ! File containing namelist input.
+  character(len=*), intent(in) :: nlfile
+
+  ! Local variables
+  integer :: unitn, ierr 
+  character(len=*), parameter :: subname = 'oro_drag_readnl'
+
+  ! More specific name for dc to prevent a name clash or confusion in the
+  ! namelist.
+
+  namelist /oro_drag_nl/ od_ls_ncleff, od_bl_ncd, od_ss_sncleff
+  !---------------------------------------------------------------------
+  !read oro_drag_nl only when use the od schemes
+  if (use_od_ls.or.use_od_bl.or.use_od_ss) then
+    if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'oro_drag_nl', status=ierr)
+      if (ierr == 0) then
+        read(unitn, oro_drag_nl, iostat=ierr)
+        if (ierr /= 0) then
+          call endrun(subname // ':: ERROR reading namelist')
+        end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+    end if
+
+    if (masterproc) write(iulog,*) "oro_drag_readnl od_ls_ncleff, od_bl_ncd, od_ss_sncleff ",od_ls_ncleff,od_bl_ncd,od_ss_sncleff
+
+#ifdef SPMD
+  ! Broadcast namelist variables
+  call mpibcast(od_ls_ncleff,    1, mpir8,  0, mpicom)
+  call mpibcast(od_bl_ncd,       1, mpir8,  0, mpicom)
+  call mpibcast(od_ss_sncleff,   1, mpir8,  0, mpicom)
+#endif
+  !
+  endif
+
+end subroutine oro_drag_readnl
 
 !==========================================================================
 

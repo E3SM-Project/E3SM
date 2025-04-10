@@ -59,6 +59,8 @@ module ocn_frazil_forcing
    !--------------------------------------------------------------------
 
    logical :: frazilFormationOn
+   integer :: usePorosity   ! 1 when computing internal frazil salinity using porosity
+                            ! 0 when using config_frazil_sea_ice_reference_salinity
 
 !***********************************************************************
 
@@ -360,6 +362,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
       real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
       real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
+      real (kind=RKIND), dimension(:), pointer :: lowSalinityFrazilIce
       integer, dimension(:), pointer :: landIceMask, landIceFloatingMask
 
       integer :: iCell, k, nCells
@@ -390,7 +393,7 @@ contains
       integer, pointer :: indexSalinityPtr !< index in tracers array for salinity
       integer :: indexTemperature !< index in tracers array for temperature
       integer :: indexSalinity !< index in tracers array for salinity
-      integer :: kBottomFrazil  ! k index where testing for frazil begins
+      integer :: kBottomFrazil ! k index where testing for frazil begins
 
       logical :: underFloatingLandIce, underLandIce ! indicates if we are under land ice
 
@@ -435,6 +438,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'frazilSalinityTendency', frazilSalinityTendency)
       call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'lowSalinityFrazilIce', lowSalinityFrazilIce)
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
       call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
       call mpas_pool_get_array(forcingPool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux)
@@ -447,6 +451,9 @@ contains
       frazilTemperatureTendency = 0.0_RKIND
       frazilSalinityTendency = 0.0_RKIND
       frazilLayerThicknessTendency = 0.0_RKIND
+
+      ! initialize frazil salinity conservation field
+      lowSalinityFrazilIce = 0.0_RKIND
 
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
@@ -489,7 +496,7 @@ contains
         ! find deepest level where frazil can be created
         kBottomFrazil=maxLevelCell(iCell)
         do k=maxLevelCell(iCell), minLevelCell(iCell), -1
-          ! add the ssh so frazil can form below land ice, where the ssh is depressed
+         ! add the ssh so frazil can form below land ice, where the ssh is depressed
           if (-zMid(k,iCell) < -ssh(iCell) + config_frazil_maximum_depth) then
             kBottomFrazil=k
             exit
@@ -529,9 +536,10 @@ contains
 
             ! get frazil salinity
             if (underLandIce) then
-              frazilSalinity = 0.0_RKIND
+              frazilSalinity = usePorosity * config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell)
             else
-              frazilSalinity = config_frazil_sea_ice_reference_salinity
+              frazilSalinity = usePorosity * config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) &
+                 + config_frazil_sea_ice_reference_salinity * (1 - usePorosity)
             end if
             frazilSalinity = min( frazilSalinity, activeTracers(indexSalinity, k, iCell) )
 
@@ -540,7 +548,6 @@ contains
 
             ! limit the frazil formed appropriately
             newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
-
 
             ! Determine new salt in frazil
             newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity
@@ -564,7 +571,6 @@ contains
             sumNewThicknessWeightedSaltContent = sumNewThicknessWeightedSaltContent + newThicknessWeightedSaltContent
 
           else
-
             ! ocean water is warm enough to melt frazil
 
             ! test to see if there is frazil to be melted
@@ -599,9 +605,13 @@ contains
                                                  * config_frazil_ice_density ) / (config_specific_heat_sea_water * rho_sw) &
                                                  / dt
 
+              ! ocean fluid temperature is modified due to mixing of existing water with meltwater at the freezing point
+              frazilTemperatureTendency(k,iCell) = frazilTemperatureTendency(k,iCell) + &
+                   meltedFrazilIceThickness * oceanFreezingTemperature / dt
+
               ! keep track of new frazil ice
-              sumNewThicknessWeightedSaltContent = sumNewThicknessWeightedSaltContent - meltedThicknessWeightedSaltContent
-              sumNewFrazilIceThickness = sumNewFrazilIceThickness - meltedFrazilIceThickness
+              sumNewThicknessWeightedSaltContent = max(0.0_RKIND,sumNewThicknessWeightedSaltContent - meltedThicknessWeightedSaltContent)
+              sumNewFrazilIceThickness = max(0.0_RKIND,sumNewFrazilIceThickness - meltedFrazilIceThickness)
 
             endif  ! if (sumNewFrazilIceThickness > 0.0_RKIND)
 
@@ -609,22 +619,42 @@ contains
 
         enddo   ! do k=kBottom,minLevelCell,-1
 
-        ! frazilIceFreshwaterFlux forms part of the landIceFreshwaterFluxTotal computed in surface land ice fluxes
-        frazilIceFreshwaterFlux(iCell) = - (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
         ! accumulate frazil mass to column total
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
-                                           * config_frazil_ice_density
-        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + sumNewThicknessWeightedSaltContent
+           * config_frazil_ice_density
 
+        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
+           (1-usePorosity) * sumNewThicknessWeightedSaltContent
+
+        !NJ: Assume frazil salinity is the coupling salinity
         if ( underLandIce ) then
+           ! frazilIceFreshwaterFlux forms part of the landIceFreshwaterFluxTotal computed in surface land ice fluxes
+           frazilIceFreshwaterFlux(iCell) = - (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
            ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
            ! for freshwater budgets
            accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
                                                   + sumNewFrazilIceThickness * config_frazil_ice_density
            ! There is no accumulatedLandIceFrazilSalinity because it is always 0
+           frazilSalinity = 0.0_RKIND
+        else
+           frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
+        !Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
+        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1) then
+           newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
+           if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
+            !Warning: salt conservation error. Track with lowSalinityFrazilIce
+            lowSalinityFrazilIce(iCell) = newThicknessWeightedSaltContent - sumNewThicknessWeightedSaltContent
+            accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + max(0.0_RKIND, sumNewThicknessWeightedSaltContent)
+           else
+            !salt expelled at the surface
+            frazilSalinityTendency(minLevelCell(iCell),iCell) = frazilSalinityTendency(minLevelCell(iCell),iCell) + &
+                max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) / dt
+            accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + newThicknessWeightedSaltContent
+           endif
+         endif ! if frazil ice is formed
       enddo   ! do iCell = 1, nCells
       !$omp end do
       !$omp end parallel
@@ -666,6 +696,9 @@ contains
       if(config_use_frazil_ice_formation) then
         frazilFormationOn = .true.
       end if
+
+      usePorosity = 0
+      if(config_use_frazil_ice_porosity) usePorosity = 1
 
    end subroutine ocn_frazil_forcing_init!}}}
 

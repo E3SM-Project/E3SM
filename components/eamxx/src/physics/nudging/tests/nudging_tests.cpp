@@ -64,10 +64,10 @@ TEST_CASE("nudging_tests") {
   auto gm_fine_v = create_gm (comm,ngcols_data,nlevs_fine);
   auto gm_fine   = create_gm (comm,ngcols_fine,nlevs_fine);
 
-  auto grid_data   = gm_data->get_grid("Point Grid");
-  auto grid_fine_h = gm_fine_h->get_grid("Point Grid");
-  auto grid_fine_v = gm_fine_v->get_grid("Point Grid");
-  auto grid_fine   = gm_fine->get_grid("Point Grid");
+  auto grid_data   = gm_data->get_grid("point_grid");
+  auto grid_fine_h = gm_fine_h->get_grid("point_grid");
+  auto grid_fine_v = gm_fine_v->get_grid("point_grid");
+  auto grid_fine   = gm_fine->get_grid("point_grid");
   
   const int ncols_data = grid_data->get_num_local_dofs();
 

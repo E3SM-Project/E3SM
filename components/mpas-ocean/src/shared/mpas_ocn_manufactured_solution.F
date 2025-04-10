@@ -58,6 +58,7 @@ module ocn_manufactured_solution
    real (kind=RKIND) :: kx, ky
    real (kind=RKIND) :: ang_freq
    real (kind=RKIND) :: eta0
+   real (kind=RKIND) :: viscDel2, viscDel4
    real (kind=RKIND) :: H0
 
 !***********************************************************************
@@ -201,6 +202,17 @@ contains
                       + ang_freq*sin(phase) &
                       - 0.5_RKIND*eta0*(kx + ky)*sin(2.0_RKIND*(phase))) 
 
+            if (.not. config_disable_vel_hmix) then
+               if (config_use_mom_del2) then 
+                  u = u + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
+                  v = v + viscDel2 * eta0 * (kx**2 + ky**2) * cos(phase)
+               endif
+               if (config_use_mom_del4) then 
+                  u = u - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
+                  v = v - viscDel4 * eta0 * ((kx**4 + ky**4 + kx**2 * ky**2) * cos(phase))
+               endif
+            endif
+
             tend(k,iEdge) = tend(k,iEdge) + u*cos(angleEdge(iEdge)) + v*sin(angleEdge(iEdge))
          enddo
 
@@ -234,6 +246,9 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: restingThickness
 
       if (.not. config_use_manufactured_solution) return
+
+      viscDel2 = config_mom_del2
+      viscDel4 = config_mom_del4
 
       kx = 2.0_RKIND*pi / config_manufactured_solution_wavelength_x
       ky = 2.0_RKIND*pi / config_manufactured_solution_wavelength_y

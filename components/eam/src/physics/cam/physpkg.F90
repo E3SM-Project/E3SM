@@ -964,7 +964,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call macrop_driver_init(pbuf2d)
        call microp_aero_init()
        call microp_driver_init(pbuf2d)
-       call conv_water_init
+       call conv_water_init(pbuf2d)
     end if
 
     ! initiate CLUBB within CAM
@@ -3247,14 +3247,14 @@ subroutine add_fld_default_calls()
   implicit none
 
   !Add all existing ptend names for the addfld calls
-  character(len=20), parameter :: vlist(28) = (/     'topphysbc           '                       ,&
-       'chkenergyfix        ','dadadj              ','zm_convr            ','zm_conv_evap        ',&
-       'momtran             ','zm_conv_tend        ','UWSHCU              ','convect_shallow     ',&
-       'pcwdetrain_mac      ','macro_park          ','macrop              ','micro_mg            ',&
-       'cldwat_mic          ','aero_model_wetdep_ma','convtran2           ','cam_radheat         ',&
-       'chemistry           ','vdiff               ','rayleigh_friction   ','aero_model_drydep_ma',&
-       'Grav_wave_drag      ','convect_shallow_off ','clubb_ice1          ','clubb_det           ',&
-       'clubb_ice4          ','clubb_srf           ','micro_p3            ' /)
+  character(len=21), parameter :: vlist(28) = (/       'topphysbc            '                       ,&
+       'chkenergyfix         ','dadadj               ','zm_convr             ','zm_conv_evap         ',&
+       'zm_transport_momentum','zm_conv_tend         ','UWSHCU               ','convect_shallow      ',&
+       'pcwdetrain_mac       ','macro_park           ','macrop               ','micro_mg             ',&
+       'cldwat_mic           ','aero_model_wetdep_ma ','zm_transport_tracer_2','cam_radheat          ',&
+       'chemistry            ','vdiff                ','rayleigh_friction    ','aero_model_drydep_ma ',&
+       'Grav_wave_drag       ','convect_shallow_off  ','clubb_ice1           ','clubb_det            ',&
+       'clubb_ice4           ','clubb_srf            ','micro_p3             '/)
 
 
 

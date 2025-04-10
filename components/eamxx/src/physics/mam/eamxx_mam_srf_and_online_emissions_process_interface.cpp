@@ -17,11 +17,13 @@ using soilErodibilityFunc =
 // ================================================================
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : MAMGenericInterface(comm, params) {
   // FIXME: Do we want to read dust emiss factor from the namelist??
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
@@ -29,7 +31,7 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
 // ================================================================
 void MAMSrfOnlineEmiss::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -38,8 +40,6 @@ void MAMSrfOnlineEmiss::set_grids(
   using namespace ekat::units;
   constexpr auto m2     = pow(m, 2);
   constexpr auto s2     = pow(s, 2);
-  constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-  constexpr auto n_unit = 1 / kg;   // units of number mixing ratios of tracers
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
   const FieldLayout scalar2d   = grid_->get_2d_scalar_layout();
@@ -60,46 +60,13 @@ void MAMSrfOnlineEmiss::set_grids(
 
   // -- Variables required for building DS to compute z_mid --
   // Specific humidity [kg/kg]
-  // FIXME: Comply with add_tracer calls
-  add_field<Required>("qv", scalar3d_m, q_unit, grid_name, "tracers");
-
-  // Cloud liquid mass mixing ratio [kg/kg]
-  add_field<Required>("qc", scalar3d_m, q_unit, grid_name, "tracers");
-
-  // Cloud ice mass mixing ratio [kg/kg]
-  add_field<Required>("qi", scalar3d_m, q_unit, grid_name, "tracers");
-
-  // Cloud liquid number mixing ratio [1/kg]
-  add_field<Required>("nc", scalar3d_m, n_unit, grid_name, "tracers");
-
-  // Cloud ice number mixing ratio [1/kg]
-  add_field<Required>("ni", scalar3d_m, n_unit, grid_name, "tracers");
-
-  // Temperature[K] at midpoints
-  add_field<Required>("T_mid", scalar3d_m, K, grid_name);
-
-  // Vertical pressure velocity [Pa/s] at midpoints
-  add_field<Required>("omega", scalar3d_m, Pa / s, grid_name);
-
-  // Total pressure [Pa] at midpoints
-  add_field<Required>("p_mid", scalar3d_m, Pa, grid_name);
-
-  // Total pressure [Pa] at interfaces
-  add_field<Required>("p_int", scalar3d_i, Pa, grid_name);
-
-  // Layer thickness(pdel) [Pa] at midpoints
-  add_field<Required>("pseudo_density", scalar3d_m, Pa, grid_name);
-
-  // Planetary boundary layer height [m]
-  add_field<Required>("pbl_height", scalar2d, m, grid_name);
-
-  // Surface geopotential [m2/s2]
-  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+  add_tracers_wet_atm();
+  add_fields_dry_atm();
 
   //----------- Variables from microphysics scheme -------------
 
-  // Total cloud fraction [fraction] (Require only for building DS)
-  add_field<Required>("cldfrac_tot", scalar3d_m, nondim, grid_name);
+  // Surface geopotential [m2/s2]
+  add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
 
   // -- Variables required for online dust and sea salt emissions --
 
@@ -139,7 +106,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ dms;
   // File name, name and sectors
-  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
   srf_emiss_species_.push_back(dms);  // add to the vector
@@ -149,7 +116,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ so2;
   // File name, name and sectors
-  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_SO2");
+  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_so2");
   so2.species_name = "so2";
   so2.sectors      = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(so2);  // add to the vector
@@ -289,7 +256,7 @@ void MAMSrfOnlineEmiss::set_grids(
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
 }
 
 // ================================================================
@@ -314,41 +281,20 @@ void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
 //  INITIALIZE_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
+  // Check the interval values for the following fields used by this interface.
+  // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
+  // because we automatically added these fields.
+  const std::map<std::string, std::pair<Real, Real>> ranges_emissions = {
+      {"sst", {-1e10, 1e10}},  // FIXME
+      {"dstflx", {-1e10, 1e10}}};
+  set_ranges_process(ranges_emissions);
+  add_interval_checks();
+
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
-
-  // Populate the wet atmosphere state with views from fields
-  wet_atm_.qv = get_field_in("qv").get_view<const Real **>();
-
-  // Following wet_atm vars are required only for building DS
-  wet_atm_.qc = get_field_in("qc").get_view<const Real **>();
-  wet_atm_.nc = get_field_in("nc").get_view<const Real **>();
-  wet_atm_.qi = get_field_in("qi").get_view<const Real **>();
-  wet_atm_.ni = get_field_in("ni").get_view<const Real **>();
-
-  // Populate the dry atmosphere state with views from fields
-  dry_atm_.T_mid = get_field_in("T_mid").get_view<const Real **>();
-  dry_atm_.p_mid = get_field_in("p_mid").get_view<const Real **>();
-  dry_atm_.p_del = get_field_in("pseudo_density").get_view<const Real **>();
-  dry_atm_.p_int = get_field_in("p_int").get_view<const Real **>();
-
-  // Following dry_atm vars are required only for building DS
-  dry_atm_.cldfrac = get_field_in("cldfrac_tot").get_view<const Real **>();
-  dry_atm_.pblh    = get_field_in("pbl_height").get_view<const Real *>();
-  dry_atm_.omega   = get_field_in("omega").get_view<const Real **>();
-
-  // store fields converted to dry mmr from wet mmr in dry_atm_
-  dry_atm_.z_mid     = buffer_.z_mid;
-  dry_atm_.z_iface   = buffer_.z_iface;
-  dry_atm_.dz        = buffer_.dz;
-  dry_atm_.qv        = buffer_.qv_dry;
-  dry_atm_.qc        = buffer_.qc_dry;
-  dry_atm_.nc        = buffer_.nc_dry;
-  dry_atm_.qi        = buffer_.qi_dry;
-  dry_atm_.ni        = buffer_.ni_dry;
-  dry_atm_.w_updraft = buffer_.w_updraft;
-  dry_atm_.z_surf    = 0.0;  // FIXME: for now
+  populate_wet_atm(wet_atm_);
+  populate_dry_atm(dry_atm_, buffer_);
 
   // ---------------------------------------------------------------
   // Output fields
@@ -364,7 +310,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
 
   // Current month ( 0-based)
-  const int curr_month = timestamp().get_month() - 1;
+  const int curr_month = start_of_step_ts().get_month() - 1;
 
   // Load the first month into data_end.
 
@@ -376,7 +322,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, timestamp(), curr_month, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, start_of_step_ts(), curr_month, *ispec_srf.horizInterp_,
         ispec_srf.data_end_);  // output
   }
 
@@ -394,7 +340,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Time dependent data
   marineOrganicsFunc::update_marine_organics_data_from_file(
-      morg_dataReader_, timestamp(), curr_month, *morg_horizInterp_,
+      morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
       morg_data_end_);  // output
 
   //-----------------------------------------------------------------
@@ -423,7 +369,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
               constituent_fluxes);  // in-out
   Kokkos::fence();
   // Gather time and state information for interpolation
-  const auto ts = timestamp() + dt;
+  const auto ts = end_of_step_ts();
 
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt

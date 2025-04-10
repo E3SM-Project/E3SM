@@ -11,11 +11,11 @@ namespace scream {
 MLCorrection::MLCorrection(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  m_ML_model_path_tq = m_params.get<std::string>("ML_model_path_tq");
-  m_ML_model_path_uv = m_params.get<std::string>("ML_model_path_uv");
-  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ML_model_path_sfc_fluxes");
-  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ML_output_fields");
-  m_ML_correction_unit_test = m_params.get<bool>("ML_correction_unit_test");
+  m_ML_model_path_tq = m_params.get<std::string>("ml_model_path_tq");
+  m_ML_model_path_uv = m_params.get<std::string>("ml_model_path_uv");
+  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ml_model_path_sfc_fluxes");
+  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ml_output_fields");
+  m_ML_correction_unit_test = m_params.get<bool>("ml_correction_unit_test");
 }
 
 // =========================================================================================
@@ -27,7 +27,7 @@ void MLCorrection::set_grids(
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   constexpr int ps = Pack::n;
-  m_grid                = grids_manager->get_grid("Physics");
+  m_grid                = grids_manager->get_grid("physics");
   const auto &grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();  // Number of columns on this rank
   m_num_levs =
@@ -67,7 +67,7 @@ void MLCorrection::set_grids(
   add_field<Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name);
   /* ----------------------- WARNING --------------------------------*/
   add_tracer<Updated>("qv", m_grid, kg/kg, ps);
-  add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
+  add_group<Updated>("tracers", grid_name, 1, MonolithicAlloc::Required);
 }
 
 // =========================================================================================
@@ -99,7 +99,7 @@ void MLCorrection::initialize_impl(const RunType /* run_type */) {
 // =========================================================================================
 void MLCorrection::run_impl(const double dt) {
   // use model time to infer solar zenith angle for the ML prediction
-  auto current_ts = timestamp();
+  auto current_ts = start_of_step_ts();
   std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
 
   const auto &phis            = get_field_in("phis").get_view<const Real *, Host>();
@@ -160,7 +160,7 @@ void MLCorrection::run_impl(const double dt) {
   ekat::enable_fpes(fpe_mask);
 
   // Now back out the qv change abd apply it to precipitation, only if Tq ML is turned on
-  if (m_ML_model_path_tq != "None") {
+  if (m_ML_model_path_tq != "none") {
     using PC  = scream::physics::Constants<Real>;
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;

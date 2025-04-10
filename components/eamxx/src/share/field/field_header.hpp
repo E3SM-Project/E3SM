@@ -4,10 +4,10 @@
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_tracking.hpp"
 #include "share/field/field_alloc_prop.hpp"
-#include "share/util/scream_family_tracking.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_family_tracking.hpp"
+#include "share/eamxx_types.hpp"
 
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 #include "ekat/std_meta/ekat_std_any.hpp"
 
 #include <vector>
@@ -84,6 +84,11 @@ public:
 
   std::shared_ptr<FieldHeader> alias (const std::string& name) const;
 
+  // Two headers alias each other if either
+  //   - they are the same obj
+  //   - they have the same tracking, alloc_prop and extra data (they were created by alias above)
+  //   - they have the same parent field and their subview info (form alloc prop) are the same
+  bool is_aliasing (const FieldHeader& rhs) const;
 protected:
 
   // Friend this function, so it can set up a subfield header

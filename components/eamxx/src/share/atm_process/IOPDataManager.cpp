@@ -1,28 +1,13 @@
 #include "share/grid/point_grid.hpp"
+#include "share/grid/remap/iop_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/atm_process/IOPDataManager.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
 
 #include <numeric>
-
-// Extend ekat mpi type for <Real,int> pairs,
-// used for reduction of type MPI_MINLOC.
-namespace ekat {
-#ifdef SCREAM_DOUBLE_PRECISION
-  template<>
-  MPI_Datatype get_mpi_type<std::pair<double, int>> () {
-    return MPI_DOUBLE_INT;
-  }
-#else
-  template<>
-  MPI_Datatype get_mpi_type<std::pair<float, int>> () {
-    return MPI_FLOAT_INT;
-  }
-#endif
-}
 
 namespace scream {
 namespace control {
@@ -99,7 +84,7 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   //                  First entry will be the variable name used when accessing in class
   //   - fl:          IOP field layout (acceptable ranks: 0, 1)
   //   - srf_varname: Name of surface variable potentially in iop file associated with iop variable.
-  auto setup_iop_field = [&, this] (const vos&         varnames,
+  auto setup_iop_field = [&, this] (const std::vector<std::string>& varnames,
                                     const FieldLayout& fl,
                                     const std::string& srf_varname = "none") {
     EKAT_REQUIRE_MSG(fl.rank() == 0 || fl.rank() == 1,
@@ -248,9 +233,11 @@ initialize_iop_file(const util::TimeStamp& run_t0,
   else if (scorpio::has_dim(iop_file, "tsec")) time_dimname = "tsec";
   else EKAT_ERROR_MSG("Error! No valid dimension for tsec in "+iop_file+".\n");
 
-  // When we read vars, "time" must be treated as unlimited, to avoid issues
-  if (not scorpio::is_dim_unlimited(iop_file,time_dimname)) {
-    scorpio::pretend_dim_is_unlimited(iop_file,time_dimname);
+  // When we read vars, we need time to be a "record" dimension, so that buffers
+  // are only filled with one time slice at a time. In our scorpio interfaces,
+  // we call the record dimension "time" (since that's what it virtually always is)
+  if (not scorpio::has_time_dim(iop_file)) {
+    scorpio::mark_dim_as_time(iop_file,time_dimname);
   }
 
   const auto ntimes = scorpio::get_dimlen(iop_file, time_dimname);
@@ -321,184 +308,60 @@ setup_io_info(const std::string& file_name,
     // IO grid needs to have ncol dimension equal to the IC/topo file
     const auto nc_file_ncols = scorpio::get_dimlen(file_name, "ncol");
     const auto nlevs = grid->get_num_vertical_levels();
-    m_io_grids[grid_name] = create_point_grid(grid_name,
-                                              nc_file_ncols,
-                                              nlevs,
-                                              m_comm);
-  }
+    auto grid = create_point_grid(grid_name,nc_file_ncols,nlevs,m_comm);
 
-  // Store closest lat/lon info for this grid if doesn't exist
-  if (m_lat_lon_info.count(grid_name) == 0) {
-    const auto& io_grid = m_io_grids[grid_name];
+    // Read lat/lon fields from dile
+    auto lat = grid->create_geometry_data("lat",grid->get_2d_scalar_layout());
+    auto lon = grid->create_geometry_data("lon",grid->get_2d_scalar_layout());
+    AtmosphereInput latlon_reader (file_name,grid,{lat,lon});
+    latlon_reader.read_variables();
 
-    // Create lat/lon fields
-    const auto ncols = io_grid->get_num_local_dofs();
-    std::vector<Field> fields;
-
-    FieldIdentifier lat_fid("lat",
-                            FieldLayout({FieldTag::Column},{ncols}),
-                            ekat::units::Units::nondimensional(),
-                            grid_name);
-    Field lat_f(lat_fid);
-    lat_f.allocate_view();
-    fields.push_back(lat_f);
-
-    FieldIdentifier lon_fid("lon",
-                            FieldLayout({FieldTag::Column},{ncols}),
-                            ekat::units::Units::nondimensional(),
-                            grid_name);
-    Field lon_f(lon_fid);
-    lon_f.allocate_view();
-    fields.push_back(lon_f);
-
-    // Read from file
-    AtmosphereInput file_reader(file_name, io_grid, fields);
-    file_reader.read_variables();
-    file_reader.finalize();
-
-    // Find column index of closest lat/lon to target_lat/lon params
-    auto lat_v = fields[0].get_view<Real*>();
-    auto lon_v = fields[1].get_view<Real*>();
-    const auto target_lat = m_params.get<Real>("target_latitude");
-    const auto target_lon = m_params.get<Real>("target_longitude");
-    using minloc_t = Kokkos::MinLoc<Real,int>;
-    using minloc_value_t = typename minloc_t::value_type;
-    minloc_value_t minloc;
-    Kokkos::parallel_reduce(ncols, KOKKOS_LAMBDA (int icol, minloc_value_t& result) {
-      auto dist = std::abs(lat_v(icol)-target_lat)+std::abs(lon_v(icol)-target_lon);
-      if(dist<result.val) {
-        result.val = dist;
-        result.loc = icol;
-      }
-    }, minloc_t(minloc));
-
-    // Find processor with closest lat/lon match
-    const auto my_rank = m_comm.rank();
-    std::pair<Real, int> min_dist_and_rank = {minloc.val, my_rank};
-    m_comm.all_reduce<std::pair<Real, int>>(&min_dist_and_rank, 1, MPI_MINLOC);
-
-    // Broadcast closest lat/lon values to all ranks
-    const auto lat_v_h = lat_f.get_view<Real*,Host>();
-    const auto lon_v_h = lon_f.get_view<Real*,Host>();
-    auto local_column_idx = minloc.loc;
-    auto min_dist_rank = min_dist_and_rank.second;
-    Real lat_lon_vals[2];
-    if (my_rank == min_dist_rank) {
-      lat_lon_vals[0] = lat_v_h(local_column_idx);
-      lat_lon_vals[1] = lon_v_h(local_column_idx);
-    }
-    m_comm.broadcast(lat_lon_vals, 2, min_dist_rank);
-
-    // Set local_column_idx=-1 for mpi ranks not containing minimum lat/lon distance
-    if (my_rank != min_dist_rank) local_column_idx = -1;
-
-    // Store closest lat/lon info for this grid, used later when reading ICs
-    m_lat_lon_info[grid_name] = ClosestLatLonInfo{lat_lon_vals[0], lat_lon_vals[1], min_dist_rank, local_column_idx};
+    m_io_grids[grid_name] = grid;
   }
 }
 
 void IOPDataManager::
 read_fields_from_file_for_iop (const std::string& file_name,
-                               const vos& field_names_nc,
-                               const vos& field_names_eamxx,
-                               const util::TimeStamp& initial_ts,
-                               const field_mgr_ptr field_mgr,
-                               const int time_index)
+                               const std::vector<Field>& fields,
+                               const std::shared_ptr<const AbstractGrid>& grid)
 {
-  const auto dummy_units = ekat::units::Units::nondimensional();
+  EKAT_REQUIRE_MSG (fields.size()>0,
+      "[IOPDataManager::read_fields_from_file_for_iop] Error! Input fields list is empty.\n");
 
-  EKAT_REQUIRE_MSG(field_names_nc.size()==field_names_eamxx.size(),
-                  "Error! Field name arrays must have same size.\n");
+  auto io_grid = m_io_grids[grid->name()];
+  EKAT_REQUIRE_MSG(io_grid!=nullptr,
+      "Error! Attempting to read IOP initial conditions on" +
+      grid->name() + " grid, but m_io_grid entry has not been created.\n");
 
-  if (field_names_nc.size()==0) {
-    return;
-  }
-
-  const auto& grid_name = field_mgr->get_grid()->name();
-  EKAT_REQUIRE_MSG(m_io_grids.count(grid_name) > 0,
-                   "Error! Attempting to read IOP initial conditions on "
-                   +grid_name+" grid, but m_io_grid entry has not been created.\n");
-  EKAT_REQUIRE_MSG(m_lat_lon_info.count(grid_name) > 0,
-                   "Error! Attempting to read IOP initial conditions on "
-                   +grid_name+" grid, but m_lat_lon_info entry has not been created.\n");
-
-  auto io_grid = m_io_grids[grid_name];
-  if (grid_name=="Physics GLL" && scorpio::has_dim(file_name,"ncol_d")) {
-    // If we are on GLL grid, and nc file contains "ncol_d" dimension,
-    // we need to reset COL dim tag
-    using namespace ShortFieldTagsNames;
+  if (grid->name()=="physics_gll" and scorpio::has_dim(file_name,"ncol_d")) {
+    // If we are on GLL grid, and nc file contains "ncol_d" dimension, we need to reset COL dim tag
     auto grid = io_grid->clone(io_grid->name(),true);
-    grid->reset_field_tag_name(COL,"ncol_d");
+    grid->reset_field_tag_name(FieldTag::Column,"ncol_d");
     io_grid = grid;
   }
 
-  // Create vector of fields with correct dimensions to read from file
-  std::vector<Field> io_fields;
-  for (size_t i=0; i<field_names_nc.size(); ++i) {
-    const auto& nc_name    = field_names_nc[i];
-    const auto& eamxx_name = field_names_eamxx[i];
-    const auto& fm_field = eamxx_name!=nc_name
-                           ?
-                           field_mgr->get_field(eamxx_name).alias(nc_name)
-                           :
-                           field_mgr->get_field(eamxx_name);
-    auto fm_fid = fm_field.get_header().get_identifier();
-    EKAT_REQUIRE_MSG(fm_fid.get_layout().tag(0)==FieldTag::Column,
-                     "Error! IOP inputs read from IC/topo file must have Column "
-                     "as first dim tag.\n");
+  // Create IOP remapper
+  const auto lat = m_params.get<Real>("target_latitude");
+  const auto lon = m_params.get<Real>("target_longitude");
+  auto remapper = std::make_shared<IOPRemapper>(io_grid,grid,lat,lon);
 
-    // Set first dimension to match input file
-    FieldLayout io_fl = fm_fid.get_layout();
-    io_fl.reset_dim(0,io_grid->get_num_local_dofs());
-    FieldIdentifier io_fid(fm_fid.name(), io_fl, fm_fid.get_units(), io_grid->name());
-    Field io_field(io_fid);
-    io_field.allocate_view();
-    io_fields.push_back(io_field);
+  remapper->registration_begins();
+  for (const auto& f : fields) {
+    remapper->register_field_from_tgt(f);
   }
+  remapper->registration_ends();
 
-  // Read data from file
+  // Read remapper src fields (which may have different layout than fields in input vector)
+  std::vector<Field> io_fields;
+  for (int i=0; i<remapper->get_num_fields(); ++i) {
+    io_fields.push_back(remapper->get_src_field(i));
+  }
   AtmosphereInput file_reader(file_name,io_grid,io_fields);
-  file_reader.read_variables(time_index);
+  file_reader.read_variables();
   file_reader.finalize();
 
-  // For each field, broadcast data from closest lat/lon column to all processors
-  // and copy data into each field's column in the field manager.
-  for (size_t i=0; i<io_fields.size(); ++i) {
-    const auto& io_field = io_fields[i];
-    const auto& fname = field_names_eamxx[i];
-    auto& fm_field = field_mgr->get_field(fname);
-
-    // Create a temporary field to store the data from the
-    // single column of the closest lat/lon pair
-    const auto io_fid = io_field.get_header().get_identifier();
-    FieldLayout col_data_fl = io_fid.get_layout().clone().strip_dim(0);
-    FieldIdentifier col_data_fid("col_data", col_data_fl, dummy_units, "");
-    Field col_data(col_data_fid);
-    col_data.allocate_view();
-
-    // MPI rank with closest column index store column data
-    const auto mpi_rank_with_col = m_lat_lon_info[grid_name].mpi_rank_of_closest_column;
-    if (m_comm.rank() == mpi_rank_with_col) {
-      const auto col_idx_with_data = m_lat_lon_info[grid_name].local_column_index_of_closest_column;
-      col_data.deep_copy<Host>(io_field.subfield(0,col_idx_with_data));
-    }
-
-    // Broadcast column data to all other ranks
-    const auto col_size = col_data.get_header().get_identifier().get_layout().size();
-    m_comm.broadcast(col_data.get_internal_view_data<Real,Host>(), col_size, mpi_rank_with_col);
-
-    // Copy column data to all columns in field manager field
-    const auto ncols = fm_field.get_header().get_identifier().get_layout().dim(0);
-    for (auto icol=0; icol<ncols; ++icol) {
-      fm_field.subfield(0,icol).deep_copy<Host>(col_data);
-    }
-
-    // Sync fields to device
-    fm_field.sync_to_dev();
-
-    // Set the initial time stamp on FM fields
-    fm_field.get_header().get_tracking().update_time_stamp(initial_ts);
-  }
+  // Remap
+  remapper->remap_fwd();
 }
 
 void IOPDataManager::
@@ -750,27 +613,27 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 }
 
 void IOPDataManager::
-set_fields_from_iop_data(const field_mgr_ptr field_mgr)
+set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_name)
 {
-  if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers")) {
+  if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers", grid_name)) {
     // Zero out all tracers before setting iop tracers (if requested)
-    field_mgr->get_field_group("tracers").m_bundle->deep_copy(0);
+    field_mgr->get_field_group("tracers", grid_name).m_monolithic_field->deep_copy(0);
   }
 
-  EKAT_REQUIRE_MSG(field_mgr->get_grid()->name() == "Physics GLL",
+  EKAT_REQUIRE_MSG(grid_name == "physics_gll",
                    "Error! Attempting to set non-GLL fields using "
                    "data from the IOP file.\n");
 
   // Find which fields need to be written
-  const bool set_ps            = field_mgr->has_field("ps") && has_iop_field("Ps");
-  const bool set_T_mid         = field_mgr->has_field("T_mid") && has_iop_field("T");
-  const bool set_horiz_winds_u = field_mgr->has_field("horiz_winds") && has_iop_field("u");
-  const bool set_horiz_winds_v = field_mgr->has_field("horiz_winds") && has_iop_field("v");
-  const bool set_qv            = field_mgr->has_field("qv") && has_iop_field("q");
-  const bool set_nc            = field_mgr->has_field("nc") && has_iop_field("NUMLIQ");
-  const bool set_qc            = field_mgr->has_field("qc") && has_iop_field("CLDLIQ");
-  const bool set_qi            = field_mgr->has_field("qi") && has_iop_field("CLDICE");
-  const bool set_ni            = field_mgr->has_field("ni") && has_iop_field("NUMICE");
+  const bool set_ps            = field_mgr->has_field("ps", grid_name) && has_iop_field("Ps");
+  const bool set_T_mid         = field_mgr->has_field("T_mid", grid_name) && has_iop_field("T");
+  const bool set_horiz_winds_u = field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("u");
+  const bool set_horiz_winds_v = field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("v");
+  const bool set_qv            = field_mgr->has_field("qv", grid_name) && has_iop_field("q");
+  const bool set_nc            = field_mgr->has_field("nc", grid_name) && has_iop_field("NUMLIQ");
+  const bool set_qc            = field_mgr->has_field("qc", grid_name) && has_iop_field("CLDLIQ");
+  const bool set_qi            = field_mgr->has_field("qi", grid_name) && has_iop_field("CLDICE");
+  const bool set_ni            = field_mgr->has_field("ni", grid_name) && has_iop_field("NUMICE");
 
   // Create views/scalars for these field's data
   view_1d<Real> ps;
@@ -781,47 +644,47 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   view_1d<Real> t_iop, u_iop, v_iop, qv_iop, nc_iop, qc_iop, qi_iop, ni_iop;
 
   if (set_ps) {
-    ps = field_mgr->get_field("ps").get_view<Real*>();
+    ps = field_mgr->get_field("ps", grid_name).get_view<Real*>();
     get_iop_field("Ps").sync_to_host();
     ps_iop = get_iop_field("Ps").get_view<Real, Host>()();
   }
   if (set_T_mid) {
-    T_mid = field_mgr->get_field("T_mid").get_view<Real**>();
+    T_mid = field_mgr->get_field("T_mid", grid_name).get_view<Real**>();
     t_iop = get_iop_field("T").get_view<Real*>();
   }
   if (set_horiz_winds_u || set_horiz_winds_v) {
-    horiz_winds = field_mgr->get_field("horiz_winds").get_view<Real***>();
+    horiz_winds = field_mgr->get_field("horiz_winds", grid_name).get_view<Real***>();
     if (set_horiz_winds_u) u_iop = get_iop_field("u").get_view<Real*>();
     if (set_horiz_winds_v) v_iop = get_iop_field("v").get_view<Real*>();
   }
   if (set_qv) {
-    qv = field_mgr->get_field("qv").get_view<Real**>();
+    qv = field_mgr->get_field("qv", grid_name).get_view<Real**>();
     qv_iop = get_iop_field("q").get_view<Real*>();
   }
   if (set_nc) {
-    nc = field_mgr->get_field("nc").get_view<Real**>();
+    nc = field_mgr->get_field("nc", grid_name).get_view<Real**>();
     nc_iop = get_iop_field("NUMLIQ").get_view<Real*>();
   }
   if (set_qc) {
-    qc = field_mgr->get_field("qc").get_view<Real**>();
+    qc = field_mgr->get_field("qc", grid_name).get_view<Real**>();
     qc_iop = get_iop_field("CLDLIQ").get_view<Real*>();
   }
   if (set_qi) {
-    qi = field_mgr->get_field("qi").get_view<Real**>();
+    qi = field_mgr->get_field("qi", grid_name).get_view<Real**>();
     qi_iop = get_iop_field("CLDICE").get_view<Real*>();
   }
   if (set_ni) {
-    ni = field_mgr->get_field("ni").get_view<Real**>();
+    ni = field_mgr->get_field("ni", grid_name).get_view<Real**>();
     ni_iop = get_iop_field("NUMICE").get_view<Real*>();
   }
 
   // Check if t_iop has any 0 entires near the top of the model
   // and correct t_iop and q_iop accordingly.
-  correct_temperature_and_water_vapor(field_mgr);
+  correct_temperature_and_water_vapor(field_mgr, grid_name);
 
   // Loop over all columns and copy IOP field values to FM views
-  const auto ncols = field_mgr->get_grid()->get_num_local_dofs();
-  const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  const auto ncols = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_local_dofs();
+  const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
   const auto policy = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const auto icol = team.league_rank();
@@ -859,11 +722,11 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 }
 
 void IOPDataManager::
-correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
+correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr, const std::string& grid_name)
 {
   // Find the first valid level index for t_iop, i.e., first non-zero entry
   int first_valid_idx;
-  const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
   auto t_iop = get_iop_field("T").get_view<Real*>();
   Kokkos::parallel_reduce(nlevs, KOKKOS_LAMBDA (const int ilev, int& lmin) {
     if (t_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
@@ -873,12 +736,12 @@ correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
   // levels 0,...,first_valid_idx-1
   if (first_valid_idx > 0) {
     // If we have values of T and q to correct, we must have both T_mid and qv as FM fields
-    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid"), "Error! IOP requires FM to define T_mid.\n");
-    EKAT_REQUIRE_MSG(field_mgr->has_field("qv"),    "Error! IOP requires FM to define qv.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid", grid_name), "Error! IOP requires FM to define T_mid.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("qv", grid_name),    "Error! IOP requires FM to define qv.\n");
 
     // Replace values of T and q where t_iop contains zeros
-    auto T_mid = field_mgr->get_field("T_mid").get_view<const Real**>();
-    auto qv   = field_mgr->get_field("qv").get_view<const Real**>();
+    auto T_mid = field_mgr->get_field("T_mid", grid_name).get_view<const Real**>();
+    auto qv   = field_mgr->get_field("qv", grid_name).get_view<const Real**>();
     auto q_iop = get_iop_field("q").get_view<Real*>();
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0, first_valid_idx), KOKKOS_LAMBDA (const int ilev) {
       t_iop(ilev) = T_mid(0, ilev);

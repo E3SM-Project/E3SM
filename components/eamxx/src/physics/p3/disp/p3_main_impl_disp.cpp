@@ -161,8 +161,14 @@ Int Functions<Real,DefaultDevice>
   auto precip_ice_flux         = diagnostic_outputs.precip_ice_flux;
   auto precip_total_tend       = diagnostic_outputs.precip_total_tend;
   auto nevapr                  = diagnostic_outputs.nevapr;
+  auto diag_equiv_reflectivity = diagnostic_outputs.diag_equiv_reflectivity;
   auto qv_prev                 = diagnostic_inputs.qv_prev;
   auto t_prev                  = diagnostic_inputs.t_prev;
+  // Inputs for the heteogeneous freezing
+  auto hetfrz_immersion_nucleation_tend  = diagnostic_inputs.hetfrz_immersion_nucleation_tend;
+  auto hetfrz_contact_nucleation_tend    = diagnostic_inputs.hetfrz_contact_nucleation_tend;
+  auto hetfrz_deposition_nucleation_tend = diagnostic_inputs.hetfrz_deposition_nucleation_tend;
+
   auto liq_ice_exchange        = history_only.liq_ice_exchange;
   auto vap_liq_exchange        = history_only.vap_liq_exchange;
   auto vap_ice_exchange        = history_only.vap_ice_exchange;
@@ -200,7 +206,6 @@ Int Functions<Real,DefaultDevice>
   auto qv_supersat_i           = temporaries.qv_supersat_i;
   auto tmparr2                 = temporaries.tmparr2;
   auto exner                   = temporaries.exner;
-  auto diag_equiv_reflectivity = temporaries.diag_equiv_reflectivity;
   auto diag_vm_qi              = temporaries.diag_vm_qi;
   auto diag_diam_qi            = temporaries.diag_diam_qi;
   auto pratot                  = temporaries.pratot;
@@ -252,6 +257,7 @@ Int Functions<Real,DefaultDevice>
 
   p3_main_part2_disp(
       nj, nk, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+      hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,

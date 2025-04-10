@@ -3,8 +3,8 @@
 #include "share/grid/remap/vertical_remapper.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_timing.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -501,10 +501,10 @@ TEST_CASE ("vertical_remapper") {
             // -------------------------------------- //
 
             // No bwd remap
-            REQUIRE_THROWS(remap->remap(false));
+            REQUIRE_THROWS(remap->remap_bwd());
 
             print (" -> run remap ...\n",comm);
-            remap->remap(true);
+            remap->remap_fwd();
             print (" -> run remap ... done!\n",comm);
 
             // -------------------------------------- //

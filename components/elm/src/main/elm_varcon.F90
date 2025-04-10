@@ -222,6 +222,14 @@ module elm_varcon
   real(r8), public, parameter :: snw_rds_min = 54.526_r8    
   !-----------------------------------------------------------------------
 
+  !------------------------------------------------------------------
+  ! IM2 hillslope hydrology constants
+  !------------------------------------------------------------------
+  ! fraction of surface runoff fluxes that get transferred to downhill topounit
+  real(r8), public, parameter :: frac_to_downhill = 1.0_r8  ! (fraction, valid values from 0.0 to 1.0)
+  ! fraction of from_uphill water state that get transferred to columns on the topounit in each timestep
+  real(r8), public, parameter :: frac_from_uphill = 0.5_r8  ! (fraction, valid values from 0.0 to 1.0)
+
 contains
 
   !------------------------------------------------------------------------------

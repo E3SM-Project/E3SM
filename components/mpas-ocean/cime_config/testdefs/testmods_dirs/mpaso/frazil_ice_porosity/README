@@ -1,0 +1,7 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #6802. It uses mpaso namelist variables to turn on the
+frazil_ice_porosity model:
+   config_use_frazil_ice_porosity = .true.
+and set the frazil_ice_porosity to 1:
+   config_frazil_ice_porosity = 1.0
+It will have an impact on all mpaso runs.

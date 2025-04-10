@@ -3,7 +3,7 @@
 
 #include "physics/share/physics_functions.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream {
 namespace physics {
