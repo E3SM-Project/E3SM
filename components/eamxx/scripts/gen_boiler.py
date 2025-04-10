@@ -230,7 +230,7 @@ PIECES = OrderedDict([
 ])
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
-#   (path-to-origin, path-to-cxx-src)
+#   (path-to-origin, path-to-cxx-src, init-code)
 ORIGIN_FILES, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
@@ -247,6 +247,16 @@ PHYSICS = {
         ("components/eam/src/control/apply_iop_forcing.F90", "components/eam/src/dynamics/se/se_iop_intr_mod.F90", "components/eam/src/control/iop_data_mod.F90", "components/eam/src/control/history_iop.F90"),
         "components/eamxx/src/physics/dp",
         "dp_init(d.plev, true);"
+    ),
+    "gw" : (
+        ("components/eam/src/physics/cam/gw/gw_common.F90",
+         "components/eam/src/physics/cam/gw/gw_convect.F90",
+         "components/eam/src/physics/cam/gw/gw_diffusion.F90",
+         "components/eam/src/physics/cam/gw/gw_oro.F90",
+         "components/eam/src/physics/cam/gw/gw_utils.F90",
+         "components/eam/src/physics/cam/gw/gw_front.F90"),
+        "components/eamxx/src/physics/gw",
+        "gw_init();"
     ),
 }
 
