@@ -137,23 +137,23 @@ PIECES = OrderedDict([
         lambda *x           : "The cxx data struct definition(struct Data)"
     )),
 
-    ("cxx_f2c_bind_decl"  , (
-        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
-        lambda phys, sub, gb: get_plain_comment_regex(comment="end _host function decls"), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_host"), # cxx_host decl
-        lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-        lambda *x           : "The f90 to cxx function declaration(<name>_host)"
-    )),
+    # ("cxx_f2c_bind_decl"  , (
+    #     lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
+    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
+    #     lambda phys, sub, gb: get_plain_comment_regex(comment="end _f function decls"), # reqs special comment
+    #     lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
+    #     lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
+    #     lambda *x           : "The f90 to cxx function declaration(<name>_f)"
+    # )),
 
-    ("cxx_f2c_bind_impl"  , (
-        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_host"),      # cxx_f
-        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The f90 to cxx function implementation(<name>_host)"
-    )),
+    # ("cxx_f2c_bind_impl"  , (
+    #     lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
+    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
+    #     lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
+    #     lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
+    #     lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
+    #     lambda *x           : "The f90 to cxx function implementation(<name>_f)"
+    # )),
 
     ("cxx_func_decl", (
         lambda phys, sub, gb: f"{phys}_functions.hpp",
@@ -759,6 +759,7 @@ def parse_f90_args(line):
     [('elem', 'type::element_t', 'inout', (':',))]
     >>> parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out')
     [('iopfile_out', 'type::string', 'out', None)]
+
     """
     expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
     metadata_str, names_str = line.split("::")
@@ -1784,7 +1785,7 @@ f"""struct {struct_name}{inheritance} {{
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
 
-        return f"void {sub}_host({', '.join(arg_decls)});"
+        return f"void {sub}_f({', '.join(arg_decls)});"
 
     ###########################################################################
     def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
@@ -1794,7 +1795,104 @@ f"""struct {struct_name}{inheritance} {{
         >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
         void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2)
         {
-          // TODO
+        #if 0
+          using SHF        = Functions<Real, DefaultDevice>;
+          using Scalar     = typename SHF::Scalar;
+          using Spack      = typename SHF::Spack;
+          using KT         = typename SHF::KT;
+          using ExeSpace   = typename KT::ExeSpace;
+          using MemberType = typename SHF::MemberType;
+        <BLANKLINE>
+          using view_2d = typename SHF::view_2d<Spack>;
+          using view_1d = typename SHF::view_1d<Real>;
+          using view_3d = typename SHF::view_3d<Spack>;
+          using iview_1d = typename SHF::view_1d<Int>;
+          using bview_1d = typename SHF::view_1d<bool>;
+        <BLANKLINE>
+          static constexpr Int num_arrays_2 = 4;
+          std::vector<view_2d> temp_d_2(num_arrays_2);
+          std::vector<int> dim_2_0_sizes = {shcol, shcol, shcol, shcol};
+          std::vector<int> dim_2_1_sizes = {nlevi, nlevi, nlev, nlev};
+          ekat::host_to_device({bak1, bak2, bar1, bar2}, dim_2_0_sizes, dim_2_1_sizes, temp_d_2);
+        <BLANKLINE>
+          static constexpr Int num_arrays_1 = 3;
+          std::vector<view_1d> temp_d_1(num_arrays_1);
+          std::vector<int> dim_1_0_sizes = {shcol, shcol, shcol};
+          ScreamDeepCopy::copy_to_device({baz, foo1, foo2}, dim_1_0_sizes, temp_d_1);
+        <BLANKLINE>
+          static constexpr Int num_arrays_3 = 2;
+          std::vector<view_3d> temp_d_3(num_arrays_3);
+          std::vector<int> dim_3_0_sizes = {shcol, shcol};
+          std::vector<int> dim_3_1_sizes = {nlev, nlev};
+          std::vector<int> dim_3_2_sizes = {ntracers, ntracers};
+          ekat::host_to_device({tracerd1, tracerd2}, dim_3_0_sizes, dim_3_1_sizes, dim_3_2_sizes, temp_d_3);
+        <BLANKLINE>
+          static constexpr Int inum_arrays_1 = 3;
+          std::vector<iview_1d> itemp_d_1(inum_arrays_1);
+          std::vector<int> idim_1_0_sizes = {shcol, shcol, shcol};
+          ScreamDeepCopy::copy_to_device({bag, ball1, ball2}, idim_1_0_sizes, itemp_d_1);
+        <BLANKLINE>
+          static constexpr Int bnum_arrays_1 = 1;
+          std::vector<bview_1d> btemp_d_1(bnum_arrays_1);
+          std::vector<int> bdim_1_0_sizes = {shcol};
+          ScreamDeepCopy::copy_to_device({vals}, bdim_1_0_sizes, btemp_d_1);
+        <BLANKLINE>
+          view_2d
+            bak1_d(temp_d_2[0]),
+            bak2_d(temp_d_2[1]),
+            bar1_d(temp_d_2[2]),
+            bar2_d(temp_d_2[3]);
+        <BLANKLINE>
+          view_1d
+            baz_d(temp_d_1[0]),
+            foo1_d(temp_d_1[1]),
+            foo2_d(temp_d_1[2]);
+        <BLANKLINE>
+          view_3d
+            tracerd1_d(temp_d_3[0]),
+            tracerd2_d(temp_d_3[1]);
+        <BLANKLINE>
+          iview_1d
+            bag_d(itemp_d_1[0]),
+            ball1_d(itemp_d_1[1]),
+            ball2_d(itemp_d_1[2]);
+        <BLANKLINE>
+          bview_1d
+            vals_d(btemp_d_1[0]);
+        <BLANKLINE>
+          const Int nk_pack = ekat::npack<Spack>(nlev);
+          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+            const Int i = team.league_rank();
+        <BLANKLINE>
+            const auto bak1_s = ekat::subview(bak1_d, i);
+            const auto bak2_s = ekat::subview(bak2_d, i);
+            const auto bar1_s = ekat::subview(bar1_d, i);
+            const auto bar2_s = ekat::subview(bar2_d, i);
+            const Scalar baz_s = baz_d(i);
+            const Scalar foo1_s = foo1_d(i);
+            const Scalar foo2_s = foo2_d(i);
+            const auto tracerd1_s = ekat::subview(tracerd1_d, i);
+            const auto tracerd2_s = ekat::subview(tracerd2_d, i);
+        <BLANKLINE>
+            const Scalar bag_s = bag_d(i);
+            const Scalar ball1_s = ball1_d(i);
+            const Scalar ball2_s = ball2_d(i);
+        <BLANKLINE>
+            const Scalar vals_s = vals_d(i);
+        <BLANKLINE>
+            SHF::fake_sub(foo1_s, foo2_s, bar1_s, bar2_s, bak1_s, bak2_s, tracerd1_s, tracerd2_s, gag, baz_s, bag_s, bab1, bab2, val, vals_s, shcol, nlev, nlevi, ntracers, ball1_s, ball2_s);
+          });
+          std::vector<view_1d> tempout_d_1(num_arrays_1);
+          std::vector<int> dim_1_0_out_sizes = {shcol};
+          ScreamDeepCopy::copy_to_host({baz}, dim_1_0_out_sizes, tempout_d_1);
+        <BLANKLINE>
+          std::vector<iview_1d> itempout_d_1(inum_arrays_1);
+          std::vector<int> idim_1_0_out_sizes = {shcol, shcol};
+          ScreamDeepCopy::copy_to_host({ball1, ball2}, idim_1_0_out_sizes, itempout_d_1);
+        <BLANKLINE>
+        #endif
+        <BLANKLINE>
         }
         <BLANKLINE>
         >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
@@ -2608,7 +2706,7 @@ template struct Functions<Real,DefaultDevice>;
         ... "fake_line_after_2",
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file shoc_functions_f90.cpp, would replace:
+        In file tests/infra/shoc_test_data.cpp, would replace:
         void fake_sub(FakeSubData& d)
         {
           // bad line
@@ -2632,7 +2730,7 @@ template struct Functions<Real,DefaultDevice>;
         ... "fake_line_after_2",
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file shoc_functions_f90.cpp, at line 2, would insert:
+        In file tests/infra/shoc_test_data.cpp, at line 2, would insert:
         void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
@@ -2661,7 +2759,7 @@ template struct Functions<Real,DefaultDevice>;
         ... "fake_line_after_2",
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_bind_decl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file shoc_functions_f90.cpp, would replace:
+        In file tests/infra/shoc_test_data.cpp, would replace:
         void fake_sub_c();
         <BLANKLINE>
         WITH:
