@@ -17,11 +17,10 @@ using scream::Int;
 namespace scream {
 namespace gw {
 
-///////////////////////////////////////////////////////////////////////////////
+extern "C" {
+} // extern "C" : end _c decls
 
-//
-// _f function definitions
-//
+// end _c impls
 
 } // namespace gw
 } // namespace scream

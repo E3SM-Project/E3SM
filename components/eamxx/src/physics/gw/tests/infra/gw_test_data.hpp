@@ -16,13 +16,7 @@
 namespace scream {
 namespace gw {
 
-///////////////////////////////////////////////////////////////////////////////
-
 // Glue functions to call fortran from from C++ with the Data struct
-
-extern "C" { // _f function decls
-
-} // end _f function decls
 
 }  // namespace gw
 }  // namespace scream
