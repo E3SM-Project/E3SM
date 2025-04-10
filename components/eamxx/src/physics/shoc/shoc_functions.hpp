@@ -323,9 +323,12 @@ struct Functions
     const MemberType&            team,
     const Int&                   nlev,
     const Scalar&                length_fac,
+    const bool&                  shoc_nosgs_var,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& brunt,
     const uview_1d<const Spack>& zt_grid,
+    const uview_1d<const Spack>& dz_zt,
+    const uview_1d<const Spack>& tk,
     const Scalar&                l_inf,
     const uview_1d<Spack>&       shoc_mix);
 
@@ -523,6 +526,7 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                length_fac,
+    const bool&                  shoc_nosgs_var,
     const Scalar&                dx,
     const Scalar&                dy,
     const uview_1d<const Spack>& zt_grid,
@@ -530,6 +534,7 @@ struct Functions
     const uview_1d<const Spack>& dz_zt,
     const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& thv,
+    const uview_1d<const Spack>& tk,
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       shoc_mix);
@@ -539,6 +544,7 @@ struct Functions
     const Int&                   nlev,
     const Int&                   nlevi,
     const Scalar&                length_fac,
+    const bool&                  tke_1p5_closure,
     const view_1d<const Scalar>& dx,
     const view_1d<const Scalar>& dy,
     const view_2d<const Spack>&  zt_grid,
@@ -546,6 +552,7 @@ struct Functions
     const view_2d<const Spack>&  dz_zt,
     const view_2d<const Spack>&  tke,
     const view_2d<const Spack>&  thv,
+    const view_2d<const Spack>&  tk,
     const WorkspaceMgr&          workspace_mgr,
     const view_2d<Spack>&        brunt,
     const view_2d<Spack>&        shoc_mix);
@@ -1303,6 +1310,7 @@ struct Functions
   static void eddy_diffusivities(
     const MemberType&            team,
     const Int&                   nlev,
+    const bool&                  shoc_nosgs_var,
     const Scalar&                Ckh,
     const Scalar&                Ckm,
     const Scalar&                pblh,

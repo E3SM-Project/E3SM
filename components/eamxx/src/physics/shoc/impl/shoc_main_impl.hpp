@@ -207,10 +207,10 @@ void Functions<S,D>::shoc_main_internal(
 
     // Update the turbulent length scale
     shoc_length(team,nlev,nlevi,       // Input
-                length_fac,            // Runtime Options
+                length_fac,shoc_nosgs_var,// Runtime Options
                 dx,dy,                 // Input
                 zt_grid,zi_grid,dz_zt, // Input
-                tke,thv,               // Input
+                tke,thv,tk,            // Input
                 workspace,             // Workspace
                 brunt,shoc_mix);       // Output
 
@@ -469,10 +469,10 @@ void Functions<S,D>::shoc_main_internal(
 
     // Update the turbulent length scale
     shoc_length_disp(shcol,nlev,nlevi,      // Input
-                     length_fac,            // Runtime Options
+                     length_fac,shoc_nosgs_var,// Runtime Options
                      dx,dy,                 // Input
                      zt_grid,zi_grid,dz_zt, // Input
-                     tke,thv,               // Input
+                     tke,thv,tk,            // Input
                      workspace_mgr,         // Workspace mgr
                      brunt,shoc_mix);       // Output
 

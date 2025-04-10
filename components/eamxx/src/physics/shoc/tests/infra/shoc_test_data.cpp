@@ -2696,7 +2696,8 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     // Hardcode runtime options for F90 testing
     const Real Ckh = 0.1;
     const Real Ckm = 0.1;
-    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
+    const bool shoc_nosgs_var = false;
+    SHF::eddy_diffusivities(team, nlev, shoc_nosgs_var, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
   });
 
   // Sync back to host
