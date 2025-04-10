@@ -24,8 +24,8 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
                                 sp_humidity_in, temperature_in, &
                                 zmid, pmid, pint, pblt, tpert, &
                                 parcel_temp, parcel_qsat, msemax_klev, &
-                                cldbot_temperature, cldbot_klev, &
-                                cldtop_klev, cape, &
+                                lcl_temperature, lcl_klev, &
+                                eql_klev, cape, &
                                 zm_const, zm_param, &
                                 iclosure, dcapemx, &
                                 use_input_tq_mx, q_mx, t_mx )
@@ -59,9 +59,9 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols,pver),      intent(  out) :: parcel_temp         ! parcel temperature
    real(r8), dimension(pcols,pver),      intent(inout) :: parcel_qsat         ! parcel saturation mixing ratio
    integer,  dimension(pcols),           intent(inout) :: msemax_klev         ! index of max MSE at parcel launch level
-   real(r8), dimension(pcols),           intent(  out) :: cldbot_temperature  ! cloud bottom (LCL) temperature
-   integer,  dimension(pcols),           intent(inout) :: cldbot_klev         ! index of cloud bottom (i.e. lifting condensation level)
-   integer,  dimension(pcols),           intent(inout) :: cldtop_klev         ! index of cloud top (i.e. equilibrium level)
+   real(r8), dimension(pcols),           intent(  out) :: lcl_temperature     ! lifting condensation level (LCL) temperature
+   integer,  dimension(pcols),           intent(inout) :: lcl_klev            ! index of lifting condensation level (i.e. cloud bottom)
+   integer,  dimension(pcols),           intent(inout) :: eql_klev            ! index of equilibrium level (i.e. cloud top)
    real(r8), dimension(pcols),           intent(inout) :: cape                ! convective available potential energy
    type(zm_const_t),                     intent(in   ) :: zm_const            ! derived type to hold ZM constants
    type(zm_param_t),                     intent(in   ) :: zm_param            ! derived type to hold ZM tunable parameters
@@ -76,7 +76,7 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols,pver)    :: temperature     ! local version of temperature
    real(r8), dimension(pcols,pver)    :: tv              ! virtual temperature
    real(r8), dimension(pcols,pver)    :: parcel_vtemp    ! parcel virtual temperature
-   real(r8), dimension(pcols)         :: cldbot_pmid     ! cloud bottom (LCL) pressure
+   real(r8), dimension(pcols)         :: lcl_pmid        ! lifting condensation level (LCL) pressure
    real(r8), dimension(pcols)         :: mse_max_val     ! value of max MSE at parcel launch level
    integer,  dimension(pcols)         :: pblt_ull        ! upper limit index of max MSE search for ULL
    integer,  dimension(pcols)         :: msemax_top_k    ! upper limit index of max MSE search
@@ -169,9 +169,9 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
          t_mx(i) = temperature(i,msemax_klev(i))
       end if
       ! save LCL values for compute_dilute_parcel()
-      cldbot_klev(i) = msemax_klev(i)
-      cldbot_pmid(i) = pmid(i,msemax_klev(i))
-      cldbot_temperature(i) = temperature(i,msemax_klev(i))
+      lcl_klev(i) = msemax_klev(i)
+      lcl_pmid(i) = pmid(i,msemax_klev(i))
+      lcl_temperature(i) = temperature(i,msemax_klev(i))
    end do
 
    !----------------------------------------------------------------------------
@@ -180,16 +180,16 @@ subroutine compute_dilute_cape( pcols, ncol, pver, pverp, &
                                pmid, temperature, sp_humidity, tpert, pblt, &
                                zm_const, zm_param, &
                                parcel_temp, parcel_vtemp, parcel_qsat, &
-                               cldbot_pmid, cldbot_temperature, cldbot_klev )
+                               lcl_pmid, lcl_temperature, lcl_klev )
 
    !----------------------------------------------------------------------------
    ! calculate CAPE
    call compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg, &
                                   temperature, tv, zmid, sp_humidity, pint, &
-                                  cldbot_pmid,  msemax_klev, cldbot_klev, &
+                                  msemax_klev, lcl_pmid, lcl_klev, &
                                   zm_const, zm_param, &
                                   parcel_qsat, parcel_temp, parcel_vtemp, &
-                                  cldtop_klev, cape )
+                                  eql_klev, cape )
 
    !----------------------------------------------------------------------------
    return
@@ -258,7 +258,7 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
                                   pmid, temperature, sp_humidity, tpert, pblt, &
                                   zm_const, zm_param, &
                                   parcel_temp, parcel_vtemp, parcel_qsat, &
-                                  cldbot_pmid, cldbot_temperature, cldbot_klev )
+                                  lcl_pmid, lcl_temperature, lcl_klev )
    !----------------------------------------------------------------------------
    ! Purpose: Calculate thermodynamic properties of an entraining air parcel 
    !          lifted from the PBL using fractional mass entrainment rate 
@@ -267,24 +267,24 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    implicit none
    !----------------------------------------------------------------------------
    ! Arguments
-   integer,                         intent(in   ) :: pcols              ! number of atmospheric columns (max)
-   integer,                         intent(in   ) :: ncol               ! number of atmospheric columns (actual)
-   integer,                         intent(in   ) :: pver               ! number of mid-point vertical levels
-   integer,                         intent(in   ) :: num_msg            ! number of missing moisture levels at the top of model
-   integer,  dimension(pcols),      intent(in   ) :: klaunch            ! index of parcel launch level based on max MSE
-   real(r8), dimension(pcols,pver), intent(in   ) :: pmid               ! ambient env pressure at cell center
-   real(r8), dimension(pcols,pver), intent(in   ) :: temperature        ! ambient env temperature at cell center
-   real(r8), dimension(pcols,pver), intent(in   ) :: sp_humidity        ! ambient env specific humidity at cell center
-   real(r8), dimension(pcols),      intent(in   ) :: tpert              ! PBL temperature perturbation
-   integer,  dimension(pcols),      intent(in   ) :: pblt               ! index of pbl depth 
-   type(zm_const_t),                intent(in   ) :: zm_const           ! derived type to hold ZM constants
-   type(zm_param_t),                intent(in   ) :: zm_param           ! derived type to hold ZM tunable parameters
-   real(r8), dimension(pcols,pver), intent(inout) :: parcel_temp        ! Parcel temperature
-   real(r8), dimension(pcols,pver), intent(inout) :: parcel_vtemp       ! Parcel virtual temperature
-   real(r8), dimension(pcols,pver), intent(inout) :: parcel_qsat        ! Parcel water vapour (sat value above lcl)
-   real(r8), dimension(pcols)     , intent(inout) :: cldbot_pmid        ! cloud bottom (LCL) pressure
-   real(r8), dimension(pcols)     , intent(inout) :: cldbot_temperature ! cloud bottom (LCL) temperature
-   integer,  dimension(pcols)     , intent(inout) :: cldbot_klev        ! cloud bottom (LCL) vertical index
+   integer,                         intent(in   ) :: pcols           ! number of atmospheric columns (max)
+   integer,                         intent(in   ) :: ncol            ! number of atmospheric columns (actual)
+   integer,                         intent(in   ) :: pver            ! number of mid-point vertical levels
+   integer,                         intent(in   ) :: num_msg         ! number of missing moisture levels at the top of model
+   integer,  dimension(pcols),      intent(in   ) :: klaunch         ! index of parcel launch level based on max MSE
+   real(r8), dimension(pcols,pver), intent(in   ) :: pmid            ! ambient env pressure at cell center
+   real(r8), dimension(pcols,pver), intent(in   ) :: temperature     ! ambient env temperature at cell center
+   real(r8), dimension(pcols,pver), intent(in   ) :: sp_humidity     ! ambient env specific humidity at cell center
+   real(r8), dimension(pcols),      intent(in   ) :: tpert           ! PBL temperature perturbation
+   integer,  dimension(pcols),      intent(in   ) :: pblt            ! index of pbl depth 
+   type(zm_const_t),                intent(in   ) :: zm_const        ! derived type to hold ZM constants
+   type(zm_param_t),                intent(in   ) :: zm_param        ! derived type to hold ZM tunable parameters
+   real(r8), dimension(pcols,pver), intent(inout) :: parcel_temp     ! Parcel temperature
+   real(r8), dimension(pcols,pver), intent(inout) :: parcel_vtemp    ! Parcel virtual temperature
+   real(r8), dimension(pcols,pver), intent(inout) :: parcel_qsat     ! Parcel water vapour (sat value above lcl)
+   real(r8), dimension(pcols)     , intent(inout) :: lcl_pmid        ! lifting condensation level (LCL) pressure
+   real(r8), dimension(pcols)     , intent(inout) :: lcl_temperature ! lifting condensation level (LCL) temperature
+   integer,  dimension(pcols)     , intent(inout) :: lcl_klev        ! lifting condensation level (LCL) vertical index
    !----------------------------------------------------------------------------
    ! Local variables
    integer i,k,ii   ! loop iterators
@@ -319,14 +319,14 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
    real(r8) tfguess  ! first guess for entropy inversion
    real(r8) tscool   ! super cooled temperature offset from freezing temperature when cloud water loading freezes
 
-   real(r8) qxsk     ! cloud bottom (LCL) excess water @ k
-   real(r8) qxskp1   ! cloud bottom (LCL) excess water @ k+1
-   real(r8) dsdp     ! cloud bottom (LCL) entropy gradient @ k
-   real(r8) dqtdp    ! cloud bottom (LCL) total water gradient @ k
-   real(r8) dqxsdp   ! cloud bottom (LCL) excess water gradient @ k+1
-   real(r8) slcl     ! cloud bottom (LCL) entropy
-   real(r8) qtlcl    ! cloud bottom (LCL) total water
-   real(r8) qslcl    ! cloud bottom (LCL) saturated vapor mixing ratio
+   real(r8) qxsk     ! LCL excess water @ k
+   real(r8) qxskp1   ! LCL excess water @ k+1
+   real(r8) dsdp     ! LCL entropy gradient @ k
+   real(r8) dqtdp    ! LCL total water gradient @ k
+   real(r8) dqxsdp   ! LCL excess water gradient @ k+1
+   real(r8) slcl     ! LCL entropy
+   real(r8) qtlcl    ! LCL total water
+   real(r8) qslcl    ! LCL saturated vapor mixing ratio
 
    integer rcall     ! ientropy call id for error message
    
@@ -414,18 +414,18 @@ subroutine compute_dilute_parcel( pcols, ncol, pver, num_msg, klaunch, &
 
             ! determine if we are at the LCL if this is first level where qsmix<=qtmix on ascending
             if ( qsmix(i,k)<=qtmix(i,k) .and. qsmix(i,k+1)>qtmix(i,k+1) ) then
-               cldbot_klev(i) = k
-               qxsk           = qtmix(i,k) - qsmix(i,k)
-               qxskp1         = qtmix(i,k+1) - qsmix(i,k+1)
-               dqxsdp         = (qxsk - qxskp1)/dp
-               cldbot_pmid(i)      = pmid(i,k+1) - qxskp1/dqxsdp ! pressure level of actual lcl
-               dsdp           = (smix(i,k)  - smix(i,k+1))/dp
-               dqtdp          = (qtmix(i,k) - qtmix(i,k+1))/dp
-               slcl           = smix(i,k+1)  + dsdp* (cldbot_pmid(i)-pmid(i,k+1))  
-               qtlcl          = qtmix(i,k+1) + dqtdp*(cldbot_pmid(i)-pmid(i,k+1))
-               tfguess        = tmix(i,k)
+               lcl_klev(i) = k
+               qxsk        = qtmix(i,k) - qsmix(i,k)
+               qxskp1      = qtmix(i,k+1) - qsmix(i,k+1)
+               dqxsdp      = (qxsk - qxskp1)/dp
+               lcl_pmid(i) = pmid(i,k+1) - qxskp1/dqxsdp
+               dsdp        = (smix(i,k)  - smix(i,k+1))/dp
+               dqtdp       = (qtmix(i,k) - qtmix(i,k+1))/dp
+               slcl        = smix(i,k+1)  + dsdp* (lcl_pmid(i)-pmid(i,k+1))  
+               qtlcl       = qtmix(i,k+1) + dqtdp*(lcl_pmid(i)-pmid(i,k+1))
+               tfguess     = tmix(i,k)
                rcall = 3
-               call ientropy( rcall, slcl, cldbot_pmid(i), qtlcl, cldbot_temperature(i), qslcl, tfguess, zm_const )
+               call ientropy( rcall, slcl, lcl_pmid(i), qtlcl, lcl_temperature(i), qslcl, tfguess, zm_const )
             endif
 
          end if !  k < klaunch
@@ -526,11 +526,11 @@ end subroutine compute_dilute_parcel
 !===================================================================================================
 
 subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg, &
-                                     temperature, tv, zmid, sp_humidity, pint, cldbot_pmid, &
-                                     msemax_klev, cldbot_klev, &
+                                     temperature, tv, zmid, sp_humidity, pint, &
+                                     msemax_klev, lcl_pmid, lcl_klev, &
                                      zm_const, zm_param, &
                                      parcel_qsat, parcel_temp, parcel_vtemp, &
-                                     cldtop_klev, cape )
+                                     eql_klev, cape )
    !----------------------------------------------------------------------------
    ! Purpose: calculate convective available potential energy (CAPE)
    !          from parcel thermodynamic properties from compute_dilute_parcel()
@@ -546,39 +546,39 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
    real(r8), dimension(pcols,pver), intent(in   ) :: zmid         ! height/altitude at mid-levels
    real(r8), dimension(pcols,pver), intent(in   ) :: sp_humidity  ! specific humidity
    real(r8), dimension(pcols,pverp),intent(in   ) :: pint         ! pressure at interfaces
-   real(r8), dimension(pcols),      intent(in   ) :: cldbot_pmid  ! cloud bottom (LCL) pressure
    integer,  dimension(pcols),      intent(in   ) :: msemax_klev  ! index of max MSE at parcel launch level
-   integer,  dimension(pcols),      intent(in   ) :: cldbot_klev  ! index of cloud bottom
+   real(r8), dimension(pcols),      intent(in   ) :: lcl_pmid     ! lifting condensation level (LCL) pressure
+   integer,  dimension(pcols),      intent(in   ) :: lcl_klev     ! lifting condensation level (LCL) index
    type(zm_const_t),                intent(in   ) :: zm_const     ! derived type to hold ZM constants
    type(zm_param_t),                intent(in   ) :: zm_param     ! derived type to hold ZM tunable parameters
    real(r8), dimension(pcols,pver), intent(inout) :: parcel_qsat  ! parcel saturation mixing ratio
    real(r8), dimension(pcols,pver), intent(inout) :: parcel_temp  ! parcel temperature
    real(r8), dimension(pcols,pver), intent(inout) :: parcel_vtemp ! parcel virtual temperature
-   integer,  dimension(pcols),      intent(inout) :: cldtop_klev  ! index of cloud top
+   integer,  dimension(pcols),      intent(inout) :: eql_klev     ! index of equilibrium level (i.e. cloud top)
    real(r8), dimension(pcols),      intent(inout) :: cape         ! convective available potential energy
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i, k, n                                      ! loop iterators
    real(r8), dimension(pcols,pver)    :: buoyancy           ! parcel buoyancy
    real(r8), dimension(pcols,num_cin) :: cape_tmp           ! provisional value of cape
-   integer,  dimension(pcols,num_cin) :: cldtop_klev_tmp    ! provisional value of cloud top index
+   integer,  dimension(pcols,num_cin) :: eql_klev_tmp       ! provisional value of equilibrium level index
    integer,  dimension(pcols)         :: neg_buoyancy_cnt   ! counter for levels with negative bounancy
 
    logical plge600(pcols) ! for testing - remove!
    !----------------------------------------------------------------------------
    ! Initialize variables
-   cldtop_klev     (1:ncol)           = pver
-   cldtop_klev_tmp (1:ncol,1:num_cin) = pver
-   cape            (1:ncol)           = 0._r8
-   cape_tmp        (1:ncol,1:num_cin) = 0._r8
-   buoyancy        (1:ncol,1:pver)    = 0._r8
-   neg_buoyancy_cnt(1:ncol)           = 0
+   eql_klev     (1:ncol)               = pver
+   eql_klev_tmp (1:ncol,1:num_cin)     = pver
+   cape            (1:ncol)            = 0._r8
+   cape_tmp        (1:ncol,1:num_cin)  = 0._r8
+   buoyancy        (1:ncol,1:pver)     = 0._r8
+   neg_buoyancy_cnt(1:ncol)            = 0
    !----------------------------------------------------------------------------
    ! Calculate buoyancy
    do k = pver, num_msg+1, -1
       do i=1,ncol
-         ! Define buoyancy from launch level to cloud top
-         if ( k <= msemax_klev(i) .and. cldbot_pmid(i).ge.lcl_pressure_threshold ) then
+         ! Define buoyancy from launch level to equilibrium level
+         if ( k <= msemax_klev(i) .and. lcl_pmid(i).ge.lcl_pressure_threshold ) then
             buoyancy(i,k) = parcel_vtemp(i,k) - tv(i,k) + zm_param%tiedke_add
          else
             parcel_qsat(i,k)  = sp_humidity(i,k)
@@ -592,11 +592,11 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
    ! find convective equilibrium level accounting for negative buoyancy levels
    do k = num_msg+2, pver
       do i = 1,ncol
-         if ( k < cldbot_klev(i) .and. cldbot_pmid(i).ge.lcl_pressure_threshold ) then
+         if ( k < lcl_klev(i) .and. lcl_pmid(i).ge.lcl_pressure_threshold ) then
             if ( buoyancy(i,k+1) > 0._r8 .and. &
                  buoyancy(i,k)   <=0._r8 ) then
                neg_buoyancy_cnt(i) = min( num_cin, neg_buoyancy_cnt(i)+1 )
-               cldtop_klev_tmp(i,neg_buoyancy_cnt(i)) = k
+               eql_klev_tmp(i,neg_buoyancy_cnt(i)) = k
             end if
          end if
       end do
@@ -607,9 +607,8 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
    do n = 1,num_cin
       do k = num_msg+1, pver
          do i = 1,ncol
-            ! if ( cldbot_pmid(i).ge.lcl_pressure_threshold .and. &
-            if ( cldbot_pmid(i).ge.lcl_pressure_threshold .and. &
-                 k <= msemax_klev(i) .and. k > cldtop_klev_tmp(i,n)) then
+            if ( lcl_pmid(i).ge.lcl_pressure_threshold .and. &
+                 k <= msemax_klev(i) .and. k > eql_klev_tmp(i,n)) then
                cape_tmp(i,n) = cape_tmp(i,n) + zm_const%rdair*buoyancy(i,k)*log(pint(i,k+1)/pint(i,k))
             end if
          end do
@@ -623,7 +622,7 @@ subroutine compute_cape_from_parcel( pcols, ncol, pver, pverp, num_cin, num_msg,
       do i = 1,ncol
          if (cape_tmp(i,n) > cape(i)) then
             cape(i) = cape_tmp(i,n)
-            cldtop_klev(i) = cldtop_klev_tmp(i,n)
+            eql_klev(i) = eql_klev_tmp(i,n)
          end if
       end do
    end do
