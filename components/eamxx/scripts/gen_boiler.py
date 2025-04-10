@@ -84,7 +84,7 @@ template<typename S, typename D>
 FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX, DESC = range(6)
 PIECES = OrderedDict([
     ("f90_c2f_bind", (
-        lambda phys, sub, gb: f"{phys}_iso_c.f90",
+        lambda phys, sub, gb: f"tests/infra/{phys}_iso_c.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
         lambda phys, sub, gb: re.compile(fr"^\s*end\s+module\s{phys}_iso_c"), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
@@ -92,17 +92,17 @@ PIECES = OrderedDict([
         lambda *x           : "The c to f90 fortran subroutine(<name>_c)"
     )),
 
-    ("f90_f2c_bind"  , (
-        lambda phys, sub, gb: f"{phys}_iso_f.f90",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
-        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
-        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
-        lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
-    )),
+    # ("f90_f2c_bind"  , (
+    #     lambda phys, sub, gb: f"{phys}_iso_f.f90",
+    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
+    #     lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
+    #     lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
+    #     lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
+    #     lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
+    # )),
 
     ("cxx_c2f_bind_decl"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"), # cxx_c decl
@@ -111,7 +111,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_glue_decl"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
         lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data) decl
@@ -120,7 +120,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_glue_impl" , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
@@ -129,7 +129,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_data"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
         lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"),  # reqs special comment
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)), # struct Sub
@@ -183,7 +183,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_bfb_unit_decl", (
-        lambda phys, sub, gb: f"tests/{phys}_unit_tests_common.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_unit_tests_common.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True), # insert at end of test struct
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)), # struct decl
