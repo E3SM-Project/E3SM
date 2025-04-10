@@ -8144,6 +8144,8 @@ contains
 
     thisTracer => tracersHead
 
+    abortFlag = .false.
+
     do while (associated(thisTracer))
 
        if (thisTracer % ndims == 2) then
