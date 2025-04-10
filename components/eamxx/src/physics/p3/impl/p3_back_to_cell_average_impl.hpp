@@ -30,10 +30,11 @@ void Functions<S,D>
   Spack& ncheti_cnt, Spack& qcheti_cnt, Spack& nicnt, Spack& qicnt, Spack& ninuc_cnt,
   Spack& qinuc_cnt, const Smask& context, const P3Runtime& runtime_options)
 {
-  Spack ir_cldm, il_cldm, lr_cldm;
+  Spack ir_cldm, il_cldm, lr_cldm, cld_frac_glaciated;
   ir_cldm = min(cld_frac_i,cld_frac_r); // Intersection of ICE and RAIN cloud
   il_cldm = min(cld_frac_i,cld_frac_l); // Intersection of ICE and LIQUID cloud
   lr_cldm = min(cld_frac_l,cld_frac_r); // Intersection of LIQUID and RAIN cloud
+  cld_frac_glaciated = max(0.0001,cld_frac_i - il_cldm); // Fraction (if any) of cell that is occupied by only ice and not liquid cloud
 
   // Some process rates take place within the intersection of liquid, rain and
   // ice cloud fractions. We calculate the intersection as the minimum between
@@ -52,7 +53,11 @@ void Functions<S,D>
   ncautr.set(context, ncautr * lr_cldm); // Autoconversion of rain drops within rain/liq cloud
 
   // map ice-phase  process rates to cell-avg
-  qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_i);    // Sublimation of ice in ice cloud
+    if (runtime_options.use_separate_ice_liq_frac) {
+       qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_glaciated);
+    } else {
+       qi2qv_sublim_tend.set(context, qi2qv_sublim_tend * cld_frac_i); // Sublimation of ice in ice cloud
+    }
   nr_ice_shed_tend.set(context, nr_ice_shed_tend * il_cldm); // Rain # increase due to shedding from rain-ice collisions, occurs when ice and liquid interact
   qc2qi_hetero_freeze_tend.set(context, qc2qi_hetero_freeze_tend * il_cldm); // Immersion freezing of cloud drops
   qr2qi_collect_tend.set(context, qr2qi_collect_tend * ir_cldm);  // Collection of rain mass by ice
@@ -67,14 +72,17 @@ void Functions<S,D>
   nr_collect_tend.set(context, nr_collect_tend * ir_cldm);  // Rain number change due to collection from ice
   ni_selfcollect_tend.set(context, ni_selfcollect_tend * cld_frac_i);    // Ice self collection
   if (runtime_options.use_separate_ice_liq_frac) {
-    qv2qi_vapdep_tend.set(context, qv2qi_vapdep_tend * (cld_frac_i-il_cldm));    // Vapor deposition to ice phase
+    qv2qi_vapdep_tend.set(context, qv2qi_vapdep_tend * cld_frac_glaciated);    // Vapor deposition to ice phase
   } else {
     qv2qi_vapdep_tend.set(context, qv2qi_vapdep_tend * cld_frac_i);    // Vapor deposition to ice phase
   }
   nr2ni_immers_freeze_tend.set(context, nr2ni_immers_freeze_tend * cld_frac_r);   // Change in number due to immersion freezing of rain
-  ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_i);    // Number change due to sublimation of ice
+  if (runtime_options.use_separate_ice_liq_frac) {
+     ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_glaciated);
+  } else {  
+     ni_sublim_tend.set(context, ni_sublim_tend * cld_frac_i); // Number change due to sublimation of ice
+   }
   qc2qi_berg_tend.set(context, qc2qi_berg_tend * il_cldm); // Bergeron process
-
   ncheti_cnt.set(context,ncheti_cnt*cld_frac_l);
   qcheti_cnt.set(context, qcheti_cnt*cld_frac_l);
   nicnt.set(context, nicnt*cld_frac_l);
