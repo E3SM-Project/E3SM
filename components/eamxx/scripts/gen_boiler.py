@@ -202,7 +202,7 @@ PIECES = OrderedDict([
 
     ("cxx_eti", (
         lambda phys, sub, gb: f"eti/{phys}_{sub}.cpp",
-        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
+        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti", force=True),
         lambda phys, sub, gb: re.compile(".*"), # insert at top of file
         lambda phys, sub, gb: re.compile(".*"), # start at top of file
         lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file
