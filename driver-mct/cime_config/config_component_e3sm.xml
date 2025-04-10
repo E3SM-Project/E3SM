@@ -837,6 +837,10 @@
     <default_value>0</default_value>
     <values match="last">
       <value compset="_MPASO.+_MALI">30</value>
+      <value compset="_MPASO.+_MALI%SIASTATIC">0</value>
+      <value compset="_MPASO.+_MALI%STATIC">0</value>
+      <value compset="_MPASO.+_MALI%SIADATA">0</value>
+      <value compset="_MPASO.+_MALI%DATA">0</value>
     </values>
     <group>run_glc</group>
     <file>env_run.xml</file>
