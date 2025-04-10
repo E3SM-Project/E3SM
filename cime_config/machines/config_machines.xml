@@ -3435,9 +3435,9 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>102</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>102</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
@@ -3462,7 +3462,7 @@
           <command name="load">cmake</command>
         </modules>
         <modules compiler="!gnu">
-          <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
+          <command name="load">oneapi/eng-compiler/2024.07.30.002; source /lus/flare/projects/catalyst/world_shared/mpich/setup.sh</command>
         </modules>
 	<!--<modules compiler="oneapi-ifxgpu"> -->
 	<!--          <command name="load">kokkos/4.4.01-omp-sycl</command> -->
