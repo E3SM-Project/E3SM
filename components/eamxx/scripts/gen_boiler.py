@@ -185,7 +185,7 @@ PIECES = OrderedDict([
     ("cxx_bfb_unit_decl", (
         lambda phys, sub, gb: f"tests/infra/{phys}_unit_tests_common.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True), # insert at end of test struct
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="UnitWrap"), # Insert at end of UnitWrap struc
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)), # struct decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"), # end of struct decl
         lambda *x           : "The cxx unit test struct declaration"
