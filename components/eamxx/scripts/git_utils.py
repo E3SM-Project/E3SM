@@ -140,7 +140,7 @@ def merge_git_ref(git_ref, repo=None, verbose=False, dry_run=False):
 def create_backup_commit (repo=None, dry_run=False):
 ###############################################################################
 
-    bkp_cmd = "git add -A && git commit -m 'WARNING: test-all-scream backup commit'"
+    bkp_cmd = "git add -A && git commit -m 'WARNING: test-all-eamxx backup commit'"
     if dry_run:
         print (f"Would run: {bkp_cmd}")
     else:
@@ -210,7 +210,7 @@ def cleanup_repo(orig_branch, orig_commit, has_backup_commit=False, repo=None, d
 
     checkout_git_ref(orig_branch if orig_branch else orig_commit, repo=repo, dry_run=dry_run)
 
-    # This *can* happen. test_all_scream can merge origin/master into current branch.
+    # This *can* happen. test-all-eamxx can merge origin/master into current branch.
     # Checking out orig_branch doesn't do anything if we were on a branch (not detached
     # head mode), since the branch tip moved with the master merge. In that case,
     # what we really need is a hard reset to the original commit.
@@ -219,7 +219,7 @@ def cleanup_repo(orig_branch, orig_commit, has_backup_commit=False, repo=None, d
         run_cmd_no_fail("git reset --hard {}".format(orig_commit), from_dir=repo)
         if has_backup_commit:
             # This can happen if we ran an integration test with a dirty repo.
-            # test_all_scream will create a temporary backup commit, which we
+            # test-all-eamxx will create a temporary backup commit, which we
             # need to undo, but leaving the changed files in the workspace.
             # So DON'T add --hard to this call!
             run_cmd_no_fail("git reset {HEAD~1}", from_dir=repo)

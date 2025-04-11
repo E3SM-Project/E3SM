@@ -3,7 +3,7 @@
 
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include <vector>
 
@@ -58,7 +58,6 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
   int nlevs = grid->get_num_vertical_levels();
 
   // Create fields
-
   auto layout_s2d   = grid->get_2d_scalar_layout();
   auto layout_v2d   = grid->get_2d_vector_layout(ncmps);
   auto layout_s3d_m = grid->get_3d_scalar_layout(true);

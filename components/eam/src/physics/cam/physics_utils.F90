@@ -13,7 +13,7 @@ module physics_utils
   save
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-#include "scream_config.f"
+#include "eamxx_config.f"
 
   integer,parameter,public :: rtype8 = c_double ! 8 byte real, compatible with c type double
   integer,parameter,public :: btype  = c_bool ! boolean type, compatible with c

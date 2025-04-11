@@ -6,8 +6,8 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -139,8 +139,7 @@ void run(std::mt19937_64& engine)
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field SWCF_f = diag_out.clone();
-    SWCF_f.deep_copy<double,Host>(0.0);
-    SWCF_f.sync_to_dev();
+    SWCF_f.deep_copy(0);
     const auto& SWCF_v = SWCF_f.get_view<Real*>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();

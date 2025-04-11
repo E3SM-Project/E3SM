@@ -3,8 +3,6 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "ekat/ekat_pack.hpp"
-
 namespace scream
 {
 
@@ -15,12 +13,10 @@ namespace scream
 class FieldAtLevel : public AtmosphereDiagnostic
 {
 public:
-  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-
   // Constructors
   FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
+  // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "FieldAtLevel"; }
 
   // Set the grid

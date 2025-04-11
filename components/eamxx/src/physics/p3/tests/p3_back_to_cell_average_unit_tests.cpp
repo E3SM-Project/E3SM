@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
@@ -59,7 +59,9 @@ void run_bfb()
       nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend,
       qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend,
       nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend,
-      ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend;
+      ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend,
+      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt; 
+    Smask context;
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
       cld_frac_l[s]               = device_data[s].cld_frac_l;
       cld_frac_r[s]               = device_data[s].cld_frac_r;
@@ -93,13 +95,20 @@ void run_bfb()
       qv2qi_nucleat_tend[s]       = device_data[s].qv2qi_nucleat_tend;
       ni_nucleat_tend[s]          = device_data[s].ni_nucleat_tend;
       qc2qi_berg_tend[s]          = device_data[s].qc2qi_berg_tend;
+      ncheti_cnt[s]               = device_data[s].ncheti_cnt;
+      qcheti_cnt[s]               = device_data[s].qcheti_cnt;
+      nicnt[s]                    = device_data[s].nicnt;
+      qicnt[s]                    = device_data[s].qicnt;
+      ninuc_cnt[s]                = device_data[s].ninuc_cnt;
+      qinuc_cnt[s]                = device_data[s].qinuc_cnt;
+      context.set(s,                device_data[s].context);
     }
-
     Functions::back_to_cell_average(cld_frac_l, cld_frac_r, cld_frac_i, qc2qr_accret_tend, qr2qv_evap_tend, qc2qr_autoconv_tend,
       nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend,
       qc2qi_hetero_freeze_tend, qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend,
       qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend, ncshdc, nc2ni_immers_freeze_tend,
-      nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend);
+      nr_collect_tend, ni_selfcollect_tend, qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend,
+      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, context);
 
     // Copy results back into views
     for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -195,5 +204,4 @@ TEST_CASE("p3_back_to_cell_average", "[p3_functions]")
   t.run_phys();
   t.run_bfb();
 }
-
 } // namespace

@@ -1,1 +1,1 @@
-add_subdirectory(libpyscream)
+add_subdirectory(libpyeamxx)

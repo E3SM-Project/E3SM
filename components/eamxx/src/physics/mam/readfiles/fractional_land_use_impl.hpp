@@ -3,8 +3,8 @@
 
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_timing.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 namespace scream {
 namespace frac_landuse {
@@ -105,7 +105,7 @@ void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
   // same grid as model)
   start_timer(
       "EAMxx::FracLandUse::update_frac_land_use_data_from_file::horiz_remap");
-  horiz_interp.remap(/*forward = */ true);
+  horiz_interp.remap_fwd();
   stop_timer(
       "EAMxx::FracLandUse::update_frac_land_use_data_from_file::horiz_remap");
 

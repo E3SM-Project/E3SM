@@ -6,8 +6,8 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -134,8 +134,7 @@ void run(std::mt19937_64& engine)
       diag->compute_diagnostic();
       const auto& diag_out = diag->get_diagnostic();
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
-      qv_vert_integrated_flux_u_f.deep_copy<double,Host>(0.0);
-      qv_vert_integrated_flux_u_f.sync_to_dev();
+      qv_vert_integrated_flux_u_f.deep_copy(0);
       const auto& qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real*>();
       constexpr Real g = PC::gravit;
       int comp = which_comp=="Zonal" ? 0 : 1;

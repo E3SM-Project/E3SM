@@ -34,7 +34,7 @@ void Functions<S,D>::update_prognostics_implicit(
   const Workspace&             workspace,
   const uview_1d<Spack>&       thetal,
   const uview_1d<Spack>&       qw,
-  const uview_2d<Spack>&       qtracers,
+  const uview_2d_strided<Spack>& qtracers,
   const uview_1d<Spack>&       tke,
   const uview_1d<Spack>&       u_wind,
   const uview_1d<Spack>&       v_wind)
@@ -83,7 +83,6 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto thetal_s       = ekat::scalarize(thetal);
   const auto qw_s           = ekat::scalarize(qw);
   const auto tke_s          = ekat::scalarize(tke);
-  const auto qtracers_s     = ekat::scalarize(qtracers);
   const auto qtracers_rhs_s = ekat::scalarize(qtracers_rhs);
   const auto wtracer_sfc_s  = ekat::scalarize(wtracer_sfc);
 
@@ -140,8 +139,10 @@ void Functions<S,D>::update_prognostics_implicit(
       tke_s(nlev-1)    += cmnfac*wtke_sfc;
     });
 
+    const auto sfc_lev_idx = (nlev-1)/Spack::n;
+    const auto sfc_pack_idx = (nlev-1)%Spack::n;
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracers), [&] (const Int& q) {
-      qtracers_s(q, nlev-1) += cmnfac*wtracer_sfc_s(q);
+      qtracers(q, sfc_lev_idx)[sfc_pack_idx] += cmnfac*wtracer_sfc_s(q);
     });
   }
 
@@ -152,8 +153,10 @@ void Functions<S,D>::update_prognostics_implicit(
     wind_rhs_s(k,1) = v_wind_s(k);
 
     // The rhs version of the tracers is the transpose of the input/output layout
+    const auto lev_idx = k/Spack::n;
+    const auto pack_idx = k%Spack::n;
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
-      qtracers_rhs_s(k, q) = qtracers_s(q, k);
+      qtracers_rhs_s(k, q) = qtracers(q, lev_idx)[pack_idx];
     });
     qtracers_rhs_s(k, num_qtracers)   = thetal_s(k);
     qtracers_rhs_s(k, num_qtracers+1) = qw_s(k);
@@ -189,8 +192,10 @@ void Functions<S,D>::update_prognostics_implicit(
     v_wind_s(k) = wind_rhs_s(k, 1);
 
     // Transpose tracers back to  input/output layout
+    const auto lev_idx = k/Spack::n;
+    const auto pack_idx = k%Spack::n;
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
-      qtracers_s(q, k) = qtracers_rhs_s(k, q);
+      qtracers(q, lev_idx)[pack_idx] = qtracers_rhs_s(k, q);
     });
     thetal_s(k) = qtracers_rhs_s(k, num_qtracers);
     qw_s(k)     = qtracers_rhs_s(k, num_qtracers+1);

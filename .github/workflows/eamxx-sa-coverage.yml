@@ -35,7 +35,7 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: cov
           machine: ghci-snl-cpu
@@ -84,7 +84,7 @@ jobs:
                   ;;
           esac
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: cov
           machine: ghci-snl-cuda

@@ -423,6 +423,7 @@
 <config_slow_mode_drainage_strength>-5.0e-8</config_slow_mode_drainage_strength>
 <config_slow_mode_critical_porosity>0.05</config_slow_mode_critical_porosity>
 <config_macro_drainage_timescale>10.</config_macro_drainage_timescale>
+<config_congelation_freezing_method>'two-step'</config_congelation_freezing_method>
 <config_congelation_ice_porosity>0.85</config_congelation_ice_porosity>
 
 <!-- itd -->

@@ -23,7 +23,9 @@ set(BUILD_HOMME_PREQX_KOKKOS OFF CACHE BOOL "")
 set(BUILD_HOMME_PESE         OFF CACHE BOOL "")
 set(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
 set(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
+
 set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
+
 set(BUILD_HOMME_TOOL         OFF CACHE BOOL "")
 
 if (NOT Kokkos_ENABLE_SERIAL)
@@ -113,9 +115,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
                    ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
     target_compile_definitions(${hommeLibName} PUBLIC HOMMEXX_CONFIG_IS_CMAKE SCREAM)
     # Link to cime's csm_share lib
-    target_link_libraries (${hommeLibName} csm_share)
+    target_link_libraries (${hommeLibName} PUBLIC csm_share)
     if (HOMME_ENABLE_COMPOSE)
-      target_link_libraries (${hommeLibName} composec++)
+      target_link_libraries (${hommeLibName} PUBLIC composec++)
     endif()
 
     string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
@@ -133,7 +135,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       SetCudaFlags(${hommeLibName} CUDA_LANG)
     endif()
 
-    SetOmpFlags(${hommeLibName})
+    SetOmpFlags(${hommeLibName} Fortran)
 
     #####################################
     ###     Build SCREAM library      ###

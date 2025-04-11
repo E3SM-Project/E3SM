@@ -1,6 +1,6 @@
 #ifndef SCREAM_COSP_FUNCTIONS_HPP
 #define SCREAM_COSP_FUNCTIONS_HPP
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 using scream::Real;
 extern "C" void cosp_c2f_init(int ncol, int nsubcol, int nlay);
 extern "C" void cosp_c2f_final();
@@ -31,13 +31,15 @@ namespace scream {
         };
         inline void main(
                 const Int ncol, const Int nsubcol, const Int nlay, const Int ntau, const Int nctp, const Int ncth, const Real emsfc_lw,
-                view_1d<const Real>& sunlit , view_1d<const Real>& skt,
-                view_2d<const Real>& T_mid  , view_2d<const Real>& p_mid  , view_2d<const Real>& p_int,
-                view_2d<const Real>& z_mid  , view_2d<const Real>& qv     , view_2d<const Real>& qc     , view_2d<const Real>& qi,
-                view_2d<const Real>& cldfrac,
-                view_2d<const Real>& reff_qc, view_2d<const Real>& reff_qi,
-                view_2d<const Real>& dtau067, view_2d<const Real>& dtau105,
-                view_1d<Real>& isccp_cldtot , view_3d<Real>& isccp_ctptau, view_3d<Real>& modis_ctptau, view_3d<Real>& misr_cthtau) {
+                const view_1d<const Real>& sunlit , const view_1d<const Real>& skt,
+                const view_2d<const Real>& T_mid  , const view_2d<const Real>& p_mid  ,
+                const view_2d<const Real>& p_int,  const view_2d<const Real>& z_mid,
+                const view_2d<const Real>& qv     , const view_2d<const Real>& qc,
+                const view_2d<const Real>& qi, const view_2d<const Real>& cldfrac,
+                const view_2d<const Real>& reff_qc, const view_2d<const Real>& reff_qi,
+                const view_2d<const Real>& dtau067, const view_2d<const Real>& dtau105,
+                const view_1d<Real>& isccp_cldtot , const view_3d<Real>& isccp_ctptau,
+                const view_3d<Real>& modis_ctptau, const view_3d<Real>& misr_cthtau) {
 
             // Make host copies and permute data as needed
             lview_host_2d

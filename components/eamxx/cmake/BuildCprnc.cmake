@@ -41,6 +41,9 @@ macro(BuildCprnc)
         "
       )
       set(SRC_ROOT ${SCREAM_BASE_DIR}/../..)
+      # Let's make sure cprnc can at least find the FindNetCDF.cmake
+      # module that scorpio has.
+      list(APPEND CMAKE_MODULE_PATH ${SRC_ROOT}/externals/scorpio/cmake)
       add_subdirectory(${SRC_ROOT}/cime/CIME/non_py/cprnc ${BLDROOT})
       EkatDisableAllWarning(cprnc)
 

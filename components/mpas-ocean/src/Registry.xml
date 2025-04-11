@@ -693,6 +693,10 @@
 					description="Controls if zonal and meridional components of windstress are used to build surface wind stress."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_bulk_wind_stress_interp_isotropic" type="logical" default_value=".false."
+					description="Controls if windstress is interpolated to edges from 4 adjacent cells rather than just 2."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_bulk_thickness_flux" type="logical" default_value=".false."
 					description="Controls if a bulk thickness flux will be computed for surface forcing."
 					possible_values=".true. or .false."
@@ -1004,9 +1008,17 @@
 					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
+		<nml_option name="config_use_frazil_ice_porosity" type="logical" default_value=".false."
+					description="If true, use an internal porosity to set internal frazil salinity and that of specified passive tracers."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_frazil_ice_density" type="real" default_value="1000.0" units="kg m^-3"
 					description="Assumed density of frazil. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_frazil_ice_porosity" type="real" default_value="1.0" units="1"
+					description="If frazil porosity is used, sets the porosity of internal ocean frazil ice."
+					possible_values="Positive real number from 0 to 1"
 		/>
 		<nml_option name="config_frazil_fractional_thickness_limit" type="real" default_value="0.1" units="non-dimensional"
 					description="maximum fraction of layer thickness than can be used or created at an instant by frazil."
@@ -4131,6 +4143,10 @@
 		/>
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
+			 packages="frazilIce"
+		/>
+		<var name="lowSalinityFrazilIce" type="real" dimensions="nCells Time" units="kg m^-2"
+			 description="min(0,AccumulatedFrazilIceMass * reference salinity - accumulatedFrazilIceSalinity), non-zero indicates possible non-conservation"
 			 packages="frazilIce"
 		/>
 		<var name="frazilIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"

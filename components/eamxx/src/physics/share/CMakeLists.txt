@@ -2,7 +2,7 @@ set(PHYSICS_SHARE_SRCS
   physics_share_f2c.F90
   physics_share.cpp
   physics_test_data.cpp
-  scream_trcmix.cpp
+  eamxx_trcmix.cpp
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -25,5 +25,7 @@ if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE physics_share)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE physics_share)
+endif()

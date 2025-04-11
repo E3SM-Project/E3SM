@@ -1,7 +1,7 @@
 #include "eamxx_homme_process_interface.hpp"
 
 // Scream includes
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 // Homme includes
 #include "dynamics/homme/homme_dimensions.hpp"

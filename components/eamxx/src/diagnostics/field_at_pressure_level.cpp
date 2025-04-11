@@ -1,5 +1,5 @@
 #include "diagnostics/field_at_pressure_level.hpp"
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_upper_bound.hpp"
@@ -88,7 +88,7 @@ initialize_impl (const RunType /*run_type*/)
   m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
 
 
-  std::string mask_name = name() + " mask";
+  std::string mask_name = m_diag_name + " mask";
   FieldLayout mask_layout( {COL}, {num_cols});
   FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
   Field diag_mask(mask_fid);
@@ -146,7 +146,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
         auto k1 = ub - beg;
         if (k1==0) {
           // Corner case: p_tgt==y1(0)
-          diag(icol) = y1(icol);
+          diag(icol) = y1(0);
         } else if (k1==nlevs) {
           // Corner case: p_tgt==y1(nlevs-1)
           diag(icol) = y1(nlevs-1);
@@ -181,7 +181,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
           auto k1 = ub - beg;
           if (k1==0) {
             // Corner case: p_tgt==y1(0)
-            diag(icol,idim) = y1(icol);
+            diag(icol,idim) = y1(0);
           } else if (k1==nlevs) {
             // Corner case: p_tgt==y1(nlevs-1)
             diag(icol,idim) = y1(nlevs-1);

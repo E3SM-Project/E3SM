@@ -7,30 +7,30 @@ module  zm_microphysics
 ! Author: Xialiang Song and Guang Zhang, June 2010  
 !---------------------------------------------------------------------------------
 
-use shr_kind_mod,      only: r8=>shr_kind_r8
-use spmd_utils,        only: masterproc    
-use ppgrid,            only: pcols, pver, pverp
-use physconst,         only: gravit, rair, tmelt, cpair, rh2o, r_universal, mwh2o, rhoh2o
-use physconst,         only: latvap, latice
-use activate_drop_mam, only: actdrop_mam_calc
-use ndrop_bam,         only: ndrop_bam_run
-use nucleate_ice_conv, only: nucleati_conv
+use shr_kind_mod,           only: r8=>shr_kind_r8
+use spmd_utils,             only: masterproc    
+use ppgrid,                 only: pcols, pver, pverp
+use physconst,              only: gravit, rair, tmelt, cpair, rh2o, r_universal, mwh2o, rhoh2o
+use physconst,              only: latvap, latice
+use activate_drop_mam,      only: actdrop_mam_calc
+use ndrop_bam,              only: ndrop_bam_run
+use nucleate_ice_conv,      only: nucleati_conv
+use shr_spfn_mod,           only: gamma => shr_spfn_gamma
+use wv_saturation,          only: svp_water, svp_ice
+use cam_logfile,            only: iulog
+use cam_abortutils,         only: endrun
+use zm_microphysics_state,  only: zm_microp_st
 #ifndef HAVE_ERF_INTRINSICS
-use shr_spfn_mod,      only: erf => shr_spfn_erf
+use shr_spfn_mod,           only: erf => shr_spfn_erf
 #endif
-use shr_spfn_mod, only: gamma => shr_spfn_gamma
-use wv_saturation,  only: svp_water, svp_ice
-use cam_logfile,       only: iulog
-use cam_abortutils,    only: endrun
+
 implicit none
 private
 save
 
-public :: &
-   zm_mphyi, &
-   zm_mphy,  &
-   zm_aero_t,  &
-   zm_microp_st
+public :: zm_mphyi
+public :: zm_mphy
+public :: zm_aero_t
 
 ! Private module data
 
@@ -137,84 +137,6 @@ type :: zm_aero_t
    real(r8) :: sigmag_aitken
 
 end type zm_aero_t
-
-type :: zm_microp_st
-
-   real(r8),    allocatable :: wu(:,:)        ! vertical velocity
-
-   real(r8),    allocatable :: qliq(:,:)      ! convective cloud liquid water.
-   real(r8),    allocatable :: qice(:,:)      ! convective cloud ice.
-   real(r8),    allocatable :: qrain(:,:)     ! convective rain water.
-   real(r8),    allocatable :: qsnow(:,:)     ! convective snow.
-   real(r8),    allocatable :: qgraupel(:,:)  ! convective graupel.
-   real(r8),    allocatable :: qnl(:,:)       ! convective cloud liquid water num concen.
-   real(r8),    allocatable :: qni(:,:)       ! convective cloud ice num concen.
-   real(r8),    allocatable :: qnr(:,:)       ! convective rain water num concen.
-   real(r8),    allocatable :: qns(:,:)       ! convective snow num concen.
-   real(r8),    allocatable :: qng(:,:)       ! convective graupel num concen.
-
-   real(r8),    allocatable :: autolm(:,:)    !mass tendency due to autoconversion of droplets to rain
-   real(r8),    allocatable :: accrlm(:,:)    !mass tendency due to accretion of droplets by rain
-   real(r8),    allocatable :: bergnm(:,:)    !mass tendency due to Bergeron process
-   real(r8),    allocatable :: fhtimm(:,:)    !mass tendency due to immersion freezing
-   real(r8),    allocatable :: fhtctm(:,:)    !mass tendency due to contact freezing
-   real(r8),    allocatable :: fhmlm (:,:)    !mass tendency due to homogeneous freezing
-   real(r8),    allocatable :: hmpim (:,:)    !mass tendency due to HM process
-   real(r8),    allocatable :: accslm(:,:)    !mass tendency due to accretion of droplets by snow
-   real(r8),    allocatable :: dlfm  (:,:)    !mass tendency due to detrainment of droplet
-   real(r8),    allocatable :: autoln(:,:)    !num tendency due to autoconversion of droplets to rain
-   real(r8),    allocatable :: accrln(:,:)    !num tendency due to accretion of droplets by rain
-   real(r8),    allocatable :: bergnn(:,:)    !num tendency due to Bergeron process
-   real(r8),    allocatable :: fhtimn(:,:)    !num tendency due to immersion freezing
-   real(r8),    allocatable :: fhtctn(:,:)    !num tendency due to contact freezing
-   real(r8),    allocatable :: fhmln (:,:)    !num tendency due to homogeneous freezing
-   real(r8),    allocatable :: accsln(:,:)    !num tendency due to accretion of droplets by snow
-   real(r8),    allocatable :: activn(:,:)    !num tendency due to droplets activation
-   real(r8),    allocatable :: dlfn  (:,:)    !num tendency due to detrainment of droplet
-   real(r8),    allocatable :: autoim(:,:)    !mass tendency due to autoconversion of cloud ice to snow
-   real(r8),    allocatable :: accsim(:,:)    !mass tendency due to accretion of cloud ice by snow
-   real(r8),    allocatable :: difm  (:,:)    !mass tendency due to detrainment of cloud ice
-   real(r8),    allocatable :: nuclin(:,:)    !num tendency due to ice nucleation
-   real(r8),    allocatable :: autoin(:,:)    !num tendency due to autoconversion of cloud ice to snow
-   real(r8),    allocatable :: accsin(:,:)    !num tendency due to accretion of cloud ice by snow
-   real(r8),    allocatable :: hmpin (:,:)    !num tendency due to HM process
-   real(r8),    allocatable :: difn  (:,:)    !num tendency due to detrainment of cloud ice
-   real(r8),    allocatable :: cmel  (:,:)    !mass tendency due to condensation
-   real(r8),    allocatable :: cmei  (:,:)    !mass tendency due to deposition
-   real(r8),    allocatable :: trspcm(:,:)    !LWC tendency due to convective transport
-   real(r8),    allocatable :: trspcn(:,:)    !droplet num tendency due to convective transport
-   real(r8),    allocatable :: trspim(:,:)    !IWC tendency due to convective transport
-   real(r8),    allocatable :: trspin(:,:)    !ice crystal num tendency due to convective transport
-   real(r8),    allocatable :: accgrm(:,:)    ! mass tendency due to collection of rain by graupel
-   real(r8),    allocatable :: accglm(:,:)    ! mass tendency due to collection of droplets by graupel
-   real(r8),    allocatable :: accgslm(:,:)   ! mass tendency of graupel due to collection of droplets by snow
-   real(r8),    allocatable :: accgsrm(:,:)   ! mass tendency of graupel due to collection of rain by snow
-   real(r8),    allocatable :: accgirm(:,:)   ! mass tendency of graupel due to collection of rain by ice
-   real(r8),    allocatable :: accgrim(:,:)   ! mass tendency of graupel due to collection of ice by rain
-   real(r8),    allocatable :: accgrsm(:,:)   ! mass tendency due to collection of snow by rain
-   real(r8),    allocatable :: accgsln(:,:)   ! num tendency of graupel due to collection of droplets by snow
-   real(r8),    allocatable :: accgsrn(:,:)   ! num tendency of graupel due to collection of rain by snow
-   real(r8),    allocatable :: accgirn(:,:)   ! num tendency of graupel due to collection of rain by ice
-   real(r8),    allocatable :: accsrim(:,:)   ! mass tendency of snow due to collection of ice by rain
-   real(r8),    allocatable :: acciglm(:,:)   ! mass tendency of ice mult(splintering) due to acc droplets by graupel
-   real(r8),    allocatable :: accigrm(:,:)   ! mass tendency of ice mult(splintering) due to acc rain by graupel
-   real(r8),    allocatable :: accsirm(:,:)   ! mass tendency of snow due to collection of rain by ice
-   real(r8),    allocatable :: accigln(:,:)   ! num tendency of ice mult(splintering) due to acc droplets by graupel
-   real(r8),    allocatable :: accigrn(:,:)   ! num tendency of ice mult(splintering) due to acc rain by graupel
-   real(r8),    allocatable :: accsirn(:,:)   ! num tendency of snow due to collection of rain by ice
-   real(r8),    allocatable :: accgln(:,:)    ! num tendency due to collection of droplets by graupel
-   real(r8),    allocatable :: accgrn(:,:)    ! num tendency due to collection of rain by graupel
-   real(r8),    allocatable :: accilm(:,:)    ! mass tendency of cloud ice due to collection of droplet by cloud ice
-   real(r8),    allocatable :: acciln(:,:)    ! number conc tendency of cloud ice due to collection of droplet by cloud ice
-   real(r8),    allocatable :: fallrm(:,:)    ! mass tendency of rain fallout
-   real(r8),    allocatable :: fallsm(:,:)    ! mass tendency of snow fallout
-   real(r8),    allocatable :: fallgm(:,:)    ! mass tendency of graupel fallout
-   real(r8),    allocatable :: fallrn(:,:)    ! num tendency of rain fallout
-   real(r8),    allocatable :: fallsn(:,:)    ! num tendency of snow fallout
-   real(r8),    allocatable :: fallgn(:,:)    ! num tendency of graupel fallout
-   real(r8),    allocatable :: fhmrm (:,:)    ! mass tendency due to homogeneous freezing of rain
-
-end type zm_microp_st
 
 
 real(r8), parameter :: dcon  = 25.e-6_r8

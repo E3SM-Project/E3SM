@@ -33,7 +33,7 @@ module atm_comp_mct
   ! Public interfaces
   !--------------------------------------------------------------------------
 
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
   public :: atm_init_hip_mct
 #endif
   public :: atm_init_mct
@@ -68,10 +68,10 @@ module atm_comp_mct
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
   !===============================================================================
   subroutine atm_init_hip_mct()
-    use scream_f2c_mod, only: scream_init_hip_atm
+    use eamxx_f2c_mod, only: scream_init_hip_atm
 
     call scream_init_hip_atm()
 
@@ -81,9 +81,9 @@ CONTAINS
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
     use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
-    use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
+    use eamxx_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
-    use scream_cpl_indices, only: scream_set_cpl_indices, &
+    use eamxx_cpl_indices, only: scream_set_cpl_indices, &
                                   num_cpl_imports,          num_scream_imports, &
                                   num_cpl_exports,          num_scream_exports, &
                                   import_field_size,        export_field_size, &
@@ -197,7 +197,7 @@ CONTAINS
     else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
       run_type_c = 1
     else if (trim(run_type) == trim(seq_infodata_start_type_brnch) ) then
-      run_type_c = 1
+      run_type_c = 2
     else
       print *, "[eamxx] ERROR! Unsupported run type: "//trim(run_type)
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
@@ -207,6 +207,8 @@ CONTAINS
     call seq_timemgr_EClockGetData(EClock, calendar=calendar, &
                                    curr_ymd=cur_ymd, curr_tod=cur_tod, &
                                    start_ymd=case_start_ymd, start_tod=case_start_tod)
+    
+    yaml_fname = trim(yaml_fname)//trim(inst_suffix)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(calendar,calendar_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
@@ -302,7 +304,7 @@ CONTAINS
   !===============================================================================
   subroutine atm_run_mct(EClock, cdata, x2a, a2x)
     use iso_c_binding,  only: c_double
-    use scream_f2c_mod, only: scream_run
+    use eamxx_f2c_mod, only: scream_run
 #ifdef HAVE_MOAB
     use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use shr_kind_mod     ,  only: cxx=>shr_kind_cxx
@@ -403,7 +405,7 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
-    use scream_f2c_mod, only: scream_finalize
+    use eamxx_f2c_mod, only: scream_finalize
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock  ! clock
@@ -422,7 +424,7 @@ CONTAINS
 
   subroutine atm_Set_gsMap_mct( mpicom_atm, ATMID, GSMap_atm )
     use iso_c_binding, only: c_int, c_loc
-    use scream_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
+    use eamxx_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
                               scream_get_local_cols_gids
     use mct_mod,        only: mct_gsMap_init
     !-------------------------------------------------------------------
@@ -464,7 +466,7 @@ CONTAINS
                               mct_gsMap_orderedPoints
     use seq_flds_mod,   only: seq_flds_dom_coord, seq_flds_dom_other
     use shr_const_mod,  only: SHR_CONST_PI
-    use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
+    use eamxx_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
     !-------------------------------------------------------------------
     !
     ! Arguments
@@ -521,9 +523,9 @@ CONTAINS
       iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
       iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
     use iso_c_binding, only: c_int, c_loc
-    use scream_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
+    use eamxx_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
                               scream_get_local_cols_gids
-    use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
+    use eamxx_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
     use seq_flds_mod, only: seq_flds_dom_fields
     use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl, cxx=>shr_kind_cxx
     use shr_const_mod, only: SHR_CONST_PI

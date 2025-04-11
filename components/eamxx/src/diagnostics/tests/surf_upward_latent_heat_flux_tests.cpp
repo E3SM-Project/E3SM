@@ -6,7 +6,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -85,8 +85,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
   diag_latent_heat->compute_diagnostic();
   const auto diag_latent_heat_out = diag_latent_heat->get_diagnostic();
   Field surf_lhf = diag_latent_heat_out.clone();
-  surf_lhf.deep_copy<double,Host>(0.0);
-  surf_lhf.sync_to_dev();
+  surf_lhf.deep_copy(0);
   const auto& surf_lhf_v = surf_lhf.get_view<Real*>();
   constexpr auto latent_heat_evap = PC::LatVap; // [J/kg]
   Kokkos::parallel_for("surf_upward_latent_heat_flux_test",

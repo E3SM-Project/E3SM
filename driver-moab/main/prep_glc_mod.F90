@@ -684,8 +684,15 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eoi = 1,num_inst_ocn
       o2x_ox => component_get_c2x_cx(ocn(eoi))
-      call seq_map_map(mapper_So2g, o2x_ox, o2x_gx(eoi), &
-                       fldlist=seq_flds_x2g_states_from_ocn,norm=.true.)
+!MOABTODO:  uncomment when porting glc
+!      if (ocn_c2_glctf) then
+!         call seq_map_map(mapper_So2g_tf, o2x_ox, o2x_gx(eoi), &
+!                       fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
+!      end if
+!      if (ocn_c2_glcshelf) then
+!         call seq_map_map(mapper_So2g_shelf, o2x_ox, o2x_gx(eoi), &
+!                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
+!      end if
     enddo
 
     call t_drvstopf  (trim(timer))
@@ -851,7 +858,7 @@ contains
        ! Also could map o2x_ox->o2x_gx(1) but using x2g_gx as destination allows us to see
        ! these fields on the GLC grid of the coupler history file, which helps with debugging.
        call seq_map_map(mapper_So2g, o2x_ox, x2g_gx, &
-       fldlist=seq_flds_x2g_states_from_ocn,norm=.true.)
+       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
 
        ! inputs to melt flux calculation
        index_x2g_So_blt =    mct_avect_indexra(x2g_gx,'So_blt',perrwith='quiet')

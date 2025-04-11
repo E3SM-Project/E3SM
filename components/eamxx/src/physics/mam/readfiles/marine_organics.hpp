@@ -22,7 +22,7 @@ struct marineOrganicsFunctions {
     // The current month
     int current_month = -1;
     // Julian Date for the beginning of the month, as defined in
-    //           /src/share/util/scream_time_stamp.hpp
+    //           /src/share/util/eamxx_time_stamp.hpp
     // See this file for definition of Julian Date.
     Real t_beg_month;
     // Current simulation Julian Date

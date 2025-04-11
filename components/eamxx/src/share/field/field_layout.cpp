@@ -9,7 +9,7 @@ FieldLayout::
 FieldLayout ()
  : FieldLayout({},{})
 {
-
+  // Nothing to do here
 }
 
 FieldLayout::FieldLayout (const std::vector<FieldTag>& tags,

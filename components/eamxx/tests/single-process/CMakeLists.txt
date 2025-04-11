@@ -16,19 +16,13 @@ else()
   message(STATUS "RRTMGP and COSP only supported for double precision builds; skipping")
 endif()
 if (SCREAM_ENABLE_MAM)
-  # Once the mam4xx aerosol microphysics AtmosphereProcess is running, the
-  # corresponding test here needs to be reworked with valid aerosol
-  # initial conditions.
   add_subdirectory(mam/optics)
   add_subdirectory(mam/aci)
   add_subdirectory(mam/drydep)
   add_subdirectory(mam/emissions)
   add_subdirectory(mam/constituent_fluxes)
   add_subdirectory(mam/wet_scav)
-
-  # Currently this test produces non-deterministic output.
-  # Commenting it so the other PRs can test normally
-  # add_subdirectory(mam/aero_microphys)
+  add_subdirectory(mam/aero_microphys)
 endif()
 if (SCREAM_TEST_LEVEL GREATER_EQUAL SCREAM_TEST_LEVEL_EXPERIMENTAL)
   add_subdirectory(zm)

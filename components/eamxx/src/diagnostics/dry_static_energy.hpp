@@ -3,8 +3,7 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "share/scream_types.hpp"
-#include <ekat/ekat_pack.hpp>
+#include "share/eamxx_types.hpp"
 
 namespace scream
 {
@@ -12,14 +11,13 @@ namespace scream
 class DryStaticEnergyDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT            = KokkosTypes<DefaultDevice>;
-  using view_2d       = typename KT::template view_2d<Pack>;
+  using view_2d       = typename KT::template view_2d<Real>;
 
   // Constructors
   DryStaticEnergyDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
+  // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "DryStaticEnergy"; }
 
   // Set the grid

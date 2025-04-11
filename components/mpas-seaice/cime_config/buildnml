@@ -61,6 +61,8 @@ def buildnml(case, caseroot, compname):
         ice_ic_mode = 'spunup'
     if ice_bgc == 'ice_bgc':
         ice_ic_mode = 'spunup'
+    if run_type == 'hybrid' or run_type == 'branch':
+        ice_ic_mode = 'spunup'
 
     #--------------------------------------------------------------------
     # Determine date stamp, from grid names
@@ -323,7 +325,7 @@ def buildnml(case, caseroot, compname):
     elif ice_grid == 'RRSwISC6to18E3r5':
         decomp_date = '20240404'
         decomp_prefix = 'partitions/mpas-seaice.graph.info.'
-        grid_date = '20240327'
+        grid_date = '20250205'
         grid_prefix = 'mpassi.RRSwISC6to18E3r5'
         data_iceberg_file = 'Iceberg_Climatology_Merino.RRSwISC6to18E3r5.20240327.nc'
         if ice_ic_mode == 'spunup':

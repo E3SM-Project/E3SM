@@ -1,5 +1,5 @@
 #include "dynamics/homme/homme_grids_manager.hpp"
-#include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 

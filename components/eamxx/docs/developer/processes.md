@@ -4,7 +4,7 @@ In EAMxx, `AtmosphereProcess` (AP) is an abstract class representing a portion
 of the atmosphere timestep algorithm. In simple terms, an AP is an object that
 given certain input fields performs some calculations to compute some output
 fields. The concrete AP classes allow to create a buffer layer between
-particular packages (e.g., dynamics dycore, physics parametrizations) and the
+particular packages (e.g., dynamics dycore, physics parameterizations) and the
 atmosphere driver (AD), allowing separation of concerns, so that the AD does
 not need to know details about the package, and the package does not need to
 know about the EAMxx infrastructure.
@@ -23,7 +23,7 @@ This design allows to have a code base that is cleaner, self-container, and
 easy to test via a battery of targeted unit tests.
 
 In EAMxx, we already have a few concrete AP's, interfacing the AD to the
-Hommexx non-hydrostatic dycore as well as some physics parametrizations (P3,
+Hommexx non-hydrostatic dycore as well as some physics parameterizations (P3,
 SHOC, RRMTPG, etc). In the next section we describe the interfaces of an AP
 class, and we show an example of how to write a new concrete AP class.
 

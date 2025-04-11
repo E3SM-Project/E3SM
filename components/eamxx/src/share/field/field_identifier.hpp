@@ -2,7 +2,7 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
-#include "share/util/scream_data_type.hpp"
+#include "share/util/eamxx_data_type.hpp"
 
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/util/ekat_units.hpp"

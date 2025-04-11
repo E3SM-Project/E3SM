@@ -1,7 +1,7 @@
 #ifndef SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
-#include "share/scream_config.hpp"
+#include "share/eamxx_config.hpp"
 
 #include "share/grid/remap/abstract_remapper.hpp"
 
@@ -18,14 +18,9 @@ namespace scream
 class PhysicsDynamicsRemapper : public AbstractRemapper
 {
 public:
-  using base_type       = AbstractRemapper;
-  using field_type      = typename base_type::field_type;
-  using identifier_type = typename base_type::identifier_type;
-  using layout_type     = typename base_type::layout_type;
-  using grid_type       = typename base_type::grid_type;
-  using grid_ptr_type   = typename base_type::grid_ptr_type;
+  using grid_ptr_type   = typename AbstractRemapper::grid_ptr_type;
 
-  using device_type     = typename field_type::device_t;
+  using device_type     = typename Field::device_t;
   using KT              = KokkosTypes<device_type>;
 
   template<typename T,int N>
@@ -41,40 +36,23 @@ public:
 
   ~PhysicsDynamicsRemapper () = default;
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
+  bool compatible_layouts (const FieldLayout& src,
+                           const FieldLayout& tgt) const override {
     return src.type()==tgt.type();
+  }
+
+  bool is_valid_tgt_layout (const FieldLayout& layout) const override {
+    // We don't want fields with TimeLevel in it. Just subview the fields instead
+    return AbstractRemapper::is_valid_tgt_layout(layout) and
+           not ekat::contains(layout.tags(),FieldTag::TimeLevel);
   }
 
 protected:
 
-  // Getters
-  const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_phys_fields[ifield].get_header().get_identifier();
-  }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_dyn_fields[ifield].get_header().get_identifier();
-  }
-  const field_type& do_get_src_field (const int ifield) const override {
-    return m_phys_fields[ifield];
-  }
-  const field_type& do_get_tgt_field (const int ifield) const override {
-    return m_dyn_fields[ifield];
-  }
-
   // Registration methods
-  void do_registration_begins () override {}
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-  void do_registration_ends () override;
+  void registration_ends_impl () override;
 
   void setup_boundary_exchange ();
-
-  std::vector<field_type>   m_phys_fields;
-  std::vector<field_type>   m_dyn_fields;
 
   grid_ptr_type     m_dyn_grid;
   grid_ptr_type     m_phys_grid;
@@ -172,14 +150,14 @@ protected:
   void initialize_device_variables();
 
   bool subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
-                                   const std::vector<field_type>& fields) const;
+                                   const std::vector<Field>& fields) const;
   void update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
                                const ViewsRepo& repo,
-                               const std::vector<field_type>& fields) const;
+                               const std::vector<Field>& fields) const;
 
   // Remap methods
-  void do_remap_fwd () override;
-  void do_remap_bwd () override;
+  void remap_fwd_impl () override;
+  void remap_bwd_impl () override;
 
   // phys->dyn requires a halo-exchange. Since not all entries in dyn
   // are overwritten before the exchange, to avoid leftover garbage,

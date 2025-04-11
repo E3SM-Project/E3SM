@@ -35,7 +35,7 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: valg
           machine: ghci-snl-cpu
@@ -88,10 +88,10 @@ jobs:
                   ;;
           esac
       - name: Run tests
-        uses: ./.github/actions/test-all-scream
+        uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
           machine: ghci-snl-cuda
           generate: false
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=ON

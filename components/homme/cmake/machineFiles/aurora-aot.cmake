@@ -6,6 +6,9 @@
 SET (AURORA_MACHINE TRUE CACHE BOOL "")
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "")
+
+# Default to FALSE for now. To enable, set to TRUE and export
+# MPIR_CVAR_ENABLE_GPU=1.
 SET(HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 
 SET(HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
@@ -18,15 +21,22 @@ SET(USE_QUEUING FALSE CACHE BOOL "")
 SET(HOMME_USE_KOKKOS TRUE CACHE BOOL "")
 SET(HOMME_USE_MKL TRUE CACHE BOOL "")
 
-SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
+SET(BUILD_HOMME_PREQX_KOKKOS FALSE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
-set(Kokkos_ROOT $ENV{KOKKOS_HOME} CACHE STRING "")
+#set(Kokkos_ROOT $ENV{KOKKOS_HOME} CACHE STRING "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
 
 SET(SYCL_BUILD TRUE CACHE BOOL "")
-SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
+SET(HOMME_ENABLE_COMPOSE TRUE CACHE BOOL "")
+
+SET(Kokkos_ARCH_SPR ON CACHE BOOL "")
+SET(Kokkos_ARCH_INTEL_PVC ON CACHE BOOL "")
+SET(Kokkos_ENABLE_SERIAL ON CACHE BOOL "")
+SET(Kokkos_ENABLE_SYCL ON CACHE BOOL "")
+SET(Kokkos_ENABLE_DEBUG OFF CACHE BOOL "")
+SET(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "")
 
 SET(CMAKE_CXX_STANDARD 17)
 
@@ -35,8 +45,8 @@ SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 
 #AOT flags
-SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
-SET(SYCL_LINK_FLAGS "-fsycl-max-parallel-link-jobs=32 -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=intel_gpu_pvc")
+SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -Xclang -fsycl-allow-virtual-functions")
+SET(SYCL_LINK_FLAGS "-Wl,--no-relax -flink-huge-device-code -fsycl-max-parallel-link-jobs=32 -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=intel_gpu_pvc")
 
 SET(ADD_Fortran_FLAGS "-fc=ifx -fpscomp logicals -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
 SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "")

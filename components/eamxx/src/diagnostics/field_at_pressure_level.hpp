@@ -19,7 +19,7 @@ public:
   // Constructors
   FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
+  // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "FieldAtPressureLevel"; }
 
   // Set the grid

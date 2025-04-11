@@ -25,7 +25,7 @@ RefiningRemapperRMA::
   clean_up();
 }
 
-void RefiningRemapperRMA::do_remap_fwd ()
+void RefiningRemapperRMA::remap_fwd_impl ()
 {
   // Start RMA epoch on each field
   for (int i=0; i<m_num_fields; ++i) {

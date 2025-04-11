@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
@@ -47,7 +47,9 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend, nc_selfcollect_tend;
+      Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend, nc_selfcollect_tend,
+        ncheti_cnt, nicnt;
+      Smask context;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         nc[s] = cxx_device(vs).nc;
         nc2ni_immers_freeze_tend[s] = cxx_device(vs).nc2ni_immers_freeze_tend;
@@ -55,9 +57,13 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
         nc_accret_tend[s] = cxx_device(vs).nc_accret_tend;
         nc_collect_tend[s] = cxx_device(vs).nc_collect_tend;
         nc_selfcollect_tend[s] = cxx_device(vs).nc_selfcollect_tend;
+        ncheti_cnt[s] = cxx_device(vs).ncheti_cnt;
+        nicnt[s] = cxx_device(vs).nicnt;
+	context.set(s, cxx_device(vs).context);
       }
-
-      Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend);
+      const bool use_hetfrz_classnuc = false;
+      Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt, nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend,
+	  ncheti_cnt, nicnt, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

@@ -1,4 +1,4 @@
-#include "share/util/scream_bfbhash.hpp"
+#include "share/util/eamxx_bfbhash.hpp"
 
 #include <catch2/catch.hpp>
 

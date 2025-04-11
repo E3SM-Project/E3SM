@@ -1,0 +1,5 @@
+The io_metadata.csv has the IO metadata of the EAMxx/SCREAM model.
+The first column is the variable name in the model,
+the second column is the corresponding CF standard name,
+and the third column is the long name of the variable.
+If any of the values is missing (empty), the string "MISSING" is used.

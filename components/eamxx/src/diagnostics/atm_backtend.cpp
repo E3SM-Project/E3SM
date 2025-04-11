@@ -2,13 +2,15 @@
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 namespace scream {
 
-AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
-                                 const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
+AtmBackTendDiag::
+AtmBackTendDiag(const ekat::Comm &comm,
+                const ekat::ParameterList &params)
+ : AtmosphereDiagnostic(comm, params)
+{
   EKAT_REQUIRE_MSG(params.isParameter("Tendency Name"),
                    "Error! AtmBackTendDiag requires 'Tendency Name' in its "
                    "input parameters.\n");
@@ -16,12 +18,9 @@ AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
   m_name = m_params.get<std::string>("Tendency Name");
 }
 
-std::string AtmBackTendDiag::name() const { return m_name + "_atm_tend"; }
-
-void AtmBackTendDiag::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
-  using namespace ekat::units;
-
+void AtmBackTendDiag::
+set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+{
   const auto &gname = m_params.get<std::string>("grid_name");
   add_field<Required>(m_name, gname);
 }
@@ -32,7 +31,6 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &gn  = fid.get_grid_name();
 
   // Sanity checks
-  using namespace ShortFieldTagsNames;
   const auto &layout = fid.get_layout();
   EKAT_REQUIRE_MSG(
       f.data_type() == DataType::RealType,
@@ -48,12 +46,12 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
   auto diag_units = fid.get_units() / s;
 
   // All good, create the diag output
-  FieldIdentifier d_fid(name(), layout.clone(), diag_units, gn);
+  FieldIdentifier d_fid(m_name + "_atm_backtend", layout.clone(), diag_units, gn);
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
   // Let's also create the previous field
-  FieldIdentifier prev_fid(name() + "_prev", layout.clone(), diag_units, gn);
+  FieldIdentifier prev_fid(m_name + "_atm_backtend_prev", layout.clone(), diag_units, gn);
   m_f_prev = Field(prev_fid);
   m_f_prev.allocate_view();
 }

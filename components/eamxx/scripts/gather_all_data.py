@@ -50,7 +50,7 @@ class GatherAllData(object):
 
         repo = scream_docs_repo if self._scream_docs else scream_repo
 
-        # Compute kokkos location. scream itself won't allow this, and test-all-scream will error out,
+        # Compute kokkos location. scream itself won't allow this, and test-all-eamxx will error out,
         # but one can use gather-all-data for plenty of other apps, so we need to support this here.
         local_cmd = self._run
         if self._kokkos:

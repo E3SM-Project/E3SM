@@ -44,10 +44,10 @@ void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader>& f
   // If this field has a parent, then the underlying data includes all entires
   // in the larger field. We then must treat the child field as having col_stride
   // and col_offset of a vector field with component as its subview_idx.
-  std::shared_ptr<const FieldHeader> parent = fh->get_parent().lock();
+  std::shared_ptr<const FieldHeader> parent = fh->get_parent();
   if (parent != nullptr) {
 
-    EKAT_REQUIRE_MSG(parent->get_parent().lock() == nullptr,
+    EKAT_REQUIRE_MSG(parent->get_parent() == nullptr,
                      "Error! Currently support isn't added for fields with grandparents.\n");
 
     const auto parent_lt = parent->get_identifier().get_layout().type();

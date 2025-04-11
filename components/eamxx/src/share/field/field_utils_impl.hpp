@@ -231,7 +231,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 }
 
 template<typename ST, typename Engine, typename PDF, typename MaskType>
-void perturb (const Field& f,
+void perturb (Field& f,
               Engine& engine,
               PDF&& pdf,
               const unsigned int base_seed,
@@ -243,6 +243,7 @@ void perturb (const Field& f,
   // Check to see if field has a column dimension
   using namespace ShortFieldTagsNames;
   const bool has_column_dim = fl.has_tag(COL);
+  const bool has_lev_dim = fl.has_tag(LEV);
 
   if (has_column_dim) {
     // Because Column is the partitioned dimension, we must reset the
@@ -253,7 +254,7 @@ void perturb (const Field& f,
 
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of column and level dimension.
-    auto perturb_fl = fl.clone().strip_dim(COL).strip_dim(LEV);
+    auto perturb_fl = fl.clone().strip_dims({COL,LEV});
     FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
@@ -263,13 +264,18 @@ void perturb (const Field& f,
       const auto new_seed = base_seed+gids(icol);
       engine.seed(new_seed);
 
-      // Loop through levels. For each that satisfy the level_mask,
-      // apply a random perturbation to f.
-      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
-        if (level_mask(ilev)) {
-          randomize(perturb_f, engine, pdf);
-          f.subfield(0, icol).subfield(f.rank()-2, ilev).scale(perturb_f);
+      if (has_lev_dim) {
+        // Loop through levels. For each that satisfy the level_mask,
+        // apply a random perturbation to f.
+        for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+          if (level_mask(ilev)) {
+            randomize(perturb_f, engine, pdf);
+            f.subfield(COL, icol).subfield(LEV, ilev).scale(perturb_f);
+          }
         }
+      } else {
+        randomize(perturb_f, engine, pdf);
+        f.subfield(COL, icol).scale(perturb_f);
       }
     }
   } else {
@@ -284,13 +290,18 @@ void perturb (const Field& f,
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
-    // Loop through levels. For each that satisfy the level_mask,
-    // apply a random perturbation to f.
-    for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
-      if (level_mask(ilev)) {
-        randomize(perturb_f, engine, pdf);
-        f.subfield(f.rank()-1, ilev).scale(perturb_f);
+    if (has_lev_dim) {
+      // Loop through levels. For each that satisfy the level_mask,
+      // apply a random perturbation to f.
+      for (auto ilev=0; ilev<fl.dims().back(); ++ilev) {
+        if (level_mask(ilev)) {
+          randomize(perturb_f, engine, pdf);
+          f.subfield(LEV, ilev).scale(perturb_f);
+        }
       }
+    } else {
+      randomize(perturb_f, engine, pdf);
+      f.scale(perturb_f);
     }
   }
 }
@@ -867,7 +878,7 @@ void print_field_hyperslab (const Field& f,
   auto get_orig_header = [&]() -> std::shared_ptr<const FieldHeader> {
     auto fh = f.get_header_ptr();
     while (fh->get_identifier().get_layout().rank()<orig_rank) {
-      fh = fh->get_parent().lock();
+      fh = fh->get_parent();
     }
     return fh;
   };
@@ -1033,6 +1044,169 @@ void print_field_hyperslab (const Field& f,
 
     auto sub_f = f.subfield(idim,idx);
     return print_field_hyperslab<T>(sub_f,tags,indices,out,orig_rank,curr_idx+1);
+  }
+}
+
+template<Comparison CMP, typename ViewT, typename MaskT>
+struct SetMaskHelper {
+  using exec_space = typename ViewT::traits::execution_space;
+  using ST     = typename ViewT::traits::non_const_value_type;
+  using MaskST = typename MaskT::traits::non_const_value_type;
+
+  template<int M>
+  using MDRange = Kokkos::MDRangePolicy<
+                    exec_space,
+                    Kokkos::Rank<M,Kokkos::Iterate::Right,Kokkos::Iterate::Right>
+                  >;
+
+  static constexpr int N = ViewT::rank;
+
+  void run (const std::vector<int>& dims) const {
+    if constexpr (N==0) {
+      Kokkos::RangePolicy<exec_space> policy(0,1);
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==1) {
+      Kokkos::RangePolicy<exec_space> policy(0,dims[0]);
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==2) {
+      MDRange<2> policy({0,0},{dims[0],dims[1]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==3) {
+      MDRange<3> policy({0,0,0},{dims[0],dims[1],dims[2]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==4) {
+      MDRange<4> policy({0,0,0,0},{dims[0],dims[1],dims[2],dims[3]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==5) {
+      MDRange<5> policy({0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4]});
+      Kokkos::parallel_for(policy,*this);
+    } else if constexpr (N==6) {
+      MDRange<6> policy({0,0,0,0,0,0},{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]});
+      Kokkos::parallel_for(policy,*this);
+    } else {
+      EKAT_ERROR_MSG ("Unsupported rank! Should be in [2,6].\n");
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void set_mask (const ST& x_val, MaskST& m_val) const {
+    if constexpr (CMP==Comparison::EQ)
+      m_val = static_cast<int>(x_val==val);
+    else if constexpr (CMP==Comparison::NE)
+      m_val = static_cast<int>(x_val!=val);
+    else if constexpr (CMP==Comparison::GT)
+      m_val = static_cast<int>(x_val>val);
+    else if constexpr (CMP==Comparison::GE)
+      m_val = static_cast<int>(x_val>=val);
+    else if constexpr (CMP==Comparison::LT)
+      m_val = static_cast<int>(x_val<val);
+    else if constexpr (CMP==Comparison::LE)
+      m_val = static_cast<int>(x_val<=val);
+    else
+      EKAT_KERNEL_ERROR_MSG ("Unsupported Comparison value.\n");
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i) const {
+    if constexpr (N==0)
+      set_mask (x(),m());
+    else
+      set_mask (x(i),m(i));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j) const {
+    set_mask (x(i,j),m(i,j));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k) const {
+    set_mask (x(i,j,k),m(i,j,k));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l) const {
+    set_mask (x(i,j,k,l),m(i,j,k,l));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l, int n) const {
+    set_mask (x(i,j,k,l,n),m(i,j,k,l,n));
+  }
+  KOKKOS_INLINE_FUNCTION
+  void operator() (int i, int j, int k, int l, int n, int p) const {
+    set_mask (x(i,j,k,l,n,p),m(i,j,k,l,n,p));
+  }
+
+  ViewT x;
+  MaskT m;
+  ST    val;
+};
+
+template<Comparison CMP, typename ViewT, typename MaskT>
+void setMaskHelper (const ViewT& x, const MaskT& m,
+                    const FieldHeader& mh,
+                    typename ViewT::traits::value_type val,
+                    const std::vector<int>& dims)
+{
+  SetMaskHelper<CMP,ViewT,MaskT> helper;
+  helper.m = m;
+  helper.x = x;
+  helper.val = val;
+  helper.run(dims);
+}
+
+template<Comparison CMP, typename ST>
+void compute_mask (const Field& x, const ST value, Field& m)
+{
+  const auto& layout = x.get_header().get_identifier().get_layout();
+  const auto& dims = layout.dims();
+  const auto contiguous = x.get_header().get_alloc_properties().contiguous();
+  const auto& mh = m.get_header();
+
+  switch (layout.rank()) {
+    case 0:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST>(),m.get_view<int>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST>(),m.get_view<int>(),mh,value,dims);
+      break;
+    case 1:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST*>(),m.get_view<int*>(),mh,value,dims);
+      break;
+    case 2:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST**>(),m.get_view<int**>(),mh,value,dims);
+      break;
+    case 3:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST***>(),m.get_view<int***>(),mh,value,dims);
+      break;
+    case 4:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST****>(),m.get_view<int****>(),mh,value,dims);
+      break;
+    case 5:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST*****>(),m.get_view<int*****>(),mh,value,dims);
+      break;
+    case 6:
+      if (contiguous)
+        setMaskHelper<CMP>(x.get_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
+      else
+        setMaskHelper<CMP>(x.get_strided_view<const ST******>(),m.get_view<int******>(),mh,value,dims);
+      break;
+    default:
+      EKAT_ERROR_MSG ("Unsupported field rank in compute_mask.\n"
+          " - field name: " << x.name() << "\n"
+          " - field rank: " << x.rank() << "\n");
   }
 }
 

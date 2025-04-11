@@ -579,6 +579,7 @@ contains
          tendPool        !< [inout] Tendency terms for all variables
 
       integer :: &
+         i,                  &! general loop counter
          iCell, iEdge, k, n, &! loop counters for cell,edge,vert,tracer
          err,                &! internal error flag 
          timeLevel,          &! time level to use for state variables
@@ -614,11 +615,12 @@ contains
 
       ! pointers for retrieving data from pools
       integer, pointer :: &
-         indexTemperature, indexSalinity ! tracer index for temp,salt
-      integer, pointer :: &
-         indexCFC11, indexCFC12 ! tracer indicies for CFCs
+         indexTracer,                     &! general tracer index
+         indexTemperature, indexSalinity, &! tracer index for temp,salt
+         indexCFC11, indexCFC12            ! tracer indicies for CFCs
 
       logical, pointer :: & ! option configuration flags
+         config_use_tracerField, &
          config_use_tracerGroup, &
          config_use_tracerGroup_surface_bulk_forcing, &
          config_use_tracerGroup_surface_restoring,    &
@@ -659,6 +661,13 @@ contains
       ! Scratch Arrays
       real (kind=RKIND), dimension(:,:), allocatable :: &
          normalThicknessFlux ! Flux of thickness through edge (m^2/s)
+      integer, parameter :: num_fields = 8
+      logical, dimension(:), allocatable :: skipTracer
+      character(len=20), dimension(num_fields) :: &
+            fieldNames = [character(len=20) :: &
+                          'rain', 'snow', &
+                          'riverRunoff', 'iceRunoff', 'subglacialRunoff', &
+                          'seaIceFreshWater', 'icebergFreshWater', 'landIceFreshwater']
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -800,7 +809,19 @@ contains
          modifiedConfigName = configBase // '_ttd_forcing'
          call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
                             config_use_tracerGroup_ttd_forcing)
-
+         if ( groupName == 'freshwaterTracers' ) then
+           if (config_use_tracerGroup_surface_restoring) &
+             call mpas_log_write('surface restoring not supported for freshwaterTracers group', MPAS_LOG_CRIT)
+           if (config_use_tracerGroup_interior_restoring) &
+             call mpas_log_write('interior restoring not supported for freshwaterTracers group', MPAS_LOG_CRIT)
+           if (config_use_tracerGroup_exponential_decay) &
+             call mpas_log_write('exponential decay not supported for freshwaterTracers group', MPAS_LOG_CRIT)
+           if (config_use_tracerGroup_idealAge_forcing) &
+             ! TODO support this
+             call mpas_log_write('idealAge forcing not supported for freshwaterTracers group', MPAS_LOG_CRIT)
+           if (config_use_tracerGroup_ttd_forcing) &
+             call mpas_log_write('TTD forcing not supported for freshwaterTracers group', MPAS_LOG_CRIT)
+         endif
          ! Get tracers from pool, determine number of tracers in group
          call mpas_pool_get_array(tracersPool, groupName, &
                                   tracerGroup, timeLevel)
@@ -817,6 +838,19 @@ contains
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFlux)
+         allocate(skipTracer(nTracersGroup))
+         skipTracer(:) = .false.
+         if ( groupName == 'freshwaterTracers' ) then
+            do i = 1, num_fields
+               call mpas_pool_get_dimension( &
+                      tracersSurfaceFluxPool, &
+                      'index_'//trim(fieldNames(i))//'SurfaceFlux', indexTracer)
+               modifiedConfigName = configBase // '_' // trim(fieldNames(i)) // 'Flux'
+               call mpas_pool_get_config(ocnConfigs, modifiedConfigName, &
+                                         config_use_tracerField)
+               skipTracer(indexTracer) = (.not. config_use_tracerField)
+            enddo
+         endif
 
          ! Get Array of total surface temp/salt flux 
          ! (includes thickness tendencies)
@@ -834,8 +868,6 @@ contains
 
          if (trim(config_subglacial_runoff_mode) == 'data') then
              ! Get surface flux due to subglacial runoff array
-             ! only active tracers have subglacial runoff flux for now,
-             ! but we still need to associate for ALL tracers
              modifiedGroupName = groupName // "SurfaceFluxSubglacialRunoff"
              call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                       modifiedGroupName, &
@@ -890,7 +922,7 @@ contains
          ! compute surface tracer flux from bulk forcing
          !
          if (config_use_tracerGroup_surface_bulk_forcing) then
-
+            ! This applies surface fluxes if groupName is activeTracers
             call ocn_surface_bulk_forcing_tracers(meshPool, groupName, &
                                   forcingPool, tracerGroup, &
                                   tracerGroupSurfaceFlux, &
@@ -1178,7 +1210,8 @@ contains
          call ocn_tracer_advection_tend(tracerGroup, &
                             normalThicknessFlux, vertAleTransportTop, &
                             layerThickness, dt, tracerGroupTend, &
-                            computeBudgets)
+                            computeBudgets, skipTracer)
+         deallocate(skipTracer)
 
          !$acc update host (activeTracerHorizontalAdvectionEdgeFlux, &
          !$acc              activeTracerHorizontalAdvectionTendency, &

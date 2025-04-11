@@ -1372,6 +1372,7 @@ contains
          qflx_glcice_diag      =>    col_wf%qflx_glcice_diag      , & ! Output: [real(r8) (:)   ] flux of new glacier ice (mm H2O/s) [+ = ice grows]
          qflx_glcice_melt_diag =>    col_wf%qflx_glcice_melt_diag , & ! Output: [real(r8) (:)   ] ice melt (positive definite) (mm H2O/s)
          qflx_snomelt     =>    col_wf%qflx_snomelt     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)
+         qflx_snomelt_lyr     =>    col_wf%qflx_snomelt_lyr     , & ! Output: [real(r8) (:)   ] snow melt (mm H2O /s)
 
          eflx_snomelt     =>    col_ef%eflx_snomelt    , & ! Output: [real(r8) (:)   ] snow melt heat flux (W/m**2)
          eflx_snomelt_r   =>    col_ef%eflx_snomelt_r  , & ! Output: [real(r8) (:)   ] rural snow melt heat flux (W/m**2)
@@ -1391,6 +1392,7 @@ contains
          l = col_pp%landunit(c)
 
          qflx_snomelt(c) = 0._r8
+         qflx_snomelt_lyr(c,-nlevsno+1:0) = 0._r8
          xmf(c) = 0._r8
          qflx_snofrz_lyr(c,-nlevsno+1:0) = 0._r8
          qflx_snofrz_col(c) = 0._r8
@@ -1626,7 +1628,7 @@ contains
 
                      if (imelt(c,j) == 1 .AND. j < 1) then
                         qflx_snomelt(c) = qflx_snomelt(c) + max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime
-
+                        qflx_snomelt_lyr(c,j) = max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime 
 
                      endif
 
@@ -1646,7 +1648,6 @@ contains
             ! as computed in HydrologyDrainageMod.F90.
 
             l = col_pp%landunit(c)
-
             if ( lun_pp%itype(l)==istice_mec) then
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux

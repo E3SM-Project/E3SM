@@ -59,7 +59,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 //                         perturbed if level_mask(k)=true
 //   - dof_gids:           Field containing global DoF IDs for columns of f (if applicable)
 template<typename Engine, typename PDF, typename MaskType>
-void perturb (const Field& f,
+void perturb (Field& f,
               Engine& engine,
               PDF&& pdf,
               const int base_seed,
@@ -133,24 +133,24 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   // Sanity checks before handing off to the implementation
   EKAT_REQUIRE_MSG(l_w.rank() == 1,
                    "Error! The weight field must be rank-1.\n"
-                   "The input has rank "
+                   "The input weight has rank "
                        << l_w.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_w.tags() == std::vector<FieldTag>({COL}),
                    "Error! The weight field must have a column dimension.\n"
-                   "The input f1 layout is "
+                   "The input field has layout "
                        << l_w.tags() << ".\n");
   EKAT_REQUIRE_MSG(l_in.rank() <= 3,
                    "Error! The input field must be at most rank-3.\n"
-                   "The input f_in rank is "
+                   "The input field's rank is "
                        << l_in.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_in.tags()[0] == COL,
                    "Error! The input field must have a column dimension.\n"
-                   "The input f_in layout is "
+                   "The input field's layout is "
                        << l_in.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
       l_w.dim(0) == l_in.dim(0),
       "Error! input and weight fields must have the same dimension along "
-      "which we are taking the reducing the field.\n"
+      "which we are reducing the field.\n"
       "The weight field has dimension "
           << l_w.dim(0)
           << " while "
@@ -159,20 +159,20 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   EKAT_REQUIRE_MSG(
       l_in.dim(0) > 0,
       "Error! The input field must have a non-zero column dimension.\n"
-      "The input f_in layout is "
+      "The input field's layout is "
           << l_in.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
       l_out == l_in.clone().strip_dim(0),
       "Error! The output field must have the same layout as the input field "
       "without the column dimension.\n"
-      "The input f_in layout is "
-          << l_in.to_string() << " and the output f_out layout is "
+      "The input field's layout is "
+          << l_in.to_string() << " and the output field's layout is "
           << l_out.to_string() << ".\n");
   EKAT_REQUIRE_MSG(
       f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
       "Error! All fields must be allocated.");
   EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
-                   "Error! In/out Fields have matching data types.");
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(
       f_out.data_type() == weight.data_type(),
       "Error! Weight field must have the same data type as input fields.");
@@ -260,7 +260,7 @@ void vert_contraction(const Field &f_out, const Field &f_in,
       f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
       "Error! All fields must be allocated.");
   EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
-                   "Error! In/out Fields have matching data types.");
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(
       f_out.data_type() == weight.data_type(),
       "Error! Weight field must have the same data type as input field.");
@@ -362,6 +362,51 @@ print_field_hyperslab (const Field& f,
     default:
       EKAT_ERROR_MSG ("[print_field_hyperslab] Error! Invalid/unsupported data type.\n"
           " - field name: " + f.name() + "\n");
+  }
+}
+
+template<Comparison CMP, typename ST>
+void compute_mask (const Field& x, const ST value, Field& mask)
+{
+  // Sanity checks
+  EKAT_REQUIRE_MSG (x.is_allocated(),
+      "Error! Input field was not yet allocated.\n");
+  EKAT_REQUIRE_MSG (mask.is_allocated(),
+      "Error! Mask field was not yet allocated.\n");
+  EKAT_REQUIRE_MSG (not mask.is_read_only(),
+      "Error! Cannot update mask field, as it is read-only.\n"
+      " - mask name: " + mask.name() + "\n");
+  EKAT_REQUIRE_MSG (mask.data_type()==DataType::IntType,
+      "Error! The data type of the mask field must be 'int'.\n"
+      " - mask field name: " << mask.name() << "\n"
+      " - mask field data type: " << etoi(mask.data_type()) << "\n");
+
+  const auto& x_layout = x.get_header().get_identifier().get_layout();
+  const auto& m_layout = mask.get_header().get_identifier().get_layout();
+
+  EKAT_REQUIRE_MSG (m_layout.congruent(x_layout),
+      "Error! Mask field layout is incompatible with this field.\n"
+      " - field name  : " + x.name() + "\n"
+      " - mask name   : " + mask.name() + "\n"
+      " - field layout: " + x_layout.to_string() + "\n"
+      " - mask layout : " + m_layout.to_string() + "\n");
+
+  const auto x_dt   = x.data_type();
+  const auto val_dt = get_data_type<ST>();
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(val_dt,x_dt),
+      "Error! Target value may be narrowed when converted to field data type.\n"
+      " - field data type: " + e2str(x_dt) + "\n"
+      " - value data type: " + e2str(val_dt) + "\n");
+
+  switch (x_dt) {
+    case DataType::IntType:
+      impl::compute_mask<CMP>(x,static_cast<int>(value),mask); break;
+    case DataType::FloatType:
+      impl::compute_mask<CMP>(x,static_cast<float>(value),mask); break;
+    case DataType::DoubleType:
+      impl::compute_mask<CMP>(x,static_cast<double>(value),mask); break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unexpected/unsupported data type.\n");
   }
 }
 

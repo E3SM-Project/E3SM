@@ -2487,6 +2487,14 @@ Valid values: Any positive real number.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_congelation_freezing_method" type="char*1024"
+	category="thermodynamics" group="thermodynamics">
+Method used for congelation freezing.
+
+Valid values: 'one-step', 'two-step'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_congelation_ice_porosity" type="real"
 	category="thermodynamics" group="thermodynamics">
 Liquid fraction of congelation ice.

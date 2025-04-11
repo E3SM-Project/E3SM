@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
@@ -10,10 +10,10 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
-#include "share/util/scream_universal_constants.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -122,7 +122,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -142,7 +142,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create Output manager
   OutputManager om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Time loop: ensure we always hit 3 output steps
   const int nsteps = num_output_steps*freq;
@@ -186,7 +186,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,-seed-1);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 

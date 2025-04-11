@@ -3,7 +3,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <ekat/ekat_pack_utils.hpp>
@@ -27,7 +27,7 @@ RefiningRemapperP2P::
   clean_up();
 }
 
-void RefiningRemapperP2P::do_remap_fwd ()
+void RefiningRemapperP2P::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data

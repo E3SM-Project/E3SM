@@ -72,20 +72,23 @@ module conv_water
   !                                                                             !
   !============================================================================ !
 
-   subroutine conv_water_init()
+   subroutine conv_water_init(pbuf2d)
    ! --------------------------------------------------------------------- ! 
    ! Purpose:                                                              !
    !   Initializes the pbuf indices required by conv_water
    ! --------------------------------------------------------------------- ! 
 
    
-   use physics_buffer, only : pbuf_get_index
+   use physics_buffer, only : physics_buffer_desc, pbuf_get_index, pbuf_set_field
    use cam_history,    only : addfld
    use phys_control,   only : phys_getopts
 
    use constituents,  only: cnst_get_ind
 
    implicit none
+
+   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
    logical :: use_MMF
 
    call phys_getopts(use_MMF_out = use_MMF)
@@ -101,6 +104,8 @@ module conv_water
    dp_frac_idx  = pbuf_get_index('DP_FRAC')
    ast_idx      = pbuf_get_index('AST')
    rei_idx      = pbuf_get_index('REI')
+
+   call pbuf_set_field(pbuf2d, fice_idx, 0.0_r8)
 
    ! Convective cloud water variables.
    call addfld ('ICIMRCU', (/ 'lev' /), 'A', 'kg/kg', 'Convection in-cloud ice mixing ratio '                   )

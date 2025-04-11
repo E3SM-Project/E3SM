@@ -1,5 +1,5 @@
 #include "diagnostics/dry_static_energy.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 
@@ -18,7 +18,6 @@ DryStaticEnergyDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& pa
 void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   auto m2  = pow(m,2);
   auto s2  = pow(s,2);
@@ -28,29 +27,24 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-  constexpr int ps = Pack::n;
+  auto scalar2d = grid->get_2d_scalar_layout();
+  auto scalar3d = grid->get_3d_scalar_layout(true);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,      grid_name, ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("qv",             scalar3d_layout_mid, kg/kg,  grid_name, ps);
-  add_field<Required>("phis",           scalar2d_layout_col, m2/s2,  grid_name, ps);
+  add_field<Required>("T_mid",          scalar3d, K,      grid_name);
+  add_field<Required>("pseudo_density", scalar3d, Pa,     grid_name);
+  add_field<Required>("p_mid",          scalar3d, Pa,     grid_name);
+  add_field<Required>("qv",             scalar3d, kg/kg,  grid_name);
+  add_field<Required>("phis",           scalar2d, m2/s2,  grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, m2/s2, grid_name);
+  FieldIdentifier fid (name(), scalar3d, m2/s2, grid_name);
   m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 
   // Initialize a 2d view of dz to be used in compute_diagnostic
-  const auto npacks     = ekat::npack<Pack>(m_num_levs);
-  const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
-  m_tmp_mid = view_2d("",m_num_cols,npacks);
-  m_tmp_int = view_2d("",m_num_cols,npacks_p1);
+  m_tmp_mid = view_2d("",m_num_cols,m_num_levs);
+  m_tmp_int = view_2d("",m_num_cols,m_num_levs+1);
 }
 // =========================================================================================
 void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
@@ -58,14 +52,13 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
   using MemberType = typename KT::MemberType;
   using PF = PhysicsFunctions<DefaultDevice>;
 
-  const auto npacks     = ekat::npack<Pack>(m_num_levs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, m_num_levs);
 
-  const auto& dse                = m_diagnostic_output.get_view<Pack**>();
-  const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
-  const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
-  const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
-  const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
+  const auto& dse                = m_diagnostic_output.get_view<Real**>();
+  const auto& T_mid              = get_field_in("T_mid").get_view<const Real**>();
+  const auto& p_mid              = get_field_in("p_mid").get_view<const Real**>();
+  const auto& qv_mid             = get_field_in("qv").get_view<const Real**>();
+  const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Real**>();
   const auto& phis               = get_field_in("phis").get_view<const Real*>();
 
   // Set surface geopotential for this diagnostic
@@ -82,8 +75,8 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
     const auto& dz_s    = ekat::subview(tmp_mid,icol);
     const auto& z_int_s = ekat::subview(tmp_int,icol);
     const auto& z_mid_s = dz_s; // Reuse the memory for z_mid, but set a new variable for code readability.
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
-      dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&] (const Int& ilev) {
+      dz_s(ilev) = PF::calculate_dz(pseudo_density_mid(icol,ilev), p_mid(icol,ilev), T_mid(icol,ilev), qv_mid(icol,ilev));
     });
     team.team_barrier();
 
@@ -94,8 +87,8 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
     team.team_barrier();
 
     const auto& dse_s = ekat::subview(dse,icol);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks), [&] (const Int& jpack) {
-      dse_s(jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid_s(jpack),phis(icol));
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&] (const Int& ilev) {
+      dse_s(ilev) = PF::calculate_dse(T_mid(icol,ilev),z_mid_s(ilev),phis(icol));
     });
     team.team_barrier();
   });

@@ -84,7 +84,7 @@ A paper describing the advanced snow physics is in preparation.
 
 ### Biogeochemistry
 
-This section is under construction, pending the full merge of BGC codes in Icepack and the older column physics package.
+Icepack incorporates a comprehensive biogeochemistry component that includes two aerosol options, water isotopes, and a full suite of vertically resolved biogeochemical tracers.  The complexity of the ecosystem can be specified in Icepack’s configuration settings and namelist flags. The biogeochemistry component is thoroughly documented in the Icepack documentation linked above.
 
 ## Coupling of MPAS-seaice within E3SM
 

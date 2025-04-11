@@ -321,9 +321,10 @@ contains
     ! namelist variables to determine how many patches need to be allocated
     ! in ELM
     ! --------------------------------------------------------------------------------
-    integer                                        :: pass_biogeog
-    integer                                        :: pass_nocomp
-    integer                                        :: pass_sp
+    integer                                        :: pass_use_biogeog
+    integer                                        :: pass_use_nocomp
+    integer                                        :: pass_use_sp
+    integer                                        :: pass_use_luh2
     integer                                        :: pass_masterproc
     logical                                        :: verbose_output
     type(fates_param_reader_ctsm_impl)             :: var_reader
@@ -338,26 +339,34 @@ contains
 
        ! Send parameters individually
        if(use_fates_fixed_biogeog)then
-          pass_biogeog = 1
+          pass_use_biogeog = 1
        else
-          pass_biogeog = 0
+          pass_use_biogeog = 0
        end if
-       call set_fates_ctrlparms('use_fixed_biogeog',ival=pass_biogeog)
+       call set_fates_ctrlparms('use_fixed_biogeog',ival=pass_use_biogeog)
 
        if(use_fates_nocomp)then
-          pass_nocomp = 1
+          pass_use_nocomp = 1
        else
-          pass_nocomp = 0
+          pass_use_nocomp = 0
        end if
-       call set_fates_ctrlparms('use_nocomp',ival=pass_nocomp)
+       call set_fates_ctrlparms('use_nocomp',ival=pass_use_nocomp)
 
        if(use_fates_sp)then
-          pass_sp = 1
+          pass_use_sp = 1
        else
-          pass_sp = 0
+          pass_use_sp = 0
        end if
-       call set_fates_ctrlparms('use_sp',ival=pass_sp)
+       call set_fates_ctrlparms('use_sp',ival=pass_use_sp)
 
+       ! FATES landuse modes
+       if(use_fates_luh) then
+          pass_use_luh2 = 1
+       else
+          pass_use_luh2 = 0
+       end if
+       call set_fates_ctrlparms('use_luh2',ival=pass_use_luh2)
+       
        if(masterproc)then
           pass_masterproc = 1
        else
@@ -415,7 +424,6 @@ contains
      integer                                        :: pass_num_lu_harvest_cats
      integer                                        :: pass_lu_harvest
      integer                                        :: pass_tree_damage
-     integer                                        :: pass_use_luh
      integer                                        :: pass_use_potentialveg     
      integer                                        :: pass_num_luh_states
      integer                                        :: pass_num_luh_transitions
@@ -567,16 +575,13 @@ contains
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_luh) then
-           pass_use_luh = 1
            pass_num_luh_states = num_landuse_state_vars
            pass_num_luh_transitions = num_landuse_transition_vars
         else
-           pass_use_luh = 0
            pass_num_luh_states = 0
            pass_num_luh_transitions = 0
         end if
 
-        call set_fates_ctrlparms('use_luh2',ival=pass_use_luh)
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
 
@@ -2764,26 +2769,23 @@ contains
 
  ! ======================================================================================
  
- subroutine wrap_canopy_radiation(this, bounds_clump, &
-         num_vegsol, filter_vegsol, coszen, surfalb_inst)
+ subroutine wrap_canopy_radiation(this, bounds_clump, surfalb_inst,nextsw_cday,declinp1)
 
+   use shr_orb_mod, only: shr_orb_cosz
 
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)             :: bounds_clump
-    ! filter for vegetated pfts with coszen>0
-    integer            , intent(in)            :: num_vegsol
-    integer            , intent(in)            :: filter_vegsol(num_vegsol)
-    ! cosine solar zenith angle for next time step
-    real(r8)           , intent(in)            :: coszen( bounds_clump%begp: )
     type(surfalb_type) , intent(inout)         :: surfalb_inst
-
+    real(r8),intent(in) :: nextsw_cday,declinp1
+    
     ! locals
-    integer                                    :: s,c,p,ifp,icp,nc
+    integer                                    :: s,c,p,ifp,icp,nc,g
 
     associate(&
          albgrd_col   =>    surfalb_inst%albgrd_col         , & !in
          albgri_col   =>    surfalb_inst%albgri_col         , & !in
+         coszen_col   =>    surfalb_inst%coszen_col         , & !in
          albd         =>    surfalb_inst%albd_patch         , & !out
          albi         =>    surfalb_inst%albi_patch         , & !out
          fabd         =>    surfalb_inst%fabd_patch         , & !out
@@ -2797,51 +2799,47 @@ contains
     do s = 1, this%fates(nc)%nsites
 
        c = this%f2hmap(nc)%fcolumn(s)
+       g = col_pp%gridcell(c)
+
+       coszen_col(c) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
+
+       this%fates(nc)%bc_in(s)%coszen = coszen_col(c)
+       
        do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
-
+          
           p = ifp+col_pp%pfti(c)
-
-          if( any(filter_vegsol==p) )then
-
-             this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) = .true.
-             this%fates(nc)%bc_in(s)%coszen_pa(ifp)  = coszen(p)
-             this%fates(nc)%bc_in(s)%albgr_dir_rb(:) = albgrd_col(c,:)
-             this%fates(nc)%bc_in(s)%albgr_dif_rb(:) = albgri_col(c,:)
-
-             if (veg_es%t_veg(p) <= tfrz) then
-                this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = veg_ws%fwet(p)
-             else
-                this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
-             end if
-             
+          if (veg_es%t_veg(p) <= tfrz) then
+             this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = veg_ws%fwet(p)
           else
-
-             this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) = .false.
-
+             this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
           end if
-
        end do
-    end do
+       
+       if(coszen_col(c) > 0._r8) then
 
-    call FatesNormalizedCanopyRadiation(this%fates(nc)%nsites,  &
+          this%fates(nc)%bc_in(s)%albgr_dir_rb(:) = albgrd_col(c,:)
+          this%fates(nc)%bc_in(s)%albgr_dif_rb(:) = albgri_col(c,:)
+       else
+
+          ! This will ensure a crash in FATES if it tries
+          this%fates(nc)%bc_in(s)%albgr_dir_rb(:) = spval
+          this%fates(nc)%bc_in(s)%albgr_dif_rb(:) = spval
+
+       end if
+    end do
+    
+    call FatesNormalizedCanopyRadiation( &
          this%fates(nc)%sites, &
          this%fates(nc)%bc_in,  &
          this%fates(nc)%bc_out)
 
     ! Pass FATES BC's back to HLM
     ! -----------------------------------------------------------------------------------
-    do icp = 1,num_vegsol
-       p = filter_vegsol(icp)
-       c = veg_pp%column(p)
-       s = this%f2hmap(nc)%hsites(c)
-       ! do if structure here and only pass natveg columns
-       ifp = p-col_pp%pfti(c)
 
-       if(.not.this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) )then
-          write(iulog,*) 's,p,ifp',s,p,ifp
-          write(iulog,*) 'Not all patches on the natveg column were passed to canrad',veg_pp%sp_pftorder_index(p)
-          call endrun(msg=errMsg(sourcefile, __LINE__))
-       else
+    do s = 1, this%fates(nc)%nsites
+       c = this%f2hmap(nc)%fcolumn(s)
+       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
+          p = ifp+col_pp%pfti(c)
           albd(p,:) = this%fates(nc)%bc_out(s)%albd_parb(ifp,:)
           albi(p,:) = this%fates(nc)%bc_out(s)%albi_parb(ifp,:)
           fabd(p,:) = this%fates(nc)%bc_out(s)%fabd_parb(ifp,:)
@@ -2849,7 +2847,7 @@ contains
           ftdd(p,:) = this%fates(nc)%bc_out(s)%ftdd_parb(ifp,:)
           ftid(p,:) = this%fates(nc)%bc_out(s)%ftid_parb(ifp,:)
           ftii(p,:) = this%fates(nc)%bc_out(s)%ftii_parb(ifp,:)
-       end if
+       end do
     end do
 
   end associate

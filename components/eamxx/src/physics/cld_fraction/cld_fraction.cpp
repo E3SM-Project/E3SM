@@ -1,5 +1,5 @@
 #include "physics/cld_fraction/cld_fraction_main_impl.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream {
 namespace cld_fraction {

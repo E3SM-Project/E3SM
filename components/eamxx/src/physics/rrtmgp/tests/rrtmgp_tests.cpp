@@ -1,8 +1,8 @@
-#include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 
-#include "share/scream_types.hpp"
-#include "share/scream_session.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/eamxx_session.hpp"
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "examples/all-sky/mo_garand_atmos_io.h"
@@ -401,7 +401,7 @@ int run_kokkos(int argc, char** argv) {
 
     // Initialize absorption coefficients
   logger->info("Initialize RRTMGP...\n");
-  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
+  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger, 2.0);
 
   // Setup our dummy atmosphere based on the input data we read in
   logger->info("Setup dummy atmos...\n");
@@ -428,8 +428,8 @@ int run_kokkos(int argc, char** argv) {
   // we would just have to setup the pointers to them in the
   // FluxesBroadband object
   logger->info("Setup fluxes...\n");
-  const auto nswbands = interface_t::k_dist_sw_k.get_nband();
-  const auto nlwbands = interface_t::k_dist_lw_k.get_nband();
+  const auto nswbands = interface_t::k_dist_sw_k->get_nband();
+  const auto nlwbands = interface_t::k_dist_lw_k->get_nband();
   real2dk sw_flux_up ("sw_flux_up" , ncol, nlay+1);
   real2dk sw_flux_dn ("sw_flux_dn" , ncol, nlay+1);
   real2dk sw_flux_dir("sw_flux_dir", ncol, nlay+1);
@@ -470,19 +470,19 @@ int run_kokkos(int argc, char** argv) {
   auto aer_ssa_sw = real3dk("aer_ssa_sw", ncol, nlay, nswbands);
   auto aer_asm_sw = real3dk("aer_asm_sw", ncol, nlay, nswbands);
   auto aer_tau_lw = real3dk("aer_tau_lw", ncol, nlay, nlwbands);
-  Kokkos::parallel_for(MDRP::template get<3>({nswbands,nlay,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, nswbands}), KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
     aer_tau_sw(icol,ilay,ibnd) = 0;
     aer_ssa_sw(icol,ilay,ibnd) = 0;
     aer_asm_sw(icol,ilay,ibnd) = 0;
   });
-  Kokkos::parallel_for(MDRP::template get<3>({nlwbands,nlay,ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
+  Kokkos::parallel_for(MDRP::template get<3>({ncol, nlay, nlwbands}), KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
     aer_tau_lw(icol,ilay,ibnd) = 0;
   });
 
   // These are returned as outputs now from rrtmgp_main
   // TODO: provide as inputs consistent with how aerosol is treated?
-  const auto nswgpts = interface_t::k_dist_sw_k.get_ngpt();
-  const auto nlwgpts = interface_t::k_dist_lw_k.get_ngpt();
+  const auto nswgpts = interface_t::k_dist_sw_k->get_ngpt();
+  const auto nlwgpts = interface_t::k_dist_lw_k->get_ngpt();
   auto cld_tau_sw_bnd = real3dk("cld_tau_sw_bnd", ncol, nlay, nswbands);
   auto cld_tau_lw_bnd = real3dk("cld_tau_lw_bnd", ncol, nlay, nlwbands);
   auto cld_tau_sw = real3dk("cld_tau_sw", ncol, nlay, nswgpts);

@@ -5,7 +5,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -123,9 +123,9 @@ void run(std::mt19937_64& engine)
   Field preicp_total_f = diag_total->get_diagnostic().clone();
   Field preicp_liq_f   = diag_liq->get_diagnostic().clone();
   Field preicp_ice_f   = diag_ice->get_diagnostic().clone();
-  preicp_total_f.deep_copy<double>(0.0);
-  preicp_liq_f.deep_copy<double>(0.0);
-  preicp_ice_f.deep_copy<double>(0.0);
+  preicp_total_f.deep_copy(0);
+  preicp_liq_f.deep_copy(0);
+  preicp_ice_f.deep_copy(0);
   auto precip_total_v = preicp_total_f.get_view<Real*>();
   auto precip_liq_v   = preicp_liq_f.get_view<Real*>();
   auto precip_ice_v   = preicp_ice_f.get_view<Real*>();

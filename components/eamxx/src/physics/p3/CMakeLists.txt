@@ -26,6 +26,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_back_to_cell_average.cpp
     eti/p3_cloud_rain_acc.cpp
     eti/p3_calc_rime_density.cpp
+    eti/p3_ice_classical_nucleation_impl.cpp
     eti/p3_cldliq_imm_freezing.cpp
     eti/p3_rain_imm_freezing.cpp
     eti/p3_droplet_self_coll.cpp
@@ -69,7 +70,7 @@ else()
   add_library(p3 ${P3_SRCS})
   # If small kernels are ON, we don't need a separate executable to test them.
   # Also, we never want to generate baselines with this separate executable
-  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
+  if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
     add_library(p3_sk ${P3_SRCS} ${P3_SK_SRCS})
     # Always build p3_sk with SCREAM_P3_SMALL_KERNELS on
     target_compile_definitions(p3_sk PUBLIC "SCREAM_P3_SMALL_KERNELS")
@@ -111,5 +112,7 @@ if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE p3)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE p3)
+endif()

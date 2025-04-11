@@ -12,7 +12,9 @@ atmosphere_processes:
   atm_procs_list: [mam4_aci]
   mam4_aci:
     wsubmin: 0.001
+    enable_aero_vertical_mix: true
     top_level_mam4xx: 6
+    create_fields_interval_checks: true
 
 grids_manager:
   Type: Mesh Free
@@ -35,7 +37,7 @@ initial_conditions:
   pbl_height : 1.0
   dgnum: 4.362354500358337E-008
   cldfrac_liq_prev: 0.138584624960092
-  eddy_diff_heat: 0.620820118789603 
+  eddy_diff_heat: 0.620820118789603
   w_variance:  1.110977269289875E-002
 
 # The parameters for I/O control

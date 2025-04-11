@@ -173,6 +173,7 @@ contains
 
   subroutine mpaso_cpl_indices_set( )
 
+    use seq_flds_mod, only : wav_ocn_coup      
     type(mct_aVect) :: o2x      ! temporary
     type(mct_aVect) :: x2o      ! temporary
 
@@ -318,22 +319,23 @@ contains
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating')
 
-    index_x2o_Sw_ustokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_1')
-    index_x2o_Sw_vstokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_1')
-    index_x2o_Sw_ustokes_wavenumber_2 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_2')
-    index_x2o_Sw_vstokes_wavenumber_2 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_2')
-    index_x2o_Sw_ustokes_wavenumber_3 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_3')
-    index_x2o_Sw_vstokes_wavenumber_3 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_3')
-    index_x2o_Sw_ustokes_wavenumber_4 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_4')
-    index_x2o_Sw_vstokes_wavenumber_4 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_4')
-    index_x2o_Sw_ustokes_wavenumber_5 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_5')
-    index_x2o_Sw_vstokes_wavenumber_5 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_5')
-    index_x2o_Sw_ustokes_wavenumber_6 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_6')
-    index_x2o_Sw_vstokes_wavenumber_6 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_6')
-    index_x2o_Sw_Hs = mct_avect_indexra(x2o,'Sw_Hs')
-    index_x2o_Sw_Fp = mct_avect_indexra(x2o,'Sw_Fp')
-    index_x2o_Sw_Dp = mct_avect_indexra(x2o,'Sw_Dp')
-
+    if (wav_ocn_coup == 'twoway') then
+       index_x2o_Sw_ustokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_1')
+       index_x2o_Sw_vstokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_1')
+       index_x2o_Sw_ustokes_wavenumber_2 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_2')
+       index_x2o_Sw_vstokes_wavenumber_2 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_2')
+       index_x2o_Sw_ustokes_wavenumber_3 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_3')
+       index_x2o_Sw_vstokes_wavenumber_3 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_3')
+       index_x2o_Sw_ustokes_wavenumber_4 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_4')
+       index_x2o_Sw_vstokes_wavenumber_4 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_4')
+       index_x2o_Sw_ustokes_wavenumber_5 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_5')
+       index_x2o_Sw_vstokes_wavenumber_5 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_5')
+       index_x2o_Sw_ustokes_wavenumber_6 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_6')
+       index_x2o_Sw_vstokes_wavenumber_6 = mct_avect_indexra(x2o,'Sw_vstokes_wavenumber_6')
+       index_x2o_Sw_Hs = mct_avect_indexra(x2o,'Sw_Hs')
+       index_x2o_Sw_Fp = mct_avect_indexra(x2o,'Sw_Fp')
+       index_x2o_Sw_Dp = mct_avect_indexra(x2o,'Sw_Dp')
+    endif
     call mct_aVect_clean(x2o)
     call mct_aVect_clean(o2x)
 

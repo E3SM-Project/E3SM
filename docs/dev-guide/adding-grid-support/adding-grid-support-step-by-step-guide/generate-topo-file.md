@@ -40,10 +40,12 @@ Building `homme_tool` is a critical preliminary step to the topography generatio
 ```shell
 # Set the machine specific environment
 cd ${e3sm_root}/components/homme
-${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
+
+# load the appropriate machine environment
+eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
 
 # Specify machine configuration file
-mach_file=${e3sm_root}/components/homme/cmake/machineFiles/perlmutter-gnu.cmake
+mach_file=${e3sm_root}/components/homme/cmake/machineFiles/pm-cpu.cmake
 # mach_file=${e3sm_root}/components/homme/cmake/machineFiles/chrysalis.cmake
 
 cmake -C ${mach_file} \
@@ -65,12 +67,12 @@ Certain physics calculations in the atmosphere require a characterization of the
 
 ### Building cube_to_target
 
-The following commands were working on both Perlmutter/NERSC and Chrysalis/LCRC machines as of 2024.
+The following commands were working on both Perlmutter/NERSC and Chrysalis/LCRC machines as of 2025.
 
 ```shell
 cd ${e3sm_root}/components/eam/tools/topo_tool/cube_to_target
 
-${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
+eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
 
 make
 ```
@@ -228,7 +230,7 @@ make
 
     ```shell
     cd ${e3sm_root}/components/homme
-    ${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
+    eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
 
     cat <<EOF > input.nl
     &ctl_nl
@@ -390,7 +392,7 @@ To submit the slurm batch job use `sbatch <script>`
     #---------------------------------------------------------------------------
     # Apply Smoothing
     cd ${e3sm_root}/components/homme
-    ${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
+    eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
     # Create namelist file for HOMME
     cat <<EOF > input.nl
     &ctl_nl
@@ -555,7 +557,7 @@ To submit the slurm batch job use `sbatch <script>`
     #---------------------------------------------------------------------------
     # Apply Smoothing
     cd ${e3sm_root}/components/homme
-    ${e3sm_root}/cime/CIME/scripts/configure && source .env_mach_specific.sh
+    eval $(${e3sm_root}/cime/CIME/Tools/get_case_env)
     # Create namelist file for HOMME
     cat <<EOF > input.nl
     &ctl_nl

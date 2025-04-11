@@ -18,10 +18,10 @@ namespace scream {
  * A FieldGroupInfo stores:
  *
  *   - a list of the field names associated to this group;
- *   - whether the field were allocated as a single "bundled" field,
- *     with each field extracted as a "subview" of the bundled one;
- *   - if the allocation was "bundled", also store for each field
- *     the index that was used to extract the corresponding subview.
+ *   - whether the field were allocated as a single monolithic field,
+ *     with each field extracted as a "subview" of the monolithic one;
+ *   - if the group allocated a monolithic field, also store for each
+ *     subfield the index that was used to extract the corresponding subview.
  */
 
 struct FieldGroupInfo
@@ -32,7 +32,7 @@ struct FieldGroupInfo
   FieldGroupInfo (const ci_string& group_name)
     : m_group_name (group_name)
     , m_fields_names{}
-    , m_bundled (false)
+    , m_monolithic_allocation (false)
     , m_subview_dim(-1)
     , m_subview_idx{}
   {
@@ -51,15 +51,25 @@ struct FieldGroupInfo
   // The names of the fields in this group
   std::list<ci_string>   m_fields_names;
 
-  // Whether the group was allocated as a bundle
-  bool m_bundled;
+  // Store the grid which registered each field
+  std::map<ci_string, std::list<ci_string>> m_grid_registered;
 
-  // If bundled, each field is subviewed along a different entry
-  // along the same dimension.
+  // Store any grid that is requested for a group.
+  // This is useful in the case where we allocate
+  // a monolithic field, we can add a grid that may
+  // not have any registered fields, but that we want
+  // the group to exist.
+  std::list<ci_string> m_requested_grids;
+
+  // Whether the group allocated a monolithic field
+  bool m_monolithic_allocation;
+
+  // If we allocate a monolithic field, each field is subviewed
+  // along a different entry along the same dimension.
   int m_subview_dim;
 
-  // If bundled, for each field name, store the idx used
-  // to subview each field from the bundle.
+  // If we allocate a monolithic field, for each field name,
+  // store the idx used to subview each individual field.
   std::map<ci_string,int>  m_subview_idx;
 };
 
@@ -68,7 +78,7 @@ inline bool operator== (const FieldGroupInfo& lhs,
 {
   return lhs.m_group_name==rhs.m_group_name &&
          lhs.m_fields_names==rhs.m_fields_names &&
-         lhs.m_bundled==rhs.m_bundled &&
+         lhs.m_monolithic_allocation==rhs.m_monolithic_allocation &&
          lhs.m_subview_dim==rhs.m_subview_dim &&
          lhs.m_subview_idx==rhs.m_subview_idx;
 }

@@ -183,7 +183,7 @@ contains
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge, edgesOnEdge
 
       real (kind=RKIND) :: invAreaCell1, layerThicknessEdge1, coeff, weightedNormalVel, cellArea
-      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt250m, kineticEnergyAtSurface, relativeVorticityAt250m, relativeVorticityAtSurface
+      real (kind=RKIND), dimension(:), pointer :: refBottomDepth, kineticEnergyAt250m, kineticEnergyAtSurface, relativeVorticityAt250m, relativeVorticityAtSurface, divergenceAtSurface
       real (kind=RKIND), dimension(:), pointer :: divergenceAt250m, relativeVorticityVertexAt250m
       real (kind=RKIND), dimension(:), pointer :: divergenceAtBottom,relativeVorticityAtBottom,kineticEnergyAtBottom
       real (kind=RKIND), dimension(:), pointer :: vertVelAt250m
@@ -265,6 +265,7 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAt250m', relativeVorticityAt250m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAtSurface', relativeVorticityAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAt250m', divergenceAt250m)
+         call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAtSurface', divergenceAtSurface)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'relativeVorticityAtBottom', relativeVorticityAtBottom)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'divergenceAtBottom', divergenceAtBottom)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'kineticEnergyAtBottom', kineticEnergyAtBottom)
@@ -424,6 +425,7 @@ contains
          relativeVorticityVertexAt250m(:) = relativeVorticity(iLevel0250,:)
          kineticEnergyAtSurface(:) = kineticEnergyCell(1,:)
          relativeVorticityAtSurface(:) = relativeVorticityCell(1,:)
+         divergenceAtSurface(:) = divergence(1,:)
          activeTracersAtSurface(1,:) = activeTracers(1,1,:)
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
          activeTracersAt250m(1,:) = activeTracers(1,iLevel0250,:)

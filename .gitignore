@@ -44,7 +44,9 @@ site
 # Ignore mkdocs site-generated files in eamxx
 components/eamxx/site/*
 # Ignore auto-generated eamxx_params.md file
-components/eamxx/docs/common/eamxx_params.md
+components/eamxx/docs/user/eamxx_params.md
+# Ignore html generated for presentations in the source code
+components/eamxx/docs/_presentations_html/
 
 # Python packaging
 *.egg-info

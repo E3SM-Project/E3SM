@@ -704,7 +704,6 @@ void set_idx2_maps (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
 template <typename MT>
 void size_mpi_buffers (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
                        const Rank2Gids& rank2owngids) {
-  const auto myrank = cm.p->rank();
   // sizeof real, int, single int (b/c of alignment)
   const Int sor = sizeof(Real), soi = sizeof(Int), sosi = sor;
   static_assert(sizeof(Real) >= sizeof(Int),
@@ -728,7 +727,7 @@ void size_mpi_buffers (IslMpi<MT>& cm, const Rank2Gids& rank2rmtgids,
     return (bytes + sor - 1)/sor;
   };
 
-  slmm_assert(cm.ranks.back() == myrank);
+  slmm_assert(cm.ranks.back() == cm.p->rank());
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
   cm.nlid_per_rank.resize(nrmtrank);
   cm.sendsz.resize(nrmtrank);

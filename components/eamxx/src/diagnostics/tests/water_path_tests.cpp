@@ -5,9 +5,9 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"

@@ -6,7 +6,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 #include "physics/share/physics_constants.hpp"
 

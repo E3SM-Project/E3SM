@@ -1,5 +1,5 @@
 #include "diagnostics/atm_density.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 
 namespace scream
 {
@@ -14,7 +14,6 @@ AtmDensityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
 void AtmDensityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
   // Boiler Plate
   auto grid  = grids_manager->get_grid("Physics");
@@ -23,41 +22,38 @@ void AtmDensityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> g
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   // Set Field Layouts
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
+  auto scalar3d = grid->get_3d_scalar_layout(true);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d_layout_mid, K,     grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa,    grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("p_mid",          scalar3d_layout_mid, Pa,    grid_name, SCREAM_PACK_SIZE);
-  add_field<Required>("qv",             scalar3d_layout_mid, kg/kg, grid_name, SCREAM_PACK_SIZE);
+  add_field<Required>("T_mid",          scalar3d, K,     grid_name);
+  add_field<Required>("pseudo_density", scalar3d, Pa,    grid_name);
+  add_field<Required>("p_mid",          scalar3d, Pa,    grid_name);
+  add_field<Required>("qv",             scalar3d, kg/kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, kg/(m*m*m), grid_name);
+  FieldIdentifier fid (name(), scalar3d, kg/(m*m*m), grid_name);
   m_diagnostic_output = Field(fid);
-  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(SCREAM_PACK_SIZE);
   m_diagnostic_output.allocate_view();
 }
 
 void AtmDensityDiagnostic::compute_diagnostic_impl()
 {
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using PF            = scream::PhysicsFunctions<DefaultDevice>;
+  using PF = scream::PhysicsFunctions<DefaultDevice>;
 
-  const auto npacks  = ekat::npack<Pack>(m_num_levs);
-  const auto atm_dens           = m_diagnostic_output.get_view<Pack**>();
-  const auto T_mid              = get_field_in("T_mid").get_view<const Pack**>();
-  const auto p_mid              = get_field_in("p_mid").get_view<const Pack**>();
-  const auto qv_mid             = get_field_in("qv").get_view<const Pack**>();
-  const auto pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
+  const auto atm_dens = m_diagnostic_output.get_view<Real**>();
+  const auto T_mid    = get_field_in("T_mid").get_view<const Real**>();
+  const auto p_mid    = get_field_in("p_mid").get_view<const Real**>();
+  const auto qv_mid   = get_field_in("qv").get_view<const Real**>();
+  const auto pseudo_density_mid = get_field_in("pseudo_density").get_view<const Real**>();
 
+  int nlevs = m_num_levs;
   Kokkos::parallel_for("AtmosphereDensityDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*npacks),
+                       Kokkos::RangePolicy<>(0,m_num_cols*nlevs),
                        KOKKOS_LAMBDA(const int& idx) {
-      const int icol  = idx / npacks;
-      const int jpack = idx % npacks;
-      auto dz = PF::calculate_dz(pseudo_density_mid(icol,jpack),p_mid(icol,jpack),T_mid(icol,jpack),qv_mid(icol,jpack));
-      atm_dens(icol,jpack) = PF::calculate_density(pseudo_density_mid(icol,jpack),dz);
+      const int icol  = idx / nlevs;
+      const int ilev = idx % nlevs;
+      auto dz = PF::calculate_dz(pseudo_density_mid(icol,ilev),p_mid(icol,ilev),T_mid(icol,ilev),qv_mid(icol,ilev));
+      atm_dens(icol,ilev) = PF::calculate_density(pseudo_density_mid(icol,ilev),dz);
   });
   Kokkos::fence();
 }

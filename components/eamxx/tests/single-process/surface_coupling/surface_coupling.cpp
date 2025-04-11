@@ -7,8 +7,8 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/util/ekat_test_utils.hpp>
@@ -101,7 +101,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   ctrl_pl.set("save_grid_data",false);
   OutputManager4Test om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
   // Create output data:
   // T=3600, well above the max timestep for the test.
   auto tw = t0;
@@ -600,7 +600,7 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[16], "Faxa_lwdn"  );
 
   // Setup the import/export data. This is meant to replicate the structures coming
-  // from mct_coupling/scream_cpl_indices.F90
+  // from mct_coupling/eamxx_cpl_indices.F90
   setup_import_and_export_data(engine, atm_comm,
                                num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,
@@ -624,7 +624,7 @@ TEST_CASE("surface-coupling", "") {
   ad.initialize_output_managers ();
   ad.initialize_atm_procs ();
 
-  const auto fm = ad.get_field_mgr("Physics");
+  const auto fm = ad.get_field_mgr();
 
   // Verify any initial imports/exports were done as expected
   test_imports(*fm, import_data_view, import_cpl_indices_view,

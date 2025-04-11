@@ -3,7 +3,7 @@
 
 #include "share/grid/abstract_grid.hpp"
 
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"

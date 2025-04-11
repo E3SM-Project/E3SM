@@ -2,9 +2,9 @@
 
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -198,7 +198,8 @@ TEST_CASE ("refining_remapper") {
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();
-    CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // bad data type (must be real)
+    r->register_field(bad_src,bad_tgt);
+    CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
   auto r = std::make_shared<RefiningRemapperP2PTester>(tgt_grid,filename);
@@ -226,8 +227,8 @@ TEST_CASE ("refining_remapper") {
   r->registration_ends();
 
   // Run remap
-  CHECK_THROWS (r->remap(false)); // No backward remap
-  r->remap(true);
+  CHECK_THROWS (r->remap_bwd()); // No backward remap
+  r->remap_fwd();
 
   // Gather global copies (to make checks easier) and check src/tgt fields
   auto gs2d_src = all_gather_field(s2d_src,comm);

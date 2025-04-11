@@ -24,46 +24,9 @@ public:
 
   ~HorizInterpRemapperBase ();
 
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
-
-  bool compatible_layouts (const layout_type& src,
-                           const layout_type& tgt) const override {
-    // Same type of layout, and same sizes except for possibly the first one
-    // Note: we can't do [src|tgt].size()/[src|tgt].dim(0)), since there may
-    // be 0 src/tgt gids on some ranks, which means src/tgt.dim(0)=0.
-    using namespace ShortFieldTagsNames;
-
-    // Use congruence, since we don't really care about dimension names, only tags/extents
-    return src.clone().strip_dim(COL).congruent(tgt.clone().strip_dim(COL));
-  }
-
 protected:
 
-  FieldLayout create_layout (const FieldLayout& fl_in,
-                             const grid_ptr_type& grid) const;
-
-  const identifier_type& do_get_src_field_id (const int ifield) const override {
-    return m_src_fields[ifield].get_header().get_identifier();
-  }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
-    return m_tgt_fields[ifield].get_header().get_identifier();
-  }
-  const field_type& do_get_src_field (const int ifield) const override {
-    return m_src_fields[ifield];
-  }
-  const field_type& do_get_tgt_field (const int ifield) const override {
-    return m_tgt_fields[ifield];
-  }
-
-  void do_registration_begins () override { /* Nothing to do here */ }
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-  void do_registration_ends () override;
-
-  void do_remap_bwd () override {
-    EKAT_ERROR_MSG ("HorizInterpRemapperBase only supports fwd remapping.\n");
-  }
+  void registration_ends_impl () override;
 
   using KT = KokkosTypes<DefaultDevice>;
 
@@ -98,9 +61,7 @@ public:
   grid_ptr_type   m_ov_coarse_grid;
 
   // Source, target, and overlapped intermediate fields
-  std::vector<Field>    m_src_fields;
   std::vector<Field>    m_ov_fields;
-  std::vector<Field>    m_tgt_fields;
 
   // ----- Sparse matrix CRS representation ---- //
   view_1d<int>    m_row_offsets;

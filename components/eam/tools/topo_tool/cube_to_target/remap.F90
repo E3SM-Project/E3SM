@@ -850,7 +850,9 @@ MODULE remap
 
             if (xseg(1).EQ.xseg(2))then
               slope = bignum
-            else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
+            ! this will enable exact integration, which was found to create problematic negative weights
+            ! else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
+            else if (.false.) then
               slope = 0.0
             else
               slope    = (yseg(2)-yseg(1))/(xseg(2)-xseg(1))
@@ -955,7 +957,9 @@ MODULE remap
 !    if (fuzzy(abs(xseg(1) -xseg(2)),fuzzy_width)==0)then
     if (xseg(1).EQ.xseg(2))then
       weights = 0.0D0
-    else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
+    ! this will enable exact integration, which was found to create problematic negative weights
+    ! else if (abs(yseg(1) -yseg(2))<fuzzy_width) then
+    else if (.false.) then
       !
       ! line segment parallel to latitude - compute weights exactly
       !

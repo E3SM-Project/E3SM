@@ -29,6 +29,7 @@ sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
 # Cime imports
 from standard_script_setup import * # pylint: disable=wildcard-import
 from CIME.utils import expect, safe_copy, SharedArea
+from CIME.test_status import TestStatus, RUN_PHASE
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -169,6 +170,10 @@ def perform_consistency_checks(case, xml):
     # of a rad superstep
     rrtmgp = find_node(xml,"rrtmgp")
     rest_opt = case.get_value("REST_OPTION")
+    is_test = case.get_value("TEST")
+    caseraw = case.get_value("CASE")
+    caseroot = case.get_value("CASEROOT")
+    casebaseid  = case.get_value("CASEBASEID")
     if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
@@ -176,8 +181,17 @@ def perform_consistency_checks(case, xml):
         atm_tstep = 86400 / atm_ncpl
         rad_tstep = atm_tstep * rad_freq
 
+        # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
+        # settings until RUN phase
+        is_test_not_yet_run = False
+        if is_test:
+            test_name = casebaseid if casebaseid is not None else caseraw
+            ts = TestStatus(test_dir=caseroot, test_name=test_name)
+            phase = ts.get_latest_phase()
+            if phase != RUN_PHASE:
+                is_test_not_yet_run = True
 
-        if rad_freq==1:
+        if rad_freq==1 or is_test_not_yet_run:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
@@ -480,7 +494,7 @@ def write_pretty_xml(filepath, xml):
 def _create_raw_xml_file_impl(case, xml, filepath=None):
 ###############################################################################
     """
-    On input, xml contains the parsed content of namelist_defaults_scream.xml.
+    On input, xml contains the parsed content of namelist_defaults_eamxx.xml.
     On output, it contains the input parameters for this case.
 
     >>> from eamxx_buildnml_impl import MockCase
@@ -680,7 +694,7 @@ def create_raw_xml_file(case, caseroot):
     else:
         print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
 
-        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
+        src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_eamxx.xml")
 
         # Some atmchanges will require structural changes to the XML file and must
         # be processed early by treating them as if they were made to the defaults file.
@@ -836,7 +850,7 @@ def create_input_files(caseroot, screamroot, rundir):
         tree = ET.parse(fd)
         raw_xml = tree.getroot()
 
-    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_scream.xml")
+    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_eamxx.xml")
     with open(def_xml_file, "r") as fd:
         tree = ET.parse(fd)
         generated_files = get_child(tree.getroot(),"generated_files")

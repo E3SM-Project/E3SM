@@ -24,22 +24,9 @@ void update_gas_aerosols_using_constituents(
   // get the start index for gas species in the state_q array
   int istart = mam4::utils::gasses_start_ind();
 
-  // number of constituents to update (currently updating only MAM4xx
-  // constituents)
-  const int nconstituents = pcnst - istart;
-
-  // Create a policy to loop over columns annd number of constituents
-  // to update
-  // FIXME: TODO:We don't need a team for "nconstituents", so we can make the
-  // kookos_for simple by using just ncols
-  const auto policy = ekat::ExeSpaceUtils<MAMConstituentFluxes::KT::ExeSpace>::
-      get_default_team_policy(ncol, nconstituents);
-
   // Loop through all columns to update tracer mixing rations
   Kokkos::parallel_for(
-      policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
-        const int icol = team.league_rank();
-
+      "get_activate_frac", ncol, KOKKOS_LAMBDA(int icol) {
         //----------------------------------------------------------------------
         // To form EAM like state%q array, we need prognostics (gas and aerosol
         // mmrs) atmosphere (qv, qc, nc, ni, etc.)

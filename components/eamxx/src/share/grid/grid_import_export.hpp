@@ -2,8 +2,8 @@
 #define EAMXX_GRID_IMPORT_EXPORT_HPP
 
 #include "share/grid/abstract_grid.hpp"
-#include "share/scream_types.hpp"       // For KokkosTypes
-#include "share/util/scream_utils.hpp"  // For check_mpi_call
+#include "share/eamxx_types.hpp"       // For KokkosTypes
+#include "share/util/eamxx_utils.hpp"  // For check_mpi_call
 
 #include <ekat/mpi/ekat_comm.hpp>
 #include <mpi.h> // We do some direct MPI calls
@@ -78,6 +78,8 @@ public:
 
 protected:
 
+  using gid_type = AbstractGrid::gid_type;
+
   std::shared_ptr<const AbstractGrid>   m_unique;
   std::shared_ptr<const AbstractGrid>   m_overlapped;
 
@@ -104,70 +106,85 @@ protected:
 
 // --------------------- IMPLEMENTATION ------------------------ //
 
+// Both gather and scatter proceed in 4 stages. If pid1 needs to send data to pid2, then
+//  1. pid1 sends pid2 the list of GIDs [gid1,...,gidN] it will send. Although pid2
+//     already knows the GIDs, this step specifies the ORDER, since GIDs
+//     may be ordered differently on different pids
+//  2. pid1 sends pid2 the number of T's it will send for each of those gids
+//  3. pid1 sends pid3 all T's (first T's for gid1, then T's for gid2, etc)
+//  4. Finally, pid2 parses the data received, stuffing it into dst, according
+//     to the lid on pid2 (needs converting gids to lids)
+// The two only differ in which members to use. They are mostly specular: where one
+// uses m_unique grid, the other uses m_overlapped grid, and where one use m_export_lids/pids,
+// the other uses m_import_lids/pids. That's b/c they do the same operation, just
+// in opposite directions.
+
 template<typename T>
 void GridImportExport::
 scatter (const MPI_Datatype mpi_data_t,
          const std::map<int,std::vector<T>>& src,
                std::map<int,std::vector<T>>& dst) const
 {
-  using gid_type = AbstractGrid::gid_type;
+  const auto tag = 0;
 
   std::vector<MPI_Request> send_req, recv_req;
   
   const int nexp = m_export_lids.size();
   const int nimp = m_import_lids.size();
   auto mpi_comm = m_comm.mpi_comm();
+  auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
-  auto unique_gids_h = m_unique->get_dofs_gids().get_view<const gid_type*,Host>();
-  auto overlap_gids_h = m_overlapped->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto gids_h = m_unique->get_dofs_gids().get_view<const gid_type*,Host>();
 
-  // 1. Communicate to the recv pids how many items per lid
-  // we need to send
-  std::vector<int> send_count(m_export_lids_h.size(),0);
+  // 1. Communicate GIDs lists to recv pids
+  std::map<int,std::vector<gid_type>> send_pid2gids;
   for (int i=0; i<nexp; ++i) {
+    auto pid = m_export_pids_h[i];
     auto lid = m_export_lids_h[i];
-    auto gid = unique_gids_h[lid];
-    send_count[i] = src.at(lid).size();
+    send_pid2gids[pid].push_back(gids_h[lid]);
+  }
+  for (auto& [pid,gids] : send_pid2gids) {
     auto& req = send_req.emplace_back();
-
-    check_mpi_call(MPI_Isend (&send_count[i],1,MPI_INT,
-                              m_export_pids_h[i],gid,mpi_comm,&req),
+    check_mpi_call(MPI_Isend (gids.data(),gids.size(),mpi_gid_t,pid,tag,mpi_comm,&req),
                    "GridImportExport::scatter, creating send request (step 1)");
   }
-  std::vector<int> recv_count(m_import_lids_h.size(),0);
+  std::map<int,std::vector<gid_type>> recv_pid2gids;
   for (int i=0; i<nimp; ++i) {
-    auto lid = m_import_lids_h[i];
-    auto gid = overlap_gids_h[lid];
+    auto pid = m_import_pids_h[i];
+    recv_pid2gids[pid].push_back(-1);
+  }
+  for (auto& [pid,gids] : recv_pid2gids) {
     auto& req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv (&recv_count[i],1,MPI_INT,
-                              m_import_pids_h[i],gid,mpi_comm,&req),
+    check_mpi_call(MPI_Irecv (gids.data(),gids.size(),mpi_gid_t,pid,tag,mpi_comm,&req),
                    "GridImportExport::scatter, creating recv request (step 1)");
   }
-
   check_mpi_call(MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE),
                  "GridImportExport::scatter, waiting on send requests (step 1)");
   check_mpi_call(MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE),
                  "GridImportExport::scatter, waiting on recv requests (step 1)");
   send_req.clear();
   recv_req.clear();
-
-  // 2. Size dst and create recv/send requests
-  for (int i=0; i<nimp; ++i) {
-    auto lid = m_import_lids_h[i];
-    auto gid = overlap_gids_h[lid];
-    dst[lid].resize(recv_count[i]);
-    auto& req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(dst[lid].data(),recv_count[i],mpi_data_t,
-                             m_import_pids_h[i],gid,mpi_comm,&req),
-                   "GridImportExport::scatter, creating recv request (step 2)");
+  
+  // 2. Communicate T's count for each GID to recv pids
+  std::map<int,std::vector<int>> send_pid2count;
+  for (int i=0; i<nexp; ++i) {
+    auto pid = m_export_pids_h[i];
+    auto lid = m_export_lids_h[i];
+    send_pid2count[pid].push_back(src.at(lid).size());
+  }
+  for (auto& [pid,count] : send_pid2count) {
+    auto& req = send_req.emplace_back();
+    check_mpi_call(MPI_Isend (count.data(),count.size(),MPI_INT,pid,tag,mpi_comm,&req),
+                   "GridImportExport::scatter, creating send request (step 2)");
   }
 
-  for (int i=0; i<nexp; ++i) {
-    auto lid = m_export_lids_h[i];
-    auto gid = unique_gids_h[lid];
-    auto& req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(src.at(lid).data(),src.at(lid).size(),mpi_data_t,
-                             m_export_pids_h[i],gid,mpi_comm,&req),
+  std::map<int,std::vector<int>>      recv_pid2count;
+  for (auto& [pid,gids] : recv_pid2gids) {
+    recv_pid2count[pid].resize(gids.size());
+  }
+  for (auto& [pid,count] : recv_pid2count) {
+    auto& req = recv_req.emplace_back();
+    check_mpi_call(MPI_Irecv (count.data(),count.size(),MPI_INT,pid,tag,mpi_comm,&req),
                    "GridImportExport::scatter, creating recv request (step 2)");
   }
   check_mpi_call(MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE),
@@ -176,6 +193,58 @@ scatter (const MPI_Datatype mpi_data_t,
                  "GridImportExport::scatter, waiting on recv requests (step 2)");
   send_req.clear();
   recv_req.clear();
+
+  // 3. Pack and send the data.
+  std::map<int,std::vector<T>> send_pid2data;
+  const auto& gid2lid = m_unique->get_gid2lid_map();
+  for (const auto& [pid,gids] : send_pid2gids) {
+    auto& data = send_pid2data[pid];
+    for (auto g : gids) {
+      auto lid = gid2lid.at(g);
+      data.insert(data.end(),src.at(lid).begin(),src.at(lid).end());
+    }
+  }
+  for (auto& [pid,data] : send_pid2data) {
+    auto& req = send_req.emplace_back();
+    check_mpi_call(MPI_Isend (data.data(),data.size(),mpi_data_t,pid,tag,mpi_comm,&req),
+                   "GridImportExport::scatter, creating send request (step 3)");
+  }
+
+  std::map<int,std::vector<T>> recv_pid2data;
+  for (const auto& [pid,count] : recv_pid2count) {
+    int n = 0;
+    for (auto c : count) n += c;
+
+    auto& data = recv_pid2data[pid];
+    data.resize(n);
+  }
+  for (auto& [pid,data] : recv_pid2data) {
+    auto& req = recv_req.emplace_back();
+    check_mpi_call(MPI_Irecv (data.data(),data.size(),mpi_data_t,pid,tag,mpi_comm,&req),
+                   "GridImportExport::scatter, creating recv request (step 3)");
+  }
+  check_mpi_call(MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE),
+                 "GridImportExport::scatter, waiting on send requests (step 3)");
+  check_mpi_call(MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE),
+                 "GridImportExport::scatter, waiting on recv requests (step 3)");
+  send_req.clear();
+  recv_req.clear();
+
+  // 4. Unpack received data in dst map
+  const auto& recv_gid2lid = m_overlapped->get_gid2lid_map();
+  for (const auto& [pid,data] : recv_pid2data) {
+    const auto& count = recv_pid2count[pid];
+    const auto& gids  = recv_pid2gids[pid];
+    const int num_gids = count.size();
+    for (int i=0, pos=0; i<num_gids; ++i) {
+      auto lid = recv_gid2lid.at(gids[i]);
+      auto curr_sz = dst[lid].size();
+      dst[lid].resize(curr_sz+count[i]);
+      for (int k=0; k<count[i]; ++k, ++pos) {
+        dst[lid][curr_sz+k] = data[pos];
+      }
+    }
+  }
 }
 
 template<typename T>
@@ -184,66 +253,66 @@ gather (const MPI_Datatype mpi_data_t,
         const std::map<int,std::vector<T>>& src,
               std::map<int,std::vector<T>>& dst) const
 {
-  using gid_type = AbstractGrid::gid_type;
+  const auto tag = 0;
 
   std::vector<MPI_Request> send_req, recv_req;
   
   const int nexp = m_export_lids.size();
   const int nimp = m_import_lids.size();
   auto mpi_comm = m_comm.mpi_comm();
+  auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
-  auto unique_gids_h = m_unique->get_dofs_gids().get_view<const gid_type*,Host>();
-  auto overlap_gids_h = m_overlapped->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto ov_gids_h = m_overlapped->get_dofs_gids().get_view<const gid_type*,Host>();
 
-  const int num_ov_gids = overlap_gids_h.size();
-
-  // 1. Communicate to the recv pids how many items per lid
-  // we need to send
-  std::vector<int> send_count(num_ov_gids,0);
+  // 1. Communicate GIDs lists to recv pids
+  std::map<int,std::vector<gid_type>> send_pid2gids;
   for (int i=0; i<nimp; ++i) {
+    auto pid = m_import_pids_h[i];
     auto lid = m_import_lids_h[i];
-    auto gid = overlap_gids_h[lid];
-    send_count[lid] = src.at(lid).size();
+    send_pid2gids[pid].push_back(ov_gids_h[lid]);
+  }
+  for (auto& [pid,gids] : send_pid2gids) {
     auto& req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend (&send_count[lid],1,MPI_INT,
-                              m_import_pids_h[i],gid,mpi_comm,&req),
+    check_mpi_call(MPI_Isend (gids.data(),gids.size(),mpi_gid_t,pid,tag,mpi_comm,&req),
                    "GridImportExport::gather, creating send request (step 1)");
   }
-  std::vector<int> recv_count(m_export_lids_h.size(),0);
+  std::map<int,std::vector<gid_type>> recv_pid2gids;
   for (int i=0; i<nexp; ++i) {
+    auto pid = m_export_pids_h[i];
+    recv_pid2gids[pid].push_back(-1);
+  }
+  for (auto& [pid,gids] : recv_pid2gids) {
     auto& req = recv_req.emplace_back();
-    auto lid = m_export_lids_h[i];
-    auto gid = unique_gids_h[lid];
-    check_mpi_call(MPI_Irecv (&recv_count[i],1,MPI_INT,
-                              m_export_pids_h[i],gid,mpi_comm,&req),
+    check_mpi_call(MPI_Irecv (gids.data(),gids.size(),mpi_gid_t,pid,tag,mpi_comm,&req),
                    "GridImportExport::gather, creating recv request (step 1)");
   }
-
   check_mpi_call(MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE),
                  "GridImportExport::gather, waiting on send requests (step 1)");
   check_mpi_call(MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE),
                  "GridImportExport::gather, waiting on recv requests (step 1)");
   send_req.clear();
   recv_req.clear();
-
-  // 2. Create recv buf and recv/send requests
-  std::map<int,std::vector<T>> recv_buf;
-  for (int i=0; i<nexp; ++i) {
-    auto lid = m_export_lids_h[i];
-    auto gid = unique_gids_h[lid];
-    recv_buf[i].resize(recv_count[i]);
-    auto& req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(recv_buf[i].data(),recv_count[i],mpi_data_t,
-                             m_export_pids_h[i],gid,mpi_comm,&req),
-                   "GridImportExport::gather, creating recv request (step 2)");
+  
+  // 2. Communicate T's count for each GID to recv pids
+  std::map<int,std::vector<int>> send_pid2count;
+  for (int i=0; i<nimp; ++i) {
+    auto pid = m_import_pids_h[i];
+    auto lid = m_import_lids_h[i];
+    send_pid2count[pid].push_back(src.at(lid).size());
+  }
+  for (auto& [pid,count] : send_pid2count) {
+    auto& req = send_req.emplace_back();
+    check_mpi_call(MPI_Isend (count.data(),count.size(),MPI_INT,pid,tag,mpi_comm,&req),
+                   "GridImportExport::gather, creating send request (step 2)");
   }
 
-  for (int i=0; i<nimp; ++i) {
-    auto lid = m_import_lids_h[i];
-    auto& req = send_req.emplace_back();
-    auto gid = overlap_gids_h[lid];
-    check_mpi_call(MPI_Isend(src.at(lid).data(),src.at(lid).size(),mpi_data_t,
-                             m_import_pids_h[i],gid,mpi_comm,&req),
+  std::map<int,std::vector<int>>      recv_pid2count;
+  for (auto& [pid,gids] : recv_pid2gids) {
+    recv_pid2count[pid].resize(gids.size());
+  }
+  for (auto& [pid,count] : recv_pid2count) {
+    auto& req = recv_req.emplace_back();
+    check_mpi_call(MPI_Irecv (count.data(),count.size(),MPI_INT,pid,tag,mpi_comm,&req),
                    "GridImportExport::gather, creating recv request (step 2)");
   }
   check_mpi_call(MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE),
@@ -253,13 +322,56 @@ gather (const MPI_Datatype mpi_data_t,
   send_req.clear();
   recv_req.clear();
 
-  // 3. Fill dst map with content from the recv buffer
-  for (const auto& it : recv_buf) {
-    auto lid = m_export_lids_h[it.first];
-    auto& curr = dst[lid];
-    auto& add = it.second;
-    curr.reserve(curr.size()+add.size());
-    std::move(add.begin(),add.end(),std::back_inserter(curr));
+  // 3. Pack and send the data.
+  std::map<int,std::vector<T>> send_pid2data;
+  const auto& ov_gid2lid = m_overlapped->get_gid2lid_map();
+  for (const auto& [pid,gids] : send_pid2gids) {
+    auto& data = send_pid2data[pid];
+    for (auto g : gids) {
+      auto lid = ov_gid2lid.at(g);
+      data.insert(data.end(),src.at(lid).begin(),src.at(lid).end());
+    }
+  }
+  for (auto& [pid,data] : send_pid2data) {
+    auto& req = send_req.emplace_back();
+    check_mpi_call(MPI_Isend (data.data(),data.size(),mpi_data_t,pid,tag,mpi_comm,&req),
+                   "GridImportExport::gather, creating send request (step 3)");
+  }
+
+  std::map<int,std::vector<T>> recv_pid2data;
+  for (const auto& [pid,count] : recv_pid2count) {
+    int n = 0;
+    for (auto c : count) n += c;
+
+    auto& data = recv_pid2data[pid];
+    data.resize(n);
+  }
+  for (auto& [pid,data] : recv_pid2data) {
+    auto& req = recv_req.emplace_back();
+    check_mpi_call(MPI_Irecv (data.data(),data.size(),mpi_data_t,pid,tag,mpi_comm,&req),
+                   "GridImportExport::gather, creating recv request (step 3)");
+  }
+  check_mpi_call(MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE),
+                 "GridImportExport::gather, waiting on send requests (step 3)");
+  check_mpi_call(MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE),
+                 "GridImportExport::gather, waiting on recv requests (step 3)");
+  send_req.clear();
+  recv_req.clear();
+
+  // 4. Unpack received data in dst map
+  const auto& recv_gid2lid = m_unique->get_gid2lid_map();
+  for (const auto& [pid,data] : recv_pid2data) {
+    const auto& count = recv_pid2count[pid];
+    const auto& gids  = recv_pid2gids[pid];
+    const int num_gids = count.size();
+    for (int i=0, pos=0; i<num_gids; ++i) {
+      auto lid = recv_gid2lid.at(gids[i]);
+      auto curr_sz = dst[lid].size();
+      dst[lid].resize(curr_sz+count[i]);
+      for (int k=0; k<count[i]; ++k, ++pos) {
+        dst[lid][curr_sz+k] = data[pos];
+      }
+    }
   }
 }
 

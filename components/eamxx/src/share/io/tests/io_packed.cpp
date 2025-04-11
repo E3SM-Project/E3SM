@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -9,9 +9,9 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -107,7 +107,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   // Create some fields
   auto fm = get_fm(grid,t0,seed,ps);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 
@@ -124,7 +124,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   // Create Output manager
   OutputManager om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
 
   // Run output manager
   om.init_timestep(t0,0);
@@ -148,7 +148,7 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
   auto fm0 = get_fm(grid,t0,seed,ps_read);
   auto fm  = get_fm(grid,t0,-seed-1,ps_read);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     fnames.push_back(it.second->name());
   }
 

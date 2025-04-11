@@ -364,7 +364,7 @@ contains
   subroutine init_column_thermodynamic_profiles(domain)
 
     use icepack_intfc, only: &
-         icepack_init_thermo, &
+         icepack_init_salinity, &
          icepack_liquidus_temperature
 
     type(domain_type), intent(inout) :: domain
@@ -398,7 +398,7 @@ contains
 
        allocate(initialSalinityProfileVertical(1:nIceLayers+1))
 
-       call icepack_init_thermo(&
+       call icepack_init_salinity(&
             initialSalinityProfileVertical)
        call seaice_icepack_write_warnings(icepack_warnings_aborted())
 
@@ -834,7 +834,7 @@ contains
   subroutine init_column_thermodynamic_tracers(domain)
 
     use icepack_intfc, only: &
-         icepack_init_trcr
+         icepack_init_enthalpy
 
     type(domain_type), intent(inout) :: domain
 
@@ -894,7 +894,7 @@ contains
        do iCell = 1, nCellsSolve
           do iCategory = 1, nCategories
 
-             call icepack_init_trcr(&
+             call icepack_init_enthalpy(&
                   airTemperature(iCell), &
                   seaFreezingTemperature(iCell), &
                   initialSalinityProfile(:,iCell), &
@@ -1353,9 +1353,7 @@ contains
          oceanStressCellU, &
          oceanStressCellV, &
          freezingMeltingPotential, &
-         lateralIceMeltFraction, &
          lateralIceMeltRate, &
-         lateralHeatFlux, &
          snowfallRate, &
          rainfallRate, &
          pondFreshWaterFlux, &
@@ -1402,6 +1400,7 @@ contains
          latentHeatFluxCategory, &
          surfaceIceMeltCategory, &
          basalIceMeltCategory, &
+         lateralIceMeltFractionCategory, &
          snowMeltCategory, &
          congelationCategory, &
          snowiceFormationCategory, &
@@ -1599,9 +1598,8 @@ contains
        call MPAS_pool_get_array(drag, "dragFloeLength", dragFloeLength)
        call MPAS_pool_get_array(drag, "dragFloeSeparation", dragFloeSeparation)
 
-       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFractionCategory", lateralIceMeltFractionCategory)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
-       call MPAS_pool_get_array(melt_growth_rates, "lateralHeatFlux", lateralHeatFlux)
        call MPAS_pool_get_array(melt_growth_rates, "surfaceIceMelt", surfaceIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "surfaceIceMeltCategory", surfaceIceMeltCategory)
        call MPAS_pool_get_array(melt_growth_rates, "basalIceMelt", basalIceMelt )
@@ -1803,9 +1801,8 @@ contains
                Tbot=bottomTemperature(iCell), &
                Tsnice=snowIceInterfaceTemperature(iCell), &
                frzmlt=freezingMeltingPotential(iCell), &
-               rside=lateralIceMeltFraction(iCell), &
+               rsiden=lateralIceMeltFractionCategory(:,iCell), &
                wlat=lateralIceMeltRate(iCell), &
-               fside=lateralHeatFlux(iCell), &
                fsnow=snowfallRate(iCell), &
                frain=rainfallRate(iCell), &
                fpond=pondFreshWaterFlux(iCell), &
@@ -1969,7 +1966,7 @@ contains
              call mpas_log_write("oceanStressCellV: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanStressCellV(iCell)/))
              call mpas_log_write("oceanHeatFluxIceBottom: $r", messageType=MPAS_LOG_ERR, realArgs=(/oceanHeatFluxIceBottom(iCell)/))
              call mpas_log_write("freezingMeltingPotential: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezingMeltingPotential(iCell)/))
-             call mpas_log_write("lateralIceMeltFraction: $r", messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltFraction(iCell)/))
+             call mpas_log_write("lateralIceMeltFractionCategory: "//repeat("$r ", nCategories), messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltFractionCategory(:,iCell)/))
              call mpas_log_write("lateralIceMeltRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/lateralIceMeltRate(iCell)/))
              call mpas_log_write("snowfallRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/snowfallRate(iCell)/))
              call mpas_log_write("rainfallRate: $r", messageType=MPAS_LOG_ERR, realArgs=(/rainfallRate(iCell)/))
@@ -2139,8 +2136,6 @@ contains
          iceAreaCell, &
          seaFreezingTemperature, &
          seaSurfaceSalinity, &
-         lateralHeatFlux, &
-         lateralIceMeltFraction, &
          lateralIceMeltRate, &
          lateralIceMelt, &
          freezingMeltingPotential, &
@@ -2163,6 +2158,7 @@ contains
     real(kind=RKIND), dimension(:,:), pointer :: &
          iceAreaCategoryInitial, &
          iceVolumeCategoryInitial, &
+         lateralIceMeltFractionCategory, &
          oceanAerosolFlux, &
          oceanBioFluxes, &
          oceanBioConcentrations, &
@@ -2285,8 +2281,7 @@ contains
        call MPAS_pool_get_array(ocean_fluxes, "oceanSaltFlux", oceanSaltFlux)
        call MPAS_pool_get_array(ocean_fluxes, "oceanHeatFlux", oceanHeatFlux)
 
-       call MPAS_pool_get_array(melt_growth_rates, "lateralHeatFlux", lateralHeatFlux)
-       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFraction", lateralIceMeltFraction)
+       call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltFractionCategory", lateralIceMeltFractionCategory)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMeltRate", lateralIceMeltRate)
        call MPAS_pool_get_array(melt_growth_rates, "lateralIceMelt", lateralIceMelt)
        call MPAS_pool_get_array(melt_growth_rates, "frazilFormation", frazilFormation)
@@ -2364,9 +2359,8 @@ contains
                Tf=seaFreezingTemperature(iCell), &
                sss=seaSurfaceSalinity(iCell), &
                salinz=initialSalinityProfile(:,iCell), &
-               rside=lateralIceMeltFraction(iCell),   &
+               rsiden=lateralIceMeltFractionCategory(:,iCell),   &
                meltl=lateralIceMelt(iCell), &
-               fside=lateralHeatFlux(iCell), &
                wlat=lateralIceMeltRate(iCell), &
                frzmlt=freezingMeltingPotential(iCell), &
                frazil=frazilFormation(iCell), &
@@ -5503,7 +5497,7 @@ contains
        snowEnthalpy)
 
     use icepack_intfc, only: &
-         icepack_init_trcr
+         icepack_init_enthalpy
 
     real(kind=RKIND), intent(in) :: &
          airTemperature, &      ! air temperature (C)
@@ -5520,7 +5514,7 @@ contains
          iceEnthalpy, & ! ice enthalpy profile (J/m3)
          snowEnthalpy   ! snow enthalpy profile (J/m3)
 
-    call icepack_init_trcr(airTemperature, &
+    call icepack_init_enthalpy(airTemperature, &
          seaFreezingTemperature, &
          initialSalinityProfile, &
          initialMeltingTemperatureProfile, &
@@ -10269,6 +10263,7 @@ contains
          config_salt_flux_coupling_type, &
          config_ocean_heat_transfer_type, &
          config_frazil_coupling_type, &
+         config_congelation_freezing_method, &
          config_sea_freezing_temperature_type, &
          config_skeletal_bgc_flux_type, &
          config_snow_redistribution_scheme
@@ -10460,6 +10455,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
     call MPAS_pool_get_config(domain % configs, "config_update_ocean_fluxes", config_update_ocean_fluxes)
     call MPAS_pool_get_config(domain % configs, "config_frazil_coupling_type", config_frazil_coupling_type)
+    call MPAS_pool_get_config(domain % configs, "config_congelation_freezing_method", config_congelation_freezing_method)
     call MPAS_pool_get_config(domain % configs, "config_min_friction_velocity", config_min_friction_velocity)
     call MPAS_pool_get_config(domain % configs, "config_ice_ocean_drag_coefficient", config_ice_ocean_drag_coefficient)
     call MPAS_pool_get_config(domain % configs, "config_snow_thermal_conductivity", config_snow_thermal_conductivity)
@@ -10788,6 +10784,10 @@ contains
     call icepack_query_parameters(cpl_frazil_out=ctmp2)
     if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
+    ctmp1 = config_congelation_freezing_method
+    call icepack_query_parameters(congel_freeze_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('congel_freeze differs')
+
 !    rtmp1 = skeletalLayerThickness
 !    call icepack_query_parameters(sk_l_out=rtmp2)
 !    if (rtmp1 /= rtmp2) call mpas_log_write('sk_l differs $r $r',realArgs=(/rtmp1,rtmp2/))
@@ -10861,6 +10861,7 @@ contains
          calc_Tsfc_in            = config_calc_surface_temperature, &
          !dts_b_in                = , &        ! brine, zsalinity
          cpl_frazil_in           = config_frazil_coupling_type, &
+         congel_freeze_in        = config_congelation_freezing_method, &
          update_ocn_f_in         = config_update_ocean_fluxes, &
          ustar_min_in            = config_min_friction_velocity, &
          a_rapid_mode_in         = config_rapid_mode_channel_radius, &
@@ -11009,6 +11010,10 @@ contains
     call icepack_query_parameters(cpl_frazil_out=ctmp2)
     if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('cpl_frazil differs')
 
+    ctmp1 = config_congelation_freezing_method
+    call icepack_query_parameters(congel_freeze_out=ctmp2)
+    if (trim(ctmp1) /= trim(ctmp2)) call mpas_log_write('congel_freeze differs')
+
     call mpas_log_write(" ----- end debugging parameters -----")
     call mpas_log_write(' ')
 !echmod debugging end
@@ -11082,6 +11087,10 @@ contains
     ! dSin0_frazil:
     ! initial frazil salinity reduction
     !dSin0_frazil = seaiceFrazilSalinityReduction
+
+    ! congel_freeze:
+    ! method used for congelation freezing
+    !congel_freeze = config_congelation_freezing_method
 
     !-----------------------------------------------------------------------
     ! Parameters for radiation

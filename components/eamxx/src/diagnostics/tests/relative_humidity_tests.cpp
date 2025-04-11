@@ -7,8 +7,8 @@
 #include "physics/share/physics_constants.hpp"
 #include "physics/share/physics_functions.hpp" 
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
@@ -155,8 +155,7 @@ void run(std::mt19937_64& engine)
 
     // Run diagnostic and compare with manual calculation
     Field rh_f = T_mid_f.clone();
-    rh_f.deep_copy<double,Host>(0.0);
-    rh_f.sync_to_dev();
+    rh_f.deep_copy(0);
     const auto& rh_v = rh_f.get_view<Pack**>();
     using physics = scream::physics::Functions<Real, DefaultDevice>;
     using Smask = ekat::Mask<Pack::n>;
