@@ -1079,8 +1079,6 @@
         <command name="load">subversion</command>
         <command name="load">git</command>
         <command name="load">cmake</command>
-        <command name="load">cray-hdf5-parallel/1.14.3.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.15</command>
         <command name="load">cray-parallel-netcdf/1.12.3.15</command>
         <command name="unload">darshan-runtime</command>
       </modules>
@@ -1136,9 +1134,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-      <env name="HDF5_ROOT"/> <!-- frontier cmake cannot find_package(HDF5) for some reason, so disable it -->
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>
@@ -1147,6 +1143,10 @@
       <env name="GPUS_PER_NODE"> </env>
       <env name="NTASKS_PER_GPU"> </env>
       <env name="GPU_BIND_ARGS"> </env>
+    </environment_variables>
+    <environment_variables compiler="craygnu">
+      <env name="NETCDF_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/netcdf_with_pnetcdf/4.9.0c-4.5.3f-parallel/cray-mpich-8.1.31/gcc-native-13.2</env>
+      <env name="HDF5_ROOT">/opt/cray/pe/hdf5-parallel/1.14.3.3/gnu/12.3</env>
     </environment_variables>
     <environment_variables compiler=".*hipcc">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
