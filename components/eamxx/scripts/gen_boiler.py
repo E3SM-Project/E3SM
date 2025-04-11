@@ -2836,4 +2836,6 @@ template struct Functions<Real,DefaultDevice>;
                         print(f"Warning: failed to generate subroutine {sub} piece {piece} for physics {phys}, error: {e}")
                         all_success = False
 
+        print("ALL_SUCCESS" if all_success else "THERE WERE FAILURES")
+
         return all_success
