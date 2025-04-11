@@ -4,7 +4,7 @@ module gw_common
 ! This module contains code common to different gravity wave
 ! parameterizations.
 !
-use gw_utils, only: r8
+use gw_utils, only: r8, btype
 
 implicit none
 private
@@ -30,7 +30,7 @@ public :: gwd_compute_tendencies_from_stress_divergence
 
 ! This flag preserves answers for vanilla CAM by making a few changes (e.g.
 ! order of operations) when only orographic waves are on.
-logical, public :: orographic_only = .false.
+logical(btype), public :: orographic_only = .false.
 
 ! Number of levels in the atmosphere.
 integer, protected :: pver = 0
@@ -46,11 +46,11 @@ real(r8), allocatable, protected :: cref(:)
 
 ! Whether or not molecular diffusion is being done, and bottom level where
 ! it is done.
-logical, protected :: do_molec_diff = .false.
+logical(btype), protected :: do_molec_diff = .false.
 integer, protected :: nbot_molec = huge(1)
 
 ! Whether or not to enforce an upper boundary condition of tau = 0.
-logical :: tau_0_ubc = .false.
+logical(btype) :: tau_0_ubc = .false.
 
 ! Index the cardinal directions.
 integer, parameter :: west = 1
@@ -115,8 +115,8 @@ subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
   integer,  intent(in) :: pgwv_in
   real(r8), intent(in) :: dc_in
   real(r8), intent(in) :: cref_in(-pgwv_in:)
-  logical,  intent(in) :: do_molec_diff_in
-  logical,  intent(in) :: tau_0_ubc_in
+  logical(btype),  intent(in) :: do_molec_diff_in
+  logical(btype),  intent(in) :: tau_0_ubc_in
   integer,  intent(in) :: nbot_molec_in
   integer,  intent(in) :: ktop_in
   integer,  intent(in) :: kbotbg_in
@@ -545,7 +545,7 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
   integer, intent(in) :: ncol, ngwv
 
   ! Whether or not to apply the polar taper.
-  logical, intent(in) :: do_taper
+  logical(btype), intent(in) :: do_taper
   ! Time step.
   real(r8), intent(in) :: dt
   ! Tendency efficiency.
@@ -800,7 +800,7 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   ! wave propagation up to a certain level, but then allow wind tendencies
   ! and adjustments to tau below that level.
   ! Whether or not to apply the polar taper.
-  logical, intent(in) :: do_taper
+  logical(btype), intent(in) :: do_taper
   ! Time step.
   real(r8), intent(in) :: dt
 

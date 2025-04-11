@@ -27,7 +27,7 @@ namespace {phys} {{
 namespace unit_test {{
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::{get_data_test_struct_name(sub)} {{
+struct UnitWrap::UnitTest<D>::{get_data_test_struct_name(sub)} : public UnitWrap::UnitTest<D>::Base {{
 
 {gen_code}
 
@@ -43,7 +43,8 @@ TEST_CASE("{sub}_bfb", "[{phys}]")
 {{
   using TestStruct = scream::{phys}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{get_data_test_struct_name(sub)};
 
-  TestStruct::run_bfb();
+  TestStruct t;
+  t.run_bfb();
 }}
 
 }} // empty namespace
@@ -2520,7 +2521,7 @@ f"""{decl}
 
         if has_array:
             result = \
-"""  static void run_bfb()
+"""  void run_bfb()
   {{
     auto engine = Base::get_engine();
 
@@ -2539,7 +2540,7 @@ f"""{decl}
 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {{
-      for (auto& d : rsds_baseline) {{
+      for (auto& d : baseline_data) {{
         d.read(Base::m_fid);
       }}
     }}
@@ -2559,7 +2560,7 @@ f"""{decl}
     }}
     else if (this->m_baseline_action == GENERATE) {{
       for (Int i = 0; i < num_runs; ++i) {{
-        rsds_cxx[i].write(Base::m_fid);
+        test_data[i].write(Base::m_fid);
       }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
@@ -2610,7 +2611,7 @@ f"""// Init outputs
 """.format("\n        ".join(["test_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
 
             result = \
-"""  static void run_bfb()
+"""  void run_bfb()
   {{
     auto engine = Base::get_engine();
 

@@ -3,7 +3,7 @@
 
 #include "physics/gw/gw_functions.hpp"
 #include "physics/share/physics_test_data.hpp"
-#include "share/scream_types.hpp"
+#include "share/eamxx_types.hpp"
 
 #include <array>
 #include <utility>

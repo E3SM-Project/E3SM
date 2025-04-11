@@ -4,7 +4,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/gw/gw_functions.hpp"
-#include "physics/gw/gw_functions_f90.hpp"
+#include "physics/gw/tests/infra/gw_test_data.hpp"
 
 #include "gw_unit_tests_common.hpp"
 
@@ -13,65 +13,68 @@ namespace gw {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence {
+struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    GwdComputeTendenciesFromStressDivergenceData f90_data[] = {
+    // Set up inputs
+    GwdComputeTendenciesFromStressDivergenceData baseline_data[] = {
       // TODO
     };
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by test. Needs to happen before fortran calls so that
     // inout data is in original state
-    GwdComputeTendenciesFromStressDivergenceData cxx_data[] = {
+    GwdComputeTendenciesFromStressDivergenceData test_data[] = {
       // TODO
     };
 
-    // Assume all data is in C layout
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
+    }
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
+    // Get data from test
+    for (auto& d : test_data) {
       gwd_compute_tendencies_from_stress_divergence(d);
     }
 
-    // Get data from cxx
-    for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      gwd_compute_tendencies_from_stress_divergence_f(d.pver, d.-pgwv:pgwv, d.0:pver, d.-ngwv:ngwv, d.ncol, d.ngwv, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
-    }
-
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        GwdComputeTendenciesFromStressDivergenceData& d_f90 = f90_data[i];
-        GwdComputeTendenciesFromStressDivergenceData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.tau); ++k) {
-          REQUIRE(d_f90.total(d_f90.tau) == d_cxx.total(d_cxx.tau));
-          REQUIRE(d_f90.tau[k] == d_cxx.tau[k]);
+        GwdComputeTendenciesFromStressDivergenceData& d_baseline = baseline_data[i];
+        GwdComputeTendenciesFromStressDivergenceData& d_test = test_data[i];
+        for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
+          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
         }
-        for (Int k = 0; k < d_f90.total(d_f90.gwut); ++k) {
-          REQUIRE(d_f90.total(d_f90.gwut) == d_cxx.total(d_cxx.gwut));
-          REQUIRE(d_f90.gwut[k] == d_cxx.gwut[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.gwut); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.gwut) == d_test.total(d_test.gwut));
+          REQUIRE(d_baseline.gwut[k] == d_test.gwut[k]);
         }
-        for (Int k = 0; k < d_f90.total(d_f90.utgw); ++k) {
-          REQUIRE(d_f90.total(d_f90.utgw) == d_cxx.total(d_cxx.utgw));
-          REQUIRE(d_f90.utgw[k] == d_cxx.utgw[k]);
-          REQUIRE(d_f90.total(d_f90.utgw) == d_cxx.total(d_cxx.vtgw));
-          REQUIRE(d_f90.vtgw[k] == d_cxx.vtgw[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.utgw); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
+          REQUIRE(d_baseline.utgw[k] == d_test.utgw[k]);
+          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
+          REQUIRE(d_baseline.vtgw[k] == d_test.vtgw[k]);
         }
 
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        test_data[i].write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -88,7 +91,8 @@ TEST_CASE("gwd_compute_tendencies_from_stress_divergence_bfb", "[gw]")
 {
   using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwdComputeTendenciesFromStressDivergence;
 
-  TestStruct::run_bfb();
+  TestStruct t;
+  t.run_bfb();
 }
 
 } // empty namespace

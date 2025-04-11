@@ -13,6 +13,7 @@ private
 save
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
+#include "eamxx_config.f"
 #  ifdef SCREAM_DOUBLE_PRECISION
   integer,parameter,public :: r8 = c_double ! 8 byte real, compatible with c type double
 #  else

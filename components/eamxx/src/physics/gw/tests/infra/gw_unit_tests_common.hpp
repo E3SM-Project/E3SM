@@ -52,14 +52,14 @@ struct UnitWrap {
     template <typename S>
     using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
-    // using Functions          = scream::gw::Functions<Real, Device>;
+    using Functions          = scream::gw::Functions<Real, Device>;
     // using view_ice_table     = typename Functions::view_ice_table;
     // using view_collect_table = typename Functions::view_collect_table;
     // using view_1d_table      = typename Functions::view_1d_table;
     // using view_2d_table      = typename Functions::view_2d_table;
     // using view_dnu_table     = typename Functions::view_dnu_table;
-    // using Scalar             = typename Functions::Scalar;
-    // using Spack              = typename Functions::Spack;
+    using Scalar             = typename Functions::Scalar;
+    using Spack              = typename Functions::Spack;
     // using Pack               = typename Functions::Pack;
     // using IntSmallPack       = typename Functions::IntSmallPack;
     // using Smask              = typename Functions::Smask;

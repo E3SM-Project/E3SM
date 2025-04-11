@@ -8,7 +8,7 @@ module gw_convect
 use cam_logfile, only: iulog
 use spmd_utils,  only: masterproc
 #endif
-use gw_utils,    only: r8
+use gw_utils,    only: r8, btype
 use gw_common,   only: pver, pgwv
 
 implicit none
@@ -115,7 +115,7 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   real(r8), intent(in) :: storm_speed_min
 
   ! switch for restoring legacy method
-  logical, intent(in) :: use_gw_convect_old
+  logical(btype), intent(in) :: use_gw_convect_old
 
   ! Indices of top gravity wave source level and lowest level where wind
   ! tendencies are allowed.
