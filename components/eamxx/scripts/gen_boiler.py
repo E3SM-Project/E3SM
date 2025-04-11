@@ -1387,6 +1387,17 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
     return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data, bool_data
 
 ###############################################################################
+def get_list_of_lists(items, indent):
+###############################################################################
+    result = "{\n"
+    for item in items:
+        result += f"{indent}{{{item}}},\n"
+    result = result.rstrip(",\n")
+    result += f"\n{indent[0:-2]}}}"
+
+    return result
+
+###############################################################################
 def gen_struct_api(physics, struct_name, arg_data):
 ###############################################################################
     r"""
@@ -1413,20 +1424,27 @@ def gen_struct_api(physics, struct_name, arg_data):
     bool_vec = []
     for data, data_vec in zip([real_data, int_data, bool_data], [real_vec, int_vec, bool_vec]):
         for dims, items in data.items():
-            dim_cxx_vec.append(f"{{ {', '.join(['{}_'.format(item) for item in dims])} }}")
-            data_vec.append(f"{{ {', '.join(['&{}'.format(item) for item in items])} }}")
+            dim_cxx_vec.append(f"{', '.join(['{}_'.format(item) for item in dims])}")
+            data_vec.append(f"{', '.join(['&{}'.format(item) for item in items])}")
 
-    parent_call = f"  PhysicsTestData({{{', '.join(dim_cxx_vec)}}}, {{{', '.join(real_vec)}}}"
-    if int_vec or bool_vec:
-        parent_call += f", {{{', '.join(int_vec)}}}"
+    parent_call = "  PhysicsTestData("
+    parent_call += get_list_of_lists(dim_cxx_vec, "      ")
+    parent_call += ",\n    "
+    parent_call += get_list_of_lists(real_vec, "      ")
+
+    if int_vec:
+        parent_call += ",\n    "
+        parent_call += get_list_of_lists(int_vec, "      ")
     if bool_vec:
-        parent_call += f", {{{', '.join(bool_vec)}}}"
-    parent_call += ")"
+        parent_call += ",\n    "
+        parent_call += get_list_of_lists(bool_vec, "      ")
 
-    parent_call += f", {', '.join(['{0}({0}_)'.format(name) for name, _ in cons_args])}"
+    parent_call += "),\n"
 
-    parent_call += " {}"
+    parent_call += f"    {', '.join(['{0}({0}_)'.format(name) for name, _ in cons_args])}"
+
     result.append(parent_call)
+    result.append("{}")
     result.append("")
 
     result.append("PTD_STD_DEF({}, {}, {});".\
