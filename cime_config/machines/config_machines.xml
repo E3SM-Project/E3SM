@@ -1186,6 +1186,9 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/amdclang-15.0.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/amdclang-15.0.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
+    <environment_variables>
+      <env name="SPIO_ENABLE_ADIOSBP2NC_CONVERSION">1</env>
+    </environment_variables>
   </machine>
 
   <!-- Skylake nodes of Stampede2 at TACC -->
