@@ -100,8 +100,8 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   static Real compute_gas_mass_on_column (const KT::MemberType&       team,
-                                            const int                   nlevs,
-                                            const uview_1d<const Real>& pseudo_density);
+                                          const int                   nlevs,
+                                          const uview_1d<const Real>& pseudo_density);
 
   KOKKOS_INLINE_FUNCTION
   static Real compute_mass_boundary_flux_on_column (const Real vapor_flux,

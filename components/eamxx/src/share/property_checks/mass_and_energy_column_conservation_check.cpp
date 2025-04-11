@@ -290,8 +290,8 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
-//keep dt for fixers with fluxes.
-//we do not plan to use fluxes in dycore fixer, but the code is already there
+  //keep dt for fixers with fluxes.
+  //we do not plan to use fluxes in dycore fixer, but the code is already there
   EKAT_REQUIRE_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
                                       "before running check().");
   auto dt = m_dt;
@@ -344,7 +344,6 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     const auto qi_i             = ekat::subview(qi, i);
 
     // Calculate total mass
-    //f_view(i) = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
     f_view(i) = compute_gas_mass_on_column(team, nlevs, pseudo_density_i);
   });
 
@@ -368,9 +367,6 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
     m_energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
-
-/// simplify later
-//overwrite the "new" fields with change
     f_view(i) = m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i);
   });
 
@@ -448,11 +444,8 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   //reduce m_new_energy_for_fixer
   horiz_contraction<Real>(res, f_version, area, &m_comm);
   echeck = res.get_view<Real,Host>()();
-  //std::cout << "here 10CCCCCCCC energy_check rel = " << std::setprecision(15) << std::to_string(echeck/total_energy_before) << "\n";
   std::cout << "here 10CCCCCCCC energy_check rel = " << std::setprecision(15) << (double)echeck/total_energy_before << "\n";
 
-  std::cout << "here 16 \n";
-  //print it wrt old energy + flux
 };
 
 
@@ -479,13 +472,11 @@ compute_total_mass_on_column (const KT::MemberType&       team,
   });
 }
 
-
-
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::
 compute_gas_mass_on_column (const KT::MemberType&       team,
-                              const int                   nlevs,
-                              const uview_1d<const Real>& pseudo_density)
+                            const int                   nlevs,
+                            const uview_1d<const Real>& pseudo_density)
 {
   using PC = scream::physics::Constants<Real>;
   const Real gravit = PC::gravit;
@@ -495,11 +486,6 @@ compute_gas_mass_on_column (const KT::MemberType&       team,
     local_mass += pseudo_density(lev)/gravit;
   });
 }
-
-
-
-
-
 
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::
