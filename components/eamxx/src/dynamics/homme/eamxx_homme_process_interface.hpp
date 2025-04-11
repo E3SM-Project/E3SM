@@ -49,14 +49,6 @@ class HommeDynamics : public AtmosphereProcess
 
 public:
 
-  bool          has_energy_fixer_local = false;
-  view_1d_horiz       vapor_flux;
-  view_1d_horiz       water_flux;
-  view_1d_horiz       ice_flux;
-  view_1d_horiz       heat_flux;
-
-public:
-
   // Constructor(s) and Destructor
   HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params);
   ~HommeDynamics ();
@@ -150,9 +142,6 @@ protected:
                             const std::vector<FieldTag>& tags,
                             const std::vector<int>& dims,
                             const std::string& grid);
-
-  void set_fluxes_pointers(const view_1d_horiz& vapor_flux_, const view_1d_horiz& water_flux_,
-                                     const view_1d_horiz& ice_flux_, const view_1d_horiz& heat_flux_);
 
   // Some helper fields.
   std::map<std::string,Field>  m_helper_fields;
