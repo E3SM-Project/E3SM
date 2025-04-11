@@ -4,8 +4,10 @@ module gw_convect
 ! This module handles gravity waves from convection, and was extracted from
 ! gw_drag in May 2013.
 !
+#ifndef SCREAM_CONFIG_IS_CMAKE
 use cam_logfile, only: iulog
 use spmd_utils,  only: masterproc
+#endif
 use gw_utils,    only: r8
 use gw_common,   only: pver, pgwv
 
@@ -32,7 +34,10 @@ contains
 !==========================================================================
 
 subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
+  ! Need to figure out what to do about pref_edge
+#ifndef SCREAM_CONFIG_IS_CMAKE
   use ref_pres, only: pref_edge
+#endif
   real(r8), intent(in) :: plev_src_wind        ! reference pressure value [Pa] to set k_src_wind (previously hardcoded to 70000._r8)
   real(r8), intent(in) :: mfcc_in(:,:,:)       ! Source spectra to keep as table
   character(len=*), intent(out) :: errstring   ! Report any errors from this routine
@@ -41,11 +46,15 @@ subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
 
   errstring = ""
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
   do k = 0, pver
     if ( pref_edge(k+1) < plev_src_wind ) k_src_wind = k+1
-  end do
+ end do
+#endif
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
   if (masterproc) write (iulog,*) 'gw_convect: steering flow level = ',k_src_wind
+#endif
 
   ! First dimension is maxh.
   maxh = size(mfcc_in,1)

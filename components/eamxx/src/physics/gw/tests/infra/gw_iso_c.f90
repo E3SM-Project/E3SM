@@ -2,7 +2,7 @@ module gw_iso_c
   use iso_c_binding
   implicit none
 
-#include "scream_config.f"
+#include "eamxx_config.f"
 #ifdef SCREAM_DOUBLE_PRECISION
 # define c_real c_double
 #else
@@ -16,7 +16,7 @@ module gw_iso_c
 contains
 
   subroutine gwd_compute_tendencies_from_stress_divergence_c(ncol, pver, pgwv, ngwv, do_taper, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw) bind(C)
-    use gw, only : gwd_compute_tendencies_from_stress_divergence
+    use gw_common, only : gwd_compute_tendencies_from_stress_divergence
 
     integer(kind=c_int) , value, intent(in) :: ncol, pver, pgwv, ngwv
     logical(kind=c_bool) , value, intent(in) :: do_taper
