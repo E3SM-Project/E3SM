@@ -12,6 +12,7 @@ set(GW_SRCS
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND GW_SRCS
+    eti/gw_gwd_compute_tendencies_from_stress_divergence.cpp
   ) # GW ETI SRCS
 endif()
 

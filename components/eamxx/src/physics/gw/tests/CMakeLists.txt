@@ -3,7 +3,7 @@ include(ScreamUtils)
 add_subdirectory(infra)
 
 set(GW_TESTS_SRCS
-  
+    gw_gwd_compute_tendencies_from_stress_divergence_tests.cpp
 ) # GW_TESTS_SRCS
 
 # All tests should understand the same baseline args

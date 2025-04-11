@@ -132,6 +132,7 @@ struct UnitWrap {
     };
 
     // Put struct decls here
+    struct TestGwdComputeTendenciesFromStressDivergence;
   }; // UnitWrap
 };
 

@@ -69,6 +69,32 @@ struct Functions
   // --------- Functions ---------
   //
 
+  KOKKOS_FUNCTION
+  static void gwd_compute_tendencies_from_stress_divergence(
+    // Inputs
+    const Int& ncol,
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ngwv,
+    const bool& do_taper,
+    const Spack& dt,
+    const Spack& effgw,
+    const uview_1d<const Int>& tend_level,
+    const uview_1d<const Spack>& lat,
+    const uview_1d<const Spack>& dpm,
+    const uview_1d<const Spack>& rdpm,
+    const uview_1d<const Spack>& c,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& nm,
+    const uview_1d<const Spack>& xv,
+    const uview_1d<const Spack>& yv,
+    // Inputs/Outputs
+    const uview_1d<Spack>& tau,
+    // Outputs
+    const uview_1d<Spack>& gwut,
+    const uview_1d<Spack>& utgw,
+    const uview_1d<Spack>& vtgw);
 }; // struct Functions
 
 } // namespace gw
@@ -78,5 +104,6 @@ struct Functions
 // to the translation unit; otherwise, ETI is used.
 #if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) \
                                 && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
+# include "impl/gw_gwd_compute_tendencies_from_stress_divergence_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
