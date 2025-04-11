@@ -2262,7 +2262,9 @@ f"""{decl}
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
-        return f"  KOKKOS_FUNCTION\n  static void {sub}({', '.join(arg_decls)});"
+        arg_decls_str = ("\n    ".join([item if item.startswith("//") else f"{item}," for item in arg_decls])).rstrip(",")
+
+        return f"  KOKKOS_FUNCTION\n  static void {sub}(\n    {arg_decls_str});"
 
     ###########################################################################
     def gen_cxx_incl_impl(self, phys, sub, force_arg_data=None):
