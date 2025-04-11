@@ -18,7 +18,7 @@ f"""#include "catch2/catch.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"
-#include "physics/{phys}/{phys}_functions_f90.hpp"
+#include "physics/{phys}/tests/infra/{phys}_test_data.hpp"
 
 #include "{phys}_unit_tests_common.hpp"
 
@@ -2299,36 +2299,36 @@ f"""{decl}
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
           static void run_bfb()
           {
-            auto engine = setup_random_test();
+            auto engine = Base::get_engine();
         <BLANKLINE>
-            FakeSubData f90_data[] = {
+            FakeSubData baseline_data[] = {
               // TODO
             };
         <BLANKLINE>
-            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
+            static constexpr Int num_runs = sizeof(baseline_data) / sizeof(FakeSubData);
         <BLANKLINE>
             // Generate random input data
-            // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-            for (auto& d : f90_data) {
+            // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+            for (auto& d : baseline_data) {
               d.randomize(engine);
             }
         <BLANKLINE>
-            // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+            // Create copies of data for use by test. Needs to happen before fortran calls so that
             // inout data is in original state
-            FakeSubData cxx_data[] = {
+            FakeSubData test_data[] = {
               // TODO
             };
         <BLANKLINE>
             // Assume all data is in C layout
         <BLANKLINE>
             // Get data from fortran
-            for (auto& d : f90_data) {
+            for (auto& d : baseline_data) {
               // expects data in C layout
               fake_sub(d);
             }
         <BLANKLINE>
-            // Get data from cxx
-            for (auto& d : cxx_data) {
+            // Get data from test
+            for (auto& d : test_data) {
               d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
               fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
               d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
@@ -2337,17 +2337,17 @@ f"""{decl}
             // Verify BFB results, all data should be in C layout
             if (SCREAM_BFB_TESTING) {
               for (Int i = 0; i < num_runs; ++i) {
-                FakeSubData& d_f90 = f90_data[i];
-                FakeSubData& d_cxx = cxx_data[i];
-                REQUIRE(d_f90.bab1 == d_cxx.bab1);
-                REQUIRE(d_f90.bab2 == d_cxx.bab2);
-                for (Int k = 0; k < d_f90.total(d_f90.baz); ++k) {
-                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.baz));
-                  REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
-                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball1));
-                  REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
-                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
-                  REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
+                FakeSubData& d_baseline = baseline_data[i];
+                FakeSubData& d_test = test_data[i];
+                REQUIRE(d_baseline.bab1 == d_test.bab1);
+                REQUIRE(d_baseline.bab2 == d_test.bab2);
+                for (Int k = 0; k < d_baseline.total(d_baseline.baz); ++k) {
+                  REQUIRE(d_baseline.total(d_baseline.baz) == d_test.total(d_test.baz));
+                  REQUIRE(d_baseline.baz[k] == d_test.baz[k]);
+                  REQUIRE(d_baseline.total(d_baseline.baz) == d_test.total(d_test.ball1));
+                  REQUIRE(d_baseline.ball1[k] == d_test.ball1[k]);
+                  REQUIRE(d_baseline.total(d_baseline.baz) == d_test.total(d_test.ball2));
+                  REQUIRE(d_baseline.ball2[k] == d_test.ball2[k]);
                 }
         <BLANKLINE>
               }
@@ -2356,80 +2356,80 @@ f"""{decl}
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
           static void run_bfb()
           {
-            auto engine = setup_random_test();
+            auto engine = Base::get_engine();
         <BLANKLINE>
-            FakeSubData f90_data[max_pack_size] = {
+            FakeSubData baseline_data[max_pack_size] = {
               // TODO
             };
         <BLANKLINE>
-            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
+            static constexpr Int num_runs = sizeof(baseline_data) / sizeof(FakeSubData);
         <BLANKLINE>
             // Generate random input data
-            // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-            for (auto& d : f90_data) {
+            // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+            for (auto& d : baseline_data) {
               d.randomize(engine);
             }
         <BLANKLINE>
-            // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+            // Create copies of data for use by test and sync it to device. Needs to happen before fortran calls so that
             // inout data is in original state
-            view_1d<FakeSubData> cxx_device("cxx_device", max_pack_size);
-            const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-            std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
-            Kokkos::deep_copy(cxx_device, cxx_host);
+            view_1d<FakeSubData> test_device("test_device", max_pack_size);
+            const auto test_host = Kokkos::create_mirror_view(test_device);
+            std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, test_host.data());
+            Kokkos::deep_copy(test_device, test_host);
         <BLANKLINE>
             // Get data from fortran
-            for (auto& d : f90_data) {
+            for (auto& d : baseline_data) {
               fake_sub(d);
             }
         <BLANKLINE>
-            // Get data from cxx. Run fake_sub from a kernel and copy results back to host
+            // Get data from test. Run fake_sub from a kernel and copy results back to host
             Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
               const Int offset = i * Spack::n;
         <BLANKLINE>
               // Init pack inputs
               Spack bar1, bar2, foo1, foo2;
               for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-                bar1[s] = cxx_device(vs).bar1;
-                bar2[s] = cxx_device(vs).bar2;
-                foo1[s] = cxx_device(vs).foo1;
-                foo2[s] = cxx_device(vs).foo2;
+                bar1[s] = test_device(vs).bar1;
+                bar2[s] = test_device(vs).bar2;
+                foo1[s] = test_device(vs).foo1;
+                foo2[s] = test_device(vs).foo2;
               }
         <BLANKLINE>
               // Init outputs
               Spack baz1(0), baz2(0);
         <BLANKLINE>
         <BLANKLINE>
-              Functions::fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, cxx_device(0).gag1, cxx_device(0).gag2, cxx_device(0).gal1, cxx_device(0).gal2, cxx_device(0).bal1, cxx_device(0).bal2, cxx_device(0).bit1, cxx_device(0).bit2, cxx_device(0).gut1, cxx_device(0).gut2, cxx_device(0).gat1, cxx_device(0).gat2);
+              Functions::fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, test_device(0).gag1, test_device(0).gag2, test_device(0).gal1, test_device(0).gal2, test_device(0).bal1, test_device(0).bal2, test_device(0).bit1, test_device(0).bit2, test_device(0).gut1, test_device(0).gut2, test_device(0).gat1, test_device(0).gat2);
         <BLANKLINE>
-              // Copy spacks back into cxx_device view
+              // Copy spacks back into test_device view
               for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-                cxx_device(vs).bar1 = bar1[s];
-                cxx_device(vs).bar2 = bar2[s];
-                cxx_device(vs).baz1 = baz1[s];
-                cxx_device(vs).baz2 = baz2[s];
+                test_device(vs).bar1 = bar1[s];
+                test_device(vs).bar2 = bar2[s];
+                test_device(vs).baz1 = baz1[s];
+                test_device(vs).baz2 = baz2[s];
               }
         <BLANKLINE>
             });
         <BLANKLINE>
-            Kokkos::deep_copy(cxx_host, cxx_device);
+            Kokkos::deep_copy(test_host, test_device);
         <BLANKLINE>
             // Verify BFB results
             if (SCREAM_BFB_TESTING) {
               for (Int i = 0; i < num_runs; ++i) {
-                FakeSubData& d_f90 = f90_data[i];
-                FakeSubData& d_cxx = cxx_host[i];
-                REQUIRE(d_f90.bar1 == d_cxx.bar1);
-                REQUIRE(d_f90.bar2 == d_cxx.bar2);
-                REQUIRE(d_f90.baz1 == d_cxx.baz1);
-                REQUIRE(d_f90.baz2 == d_cxx.baz2);
-                REQUIRE(d_f90.gal1 == d_cxx.gal1);
-                REQUIRE(d_f90.gal2 == d_cxx.gal2);
-                REQUIRE(d_f90.bal1 == d_cxx.bal1);
-                REQUIRE(d_f90.bal2 == d_cxx.bal2);
-                REQUIRE(d_f90.gut1 == d_cxx.gut1);
-                REQUIRE(d_f90.gut2 == d_cxx.gut2);
-                REQUIRE(d_f90.gat1 == d_cxx.gat1);
-                REQUIRE(d_f90.gat2 == d_cxx.gat2);
+                FakeSubData& d_baseline = baseline_data[i];
+                FakeSubData& d_test = test_host[i];
+                REQUIRE(d_baseline.bar1 == d_test.bar1);
+                REQUIRE(d_baseline.bar2 == d_test.bar2);
+                REQUIRE(d_baseline.baz1 == d_test.baz1);
+                REQUIRE(d_baseline.baz2 == d_test.baz2);
+                REQUIRE(d_baseline.gal1 == d_test.gal1);
+                REQUIRE(d_baseline.gal2 == d_test.gal2);
+                REQUIRE(d_baseline.bal1 == d_test.bal1);
+                REQUIRE(d_baseline.bal2 == d_test.bal2);
+                REQUIRE(d_baseline.gut1 == d_test.gut1);
+                REQUIRE(d_baseline.gut2 == d_test.gut2);
+                REQUIRE(d_baseline.gat1 == d_test.gat1);
+                REQUIRE(d_baseline.gat2 == d_test.gat2);
               }
             }
           } // run_bfb
@@ -2444,15 +2444,15 @@ f"""{decl}
 """
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }"""
 
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
-            check_scalars += f"        REQUIRE(d_f90.{scalar[0]} == d_cxx.{scalar[0]});\n"
+            check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
@@ -2471,10 +2471,10 @@ f"""{decl}
                         all_data[k] = v
 
             for _, data in all_data.items():
-                check_arrays += f"        for (Int k = 0; k < d_f90.total(d_f90.{data[0]}); ++k) {{\n"
+                check_arrays += f"        for (Int k = 0; k < d_baseline.total(d_baseline.{data[0]}); ++k) {{\n"
                 for datum in data:
-                    check_arrays += f"          REQUIRE(d_f90.total(d_f90.{data[0]}) == d_cxx.total(d_cxx.{datum}));\n"
-                    check_arrays += f"          REQUIRE(d_f90.{datum}[k] == d_cxx.{datum}[k]);\n"
+                    check_arrays += f"          REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"
+                    check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
 
                 check_arrays += "        }\n"
 
@@ -2482,39 +2482,44 @@ f"""{decl}
             result = \
 """  static void run_bfb()
   {{
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    {data_struct} f90_data[] = {{
+    // Set up inputs
+    {data_struct} baseline_data[] = {{
       // TODO
     }};
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof({data_struct});{gen_random}
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by test. Needs to happen before fortran calls so that
     // inout data is in original state
-    {data_struct} cxx_data[] = {{
+    {data_struct} test_data[] = {{
       // TODO
     }};
 
-    // Assume all data is in C layout
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {{
+      for (auto& d : rsds_baseline) {{
+        d.read(Base::m_fid);
+      }}
+    }}
 
-    // Get data from fortran
-    for (auto& d : f90_data) {{
-      // expects data in C layout
+    // Get data from test
+    for (auto& d : test_data) {{
       {sub}(d);
     }}
 
-    // Get data from cxx
-    for (auto& d : cxx_data) {{{c2f_transpose_code}
-      {sub}_f({arg_data_args});{f2c_transpose_code}
-    }}
-
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {{
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {{
       for (Int i = 0; i < num_runs; ++i) {{
-        {data_struct}& d_f90 = f90_data[i];
-        {data_struct}& d_cxx = cxx_data[i];
+        {data_struct}& d_baseline = baseline_data[i];
+        {data_struct}& d_test = test_data[i];
 {check_scalars}{check_arrays}
+      }}
+    }}
+    else if (this->m_baseline_action == GENERATE) {{
+      for (Int i = 0; i < num_runs; ++i) {{
+        rsds_cxx[i].write(Base::m_fid);
       }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
@@ -2543,7 +2548,7 @@ f"""{decl}
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
         {ireal_assigns}
       }}
-""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = cxx_device(vs).{0};".format(ireal) for ireal in ireals]))
+""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = test_device(vs).{0};".format(ireal) for ireal in ireals]))
 
             spack_output_init = ""
             if ooreals:
@@ -2553,41 +2558,41 @@ f"""// Init outputs
 """
 
             scalars = group_data(arg_data)[4]
-            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'cxx_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
+            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'test_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
 
             spack_output_to_dview = ""
             if oreals:
                 spack_output_to_dview = \
-"""// Copy spacks back into cxx_device view
+"""// Copy spacks back into test_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
         {}
       }}
-""".format("\n        ".join(["cxx_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
+""".format("\n        ".join(["test_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
 
             result = \
 """  static void run_bfb()
   {{
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    {data_struct} f90_data[max_pack_size] = {{
+    {data_struct} baseline_data[max_pack_size] = {{
       // TODO
     }};
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof({data_struct});{gen_random}
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by test and sync it to device. Needs to happen before fortran calls so that
     // inout data is in original state
-    view_1d<{data_struct}> cxx_device("cxx_device", max_pack_size);
-    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
-    Kokkos::deep_copy(cxx_device, cxx_host);
+    view_1d<{data_struct}> test_device("test_device", max_pack_size);
+    const auto test_host = Kokkos::create_mirror_view(test_device);
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, test_host.data());
+    Kokkos::deep_copy(test_device, test_host);
 
     // Get data from fortran
-    for (auto& d : f90_data) {{
+    for (auto& d : baseline_data) {{
       {sub}(d);
     }}
 
-    // Get data from cxx. Run {sub} from a kernel and copy results back to host
+    // Get data from test. Run {sub} from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {{
       const Int offset = i * Spack::n;
 
@@ -2599,13 +2604,13 @@ f"""// Init outputs
       {spack_output_to_dview}
     }});
 
-    Kokkos::deep_copy(cxx_host, cxx_device);
+    Kokkos::deep_copy(test_host, test_device);
 
     // Verify BFB results
     if (SCREAM_BFB_TESTING) {{
       for (Int i = 0; i < num_runs; ++i) {{
-        {data_struct}& d_f90 = f90_data[i];
-        {data_struct}& d_cxx = cxx_host[i];
+        {data_struct}& d_baseline = baseline_data[i];
+        {data_struct}& d_test = test_host[i];
 {check_scalars}      }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
