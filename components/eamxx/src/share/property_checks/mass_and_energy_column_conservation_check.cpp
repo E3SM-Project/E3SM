@@ -37,10 +37,8 @@ MassAndEnergyColumnConservationCheck (const ekat::Comm& comm,
   m_current_mass   = view_1d<Real> ("current_total_water",  m_num_cols);
   m_current_energy = view_1d<Real> ("current_total_energy", m_num_cols);
 
-  m_new_mass_for_fixer = view_1d<Real> ("new mass fixer", m_num_cols);
   m_new_energy_for_fixer = view_1d<Real> ("new energy fixer", m_num_cols);
   m_energy_change = view_1d<Real> ("energy change fixer", m_num_cols);
-  m_mass_change = view_1d<Real> ("mass change fixer", m_num_cols);
 
   m_fields["pseudo_density"] = pseudo_density;
   m_fields["ps"]             = ps;
@@ -326,31 +324,23 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   FieldLayout scalar1d{{COL}, {m_num_cols}};
   FieldIdentifier s1_fid("s1", scalar1d, kg / kg, m_grid->name());
 
-  Field f_version(s1_fid);
-  f_version.allocate_view();
-  auto f_view = f_version.get_view<Real*>();
+  Field field_version_s1(s1_fid);
+  field_version_s1.allocate_view();
+  auto field_view_s1 = field_version_s1.get_view<Real*>();
 
   auto area = m_grid->get_geometry_data("area").clone();
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-
     const int i = team.league_rank();
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
-    const auto T_mid_i          = ekat::subview(T_mid, i);
-    const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
-    const auto qv_i             = ekat::subview(qv, i);
-    const auto qc_i             = ekat::subview(qc, i);
-    const auto qr_i             = ekat::subview(qr, i);
-    const auto qi_i             = ekat::subview(qi, i);
-
-    // Calculate total mass
-    f_view(i) = compute_gas_mass_on_column(team, nlevs, pseudo_density_i);
+    // Calculate total gas mass (sum dp, no water loading)
+    field_view_s1(i) = compute_gas_mass_on_column(team, nlevs, pseudo_density_i);
   });
 
   //reduce m_new_mass_for_fixer
-  horiz_contraction<Real>(res, f_version, area, &m_comm);
-  total_mass = res.get_view<Real,Host>()();
-  std::cout << "here gas_mass=" << std::to_string(total_mass) << "\n";
+  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
+  total_gas_mass_after = res.get_view<Real,Host>()();
+  //std::cout << "here gas_mass=" << std::to_string(total_mass) << "\n";
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
@@ -367,14 +357,15 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
     m_energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
-    f_view(i) = m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i);
+    field_view_s1(i) = m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i);
   });
 
-  //reduce m_new_energy_for_fixer
-  horiz_contraction<Real>(res, f_version, area, &m_comm);
+  //reduce amount of energy to be redistributed
+  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
   pb_fixer = res.get_view<Real,Host>()();
-  std::cout << "here fixer amount to fix=" << std::to_string(pb_fixer) << "\n";
+  //std::cout << "here fixer amount to fix=" << std::to_string(pb_fixer) << "\n";
  
+#if 0  
 //DEBUG remove
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
@@ -392,28 +383,26 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   auto aaa = res.get_view<Real,Host>()();
   std::cout << "here extenral fluxes value now=" << std::to_string(aaa) << "\n";
 //end DEBUG remove
+#endif
 
+  //total energy needed for relative error
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
-    f_view(i) = m_current_energy(i);
+    field_view_s1(i) = m_current_energy(i);
   });
-  horiz_contraction<Real>(res, f_version, area, &m_comm);
+  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
   total_energy_before = res.get_view<Real,Host>()();
-  std::cout << "here total energy =" << std::to_string(total_energy_before) << "\n";
-
+  //std::cout << "here total energy =" << std::to_string(total_energy_before) << "\n";
 
   using PC = scream::physics::Constants<Real>;
   const Real cpdry = PC::Cpair;
-  pb_fixer /= (cpdry*total_mass); // T change due to fixer
+  pb_fixer /= (cpdry*total_gas_mass_after); // T change due to fixer
+  //std::cout << "here pb_fixer=" << std::to_string(pb_fixer) << "\n";
 
-  std::cout << "here pb_fixer=" << std::to_string(pb_fixer) << "\n";
   //add the fixer to temperature
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-
     const int i = team.league_rank();
-    //uview_1d<const Real>
-    const auto T_mid_i          = ekat::subview(T_mid, i);
-
+    const auto T_mid_i = ekat::subview(T_mid, i);
     //T_mid_i += pb_fixer;
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const int k){ 
        T_mid_i(k) += pb_fixer;
@@ -437,12 +426,12 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
 //overwrite the "new" fields with relative change
-    f_view(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i));
+    field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i));
   });
 
   //compute global integral
   //reduce m_new_energy_for_fixer
-  horiz_contraction<Real>(res, f_version, area, &m_comm);
+  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
   echeck = res.get_view<Real,Host>()();
   std::cout << "here 10CCCCCCCC energy_check rel = " << std::setprecision(15) << (double)echeck/total_energy_before << "\n";
 

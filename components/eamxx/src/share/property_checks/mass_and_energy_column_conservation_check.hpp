@@ -139,18 +139,15 @@ protected:
   Real m_energy_tol;
 
   Real pb_fixer, echeck;
-  Real total_mass, total_energy_before, total_energy_after, total_flux;
+  Real total_gas_mass_after, total_energy_before;
 
   // Current value for total energy. These values
   // should be updated before a process is run.
   view_1d<Real> m_current_energy;
   view_1d<Real> m_current_mass;
 
-//at least one is prob redundant, keep for now
-  view_1d<Real> m_new_mass_for_fixer;
   view_1d<Real> m_new_energy_for_fixer;
   view_1d<Real> m_energy_change;
-  view_1d<Real> m_mass_change;
 }; // class EnergyConservationCheck
 
 } // namespace scream
