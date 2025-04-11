@@ -1772,6 +1772,9 @@ f"""struct {struct_name}{inheritance} {{
 }};
 
 """
+
+        result = "\n".join([item.rstrip() for item in result.splitlines()])
+
         return result
 
     ###########################################################################
