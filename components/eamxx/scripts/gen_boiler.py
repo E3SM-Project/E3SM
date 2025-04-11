@@ -1116,6 +1116,22 @@ def gen_arg_cxx_decls(arg_data, kokkos=False):
     get_type     = get_kokkos_type if kokkos else get_cxx_type
     arg_types    = [get_type(item) for item in arg_data]
     arg_sig_list = [f"{arg_type} {arg_name}" for arg_name, arg_type in zip(arg_names, arg_types)]
+
+    # For permanent sigs, we want them to look nice
+    if kokkos:
+        intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
+        curr = None
+        for arg_sig, arg_datum in zip(arg_sig_list, arg_data):
+            intent = arg_datum[ARG_INTENT]
+            if intent != curr:
+                fullname = intent_map[intent]
+                list_with_comments.append(f"// {fullname}")
+                curr = intent
+
+            list_with_comments.append(arg_sig)
+
+        arg_sig_list = list_with_comments
+
     return arg_sig_list
 
 ###############################################################################
