@@ -657,7 +657,7 @@ contains
 
         if (trim(fates_cstarvation_model) == 'linear') then
            pass_cstarvation_model = 1
-        else if (trim(fates_cstarvation_model) == 'expontential') then
+        else if (trim(fates_cstarvation_model) == 'exponential') then
            pass_cstarvation_model = 2
         end if
         call set_fates_ctrlparms('mort_cstarvation_model',ival=pass_cstarvation_model)
