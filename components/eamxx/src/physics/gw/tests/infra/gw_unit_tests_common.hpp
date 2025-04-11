@@ -132,7 +132,7 @@ struct UnitWrap {
     };
 
     // Put struct decls here
-  };
+  }; // UnitWrap
 };
 
 } // namespace unit_test

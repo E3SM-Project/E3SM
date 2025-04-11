@@ -1119,6 +1119,7 @@ def gen_arg_cxx_decls(arg_data, kokkos=False):
 
     # For permanent sigs, we want them to look nice
     if kokkos:
+        list_with_comments = []
         intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
         curr = None
         for arg_sig, arg_datum in zip(arg_sig_list, arg_data):
