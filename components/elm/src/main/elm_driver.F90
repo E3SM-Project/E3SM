@@ -1358,8 +1358,8 @@ contains
        ! Determine albedos for next time step
        ! ============================================================================
 
-       if (doalb) then
-
+       if ( doalb ) then
+       
           ! Albedos for non-urban columns
           call t_startf('surfalb')
           call SurfaceAlbedo(bounds_clump,                      &
