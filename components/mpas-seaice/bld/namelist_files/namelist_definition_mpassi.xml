@@ -245,14 +245,6 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_do_restart_zsalinity" type="logical"
-	category="restart" group="restart">
-Restart the z-salinity tracer
-
-Valid values: false
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_do_restart_bgc" type="logical"
 	category="restart" group="restart">
 Restart the ice biogeochemistry
@@ -564,30 +556,6 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_congelation_basal_melt" type="logical"
-	category="testing" group="testing">
-If true congelation and basal melt processes are active.
-
-Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_lateral_melt" type="logical"
-	category="testing" group="testing">
-If true lateral melt process is active.
-
-Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_latent_processes" type="logical"
-	category="testing" group="testing">
-If true latent heat processes are active.
-
-Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_limit_air_temperatures" type="logical"
 	category="testing" group="testing">
 If true limit air temperatures above
@@ -809,7 +777,7 @@ Default: Defined in namelist_defaults.xml
 	category="column_package" group="column_package">
 Set column physics library.
 
-Valid values: 'icepack' and 'column_package'
+Valid values: 'icepack'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -888,14 +856,6 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_use_cesm_meltponds" type="logical"
-	category="column_tracers" group="column_tracers">
-If true use the cesm meltponds tracers.
-
-Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_use_level_meltponds" type="logical"
 	category="column_tracers" group="column_tracers">
 If true use the level ice meltponds tracers.
@@ -968,14 +928,6 @@ Default: Defined in namelist_defaults.xml
 Use the brine height tracer
 
 Valid values: true or false
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_vertical_zsalinity" type="logical"
-	category="biogeochemistry" group="biogeochemistry">
-Use z-salinity (with Bitz and Lipscomb 1999 thermodynamics)
-
-Valid values: false
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1168,22 +1120,6 @@ Default: Defined in namelist_defaults.xml
 positive real number less than 1
 
 Valid values: Sets the gravity drainage length scale in the biological transport model
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_zsalinity_molecular_sublayer" type="real"
-	category="biogeochemistry" group="biogeochemistry">
-Sets the ice/ocean molecular sublayer for the z-salinity model
-
-Valid values: zero or positive real number less than 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_zsalinity_gravity_drainage_scale" type="real"
-	category="biogeochemistry" group="biogeochemistry">
-Sets the gravity drainage length scale in the z-salinity model
-
-Valid values: positive real number less than 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2489,7 +2425,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_congelation_freezing_method" type="char*1024"
 	category="thermodynamics" group="thermodynamics">
-Method used for congelation freezing.
+Method for congelation ice freezing.
 
 Valid values: 'one-step', 'two-step'
 Default: Defined in namelist_defaults.xml
