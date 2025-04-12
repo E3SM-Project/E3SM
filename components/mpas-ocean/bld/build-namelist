@@ -1228,7 +1228,11 @@ if ($OCN_ICEBERG eq 'true') {
 	add_default($nl, 'config_use_freshwaterTracers_icebergFreshWaterFlux', 'val'=>".false.");
 }
 # When there are land ice fluxes, use freshwater tracer
-if (($OCN_ISMF ne 'none')) {
+if (   ($OCN_GLC_ISMF_COUPLING eq 'coupler')
+    || ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso')
+    || ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso')
+    || ($OCN_GLC_ISMF_COUPLING eq 'tf')
+    ) {
 	add_default($nl, 'config_use_freshwaterTracers_landIceFreshwaterFlux', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_use_freshwaterTracers_landIceFreshwaterFlux', 'val'=>".false.");
