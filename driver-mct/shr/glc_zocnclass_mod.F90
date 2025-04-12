@@ -112,14 +112,17 @@ contains
     integer :: i
 
     allocate(zocn_bnds(2,glc_nzoc))
-    zocn_bnds(1,1) = 0._r8
-    zocn_bnds(2,1) = 0.5_r8 * (zocn_levels(1) + zocn_levels(2))
-    do i = 2, glc_nzoc - 1
-       zocn_bnds(1,i) = 0.5_r8 * (zocn_levels(i-1) + zocn_levels(i))
-       zocn_bnds(2,i) = 0.5_r8 * (zocn_levels(i) + zocn_levels(i+1))
-    enddo
-    zocn_bnds(1,glc_nzoc) = 0.5_r8 * (zocn_levels(glc_nzoc-1) + zocn_levels(glc_nzoc))
-    zocn_bnds(2,glc_nzoc) = zocn_levels(glc_nzoc) + (zocn_levels(glc_nzoc) - zocn_bnds(1,glc_nzoc))
+    zocn_bnds(:,:) = 0._r8
+    if (glc_nzoc >= 2) then
+       zocn_bnds(1,1) = 0._r8
+       zocn_bnds(2,1) = 0.5_r8 * (zocn_levels(1) + zocn_levels(2))
+       do i = 2, glc_nzoc - 1
+          zocn_bnds(1,i) = 0.5_r8 * (zocn_levels(i-1) + zocn_levels(i))
+          zocn_bnds(2,i) = 0.5_r8 * (zocn_levels(i) + zocn_levels(i+1))
+       enddo
+       zocn_bnds(1,glc_nzoc) = 0.5_r8 * (zocn_levels(glc_nzoc-1) + zocn_levels(glc_nzoc))
+       zocn_bnds(2,glc_nzoc) = zocn_levels(glc_nzoc) + (zocn_levels(glc_nzoc) - zocn_bnds(1,glc_nzoc))
+    endif
   end subroutine glc_zocnclass_init_bnds
 
   !-----------------------------------------------------------------------
