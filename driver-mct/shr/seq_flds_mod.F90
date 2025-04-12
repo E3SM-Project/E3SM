@@ -3001,7 +3001,7 @@ contains
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
 
-       if (flds_tf) then
+       if ((flds_tf) .and. (glc_nzoc > 0)) then
           ! glc fields with multiple ocn z classes: ocn->glc
           !
           ! Note that these fields are sent in multiple elevation classes from ocn->cpl
