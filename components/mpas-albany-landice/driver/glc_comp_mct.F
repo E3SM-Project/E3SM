@@ -1811,9 +1811,12 @@ contains
 
        err = 0
 
+       cpl_num_zocn = glc_get_num_zocn_classes()
+
        block_ptr => domain % blocklist
        call mpas_pool_get_subpool(block_ptr % structs, 'geometry', geometryPool)
        call mpas_pool_get_dimension(geometryPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+
        ! check that the num z-levels in the coupler matches what MALI was told to use
        if (nISMIP6OceanLayers /= cpl_num_zocn) then
           call mpas_log_write("nISMIP6OceanLayers=$i does not match glc_get_num_zocn_classes=$i", &
@@ -1830,7 +1833,6 @@ contains
              call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
              call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
 
-             cpl_num_zocn = glc_get_num_zocn_classes()
 
              ismip6shelfMelt_zOcean = glc_get_zlevels()
              ismip6shelfMelt_zBndsOcean = glc_get_zocnclass_bounds()
