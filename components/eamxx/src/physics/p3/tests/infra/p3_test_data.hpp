@@ -688,7 +688,7 @@ struct P3MainPart1Data : public PhysicsTestData
 
 struct P3MainPart2Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 64;
+  static constexpr size_t NUM_ARRAYS = 76;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;
@@ -894,8 +894,11 @@ void p3_main_part2_host(
   Real* T_atm, Real* rho, Real* inv_rho, Real* qv_sat_l, Real* qv_sat_i, Real* qv_supersat_i, Real* rhofacr, Real* rhofaci, Real* acn, Real* qv, Real* th_atm, Real* qc, Real* nc, Real* qr, Real* nr, Real* qi, Real* ni,
   Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
-  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange, Real* pratot,
-  Real* prctot, bool* is_hydromet_present);
+  Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange,
+  Real* P3_qr2qv_evap, Real* P3_qi2qv_sublim, Real* P3_qc2qr_accret, Real* P3_qc2qr_autoconv,
+  Real* P3_qv2qi_vapdep, Real* P3_qc2qi_berg, Real* P3_qc2qr_ice_shed, Real* P3_qc2qi_collect, Real* P3_qr2qi_collect,
+  Real* P3_qc2qi_hetero_freeze, Real* P3_qr2qi_immers_freeze, Real* P3_qi2qr_melt,
+  Real* pratot, Real* prctot, bool* is_hydromet_present);
 
 void p3_main_part3_host(
   Int kts, Int kte, Int kbot, Int ktop, Int kdir,
