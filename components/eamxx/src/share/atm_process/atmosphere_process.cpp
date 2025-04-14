@@ -71,10 +71,12 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     start_timer (m_timer_prefix + this->name() + "::init");
   }
 
+  // Avoid logging and flushing if ap type is diag ...
+  // ... because we could have 100+ of those in production runs
   if (this->type()!=AtmosphereProcessType::Diagnostic) {
     log (LogLevel::info,"  Initializing " + name() + "...");
+    m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   }
-  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
@@ -87,10 +89,12 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     m_start_of_step_fields[fname] = get_field_out(fname).clone();
   }
 
+  // Avoid logging and flushing if ap type is diag ...
+  // ... because we could have 100+ of those in production runs
   if (this->type()!=AtmosphereProcessType::Diagnostic) {
     log (LogLevel::info,"  Initializing " + name() + "... done!");
+    m_atm_logger->flush(); // During init, flush often (to help debug crashes)
   }
-  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
