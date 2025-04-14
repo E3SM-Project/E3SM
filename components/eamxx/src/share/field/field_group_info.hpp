@@ -51,6 +51,16 @@ struct FieldGroupInfo
   // The names of the fields in this group
   std::list<ci_string>   m_fields_names;
 
+  // Store the grid which registered each field
+  std::map<ci_string, std::list<ci_string>> m_grid_registered;
+
+  // Store any grid that is requested for a group.
+  // This is useful in the bundled case where
+  // we can add a grid that may not have any
+  // registered fields, but that we want the
+  // bundled group to exist.
+  std::list<ci_string> m_requested_grids;
+
   // Whether the group was allocated as a bundle
   bool m_bundled;
 

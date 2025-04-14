@@ -21,6 +21,8 @@ include (${EKAT_MACH_FILES_PATH}/mpi/srun.cmake)
 #option(Kokkos_ARCH_AMPERE80 "" ON)
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 
+option(SCREAM_SMALL_KERNELS "Use small, non-monolothic kokkos kernels for ALL components that support them" ON)
+
 message(STATUS "muller-gpu CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID} CMAKE_Fortran_COMPILER_VERSION=${CMAKE_Fortran_COMPILER_VERSION}")
 if ("${PROJECT_NAME}" STREQUAL "E3SM")
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

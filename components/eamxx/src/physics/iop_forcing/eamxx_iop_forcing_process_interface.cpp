@@ -29,7 +29,7 @@ void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   add_field<Updated>("T_mid", scalar3d_mid, K, grid_name, pack_size);
 
   add_tracer<Updated>("qv", m_grid, kg/kg, pack_size);
-  add_group<Updated>("tracers", grid_name, pack_size, Bundling::Required);
+  add_group<Updated>("tracers", grid_name, pack_size, true);
 
   // Sanity check that iop data manager is setup by driver
   EKAT_REQUIRE_MSG(m_iop_data_manager,

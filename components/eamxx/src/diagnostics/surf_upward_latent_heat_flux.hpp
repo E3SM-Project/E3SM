@@ -16,10 +16,8 @@ public:
   // Constructors
   SurfaceUpwardLatentHeatFlux (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
-  // Future extensions to latent heat flux may include processes
-  // other than evaporation, so we don't inline the name function here.
-  std::string name () const { return m_name; }
+  // The name of the diagnostic CLASS (not the computed field)
+  std::string name () const { return "SurfaceUpwardLatentHeatFlux"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);

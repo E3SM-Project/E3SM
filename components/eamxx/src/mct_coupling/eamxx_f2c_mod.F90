@@ -85,7 +85,7 @@ interface
     integer(kind=c_int), intent(in) :: import_field_size, export_field_size
   end subroutine scream_setup_surface_coupling
 
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
   subroutine scream_init_hip_atm () bind(c)
   end subroutine scream_init_hip_atm
 #endif

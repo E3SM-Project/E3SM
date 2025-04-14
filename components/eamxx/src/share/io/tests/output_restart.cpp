@@ -65,7 +65,7 @@ TEST_CASE("output_restart","io")
   auto fm0 = get_test_fm(grid);
   randomize_fields(*fm0,engine);
 
-  const auto& out_fields = fm0->get_groups_info().at("output")->m_fields_names;
+  const auto& out_fields = fm0->get_group_info("output").m_fields_names;
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);
@@ -79,6 +79,7 @@ TEST_CASE("output_restart","io")
   output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
   output_params.set<int>("flush_frequency",1);
+  output_params.sublist("Restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
   output_params.sublist("output_control").set<int>("Frequency",10);
   output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
@@ -93,7 +94,7 @@ TEST_CASE("output_restart","io")
   {
     OutputManager output_manager;
     output_manager.initialize(comm, output_params, run_t0, case_t0, false);
-    output_manager.setup(fm,gm);
+    output_manager.setup(fm,gm->get_grid_names());
 
     // We advance the fields, by adding dt to each entry of the fields at each time step
     // The output restart data is written every 5 time steps, while the output freq is 10.
@@ -205,7 +206,7 @@ clone_fm(const std::shared_ptr<const FieldManager>& src) {
   auto copy = std::make_shared<FieldManager>(src->get_grid());
   copy->registration_begins();
   copy->registration_ends();
-  for (auto it : *src) {
+  for (auto it : src->get_repo()) {
     copy->add_field(it.second->clone());
   }
 

@@ -26,26 +26,26 @@
  *
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
- *  filename_prefix:              STRING
- *  Averaging Type:               STRING
- *  Max Snapshots Per File:       INT                   (default: 1)
+ *  filename_prefix:                    STRING
+ *  Averaging Type:                     STRING
+ *  Max Snapshots Per File:             INT                   (default: 1)
  *  Fields:
  *     GRID_NAME_1:
- *        Field Names:            ARRAY OF STRINGS
- *        IO Grid Name:           STRING                (optional)
+ *        Field Names:                  ARRAY OF STRINGS
+ *        IO Grid Name:                 STRING                (optional)
  *     GRID_NAME_2:
- *        Field Names:            ARRAY OF STRINGS
- *        IO Grid Name:           STRING                (optional)
+ *        Field Names:                  ARRAY OF STRINGS
+ *        IO Grid Name:                 STRING                (optional)
  *     ...
  *     GRID_NAME_N:
- *        Field Names:            ARRAY OF STRINGS
- *        IO Grid Name:           STRING                (optional)
+ *        Field Names:                  ARRAY OF STRINGS
+ *        IO Grid Name:                 STRING                (optional)
  *  output_control:
- *    Frequency:                  INT
- *    frequency_units:            STRING                (default: nsteps)
+ *    Frequency:                        INT
+ *    frequency_units:                  STRING                (default: nsteps)
  *  Restart:
- *    filename_prefix:            STRING                (default: ${filename_prefix})
- *    Perform Restart:            BOOL                  (default: true)
+ *    filename_prefix:                  STRING                (default: ${filename_prefix})
+ *    skip_restart_if_rhist_not_found:  BOOL                  (default: false)
  *  -----
  *  The meaning of these parameters is the following:
  *  - filename_prefix: the output filename root.
@@ -73,9 +73,9 @@
  *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart
  *    - filename_prefix: the history restart filename root.
- *    - Perform Restart: if this is a restarted run, and Averaging Type is not Instant, this flag
- *      determines whether we want to restart the output history or start from scrach. That is,
- *      you can set this to false to force a fresh new history, even in a restarted run.
+ *    - skip_restart_if_rhist_not_found: if this is a restarted run and this is true, skip the
+ *      hist restart if the proper filename is not found in rpointer. Allows to add a new stream
+ *      upon restart.
 
  *  Notes:
  *   - you can specify lists with either of the two syntaxes:
@@ -127,7 +127,7 @@ public:
   // Constructor
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr,
-                   const std::shared_ptr<const gm_type>& grids_mgr);
+                   const std::string& grid_name);
 
   // Short version for outputing a list of fields (no remapping supported)
   AtmosphereOutput(const ekat::Comm& comm,
@@ -161,8 +161,12 @@ public:
 protected:
   // Internal functions
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                          const std::string& grid_name,
+                          const std::string& mode);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
+                          const std::string& grid_name,
+                          const std::vector<std::string>& modes);
 
   std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
 
@@ -188,10 +192,14 @@ protected:
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
   std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+
+  // Field managers can have multiple grids associated with it,
+  // for each FM store which grid we intend to use
+  std::map<std::string,std::string> m_fm_grid_name;
+
   std::shared_ptr<const grid_type>            m_io_grid;
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;
-  std::shared_ptr<const gm_type>              m_grids_manager;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;

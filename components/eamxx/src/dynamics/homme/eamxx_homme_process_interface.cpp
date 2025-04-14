@@ -180,7 +180,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
-  add_group<Updated>("tracers",pgn,N, Bundling::Required);
+  add_group<Updated>("tracers",pgn,N, true);
 
   if (fv_phys_active()) {
     // [CGLL ICs in pg2] Read CGLL IC data even though our in/out format is
@@ -196,7 +196,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
-    add_group<Required>("tracers",rgn,N, Bundling::Required, DerivationType::Import, "tracers", pgn);
+    add_group<Required>("tracers",rgn,N, true);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
@@ -466,7 +466,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_bundle,m_phys_grid,0,true);
   add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,100.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
-  add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,40000.0, 120000.0,false);
+  add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,30000.0, 120000.0,false);
 
   // Initialize Rayleigh friction variables
   rayleigh_friction_init();

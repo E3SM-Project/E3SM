@@ -613,27 +613,27 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 }
 
 void IOPDataManager::
-set_fields_from_iop_data(const field_mgr_ptr field_mgr)
+set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_name)
 {
-  if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers")) {
+  if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers", grid_name)) {
     // Zero out all tracers before setting iop tracers (if requested)
-    field_mgr->get_field_group("tracers").m_bundle->deep_copy(0);
+    field_mgr->get_field_group("tracers", grid_name).m_bundle->deep_copy(0);
   }
 
-  EKAT_REQUIRE_MSG(field_mgr->get_grid()->name() == "Physics GLL",
+  EKAT_REQUIRE_MSG(grid_name == "Physics GLL",
                    "Error! Attempting to set non-GLL fields using "
                    "data from the IOP file.\n");
 
   // Find which fields need to be written
-  const bool set_ps            = field_mgr->has_field("ps") && has_iop_field("Ps");
-  const bool set_T_mid         = field_mgr->has_field("T_mid") && has_iop_field("T");
-  const bool set_horiz_winds_u = field_mgr->has_field("horiz_winds") && has_iop_field("u");
-  const bool set_horiz_winds_v = field_mgr->has_field("horiz_winds") && has_iop_field("v");
-  const bool set_qv            = field_mgr->has_field("qv") && has_iop_field("q");
-  const bool set_nc            = field_mgr->has_field("nc") && has_iop_field("NUMLIQ");
-  const bool set_qc            = field_mgr->has_field("qc") && has_iop_field("CLDLIQ");
-  const bool set_qi            = field_mgr->has_field("qi") && has_iop_field("CLDICE");
-  const bool set_ni            = field_mgr->has_field("ni") && has_iop_field("NUMICE");
+  const bool set_ps            = field_mgr->has_field("ps", grid_name) && has_iop_field("Ps");
+  const bool set_T_mid         = field_mgr->has_field("T_mid", grid_name) && has_iop_field("T");
+  const bool set_horiz_winds_u = field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("u");
+  const bool set_horiz_winds_v = field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("v");
+  const bool set_qv            = field_mgr->has_field("qv", grid_name) && has_iop_field("q");
+  const bool set_nc            = field_mgr->has_field("nc", grid_name) && has_iop_field("NUMLIQ");
+  const bool set_qc            = field_mgr->has_field("qc", grid_name) && has_iop_field("CLDLIQ");
+  const bool set_qi            = field_mgr->has_field("qi", grid_name) && has_iop_field("CLDICE");
+  const bool set_ni            = field_mgr->has_field("ni", grid_name) && has_iop_field("NUMICE");
 
   // Create views/scalars for these field's data
   view_1d<Real> ps;
@@ -644,47 +644,47 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
   view_1d<Real> t_iop, u_iop, v_iop, qv_iop, nc_iop, qc_iop, qi_iop, ni_iop;
 
   if (set_ps) {
-    ps = field_mgr->get_field("ps").get_view<Real*>();
+    ps = field_mgr->get_field("ps", grid_name).get_view<Real*>();
     get_iop_field("Ps").sync_to_host();
     ps_iop = get_iop_field("Ps").get_view<Real, Host>()();
   }
   if (set_T_mid) {
-    T_mid = field_mgr->get_field("T_mid").get_view<Real**>();
+    T_mid = field_mgr->get_field("T_mid", grid_name).get_view<Real**>();
     t_iop = get_iop_field("T").get_view<Real*>();
   }
   if (set_horiz_winds_u || set_horiz_winds_v) {
-    horiz_winds = field_mgr->get_field("horiz_winds").get_view<Real***>();
+    horiz_winds = field_mgr->get_field("horiz_winds", grid_name).get_view<Real***>();
     if (set_horiz_winds_u) u_iop = get_iop_field("u").get_view<Real*>();
     if (set_horiz_winds_v) v_iop = get_iop_field("v").get_view<Real*>();
   }
   if (set_qv) {
-    qv = field_mgr->get_field("qv").get_view<Real**>();
+    qv = field_mgr->get_field("qv", grid_name).get_view<Real**>();
     qv_iop = get_iop_field("q").get_view<Real*>();
   }
   if (set_nc) {
-    nc = field_mgr->get_field("nc").get_view<Real**>();
+    nc = field_mgr->get_field("nc", grid_name).get_view<Real**>();
     nc_iop = get_iop_field("NUMLIQ").get_view<Real*>();
   }
   if (set_qc) {
-    qc = field_mgr->get_field("qc").get_view<Real**>();
+    qc = field_mgr->get_field("qc", grid_name).get_view<Real**>();
     qc_iop = get_iop_field("CLDLIQ").get_view<Real*>();
   }
   if (set_qi) {
-    qi = field_mgr->get_field("qi").get_view<Real**>();
+    qi = field_mgr->get_field("qi", grid_name).get_view<Real**>();
     qi_iop = get_iop_field("CLDICE").get_view<Real*>();
   }
   if (set_ni) {
-    ni = field_mgr->get_field("ni").get_view<Real**>();
+    ni = field_mgr->get_field("ni", grid_name).get_view<Real**>();
     ni_iop = get_iop_field("NUMICE").get_view<Real*>();
   }
 
   // Check if t_iop has any 0 entires near the top of the model
   // and correct t_iop and q_iop accordingly.
-  correct_temperature_and_water_vapor(field_mgr);
+  correct_temperature_and_water_vapor(field_mgr, grid_name);
 
   // Loop over all columns and copy IOP field values to FM views
-  const auto ncols = field_mgr->get_grid()->get_num_local_dofs();
-  const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  const auto ncols = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_local_dofs();
+  const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
   const auto policy = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const auto icol = team.league_rank();
@@ -722,11 +722,11 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr)
 }
 
 void IOPDataManager::
-correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
+correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr, const std::string& grid_name)
 {
   // Find the first valid level index for t_iop, i.e., first non-zero entry
   int first_valid_idx;
-  const auto nlevs = field_mgr->get_grid()->get_num_vertical_levels();
+  const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
   auto t_iop = get_iop_field("T").get_view<Real*>();
   Kokkos::parallel_reduce(nlevs, KOKKOS_LAMBDA (const int ilev, int& lmin) {
     if (t_iop(ilev) > 0 && ilev < lmin) lmin = ilev;
@@ -736,12 +736,12 @@ correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr)
   // levels 0,...,first_valid_idx-1
   if (first_valid_idx > 0) {
     // If we have values of T and q to correct, we must have both T_mid and qv as FM fields
-    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid"), "Error! IOP requires FM to define T_mid.\n");
-    EKAT_REQUIRE_MSG(field_mgr->has_field("qv"),    "Error! IOP requires FM to define qv.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid", grid_name), "Error! IOP requires FM to define T_mid.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("qv", grid_name),    "Error! IOP requires FM to define qv.\n");
 
     // Replace values of T and q where t_iop contains zeros
-    auto T_mid = field_mgr->get_field("T_mid").get_view<const Real**>();
-    auto qv   = field_mgr->get_field("qv").get_view<const Real**>();
+    auto T_mid = field_mgr->get_field("T_mid", grid_name).get_view<const Real**>();
+    auto qv   = field_mgr->get_field("qv", grid_name).get_view<const Real**>();
     auto q_iop = get_iop_field("q").get_view<Real*>();
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0, first_valid_idx), KOKKOS_LAMBDA (const int ilev) {
       t_iop(ilev) = T_mid(0, ilev);

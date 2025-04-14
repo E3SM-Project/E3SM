@@ -101,7 +101,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   ctrl_pl.set("save_grid_data",false);
   OutputManager4Test om;
   om.initialize(comm,om_pl,t0,false);
-  om.setup(fm,gm);
+  om.setup(fm,gm->get_grid_names());
   // Create output data:
   // T=3600, well above the max timestep for the test.
   auto tw = t0;
@@ -624,7 +624,7 @@ TEST_CASE("surface-coupling", "") {
   ad.initialize_output_managers ();
   ad.initialize_atm_procs ();
 
-  const auto fm = ad.get_field_mgr("Physics");
+  const auto fm = ad.get_field_mgr();
 
   // Verify any initial imports/exports were done as expected
   test_imports(*fm, import_data_view, import_cpl_indices_view,
