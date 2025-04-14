@@ -45,11 +45,6 @@ module zm_conv
   public trig_dcape_only          ! true if to use dcape only trigger
   public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
   public zm_microp                ! true for convective microphysics
-  public MCSP                     ! true if running MCSP
-  public MCSP_heat_coeff          ! MCSP coefficient setting degree of dry static energy transport
-  public MCSP_moisture_coeff      ! MCSP coefficient setting degree of moisture transport
-  public MCSP_uwind_coeff         ! MCSP coefficient setting degree of zonal wind transport
-  public MCSP_vwind_coeff         ! MCSP coefficient setting degree of meridional wind transport
 
 !
 ! PUBLIC: data
@@ -83,10 +78,6 @@ module zm_conv
    real(r8) :: zmconv_auto_fac       = unset_r8
    real(r8) :: zmconv_accr_fac       = unset_r8
    real(r8) :: zmconv_micro_dcs      = unset_r8
-   real(r8) :: zmconv_MCSP_heat_coeff = 0._r8
-   real(r8) :: zmconv_MCSP_moisture_coeff = 0._r8
-   real(r8) :: zmconv_MCSP_uwind_coeff = 0._r8
-   real(r8) :: zmconv_MCSP_vwind_coeff = 0._r8
 
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
@@ -129,12 +120,6 @@ module zm_conv
    real(r8) :: accr_fac = unset_r8
    real(r8) :: micro_dcs= unset_r8
 
-   logical  :: MCSP
-   real(r8) :: MCSP_heat_coeff = unset_r8
-   real(r8) :: MCSP_moisture_coeff = unset_r8
-   real(r8) :: MCSP_uwind_coeff = unset_r8
-   real(r8) :: MCSP_vwind_coeff = unset_r8
-
 !===================================================================================================
 contains
 !===================================================================================================
@@ -145,6 +130,7 @@ subroutine zmconv_readnl(nlfile)
    use units,           only: getunit, freeunit
    use zm_conv_types,   only: zm_param_mpi_broadcast
    use mpishorthand
+   use zm_conv_mcsp,    only: MCSP_enabled, MCSP_t_coeff, MCSP_q_coeff, MCSP_u_coeff, MCSP_v_coeff
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -188,10 +174,6 @@ subroutine zmconv_readnl(nlfile)
       auto_fac         = zmconv_auto_fac
       accr_fac         = zmconv_accr_fac
       micro_dcs        = zmconv_micro_dcs
-      MCSP_heat_coeff  = zmconv_MCSP_heat_coeff
-      MCSP_moisture_coeff = zmconv_MCSP_moisture_coeff
-      MCSP_uwind_coeff = zmconv_MCSP_uwind_coeff
-      MCSP_vwind_coeff = zmconv_MCSP_vwind_coeff
 
       ! set zm_param values
       zm_param%trig_dcape      = trigdcape_ull .or. trig_dcape_only
@@ -203,10 +185,15 @@ subroutine zmconv_readnl(nlfile)
       zm_param%tpert_fac       = zmconv_tp_fac
       zm_param%mx_bot_lyr_adj  = zmconv_mx_bot_lyr_adj
 
-      if( abs(MCSP_heat_coeff)+abs(MCSP_moisture_coeff)+abs(MCSP_uwind_coeff)+abs(MCSP_vwind_coeff) > 0._r8 ) then
-           MCSP = .true.
+      MCSP_t_coeff = zmconv_MCSP_heat_coeff
+      MCSP_q_coeff = zmconv_MCSP_moisture_coeff
+      MCSP_u_coeff = zmconv_MCSP_uwind_coeff
+      MCSP_v_coeff = zmconv_MCSP_vwind_coeff
+ 
+      if( abs(MCSP_t_coeff)+abs(MCSP_q_coeff)+abs(MCSP_u_coeff)+abs(MCSP_v_coeff) > 0._r8 ) then
+           MCSP_enabled = .true.
       else
-           MCSP = .false.
+           MCSP_enabled = .false.
       end if 
 
       if ( zmconv_alfa /= unset_r8 ) then
@@ -227,8 +214,8 @@ subroutine zmconv_readnl(nlfile)
          write(iulog,*)'**** ZM scheme uses unrestricted launch level along with default CAPE-based trigger:', trig_ull_only
       endif
 
-      if(MCSP) then
-         write(iulog,*)'**** ZM scheme uses multiscale coherent structure parameterization (MCSP):',MCSP
+      if(MCSP_enabled) then
+         write(iulog,*)'**** ZM scheme uses multiscale coherent structure parameterization (MCSP):',MCSP_enabled
       end if
 
       if(zm_microp) then
@@ -259,14 +246,14 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(auto_fac,          1, mpir8,  0, mpicom)
    call mpibcast(accr_fac,          1, mpir8,  0, mpicom)
    call mpibcast(micro_dcs,         1, mpir8,  0, mpicom)  
-   call mpibcast(MCSP,              1, mpilog, 0, mpicom)
-   call mpibcast(MCSP_heat_coeff,   1, mpir8,  0, mpicom)
-   call mpibcast(MCSP_moisture_coeff,1, mpir8,  0, mpicom)
-   call mpibcast(MCSP_uwind_coeff,  1, mpir8,  0, mpicom)
-   call mpibcast(MCSP_vwind_coeff,  1, mpir8,  0, mpicom)
 
    call zm_param_mpi_broadcast(zm_param)
 
+   call mpibcast(MCSP_enabled,      1, mpilog, 0, mpicom)
+   call mpibcast(MCSP_t_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(MCSP_q_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(MCSP_u_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(MCSP_v_coeff,      1, mpir8,  0, mpicom)
 #endif
 
 end subroutine zmconv_readnl
