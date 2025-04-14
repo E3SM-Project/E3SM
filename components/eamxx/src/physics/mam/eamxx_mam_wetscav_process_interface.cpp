@@ -309,6 +309,22 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   calsize_data_.initialize();
   // wetscav uses update_mmr=true;
   calsize_data_.set_update_mmr(true);
+
+  view_2d_host scavimptblvol_host("scavimptblvol_host",
+                                  mam4::aero_model::nimptblgrow_total,
+                                  mam4::AeroConfig::num_modes());
+  view_2d_host scavimptblnum_host("scavimptblnum_host",
+                                  mam4::aero_model::nimptblgrow_total,
+                                  mam4::AeroConfig::num_modes());
+
+  mam4::wetdep::init_scavimptbl(scavimptblvol_host, scavimptblnum_host);
+
+  scavimptblnum_ = view_2d("scavimptblnum", mam4::aero_model::nimptblgrow_total,
+                           mam4::AeroConfig::num_modes());
+  scavimptblvol_ = view_2d("scavimptblvol", mam4::aero_model::nimptblgrow_total,
+                           mam4::AeroConfig::num_modes());
+  Kokkos::deep_copy(scavimptblnum_, scavimptblnum_host);
+  Kokkos::deep_copy(scavimptblvol_, scavimptblvol_host);
 }
 
 // ================================================================
@@ -404,13 +420,9 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
-  Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
-                    [mam4::AeroConfig::num_modes()];
-  Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
-                    [mam4::AeroConfig::num_modes()];
-
-  mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
-  const auto &calsize_data =  calsize_data_;
+  const auto &calsize_data  = calsize_data_;
+  const auto &scavimptblnum = scavimptblnum_;
+  const auto &scavimptblvol = scavimptblvol_;
 
   // Loop over atmosphere columns
   Kokkos::parallel_for(
@@ -464,8 +476,7 @@ void MAMWetscav::run_impl(const double dt) {
             // inputs
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
-            dlf_icol, prain_icol, scavimptblnum, scavimptblvol,
-            calsize_data,
+            dlf_icol, prain_icol, scavimptblnum, scavimptblvol, calsize_data,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
             aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
