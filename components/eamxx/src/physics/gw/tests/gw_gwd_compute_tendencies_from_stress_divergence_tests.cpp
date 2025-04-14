@@ -21,7 +21,11 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
     // Set up inputs
     GwdComputeTendenciesFromStressDivergenceData baseline_data[] = {
-      // TODO
+      // ncol, pver, pgwv, ngwv, do_taper, dt, effgw
+      GwdComputeTendenciesFromStressDivergenceData(72),
+      GwdComputeTendenciesFromStressDivergenceData(63),
+      GwdComputeTendenciesFromStressDivergenceData(47),
+      GwdComputeTendenciesFromStressDivergenceData(31),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
@@ -35,7 +39,10 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
     // Create copies of data for use by test. Needs to happen before fortran calls so that
     // inout data is in original state
     GwdComputeTendenciesFromStressDivergenceData test_data[] = {
-      // TODO
+      GwdComputeTendenciesFromStressDivergenceData(baseline_data[0]),
+      GwdComputeTendenciesFromStressDivergenceData(baseline_data[1]),
+      GwdComputeTendenciesFromStressDivergenceData(baseline_data[2]),
+      GwdComputeTendenciesFromStressDivergenceData(baseline_data[3]),
     };
 
     // Read baseline data

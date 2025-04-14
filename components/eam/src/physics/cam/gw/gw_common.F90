@@ -108,13 +108,14 @@ contains
 !==========================================================================
 
 subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
-     do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, &
+     orographic_only_in, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, &
      fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in, errstring)
 
   integer,  intent(in) :: pver_in
   integer,  intent(in) :: pgwv_in
   real(r8), intent(in) :: dc_in
   real(r8), intent(in) :: cref_in(-pgwv_in:)
+  logical(btype),  intent(in) :: orographic_only_in
   logical(btype),  intent(in) :: do_molec_diff_in
   logical(btype),  intent(in) :: tau_0_ubc_in
   integer,  intent(in) :: nbot_molec_in
@@ -138,6 +139,7 @@ subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
   allocate(cref(-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   cref = cref_in
+  orographic_only = orographic_only_in
   do_molec_diff = do_molec_diff_in
   tau_0_ubc = tau_0_ubc_in
   nbot_molec = nbot_molec_in
