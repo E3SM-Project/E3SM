@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: homme_shoc_cld_mam_aci_p3_mam_optics_rrtmgp_mam_drydep
-Averaging Type: Instant
-Fields:
-  Physics GLL:
-    Field Names:
+averaging_type: instant
+fields:
+  physics_gll:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -104,8 +104,8 @@ Fields:
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.
-  Dynamics:
-    Field Names:
+  dynamics:
+    field_names:
       - v_dyn
       - vtheta_dp_dyn
       - dp3d_dyn
@@ -114,9 +114,9 @@ Fields:
       - phis_dyn
       - omega_dyn
       - Qdp_dyn
-    IO Grid Name: Physics GLL
+    io_grid_name: physics_gll
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

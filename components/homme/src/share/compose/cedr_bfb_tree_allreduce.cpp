@@ -226,14 +226,14 @@ Int BfbTreeAllReducer<ES>::unittest (const Parallel::Ptr& p) {
 } // namespace cedr
 
 #ifdef KOKKOS_ENABLE_SERIAL
-template class cedr::BfbTreeAllReducer<Kokkos::Serial>;
+template struct cedr::BfbTreeAllReducer<Kokkos::Serial>;
 #endif
 #ifdef KOKKOS_ENABLE_OPENMP
-template class cedr::BfbTreeAllReducer<Kokkos::OpenMP>;
+template struct cedr::BfbTreeAllReducer<Kokkos::OpenMP>;
 #endif
 #ifdef CEDR_ENABLE_GPU
-template class cedr::BfbTreeAllReducer<CedrGpuExeSpace>;
+template struct cedr::BfbTreeAllReducer<CedrGpuExeSpace>;
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
-template class cedr::BfbTreeAllReducer<Kokkos::Threads>;
+template struct cedr::BfbTreeAllReducer<Kokkos::Threads>;
 #endif

@@ -24,10 +24,10 @@ create_gm (const ekat::Comm& comm, const int ngcols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ngcols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -147,15 +147,15 @@ create_om (const std::string& filename_prefix,
   // NOTE: ask "real" fp precision, so even when building in double precision
   //       we can retrieve exactly the nudging data (if no remapping happens)
   ekat::ParameterList params;
-  params.set<std::string>("Averaging Type","INSTANT");
+  params.set<std::string>("averaging_type","instant");
   params.set<std::string>("filename_prefix",filename_prefix);
-  params.set<std::string>("Floating Point Precision","real");
-  params.set("Field Names",strvec_t{"p_mid","U","V"});
+  params.set<std::string>("floating_point_precision","real");
+  params.set("field_names",strvec_t{"p_mid","U","V"});
   params.set("fill_value",fill_val);
 
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   auto om = std::make_shared<OutputManager>();

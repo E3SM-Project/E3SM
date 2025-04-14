@@ -48,10 +48,12 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
+            "SMS_Ly2_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
             "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
+            "ERS.1x1_icycape.I1850GSWCNPRDCTCBC.elm-polygonal_tundra"
             )
         },
 
@@ -86,7 +88,6 @@ _TESTS = {
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
-            "SMS_Ly1_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
             "SMS_Ly5_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
@@ -145,6 +146,7 @@ _TESTS = {
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
             "ERS.ne30pg2_r05_IcoswISC30E3r5_gis20.IGELM_MLI.mali-gis20km",
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
+            "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
@@ -201,6 +203,18 @@ _TESTS = {
             "PEM_Ln18.ne4pg2_oQU480.F2010.eam-orodrag_ne4pg2",
             "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-orodrag_ne30pg2",
             "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-orodrag_ne4pg2"
+            )
+        },
+
+#tests for the dust emission cap
+        "e3sm_dustemissioncap" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "PET.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-dustemissioncap",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-dustemissioncap"
             )
         },
 
@@ -282,6 +296,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-PISMF.mpaso-impl_top_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-upwind_advection",
+            "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-freshwater_tracers",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             "ERS_Ld5_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
             "ERS_Ld5.TL319_oQU240wLI_gis20.MPAS_LISIO_JRA1p5.mpaso-ocn_glc_tf_coupling",
@@ -296,6 +311,7 @@ _TESTS = {
             "PEM_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
+            "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-freshwater_tracers_jra_1958",
             )
         },
 
@@ -688,7 +704,7 @@ _TESTS = {
 
     "e3sm_eamxx_v1_lowres" : {
         "time"  : "01:00:00",
-        "inherit" : ("e3sm_eamxx_mam4xx_v1_lowres"),
+        "inherit" : ("e3sm_eamxx_mam4xx_lowres"),
         "tests" : (
             "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2",
@@ -776,7 +792,7 @@ _TESTS = {
             )
     },
 
-    "e3sm_eamxx_mam4xx_v1_lowres" : {
+    "e3sm_eamxx_mam4xx_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
             "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
@@ -788,7 +804,16 @@ _TESTS = {
             "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
             "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
             "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aero_microphysics",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep"
+            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
+            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
+        )
+    },
+
+    "e3sm_eamxx_mam4xx_long_runtime" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Lm2.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
+            "SMS_Ly1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
         )
     },
 
@@ -802,6 +827,19 @@ _TESTS = {
             "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
             "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC",
+        )
+    },
+
+    "e3sm_moab_pem" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "PEM_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "PEM_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
+            "PEM_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "PEM_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
+            "PEM_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
+            "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
         )
     },
 

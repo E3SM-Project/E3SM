@@ -21,8 +21,9 @@ namespace scream {
  */
 
 class MAMWetscav : public MAMGenericInterface {
-  using KT      = ekat::KokkosTypes<DefaultDevice>;
-  using view_2d = typename KT::template view_2d<Real>;
+  using KT          = ekat::KokkosTypes<DefaultDevice>;
+  using view_2d     = typename KT::template view_2d<Real>;
+  using int_view_2d = typename KT::template view_2d<int>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
@@ -42,7 +43,8 @@ class MAMWetscav : public MAMGenericInterface {
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                     len_temporary_views_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
@@ -65,6 +67,7 @@ class MAMWetscav : public MAMGenericInterface {
 
   // Work arrays
   view_2d work_;
+  int_view_2d isprx_;
 
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
@@ -94,6 +97,8 @@ class MAMWetscav : public MAMGenericInterface {
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
 
+  int num_2d_scratch_ = 39;
+
   // Aerosol states
   mam_coupling::AerosolState dry_aero_tends_;
 
@@ -105,6 +110,11 @@ class MAMWetscav : public MAMGenericInterface {
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+  // parameters for calcsize
+  mam4::modal_aer_opt::CalcsizeData calsize_data_;
+  int get_len_temporary_views();
+  void init_temporary_views();
+  int len_temporary_views_{0};
 
 };  // class MAMWetscav
 

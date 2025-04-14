@@ -29,6 +29,7 @@ sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
 # Cime imports
 from standard_script_setup import * # pylint: disable=wildcard-import
 from CIME.utils import expect, safe_copy, SharedArea
+from CIME.test_status import TestStatus, RUN_PHASE
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -170,6 +171,9 @@ def perform_consistency_checks(case, xml):
     rrtmgp = find_node(xml,"rrtmgp")
     rest_opt = case.get_value("REST_OPTION")
     is_test = case.get_value("TEST")
+    caseraw = case.get_value("CASE")
+    caseroot = case.get_value("CASEROOT")
+    casebaseid  = case.get_value("CASEBASEID")
     if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
@@ -177,10 +181,17 @@ def perform_consistency_checks(case, xml):
         atm_tstep = 86400 / atm_ncpl
         rad_tstep = atm_tstep * rad_freq
 
-
         # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
-        # settings here.
-        if rad_freq==1 or is_test:
+        # settings until RUN phase
+        is_test_not_yet_run = False
+        if is_test:
+            test_name = casebaseid if casebaseid is not None else caseraw
+            ts = TestStatus(test_dir=caseroot, test_name=test_name)
+            phase = ts.get_latest_phase()
+            if phase != RUN_PHASE:
+                is_test_not_yet_run = True
+
+        if rad_freq==1 or is_test_not_yet_run:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
             expect (rest_n % rad_freq == 0,
@@ -576,8 +587,8 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...         <enable_postcondition_checks type='logical'>true</enable_postcondition_checks>
     ...       </atm_proc_base>
     ...       <physics_proc_base inherit='atm_proc_base'>
-    ...         <Grid>Physics GLL</Grid>
-    ...         <Grid grid='ne4ne4'>Physics PG2</Grid>
+    ...         <Grid>physics_gll</Grid>
+    ...         <Grid grid='ne4ne4'>physics_pg2</Grid>
     ...       </physics_proc_base>
     ...       <atm_proc_group inherit="atm_proc_base">
     ...         <atm_procs_list>NONE</atm_procs_list>
@@ -606,7 +617,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
                     ('enable_postcondition_checks', True),
                     (   'P1',
                         OrderedDict([   ('prop1', 'hi'),
-                                        ('Grid', 'Physics PG2'),
+                                        ('Grid', 'physics_pg2'),
                                         ('number_of_subcycles', 1),
                                         ('enable_precondition_checks', True),
                                         ('enable_postcondition_checks', True)])),
@@ -929,7 +940,7 @@ def create_input_data_list_file(case,caseroot):
     with open(eamxx_xml_file, "r") as fd:
         eamxx_xml = ET.parse(fd).getroot()
 
-        scorpio = get_child(eamxx_xml,'Scorpio')
+        scorpio = get_child(eamxx_xml,'scorpio')
         out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
         #  out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
         #  for fn in out_files:
@@ -998,7 +1009,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     with open(eamxx_xml_file, "r") as fd:
         eamxx_xml = ET.parse(fd).getroot()
 
-    scorpio = get_child(eamxx_xml,'Scorpio')
+    scorpio = get_child(eamxx_xml,'scorpio')
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
@@ -1016,10 +1027,10 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
     scream_input = yaml.load(open(scream_input_file,"r"),Loader=loader)
 
     # Determine the physics grid type for use in CIME-var substitution.
-    pgt = 'GLL'
+    pgt = 'gll'
     atm_grid = case.get_value('ATM_GRID')
     if '.pg' in atm_grid:
-        pgt = 'PG' + atm_grid[-1]
+        pgt = 'pg' + atm_grid[-1]
 
     for fn in out_files:
         # Get full name
@@ -1041,10 +1052,10 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # produces an output at t=0, which is not present in the restarted run, and
         # which also causes different timestamp in the file name.
         # Hence, change default output settings to perform a single AVERAGE step at the end of the run
-        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['Averaging Type'].upper()=="INSTANT":
+        if case.get_value("TESTCASE") in ["ERP", "ERS"] and content['averaging_type'].upper()=="INSTANT":
             hist_n = int(case.get_value("HIST_N",resolved=True))
             hist_opt = case.get_value("HIST_OPTION",resolved=True)
-            content['output_control']['Frequency'] = hist_n
+            content['output_control']['frequency'] = hist_n
             content['output_control']['frequency_units'] = hist_opt
             content['output_control']['skip_t0_output'] = True
             print ("ERS/ERP test with INSTANT output detected. Adjusting output control specs:\n")
@@ -1054,7 +1065,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
         # If frequency_units is not nsteps, verify that we don't request
         # a frequency faster than the model timestep
         if content['output_control']['frequency_units'] in ['nsecs','nmins','nhours']:
-            freq  = content['output_control']['Frequency']
+            freq  = content['output_control']['frequency']
             units = content['output_control']['frequency_units']
             dt_out = 1 if units=="nsecs" else 60 if units=="nmins" else 3600
             dt_out = dt_out*int(freq)
@@ -1063,10 +1074,10 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             expect (dt_atm<=dt_out,
                    "Cannot have output frequency faster than atm timestep.\n"
                    f"   yaml file: {fn.strip()}\n"
-                   f"   Frequency: {freq}\n"
+                   f"   frequency: {freq}\n"
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
-                   f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'Frequency' and/or 'frequency_units'\n")
+                   f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
 
         ordered_dump(content, open(dst_yaml, "w"))
 
@@ -1074,7 +1085,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
 
     # Now update the output yaml files entry, and dump the new content
     # of the scream input to YAML file
-    scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
+    scream_input["scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
     with open(scream_input_file, "w") as fd:
         fd.write(
 """################################################################

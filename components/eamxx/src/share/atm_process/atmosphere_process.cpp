@@ -37,8 +37,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm       (comm)
   , m_params     (params)
 {
-  if (m_params.isParameter("Logger")) {
-    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("Logger");
+  if (m_params.isParameter("logger")) {
+    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("logger");
   } else {
     // Create a console-only logger, that logs all ranks
     using namespace ekat::logger;
@@ -55,7 +55,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 
-  m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
+  m_timer_prefix = m_params.get<std::string>("timer_prefix","EAMxx::");
 
   m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 
@@ -70,8 +70,12 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   if (this->type()!=AtmosphereProcessType::Group) {
     start_timer (m_timer_prefix + this->name() + "::init");
   }
+
+  log (LogLevel::info,"  Initializing " + name() + "...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+
   set_fields_and_groups_pointers();
-  m_time_stamp = t0;
+  m_start_of_step_ts = m_end_of_step_ts = t0;
   initialize_impl(run_type);
 
   // Create all start-of-step fields needed for tendencies calculation
@@ -80,6 +84,9 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     const auto& fname = m_tend_to_field.at(tname);
     m_start_of_step_fields[fname] = get_field_out(fname).clone();
   }
+
+  log (LogLevel::info,"  Initializing " + name() + "... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
@@ -101,6 +108,8 @@ void AtmosphereProcess::run (const double dt) {
   init_step_tendencies ();
 
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
+    m_start_of_step_ts = m_end_of_step_ts;
+    m_end_of_step_ts += dt_sub;
 
     if (has_column_conservation_check()) {
       // Column local mass and energy checks requires the total mass and energy
@@ -110,14 +119,18 @@ void AtmosphereProcess::run (const double dt) {
     }
 
     if (m_internal_diagnostics_level > 0)
+      // Print hash of INPUTS before run
       print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
+                              m_start_of_step_ts,
                               true, false, false);
 
     // Run derived class implementation
     run_impl(dt_sub);
 
     if (m_internal_diagnostics_level > 0)
+      // Print hash of OUTPUTS/INTERNALS after run
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
+                              m_end_of_step_ts,
                               true, true, true);
 
     if (has_column_conservation_check()) {
@@ -134,7 +147,6 @@ void AtmosphereProcess::run (const double dt) {
     run_postcondition_checks();
   }
 
-  m_time_stamp += dt;
   if (m_update_time_stamps) {
     // Update all output fields time stamps
     update_time_stamps ();
@@ -322,10 +334,10 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as customer if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_customer(*group.m_bundle);
+      if (group.m_monolithic_field) {
+        add_me_as_customer(*group.m_monolithic_field);
       } else {
-        for (auto& it : group.m_fields) {
+        for (auto& it : group.m_individual_fields) {
           add_me_as_customer(*it.second);
         }
       }
@@ -349,10 +361,10 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as provider if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_bundle) {
-        add_me_as_provider(*group.m_bundle);
+      if (group.m_monolithic_field) {
+        add_me_as_provider(*group.m_monolithic_field);
       } else {
-        for (auto& it : group.m_fields) {
+        for (auto& it : group.m_individual_fields) {
           add_me_as_provider(*it.second);
         }
       }
@@ -429,7 +441,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_in) {
-          for (const auto& f : g.m_fields) {
+          for (const auto& f : g.m_individual_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
@@ -444,7 +456,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_out) {
-          for (const auto& f : g.m_fields) {
+          for (const auto& f : g.m_individual_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
@@ -579,7 +591,7 @@ void AtmosphereProcess::set_update_time_stamps (const bool do_update) {
 }
 
 void AtmosphereProcess::update_time_stamps () {
-  const auto& t = timestamp();
+  const auto& t = end_of_step_ts();
 
   // Update *all* output fields/groups, regardless of whether
   // they were touched at all during this time step.
@@ -588,10 +600,10 @@ void AtmosphereProcess::update_time_stamps () {
     f.get_header().get_tracking().update_time_stamp(t);
   }
   for (auto& g : m_groups_out) {
-    if (g.m_bundle) {
-      g.m_bundle->get_header().get_tracking().update_time_stamp(t);
+    if (g.m_monolithic_field) {
+      g.m_monolithic_field->get_header().get_tracking().update_time_stamp(t);
     } else {
-      for (auto& f : g.m_fields) {
+      for (auto& f : g.m_individual_fields) {
         f.second->get_header().get_tracking().update_time_stamp(t);
       }
     }
@@ -742,10 +754,10 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
     std::string s = "";
     switch (cfh) {
       case CheckFailHandling::Fatal:
-        s = "Fatal";
+        s = "fatal";
         break;
       case CheckFailHandling::Warning:
-        s = "Warning";
+        s = "warning";
         break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported CheckFailHandling value.\n");
@@ -1111,7 +1123,7 @@ void AtmosphereProcess
       if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
         rm_its.push_back(it);
         ptrs[group_name][grid_name] = nullptr;
-        for (auto& kv : it->m_fields)
+        for (auto& kv : it->m_individual_fields)
           remove_field(kv.first, grid_name);
       }
     }

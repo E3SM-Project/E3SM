@@ -271,6 +271,8 @@
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/intel-2023.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
@@ -1069,13 +1071,14 @@
       <modules compiler="craygnu.*">
         <command name="reset"></command>
         <!-- PrgEnv-gnu before cpe, or cray-mpich module doesn't update correctly -->
+        <command name="load">Core/25.03</command>
         <command name="load">PrgEnv-gnu</command>
         <command name="load">cpe/24.11</command>
         <command name="load">libunwind/1.8.1</command>
         <command name="load">cray-python/3.11.7</command>
-        <command name="load">subversion/1.14.2</command>
-        <command name="load">git/2.45.1</command>
-        <command name="load">cmake/3.27.9</command>
+        <command name="load">subversion</command>
+        <command name="load">git</command>
+        <command name="load">cmake</command>
         <command name="load">cray-hdf5-parallel/1.14.3.3</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.15</command>
         <command name="load">cray-parallel-netcdf/1.12.3.15</command>
@@ -1870,7 +1873,7 @@
 
   <machine MACH="anlgce-ub22">
     <DESC>ANL CELS General Computing Environment (Linux) workstation (Ubuntu 22.04)</DESC>
-    <NODENAME_REGEX>compute-386-(01|02|03|05|07|08)|compute-240-(15)</NODENAME_REGEX>
+    <NODENAME_REGEX>compute-386-(01|02|03|05|07|08)|compute-240-(10|15)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>mpich,openmpi</MPILIBS>
@@ -1957,6 +1960,9 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/sz/2.1.12.5/gcc-12.1.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/zfp/1.0.1/gcc-12.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
+    <!--environment_variables>
+      <env name="SPIO_ENABLE_ADIOSBP2NC_CONVERSION">1</env>
+    </environment_variables-->
   </machine>
 
   <machine MACH="anlgce">
@@ -3214,24 +3220,24 @@
     <DESC>ALCF Polaris 560 nodes, 2.8 GHz AMD EPYC Milan 7543P 32c CPU, 4 NVIDIA A100 GPUs</DESC>
     <NODENAME_REGEX>polaris-*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_RRM</PROJECT>
     <CHARGE_ACCOUNT>E3SM_RRM</CHARGE_ACCOUNT>
-    <SAVE_TIMING_DIR>/grand/E3SMinput/performance_archive</SAVE_TIMING_DIR>
-    <SAVE_TIMING_DIR_PROJECTS>SCREAM_Calib,E3SM_RRM</SAVE_TIMING_DIR_PROJECTS>
+    <SAVE_TIMING_DIR>/grand/E3SMinput/polaris/</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>E3SM_RRM</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/eagle/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/grand/E3SMinput/data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/grand/E3SMinput/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/grand/E3SMinput/baselines/$COMPILER</BASELINE_ROOT>
+    <BASELINE_ROOT>/grand/E3SMinput/baselines/polaris/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/grand/E3SMinput/soft/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnu">32</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidia">32</MAX_MPITASKS_PER_NODE>
@@ -3241,67 +3247,66 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">--cpu-bind depth -envall</arg>
-          <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
+          <arg name="ranks_bind">--cpu-bind core </arg>
+          <arg name="threads_per_rank">-d $SHELL{echo 32/ {{ tasks_per_node }} |bc}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
+      <init_path lang="python">/usr/share/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
-        <command name="purge"/>
-        <command name="load">cmake/3.23.2</command>
-        <command name="load">craype-x86-rome</command>
+        <command name="reset"></command>
+        <command name="use">/grand/E3SMinput/soft/modulefiles/polaris</command>
+        <command name="load">cray-python</command>
+        <command name="load">cmake/3.27.9</command>
+        <command name="load">craype-accel-host</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
+        <command name="load">PrgEnv-gnu/8.5.0</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="swap">gcc/12.2.0 gcc/11.2.0</command>
-        <command name="load">cudatoolkit-standalone/11.4.4</command>
+        <command name="load">nvhpc-mixed/23.9</command>
       </modules>
       <modules compiler="nvidia.*">
-        <command name="load">PrgEnv-nvhpc/8.3.3</command>
+        <command name="load">PrgEnv-nvhpc/8.5.0</command>
       </modules>
-      <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit-standalone/11.4.4</command>
+      <modules compiler=".*gpu">
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
-        <command name="load">craype-network-ofi</command>
-        <command name="load">libfabric/1.15.2.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
+        <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
+      <env name="PERL5LIB">/grand/E3SMinput/soft/perl5/lib/perl5</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-      <env name="CRAY_ACCEL_TARGET">host</env>
       <env name="GPU_TILE_COMPACT"> </env>
     </environment_variables>
-    <environment_variables compiler=".*gpu">
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="CRAY_ACCEL_TARGET">nvidia80</env>
-      <env name="GPU_TILE_COMPACT">/grand/E3SMinput/soft/qsub/set_affinity_gpu_polaris.sh</env>
-    </environment_variables>
     <environment_variables compiler="gnu.*">
-      <env name="LD_PRELOAD">/opt/cray/pe/gcc/11.2.0/snos/lib64/libstdc++.so</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /grand/E3SMinput/soft/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu">
+      <env name="NVCC_WRAPPER_DEFAULT_COMPILER">CC</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="GPU_TILE_COMPACT">/grand/E3SMinput/soft/qsub/set_affinity_gpu_polaris.sh</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 
@@ -3414,7 +3419,7 @@
     <DESC>ALCF Aurora, 10624 nodes, 2x52c SPR, 6x2s PVC, 2x512GB DDR5, 2x64GB CPU-HBM, 6x128GB GPU-HBM, Slingshot 11, PBSPro</DESC>
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
+    <COMPILERS>oneapi-ifxgpu,oneapi-ifx,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SM_Dec/performance_archive</SAVE_TIMING_DIR>
@@ -3430,10 +3435,10 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>104</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
@@ -3441,7 +3446,7 @@
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
-          <arg name="ranks_bind">-envall</arg>
+          <arg name="ranks_bind">--cpu-bind $ENV{RANKS_BIND}</arg>
           <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
           <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
        </arguments>
@@ -3459,9 +3464,9 @@
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
-        <modules compiler="oneapi-ifxgpu">
-          <command name="load">kokkos/4.4.01-omp-sycl</command>
-        </modules>
+	<!--<modules compiler="oneapi-ifxgpu"> -->
+	<!--          <command name="load">kokkos/4.4.01-omp-sycl</command> -->
+        <!--</modules> -->
         <modules compiler="gnu">
            <command name="unload">spack-pe-gcc cmake</command>
            <command name="load">gcc/10.3.0</command>
@@ -3469,45 +3474,60 @@
      </module_system>
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
      <environment_variables>
         <env name="NETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002</env>
         <env name="PNETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
         <env name="LD_LIBRARY_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/lib:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/lib:$ENV{LD_LIBRARY_PATH}</env>
         <env name="PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/bin:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/bin:$ENV{PATH}</env>
+        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
+        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
      </environment_variables>
      <environment_variables DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
-        <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
-        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+	<env name="MPIR_CVAR_CH4_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="MPIR_CVAR_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE"></env>
+        <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
+        <env name="UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS">1</env>
+        <env name="UR_L0_USE_COPY_ENGINE_FOR_IN_ORDER_QUEUE">1</env>
+	<!--<env name="FI_PROVIDER">cxi</env>-->
+	<env name="FI_MR_CACHE_MONITOR">disabled</env>
+        <env name="FI_CXI_OVFLOW_BUF_SIZE">8388608</env>
+        <env name="PALS_PING_PERIOD">240</env>
+        <env name="PALS_RPC_TIMEOUT">240</env>
+
+	<env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
         <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
-        <env name="GPU_TILE_COMPACT">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
-        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
-        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
-        <env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>
+        <env name="GPU_TILE_COMPACT">/lus/flare/projects/E3SM_Dec/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
+        <env name="RANKS_BIND">list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100</env>
+	<!--<env name="Kokkos_ROOT">$ENV{KOKKOS_ROOT}</env>-->
         <env name="ZES_ENABLE_SYSMAN">1</env>
-        <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
+	<!-- default is ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE: enable this to run 4 MPI/tile or 48 MPI/node
+	<env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4</env>-->
+	<!-- <env name="ZE_FLAT_DEVICE_HIERARCHY">FLAT</env>
+	<env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>-->
     </environment_variables>
     <environment_variables compiler="oneapi-ifx">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
-        <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
-        <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="GPU_TILE_COMPACT"> </env>
+        <env name="RANKS_BIND">core</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
-        <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
+        <env name="KMP_AFFINITY">verbose,granularity=core,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
-        <env name="OMP_PLACES">threads</env>
+        <env name="OMP_PLACES">cores</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <resource_limits>
@@ -3867,6 +3887,7 @@
 	<command name="load">intelmpi/2019u3</command>
       </modules>
       <modules>
+        <command name="load">python/3.11.5</command>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
         <command name="load">mkl/2020</command>

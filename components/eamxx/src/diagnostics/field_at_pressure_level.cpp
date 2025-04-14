@@ -146,7 +146,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
         auto k1 = ub - beg;
         if (k1==0) {
           // Corner case: p_tgt==y1(0)
-          diag(icol) = y1(icol);
+          diag(icol) = y1(0);
         } else if (k1==nlevs) {
           // Corner case: p_tgt==y1(nlevs-1)
           diag(icol) = y1(nlevs-1);
@@ -181,7 +181,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
           auto k1 = ub - beg;
           if (k1==0) {
             // Corner case: p_tgt==y1(0)
-            diag(icol,idim) = y1(icol);
+            diag(icol,idim) = y1(0);
           } else if (k1==nlevs) {
             // Corner case: p_tgt==y1(nlevs-1)
             diag(icol,idim) = y1(nlevs-1);

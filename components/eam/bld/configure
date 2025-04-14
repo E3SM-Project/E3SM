@@ -2690,6 +2690,7 @@ sub write_filepath
     }
 
     print $fh "$camsrcdir/eam/src/physics/cam\n";
+    print $fh "$camsrcdir/eam/src/physics/cam/gw\n";
     if ($clubb_sgs eq '1') {
        print $fh "$camsrcdir/eam/src/physics/clubb\n";
        print $fh "$camsrcdir/eam/src/physics/silhs\n";

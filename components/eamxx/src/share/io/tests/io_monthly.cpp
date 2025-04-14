@@ -104,7 +104,7 @@ void write (const int seed, const ekat::Comm& comm)
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -120,13 +120,13 @@ void write (const int seed, const ekat::Comm& comm)
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_monthly"));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", std::string("Instant"));
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", std::string("instant"));
   om_pl.set("file_max_storage_type",std::string("one_month"));
-  om_pl.set("Floating Point Precision",std::string("single"));
+  om_pl.set("floating_point_precision",std::string("single"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -164,7 +164,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
@@ -189,7 +189,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   // Create reader pl
   ekat::ParameterList reader_pl;
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("field_names",fnames);
 
   for (int n=0; n<12; ++n) {
     auto t = t0 + n*dt;
@@ -198,7 +198,7 @@ void read (const int seed, const ekat::Comm& comm)
     // There should be just one time snapshot per file
     REQUIRE(scorpio::get_dimlen(filename,"time")==1);
 
-    reader_pl.set("Filename",filename);
+    reader_pl.set("filename",filename);
     AtmosphereInput reader(reader_pl,fm);
     reader.read_variables();
 

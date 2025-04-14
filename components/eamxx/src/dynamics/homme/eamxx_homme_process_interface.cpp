@@ -67,8 +67,8 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   set_homme_log_file_name_f90 (&logname);
 
   m_bfb_hash_nstep = 0;
-  if (params.isParameter("BfbHash"))
-    m_bfb_hash_nstep = std::max(0, params.get<int>("BfbHash"));
+  if (params.isParameter("bfb_hash"))
+    m_bfb_hash_nstep = std::max(0, params.get<int>("bfb_hash"));
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -80,10 +80,10 @@ HommeDynamics::~HommeDynamics ()
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   // Grab dynamics, physics, and physicsGLL grids
-  const auto dgn = "Dynamics";
+  const auto dgn = "dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
-  m_phys_grid = grids_manager->get_grid("Physics");
-  m_cgll_grid = grids_manager->get_grid("Physics GLL");
+  m_phys_grid = grids_manager->get_grid("physics");
+  m_cgll_grid = grids_manager->get_grid("physics_gll");
 
   fv_phys_set_grids();
 
@@ -92,7 +92,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
   if (!is_data_structures_inited_f90()) {
     // Set moisture in homme base on input file:
-    const auto& moisture = m_params.get<std::string>("Moisture");
+    const auto& moisture = m_params.get<std::string>("moisture");
     set_homme_param("moisture",ekat::upper_case(moisture)!="DRY");
 
     prim_init_data_structures_f90 ();
@@ -121,7 +121,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   // Sanity check for the grid. This should *always* pass, since Homme builds the grids
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()==nelem,
-      "Error! The number of elements computed from the Dynamics grid num_dof()\n"
+      "Error! The number of elements computed from the dynamics grid num_dof()\n"
       "       does not match the number of elements internal in Homme.\n");
 
   const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
@@ -180,7 +180,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
-  add_group<Updated>("tracers",pgn,N, true);
+  add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
 
   if (fv_phys_active()) {
     // [CGLL ICs in pg2] Read CGLL IC data even though our in/out format is
@@ -196,7 +196,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     add_field<Required>("T_mid",         rg_scalar3d_mid,K,     rgn,N);
     add_field<Required>("ps",            rg_scalar2d    ,Pa,    rgn);
     add_field<Required>("phis",          rg_scalar2d    ,m2/s2, rgn);
-    add_group<Required>("tracers",rgn,N, true);
+    add_group<Required>("tracers",rgn,N, MonolithicAlloc::Required);
     fv_phys_rrtmgp_active_gases_init(grids_manager);
     // This is needed for the dp_ref init in initialize_homme_state.
     add_field<Computed>("pseudo_density",rg_scalar3d_mid,Pa,    rgn,N);
@@ -354,7 +354,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //          that value to compute p_mid. Or, perhaps easier, write p_mid to restart file.
   EKAT_REQUIRE_MSG (
       get_field_out("pseudo_density",pgn).get_header().get_tracking().get_providers().size()==1,
-      "Error! Someone other than Dynamics is trying to update the pseudo_density.\n");
+      "Error! Someone other than dynamics is trying to update the pseudo_density.\n");
 
   // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
   EKAT_REQUIRE_MSG(not get_group_out("Q",pgn).m_info->empty(),
@@ -397,7 +397,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // ftype!=FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
     // Remap Q directly into FQ, tendency computed in pre_process step
-    m_p2d_remapper->register_field(*get_group_out("Q",pgn).m_bundle,m_helper_fields.at("FQ_dyn"));
+    m_p2d_remapper->register_field(*get_group_out("Q",pgn).m_monolithic_field,m_helper_fields.at("FQ_dyn"));
     m_p2d_remapper->register_field(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
 
     // FM has 3 components on dyn grid, but only 2 on phys grid
@@ -412,7 +412,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->register_field(get_internal_field("v_dyn"),get_field_out("horiz_winds"));
     m_d2p_remapper->register_field(get_internal_field("dp3d_dyn"), get_field_out("pseudo_density"));
     m_d2p_remapper->register_field(get_internal_field("ps_dyn"), get_field_out("ps"));
-    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",pgn).m_bundle);
+    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",pgn).m_monolithic_field);
     m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
     m_p2d_remapper->registration_ends();
@@ -430,16 +430,16 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   }
 
   // Since we just inited them, ensure p_mid/p_int (dry and wet) timestamps are valid
-  get_field_out("p_int")    .get_header().get_tracking().update_time_stamp(timestamp());
-  get_field_out("p_mid")    .get_header().get_tracking().update_time_stamp(timestamp());
-  get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(timestamp());
-  get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(timestamp());
+  get_field_out("p_int")    .get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("p_mid")    .get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("p_dry_int").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_field_out("p_dry_mid").get_header().get_tracking().update_time_stamp(start_of_step_ts());
 
   // Complete homme model initialization
   prim_init_model_f90 ();
 
   if (fv_phys_active()) {
-    fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
+    fv_phys_dyn_to_fv_phys(start_of_step_ts(),run_type == RunType::Restart);
     // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
     // separate fvphyshack-based line to remove the whole CGLL FM. The intention
     // is to clear the view memory on the device, but I don't know if these two
@@ -463,7 +463,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
 
-  add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_bundle,m_phys_grid,0,true);
+  add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_monolithic_field,m_phys_grid,0,true);
   add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,100.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,30000.0, 120000.0,false);
@@ -489,8 +489,8 @@ void HommeDynamics::run_impl (const double dt)
         "  - input dt : " << dt << "\n"
         "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
 
-    if (m_bfb_hash_nstep > 0 && timestamp().get_num_steps() % m_bfb_hash_nstep == 0)
-      print_fast_global_state_hash("Hommexx");
+    if (m_bfb_hash_nstep > 0 && start_of_step_ts().get_num_steps() % m_bfb_hash_nstep == 0)
+      print_fast_global_state_hash("Hommexx",start_of_step_ts());
 
     const int dt_int = static_cast<int>(std::round(dt));
 
@@ -686,7 +686,7 @@ void HommeDynamics::homme_post_process (const double dt) {
   const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
-  const auto Q_view   = get_group_out("Q",pgn).m_bundle->get_view<Pack***>();
+  const auto Q_view   = get_group_out("Q",pgn).m_monolithic_field->get_view<Pack***>();
 
   const auto T_view  = get_field_out("T_mid").get_view<Pack**>();
   const auto T_prev_view = m_helper_fields.at("FT_phys").get_view<Pack**>();
@@ -811,7 +811,7 @@ void HommeDynamics::init_homme_views () {
   std::stringstream msg;
   msg << "\n************** HOMMEXX SimulationParams **********************\n\n";
   msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
-  msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
+  msg << "   moisture: " << (params.use_moisture ? "moist" : "dry") << "\n";
   msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
   msg << "   test case: " << Homme::etoi(params.test_case) << "\n";
   msg << "   ftype: " << Homme::etoi(params.ftype) << "\n";
@@ -1003,7 +1003,7 @@ void HommeDynamics::restart_homme_state () {
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
-    auto Q_old = *get_group_in("Q",pgn).m_bundle;
+    auto Q_old = *get_group_in("Q",pgn).m_monolithic_field;
     m_ic_remapper->register_field(Q_old,Q_dyn);
 
     // Grab qv_ref_old from Q_old
@@ -1106,7 +1106,7 @@ void HommeDynamics::initialize_homme_state () {
   m_ic_remapper->register_field(get_field_in("ps",rgn),get_internal_field("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),get_internal_field("vtheta_dp_dyn"));
-  m_ic_remapper->register_field(*get_group_in("tracers",rgn).m_bundle,m_helper_fields.at("Q_dyn"));
+  m_ic_remapper->register_field(*get_group_in("tracers",rgn).m_monolithic_field,m_helper_fields.at("Q_dyn"));
   m_ic_remapper->registration_ends();
   m_ic_remapper->remap_fwd();
 
@@ -1177,7 +1177,7 @@ void HommeDynamics::initialize_homme_state () {
     const auto& name = it.get_header().get_identifier().name();
     const auto& grid = it.get_header().get_identifier().get_grid_name();
     auto& f = get_internal_field(name,grid);
-    f.get_header().get_tracking().update_time_stamp(timestamp());
+    f.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
   if (not fv_phys_active()) {
@@ -1215,7 +1215,7 @@ void HommeDynamics::initialize_homme_state () {
     update_pressure (m_phys_grid);
   }
 
-  // If "Instant" averaging type is used for output,
+  // If "instant" averaging type is used for output,
   // an initial output is performed before AD processes
   // are run. If omega_dyn output is requested, it will
   // not have valid computed values for this initial

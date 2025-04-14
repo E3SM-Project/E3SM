@@ -13,7 +13,7 @@ atmosphere_processes:
     orbital_eccentricity: 0.0
     orbital_obliquity: 0.0
     orbital_mvelp: 0.0
-    Fixed Solar Zenith Angle: 0.86
+    fixed_solar_zenith_angle: 0.86
     do_aerosol_rad: false
     nswgpts: 224
     nlwgpts: 256
@@ -24,11 +24,11 @@ atmosphere_processes:
     pool_size_multiplier: 2.0
 
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: CREATE_EMPTY_DATA
-  grids_names: [Physics]
-  Physics:
-    aliases: [Point Grid]
+  grids_names: [physics]
+  physics:
+    aliases: [point_grid]
     type: point_grid
     number_of_global_columns:   128
     number_of_vertical_levels:  42

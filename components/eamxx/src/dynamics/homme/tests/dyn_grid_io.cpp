@@ -56,19 +56,19 @@ TEST_CASE("dyn_grid_io")
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("physics_grid_type","GLL");
+  params.set<std::string>("physics_grid_type","gll");
   params.set<std::string>("vertical_coordinate_filename","NONE");
   auto gm = std::make_shared<HommeGridsManager>(comm,params);
   gm->build_grids();
 
-  auto dyn_grid  = gm->get_grid("Dynamics");
-  auto phys_grid = gm->get_grid("Physics GLL");
+  auto dyn_grid  = gm->get_grid("dynamics");
+  auto phys_grid = gm->get_grid("physics_gll");
 
   // Local counters
   EKAT_REQUIRE_MSG(phys_grid->get_num_local_dofs()>0, "Internal test error! Fix dyn_grid_io, please.\n");
   EKAT_REQUIRE_MSG(get_num_local_elems_f90()>0, "Internal test error! Fix dyn_grid_io, please.\n");
 
-  // Create physics and dynamics Fields
+  // Create physics and dynamics fields
   auto dyn_scalar3d_mid = dyn_grid->get_3d_scalar_layout(true);
   auto dyn_vector3d_mid = dyn_grid->get_3d_vector_layout(true,2);
   auto dyn_scalar2d     = dyn_grid->get_2d_scalar_layout();
@@ -137,14 +137,14 @@ TEST_CASE("dyn_grid_io")
   // Now try to write all fields to file from the dyn grid fm
   // Note: add MPI ranks to filename, to allow MPI tests to run in parallel
   ekat::ParameterList out_params;
-  out_params.set<std::string>("Averaging Type","Instant");
+  out_params.set<std::string>("averaging_type","instant");
   out_params.set<std::string>("filename_prefix","dyn_grid_io");
-  out_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
-  out_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
+  out_params.sublist("fields").sublist("dynamics").set<std::vector<std::string>>("field_names",fnames);
+  out_params.sublist("fields").sublist("dynamics").set<std::string>("io_grid_name","physics_gll");
 
-  out_params.sublist("output_control").set<int>("Frequency",1);
+  out_params.sublist("output_control").set<int>("frequency",1);
   out_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
-  out_params.set<std::string>("Floating Point Precision","real");
+  out_params.set<std::string>("floating_point_precision","real");
 
   OutputManager output;
   output.initialize(comm, out_params, t0, false);
@@ -157,8 +157,8 @@ TEST_CASE("dyn_grid_io")
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
   ekat::ParameterList in_params;
-  in_params.set<std::string>("Filename",filename);
-  in_params.set<std::vector<std::string>>("Field Names",fnames);
+  in_params.set<std::string>("filename",filename);
+  in_params.set<std::vector<std::string>>("field_names",fnames);
 
   // AtmosphereInput expects a FM on a single grid, create
   // a phys FM and add fields.

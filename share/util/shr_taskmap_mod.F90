@@ -25,7 +25,6 @@ module shr_taskmap_mod
 !- module boilerplate --------------------------------------------------
 !-----------------------------------------------------------------------
    implicit none
-   include 'mpif.h'
    private
    save                             ! Make the default access private
 
@@ -45,6 +44,8 @@ module shr_taskmap_mod
    subroutine shr_taskmap_write (unit_num, comm_id, comm_name, &
                                  verbose, no_output, &
                                  save_nnodes, save_task_node_map)
+
+     use mpi
 
 !-----------------------------------------------------------------------
 ! Purpose: Write out list of nodes used by processes in a given

@@ -13,6 +13,21 @@ enum RequestType {
   Updated   // For convenience, triggers Required+Computed
 };
 
+// Whether a tracer should be advected by both Dynamics
+// and Turbulance, or only by Dynamics
+enum TracerAdvection {
+  NoPreference, // Default. In the case that no process gives a preference,
+                // the tracer is advected by dynamics and turbulence
+  DynamicsAndTurbulence,
+  DynamicsOnly,
+};
+
+// Whether the field group should be allocated as a monolithic field
+enum class MonolithicAlloc : int {
+  Required,
+  NotRequired
+};
+
 /*
  * A struct used to request a group of fields.
  *
@@ -33,27 +48,28 @@ struct GroupRequest {
   //  - name: the name of the group
   //  - grid: the grid where the group is requested
   //  - ps: the pack size that the allocation of the fields in the group
-  //        (and the bundled field, if any) should accommodate (see field_alloc_prop.hpp)
-  //  - bundled: whether the group should be bundled (see field_group.hpp)
-  GroupRequest (const std::string& name_, const std::string& grid_, const int ps, const bool bundled_ = false)
-   : name(name_), grid(grid_), pack_size(ps), bundled(bundled_)
+  //        (and the monolithic field, if any) should accommodate (see field_alloc_prop.hpp)
+  //  - monolithic_alloc: whether the group should be allocated as a monolithic group (see field_group.hpp)
+  GroupRequest (const std::string& name_, const std::string& grid_, const int ps,
+                const MonolithicAlloc monolithic_alloc_ = MonolithicAlloc::NotRequired)
+   : name(name_), grid(grid_), pack_size(ps), monolithic_alloc(monolithic_alloc_)
   {
     EKAT_REQUIRE_MSG(pack_size>=1, "Error! Invalid pack size request.\n");
   }
 
   GroupRequest (const std::string& name_, const std::string& grid_,
-                const bool bundled = false)
-   : GroupRequest(name_,grid_,1,bundled)
+                const MonolithicAlloc monolithic_alloc_ = MonolithicAlloc::NotRequired)
+   : GroupRequest(name_,grid_,1,monolithic_alloc_)
   { /* Nothing to do here */ }
 
   // Default copy ctor is perfectly fine
   GroupRequest (const GroupRequest&) = default;
 
   // Main parts of a group request
-  std::string name; // Group name
-  std::string grid; // Grid name
-  int pack_size;    // Request an allocation that can accomodate Pack<Real,pack_size>
-  bool bundled;     // Whether the group should be allocated as a single n+1 dimensional field
+  std::string name;                  // Group name
+  std::string grid;                  // Grid name
+  int pack_size;                     // Request an allocation that can accomodate Pack<Real,pack_size>
+  MonolithicAlloc monolithic_alloc;  // Whether the group should be allocated as a single n+1 dimensional field
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -82,8 +98,8 @@ inline bool operator< (const GroupRequest& lhs,
     return false;
   }
 
-  // Same pack size, order by bundling
-  return lhs.bundled<rhs.bundled;
+  // Same pack size, order by monolithic allocation
+  return etoi(lhs.monolithic_alloc)<etoi(rhs.monolithic_alloc);
 }
 
 /*
@@ -168,6 +184,7 @@ struct FieldRequest {
   SubviewInfo               subview_info;
   std::string               parent_name;
   bool                      incomplete = false;
+  std::string               calling_process = "UNKNOWN";
 };
 
 // In order to use FieldRequest in std sorted containers (like std::set),
@@ -181,7 +198,11 @@ inline bool operator< (const FieldRequest& lhs,
     if (lhs.pack_size<rhs.pack_size) {
       return true;
     } else if (lhs.pack_size==rhs.pack_size) {
-      return lhs.groups < rhs.groups;
+      if (lhs.groups < rhs.groups) {
+        return true;
+      } else if (lhs.groups==rhs.groups) {
+        return lhs.calling_process < rhs.calling_process;
+      }
     }
   }
   return false;

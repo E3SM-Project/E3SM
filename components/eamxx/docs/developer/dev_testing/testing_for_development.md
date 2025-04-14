@@ -66,7 +66,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
     void MAMInjectAsh::set_grids(
         const std::shared_ptr<const GridsManager> grids_manager) {
       constexpr auto kg = ekat::units::kg;
-      auto grid = grids_manager->get_grid("Physics");
+      auto grid = grids_manager->get_grid("physics");
       add_tracer<Updated>("ash", grid, kg / kg);
       lat = grid->get_geometry_data("lat");
       lon = grid->get_geometry_data("lon");
@@ -76,7 +76,7 @@ be the `eamxx_inject_ash_process_interface.<x>pp` files, located at
       [...] // set source_mask=1 only on area of interest, using lat/lon field
     }
     void MAM_AshInjection::run_impl(const double dt) {
-      auto t = this->timestamp() + dt; // timestamp() is the START of step time
+      auto t = end_of_step_ts();
       auto ash = get_field_out("ash");
       auto rate = compute_ash_injection_rate(
           t); // defined in ash_source_calculation.hpp header
@@ -212,17 +212,17 @@ Defining the test behavior and pass/fail criteria requires 3 files:
         inject_ash_XYZ_data: ${EAMXX_DATA_DIR}/mam4xx/.../inject_ash_input_data_file_XYZ.nc
         <identifying-string-used-by-inject_ash_xyz.xpp>: /path/to/.../data_file.nc
     grids_manager:
-      Type: Mesh Free
+      type: mesh_free
       geo_data_source: IC_FILE
-      grids_names: [Physics GLL]
-      Physics GLL:
+      grids_names: [physics_gll]
+      physics_gll:
         type: point_grid
-        aliases: [Physics]
+        aliases: [physics]
         number_of_global_columns:   218
         number_of_vertical_levels:  72
     initial_conditions:
       # The name of the file containing the initial conditions for this test.
-      Filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
+      filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
       topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
       # other variables to pass as input
@@ -230,7 +230,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:
       num_XYZ : 1.618
       <input_variable> : <value>
     # The parameters for I/O control
-    Scorpio:
+    scorpio:
       output_yaml_files: ["output.yaml"]
     ...
     ```
@@ -241,13 +241,13 @@ Defining the test behavior and pass/fail criteria requires 3 files:
     %YAML 1.1
     ---
     filename_prefix: mam4_inject_ash_standalone_output
-    Averaging Type: Instant
-    Fields:
-      Physics:
-        Field Names:
+    averaging_type: instant
+    fields:
+      physics:
+        field_names:
           - answer_field
     output_control:
-      Frequency: 1
+      frequency: 1
       frequency_units: nsteps
     ...
     ```

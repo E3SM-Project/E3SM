@@ -28,11 +28,15 @@ void MAMWetscav::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
   nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
+  len_temporary_views_ = get_len_temporary_views();
+  buffer_.set_len_temporary_views(len_temporary_views_);
+  buffer_.set_num_scratch(num_2d_scratch_);
+
   const int nmodes    = mam4::AeroConfig::num_modes();  // Number of modes
   constexpr int pcnst = mam4::aero_model::pcnst;
 
@@ -168,13 +172,37 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(
       buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
       "Error! Insufficient buffer size.\n");
-
   size_t used_mem =
       mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  std::cout << "used_mem " << used_mem << "requested_buffer_size_in_bytes() "
+            << requested_buffer_size_in_bytes() << "\n";
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMWetscav.");
 }
 
+int MAMWetscav::get_len_temporary_views() {
+  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len() * ncol_;
+  return work_len;
+}
+
+void MAMWetscav::init_temporary_views() {
+  auto work_ptr = (Real *)buffer_.temporary_views.data();
+  // Allocate work array
+  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
+  work_              = view_2d(work_ptr, ncol_, work_len);
+  work_ptr += ncol_ * work_len;
+
+  /// error check
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try
+  // to use the minimum amount of memory
+  const int workspace_used     = work_ptr - buffer_.temporary_views.data();
+  const int workspace_provided = buffer_.temporary_views.extent(0);
+  EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
+                       ") should be equal. \n");
+}
 // ================================================================
 //  INITIALIZE_IMPL
 // ================================================================
@@ -233,60 +261,54 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   //---------------------------------------------------------------------------------
   // Alllocate aerosol-related gas tendencies
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    dry_aero_tends_.gas_mmr[g] = view_2d("gas_mmr", ncol_, nlev_);
+    set_field_w_scratch_buffer(dry_aero_tends_.gas_mmr[g], buffer_, true);
   }
 
   // Allocate aerosol state tendencies (interstitial aerosols only)
   for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
-    dry_aero_tends_.int_aero_nmr[imode] = view_2d("int_aero_nmr", ncol_, nlev_);
+    set_field_w_scratch_buffer(dry_aero_tends_.int_aero_nmr[imode], buffer_,
+                               true);
 
     for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
-      dry_aero_tends_.int_aero_mmr[imode][ispec] =
-          view_2d("int_aero_mmr", ncol_, nlev_);
+      set_field_w_scratch_buffer(dry_aero_tends_.int_aero_mmr[imode][ispec],
+                                 buffer_, true);
     }
   }
-
   // Allocate work array
-  const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
-  work_              = view_2d("work", ncol_, work_len);
-
+  init_temporary_views();
+  isprx_ = int_view_2d("isprx", ncol_, nlev_);
   // TODO: Following variables are from convective parameterization (not
   // implemented yet in EAMxx), so should be zero for now
-
-  sh_frac_ = view_2d("sh_frac", ncol_, nlev_);
-  Kokkos::deep_copy(sh_frac_, 0);
+  // NOTE:If we use buffer_ to set the following inputs,
+  // we must set these views to zero at every time step.
+  sh_frac_ = view_2d("sh_frac_", ncol_, nlev_);
 
   // Deep convective cloud fraction [fraction]
-  dp_frac_ = view_2d("dp_frac", ncol_, nlev_);
-  Kokkos::deep_copy(dp_frac_, 0);
+  dp_frac_ = view_2d("dp_frac_", ncol_, nlev_);
 
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
-  evapcsh_ = view_2d("evapcsh", ncol_, nlev_);
-  Kokkos::deep_copy(evapcsh_, 0);
+  evapcsh_ = view_2d("evapcsh_", ncol_, nlev_);
 
   // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
-  evapcdp_ = view_2d("evapcdp", ncol_, nlev_);
-  Kokkos::deep_copy(evapcdp_, 0);
+  evapcdp_ = view_2d("evapcdp_", ncol_, nlev_);
 
   // Rain production, shallow convection [kg/kg/s]
-  rprdsh_ = view_2d("rprdsh", ncol_, nlev_);
-  Kokkos::deep_copy(rprdsh_, 0);
+  rprdsh_ = view_2d("rprdsh_", ncol_, nlev_);
 
   // Rain production, deep convection [kg/kg/s]
-  rprddp_ = view_2d("rprddp", ncol_, nlev_);
-  Kokkos::deep_copy(rprddp_, 0);
+  rprddp_ = view_2d("rprddp_", ncol_, nlev_);
 
   // In cloud water mixing ratio, deep convection
-  icwmrdp_ = view_2d("icwmrdp", ncol_, nlev_);
-  Kokkos::deep_copy(icwmrdp_, 0);
+  icwmrdp_ = view_2d("icwmrdp_", ncol_, nlev_);
 
   // In cloud water mixing ratio, shallow convection
-  icwmrsh_ = view_2d("icwmrsh", ncol_, nlev_);
-  Kokkos::deep_copy(icwmrsh_, 0);
-
+  icwmrsh_ = view_2d("icwmrsh_", ncol_, nlev_);
   // Detraining cld H20 from deep convection [kg/kg/s]
-  dlf_ = view_2d("dlf", ncol_, nlev_);
-  Kokkos::deep_copy(dlf_, 0);
+  dlf_ = view_2d("dlf_", ncol_, nlev_);
+
+  calsize_data_.initialize();
+  // wetscav uses update_mmr=true;
+  calsize_data_.set_update_mmr(true);
 }
 
 // ================================================================
@@ -304,6 +326,7 @@ void MAMWetscav::run_impl(const double dt) {
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
+  const auto &isprx                          = isprx_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
   // ---------------------------------------------------------------
@@ -381,6 +404,14 @@ void MAMWetscav::run_impl(const double dt) {
     }
   }
 
+  Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
+                    [mam4::AeroConfig::num_modes()];
+  Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
+                    [mam4::AeroConfig::num_modes()];
+
+  mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+  const auto &calsize_data =  calsize_data_;
+
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -426,12 +457,7 @@ void MAMWetscav::run_impl(const double dt) {
         auto wetdens_icol     = ekat::subview(wetdens, icol);
         const auto prain_icol = ekat::subview(prain, icol);
 
-        Real scavimptblnum[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
-        Real scavimptblvol[mam4::aero_model::nimptblgrow_total]
-                          [mam4::AeroConfig::num_modes()];
-
-        mam4::wetdep::init_scavimptbl(scavimptblvol, scavimptblnum);
+        auto isprx_icol = ekat::subview(isprx, icol);
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
@@ -439,9 +465,10 @@ void MAMWetscav::run_impl(const double dt) {
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
             dlf_icol, prain_icol, scavimptblnum, scavimptblvol,
+            calsize_data,
             // outputs
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-            aerdepwetis_icol, aerdepwetcw_icol, work_icol);
+            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
@@ -460,6 +487,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
   // and update the state
+  Kokkos::fence();
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
 }

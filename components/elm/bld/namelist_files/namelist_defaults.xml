@@ -395,6 +395,8 @@ lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c230905.nc</fsurd
 lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_brazil"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr2000_c130927.nc</fsurdat>
+<fsurdat hgrid="1x1_icycape"    sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_1x1pt_IcyCape_polygons_c240909.nc</fsurdat>
 <fsurdat hgrid="1x1_tropicAtl" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr2000_c130927.nc</fsurdat>
 
@@ -433,6 +435,8 @@ lnd/clm2/surfdata_map/surfdata_antarcticax4v1pg2_simyr2010_c210131.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr1850_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_brazil"    sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr1850_c140610.nc</fsurdat>
+<fsurdat hgrid="1x1_icycape"    sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_1x1pt_IcyCape_polygons_c240909.nc</fsurdat>
 
 
 <fsurdat hgrid="ne30np4"      sim_year="1850" use_crop=".false." >
@@ -655,7 +659,6 @@ this mask will have smb calculated over the entire global land surface
 <!--  ***********  Resolution independent:   ***********  -->
 <fsnowoptics >lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 <fsnowaging  >lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc</fsnowaging>
-<use_snicar_ad>.true.</use_snicar_ad>
 <snow_shape>sphere</snow_shape>
 <snicar_atm_type>default</snicar_atm_type>
 <use_dust_snow_internal_mixing>.false.</use_dust_snow_internal_mixing>
@@ -2247,5 +2250,9 @@ this mask will have smb calculated over the entire global land surface
 <use_fan use_cn=".false.">.false.</use_fan>
 <use_fan use_fates=".true." >.false.</use_fan>
 <use_fan fan_mode='disable'>.false.</use_fan>
+
+<!-- NGEE Arctic Options -->
+<use_polygonal_tundra>.false.</use_polygonal_tundra>;
+<use_arctic_init>.false.</use_arctic_init>;
 
 </namelist_defaults>

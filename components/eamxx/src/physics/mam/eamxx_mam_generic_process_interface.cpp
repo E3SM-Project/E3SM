@@ -140,8 +140,10 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
   // ---------------------------------------------------------------------
   // These variables are "Updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
-  // NOTE: Cloud borne aerosols are not updated in this process but are included
-  // to create data structures.
+  // NOTE:
+  //   - Cloud borne aerosols are not updated in this process but are included
+  //     to create data structures.
+  //   - For interstitial aerosols, we have dynamics advect, but not turbulence.
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -149,13 +151,15 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
-    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit);
+    add_tracer<Updated>(int_nmr_field_name, grid_, n_unit, 1,
+                        TracerAdvection::DynamicsOnly);
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
-        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit);
+        add_tracer<Updated>(int_mmr_field_name, grid_, q_unit, 1,
+                            TracerAdvection::DynamicsOnly);
       }
     }  // end for loop num species
   }    // end for loop for num modes
@@ -214,13 +218,36 @@ void MAMGenericInterface::populate_cloudborne_dry_aero(
   }
 }
 // ================================================================
+void MAMGenericInterface::set_field_w_scratch_buffer(
+    mam_coupling::view_2d &var, mam_coupling::Buffer &buffer,
+    const bool set_to_zero) {
+  var = buffer.scratch[i_scratch_vars_];
+  i_scratch_vars_++;
+  EKAT_REQUIRE_MSG(i_scratch_vars_ < buffer.num_2d_scratch,
+                   "Error! Insufficient number of scratch size in mam buffer.\n"
+                   "  - i_scratch_vars_: " +
+                       std::to_string(i_scratch_vars_) +
+                       "\n"
+                       "  -  buffer.num_2d_scratch: " +
+                       std::to_string(buffer.num_2d_scratch) + "\n");
+  if(set_to_zero) {
+    Kokkos::deep_copy(var, 0.0);
+  }
+}
+// ================================================================
 void MAMGenericInterface::populate_gases_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
 }
-
+// ================================================================
+void MAMGenericInterface::set_buffer_scratch_to_zero(
+    mam_coupling::Buffer &buffer) {
+  for(int f = 0; f < buffer.num_2d_scratch; ++f) {
+    Kokkos::deep_copy(buffer.scratch[f], 0.0);
+  }
+}
 // ================================================================
 void MAMGenericInterface::populate_gases_wet_aero(
     mam_coupling::AerosolState &wet_aero) {

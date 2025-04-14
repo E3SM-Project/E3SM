@@ -1,0 +1,3 @@
+use_polygonal_tundra = .true.
+use_arctic_init = .true.
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_1x1pt_IcyCape_polygons_c240909.nc'

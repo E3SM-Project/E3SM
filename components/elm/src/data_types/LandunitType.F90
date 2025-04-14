@@ -47,6 +47,8 @@ module LandunitType
      logical , pointer :: urbpoi       (:) => null() ! true=>urban point
      logical , pointer :: glcmecpoi    (:) => null() ! true=>glacier_mec point
      logical , pointer :: active       (:) => null() ! true=>do computations on this landunit
+     logical , pointer :: ispolygon    (:) => null() ! true=>is polygonal tundra
+     integer , pointer :: polygontype  (:) => null() ! ice wedge polygon initial condition (LCP, FCP, or HCP)
 
      ! urban properties
      real(r8), pointer :: canyon_hwr   (:) => null() ! urban landunit canyon height to width ratio (-)
@@ -93,6 +95,8 @@ contains
     allocate(this%lakpoi       (begl:endl)); this%lakpoi    (:) = .false.
     allocate(this%urbpoi       (begl:endl)); this%urbpoi    (:) = .false.
     allocate(this%glcmecpoi    (begl:endl)); this%glcmecpoi (:) = .false.
+    allocate(this%ispolygon    (begl:endl)); this%ispolygon (:) = .false.
+    allocate(this%polygontype  (begl:endl)); this%polygontype(:) = ispval
 
     ! The following is initialized in routine setActive in module reweightMod
     allocate(this%active       (begl:endl))
@@ -129,6 +133,8 @@ contains
     deallocate(this%lakpoi       )
     deallocate(this%urbpoi       )
     deallocate(this%glcmecpoi    )
+    deallocate(this%ispolygon    )
+    deallocate(this%polygontype  )
     deallocate(this%active       )
     deallocate(this%canyon_hwr   )
     deallocate(this%wtroad_perv  )
