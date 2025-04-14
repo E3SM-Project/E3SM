@@ -69,6 +69,9 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_DATA_COPY_CTOR(name, num_args) \
   name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
+#define PTD_DATA_COPY_CTOR_INIT(name, num_args)                         \
+  name(const name& rhs) : name(PTD_ONES(num_args), rhs.init) { *this = rhs; }
+
 #define  PTD_ASS0()           ((void) (0))
 #define  PTD_ASS1(first)      first = rhs.first; PTD_ASS0()
 #define  PTD_ASS2(first, ...) first = rhs.first; PTD_ASS1(__VA_ARGS__)
@@ -127,6 +130,9 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
+#define PTD_ASSIGN_OP_INIT(name, num_scalars, ...)                      \
+  name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); init = rhs.init; return *this; }
+
 #define PTD_RW_SCALARS(num_scalars, ...) \
   void read_scalars(const ekat::FILEPtr& fid) { EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate baselines for some BFB unit tests"); PTD_RW##num_scalars(read, __VA_ARGS__); } \
   void write_scalars(const ekat::FILEPtr& fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
@@ -142,6 +148,12 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_STD_DEF(name, num_scalars, ...) \
   PTD_DATA_COPY_CTOR(name, num_scalars);     \
   PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__) \
+  PTD_RW() \
+  PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
+
+#define PTD_STD_DEF_INIT(name, num_scalars, ...) \
+  PTD_DATA_COPY_CTOR_INIT(name, num_scalars);     \
+  PTD_ASSIGN_OP_INIT(name, num_scalars, __VA_ARGS__) \
   PTD_RW() \
   PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
 
