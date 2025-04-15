@@ -117,7 +117,7 @@ contains
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: connectedMarineMask, growMask !masks to pass to flood-fill routine
       integer, dimension(:), pointer :: altConnectedMarineMask, altGrowMask
-      real (kind=RKIND), dimension(:,:,:), allocatable :: oceanField
+      real (kind=RKIND), dimension(:,:,:), pointer :: oceanField
 
       !debugg:
       integer :: i, saltDimSize, tempDimSize
@@ -162,13 +162,12 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'altConnectedMarineMask', altConnectedMarineMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'origGrowMask', growMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'altGrowMask', altGrowMask)
-        
+         call mpas_pool_get_array(extrapOceanDataPool, 'oceanField', oceanField)
+
          if (config_recalculate_thermal_forcing) then
             call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanTemperature', MPAS_3dOceanTemperature)
             call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanSalinity', MPAS_3dOceanSalinity)
          endif
-         
-         allocate(oceanField(nISMIP6OceanLayers,nCells+1,2))
          
          ! create a 2D mask based on the open ocean + floating ice + grounded ice mask to be used for defining the location of the n-extra cells into the grounded ice
          allocate(seedOceanMaskHorizOld(nCells+1))
@@ -246,10 +245,17 @@ contains
                endif
             endif
          enddo
+        
+         ! update halos
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'connectedMarineMask')
+         call mpas_dmpar_field_halo_exch(domain, 'altConnectedMarineMask')
+         call mpas_timer_stop("halo updates")
+         
          ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
          call li_flood_fill(connectedMarineMask, growMask, domain)
          call li_flood_fill(altConnectedMarineMask, altGrowMask, domain)
-
+         
          ! alter orig3dOceanMask if necessary to avoid errors
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
@@ -420,8 +426,6 @@ contains
             ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(:,:,1)
          endif
 
-         deallocate(oceanField)
-
       endif
    !--------------------------------------------------------------------
 
@@ -466,7 +470,7 @@ contains
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
       integer, dimension(:,:), pointer, intent(inout) :: validOceanMask
       integer, intent(inout) :: err !< Output: error flag
-      real (kind=RKIND), dimension(:,:,:), allocatable, intent(inout) :: oceanField
+      real (kind=RKIND), dimension(:,:,:), pointer, intent(inout) :: oceanField
 
       !-----------------------------------------------------------------
       ! output variables
@@ -598,6 +602,7 @@ contains
          ! update halo for validOceanMask
          call mpas_timer_start("halo updates")
          call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
+         call mpas_dmpar_field_halo_exch(domain,'oceanField')
          call mpas_timer_stop("halo updates")
 
          validOceanMaskOld(:,:) = validOceanMask(:,:)
@@ -649,7 +654,7 @@ contains
       type (domain_type), intent(inout) :: domain  !< Input/Output: domain object
       integer, dimension(:,:), pointer, intent(inout) :: validOceanMask
       integer, intent(inout) :: err !< Output: error flag
-      real (kind=RKIND), dimension(:,:,:), allocatable, intent(inout) :: oceanField
+      real (kind=RKIND), dimension(:,:,:), pointer, intent(inout) :: oceanField
 
       !-----------------------------------------------------------------
       ! output variables
@@ -734,6 +739,7 @@ contains
       ! update halo for validOceanMask and ocean data
       call mpas_timer_start("halo updates")
       call mpas_dmpar_field_halo_exch(domain, 'validOceanMask')
+      call mpas_dmpar_field_halo_exch(domain, 'oceanField')
       call mpas_timer_stop("halo updates")
       ! update count of cells added to mask globally
       call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
