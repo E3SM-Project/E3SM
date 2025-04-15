@@ -68,7 +68,6 @@ contains
 #ifdef HOMME_ENABLE_COMPOSE
     use compose_mod,       only: compose_control_kokkos_init_and_fin
 #endif
-    use prim_driver_mod,   only: prim_init_grid_views
 
 #ifdef HOMME_ENABLE_COMPOSE
     ! Compose is not in charge of init/finalize kokkos
@@ -85,8 +84,6 @@ contains
 
     ! Cleanup the tmp stuff used in prim_init1_geometry
     call prim_init1_cleanup()
-
-    call prim_init_grid_views (elem)
 
   end subroutine prim_complete_init1_phase_f90
 
@@ -183,7 +180,7 @@ contains
   subroutine prim_init_model_f90 () bind(c)
     use prim_driver_mod,   only: prim_init_ref_states_views, &
                                  prim_init_diags_views, prim_init_kokkos_functors, &
-                                 prim_init_state_views
+                                 prim_init_state_views, prim_init_grid_views
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
     use global_norms_mod,  only: dss_hvtensor, print_cfl
@@ -222,6 +219,9 @@ contains
     ! allocates local memory for each process from a
     ! single buffer.
     call prim_init_kokkos_functors (allocate_buffer)
+
+    ! Init grid-related views
+    call prim_init_grid_views (elem)
 
     ! Init diags views
     call prim_init_diags_views (elem)
