@@ -234,7 +234,7 @@ subroutine gw_init(pbuf2d)
   use ref_pres,   only: pref_edge
   use physconst,  only: gravit, rair
 
-  use gw_common,  only: gw_common_init, orographic_only
+  use gw_common,  only: gw_common_init
   use gw_oro,     only: gw_oro_init
   use gw_front,   only: gw_front_init
   use gw_convect, only: gw_convect_init
