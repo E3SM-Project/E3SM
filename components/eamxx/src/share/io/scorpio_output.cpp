@@ -414,8 +414,10 @@ run (const std::string& filename,
       // Find where the field is NOT equal to m_fill_value
       compute_mask<Comparison::NE>(field,m_fill_value,mask);
 
+      print_field_hyperslab(mask.alias("field mask"));
       // mask=1 for "good" entries, and mask=0 otherwise.
       count.update(mask,1,1);
+      print_field_hyperslab(count.alias("count"));
 
       // Handle writing the average count variables to file
       if (is_write_step) {
@@ -436,12 +438,14 @@ run (const std::string& filename,
 
           // Recycle mask to find where count<thresh
           compute_mask<Comparison::LT>(count,min_count,mask);
+          print_field_hyperslab(mask.alias("count mask"));
 
           // Later, we divide fields by count. By setting count=1 where count<thresholt,
           // we can later do
           //   f.scale_inv(count); // Requires count!=0 anywhere
           //   f.deep_copy(fill_val,mask)
           count.deep_copy(1,mask);
+          print_field_hyperslab(count.alias("masked_count"));
         }
       }
     }
@@ -461,7 +465,10 @@ run (const std::string& filename,
       case OutputAvgType::Min:
         f_out.min(f_in);        break;
       case OutputAvgType::Average:
-        f_out.update(f_in,1,1); break;
+        print_field_hyperslab(f_out.alias("pre update"));
+        print_field_hyperslab(f_in.alias("f_in"));
+        f_out.update(f_in,1,1); // break;
+        print_field_hyperslab(f_out.alias("post update")); break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
     }
@@ -473,10 +480,14 @@ run (const std::string& filename,
           const auto& avg_cnt_name = m_field_to_avg_cnt_map.at(name);
           auto avg_cnt = fm_scorpio->get_field(avg_cnt_name);
 
+          print_field_hyperslab(f_out.alias("pre scale"));
           f_out.scale_inv(avg_cnt);
+          print_field_hyperslab(f_out.alias("post scale"));
 
           const auto& mask = avg_cnt.get_header().get_extra_data<Field>("mask");
+          print_field_hyperslab(mask.alias("mask"));
           f_out.deep_copy(m_fill_value,mask);
+          print_field_hyperslab(f_out.alias("post mask"));
         } else {
           // Divide by steps count only when the summation is complete
           f_out.scale(1.0 / nsteps_since_last_output);

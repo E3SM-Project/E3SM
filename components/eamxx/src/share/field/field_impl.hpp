@@ -610,6 +610,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
   const auto& dims = layout.dims();
 
   ST fill_val = 0;
+
   if constexpr (use_fill) {
     if (get_header().has_extra_data("mask_value")) {
       fill_val = get_header().get_extra_data<ST>("mask_value");
@@ -622,6 +623,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
                       " - x name: " + x.name() + "\n");
     }
   }
+  std::cout << "updating y=" << name() << " with x=" << x.name() << ", use_fill=" << use_fill << ", fill_val=" << fill_val << "\n";
 
   // Must handle the case where one of the two views is strided (or both)
   const auto x_contig = x.get_header().get_alloc_properties().contiguous();

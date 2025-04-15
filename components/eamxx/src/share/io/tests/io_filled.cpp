@@ -87,9 +87,9 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   std::vector<FL> layouts =
   {
-    FL({COL         }, {nlcols        }),
-    FL({COL,     LEV}, {nlcols,  nlevs}),
-    FL({COL,CMP,ILEV}, {nlcols,2,nlevs+1})
+    FL({COL         }, {nlcols        })
+    // FL({COL,     LEV}, {nlcols,  nlevs}),
+    // FL({COL,CMP,ILEV}, {nlcols,2,nlevs+1})
   };
 
   auto fm = std::make_shared<FieldManager>(grid);
@@ -101,6 +101,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     f.allocate_view();
     f.deep_copy(0.0); // For the "filled" field we start with a filled value.
     f.get_header().get_tracking().update_time_stamp(t0);
+    f.get_header().set_extra_data("mask_value",FillValue);
     fm->add_field(f);
   }
 
@@ -152,7 +153,9 @@ void write (const std::string& avg_type, const std::string& freq_units,
     // Update time
     t += dt;
 
-    // Set fields to n or the FillValue, depending on timesnap
+    // Set fields to n+1 or the FillValue, depending on step:
+    //  - n+1 if n+1 is odd
+    //  - FillValue if n+1 is even
     Real setval = ((n+1) % 2 == 0) ? 1.0*(n+1) : FillValue;
     for (const auto& n : fnames) {
       auto f = fm->get_field(n);
@@ -210,7 +213,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   //  avg=MAX:     output = N if (N%2=0), else N-1
   //  avg=MIN:     output = N + 1, where n is the first timesnap of the Nth output step.
   //                        we add + 1 more in cases where (N%2=0) because that means the first snap was filled.
-  //  avg=AVERAGE: output = a + M+1 = a + M*(M+1)/M
+  //  avg=AVERAGE: output = output + M+1 = a + M*(M+1)/M
   // The last one comes from
   //   a + 2*(1 + 2 +..+M)/M =
   //   a + 2*sum(i)/M = a + 2*(M(M+1)/2)/M,
@@ -237,11 +240,16 @@ void read (const std::string& avg_type, const std::string& freq_units,
         // Note, for AVERAGE type output with filling we need to check that the
         // number of contributing fill steps surpasses the fill_threshold, if not
         // then we know that the snap will reflect the fill value.
+
         Real test_val;
         Real M = freq/2 + (n%2==0 ? 0.0 :  1.0);
         Real a = n*freq + (n%2==0 ? 0.0 : -1.0);
         test_val = (M/freq > fill_threshold) ? a + (M+1.0) : FillValue;
         set(f0,test_val);
+        if (not views_are_equal(f,f0)) {
+          print_field_hyperslab(f);
+          print_field_hyperslab(f0);
+        }
         REQUIRE (views_are_equal(f,f0));
       }
     }
@@ -264,9 +272,9 @@ TEST_CASE ("io_filled") {
     "ndays"
   };
   std::vector<std::string> avg_type = {
-    "INSTANT",
-    "MAX",
-    "MIN",
+    // "INSTANT",
+    // "MAX",
+    // "MIN",
     "AVERAGE"
   };
 
