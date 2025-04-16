@@ -123,7 +123,6 @@ class Aurora(Machine):
 
         cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
 
-        # TODO: check in with az if this is correct
         cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_Dec"
         cls.num_run_res = 12 # twelve gpus
 
@@ -178,7 +177,6 @@ class Polaris(CrayMachine):
 
         cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
         
-        # TODO: check in with az if this is correct
         cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_RRM"
         cls.num_run_res = 4 # four gpus
 
