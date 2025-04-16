@@ -125,6 +125,7 @@ class Aurora(Machine):
 
         # TODO: check in with az if this is correct
         cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_Dec"
+        cls.num_run_res = 12 # twelve gpus
 
 ###############################################################################
 class PM(CrayMachine):
@@ -179,7 +180,6 @@ class Polaris(CrayMachine):
         
         # TODO: check in with az if this is correct
         cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_RRM"
-        cls.gpu_arch = "cuda"
         cls.num_run_res = 4 # four gpus
 
 ###############################################################################
