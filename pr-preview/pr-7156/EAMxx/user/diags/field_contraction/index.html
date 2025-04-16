@@ -3416,14 +3416,14 @@ a field name <code>X</code> with <code>_horiz_avg</code> in the output requests.
 </tbody>
 </table>
 <h2 id="vertical-reduction">Vertical reduction</h2>
-<p>We currently offer a few vertical reductions <span class="arithmatex">\(C\)</span>, defined as</p>
+<p>We currently offer two vertical reductions <span class="arithmatex">\(C\)</span>, defined as</p>
 <div class="arithmatex">\[
 C_{\dots} = \sum_{k} w_{k} \cdot F_{\dots k}
 \]</div>
 <p>where <span class="arithmatex">\(F_{\dots k}\)</span> is the field at level <span class="arithmatex">\(k\)</span>,
 and <span class="arithmatex">\(w_{k}\)</span> is the weight at level <span class="arithmatex">\(k\)</span>.</p>
 <p>To select the vertical reduction, you only need to suffix
-a field name <code>X</code> with <code>_vert_(avg|sum)_(dp_weighted|unweighted)</code></p>
+a field name <code>X</code> with <code>_vert_(avg|sum)</code></p>
 <table>
 <thead>
 <tr>
@@ -3434,29 +3434,19 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp_weighted|unweighted)<
 </thead>
 <tbody>
 <tr>
-<td><code>X_vert_avg_dp_weighted</code></td>
+<td><code>X_vert_avg</code></td>
 <td><span class="arithmatex">\(\Delta p_{k}\)</span></td>
 <td>Average across all levels, weighted by <span class="arithmatex">\(\Delta p_{k}\)</span></td>
 </tr>
 <tr>
-<td><code>X_vert_sum_dp_weighted</code></td>
+<td><code>X_vert_sum</code></td>
 <td><span class="arithmatex">\(\Delta p_{k}\)</span></td>
 <td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta p_{k}\)</span></td>
-</tr>
-<tr>
-<td><code>X_vert_avg_unweighted</code></td>
-<td><span class="arithmatex">\(1\)</span></td>
-<td>Average across all levels, unweighted</td>
-</tr>
-<tr>
-<td><code>X_vert_sum_unweighted</code></td>
-<td><span class="arithmatex">\(1\)</span></td>
-<td>Sum across all levels, unweighted</td>
 </tr>
 </tbody>
 </table>
 <p>The only supported weighting for now is that of
-<code>pseudo_density</code> field in EAMxx.</p>
+<code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>.</p>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -3466,11 +3456,9 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp_weighted|unweighted)<
 <span class="nt">fields</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_horiz_avg</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vert_avg_dp_weighted</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vert_sum_dp_weighted</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vert_avg_unweighted</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_vert_sum_unweighted</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
