@@ -40,13 +40,6 @@ struct ComputeTMSData : public PhysicsTestData
 // Glue functions to call fortran from from C++ with the Data struct
 void compute_tms(ComputeTMSData& d);
 
-// _f function decls
-extern "C" {
-void compute_tms_f(int ncols, int nlevs,
-                   Real *u_wind, Real *v_wind, Real *t_mid, Real *p_mid, Real *exner, Real *z_mid,
-                   Real *sgh, Real *landfrac, Real *ksrf, Real *taux, Real *tauy);
-} // end _f function decls
-
 }  // namespace tms
 }  // namespace scream
 

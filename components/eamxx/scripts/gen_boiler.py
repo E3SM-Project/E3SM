@@ -2354,7 +2354,7 @@ f"""{decl}
               d.randomize(engine);
             }
         <BLANKLINE>
-            // Create copies of data for use by test. Needs to happen before fortran calls so that
+            // Create copies of data for use by test. Needs to happen before read calls so that
             // inout data is in original state
             FakeSubData test_data[] = {
               // TODO
@@ -2532,7 +2532,7 @@ f"""{decl}
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
 
-    // Create copies of data for use by test. Needs to happen before fortran calls so that
+    // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     {data_struct} test_data[] = {{
       // TODO
@@ -2621,7 +2621,7 @@ f"""// Init outputs
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
 
-    // Create copies of data for use by test and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by test and sync it to device. Needs to happen before read calls so that
     // inout data is in original state
     view_1d<{data_struct}> test_device("test_device", max_pack_size);
     const auto test_host = Kokkos::create_mirror_view(test_device);
