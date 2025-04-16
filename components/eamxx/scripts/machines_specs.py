@@ -123,6 +123,7 @@ class Aurora(Machine):
 
         cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
 
+        # TODO: check in with az if this is correct
         cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_Dec"
 
 ###############################################################################
@@ -163,6 +164,23 @@ class PMGPU(PM):
 
         cls.num_run_res = 4 # four gpus
         cls.gpu_arch = "cuda"
+
+###############################################################################
+class Polaris(CrayMachine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("polaris")
+
+        compiler = "gnugpu"
+
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
+        
+        # TODO: check in with az if this is correct
+        cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_RRM"
+        cls.gpu_arch = "cuda"
+        cls.num_run_res = 4 # four gpus
 
 ###############################################################################
 class Chrysalis(Machine):
