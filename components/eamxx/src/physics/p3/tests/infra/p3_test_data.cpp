@@ -1083,18 +1083,18 @@ void p3_main_part2_host(
     prctot_d            (temp_d[current_index++]),
     qv_prev_d           (temp_d[current_index++]),
     t_prev_d            (temp_d[current_index++]),
-    qr2qv_evap_d     (temp_d[current_index++]),
-    qi2qv_sublim_d   (temp_d[current_index++]),
-    qc2qr_accret_d   (temp_d[current_index++]),
-    qc2qr_autoconv_d (temp_d[current_index++]),
-    qv2qi_vapdep_d   (temp_d[current_index++]),
-    qc2qi_berg_d     (temp_d[current_index++]),
-    qc2qr_ice_shed_d (temp_d[current_index++]),
-    qc2qi_collect_d  (temp_d[current_index++]),
-    qr2qi_collect_d  (temp_d[current_index++]),
+    qr2qv_evap_d        (temp_d[current_index++]),
+    qi2qv_sublim_d      (temp_d[current_index++]),
+    qc2qr_accret_d      (temp_d[current_index++]),
+    qc2qr_autoconv_d    (temp_d[current_index++]),
+    qv2qi_vapdep_d      (temp_d[current_index++]),
+    qc2qi_berg_d        (temp_d[current_index++]),
+    qc2qr_ice_shed_d    (temp_d[current_index++]),
+    qc2qi_collect_d     (temp_d[current_index++]),
+    qr2qi_collect_d     (temp_d[current_index++]),
     qc2qi_hetero_freeze_d (temp_d[current_index++]),
     qr2qi_immers_freeze_d (temp_d[current_index++]),
-    qi2qr_melt_d     (temp_d[current_index++]);
+    qi2qr_melt_d        (temp_d[current_index++]);
 
   // Call core function from kernel
   auto tables = P3F::p3_init();
