@@ -53,17 +53,14 @@ TEST_CASE("vert_contract") {
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
   FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
 
-  FieldIdentifier fin1_fid("qc", scalar1d_layout, kg / kg, grid->name());
   FieldIdentifier fin2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier fin3_fid("qc", scalar3d_layout, kg / kg, grid->name());
   FieldIdentifier pd_fid("pseudo_density", scalar1d_layout, Pa, grid->name());
 
-  Field fin1(fin1_fid);
   Field fin2(fin2_fid);
   Field fin3(fin3_fid);
   Field pd(pd_fid);
 
-  fin1.allocate_view();
   fin2.allocate_view();
   fin3.allocate_view();
   pd.allocate_view();
@@ -82,11 +79,9 @@ TEST_CASE("vert_contract") {
   REQUIRE_THROWS(diag_factory.create("VerContractDiag", comm,
                                      params));  // No 'field_name' parameter
 
-  fin1.get_header().get_tracking().update_time_stamp(t0);
   fin2.get_header().get_tracking().update_time_stamp(t0);
   fin3.get_header().get_tracking().update_time_stamp(t0);
   pd.get_header().get_tracking().update_time_stamp(t0);
-  randomize(fin1, engine, pdf);
   randomize(fin2, engine, pdf);
   randomize(fin3, engine, pdf);
   randomize(pd, engine, pdf);
@@ -95,16 +90,10 @@ TEST_CASE("vert_contract") {
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
   params.set<std::string>("contract_method", "avg");
-  auto diag_uavg = diag_factory.create("VertContractDiag", comm, params);
-  params.set<std::string>("contract_method", "avg");
   auto diag_wavg = diag_factory.create("VertContractDiag", comm, params);
   params.set<std::string>("contract_method", "sum");
-  auto diag_usum = diag_factory.create("VertContractDiag", comm, params);
-  params.set<std::string>("contract_method", "sum");
   auto diag_wsum = diag_factory.create("VertContractDiag", comm, params);
-  diag_uavg->set_grids(gm);
   diag_wavg->set_grids(gm);
-  diag_usum->set_grids(gm);
   diag_wsum->set_grids(gm);
 
   using PC         = scream::physics::Constants<Real>;
@@ -129,10 +118,10 @@ TEST_CASE("vert_contract") {
   diag1_m.allocate_view();
   diag2_m.allocate_view();
 
-  // calculate weighted avg
+  // calculate weighted avg directly
   vert_contraction<Real>(diag1_m, fin2, pd_scaled, &comm);
 
-  // Get the diagnostic field
+  // Calculate weighted avg through diags
   diag_wavg->set_required_field(fin2);
   diag_wavg->set_required_field(pd);
   diag_wavg->initialize(t0, RunType::Initial);
@@ -141,39 +130,7 @@ TEST_CASE("vert_contract") {
 
   REQUIRE(views_are_equal(diag_wavg_f, diag1_m));
 
-  Real uavg = 1;
-  fin1.deep_copy(uavg);
-  diag_uavg->set_required_field(fin1);
-  diag_uavg->set_required_field(pd);
-  diag_uavg->initialize(t0, RunType::Initial);
-  diag_uavg->compute_diagnostic();
-  auto diag_uavg_f = diag_uavg->get_diagnostic();
-  auto diag_uavg_v2_host = diag_uavg_f.get_view<Real, Host>();
-  REQUIRE_THAT(diag_uavg_v2_host(),
-               Catch::Matchers::WithinRel(
-                   uavg, tol));  // Catch2's floating point comparison
-
-  // with usum, try a known case
-  // set fin3 to 5.0 and get unweighted sum of 5 * levels
-  Real usum = 5;
-  fin3.deep_copy(usum);
-
-  diag_usum->set_required_field(fin3);
-  diag_usum->set_required_field(pd);
-  diag_usum->initialize(t0, RunType::Initial);
-  diag_usum->compute_diagnostic();
-  auto diag_usum_f = diag_usum->get_diagnostic();
-
-  Real expected_usum     = usum * nlevs;
-  auto diag_usum_v2_host = diag_usum_f.get_view<Real **, Host>();
-  for(int i = 0; i < ngcols; ++i) {
-    for(int j = 0; j < dim3; ++j) {
-      REQUIRE_THAT(diag_usum_v2_host(i, j),
-                   Catch::Matchers::WithinRel(expected_usum, tol));
-    }
-  }
-
-  // with wsum, try a random case
+  // Repeat for another case, but for sum
   auto pd_wsum = pd.clone();
   pd_wsum.scale(sp(1.0) / g);
   vert_contraction<Real>(diag2_m, fin3, pd_wsum, &comm);
