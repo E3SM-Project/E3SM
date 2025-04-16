@@ -108,6 +108,24 @@ class CrayMachine(Machine):
         cls.ftn_compiler = "ftn"
 
 ###############################################################################
+class Aurora(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("aurora")
+
+        cls.cxx_compiler = "mpicxx"
+        cls.c_compiler   = "mpicc"
+        cls.ftn_compiler = "mpifort"
+
+        compiler = "oneapi-ifxgpu"
+
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
+
+        cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_Dec"
+
+###############################################################################
 class PM(CrayMachine):
 ###############################################################################
     @classmethod
