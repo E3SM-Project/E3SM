@@ -895,9 +895,9 @@ void p3_main_part2_host(
   Real* qm, Real* bm, Real* qc_incld, Real* qr_incld, Real* qi_incld, Real* qm_incld, Real* nc_incld, Real* nr_incld,
   Real* ni_incld, Real* bm_incld, Real* mu_c, Real* nu, Real* lamc, Real* cdist, Real* cdist1, Real* cdistr, Real* mu_r, Real* lamr, Real* logn0r, Real* qv2qi_depos_tend, Real* precip_total_tend,
   Real* nevapr, Real* qr_evap_tend, Real* vap_liq_exchange, Real* vap_ice_exchange, Real* liq_ice_exchange,
-  Real* P3_qr2qv_evap, Real* P3_qi2qv_sublim, Real* P3_qc2qr_accret, Real* P3_qc2qr_autoconv,
-  Real* P3_qv2qi_vapdep, Real* P3_qc2qi_berg, Real* P3_qc2qr_ice_shed, Real* P3_qc2qi_collect, Real* P3_qr2qi_collect,
-  Real* P3_qc2qi_hetero_freeze, Real* P3_qr2qi_immers_freeze, Real* P3_qi2qr_melt,
+  Real* qr2qv_evap, Real* qi2qv_sublim, Real* qc2qr_accret, Real* qc2qr_autoconv,
+  Real* qv2qi_vapdep, Real* qc2qi_berg, Real* qc2qr_ice_shed, Real* qc2qi_collect, Real* qr2qi_collect,
+  Real* qc2qi_hetero_freeze, Real* qr2qi_immers_freeze, Real* qi2qr_melt,
   Real* pratot, Real* prctot, bool* is_hydromet_present);
 
 void p3_main_part3_host(
