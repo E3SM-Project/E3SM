@@ -1076,6 +1076,7 @@ contains
        l2x_lm(i,index_l2x_Sl_tref)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x_lm(i,index_l2x_Sl_qref)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x_lm(i,index_l2x_Sl_u10)      =  lnd2atm_vars%u_ref10m_grc(g)
+       l2x_lm(i,index_l2x_Sl_u10withgusts)=lnd2atm_vars%u_ref10m_with_gusts_grc(g) ! see commit 5813d4103
        l2x_lm(i,index_l2x_Fall_taux)   = -lnd2atm_vars%taux_grc(g)
        l2x_lm(i,index_l2x_Fall_tauy)   = -lnd2atm_vars%tauy_grc(g)
        l2x_lm(i,index_l2x_Fall_lat)    = -lnd2atm_vars%eflx_lh_tot_grc(g)

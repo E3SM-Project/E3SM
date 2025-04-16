@@ -191,6 +191,7 @@ module seq_flux_mct
   integer :: index_xao_So_ssq
   integer :: index_xao_So_duu10n
   integer :: index_xao_So_u10
+  integer :: index_xao_So_u10withgusts
   integer :: index_xao_So_fswpen
   integer :: index_xao_So_warm_diurn
   integer :: index_xao_So_salt_diurn
@@ -1510,6 +1511,7 @@ contains
        index_xao_So_re     = mct_aVect_indexRA(xao,'So_re')
        index_xao_So_ssq    = mct_aVect_indexRA(xao,'So_ssq')
        index_xao_So_u10    = mct_aVect_indexRA(xao,'So_u10')
+       index_xao_So_u10withgusts = mct_aVect_indexRA(xao,'So_u10withgusts')
        index_xao_So_duu10n = mct_aVect_indexRA(xao,'So_duu10n')
        index_xao_Faox_taux = mct_aVect_indexRA(xao,'Faox_taux')
        index_xao_Faox_tauy = mct_aVect_indexRA(xao,'Faox_tauy')
@@ -1787,6 +1789,7 @@ contains
           xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
           xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
           xao%rAttr(index_xao_So_u10   ,n) = sqrt(duu10n(n))
+          xao%rAttr(index_xao_So_u10withgusts,n) = sqrt(duu10n(n))
           xao%rAttr(index_xao_So_warm_diurn       ,n) = warm(n)
           xao%rAttr(index_xao_So_salt_diurn       ,n) = salt(n)
           xao%rAttr(index_xao_So_speed_diurn      ,n) = speed(n)
