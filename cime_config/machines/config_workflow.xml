@@ -40,7 +40,8 @@
     <job name="case.post_run_io">
       <template>template.post_run_io</template>
       <dependency>case.run</dependency>
-      <prereq>case.get_value("PIO_TYPENAME_ATM").startswith('adios') or \
+      <prereq>(os.environ.get('SPIO_ENABLE_ADIOSBP2NC_CONVERSION', '').lower() in ('true', '1')) and \
+              (case.get_value("PIO_TYPENAME_ATM").startswith('adios') or \
               case.get_value("PIO_TYPENAME_CPL").startswith('adios') or \
               case.get_value("PIO_TYPENAME_OCN").startswith('adios') or \
               case.get_value("PIO_TYPENAME_WAV").startswith('adios') or \
@@ -49,7 +50,7 @@
               case.get_value("PIO_TYPENAME_ROF").startswith('adios') or \
               case.get_value("PIO_TYPENAME_LND").startswith('adios') or \
               case.get_value("PIO_TYPENAME_ESP").startswith('adios') or \
-              case.get_value("PIO_TYPENAME_IAC").startswith('adios')</prereq>
+              case.get_value("PIO_TYPENAME_IAC").startswith('adios'))</prereq>
       <runtime_parameters>
         <walltime>0:30:00</walltime>
       </runtime_parameters>
