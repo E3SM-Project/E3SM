@@ -36,8 +36,6 @@ class VertContractDiag : public AtmosphereDiagnostic {
   std::string m_diag_name;
   // Name of contraction method (avg, sum)
   std::string m_contract_method;
-  // Name of contraction weight (dp_weighted, unweighted)
-  std::string m_contract_weight;
 
   // Need some weighting, if unweighted, we will make it 1
   Field m_weighting;

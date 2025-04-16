@@ -22,8 +22,6 @@ void VertContractDiag::set_grids(
 
   // We support either sum or avg 
   m_contract_method = m_params.get<std::string>("contract_method");
-  // We support either dp_weighted or unweighted
-  m_contract_weight = m_params.get<std::string>("contract_weight");
 
   m_diag_name       = fn + m_contract_method;
 
@@ -55,13 +53,9 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
-  // scale the weighting field (pseudo density) by g if weighting, else set all to 1
+  // scale the weighting field (pseudo density) by g
   m_weighting = get_field_in("pseudo_density");
-  if(m_contract_weight == "dp_weighted") {
-    m_weighting.scale(sp(1.0) / g);
-  } else {
-    m_weighting.deep_copy(1.0);
-  }
+  m_weighting.scale(sp(1.0) / g);
   // if "avg" is in the method name, we need to scale the weighting by its sum
   if(m_contract_method.find("avg") != std::string::npos) {
     auto sum = field_sum<Real>(m_weighting, &m_comm);

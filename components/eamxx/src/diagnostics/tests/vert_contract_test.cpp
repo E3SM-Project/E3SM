@@ -95,16 +95,12 @@ TEST_CASE("vert_contract") {
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
   params.set<std::string>("contract_method", "avg");
-  params.set<std::string>("contract_weight", "unweighted");
   auto diag_uavg = diag_factory.create("VertContractDiag", comm, params);
   params.set<std::string>("contract_method", "avg");
-  params.set<std::string>("contract_weight", "dp_weighted");
   auto diag_wavg = diag_factory.create("VertContractDiag", comm, params);
   params.set<std::string>("contract_method", "sum");
-  params.set<std::string>("contract_weight", "unweighted");
   auto diag_usum = diag_factory.create("VertContractDiag", comm, params);
   params.set<std::string>("contract_method", "sum");
-  params.set<std::string>("contract_weight", "dp_weighted");
   auto diag_wsum = diag_factory.create("VertContractDiag", comm, params);
   diag_uavg->set_grids(gm);
   diag_wavg->set_grids(gm);

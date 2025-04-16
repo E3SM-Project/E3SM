@@ -27,7 +27,7 @@ a field name `X` with `_horiz_avg` in the output requests.
 
 ## Vertical reduction
 
-We currently offer a few vertical reductions $C$, defined as
+We currently offer two vertical reductions $C$, defined as
 
 $$
 C_{\dots} = \sum_{k} w_{k} \cdot F_{\dots k}
@@ -37,17 +37,15 @@ where $F_{\dots k}$ is the field at level $k$,
 and $w_{k}$ is the weight at level $k$.
 
 To select the vertical reduction, you only need to suffix
-a field name `X` with `_vert_(avg|sum)_(dp_weighted|unweighted)`
+a field name `X` with `_vert_(avg|sum)`
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X_vert_avg_dp_weighted` | $\Delta p_{k}$ | Average across all levels, weighted by $\Delta p_{k}$ |
-| `X_vert_sum_dp_weighted` | $\Delta p_{k}$ | Sum across all levels, weighted by $\Delta p_{k}$ |
-| `X_vert_avg_unweighted` | $1$ | Average across all levels, unweighted |
-| `X_vert_sum_unweighted` | $1$ | Sum across all levels, unweighted |
+| `X_vert_avg` | $\Delta p_{k}$ | Average across all levels, weighted by $\Delta p_{k}$ |
+| `X_vert_sum` | $\Delta p_{k}$ | Sum across all levels, weighted by $\Delta p_{k}$ |
 
 The only supported weighting for now is that of
-`pseudo_density` field in EAMxx.
+`pseudo_density` field in EAMxx, $\Delta p_{k}$.
 
 ## Example
 
@@ -60,11 +58,9 @@ max_snapshots_per_file: 1
 fields:
   physics_pg2:
     field_names:
-    - T_horiz_avg
-    - T_vert_avg_dp_weighted
-    - T_vert_sum_dp_weighted
-    - T_vert_avg_unweighted
-    - T_vert_sum_unweighted
+    - T_mid_horiz_avg
+    - T_mid_vert_avg
+    - T_mid_vert_sum
 output_control:
   frequency: 1
   frequency_units: nmonths
