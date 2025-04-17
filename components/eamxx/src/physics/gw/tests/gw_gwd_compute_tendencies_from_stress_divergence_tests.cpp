@@ -49,7 +49,7 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
       d.randomize(engine);
     }
 
-    // Create copies of data for use by test. Needs to happen before fortran calls so that
+    // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
     GwdComputeTendenciesFromStressDivergenceData test_data[] = {
       GwdComputeTendenciesFromStressDivergenceData(baseline_data[0]),
