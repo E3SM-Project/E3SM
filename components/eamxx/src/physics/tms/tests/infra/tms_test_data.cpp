@@ -1,4 +1,4 @@
-#include "tms_functions_f90.hpp"
+#include "tms_test_data.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
@@ -11,28 +11,8 @@
 
 using scream::Real;
 
-//
-// A C interface to TMS fortran calls. The stubs below will link to fortran definitions in tms_iso_c.f90
-//
-extern "C" {
-void init_tms_c(Real orocnst, Real z0fac, Real karman, Real gravit, Real rair);
-void compute_tms_c(int ncols, int nlevs, Real *u_wind, Real *v_wind, Real *t_mid, Real *p_mid, Real *exner,
-                   Real *zm, Real *sgh, Real *landfrac, Real *ksrf, Real *taux, Real *tauy);
-}
-
 namespace scream {
 namespace tms {
-
-// Glue functions to call fortran from from C++ with the Data struct
-void compute_tms(ComputeTMSData& d)
-{
-  using C = scream::physics::Constants<Real>;
-  init_tms_c(C::orocnst, C::z0fac, C::Karman, C::gravit, C::Rair);
-  d.transpose<ekat::TransposeDirection::c2f>();
-  compute_tms_c(d.ncols, d.nlevs, d.u_wind, d.v_wind, d.t_mid, d.p_mid, d.exner,
-                d.z_mid, d.sgh, d.landfrac, d.ksrf, d.taux, d.tauy);
-  d.transpose<ekat::TransposeDirection::f2c>();
-}
 
 //
 // _f function definitions. These expect data in C layout
@@ -108,6 +88,12 @@ void compute_tms_f(int ncols, int nlevs,
   // Sync back to host
   std::vector<view_1d> output_data = {ksrf_d, taux_d, tauy_d};
   ScreamDeepCopy::copy_to_host({ksrf, taux, tauy}, ncols, output_data);
+}
+
+void compute_tms(ComputeTMSData& d)
+{
+  compute_tms_f(d.ncols, d.nlevs, d.u_wind, d.v_wind, d.t_mid, d.p_mid, d.exner,
+                d.z_mid, d.sgh, d.landfrac, d.ksrf, d.taux, d.tauy);
 }
 
 } // namespace tms

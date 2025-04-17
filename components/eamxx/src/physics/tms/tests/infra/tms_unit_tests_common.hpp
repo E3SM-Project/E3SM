@@ -4,6 +4,7 @@
 #include "tms_functions.hpp"
 #include "share/eamxx_types.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "physics/share/physics_test_data.hpp"
 
 namespace scream {
 namespace tms {
@@ -44,12 +45,22 @@ struct UnitWrap {
     using Scalar             = typename Functions::Scalar;
     using Spack              = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
 
+    struct Base : public UnitBase {
+
+      Base() :
+        UnitBase()
+      {
+        // Functions::tms_init(); // just in case there is ever global tms data
+      }
+
+      ~Base() = default;
+    };
+
     // Put struct decls here
     struct TestComputeTMS;
   };
 
 };
-
 
 } // namespace unit_test
 } // namespace tms
