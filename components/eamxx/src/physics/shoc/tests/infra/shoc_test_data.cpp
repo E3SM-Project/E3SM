@@ -541,7 +541,7 @@ void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* 
   ekat::device_to_host({host_dse}, shcol, nlev, inout_views);
 }
 
-void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, bool* shoc_1p5tke, Real* w_sec,
+void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* w_sec,
                                       Real* thl_sec, Real* wthl_sec, Real* tke,
                                       Real* dz_zt, Real* dz_zi, Real* isotropy_zi,
                                       Real* brunt_zi, Real* w_sec_zi, Real* thetal_zi,
@@ -653,7 +653,7 @@ void shoc_pblintd_init_pot_host(Int shcol, Int nlev, Real *thl, Real* ql, Real* 
   ekat::device_to_host({thv}, shcol, nlev, inout_views);
 }
 
-void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, Bool* shoc_1p5tke, Real* tke, Real* brunt,
+void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* tke, Real* brunt,
                                     Real* zt_grid, Real* dz_zt, Real* tk, Real* l_inf, Real* shoc_mix)
 {
   using SHF = Functions<Real, DefaultDevice>;
@@ -948,7 +948,7 @@ void diag_second_moments_lbycond_host(Int shcol, Real* wthl_sfc, Real* wqw_sfc, 
   ScreamDeepCopy::copy_to_host({wthl_sec, wqw_sec, uw_sec, vw_sec, wtke_sec, thl_sec, qw_sec, qwthl_sec}, shcol, host_views);
 }
 
-void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, Bool* shoc_1p5tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
+void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
           Real* tke, Real* isotropy, Real* tkh, Real* tk, Real* dz_zi, Real* zt_grid, Real* zi_grid, Real* shoc_mix,
           Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* wqw_sec, Real* qwthl_sec, Real* uw_sec, Real* vw_sec,
           Real* wtke_sec, Real* w_sec)
@@ -1049,7 +1049,7 @@ void diag_second_moments_host(Int shcol, Int nlev, Int nlevi, Bool* shoc_1p5tke,
   ekat::device_to_host({thl_sec, qw_sec, wthl_sec, wqw_sec, qwthl_sec, uw_sec, vw_sec, wtke_sec, w_sec}, dim1, dim2, host_views);
 }
 
-void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Bool* shoc_1p5tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* tke,
+void diag_second_shoc_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind, Real* tke,
                                 Real* isotropy, Real* tkh, Real* tk, Real* dz_zi, Real* zt_grid, Real* zi_grid, Real* shoc_mix,
                                 Real* wthl_sfc, Real* wqw_sfc, Real* uw_sfc, Real* vw_sfc, Real* thl_sec, Real* qw_sec, Real* wthl_sec,
                                 Real* wqw_sec, Real* qwthl_sec, Real* uw_sec, Real* vw_sec, Real* wtke_sec, Real* w_sec)
@@ -1394,7 +1394,7 @@ void shoc_pblintd_cldcheck_host(Int shcol, Int nlev, Int nlevi, Real* zi, Real* 
   ScreamDeepCopy::copy_to_host({pblh}, shcol, inout_views);
 }
 
-void shoc_length_host(Int shcol, Int nlev, Int nlevi, Bool* shoc_1p5tke, Real* host_dx, Real* host_dy,
+void shoc_length_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* host_dx, Real* host_dy,
                    Real* zt_grid, Real* zi_grid, Real*dz_zt, Real* tke,
                    Real* thv, Real* tk, Real*brunt, Real* shoc_mix)
 {
@@ -1740,7 +1740,7 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
   ekat::device_to_host({tracer}, shcol, nlev, num_tracer, inout_views);
 }
 
-void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Bool* shoc_1p5tke, Real* w_sec, Real* thl_sec,
+void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* w_sec, Real* thl_sec,
                                Real* wthl_sec, Real* isotropy, Real* brunt, Real* thetal,
                                Real* tke, Real* dz_zt, Real* dz_zi, Real* zt_grid, Real* zi_grid,
                                Real* w3)
@@ -1819,7 +1819,7 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, Bool* shoc_1p5
   ekat::device_to_host({w3}, shcol, nlevi, inout_views);
 }
 
-void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, Bool* shoc_1p5tke, Real* shoc_mix, Real* wthv_sec,
+void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* shoc_mix, Real* wthv_sec,
                    Real* sterm_zt, Real* tk, Real* brunt, Real* tke, Real* a_diss)
 {
   using SHF = Functions<Real, DefaultDevice>;
@@ -2640,7 +2640,7 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
   ekat::device_to_host<Int>({dz_zt, dz_zi, rho_zt}, {shcol, shcol, shcol}, {nlev, nlevi, nlev}, inout_views);
 }
 
-void eddy_diffusivities_host(Int nlev, Int shcol, Bool* shoc_1p5tke, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
+void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
                           Real* isotropy, Real* tke, Real* tkh, Real* tk)
 {
   using SHF = Functions<Real, DefaultDevice>;
@@ -2879,7 +2879,7 @@ void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, R
     ScreamDeepCopy::copy_to_host({pblh}, shcol, out_views);
 }
 
-void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, Bool* shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
+void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* tabs, Real* u_wind, Real* v_wind, Real* brunt, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke, Real* tk,
                 Real* tkh, Real* isotropy)
 {

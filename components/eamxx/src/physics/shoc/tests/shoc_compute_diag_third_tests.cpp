@@ -216,10 +216,10 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<
 
     ComputeDiagThirdShocMomentData SDS_baseline[] = {
       //               shcol, nlev, nlevi
-      ComputeDiagThirdShocMomentData(10, 71, 72),
-      ComputeDiagThirdShocMomentData(10, 12, 13),
-      ComputeDiagThirdShocMomentData(7,  16, 17),
-      ComputeDiagThirdShocMomentData(2, 7, 8)
+      ComputeDiagThirdShocMomentData(10, 71, 72, 2),
+      ComputeDiagThirdShocMomentData(10, 12, 13, 2),
+      ComputeDiagThirdShocMomentData(7,  16, 17, 2),
+      ComputeDiagThirdShocMomentData(2, 7, 8, 2)
     };
 
     // Generate random input data

@@ -89,7 +89,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     const bool shoc_1p5tke = false;
 
     // Initialize data structure for bridging to F90
-    ShocTkeData SDS(shcol, nlev, nlevi, dtime);
+    ShocTkeData SDS(shcol, nlev, nlevi, dtime, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE(SDS.nlevi - SDS.nlev == 1);
@@ -333,10 +333,10 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     auto engine = Base::get_engine();
 
     ShocTkeData baseline_data[] = {
-      ShocTkeData(10, 71, 72, 300),
-      ShocTkeData(10, 12, 13, 100),
-      ShocTkeData(7,  16, 17, 50),
-      ShocTkeData(2, 7, 8, 5),
+      ShocTkeData(10, 71, 72, 300, 2),
+      ShocTkeData(10, 12, 13, 100, 2),
+      ShocTkeData(7,  16, 17, 50, 2),
+      ShocTkeData(2, 7, 8, 5, 2),
     };
 
     // Generate random input data

@@ -286,7 +286,7 @@ struct AdvSgsTkeData : public PhysicsTestData {
   // Outputs
   Real *a_diss;
 
-  AdvSgsTkeData(Int shcol_, Int nlev_, Real dtime_, bool shoc_1p5tke) :
+  AdvSgsTkeData(Int shcol_, Int nlev_, Real dtime_, bool shoc_1p5tke_) :
     PhysicsTestData({{ shcol_, nlev_ }}, {{ &shoc_mix, &wthv_sec, &sterm_zt, &tk, & brunt, &tke, &a_diss }}), shcol(shcol_), nlev(nlev_), dtime(dtime_), shoc_1p5tke(shoc_1p5tke_) {}
 
   PTD_STD_DEF(AdvSgsTkeData, 4, shcol, nlev, dtime, shoc_1p5tke);
@@ -396,16 +396,15 @@ struct CheckLengthScaleShocLengthData : public PhysicsTestData {
 struct ClippingDiagThirdShocMomentsData : public PhysicsTestData {
   // Inputs
   Int shcol, nlevi;
-  bool shoc_1p5tke;
   Real *w_sec_zi;
 
   // Inputs/Outputs
   Real *w3;
 
-  ClippingDiagThirdShocMomentsData(Int shcol_, Int nlevi_, bool shoc_1p5tke_) :
-    PhysicsTestData({{ shcol_, nlevi_ }}, {{ &w_sec_zi, &w3 }}), shcol(shcol_), nlevi(nlevi_), shoc_1p5tke(shoc_1p5tke_) {}
+  ClippingDiagThirdShocMomentsData(Int shcol_, Int nlevi_) :
+    PhysicsTestData({{ shcol_, nlevi_ }}, {{ &w_sec_zi, &w3 }}), shcol(shcol_), nlevi(nlevi_) {}
 
-  PTD_STD_DEF(ClippingDiagThirdShocMomentsData, 3, shcol, nlevi, shoc_1p5tke);
+  PTD_STD_DEF(ClippingDiagThirdShocMomentsData, 2, shcol, nlevi);
 };
 
 struct DiagSecondMomentsSrfData : public PhysicsTestData {
@@ -440,15 +439,16 @@ struct LinearInterpData : public PhysicsTestData {
 struct DiagThirdShocMomentsData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
+  bool shoc_1p5tke;
   Real *w_sec, *thl_sec, *wthl_sec, *isotropy, *brunt, *thetal, *tke, *dz_zt, *dz_zi;
 
   // Outputs
   Real *w3;
 
-  DiagThirdShocMomentsData(Int shcol_, Int nlev_, Int nlevi_) :
-    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &w_sec, &isotropy, &brunt, &thetal, &tke, &dz_zt, &zt_grid }, { &thl_sec, &wthl_sec, &dz_zi, &zi_grid, &w3 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
+  DiagThirdShocMomentsData(Int shcol_, Int nlev_, Int nlevi_, bool shoc_1p5tke_) :
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &w_sec, &isotropy, &brunt, &thetal, &tke, &dz_zt, &zt_grid }, { &thl_sec, &wthl_sec, &dz_zi, &zi_grid, &w3 }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), shoc_1p5tke(shoc_1p5tke_) {}
 
-  PTD_STD_DEF(DiagThirdShocMomentsData, 3, shcol, nlev, nlevi);
+  PTD_STD_DEF(DiagThirdShocMomentsData, 4, shcol, nlev, nlevi, shoc_1p5tke);
 };
 
 struct ComputeDiagThirdShocMomentData : public PhysicsTestData {
@@ -1010,7 +1010,7 @@ void shoc_diag_second_moments_ubycond_host(Int shcol, Real* thl, Real* qw, Real*
                           Real* wqw, Real* qwthl, Real* uw, Real* vw, Real* wtke);
 void update_host_dse_host(Int shcol, Int nlev, Real* thlm, Real* shoc_ql, Real* inv_exner, Real* zt_grid,
                        Real* phis, Real* host_dse);
-void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, bool tke_1p5shoc, Real* w_sec,
+void compute_diag_third_shoc_moment_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* w_sec,
                                       Real* thl_sec, Real* wthl_sec, Real* tke,
                                       Real* dz_zt, Real* dz_zi, Real* isotropy_zi,
                                       Real* brunt_zi, Real* w_sec_zi, Real* thetal_zi,

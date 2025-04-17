@@ -212,7 +212,7 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
     SDS.shoc_1p5tke = true;
 
     // Call the C++ implementation
-    diag_third_shoc_moment(SDS);
+    diag_third_shoc_moments(SDS);
 
     // Check the result
 
@@ -232,10 +232,10 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
 
     DiagThirdShocMomentsData SDS_baseline[] = {
       //               shcol, nlev, nlevi
-      DiagThirdShocMomentsData(10, 71, 72),
-      DiagThirdShocMomentsData(10, 12, 13),
-      DiagThirdShocMomentsData(7,  16, 17),
-      DiagThirdShocMomentsData(2, 7, 8),
+      DiagThirdShocMomentsData(10, 71, 72, 2),
+      DiagThirdShocMomentsData(10, 12, 13, 2),
+      DiagThirdShocMomentsData(7,  16, 17, 2),
+      DiagThirdShocMomentsData(2, 7, 8, 2),
     };
 
     // Generate random input data

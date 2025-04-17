@@ -182,10 +182,9 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
     // Shear production term [s-2]
     static constexpr Real sterm_diss = 0.01;
     // Brunt vaisalla frequency, only used for 1.5 TKE closure
-    static constexpr Real brunt_diss = -0.004
-
+    static constexpr Real brunt_diss = -0.004;
     // TKE initial value
-    Real tke_init_diss= 0.1;
+    static constexpr Real tke_init_diss =  0.1;
 
     // Reset to default SHOC closures
     SDS.shoc_1p5tke = false;
@@ -199,7 +198,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
         SDS.wthv_sec[offset] = wthv_sec_diss;
         SDS.sterm_zt[offset] = sterm_diss;
         SDS.tke[offset] = tke_init_diss;
-        SDS.brunt[offset] = 0.0 // only relevant for 1.5 TKE closure
+        SDS.brunt[offset] = 0.0; // only relevant for 1.5 TKE closure
       }
     }
 
@@ -297,10 +296,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
 
     AdvSgsTkeData baseline_data[] = {
       //            shcol, nlev
-      AdvSgsTkeData(10, 71, 72),
-      AdvSgsTkeData(10, 12, 13),
-      AdvSgsTkeData(7,  16, 17),
-      AdvSgsTkeData(2,   7, 8)
+      AdvSgsTkeData(10, 71, 72, 2),
+      AdvSgsTkeData(10, 12, 13, 2),
+      AdvSgsTkeData(7,  16, 17, 2),
+      AdvSgsTkeData(2,   7, 8,  2)
     };
 
     // Generate random input data

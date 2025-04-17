@@ -261,15 +261,15 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     // of the turbulent length scale and TKE.
 
     // SHOC Mixing length [m]
-    static constexpr Real shoc_mix_1p5 = {100, 500};
+    static constexpr Real shoc_mix_1p5_t1[shcol] = {100, 500};
     // Turbulent kinetic energy [m2/s2]
-    static constexpr Real tke_1p5[shcol] = {0.4, 0.4};
+    static constexpr Real tke_1p5_t1[shcol] = {0.4, 0.4};
 
     // Verify that input length scale is increasing with column
     //  and TKE is the same for each column
     for(Int s = 0; s < shcol-1; ++s) {
-      REQUIRE(shoc_mix_1p5[s+1] > shoc_mix_1p5[s]);
-      REQUIRE(tke_1p5[s+1] == tke_1p5[s]);
+      REQUIRE(shoc_mix_1p5_t1[s+1] > shoc_mix_1p5_t1[s]);
+      REQUIRE(tke_1p5_t1[s+1] == tke_1p5_t1[s]);
     }
 
     // Fill in test data on zt_grid.
@@ -279,8 +279,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_1p5[s];
-        SDS.shoc_mix[offset] = shoc_mix_1p5;
+        SDS.tke[offset] = tke_1p5_t1[s];
+        SDS.shoc_mix[offset] = shoc_mix_1p5_t1[s];
       }
     }
 
@@ -309,15 +309,15 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     //  while keeping SHOC mix constant
 
     // SHOC Mixing length [m]
-    static constexpr Real shoc_mix_1p5 = {500, 500};
+    static constexpr Real shoc_mix_1p5_t2[shcol] = {500, 500};
     // Turbulent kinetic energy [m2/s2]
-    static constexpr Real tke_1p5[shcol] = {0.1, 0.4};
+    static constexpr Real tke_1p5_t2[shcol] = {0.1, 0.4};
 
     // Verify that input length scale is increasing with column
     //  and TKE is the same for each column
     for(Int s = 0; s < shcol-1; ++s) {
-      REQUIRE(shoc_mix_1p5[s+1] == shoc_mix_1p5[s]);
-      REQUIRE(tke_1p5[s+1] > tke_1p5[s]);
+      REQUIRE(shoc_mix_1p5_t2[s+1] == shoc_mix_1p5_t2[s]);
+      REQUIRE(tke_1p5_t2[s+1] > tke_1p5_t2[s]);
     }
 
     // Fill in test data on zt_grid.
@@ -327,8 +327,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_1p5[s];
-        SDS.shoc_mix[offset] = shoc_mix_1p5;
+        SDS.tke[offset] = tke_1p5_t2[s];
+        SDS.shoc_mix[offset] = shoc_mix_1p5_t2[s];
       }
     }
 
@@ -358,10 +358,10 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     auto engine = Base::get_engine();
 
     EddyDiffusivitiesData baseline_data[] = {
-      EddyDiffusivitiesData(10, 71),
-      EddyDiffusivitiesData(10, 12),
-      EddyDiffusivitiesData(7,  16),
-      EddyDiffusivitiesData(2, 7),
+      EddyDiffusivitiesData(10, 71, 2),
+      EddyDiffusivitiesData(10, 12, 2),
+      EddyDiffusivitiesData(7,  16, 2),
+      EddyDiffusivitiesData(2, 7, 2),
     };
 
     // Generate random input data

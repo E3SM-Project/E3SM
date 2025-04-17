@@ -284,10 +284,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments : public UnitWrap::UnitTest<
     auto engine = Base::get_engine();
 
     DiagSecondMomentsData baseline_data[] = {
-      DiagSecondMomentsData(36,  72, 73),
-      DiagSecondMomentsData(72,  72, 73),
-      DiagSecondMomentsData(128, 72, 73),
-      DiagSecondMomentsData(256, 72, 73),
+      DiagSecondMomentsData(36,  72, 73, 2),
+      DiagSecondMomentsData(72,  72, 73, 2),
+      DiagSecondMomentsData(128, 72, 73, 2),
+      DiagSecondMomentsData(256, 72, 73, 2),
     };
 
     // Generate random input data

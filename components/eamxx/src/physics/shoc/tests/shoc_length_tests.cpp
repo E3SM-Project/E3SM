@@ -174,7 +174,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     }
 
     // Call the C++ implementation
-    shoc_length(SDS)
+    shoc_length(SDS);
 
     // Verify output
     for(Int s = 0; s < shcol; ++s) {
@@ -268,10 +268,10 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
 
     ShocLengthData SDS_baseline[] = {
       //        shcol, nlev, nlevi
-      ShocLengthData(12, 71, 72),
-      ShocLengthData(10, 12, 13),
-      ShocLengthData(7,  16, 17),
-      ShocLengthData(2, 7, 8),
+      ShocLengthData(12, 71, 72, 2),
+      ShocLengthData(10, 12, 13, 2),
+      ShocLengthData(7,  16, 17, 2),
+      ShocLengthData(2, 7, 8, 2),
     };
 
     // Generate random input data
