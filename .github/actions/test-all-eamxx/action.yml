@@ -42,6 +42,10 @@ inputs:
     required: false
     default: ''
 
+  misc-options:
+    description: 'List of miscellanea options for test-all-eamxx (will be added verbatim)'
+    required: false
+    default: ''
 runs:
   using: "composite"
   steps:
@@ -77,6 +81,7 @@ runs:
         echo "  generate     : ${{ inputs.generate }}"
         echo "  submit       : ${{ inputs.submit }}"
         echo "  cmake-configs: ${{ inputs.cmake-configs }}"
+        echo "  misc-options : ${{ inputs.misc-options }}"
       shell: sh
     - name: Run test-all-eamxx
       working-directory: components/eamxx
@@ -97,6 +102,10 @@ runs:
         for config in "${configs[@]}"; do
           cmd+=" -c $config"
         done
+
+        if [ "${{ inputs.misc-options }}" != "" ]; then
+          cmd+= " ${{ inputs.misc-options }}"
+        fi
 
         # Print the full command, then run it
         echo "test-all-eamxx call: $cmd"
