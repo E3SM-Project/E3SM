@@ -140,6 +140,14 @@ machines:
     gpu_arch: "cuda"
     num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
 
+  ghci-snl-hip:
+    baselines_dir: /projects/e3sm/baselines/scream/ghci-snl-hip
+    gpu_arch: hip
+    num_run_res: $(rocm-smi --showproductname | grep 'GPU\[' | awk '{print $1}' | sort -u | wc -l)
+    env_setup:
+      - source /etc/profile.d/setup-user-env.sh
+      - export MPICH_CXX=hipcc
+
   ghci-oci:
     env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
 
