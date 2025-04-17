@@ -273,6 +273,7 @@ void FieldLayout::compute_type () {
   const int ngp       = count(tags,GP);
   const int nvlevs    = count(tags,LEV) + count(tags,ILEV);
   const int ncomps    = count(tags,CMP);
+  const int nbins     = count(tags,BIN);
 
   // We don't care about TimeLevel
   erase (tags,TL);
@@ -293,12 +294,16 @@ void FieldLayout::compute_type () {
     m_type = LayoutType::Scalar0D; return;
   } else if (tags.size()==1 and tags[0]==CMP) {
     m_type = LayoutType::Vector0D; return;
-  } else if (tags.size()==1 and nvlevs==1) {
+  } else if (tags.size()==1 and (nvlevs==1 or nbins==1)) {
     m_type = LayoutType::Scalar1D; return;
   } else if (tags[0]==CMP and tags[1]==CMP) {
     m_type = LayoutType::Tensor0D; return;
-  } else if (tags.size()==2 and ncomps==1 and nvlevs==1) {
+  } else if (tags.size()==2 and ncomps==1 and (nvlevs==1 or nbins==1)) {
     m_type = LayoutType::Vector1D; return;
+  } else if (tags.size()==2 and nbins==1 and nvlevs==1) {
+    m_type = LayoutType::Scalar2D; return;
+  } else if (tags.size()==3 and nbins==1 and nvlevs==1 and ncomps==1) {
+    m_type = LayoutType::Vector2D; return;
   } else {
     // Not a supported layout.
     m_type = LayoutType::Invalid; return;

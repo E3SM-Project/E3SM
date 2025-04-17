@@ -9,7 +9,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
   const WeightType &weight, const Field &lat, const Field &result)
 {
   auto result_layout = result.get_header().get_identifier().get_layout();
-  const int lat_num = result_layout.dim(ZonalAvgDiag::dim_name());
+  const int lat_num = result_layout.dim(ShortFieldTagsNames::BIN);
   const int ncols = field.get_header().get_identifier().get_layout().dim(0);
   const Real lat_delta = sp(180.0) / lat_num;
 
@@ -125,8 +125,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   // TODO: auto everything
   using FieldIdentifier = FieldHeader::identifier_type;
   using FieldLayout = FieldIdentifier::layout_type;
-  using ShortFieldTagsNames::COL, ShortFieldTagsNames::CMP,
-    ShortFieldTagsNames::LEV;
+  using ShortFieldTagsNames::BIN;
   const Field &field = get_fields_in().front();
   const FieldIdentifier &field_id = field.get_header().get_identifier();
   const FieldLayout &field_layout = field_id.get_layout();
@@ -135,26 +134,24 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
                    "Error! Field rank not supported by ZonalAvgDiag.\n"
                    " - field name: " + field_id.name() + "\n"
                        " - field layout: " + field_layout.to_string() + "\n");
-  EKAT_REQUIRE_MSG(field_layout.tags()[0] == COL,
+  EKAT_REQUIRE_MSG(field_layout.tags()[0] == ShortFieldTagsNames::COL,
                    "Error! ZonalAvgDiag diagnostic expects a layout starting "
                    "with the 'COL' tag.\n"
                    " - field name  : " + field_id.name() + "\n"
                        " - field layout: " + field_layout.to_string() + "\n");
 
-  FieldLayout zonal_area_layout({CMP}, {m_lat_num}, {dim_name()});
-  FieldLayout diagnostic_layout({CMP}, {m_lat_num}, {dim_name()});
-  for (int idim=1; idim < field_layout.rank(); idim++)
-  {
-    diagnostic_layout.append_dim(field_layout.tag(idim), field_layout.dim(idim),
-      field_layout.name(idim));
+  // allocate zonal average field
+  FieldLayout diagnostic_layout({BIN}, {m_lat_num});
+  for (int idim=1; idim < field_layout.rank(); idim++) {
+    diagnostic_layout.append_dim(field_layout.tag(idim), field_layout.dim(idim));
   }
-
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
     field_id.get_units(), field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
   m_diagnostic_output.allocate_view();
 
-  // compute zonal area
+  // allocate and compute zonal area
+  FieldLayout zonal_area_layout({BIN}, {m_lat_num});
   FieldIdentifier zonal_area_id("zonal area", zonal_area_layout,
     m_scaled_area.get_header().get_identifier().get_units(), field_id.get_grid_name());
   Field zonal_area(zonal_area_id);
