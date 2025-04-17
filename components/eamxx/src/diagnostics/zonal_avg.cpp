@@ -32,9 +32,9 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
             KOKKOS_LAMBDA(int i, Real& val) {
-              // TODO: check if some conditional is ok here instead of flag
+              // TODO: check if tenary is ok here (if not, multiply by flag)
               int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-              val += flag * weight_view(i) * field_view(i);
+              val += flag ? weight_view(i) * field_view(i) : sp(0.0);
             }, result_view(lat_i));
         });
     } break;
@@ -53,9 +53,9 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
             KOKKOS_LAMBDA(int i, Real& val) {
-              // TODO: check if some conditional is ok here instead of flag
               int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-              val += flag * weight_view(i) * field_view(i,d1_i);
+              // TODO: check if tenary is ok here (if not, multiply by flag)
+              val += flag ? weight_view(i) * field_view(i,d1_i) : sp(0.0);
             }, result_view(lat_i,d1_i));
         });
     } break;
@@ -77,9 +77,9 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
             KOKKOS_LAMBDA(int i, Real& val) {
-              // TODO: check if some conditional is ok here instead of flag
               int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-              val += flag * weight_view(i) * field_view(i,d1_i,d2_i);
+              // TODO: check if tenary is ok here (if not, multiply by flag)
+              val += flag ? weight_view(i) * field_view(i,d1_i,d2_i) : sp(0.0);
             }, result_view(lat_i,d1_i,d2_i));
         });
     } break;
@@ -103,7 +103,6 @@ ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm,
   const auto &field_name = m_params.get<std::string>("field_name");
   m_diag_name = field_name + "_zonal_avg";
 
-  // TODO: consider removing this and replacing with static 180
   m_lat_num = params.isParameter("num_lat_vals") ?
     params.get<int>("num_lat_vals") : 180;
 }
