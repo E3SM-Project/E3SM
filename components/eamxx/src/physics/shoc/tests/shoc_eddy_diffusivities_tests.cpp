@@ -58,8 +58,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     // Turbulent kinetic energy [m2/s2]
     static constexpr Real tke_reg = 0.4;
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridging to F90
-    EddyDiffusivitiesData SDS(shcol, nlev);
+    EddyDiffusivitiesData SDS(shcol, nlev, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
@@ -251,6 +254,102 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
         }
       }
     }
+
+    // 1.5 TKE test
+    // Verify that eddy diffusivities behave as expected if 1.5 TKE is activated.
+    // For this test we simply recycle the inputs from the previous test, with exception
+    // of the turbulent length scale and TKE.
+
+    // SHOC Mixing length [m]
+    static constexpr Real shoc_mix_1p5 = {100, 500};
+    // Turbulent kinetic energy [m2/s2]
+    static constexpr Real tke_1p5[shcol] = {0.4, 0.4};
+
+    // Verify that input length scale is increasing with column
+    //  and TKE is the same for each column
+    for(Int s = 0; s < shcol-1; ++s) {
+      REQUIRE(shoc_mix_1p5[s+1] > shoc_mix_1p5[s]);
+      REQUIRE(tke_1p5[s+1] == tke_1p5[s]);
+    }
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      // Column only input
+      SDS.tabs[s] = tabs_ustab[s];
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.tke[offset] = tke_1p5[s];
+        SDS.shoc_mix[offset] = shoc_mix_1p5;
+      }
+    }
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // Call the C++ implementation
+    eddy_diffusivities(SDS);
+
+    // Check to make sure the diffusivities are smaller
+    //  in the columns where length scale is smaller
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if (SDS.tke[offset] == SDS.tke[offsets] &
+            SDS.shoc_mix[offset] < SDS.shoc_mix[offsets]){
+          REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
+          REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
+        }
+      }
+    }
+
+    // Now we are going to do a similar but opposite test, change TKE
+    //  while keeping SHOC mix constant
+
+    // SHOC Mixing length [m]
+    static constexpr Real shoc_mix_1p5 = {500, 500};
+    // Turbulent kinetic energy [m2/s2]
+    static constexpr Real tke_1p5[shcol] = {0.1, 0.4};
+
+    // Verify that input length scale is increasing with column
+    //  and TKE is the same for each column
+    for(Int s = 0; s < shcol-1; ++s) {
+      REQUIRE(shoc_mix_1p5[s+1] == shoc_mix_1p5[s]);
+      REQUIRE(tke_1p5[s+1] > tke_1p5[s]);
+    }
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      // Column only input
+      SDS.tabs[s] = tabs_ustab[s];
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.tke[offset] = tke_1p5[s];
+        SDS.shoc_mix[offset] = shoc_mix_1p5;
+      }
+    }
+
+    // Call the C++ implementation
+    eddy_diffusivities(SDS);
+
+    // Check to make sure the diffusivities are smaller
+    //  in the columns where TKE is smaller
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if (SDS.tke[offset] < SDS.tke[offsets] &
+            SDS.shoc_mix[offset] == SDS.shoc_mix[offsets]){
+          REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
+          REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
+        }
+      }
+    }
+
   }
 
 
