@@ -6406,12 +6406,13 @@
     <gridmap glc_grid="mpas.ais4to20km" ocn_grid="SOwISC12to30E3r4">
       <map name="OCN2GLC_SHELF_FMAPNAME">cpl/gridmaps/SOwISC12to30E3r4/map_SOwISC12to30E3r4-nomask_to_ais4to20_esmfaave.20250122.nc</map>
       <map name="OCN2GLC_SHELF_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r4/map_SOwISC12to30E3r4-nomask_to_ais4to20_esmfbilin.20250122.nc</map>
+      <map name="OCN2GLC_TF_SMAPNAME">cpl/gridmaps/SOwISC12to30E3r4/map_SOwISC12to30E3r4-nomask_to_ais4to20_esmfbilin.20250415.nc</map>
       <map name="GLC2ICE_FMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4-nomask_esmfaave.20250122.nc</map>
       <map name="GLC2ICE_SMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4-nomask_esmfbilin.20250122.nc</map>
       <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4-nomask_esmfaave.20250122.nc</map>
       <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4-nomask_esmfbilin.20250122.nc</map>
-      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4-nomask_esmfnearestdtos.20250122.nc</map>
-      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4_esmfnearestdtos.20250122.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4_nn.20250415.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/mpas.ais4to20km/map_ais4to20_to_SOwISC12to30E3r4-nomask_nn.20250415.nc</map>
     </gridmap>
 
 
