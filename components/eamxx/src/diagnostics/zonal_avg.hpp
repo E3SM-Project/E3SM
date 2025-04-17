@@ -28,8 +28,6 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
 
  public:
 
-  static std::string dim_name() { return "zonal average"; }
-
   // Constructors
   ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
