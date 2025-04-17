@@ -161,3 +161,42 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
           ekat: ${{ env.ekat }}
+  gcc-hip:
+    if: |
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'gcc-hip' ||
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
+    runs-on:  [self-hosted, ghci-snl-hip, hip, gcc]
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          # - build_type: sp    NEED TO CHECK WHY DEBUG BUILDS FAIL
+          #   SK: OFF
+          # - build_type: dbg
+          #   SK: ON
+          - build_type: opt
+            SK: OFF
+    name: gcc-hip / ${{ matrix.test.build_type }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run tests
+        uses: ./.github/actions/test-all-eamxx
+        with:
+          build_type: ${{ matrix.test.build_type }}
+          machine: ghci-snl-cuda
+          generate: ${{ env.generate }}
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
+          ekat: ${{ env.ekat }}
