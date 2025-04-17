@@ -4,16 +4,16 @@
 
 namespace scream {
 
-template <typename WeightType>
-void ZonalAvgDiag::compute_zonal_sum(const Field &field,
-  const WeightType &weight, const Field &lat, const Field &result)
+void ZonalAvgDiag::compute_zonal_sum(const Field &result,
+  const Field &field, const Field &weight, const Field &lat,
+  const ekat::Comm *comm)
 {
   auto result_layout = result.get_header().get_identifier().get_layout();
   const int lat_num = result_layout.dim(ShortFieldTagsNames::BIN);
   const int ncols = field.get_header().get_identifier().get_layout().dim(0);
   const Real lat_delta = sp(180.0) / lat_num;
 
-  auto weight_view = get_view(weight);
+  auto weight_view = weight.get_view<const Real*>();
   auto lat_view = lat.get_view<const Real *>();
   using KT = ekat::KokkosTypes<DefaultDevice>;
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
@@ -87,14 +87,16 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &field,
       EKAT_ERROR_MSG("Error! Unsupported field rank for zonal averages.\n");
   }
 
-  // TODO: use device-side MPI calls
-  // TODO: the dev ptr causes problems; revisit this later
-  // TODO: doing cuda-aware MPI allreduce would be ~10% faster
-  Kokkos::fence();
-  result.sync_to_host();
-  m_comm.all_reduce(result.template get_internal_view_data<Real, Host>(),
-    result_layout.size(), MPI_SUM);
-  result.sync_to_dev();
+  if (comm) {
+    // TODO: use device-side MPI calls
+    // TODO: the dev ptr causes problems; revisit this later
+    // TODO: doing cuda-aware MPI allreduce would be ~10% faster
+    Kokkos::fence();
+    result.sync_to_host();
+    comm->all_reduce(result.template get_internal_view_data<Real, Host>(),
+      result_layout.size(), MPI_SUM);
+    result.sync_to_dev();
+  }
 }
 
 ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm,
@@ -149,14 +151,22 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output = Field(diagnostic_id);
   m_diagnostic_output.allocate_view();
 
-  // allocate and compute zonal area
+  // allocate zonal area
+  const FieldIdentifier &area_id = m_scaled_area.get_header().get_identifier();
   FieldLayout zonal_area_layout({BIN}, {m_lat_num});
   FieldIdentifier zonal_area_id("zonal area", zonal_area_layout,
-    m_scaled_area.get_header().get_identifier().get_units(), field_id.get_grid_name());
+    area_id.get_units(), area_id.get_grid_name());
   Field zonal_area(zonal_area_id);
   zonal_area.allocate_view();
-  IdentityField one;
-  compute_zonal_sum(m_scaled_area, one, m_lat, zonal_area);
+
+  // compute zonal area
+  FieldLayout ones_layout = area_id.get_layout().clone();
+  FieldIdentifier ones_id("ones", ones_layout, area_id.get_units(),
+    area_id.get_grid_name());
+  Field ones(ones_id);
+  ones.allocate_view();
+  ones.deep_copy(1.0);
+  compute_zonal_sum(zonal_area, m_scaled_area, ones, m_lat, &m_comm);
 
   // scale area by 1 / zonal area
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
@@ -174,7 +184,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
 void ZonalAvgDiag::compute_diagnostic_impl() {
   const auto &field = get_fields_in().front();
-  compute_zonal_sum(field, m_scaled_area, m_lat, m_diagnostic_output);
+  compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_lat, &m_comm);
 }
 
 }  // namespace scream
