@@ -57,7 +57,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
     // Shear production term [s-2]
     static constexpr Real sterm_gr[shcol] = {0.5, 0.0};
     // Brunt vaisalla frequency [s-1], only used for 1.5 closure
-    static constexpr Real brunt_gr[shcol] = {-0.0004, 0.0004}
+    static constexpr Real brunt_gr[shcol] = {-0.0004, 0.0004};
     // TKE initial value
     Real tke_init_gr[shcol] = {mintke, 0.4};
 
