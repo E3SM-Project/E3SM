@@ -13,18 +13,9 @@ namespace scream {
 
 class ZonalAvgDiag : public AtmosphereDiagnostic {
 
-  template <typename WeightType>
-  void compute_zonal_sum(const Field &field, const WeightType &weight,
-    const Field &lat, const Field &result);
-
-  // functions and classes to support computing zonal sum with unitary weights
-  auto get_view(const Field& field) { return field.get_view<const Real *>();}
-  struct IdentityField
-  {
-    // TODO: revisit use of constexpr vs inlining
-    constexpr Real operator()(int) const {return 1.0;}
-  };
-  IdentityField get_view(const IdentityField& field) {return field;}
+  // TODO: comment this, noting it's a utility function that could exist elsewhere
+  static void compute_zonal_sum(const Field &result, const Field &field,
+    const Field &weight, const Field &lat, const ekat::Comm *comm = nullptr);
 
  public:
 
