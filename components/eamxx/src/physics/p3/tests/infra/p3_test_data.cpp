@@ -988,21 +988,21 @@ void p3_main_part2_host(
   hetfrz_immersion_nucleation_tend = hetfrz_0.data();
   hetfrz_contact_nucleation_tend = hetfrz_1.data();
   hetfrz_deposition_nucleation_tend = hetfrz_2.data();
-  std::vector<Real> qr2qv_evap(nk,0), qi2qv_sublim(nk,0), qc2qr_accret(nk,0), qc2qr_autoconv(nk,0), qv2qi_vapdep(nk,0),
-    qc2qi_berg(nk,0), qc2qr_ice_shed(nk,0), qc2qi_collect(nk,0), qr2qi_collect(nk,0), qc2qi_hetero_freeze(nk,0),
-    qr2qi_immers_freeze(nk,0), qi2qr_melt(nk,0);
-  qr2qv_evap = qr2qv_evap.data();
-  qi2qv_sublim = qi2qv_sublim.data();
-  qc2qr_accret = qc2qr_accret.data();
-  qc2qr_autoconv = qc2qr_autoconv.data();
-  qv2qi_vapdep = qv2qi_vapdep.data();
-  qc2qi_berg = qc2qi_berg.data();
-  qc2qr_ice_shed = qc2qr_ice_shed.data();
-  qc2qi_collect = qc2qi_collect.data();
-  qr2qi_collect = qr2qi_collect.data();
-  qc2qi_hetero_freeze = qc2qi_hetero_freeze.data();
-  qr2qi_immers_freeze = qr2qi_immers_freeze.data();
-  qi2qr_melt = qi2qr_melt.data();
+  std::vector<Real> qr2qv_evap_v(nk,0), qi2qv_sublim_v(nk,0), qc2qr_accret_v(nk,0), qc2qr_autoconv_v(nk,0), qv2qi_vapdep_v(nk,0),
+    qc2qi_berg_v(nk,0), qc2qr_ice_shed_v(nk,0), qc2qi_collect_v(nk,0), qr2qi_collect_v(nk,0), qc2qi_hetero_freeze_v(nk,0),
+    qr2qi_immers_freeze_v(nk,0), qi2qr_melt_v(nk,0);
+  qr2qv_evap = qr2qv_evap_v.data();
+  qi2qv_sublim = qi2qv_sublim_v.data();
+  qc2qr_accret = qc2qr_accret_v.data();
+  qc2qr_autoconv = qc2qr_autoconv_v.data();
+  qv2qi_vapdep = qv2qi_vapdep_v.data();
+  qc2qi_berg = qc2qi_berg_v.data();
+  qc2qr_ice_shed = qc2qr_ice_shed_v.data();
+  qc2qi_collect = qc2qi_collect_v.data();
+  qr2qi_collect = qr2qi_collect_v.data();
+  qc2qi_hetero_freeze = qc2qi_hetero_freeze_v.data();
+  qr2qi_immers_freeze = qr2qi_immers_freeze_v.data();
+  qi2qr_melt = qi2qr_melt_v.data();
 
   ekat::host_to_device({hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
         pres, dpres, dz, nc_nuceat_tend, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r,
