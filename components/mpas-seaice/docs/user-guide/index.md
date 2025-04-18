@@ -44,8 +44,6 @@ Related namelist variables are grouped according to their application.
 
 ## Icepack
 
-The Icepack software has replaced the original ``colpkg`` column physics code in MPAS-seaice. The ``column_package`` option is still available but is no longer being supported in MPAS-seaice.
-
 Full documentation for E3SM's version of Icepack can be found in [E3SM's Icepack readthedocs](<https://e3sm-icepack.readthedocs.io/en/latest>).  The most up-to-date documentation from the CICE Consortium's main Icepack repository is [here](<https://cice-consortium-icepack.readthedocs.io/en/main>).
 
 The MPAS-seaice driver for Icepack is

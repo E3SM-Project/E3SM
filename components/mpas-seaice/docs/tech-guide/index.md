@@ -54,8 +54,6 @@ With advanced physics and biogeochemistry (BGC) options, MPAS-Seaice can be conf
 
 ## Column Physics
 
-The Icepack software has replaced the original ``colpkg`` column physics code in MPAS-seaice. The ``config_column_physics_type = 'column_package'`` option is still available but is no longer being supported in MPAS-seaice.
-
 Because of the strong thermal gradients between the (cold) atmosphere and (relatively warm) oceans in polar regions, a large portion of the physics in sea ice models can be described in a vertical column, without reference to neighboring grid cells. MPAS-Seaice shares the same column physics code as CICE through the Icepack library (Hunke et al., 2018), which is maintained by the CICE Consortium. This code includes several options for simulating sea ice thermodynamics, mechanical redistribution (ridging) and associated area and thickness changes. In addition, the model supports a number of tracers, including thickness, enthalpy, ice age, first-year ice area, deformed ice area and volume, melt ponds, snow properties and biogeochemistry.
 
 Icepack is implemented in MPAS-seaice as a git submodule. Icepack consists of three independent parts, the column physics code, the Icepack driver that supports stand-alone testing of the column physics code, and the Icepack scripts that build and test the Icepack model.  E3SM uses only the column physics code, which is called for each ocean grid cell.  Icepack’s own driver and testing scripts are used when preparing new developments to be merged back to the CICE Consortium’s Icepack repository.
