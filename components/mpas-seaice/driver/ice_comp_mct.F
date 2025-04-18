@@ -3888,7 +3888,7 @@ contains
    ent_type = 1 ! cells
   !  set all tags in one method
    tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
-   ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im(1, 1) )
+   ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im )
    if ( ierr /= 0 ) then
       write(iceLogUnit,*) 'Fail to get seq_flds_x2i_fields '
    endif
