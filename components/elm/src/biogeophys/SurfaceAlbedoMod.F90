@@ -936,10 +936,8 @@ contains
     if(use_fates)then
 #ifndef _OPENACC
 
-       call alm_fates%wrap_canopy_radiation(bounds, &
-            num_vegsol, filter_vegsol, &
-            coszen_patch(bounds%begp:bounds%endp), &
-            surfalb_vars)
+       call alm_fates%wrap_canopy_radiation(bounds,surfalb_vars,nextsw_cday,declinp1)
+
 #endif
     else
     
