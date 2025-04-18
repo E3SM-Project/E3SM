@@ -135,7 +135,6 @@ subroutine zmconv_readnl(nlfile)
    use units,           only: getunit, freeunit
    use zm_conv_types,   only: zm_param_mpi_broadcast
    use mpishorthand
-   use zm_conv_mcsp,    only: MCSP_enabled, MCSP_t_coeff, MCSP_q_coeff, MCSP_u_coeff, MCSP_v_coeff
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -149,7 +148,7 @@ subroutine zmconv_readnl(nlfile)
            zmconv_trig_dcape_only, zmconv_trig_ull_only, zmconv_microp, zmconv_auto_fac,&
            zmconv_accr_fac, zmconv_micro_dcs, zmconv_clos_dyn_adj, zmconv_tpert_fix,    &
            zmconv_MCSP_heat_coeff, zmconv_MCSP_moisture_coeff, &
-           zmconv_MCSP_uwind_coeff, zmconv_MCSP_vwind_coeff   
+           zmconv_MCSP_uwind_coeff, zmconv_MCSP_vwind_coeff
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -190,16 +189,17 @@ subroutine zmconv_readnl(nlfile)
       zm_param%tpert_fac       = zmconv_tp_fac
       zm_param%mx_bot_lyr_adj  = zmconv_mx_bot_lyr_adj
 
-      MCSP_t_coeff = zmconv_MCSP_heat_coeff
-      MCSP_q_coeff = zmconv_MCSP_moisture_coeff
-      MCSP_u_coeff = zmconv_MCSP_uwind_coeff
-      MCSP_v_coeff = zmconv_MCSP_vwind_coeff
- 
-      if( abs(MCSP_t_coeff)+abs(MCSP_q_coeff)+abs(MCSP_u_coeff)+abs(MCSP_v_coeff) > 0._r8 ) then
-           MCSP_enabled = .true.
+      ! mesoscale coherent structure parameterization (MCSP) parameters
+      zm_param%mcsp_t_coeff = zmconv_MCSP_heat_coeff
+      zm_param%mcsp_q_coeff = zmconv_MCSP_moisture_coeff
+      zm_param%mcsp_u_coeff = zmconv_MCSP_uwind_coeff
+      zm_param%mcsp_v_coeff = zmconv_MCSP_vwind_coeff
+      if ( abs(zm_param%mcsp_t_coeff)>0._r8 .or. abs(zm_param%mcsp_q_coeff)>0._r8 .or. &
+           abs(zm_param%mcsp_u_coeff)>0._r8 .or. abs(zm_param%mcsp_v_coeff)>0._r8 ) then
+         zm_param%mcsp_enabled = .true.
       else
-           MCSP_enabled = .false.
-      end if 
+         zm_param%mcsp_enabled = .false.
+      end if
 
       if ( zmconv_alfa /= unset_r8 ) then
            alfa_scalar = zmconv_alfa
@@ -219,8 +219,8 @@ subroutine zmconv_readnl(nlfile)
          write(iulog,*)'**** ZM scheme uses unrestricted launch level along with default CAPE-based trigger:', trig_ull_only
       endif
 
-      if(MCSP_enabled) then
-         write(iulog,*)'**** ZM scheme uses multiscale coherent structure parameterization (MCSP):',MCSP_enabled
+      if(zm_param%mcsp_enabled) then
+         write(iulog,*)'**** ZM scheme uses multiscale coherent structure parameterization (MCSP):',mcsp_enabled
       end if
 
       if(zm_microp) then
@@ -254,11 +254,14 @@ subroutine zmconv_readnl(nlfile)
 
    call zm_param_mpi_broadcast(zm_param)
 
+<<<<<<< HEAD
    call mpibcast(MCSP_enabled,      1, mpilog, 0, mpicom)
    call mpibcast(MCSP_t_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(MCSP_q_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(MCSP_u_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(MCSP_v_coeff,      1, mpir8,  0, mpicom)
+=======
+>>>>>>> 0fb18de58c (update zmconv_readnl)
 #endif
 
 end subroutine zmconv_readnl
