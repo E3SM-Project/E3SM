@@ -19,7 +19,6 @@ module zm_conv_intr
    use rad_constituents,      only: rad_cnst_get_aer_props, rad_cnst_get_mode_props
    use ndrop_bam,             only: ndrop_bam_init
    use zm_conv,               only: zm_conv_evap, zm_convr, trigdcape_ull, trig_dcape_only
-   ! use zm_conv,               only: MCSP, MCSP_heat_coeff, MCSP_moisture_coeff, MCSP_uwind_coeff, MCSP_vwind_coeff
    use zm_conv,               only: zm_microp
    use zm_transport,          only: zm_transport_tracer, zm_transport_momentum
    use zm_microphysics,       only: zm_aero_t
@@ -144,7 +143,8 @@ subroutine zm_conv_init(pref_edge)
    use physics_buffer,     only: pbuf_get_index
    use rad_constituents,   only: rad_cnst_get_info
    use zm_microphysics,    only: zm_mphyi
-   use zm_conv_mcsp,       only: MCSP_enabled, zm_conv_mcsp_init
+   use zm_conv,            only: zm_param
+   use zm_conv_mcsp,       only: zm_conv_mcsp_init
 
    implicit none
 
@@ -343,7 +343,7 @@ subroutine zm_conv_init(pref_edge)
       call add_default('ZMMTT    ', history_budget_histfile_num, ' ')
    end if
 
-   if (MCSP_enabled) call zm_conv_mcsp_init()
+   if (zm_param%mcsp_enabled) call zm_conv_mcsp_init()
 
    ! Limit deep convection to regions below ZM_upper_limit_pref
    limcnv = 0 ! initialize to null value to check against below
@@ -555,7 +555,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    use physconst,          only: gravit
    use time_manager,       only: get_curr_date
    use interpolate_data,   only: vertinterp
-   use zm_conv_mcsp,       only: MCSP_enabled, zm_conv_mcsp_tend
+   use zm_conv,            only: zm_const, zm_param
+   use zm_conv_mcsp,       only: zm_conv_mcsp_tend
    !----------------------------------------------------------------------------
    ! Arguments
    type(physics_state),target,       intent(in)  :: state      ! Physics state variables
@@ -660,33 +661,8 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    real(r8), dimension(pcols,pver) :: frz
    real(r8), dimension(pcols)      :: precz_snum
 
-   ! ! MCSP
-   ! logical  :: doslop
-   ! logical  :: doslop_heat
-   ! logical  :: doslop_moisture
-   ! logical  :: doslop_uwind
-   ! logical  :: doslop_vwind
-   ! real(r8) :: alpha2, alpha_moisture, alphau, alphav
-   ! real(r8) :: mcsp_top, mcsp_bot
-   ! real(r8) :: dpg
-   ! real(r8) :: Qcq_adjust
-   ! real(r8), dimension(pcols)      :: Q_dis
-   ! real(r8), dimension(pcols)      :: Qq_dis
-   ! real(r8), dimension(pcols,pver) :: Qm
-   ! real(r8), dimension(pcols,pver) :: Qmq
-   ! real(r8), dimension(pcols,pver) :: Qmu
-   ! real(r8), dimension(pcols,pver) :: Qmv
-   ! real(r8), dimension(pcols)      :: Qm_int_end
-   ! real(r8), dimension(pcols)      :: Qmq_int_end
-   ! real(r8), dimension(pcols)      :: Pa_int_end
-   ! real(r8), dimension(pcols)      :: Qs_zmconv
-   ! real(r8), dimension(pcols)      :: Qv_zmconv
-   ! real(r8), dimension(pcols)      :: MCSP_freq
-   ! real(r8), dimension(pcols,pver) :: MCSP_DT
-   ! real(r8), dimension(pcols)      :: ZM_depth
-   ! real(r8), dimension(pcols)      :: MCSP_shear
-   ! real(r8), dimension(pcols)      :: du600
-   ! real(r8), dimension(pcols)      :: dv600
+   logical :: do_mcsp_u = .false.
+   logical :: do_mcsp_v = .false.
 
    !----------------------------------------------------------------------------
 
@@ -765,36 +741,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
          microp_st%fhmrm (pcols,pver)    ) ! mass tendency due to homogeneous freezing of rain
    end if
 
-   ! doslop          = .false.
-   ! doslop_heat     = .false.
-   ! doslop_moisture = .false.
-   ! doslop_uwind    = .false.
-   ! doslop_vwind    = .false.
-   ! alphau          = 0
-   ! alphav          = 0
-   ! if ( MCSP ) then
-   !    if ( MCSP_heat_coeff > 0 ) then
-   !       doslop_heat = .true.
-   !       alpha2 = MCSP_heat_coeff
-   !    end if
-   !    if ( MCSP_moisture_coeff > 0 ) then
-   !       doslop_moisture = .true.
-   !       alpha_moisture = MCSP_moisture_coeff
-   !    end if
-   !    if ( MCSP_uwind_coeff > 0 ) then
-   !       doslop_uwind = .true.
-   !       alphau = MCSP_uwind_coeff
-   !    end if
-   !    if ( MCSP_vwind_coeff > 0 ) then
-   !       doslop_vwind = .true.
-   !       alphav = MCSP_vwind_coeff
-   !    end if
-   ! end if
-
-   ! if (doslop_heat .or. doslop_moisture .or. doslop_uwind .or. doslop_vwind) then
-   !    doslop = .true.
-   ! end if
-
    !----------------------------------------------------------------------------
    ! Initialize stuff
 
@@ -812,8 +758,12 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    lq(:) = .FALSE.
    lq(1) = .TRUE.
- 
-   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq, lu=doslop_uwind, lv=doslop_vwind)
+
+   if (zm_param%mcsp_u_coeff>0) do_mcsp_u = .true.
+   if (zm_param%mcsp_v_coeff>0) do_mcsp_v = .true.
+
+   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', &
+                           ls=.true., lq=lq, lu=do_mcsp_u, lv=do_mcsp_v)
 
    !----------------------------------------------------------------------------
    ! Associate pointers with physics buffer fields
@@ -898,135 +848,16 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver)
    end if
 
-   if (MCSP_enabled) then
-      call zm_conv_mcsp_tend( pcols, ncol, pver, ztodt, jctop, zm_const, &
+   !----------------------------------------------------------------------------
+   ! mesoscale coherent structure parameterization (MCSP)
+
+   if (zm_param%mcsp_enabled) then
+      call zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
+                              ztodt, jctop, zm_const, zm_param, &
                               state%pmid, state%pint, state%pdel, &
                               state%s, state%q, state%u, state%v, &
-                              ptend_loc%s, ptend_loc%q, ptend_loc%u, ptend_loc%v )
+                              ptend_loc )
    end if
-
-   ! !----------------------------------------------------------------------------
-   ! ! Begin MCSP parameterization here
-   ! !----------------------------------------------------------------------------
-   ! if (doslop) then
-   !    du600              = 0
-   !    dv600              = 0
-   !    ZM_depth           = 0
-   !    MCSP_shear         = 0
-   !    Qs_zmconv (1:ncol) = 0
-   !    Qv_zmconv (1:ncol) = 0
-   !    Pa_int_end(1:ncol) = 0
-   !    Qm (1:ncol,1:pver) = 0
-   !    Qmq(1:ncol,1:pver) = 0
-   !    Qmu(1:ncol,1:pver) = 0
-   !    Qmv(1:ncol,1:pver) = 0
-
-   !    call vertinterp(ncol, pcols, pver, state%pmid, MCSP_storm_speed_pref, state%u,du600)
-   !    call vertinterp(ncol, pcols, pver, state%pmid, MCSP_storm_speed_pref, state%v,dv600)
-
-   !    do i = 1,ncol
-   !       if (state%pmid(i,pver).gt.MCSP_storm_speed_pref) then
-   !          du600(i) = du600(i)-state%u(i,pver)
-   !          dv600(i) = dv600(i)-state%v(i,pver)
-   !       else
-   !          du600(i) = -999
-   !          dv600(i) = -999
-   !       end if
-   !    end do
-
-   !    MCSP_shear = du600
-   !    do i = 1,ncol
-   !       if ( jctop(i).ne.pver ) ZM_depth(i) = state%pint(i,pver+1) - state%pmid(i,jctop(i))
-   !    end do
-
-   !    ! Define parameters
-   !    do i = 1,ncol
-   !       do k = jctop(i),pver
-   !          Qs_zmconv(i) = Qs_zmconv(i) + ptend_loc%s(i,k) * state%pdel(i,k)
-   !          Qv_zmconv(i) = Qv_zmconv(i) + ptend_loc%q(i,k,1) * state%pdel(i,k)
-   !          Pa_int_end(i) = Pa_int_end(i) + state%pdel(i,k)
-   !       end do
-   !    end do
-
-   !    do i = 1,ncol
-   !       if (jctop(i) .ne. pver) then
-   !          Qs_zmconv(i) = Qs_zmconv(i) / Pa_int_end(i)
-   !          Qv_zmconv(i) = Qv_zmconv(i) / Pa_int_end(i)
-   !       else
-   !          Qs_zmconv(i) = 0
-   !          Qv_zmconv(i) = 0
-   !       end if
-   !    end do
-
-   !    do i = 1,ncol
-   !       Qm_int_end(i)  = 0
-   !       Qmq_int_end(i) = 0
-   !       Pa_int_end(i)  = 0
-   !       Q_dis(i)       = 0
-   !       Qq_dis(i)      = 0
-
-   !       if ( (state%pint(i,pver+1)-state%pmid(i,jctop(i))) >= MCSP_conv_depth_min ) then
-   !          if ( abs(du600(i)).ge.MCSP_shear_min .and. &
-   !               abs(du600(i)).lt.MCSP_shear_max .and. &
-   !               Qs_zmconv(i).gt.0 ) then
-   !             do k = jctop(i),pver
-   !                mcsp_top = state%pint(i,pver+1) - state%pmid(i,k)
-   !                mcsp_bot = state%pint(i,pver+1) - state%pmid(i,jctop(i))
-
-   !                Qm(i,k)  = -1 * Qs_zmconv(i) * alpha2 * sin(2.0_r8*pi*(mcsp_top/mcsp_bot))
-   !                Qmq(i,k) = -1 * Qv_zmconv(i) * alpha2 * sin(2.0_r8*pi*(mcsp_top/mcsp_bot))
-   !                Qmq(i,k) = Qm(i,k)/2500000.0_r8/4.0_r8
-
-   !                Qmu(i,k) = alphau * (cos(pi*(mcsp_top/mcsp_bot)))
-   !                Qmv(i,k) = alphav * (cos(pi*(mcsp_top/mcsp_bot)))
-
-   !                dpg = state%pdel(i,k)/gravit
-
-   !                Qm_int_end(i)  = Qm_int_end(i) + Qm(i,k) * dpg
-   !                Qm_int_end(i)  = Qm_int_end(i) + (2.0_r8*Qmu(i,k)*ztodt*state%u(i,k)+ &
-   !                                                 Qmu(i,k)*Qmu(i,k)*ztodt*ztodt)/2.0_r8 * dpg/ztodt
-   !                Qm_int_end(i)  = Qm_int_end(i) + (2.0_r8*Qmv(i,k)*ztodt*state%v(i,k)+ &
-   !                                                 Qmv(i,k)*Qmv(i,k)*ztodt*ztodt)/2.0_r8 * dpg/ztodt
-   !                Qmq_int_end(i) = Qmq_int_end(i) + Qmq(i,k) * dpg
-   !                Pa_int_end(i)  = Pa_int_end(i) + state%pdel(i,k)
-   !             end do
-   !             Q_dis(i)  = Qm_int_end(i)  / Pa_int_end(i)
-   !             Qq_dis(i) = Qmq_int_end(i) / Pa_int_end(i)
-   !          end if
-   !       end if
-   !    end do
-
-   !    MCSP_DT   = 0
-   !    MCSP_freq = 0
-
-   !    do i = 1,ncol
-   !       do k = jctop(i),pver
-   !          Qcq_adjust = ptend_loc%q(i,k,1) - Qq_dis(i) * gravit
-
-   !          ptend_loc%s(i,k) = ptend_loc%s(i,k) - Q_dis(i)*gravit ! energy fixer
-
-   !          MCSP_DT(i,k) = -Q_dis(i)*gravit+Qm(i,k)
-   !          if (abs(Qm(i,k)).gt.0 .and. abs(Qmu(i,k)).gt.0) MCSP_freq(i) = 1
-
-   !          if (doslop_heat)     ptend_loc%s(i,k)   = ptend_loc%s(i,k) + Qm(i,k)
-   !          if (doslop_moisture) ptend_loc%q(i,k,1) = Qcq_adjust + Qmq(i,k)
-   !          if (doslop_uwind)    ptend_loc%u(i,k)   = Qmu(i,k)
-   !          if (doslop_vwind)    ptend_loc%v(i,k)   = Qmv(i,k)
-   !       end do
-   !    end do
-
-   !    MCSP_DT(1:ncol,1:pver) = MCSP_DT(1:ncol,1:pver)/cpair
-   !    call outfld('MCSP_DT    ',MCSP_DT,   pcols, lchnk )
-   !    call outfld('MCSP_freq  ',MCSP_freq, pcols, lchnk )
-   !    if (doslop_uwind) call outfld('MCSP_DU    ',ptend_loc%u*86400.0_r8, pcols, lchnk )
-   !    if (doslop_vwind) call outfld('MCSP_DV    ',ptend_loc%v*86400.0_r8, pcols, lchnk )
-   !    call outfld('ZM_depth   ',ZM_depth,   pcols, lchnk )
-   !    call outfld('MCSP_shear ',MCSP_shear, pcols, lchnk )
-
-   ! end if
-   ! !----------------------------------------------------------------------------
-   ! ! End of MCSP parameterization calculations
-   ! !----------------------------------------------------------------------------
 
    call outfld('DCAPE',  dcape, pcols, lchnk )
    call outfld('CAPE_ZM', cape, pcols, lchnk )
