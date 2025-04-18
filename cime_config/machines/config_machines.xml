@@ -1138,7 +1138,6 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
-      <env name="HDF5_ROOT"/> <!-- frontier cmake cannot find_package(HDF5) for some reason, so disable it -->
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_OFI_CXI_COUNTER_REPORT">2</env>

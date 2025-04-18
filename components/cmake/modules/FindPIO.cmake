@@ -32,9 +32,11 @@ list(APPEND PIOLIBS "${INSTALL_SHAREDPATH}/lib/libgptl.a")
 find_package(NETCDF REQUIRED)
 # Check if scorpio has hdf5 enabled
 if (DEFINED ENV{HDF5_ROOT})
-  if (DEFINED ENV{HDF5_USE_STATIC_LIBRARIES})
-    set(HDF5_USE_STATIC_LIBRARIES On)
-  endif()
+# Using a custom FindHDF5.cmake eliminates the need to set HDF5_USE_STATIC_LIBRARIES
+# The custom module correctly handles static-only HDF5 builds
+#  if (DEFINED ENV{HDF5_USE_STATIC_LIBRARIES})
+#    set(HDF5_USE_STATIC_LIBRARIES On)
+#  endif()
   find_package(HDF5 REQUIRED COMPONENTS C HL)
 endif()
 
