@@ -148,6 +148,27 @@ FieldLayout& FieldLayout::strip_dim (const int idim) {
   return *this;
 }
 
+void FieldLayout::add_dim (const FieldTag t, const int extent, const std::string& name,
+  bool prepend_instead_of_append)
+{
+  if (prepend_instead_of_append)
+  {
+    m_tags.insert(m_tags.begin(), t);
+    m_names.insert(m_names.begin(), name);
+    m_dims.insert(m_dims.begin(), extent);
+  }
+  else
+  {
+    m_tags.push_back(t);
+    m_names.push_back(name);
+    m_dims.push_back(extent);
+  }
+
+  ++m_rank;
+  set_extents();
+  compute_type();
+}
+
 FieldLayout&
 FieldLayout::append_dim (const FieldTag t, const int extent)
 {
@@ -157,13 +178,20 @@ FieldLayout::append_dim (const FieldTag t, const int extent)
 FieldLayout&
 FieldLayout::append_dim (const FieldTag t, const int extent, const std::string& name)
 {
-  m_tags.push_back(t);
-  m_names.push_back(name);
-  m_dims.push_back(extent);
+  add_dim(t, extent, name);
+  return *this;
+}
 
-  ++m_rank;
-  set_extents();
-  compute_type();
+FieldLayout&
+FieldLayout::prepend_dim (const FieldTag t, const int extent)
+{
+  return prepend_dim(t,extent,e2str(t));
+}
+
+FieldLayout&
+FieldLayout::prepend_dim (const FieldTag t, const int extent, const std::string& name)
+{
+  add_dim(t, extent, name, true);
   return *this;
 }
 
