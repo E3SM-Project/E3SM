@@ -34,7 +34,6 @@ enum class FieldTag {
   GaussPoint,
   Component,
   TimeLevel,
-  DiagnosticBin,
 };
 
 // If using tags a lot, consider adding 'using namespace ShortFieldTagsNames'
@@ -51,7 +50,6 @@ namespace ShortFieldTagsNames {
   constexpr auto LEV  = FieldTag::LevelMidPoint;
   constexpr auto ILEV = FieldTag::LevelInterface;
   constexpr auto CMP  = FieldTag::Component;
-  constexpr auto BIN  = FieldTag::DiagnosticBin;
 }
 
 inline std::string e2str (const FieldTag ft) {
@@ -81,9 +79,6 @@ inline std::string e2str (const FieldTag ft) {
       break;
     case FieldTag::Component:
       name = "dim";
-      break;
-    case FieldTag::DiagnosticBin:
-      name = "bin";
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
