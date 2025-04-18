@@ -632,6 +632,9 @@ contains
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
          penetrativeTemperatureFlux, &! heat flux penetrating below sfc
          tracerGroupExponentialDecayRate ! exp decay rate for forcing
+      
+      integer, dimension(:), pointer :: &
+         masksTSRegion                !mask for TS restoring region
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          tracerGroupPistonVelocity,        &! forcing piston velocity
@@ -1041,6 +1044,9 @@ contains
          ! ocean surface restoring
          !
          if (config_use_tracerGroup_surface_restoring) then
+
+            call mpas_log_write( "Hello Olawale! Writing from restoring")
+
             call mpas_timer_start("surface_restoring_"//groupName)
             call mpas_pool_get_subpool(forcingPool, &
                                    'tracersSurfaceRestoringFields', &
@@ -1056,10 +1062,13 @@ contains
                                      modifiedGroupName, &
                                      tracerGroupSurfaceRestoringValue)
 
+            call mpas_pool_get_array(meshPool, "masksTSRegion", &
+                               masksTSRegion)
+
             ! Note: monthly surface salinity restoring is a special
             ! case for tracer restoring
             call ocn_tracer_surface_restoring_compute(groupName, &
-                   nTracersGroup, nCellsAll, tracerGroup,  &
+                   nTracersGroup, nCellsAll, masksTSRegion, tracerGroup,  &
                    tracerGroupPistonVelocity, &
                    tracerGroupSurfaceRestoringValue, &
                    tracerGroupSurfaceFlux, indxSalt, &

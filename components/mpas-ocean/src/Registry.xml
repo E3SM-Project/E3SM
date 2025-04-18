@@ -1801,6 +1801,8 @@
 			<var name="fCell"/>
 			<var name="bed_elevation"/>
 			<var name="LTSRegion"/>
+                        <var name="masksTSRegion"/>
+
 		</stream>
 
 		<stream name="output_init"
@@ -2799,6 +2801,9 @@
 			 description="Pre-computed wet fraction for each edge at given ssh value"
 			 packages="subgridWetDryPKG"
 		/>
+                <var name="masksTSRegion" type="integer" dimensions="nCells"
+                         description="Region mask for restoring temperature and/or salinity. 1 in the region, 0 elsewhere."
+                />
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"

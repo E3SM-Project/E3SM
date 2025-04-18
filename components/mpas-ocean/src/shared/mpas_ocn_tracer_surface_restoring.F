@@ -77,7 +77,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_surface_restoring_compute(groupName, nTracers, nCells, tracers, pistonVelocity, &
+   subroutine ocn_tracer_surface_restoring_compute(groupName, nTracers, nCells, masksTSRegion, tracers, pistonVelocity, &
                  tracersSurfaceRestoringValue, tracersSurfaceFlux, indexSalinity,  &
                  use_surface_salinity_monthly_restoring, salinity_restoring_constant_piston_velocity, err)!{{{
 
@@ -110,6 +110,9 @@ contains
          pistonVelocity,     &
          tracersSurfaceRestoringValue
 
+      ! one dimensional arrays
+      integer, dimension(:), intent(in) :: &
+          masksTSRegion
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -144,17 +147,20 @@ contains
 
         do iTracer=1,nTracers
 
-          ! For monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS
-          if (trim(groupName) == 'activeTracers' &
-                .and. iTracer == indexSalinity   &
-                .and. use_surface_salinity_monthly_restoring) then
-          tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) + &
+          if (masksTSRegion(icell) == 1) then
+
+                ! For monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS
+                if (trim(groupName) == 'activeTracers' &
+                        .and. iTracer == indexSalinity   &
+                        .and. use_surface_salinity_monthly_restoring) then
+                tracersSurfaceFlux(iTracer, iCell) =   tracersSurfaceFlux(iTracer, iCell) + &
                                                  salinity_restoring_constant_piston_velocity * &
                                                  tracersSurfaceRestoringValue(iTracer,iCell)
-          else
-          tracersSurfaceFlux(iTracer, iCell) =  tracersSurfaceFlux(iTracer, iCell) - &
+                else
+                tracersSurfaceFlux(iTracer, iCell) =  tracersSurfaceFlux(iTracer, iCell) - &
                                                 pistonVelocity(iTracer,iCell) *      &
                                                  (tracers(iTracer, iLevel, iCell) - tracersSurfaceRestoringValue(iTracer,iCell))
+                endif
           endif
         enddo
       enddo
