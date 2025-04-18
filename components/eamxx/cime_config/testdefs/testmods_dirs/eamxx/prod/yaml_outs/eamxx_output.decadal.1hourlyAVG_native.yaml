@@ -1,16 +1,18 @@
 %YAML 1.1
 ---
-filename_prefix: eamxx_output.decadal.1hourlyINST_native.h
+filename_prefix: eamxx_output.decadal.1hourlyAVG_native.h
 iotype: pnetcdf
-averaging_type: instant
+averaging_type: average
 max_snapshots_per_file: 1 # only one snapshot per file
 fields:
   physics_pg2:
     field_names:
-    # For cloud morphology
-    - SW_flux_up_at_model_top
-    - LW_flux_up_at_model_top
-    - precip_total_surf_mass_flux
+    - snow_depth_land
+    - isccp_ctptau
+    - modis_ctptau
+    - misr_cthtau
+    - cosp_sunlit
+    - isccp_cldtot
 output_control:
   frequency: 1
   frequency_units: nhours

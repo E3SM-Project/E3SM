@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
-filename_prefix: eamxx_output.decadal.6hourlyINST_native.h
+filename_prefix: eamxx_output.decadal.4hourlyINST_native.h
 iotype: pnetcdf
 averaging_type: instant
-max_snapshots_per_file: 4  # one file per day
+max_snapshots_per_file: 1 # only one snapshot per file
 fields:
   physics_pg2:
     field_names:
@@ -21,7 +21,7 @@ fields:
     - omega_at_500hPa
     - omega_at_850hPa
 output_control:
-  frequency: 6
+  frequency: 1
   frequency_units: nhours
 restart:
   force_new_file: true

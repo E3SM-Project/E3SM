@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
-filename_prefix: eamxx_output.decadal.6hourlyAVG_coarse.h
+filename_prefix: eamxx_output.decadal.4hourlyAVG_coarse.h
 iotype: pnetcdf
 averaging_type: average
-max_snapshots_per_file: 4  # one file per day
+max_snapshots_per_file: 1 # only one snapshot per file
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
 fields:
   physics_pg2:
@@ -41,7 +41,7 @@ fields:
     - SW_flux_dn_at_model_top
     - LW_flux_up_at_model_top
 output_control:
-  frequency: 6
+  frequency: 4
   frequency_units: nhours
 restart:
   force_new_file: true
