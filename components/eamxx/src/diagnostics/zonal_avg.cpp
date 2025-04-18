@@ -142,13 +142,9 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
                    " - field name  : " + field_id.name() + "\n"
                        " - field layout: " + field_layout.to_string() + "\n");
 
-  FieldLayout diagnostic_layout({CMP}, {m_lat_num}, {ZonalAvgDiag::dim_name});
-  for (int idim=1; idim < field_layout.rank(); idim++)
-  {
-    diagnostic_layout.append_dim(field_layout.tag(idim), field_layout.dim(idim),
-      field_layout.name(idim));
-  }
-
+  FieldLayout diagnostic_layout =
+    field_layout.clone().strip_dim(COL).prepend_dim({CMP}, {m_lat_num},
+      {ZonalAvgDiag::dim_name});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
     field_id.get_units(), field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
