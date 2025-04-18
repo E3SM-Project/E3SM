@@ -20,6 +20,10 @@ class Cosp : public AtmosphereProcess
 {
 
 public:
+  using PF  = scream::PhysicsFunctions<HostDevice>;
+  using KT  = KokkosTypes<DefaultDevice>;
+  using KTH = KokkosTypes<HostDevice>;
+
   // Constructors
   Cosp (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -71,9 +75,6 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // TODO: use atm buffer instead
-  Field m_z_mid;
-  Field m_z_int;
 }; // class Cosp
 
 } // namespace scream

@@ -10,10 +10,6 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [cosp]
-  cosp:
-    cosp_frequency: ${NUM_STEPS}
-    cosp_frequency_units: steps
-
 
 grids_manager:
   type: mesh_free
