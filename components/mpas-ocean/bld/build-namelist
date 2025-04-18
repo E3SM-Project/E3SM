@@ -1179,6 +1179,7 @@ add_default($nl, 'config_use_ecosysTracers_exponential_decay');
 add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
+add_default($nl, 'config_use_ecosys_frazil_tendencies');
 if ($ice_bgc eq 'ice_bgc' ) {
         add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".true.");
 } else {
