@@ -110,6 +110,10 @@ module prep_lnd_mod
   ! other fields (besides frac_field and topo_field) that are mapped from glc to lnd,
   ! separated by elevation class
   character(CXX) :: glc2lnd_ec_extra_fields
+
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+#endif
   !================================================================================================
 
 contains
@@ -148,7 +152,7 @@ contains
 #ifdef HAVE_MOAB
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
-    character*32             :: appname, outfile, wopts, lnum
+    character*32             :: appname
     character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2l, wgtIda2l_conservative, wgtIda2l_bilinear
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
@@ -770,7 +774,6 @@ contains
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
 #ifdef MOABDEBUG
     integer :: ierr
-    character*32             :: outfile, wopts, lnum
 #endif
 #ifdef MOABCOMP
     character(CXX)           :: tagname, mct_field
@@ -984,6 +987,9 @@ contains
     integer :: eri
     type(mct_aVect) , pointer :: r2x_rx
     character(*), parameter :: subname = '(prep_lnd_calc_r2x_lx)'
+#ifdef MOABDEBUG
+    integer  :: ierr
+#endif
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
@@ -997,6 +1003,14 @@ contains
        ! equivalent.
        call seq_map_map(mapper_Fr2l, r2x_rx, r2x_lx(eri), &
             fldlist=seq_flds_r2x_fluxes, norm=.true.)
+#ifdef MOABDEBUG
+       if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
+          write(lnum,"(I0.2)")num_moab_exports
+          outfile = 'LndAftRofProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+       endif
+#endif
     enddo
     call t_drvstopf  (trim(timer))
 
