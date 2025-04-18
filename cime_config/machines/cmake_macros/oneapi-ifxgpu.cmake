@@ -13,7 +13,7 @@ string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise -O2 -g -gline-tables-o
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -fpscomp logicals")
 string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
-string(APPEND CMAKE_C_FLAGS   " -fp-model precise -std=gnu99")
+string(APPEND CMAKE_C_FLAGS   " -fp-model precise")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model precise")
 string(APPEND CMAKE_Fortran_FLAGS   " -fpscomp logicals -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model precise")
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DHIDE_MPI")
