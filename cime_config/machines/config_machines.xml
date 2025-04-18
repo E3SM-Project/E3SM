@@ -3436,7 +3436,7 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>102</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>102</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
@@ -3483,9 +3483,6 @@
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
      </environment_variables>
-     <environment_variables DEBUG="TRUE">
-        <env name="HYDRA_TOPO_DEBUG">1</env>
-     </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
 	<env name="MPIR_CVAR_CH4_COLL_SELECTION_TUNING_JSON_FILE"></env>
@@ -3523,7 +3520,7 @@
         <env name="RANKS_BIND">core</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE" compiler="!gnu">
-        <env name="KMP_AFFINITY">verbose,granularity=core,balanced</env>
+        <env name="KMP_AFFINITY">granularity=core,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE" compiler="gnu">
