@@ -328,14 +328,10 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   //FieldLayout scalar1d = m_grid->get_1d_scalar_layout();
   FieldLayout scalar1d{{COL}, {m_num_cols}};
   FieldIdentifier s1_fid("s1", scalar1d, kg / kg, m_grid->name());
-  FieldIdentifier s1_fid_2("s1_2", scalar1d, kg / kg, m_grid->name());
 
   Field field_version_s1(s1_fid);
-  Field field_version_s1_2(s1_fid);
   field_version_s1.allocate_view();
-  field_version_s1_2.allocate_view();
   auto field_view_s1 = field_version_s1.get_view<Real*>();
-  auto field_view_s1_2 = field_version_s1_2.get_view<Real*>();
 
   auto area = m_grid->get_geometry_data("area").clone();
   auto area_view = area.get_view<const Real*>();
@@ -347,26 +343,17 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
     field_view_s1(i) = compute_gas_mass_on_column(team, nlevs, pseudo_density_i) * area_view(i);
   });
 
-//  //reduce m_new_mass_for_fixer
-//  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
-//  total_gas_mass_after = res.get_view<Real,Host>()();
-//  //std::cout << "here gas_mass=" << std::to_string(total_mass) << "\n";
+  //reprosum vars
+  const Real* send;
+  Real* recv;
+  Int nlocal = ncols;
+  Int ncount = 1;
+  auto s1_host = field_version_s1.get_view<const Real*,Host>();
+  auto s0_host = res.get_view<Real,Host>();
+  send = s1_host.data();
+  recv = s0_host.data();
 
-const Real* send;
-Real* recv;
-Int nlocal = ncols;
-Int ncount = 1;
-
-//try to use it on m_new_energy_for_fixer
-auto s1_host = field_version_s1.get_view<const Real*,Host>();
-auto s0_host = res.get_view<Real,Host>();
-send = s1_host.data();
-recv = s0_host.data();
-
-eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-
-//std::cout << "here 10D recv= " << std::setprecision(15) << (*recv)/total_energy_before << "\n";
-
+  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   total_gas_mass_after = (*recv);
 
 //this ||4 needs to be 2 for loops, with one summing each 4 cols first, serially
@@ -389,47 +376,35 @@ eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
     field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i)) * area_view(i);
   });
 
-//  //reduce amount of energy to be redistributed
-//  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
-//  pb_fixer = res.get_view<Real,Host>()();
-//  //std::cout << "here fixer amount to fix=" << std::to_string(pb_fixer) << "\n";
- 
-eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-pb_fixer = (*recv);
-
+  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+  pb_fixer = (*recv);
 
 #define DEBUG_FIXER
+
 #ifdef DEBUG_FIXER
   //total energy needed for relative error
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     field_view_s1(i) = m_current_energy(i) * area_view(i);
   });
-//  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
-//  total_energy_before = res.get_view<Real,Host>()();
-//  //std::cout << "here total energy =" << std::to_string(total_energy_before) << "\n";
-eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   total_energy_before = (*recv);
 #endif
 
   using PC = scream::physics::Constants<Real>;
   const Real cpdry = PC::Cpair;
   pb_fixer /= (cpdry*total_gas_mass_after); // T change due to fixer
-  //std::cout << "here pb_fixer=" << std::to_string(pb_fixer) << "\n";
 
   //add the fixer to temperature
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto T_mid_i = ekat::subview(T_mid, i);
-    //T_mid_i += pb_fixer;
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const int k){ 
        T_mid_i(k) += pb_fixer;
     });
   });//adding fix to T
 
 #ifdef DEBUG_FIXER
-/////////////////////////////////////// DEBUG
-  ////////////////////////////////////////////////////check new energy now
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
     const int i = team.league_rank();
@@ -444,31 +419,14 @@ eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
     // Calculate total energy
     m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
-//overwrite the "new" fields with relative change
+    //overwrite the "new" fields with relative change
     field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i));
     field_view_s1(i) *= area_view(i);
   });
 
-//  //compute global integral
-//  //reduce m_new_energy_for_fixer
-//  horiz_contraction<Real>(res, field_version_s1, area, &m_comm);
-//  echeck = res.get_view<Real,Host>()();
-//  std::cout << "here 10CCCCCCCC energy_check rel = " << std::setprecision(15) << (double)echeck/total_energy_before << "\n";
-//////////////////////////////////// repro_sum
-//const Real* send;
-//Real* recv;
-//Int nlocal = ncols;
-//Int ncount = 1;
+  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
 
-//try to use it on m_new_energy_for_fixer
-//s1_host = field_version_s1_2.get_view<const Real*,Host>();
-//s0_host = res.get_view<Real,Host>();
-//send = s1_host.data();
-//recv = s0_host.data();
-
-eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-
-std::cout << "here 10D recv= " << std::setprecision(15) << (*recv)/total_energy_before << "\n";
+  std::cout << "here 10D recv= " << std::setprecision(15) << (*recv)/total_energy_before << "\n";
 #endif
 
 };
