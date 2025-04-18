@@ -9,7 +9,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result,
   const ekat::Comm *comm)
 {
   auto result_layout = result.get_header().get_identifier().get_layout();
-  const int lat_num = result_layout.dim(ZonalAvgDiag::dim_name());
+  const int lat_num = result_layout.dim(ZonalAvgDiag::dim_name);
   const int ncols = field.get_header().get_identifier().get_layout().dim(0);
   const Real lat_delta = sp(180.0) / lat_num;
 
@@ -142,7 +142,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
                    " - field name  : " + field_id.name() + "\n"
                        " - field layout: " + field_layout.to_string() + "\n");
 
-  FieldLayout diagnostic_layout({CMP}, {m_lat_num}, {dim_name()});
+  FieldLayout diagnostic_layout({CMP}, {m_lat_num}, {ZonalAvgDiag::dim_name});
   for (int idim=1; idim < field_layout.rank(); idim++)
   {
     diagnostic_layout.append_dim(field_layout.tag(idim), field_layout.dim(idim),
@@ -156,7 +156,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   // allocate zonal area
   const FieldIdentifier &area_id = m_scaled_area.get_header().get_identifier();
-  FieldLayout zonal_area_layout({CMP}, {m_lat_num}, {dim_name()});
+  FieldLayout zonal_area_layout({CMP}, {m_lat_num}, {ZonalAvgDiag::dim_name});
   FieldIdentifier zonal_area_id("zonal area", zonal_area_layout,
     area_id.get_units(), area_id.get_grid_name());
   Field zonal_area(zonal_area_id);
