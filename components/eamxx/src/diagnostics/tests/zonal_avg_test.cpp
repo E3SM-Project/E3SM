@@ -123,7 +123,7 @@ TEST_CASE("zonal_avg") {
   auto diag1_field = diag1->get_diagnostic();
 
   // Manual calculation
-  FieldLayout diag0_layout({COL}, {nlats});
+  FieldLayout diag0_layout({CMP}, {nlats}, {ZonalAvgDiag::dim_name});
   FieldIdentifier diag0_id("qc_zonal_avg_manual", diag0_layout, kg / kg,
     grid->name());
   Field diag0_field(diag0_id);
@@ -167,7 +167,8 @@ TEST_CASE("zonal_avg") {
   }
 
   // Try a random case with qc3
-  FieldLayout diag3m_layout({COL, CMP, LEV}, {nlats, dim3, nlevs});
+  FieldLayout diag3m_layout({CMP, CMP, LEV}, {nlats, dim3, nlevs},
+    {ZonalAvgDiag::dim_name, e2str(CMP), e2str(LEV)});
   FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, kg / kg,
     grid->name());
   Field diag3m_field(diag3m_id);
