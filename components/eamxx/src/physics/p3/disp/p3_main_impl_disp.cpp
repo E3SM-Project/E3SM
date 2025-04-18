@@ -172,6 +172,21 @@ Int Functions<Real,DefaultDevice>
   auto liq_ice_exchange        = history_only.liq_ice_exchange;
   auto vap_liq_exchange        = history_only.vap_liq_exchange;
   auto vap_ice_exchange        = history_only.vap_ice_exchange;
+  auto qr2qv_evap              = history_only.qr2qv_evap;
+  auto qi2qv_sublim            = history_only.qi2qv_sublim;
+  auto qc2qr_accret            = history_only.qc2qr_accret;
+  auto qc2qr_autoconv          = history_only.qc2qr_autoconv;
+  auto qv2qi_vapdep            = history_only.qv2qi_vapdep;
+  auto qc2qi_berg              = history_only.qc2qi_berg;
+  auto qc2qr_ice_shed          = history_only.qc2qr_ice_shed;
+  auto qc2qi_collect           = history_only.qc2qi_collect;
+  auto qr2qi_collect           = history_only.qr2qi_collect;
+  auto qc2qi_hetero_freeze     = history_only.qc2qi_hetero_freeze;
+  auto qr2qi_immers_freeze     = history_only.qr2qi_immers_freeze;
+  auto qi2qr_melt              = history_only.qi2qr_melt;
+  auto qr_sed                  = history_only.qr_sed;
+  auto qc_sed                  = history_only.qc_sed;
+  auto qi_sed                  = history_only.qi_sed;
   auto mu_r                    = temporaries.mu_r;
   auto T_atm                   = temporaries.T_atm;
   auto lamr                    = temporaries.lamr;
@@ -266,6 +281,9 @@ Int Functions<Real,DefaultDevice>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
+      qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+      qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
+      qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
       pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
@@ -283,7 +301,7 @@ Int Functions<Real,DefaultDevice>
   cloud_sedimentation_disp(
       qc_incld, rho, inv_rho, cld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, workspace_mgr,
       nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
-      qc, nc, nc_incld, mu_c, lamc, qtend_ignore, ntend_ignore,
+      qc, nc, nc_incld, mu_c, lamc, qc_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
 
 
@@ -291,14 +309,14 @@ Int Functions<Real,DefaultDevice>
   rain_sedimentation_disp(
       rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
-      nr, nr_incld, mu_r, lamr, precip_liq_flux, qtend_ignore, ntend_ignore,
+      nr, nr_incld, mu_r, lamr, precip_liq_flux, qr_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // Ice sedimentation:  (adaptive substepping)
   ice_sedimentation_disp(
       rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
-      qm, qm_incld, bm, bm_incld, qtend_ignore, ntend_ignore,
+      qm, qm_incld, bm, bm_incld, qi_sed, ntend_ignore,
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // homogeneous freezing f cloud and rain
