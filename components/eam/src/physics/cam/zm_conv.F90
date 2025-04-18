@@ -220,7 +220,7 @@ subroutine zmconv_readnl(nlfile)
       endif
 
       if(zm_param%mcsp_enabled) then
-         write(iulog,*)'**** ZM scheme uses multiscale coherent structure parameterization (MCSP):',mcsp_enabled
+         write(iulog,*)'**** ZM scheme uses mesoscale coherent structure parameterization (MCSP):',zm_param%mcsp_enabled
       end if
 
       if(zm_microp) then
