@@ -207,7 +207,7 @@ contains
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
-      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers, iMOAB_ComputeCoverageMesh
+      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -263,7 +263,7 @@ contains
 
     integer                  :: rmapid, rmapid2  ! external id to identify the moab app ; 2 is for rof in ocean context (coverage)
     integer                  :: type_grid !
-    integer                  :: context_id, direction
+    integer                  :: context_id
     character*32             :: prefix_output ! for writing a coverage file for debugging
     integer                  :: rank_on_cpl ! just for debugging
 ! these are just to zero out r2x fields on ocean
@@ -437,7 +437,9 @@ contains
             mapper_Fa2o%src_context = atm(1)%cplcompid
             mapper_Fa2o%weight_identifier = wgtIda2o_conservative
             mapper_Fa2o%mbname = 'mapper_Fa2o'
-
+            ! now take care of the mapper
+            mapper_Fa2o%intx_context = idintx
+            !! updated mapper_Fa2o --
             ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
             ! atm for the intx atm-ocn context (coverage)
             call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
@@ -445,24 +447,15 @@ contains
             ! next, let us compute the ATM and OCN data transfer
             if (.not. samegrid_ao) then ! not a data OCN model
 
-               ! for bilinear maps, we need to have a layer of ghosts on source
-               nghlay = 1  ! number of ghost layers
-               nghlay_tgt = 0
-               ierr   = iMOAB_SetMapGhostLayers( mbintxao, nghlay, nghlay_tgt )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in setting the number of ghost layers'
-                  call shr_sys_abort(subname//' error in setting the number of ghost layers')
-               endif
-
-               ! compute the ATM coverage mesh here on coupler pes
-               ! ATM mesh was redistributed to cover target (OCN) partition
-               ierr = iMOAB_ComputeCoverageMesh( mbaxid, mboxid, mbintxao )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' cannot compute source ATM coverage mesh for OCN'
-                  call shr_sys_abort(subname//' ERROR in computing ATM-OCN coverage')
-               endif
-
                if (compute_maps_online_a2o) then
+                  ! for bilinear maps, we need to have a layer of ghosts on source
+                  nghlay = 1  ! number of ghost layers
+                  nghlay_tgt = 0
+                  ierr   = iMOAB_SetMapGhostLayers( mbintxao, nghlay, nghlay_tgt )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in setting the number of ghost layers'
+                     call shr_sys_abort(subname//' error in setting the number of ghost layers')
+                  endif
                   ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mboxid, mbintxao )
                   if (ierr .ne. 0) then
@@ -472,12 +465,32 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection completed between ATM and OCN with id:', idintx
                   end if
+                  if (atm_pg_active) then
+                     type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
+                  else
+                     type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+                  endif
+                  type2 = 3;  ! FV mesh on coupler OCN
+                  ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             atm(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing comm graph for second hop, ATM-OCN'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-OCN')
+                  endif
+#ifdef MOABDEBUG
+                  wopts = C_NULL_CHAR
+                  call shr_mpi_commrank( mpicom_CPLID, rank )
+                  if (rank .lt. 5 .and. compute_maps_online_a2o) then
+                     write(lnum,"(I0.2)")rank !
+                     outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                     ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in writing intx file '
+                        call shr_sys_abort(subname//' ERROR in writing intx file ')
+                     endif
+                  endif
+#endif
                end if
-
-               ! now take care of the mapper
-               mapper_Fa2o%intx_context = idintx
-               !! updated mapper_Fa2o --
-
                ! To project fields from ATM to OCN grid, we need to define
                ! ATM a2x fields to OCN grid on coupler side
                tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
@@ -488,7 +501,6 @@ contains
                   write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
                endif
-
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
@@ -552,34 +564,18 @@ contains
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
                         wgtIda2o_bilinear, 'mapper_Sa2o moab initialization', esmf_map_flag)
-               endif
 
-               if (atm_pg_active) then
-                  type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
-               else
-                  type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
-               endif
-               type2 = 3;  ! FV mesh on coupler OCN
-               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          atm(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, ATM-OCN'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-OCN')
-               endif
+                  context_id = idintx
+                  ! again, one coverage set and coverage graph for 2 different maps
+                  ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, &
+                       mpigrp_CPLID, type1, atm(1)%cplcompid, context_id)
 
-#ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 5 .and. compute_maps_online_a2o) then
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
                   if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing intx file '
-                     call shr_sys_abort(subname//' ERROR in writing intx file ')
+                     write(logunit,*) subname,' error in migrating atm mesh for map atm c2 ocn '
+                     call shr_sys_abort(subname//' ERROR in migrating atm mesh for map atm c2 ocn ')
                   endif
+
                endif
-#endif
             else ! if (samegrid_ao)
 
                ! ATM and OCN components use the same mesh and DoF numbering (OCN is a subset of ATM);
@@ -757,12 +753,11 @@ contains
                wgtIdr2o_conservative, 'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
          type1 = 3 ! fv mesh nowadays
-         direction = 1 !
          context_id = rmapid ! ocn(1)%cplcompid
          ! this creates a par comm graph between mbrxid and mbintxro, with ids rof(1)%cplcompid, rmapid (rmapid is 100*src+tgt)
          ! this will be used in send/receive mappers
          ierr = iMOAB_MigrateMapMesh (mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, &
-            mpigrp_CPLID, type1, rof(1)%cplcompid, context_id, direction)
+            mpigrp_CPLID, type1, rof(1)%cplcompid, context_id)
 
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
