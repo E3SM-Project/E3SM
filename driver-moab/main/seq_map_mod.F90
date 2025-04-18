@@ -235,7 +235,7 @@ contains
       call shr_sys_abort(subname//' ERROR in loading map file')
     endif
    if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(2A,I6,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
+      write(logunit,'(2A,I12,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
          mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', trim(sol_identifier)
       call shr_sys_flush(logunit)
    endif
