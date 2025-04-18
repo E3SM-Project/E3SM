@@ -261,11 +261,11 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments : public UnitWrap::UnitTest<
     // Call the C++ implementation
     diag_second_moments(SDS);
 
-    // Require that all values of w3 are ZERO
+    // Require that all values of w2 are ZERO
     for (Int s = 0; s < shcol; ++s){
       // nlev checks
-      for (Int n = 0; n < nlevi; ++n){
-        const auto offset = n + s * nlevi;
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
         REQUIRE(SDS.w_sec[offset] == 0);
       }
       // nlevi checks
