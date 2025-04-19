@@ -170,6 +170,7 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
         const auto offset = n + s * nlev;
 
         SDS.tk[offset] = tk[n];
+	SDS.brunt[offset] = 0;
       }
     }
 
@@ -187,19 +188,17 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
 
         // Be sure brunt vaisalla frequency is reasonable
-        REQUIRE(std::abs(SDS.brunt[offset]) < 1);
+        REQUIRE(SDS.brunt[offset] < 1);
 
-        // Make sure length scale is larger when TKE is larger
-        if (s < shcol-1){
-          // get offset for "neighboring" column
-          const auto offsets = n + (s+1) * nlev;
-          if (SDS.tke[offsets] > SDS.tke[offset]){
-            REQUIRE(SDS.shoc_mix[offsets] > SDS.shoc_mix[offset]);
-          }
-          else{
-            REQUIRE(SDS.shoc_mix[offsets] < SDS.shoc_mix[offset]);
-          }
+	// Ensure length scale is equal to dz if brunt =< 0, else
+        //   length scale should be less then dz
+        if (SDS.brunt[offset] <= 0){
+	  REQUIRE(SDS.shoc_mix[offset] == SDS.dz_zt[offset]);
         }
+        else{
+          REQUIRE(SDS.shoc_mix[offset] < SDS.dz_zt[offset]);
+        }
+
       }
     }
 

@@ -136,7 +136,6 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
-      SDS.l_inf[s] = l_inf;
       for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 

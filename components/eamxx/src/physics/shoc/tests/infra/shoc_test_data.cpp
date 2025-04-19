@@ -668,7 +668,7 @@ void compute_shoc_mix_shoc_length_host(Int nlev, Int shcol, bool shoc_1p5tke, Re
 
   std::vector<view_1d> temp_1d_d(1);
   std::vector<view_2d> temp_2d_d(6);
-  std::vector<const Real*> ptr_array = {tke,   brunt, zt_grid, shoc_mix};
+  std::vector<const Real*> ptr_array = {tke,   brunt, zt_grid, dz_zt, tk, shoc_mix};
 
   // Sync to device
   ScreamDeepCopy::copy_to_device({l_inf}, shcol, temp_1d_d);
@@ -1412,7 +1412,7 @@ void shoc_length_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5tke, Real* ho
   std::vector<view_2d> temp_2d_d(8);
   std::vector<int> dim1_sizes(8, shcol);
   std::vector<int> dim2_sizes = {nlev, nlevi, nlev, nlev,
-                                 nlev, nlev, nlev};
+                                 nlev, nlev, nlev, nlev};
   std::vector<const Real*> ptr_array = {zt_grid, zi_grid, dz_zt, tke,
                                         thv, tk, brunt, shoc_mix};
   // Sync to device
