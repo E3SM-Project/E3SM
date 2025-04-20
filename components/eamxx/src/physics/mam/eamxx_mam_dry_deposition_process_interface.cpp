@@ -71,9 +71,6 @@ void MAMDryDep::set_grids(
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
-
-    //NOTE: droplet number (nc) is treated in a special way by MAM4xx
-  //depending on the MAM4xx processes active in a simulation
   
   // cloud liquid number mixing ratio [1/kg]
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
