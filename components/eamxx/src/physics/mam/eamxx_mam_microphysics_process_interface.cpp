@@ -402,9 +402,7 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
   work_ptr += ncol_ * nlev_ * extcnt;
-  // Work arrays for return values from
-  // perform_atmospheric_chemistry_and_microphysics
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
   // to use the minimum amount of memory
