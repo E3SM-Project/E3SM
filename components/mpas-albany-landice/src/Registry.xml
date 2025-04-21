@@ -1484,10 +1484,10 @@ is the value of that variable from the *previous* time level!
                 <var name="timeAccumulatedCoupled" type="real" dimensions="Time" units="s"
                      description="accumulated time for use in averaging of coupler fields"
                 />
-                <var name="avgCalvingThickness" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="avgCalvingFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="time averaged thickness of ice that calves (using calvingThickness from 'geometry' pool)"
                 />
-                <var name="avgFaceMeltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                <var name="avgFaceMeltFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="time averaged thickness of ice thickness lost from face melting (using faceMeltingThickness from 'geometry' pool)"
                 />
                 <var name="avgBareIceAblation" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 

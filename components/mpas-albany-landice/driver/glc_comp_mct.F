@@ -1471,7 +1471,7 @@ contains
    real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
    real (kind=RKIND), dimension(:), pointer :: thickness
    real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied
-   real (kind=RKIND), dimension(:), pointer :: avgCalvingThickness
+   real (kind=RKIND), dimension(:), pointer :: avgCalvingFlux
    real (kind=RKIND), dimension(:,:), pointer :: temperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
@@ -1498,14 +1498,14 @@ contains
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
          call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied) 
-         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness) 
+         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux) 
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          do i = 1, nCellsSolve
             n = n + 1
 
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n)= avgCalvingThickness(i) 
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)= avgCalvingFlux(i) 
             g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblationApplied(i) 
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level

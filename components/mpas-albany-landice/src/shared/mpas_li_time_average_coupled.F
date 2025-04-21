@@ -51,7 +51,7 @@ module li_time_average_coupled
         type (mpas_pool_type), intent(in) :: meshPool          
         type (mpas_pool_type), intent(inout) :: timeAveragingPool
 
-        real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied, avgCalvingThickness, avgFaceMeltingThickness
+        real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied, avgCalvingFlux, avgFaceMeltFlux
 
         integer, pointer :: nCells
 
@@ -63,13 +63,13 @@ module li_time_average_coupled
 
         call mpas_pool_get_array(timeAveragingPool, 'timeAccumulatedCoupled', timeAccumulatedCoupled)
         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
-        call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness)
-        call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltingThickness', avgFaceMeltingThickness)
+        call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltFlux', avgFaceMeltFlux)
 
         do iCell = 1, nCells
            avgBareIceAblationApplied(iCell) = 0.0_RKIND
-           avgCalvingThickness(iCell) = 0.0_RKIND
-           avgFaceMeltingThickness(iCell) = 0.0_RKIND
+           avgCalvingFlux(iCell) = 0.0_RKIND
+           avgFaceMeltFlux(iCell) = 0.0_RKIND
         end do
 
         timeAccumulatedCoupled = 0.0_RKIND
@@ -96,8 +96,8 @@ module li_time_average_coupled
         type (mpas_pool_type), intent(in) :: meshPool
 
         real (kind=RKIND), dimension(:), pointer :: bareIceAblationApplied, avgBareIceAblationApplied, &
-                                                    calvingThickness, avgCalvingThickness, &
-                                                    faceMeltingThickness, avgFaceMeltingThickness
+                                                    calvingThickness, avgCalvingFlux, &
+                                                    faceMeltingThickness, avgFaceMeltFlux
         integer, pointer :: nCells
 
         real (kind=RKIND), pointer :: timeAccumulatedCoupled, rhoi, deltat
@@ -112,18 +112,18 @@ module li_time_average_coupled
         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
-        call mpas_pool_get_array(timeAveragingPool, 'avgCalvingThickness', avgCalvingThickness)
-        call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltingThickness', avgFaceMeltingThickness)
+        call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltFlux', avgFaceMeltFlux)
 
         do iCell = 1, nCells
 
            avgBareIceAblationApplied(iCell) = ( avgBareIceAblationApplied(iCell) * timeAccumulatedCoupled &
                                                + bareIceAblationApplied(iCell) * deltat ) / ( timeAccumulatedCoupled + deltat )
 
-           avgCalvingThickness(iCell) = ( avgCalvingThickness(iCell) * timeAccumulatedCoupled &
+           avgCalvingFlux(iCell) = ( avgCalvingFlux(iCell) * timeAccumulatedCoupled &
                                                 + calvingThickness(iCell) * deltat * (rhoi / deltat) ) / ( timeAccumulatedCoupled + deltat )
 
-           avgFaceMeltingThickness(iCell) = ( avgFaceMeltingThickness(iCell) * timeAccumulatedCoupled &
+           avgFaceMeltFlux(iCell) = ( avgFaceMeltFlux(iCell) * timeAccumulatedCoupled &
                                                 + faceMeltingThickness(iCell) * deltat * (rhoi / deltat) ) / ( timeAccumulatedCoupled + deltat )
                                         
         end do
