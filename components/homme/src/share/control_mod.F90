@@ -134,7 +134,12 @@ module control_mod
   integer              , public :: restartfreq
   integer              , public :: runtype 
   integer              , public :: timerdetail 
-  integer              , public :: numnodes 
+  integer              , public :: numnodes
+#ifdef CAM
+  integer              , public :: multilevel
+  integer              , public :: tasknum
+  integer              , public :: remapfreq      ! remap frequency of synopsis of system state (steps)
+#endif
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 

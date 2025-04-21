@@ -43,6 +43,9 @@ module element_mod
      ! Equ-angular gnomonic projection coordinates
      type (cartesian2D_t)     :: cartp(np,np)                         ! gnomonic or reference coords of GLL points
      type (cartesian2D_t)     :: corners(4)                           ! gnomonic or reference coords of element corners
+#ifdef CAM
+     real (kind=real_kind)    :: u2qmap(4,2)                          ! bilinear map from ref element to quad in cubedsphere coordinates
+#endif
 
      ! 3D cartesian coordinates
      type (cartesian3D_t)     :: corners3D(4)                         ! Physical coords of corners
