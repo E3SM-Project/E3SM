@@ -101,6 +101,8 @@ fields:
       - MeridionalVapFlux
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
+      - T_mid_zonal_avg_with_180_bins
+      - T_mid_zonal_avg_with_90_bins
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.

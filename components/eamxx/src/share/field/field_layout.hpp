@@ -59,10 +59,6 @@ inline std::string e2str (const LayoutType lt) {
  */
 
 class FieldLayout {
-
-  void add_dim (const FieldTag t, const int extent, const std::string& name,
-    bool prepend_instead_of_append = false);
-
 public:
   using extents_type = typename KokkosTypes<DefaultDevice>::view_1d<int>;
 
@@ -159,6 +155,9 @@ public:
 protected:
   void compute_type ();
   void set_extents ();
+  void add_dim (const FieldTag t, const int extent, const std::string& name,
+    bool prepend_instead_of_append = false);
+
 
   int                       m_rank;
   std::vector<FieldTag>     m_tags;

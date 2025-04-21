@@ -4,23 +4,26 @@
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
 namespace scream {
-// TODO: Update this comment
 /*
- * This diagnostic will calculate the area-weighted average of a field
- * across the COL tag dimension, producing an N-1 dimensional field
- * that is area-weighted average of the input field.
+ * This diagnostic will calculate area-weighted zonal averages of a field across
+ * the COL tag dimension producing an N dimensional field, where the COL tag
+ * dimension is replaced by a CMP tag dimension named "bin" that indicates which
+ * zonal band the average value corresponds to.
  */
 
 class ZonalAvgDiag : public AtmosphereDiagnostic {
 
-  // TODO: comment this, noting it's a utility function that could exist elsewhere
-  static void compute_zonal_sum(const Field &result, const Field &field,
-    const Field &weight, const Field &lat, const ekat::Comm *comm = nullptr);
+  // Utility to compute the contraction of a field along its column dimension.
+  // This is equivalent to f_out = einsum('i,i...k->...k', weight, f_in).
+  // The implementation is such that:
+  // - all Field objects must be allocated
+  // - the first dimension for field, weight, and lat is for the columns (COL)
+  // - the first dimension for result is for the zonal bins (CMP,"bin")
+  // - field and result must be the same dimension, up to 3
+  static void compute_zonal_sum(const Field &result, const Field &field, const Field &weight,
+                                const Field &lat, const ekat::Comm *comm = nullptr);
 
- public:
-
-  inline static const std::string dim_name = "bin";
-
+public:
   // Constructors
   ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -30,24 +33,22 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
- protected:
+protected:
 #ifdef KOKKOS_ENABLE_CUDA
- public:
+public:
 #endif
   void compute_diagnostic_impl();
 
- protected:
+protected:
   void initialize_impl(const RunType /*run_type*/);
 
   std::string m_diag_name;
+  int m_num_zonal_bins;
 
   Field m_lat;
-  int m_lat_num;
-
   Field m_scaled_area;
-
 };
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_ZONAL_AVERAGE_HPP
+#endif // EAMXX_ZONAL_AVERAGE_HPP
