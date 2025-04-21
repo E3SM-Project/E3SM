@@ -1,21 +1,22 @@
-
 module zm_conv
    !----------------------------------------------------------------------------
    ! Purpose: primary methods for the Zhang-McFarlane convection scheme
    !----------------------------------------------------------------------------
    ! Contributors: Rich Neale, Byron Boville, Xiaoliang song
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp
+   use zm_eamxx_bridge_methods,only: cldfrc_fice
+#else
    use shr_kind_mod,           only: r8 => shr_kind_r8
-   use spmd_utils,             only: masterproc
    use ppgrid,                 only: pcols, pver, pverp
    use cloud_fraction,         only: cldfrc_fice
-   use cam_abortutils,         only: endrun
-   use cam_logfile,            only: iulog
+   use zm_microphysics,        only: zm_mphy
+#endif
    use zm_conv_cape,           only: compute_dilute_cape
    use zm_conv_types,          only: zm_const_t, zm_param_t
    use zm_conv_util,           only: qsat_hpa ! remove after moving cldprp to new module
-   use zm_aero,                only: zm_aero_t
-   use zm_microphysics,        only: zm_mphy
+   use zm_aero_type,           only: zm_aero_t
    use zm_microphysics_state,  only: zm_microp_st, zm_microp_st_alloc, zm_microp_st_dealloc, zm_microp_st_ini, zm_microp_st_gb
    !----------------------------------------------------------------------------
    implicit none
@@ -32,9 +33,8 @@ module zm_conv
    type(zm_param_t), public :: zm_param ! derived type to hold ZM tunable parameters
    !----------------------------------------------------------------------------
    ! private variables
-   real(r8), parameter :: capelmt      = 70._r8  ! threshold value of cape for deep convection
+   real(r8), parameter :: capelmt      = 70._r8  ! threshold value for cape for deep convection
    real(r8), parameter :: trigdcapelmt = 0._r8   ! threshold value of dcape for deep convection
-
 !===================================================================================================
 contains
 !===================================================================================================
@@ -43,7 +43,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    !----------------------------------------------------------------------------
    ! Purpose: initialize quantities for ZM convection scheme
    !----------------------------------------------------------------------------
-   use zm_conv_types, only: zm_const_set_to_global
+   use zm_conv_types, only: zm_const_set_to_global, zm_param_print
    !----------------------------------------------------------------------------
    ! Arguments
    integer, intent(in)           :: limcnv_in       ! top interface level limit for convection
@@ -60,6 +60,9 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    ! set zm_const using global values
    call zm_const_set_to_global(zm_const)
 
+   ! print parameter values to the log file
+   call zm_param_print(zm_param)
+
    !----------------------------------------------------------------------------
    return
 
@@ -67,7 +70,7 @@ end subroutine zm_convi
 
 !===================================================================================================
 
-subroutine zm_convr(lchnk   ,ncol    , &
+subroutine zm_convr(lchnk   ,ncol    ,is_first_step, &
                     t       ,qh      ,prec    ,jctop   ,jcbot   , &
                     pblh    ,zm      ,geos    ,zi      ,qtnd    , &
                     heat    ,pap     ,paph    ,dpp     ,omega   , &
@@ -98,7 +101,6 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! and will make use of the standard CAM nomenclature
 ! 
 !-----------------------------------------------------------------------
-   use time_manager, only: is_first_step 
 !
 ! ************************ index of variables **********************
 !
@@ -198,6 +200,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !
    integer, intent(in) :: lchnk                   ! chunk identifier
    integer, intent(in) :: ncol                    ! number of atmospheric columns
+   logical, intent(in) :: is_first_step           ! flag to control DCAPE calculations
 
    real(r8), intent(in) :: t(pcols,pver)          ! grid slice of temperature at mid-layer.
    real(r8), intent(in) :: qh(pcols,pver)   ! grid slice of specific humidity.
@@ -565,7 +568,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    if (zm_param%trig_dcape) dcapemx(:ncol) = maxi(:ncol)
 
    ! Calculate dcape trigger condition
-   if ( .not.is_first_step() .and. zm_param%trig_dcape ) then
+   if ( .not.is_first_step .and. zm_param%trig_dcape ) then
       iclosure = .false.
       call compute_dilute_cape( pcols, ncol, pver, pverp, &
                                 zm_param%num_cin, msg, &
@@ -591,7 +594,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    do i=1,ncol
      if (zm_param%trig_dcape) then
      ! DCAPE-ULL
-      if (is_first_step()) then
+      if (is_first_step) then
          !Will this cause restart to be non-BFB
            if (cape(i) > capelmt) then
               lengath = lengath + 1
@@ -1163,10 +1166,11 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! in the Zhang-MacFarlane parameterization.
 ! Evaporate some of the precip directly into the environment using a Sundqvist type algorithm
 !-----------------------------------------------------------------------
-
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use zm_eamxx_bridge_wv_saturation, only: qsat
+#else
     use wv_saturation,  only: qsat
-    use phys_grid, only: get_rlat_all_p
-
+#endif
 !------------------------------Arguments--------------------------------
     integer,intent(in) :: ncol, lchnk             ! number of columns and chunk index
     real(r8),intent(in), dimension(pcols,pver) :: t          ! temperature (K)
@@ -2161,6 +2165,7 @@ subroutine cldprp(lchnk   , zm_const, &
          end do
       end do
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
       call  zm_mphy(su,   qu,    mu,    du,   eu,  loc_microp_st%cmel,  loc_microp_st%cmei,   zf,    p,   & 
                      t,    q,  eps0,  jb,  jt,  jlcl,  msg,   il2g,  zm_const%grav,   zm_const%cpair,    zm_const%rdair,   aero, gamhat,   &
                     loc_microp_st%qliq,   loc_microp_st%qice,    loc_microp_st%qnl,   loc_microp_st%qni,  &
@@ -2183,7 +2188,7 @@ subroutine cldprp(lchnk   , zm_const, &
                     loc_microp_st%acciln ,loc_microp_st%fallrm ,loc_microp_st%fallsm ,loc_microp_st%fallgm , &
                     loc_microp_st%fallrn ,loc_microp_st%fallsn ,loc_microp_st%fallgn ,loc_microp_st%fhmrm  , &
                     dsfm,   dsfn, zm_param%auto_fac, zm_param%accr_fac, zm_param%micro_dcs) 
-
+#endif
 
       do k = pver,msg + 2,-1
          do i = 1,il2g

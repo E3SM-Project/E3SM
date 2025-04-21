@@ -20,7 +20,7 @@ module zm_conv_intr
    use ndrop_bam,             only: ndrop_bam_init
    use zm_conv,               only: zm_conv_evap, zm_convr
    use zm_transport,          only: zm_transport_tracer, zm_transport_momentum
-   use zm_aero,               only: zm_aero_t
+   use zm_aero_type,          only: zm_aero_t
    use zm_microphysics_state, only: zm_microp_st
 
    implicit none
@@ -468,6 +468,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    integer :: ncol                     ! number of atmospheric columns
    integer :: itim_old                 ! for physics buffer fields
    logical :: lq(pcnst)                ! flags for ptend initialization
+   logical :: is_first_step_loc
 
    real(r8), dimension(pcols,pver) :: ftem            ! Temporary workspace for outfld variables
    real(r8), dimension(pcols,pver) :: ntprprd         ! evap outfld: net precip production in layer
@@ -629,9 +630,12 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       end if
    end if
 
+   is_first_step_loc = is_first_step()
+
    ! Call the primary Zhang-McFarlane convection parameterization
    call t_startf ('zm_convr')
-   call zm_convr( lchnk, ncol, state%t, state%q(:,:,1), prec, jctop, jcbot, &
+   call zm_convr( lchnk, ncol, is_first_step_loc, &
+                  state%t, state%q(:,:,1), prec, jctop, jcbot, &
                   pblh, state%zm, state%phis, state%zi, ptend_loc%q(:,:,1), &
                   ptend_loc%s, state%pmid, state%pint, state%pdel, state%omega, &
                   0.5*ztodt, mcon, cme, cape, tpert, dlf, pflx, zdu, rprd, mu, md, du, eu, ed, &
