@@ -32,6 +32,7 @@ atmosphere_processes:
       c_diag_3rd_mom: 7.0
       Ckh: 0.1
       Ckm: 0.1
+      shoc_1p5tke: false
 grids_manager:
   Type: Mesh Free
   geo_data_source: IC_FILE

@@ -29,6 +29,7 @@ atmosphere_processes:
       c_diag_3rd_mom: 7.0
       Ckh: 0.1
       Ckm: 0.1
+      shoc_1p5tke: false
   mam4_drydep:
     # Fractional land use file
     drydep_remap_file: ""
