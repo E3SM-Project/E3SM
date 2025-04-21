@@ -356,7 +356,7 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   total_gas_mass_after = (*recv);
 
-//this ||4 needs to be 2 for loops, with one summing each 4 cols first, serially
+//this ||4 needs to be 2 for-loops, with one summing each 4 cols first, serially
 //for pg2 grids (if on np4 grids, it would require much more work?)  
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 

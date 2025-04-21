@@ -42,15 +42,18 @@ set(SHARE_SRC
   util/eamxx_utils.cpp
   util/eamxx_bfbhash.cpp
   util/eamxx_repro_sum_mod.F90
-  ../../../../share/util/shr_reprosum_mod.F90
-  ../../../../share/util/shr_kind_mod.F90
-  ../../../../share/util/shr_log_mod.F90
-  ../../../../share/util/shr_strconvert_mod.F90
-  ../../../../share/util/shr_sys_mod.F90
-  ../../../../share/util/shr_abort_mod.F90
-  ../../../../share/util/shr_mpi_mod.F90
-  util/shr_infnan_mod.F90
 )
+
+#  ../../../../share/util/shr_reprosum_mod.F90
+#  ../../../../share/util/shr_kind_mod.F90
+#  ../../../../share/util/shr_log_mod.F90
+#  ../../../../share/util/shr_strconvert_mod.F90
+#  ../../../../share/util/shr_sys_mod.F90
+#  ../../../../share/util/shr_abort_mod.F90
+#  ../../../../share/util/shr_mpi_mod.F90
+#  util/shr_infnan_mod.F90
+
+
 
 # Append ETI sources (I didn't do it above for clarity of reading)
 list (APPEND SHARE_SRC
@@ -108,6 +111,7 @@ target_include_directories(scream_share PUBLIC
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
 
+target_link_libraries(scream_share PUBLIC csm_share)
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
