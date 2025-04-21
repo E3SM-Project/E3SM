@@ -9,9 +9,9 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result,
   const ekat::Comm *comm)
 {
   auto result_layout = result.get_header().get_identifier().get_layout();
-  const int lat_num = result_layout.dim(ZonalAvgDiag::dim_name);
+  const int num_zonal_bins = result_layout.dim(0);
   const int ncols = field.get_header().get_identifier().get_layout().dim(0);
-  const Real lat_delta = sp(180.0) / lat_num;
+  const Real lat_delta = sp(180.0) / num_zonal_bins;
 
   auto weight_view = weight.get_view<const Real*>();
   auto lat_view = lat.get_view<const Real *>();
@@ -24,7 +24,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result,
     case 1: {
       auto field_view = field.get_view<const Real *>();
       auto result_view = result.get_view<Real *>();
-      TeamPolicy team_policy = ESU::get_default_team_policy(lat_num, ncols);
+      TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins, ncols);
       Kokkos::parallel_for("compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember& tm) {
           const int lat_i = tm.league_rank();
@@ -43,12 +43,12 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result,
       auto field_view = field.get_view<const Real **>();
       auto result_view = result.get_view<Real **>();
       TeamPolicy team_policy =
-        ESU::get_default_team_policy(lat_num * d1, ncols);
+        ESU::get_default_team_policy(num_zonal_bins * d1, ncols);
       Kokkos::parallel_for("compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember& tm) {
           const int idx = tm.league_rank();
-          const int d1_i = idx / lat_num;
-          const int lat_i = idx % lat_num;
+          const int d1_i = idx / num_zonal_bins;
+          const int lat_i = idx % num_zonal_bins;
           const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
@@ -65,14 +65,14 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result,
       auto field_view = field.get_view<const Real ***>();
       auto result_view = result.get_view<Real ***>();
       TeamPolicy team_policy =
-        ESU::get_default_team_policy(lat_num * d1 * d2, ncols);
+        ESU::get_default_team_policy(num_zonal_bins * d1 * d2, ncols);
       Kokkos::parallel_for("compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember& tm) {
           const int idx = tm.league_rank();
-          const int d1_i = idx / (lat_num * d2);
-          const int idx2 = idx % (lat_num * d2);
-          const int d2_i = idx2 / lat_num;
-          const int lat_i = idx2 % lat_num;
+          const int d1_i = idx / (num_zonal_bins * d2);
+          const int idx2 = idx % (num_zonal_bins * d2);
+          const int d2_i = idx2 / num_zonal_bins;
+          const int lat_i = idx2 % num_zonal_bins;
           const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
@@ -105,8 +105,10 @@ ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm,
   const auto &field_name = m_params.get<std::string>("field_name");
   m_diag_name = field_name + "_zonal_avg";
 
-  m_lat_num = params.isParameter("num_lat_vals") ?
-    params.get<int>("num_lat_vals") : 180;
+  auto num_bins_value  = params.get<std::string>("number_of_zonal_bins");
+
+  m_bin_dim_name = "bin" + num_bins_value;
+  m_num_zonal_bins = std::stoi(num_bins_value);
 }
 
 void ZonalAvgDiag::set_grids(
@@ -143,8 +145,8 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
                        " - field layout: " + field_layout.to_string() + "\n");
 
   FieldLayout diagnostic_layout =
-    field_layout.clone().strip_dim(COL).prepend_dim({CMP}, {m_lat_num},
-      {ZonalAvgDiag::dim_name});
+    field_layout.clone().strip_dim(COL).prepend_dim({CMP}, {m_num_zonal_bins},
+      {m_bin_dim_name});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
     field_id.get_units(), field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
@@ -152,7 +154,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   // allocate zonal area
   const FieldIdentifier &area_id = m_scaled_area.get_header().get_identifier();
-  FieldLayout zonal_area_layout({CMP}, {m_lat_num}, {ZonalAvgDiag::dim_name});
+  FieldLayout zonal_area_layout({CMP}, {m_num_zonal_bins}, {m_bin_dim_name});
   FieldIdentifier zonal_area_id("zonal area", zonal_area_layout,
     area_id.get_units(), area_id.get_grid_name());
   Field zonal_area(zonal_area_id);
@@ -169,7 +171,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   // scale area by 1 / zonal area
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
-  const Real lat_delta = sp(180.0) / m_lat_num;
+  const Real lat_delta = sp(180.0) / m_num_zonal_bins;
   const int ncols = field_layout.dim(0);
   auto lat_view = m_lat.get_view<const Real *>();
   auto zonal_area_view = zonal_area.get_view<const Real *>();

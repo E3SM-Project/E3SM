@@ -108,7 +108,7 @@ TEST_CASE("zonal_avg") {
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
-  params.set<int>("num_lat_vals", nlats);
+  params.set<std::string>("number_of_zonal_bins", std::to_string(nlats));
   auto diag1 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
@@ -123,7 +123,9 @@ TEST_CASE("zonal_avg") {
   auto diag1_field = diag1->get_diagnostic();
 
   // Manual calculation
-  FieldLayout diag0_layout({CMP}, {nlats}, {ZonalAvgDiag::dim_name});
+  const std::string bin_dim_name =
+    diag1_field.get_header().get_identifier().get_layout().name(0);
+  FieldLayout diag0_layout({CMP}, {nlats}, {bin_dim_name});
   FieldIdentifier diag0_id("qc_zonal_avg_manual", diag0_layout, kg / kg,
     grid->name());
   Field diag0_field(diag0_id);
@@ -168,7 +170,7 @@ TEST_CASE("zonal_avg") {
 
   // Try a random case with qc3
   FieldLayout diag3m_layout({CMP, CMP, LEV}, {nlats, dim3, nlevs},
-    {ZonalAvgDiag::dim_name, e2str(CMP), e2str(LEV)});
+    {bin_dim_name, e2str(CMP), e2str(LEV)});
   FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, kg / kg,
     grid->name());
   Field diag3m_field(diag3m_id);

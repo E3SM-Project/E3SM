@@ -14,12 +14,12 @@ namespace scream {
 class ZonalAvgDiag : public AtmosphereDiagnostic {
 
   // TODO: comment this, noting it's a utility function that could exist elsewhere
+  //       also note the assumptions that field is arranged column first and
+  //       result is arranged "bin" first
   static void compute_zonal_sum(const Field &result, const Field &field,
     const Field &weight, const Field &lat, const ekat::Comm *comm = nullptr);
 
  public:
-
-  inline static const std::string dim_name = "bin";
 
   // Constructors
   ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -40,10 +40,10 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
   void initialize_impl(const RunType /*run_type*/);
 
   std::string m_diag_name;
+  std::string m_bin_dim_name;
+  int m_num_zonal_bins;
 
   Field m_lat;
-  int m_lat_num;
-
   Field m_scaled_area;
 
 };
