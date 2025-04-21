@@ -20,7 +20,7 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();       // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -322,7 +322,7 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   }
 
   if (m_num_from_file_exports>0) {
-    set_from_file_exports(dt);
+    set_from_file_exports();
   }
 
   if (m_num_from_model_exports>0) {
@@ -350,15 +350,10 @@ void SurfaceCouplingExporter::set_constant_exports()
 
 }
 // =========================================================================================
-void SurfaceCouplingExporter::set_from_file_exports(const int dt)
+void SurfaceCouplingExporter::set_from_file_exports()
 {
   // Perform interpolation on the data with the latest timestamp
-  auto ts = timestamp();
-  if (dt > 0) {
-    ts += dt;
-  }
-  m_time_interp.perform_time_interpolation(ts);
-
+  m_time_interp.perform_time_interpolation(end_of_step_ts());
 }
 // =========================================================================================
 // This compute_eamxx_exports routine  handles all export variables that are derived from the EAMxx state.

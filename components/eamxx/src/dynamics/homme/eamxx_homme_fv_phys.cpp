@@ -22,11 +22,11 @@
 
 extern "C" void gfr_init_hxx();
 
-// Parse a name of the form "Physics PGN". Return -1 if not an FV physics grid
+// Parse a name of the form "physics_pgn". Return -1 if not an FV physics grid
 // name, otherwise N in pgN.
 static int get_phys_grid_fv_param (const std::string& grid_name) {
   if (grid_name.size() < 11) return -1;
-  if (grid_name.substr(0, 10) != "Physics PG") return -1;
+  if (grid_name.substr(0, 10) != "physics_pg") return -1;
   const auto param = grid_name.substr(10, std::string::npos);
   int N;
   std::istringstream ss(param);
@@ -93,7 +93,7 @@ static void copy_prev (const int ncols, const int npacks,
   Kokkos::fence();
 }
 
-void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
+void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const bool restart) {
   if (not fv_phys_active()) return;
   constexpr int N = HOMMEXX_PACK_SIZE;
   using Pack = ekat::Pack<Real,N>;
@@ -126,7 +126,7 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
     const auto uv = get_field_out("horiz_winds",pgn).get_view<const Pack***>();
     copy_prev(ncols, npacks, T, uv, FT, FM);
 
-    // In an initial run, the AD only reads IC for the Physics GLL fields,
+    // In an initial run, the AD only reads IC for the physics GLL fields,
     // and this class has just taken care of remapping them to the FV grid.
     // Therefore, the timestamp of the FV fields has *not* been set yet,
     // which can cause serious issues downstream. For details, see
@@ -136,10 +136,10 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const bool restart) {
     // IC for FV fields, this step remains safe (we're setting the same t0)
     for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density"}) {
       auto f = get_field_out(n,pgn);
-      f.get_header().get_tracking().update_time_stamp(timestamp());
+      f.get_header().get_tracking().update_time_stamp(ts);
     }
     auto Q = get_group_out("tracers",pgn).m_monolithic_field;
-    Q->get_header().get_tracking().update_time_stamp(timestamp());
+    Q->get_header().get_tracking().update_time_stamp(ts);
   }
   update_pressure(m_phys_grid);
 }
@@ -156,7 +156,7 @@ void HommeDynamics::fv_phys_pre_process () {
 // update_pressure to update p_mid,int.
 void HommeDynamics::fv_phys_post_process () {
   if (not fv_phys_active()) return;
-  fv_phys_dyn_to_fv_phys();
+  fv_phys_dyn_to_fv_phys(end_of_step_ts());
 }
 
 void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
@@ -304,7 +304,7 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap (const RunType run_type) {
         gfr.remap_tracer_dyn_to_fv_phys(time_idx, 1, in_dgll, out_phys);
         Kokkos::fence();
 
-        f_phys.get_header().get_tracking().update_time_stamp(timestamp());
+        f_phys.get_header().get_tracking().update_time_stamp(start_of_step_ts());
       }
     }
   }

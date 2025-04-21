@@ -303,6 +303,17 @@
     </values>
   </entry>
 
+  <entry id="wav_ocn_coup">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>One- or Two-way coupling between Wave and Ocn.</desc>
+    <values>
+      <value>none</value>
+      <value WAV_OCN_COUP="oneway">oneway</value>
+      <value WAV_OCN_COUP="twoway">twoway</value>
+    </values>
+  </entry>
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->

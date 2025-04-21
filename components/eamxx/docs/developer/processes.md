@@ -138,7 +138,7 @@ void MyProcess::set_grids (const std::shared_ptr<GridsManager>& gm)
   using namespace ekat::units;
   const auto nondim = Units::nondimensional();
 
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
   m_ncols = grid->get_num_local_dofs();
   m_nlevs = grid->get_num_vertical_levels();
 

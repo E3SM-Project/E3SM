@@ -8,7 +8,7 @@ This script is used by the scream-internal_diagnostics_level testmod to check
 hash output after a test has run.
 """
 
-import sys, re, glob, pathlib, argparse
+import sys, re, glob, pathlib, argparse, gzip
 
 from utils import run_cmd_no_fail, expect, GoodFormatter
 
@@ -61,24 +61,46 @@ def get_log_glob_from_atm_modelio(case_dir):
     run_dir = pathlib.Path(ln.split()[2].split('"')[1])
     ln = grep('logfile = ', filename)[0]
     atm_log_fn = ln.split()[2].split('"')[1]
-    id_ = atm_log_fn.split('.')[2]
-    return str(run_dir / '**' / f'e3sm.log.{id_}*')
+    return str(run_dir / '**' / f'atm.log.*')
 
 ###############################################################################
-def get_hash_lines(fn):
+def get_hash_lines(fn,start_from_line):
 ###############################################################################
-    rlns = run_cmd_no_fail(f'zgrep exxhash {fn}').splitlines()
-    lns = []
-    if len(rlns) == 0: return lns
-    for rln in rlns:
-        pos = rln.find('exxhash')
-        lns.append(rln[pos:])
-    return lns
+    times = []
+    hash_lines = []
+
+    lines = []
+    with gzip.open(fn,'rt') as file:
+        start_line_found = False
+        for line in file:
+            if start_line_found:
+                lines.append(line)
+            elif start_from_line in line:
+                start_line_found = True
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        i = i+1
+        # eamxx hash line has the form "eamxx hash> date=YYYY-MM-DD-XXXXX (STRING), naccum=INT
+        # The INT at the end says how many of the following line contain hashes for this proc-step
+        if "eamxx hash>" in line:
+            times.append(parse_time(line))
+            naccum_index = line.index("naccum=") + len("naccum=")
+            N = int(line[naccum_index:])
+            hashes = []
+            for j in range(N):
+                hashes.append(lines[i].strip('\n'))
+                i += 1
+            hash_lines.append(hashes)
+
+    return times, hash_lines
 
 ###############################################################################
 def parse_time(hash_ln):
 ###############################################################################
-    return hash_ln.split()[1:3]
+    # hash_ln has the form "eamxx hash> date=YYYY-MM-DD-XXXXX (STRING), naccum=INT
+    return hash_ln.split()[2].split('=')[1]
 
 ###############################################################################
 def all_equal(t1, t2):
@@ -89,21 +111,30 @@ def all_equal(t1, t2):
     return True
 
 ###############################################################################
-def find_first_index_at_time(lns, time):
+def find_first_index_at_time(times, time):
 ###############################################################################
-    for i, ln in enumerate(lns):
-        t = parse_time(ln)
-        if all_equal(time, t): return i
+    for i, t in enumerate(times):
+        if t==time: return i
     return None
 
 ###############################################################################
-def diff(l1, l2):
+def diff(times, l1, l2):
 ###############################################################################
     diffs = []
     for i in range(len(l1)):
         if l1[i] != l2[i]:
-            diffs.append((l1[i], l2[i]))
+            diffs.append((times[i], l1[i], l2[i]))
     return diffs
+
+###############################################################################
+def get_model_start_of_step_lines (atm_log):
+###############################################################################
+    lines = []
+    with gzip.open(atm_log,'rt') as file:
+        for line in file:
+            if "model start-of-step time" in line:
+                lines.append(line)
+    return lines
 
 ###############################################################################
 def check_hashes_ers(case_dir):
@@ -111,53 +142,62 @@ def check_hashes_ers(case_dir):
     case_dir_p = pathlib.Path(case_dir)
     expect(case_dir_p.is_dir(), f"{case_dir} is not a dir")
 
-    # Look for the two e3sm.log files.
+    # Look for the two atm.log files.
     glob_pat = get_log_glob_from_atm_modelio(case_dir_p)
-    e3sm_fns = glob.glob(glob_pat, recursive=True)
-    if len(e3sm_fns) == 0:
-        print('Could not find e3sm.log files with glob string {}'.format(glob_pat))
+    atm_fns = glob.glob(glob_pat, recursive=True)
+    if len(atm_fns) == 0:
+        print('Could not find atm.log files with glob string {}'.format(glob_pat))
         return False
-    e3sm_fns.sort()
-    if len(e3sm_fns) == 1:
+    if len(atm_fns) == 1:
         # This is the first run. Exit and wait for the second
         # run. (POSTRUN_SCRIPT is called after each of the two runs.)
         print('Exiting on first run.')
         return True
-    print('Diffing base {} and restart {}'.format(e3sm_fns[0], e3sm_fns[1]))
-
-    # Because of the prefixed 1: and 2: on some systems, we can't just use
-    # zdiff.
-    lns = []
-    for f in e3sm_fns:
-        lns.append(get_hash_lines(f))
-    time = parse_time(lns[1][0])
-    time_idx = find_first_index_at_time(lns[0], time)
-    if time_idx is None:
-        print('Could not find a start time.')
-        return False
-    lns[0] = lns[0][time_idx:]
-    if len(lns[0]) != len(lns[1]):
-        print('Number of hash lines starting at restart time do not agree.')
-        return False
-    diffs = diff(lns[0], lns[1])
-
-    # Flushed prints to e3sm.log can sometimes conflict with other
-    # output. Permit up to 'thr' diffs so we don't fail due to badly printed
-    # lines. This isn't a big loss in checking because an ERS_Ln22 second run
-    # writes > 1000 hash lines, and a true loss of BFBness is nearly certain to
-    # propagate to a large number of subsequent hashes.
-    thr = 5
-    if len(lns[0]) < 100: thr = 0
-
-    ok = True
-    if len(diffs) > thr:
-        print('DIFF')
-        print(diffs[-10:])
-        ok = False
     else:
-        print('OK')
+        expect(len(atm_fns)==2,
+               "Error! Found more than 2 atm log files. Not sure what to do here."
+               " NOTE: if you run ERS test twice, clear the run folder from old logs first.")
 
-    return ok
+    atm_fns.sort()
+    print('Diffing base {} and restart {}'.format(atm_fns[0], atm_fns[1]))
+
+    start_line = get_model_start_of_step_lines(atm_fns[1])[0]
+
+    # Extract hash lines, along with their timestamps, but ignore anything
+    # before the line $start_line
+    hash_lines = []
+    times = []
+    for f in atm_fns:
+        t,h = get_hash_lines(f,start_line)
+        hash_lines.append(h)
+        times.append(t)
+
+    run1_hashes = hash_lines[0]
+    run2_hashes = hash_lines[1]
+    if len(run1_hashes) != len(run2_hashes):
+        print('Number of hash lines starting at restart time do not agree.')
+        print(f' run1 number of hash lines (after rest time): {len(run1_hashes)}')
+        print(f' run2 number of hash lines: {len(run2_hashes)}')
+        print(run1_hashes)
+        return False
+
+    diffs = diff(times[1],run1_hashes, run2_hashes)
+
+    if run1_hashes==run2_hashes:
+        print('OK')
+        return True
+    else:
+        # Nicely print the diffing hashes, grouped by their timestamp
+        print(f'FOUND DIFFS')
+        for d in diffs[-10:]:
+            print (f' timestamp: {d[0]}')
+            slen = len(d[1][0])
+            print("run1".center(slen) + " | " + "run2".center(slen))
+            for r1,r2 in zip(d[1],d[2]):
+                # Print only the hash entry(ies) that diff in this timestamp
+                if r1!=r2:
+                    print (f'{r1} | {r2}')
+        return False
 
 ###############################################################################
 def _main_func(description):

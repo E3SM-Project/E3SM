@@ -71,6 +71,11 @@ if (SCREAM_RRTMGP_ENABLE_YAKL)
       set(YAKL_HIP_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip")
       string (REPLACE " " ";" YAKL_HIP_FLAGS_LIST ${YAKL_HIP_FLAGS})
     endif()
+    if (SYCL_BUILD)
+      set(YAKL_ARCH "SYCL")
+      set(YAKL_SYCL_FLAGS " -fp-model precise -DYAKL_ARCH_SYCL -\-intel -fsycl -fsycl-targets=spir64_gen -mlong-double-64")
+      string (REPLACE " " ";" YAKL_SYCL_FLAGS_LIST ${YAKL_SYCL_FLAGS})
+    endif()
 
     set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
     add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
@@ -181,7 +186,8 @@ endif()
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
 #       with the "plain" signature
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
+
+find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH} PATH_SUFFIXES lib lib64)
 target_link_libraries(eamxx_rrtmgp_interface ${NETCDF_C} rrtmgp scream_share Kokkos::kokkos)
 target_include_directories(eamxx_rrtmgp_interface PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR})

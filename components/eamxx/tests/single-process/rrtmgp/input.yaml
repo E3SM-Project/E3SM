@@ -25,24 +25,24 @@ atmosphere_processes:
     rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [Physics]
-  Physics:
-    aliases: [Point Grid]
+  grids_names: [physics]
+  physics:
+    aliases: [point_grid]
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:  72
 
 # Specifications for setting initial conditions
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0
   aero_tau_sw: 0.0
   aero_tau_lw: 0.0
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output${SUFFIX}.yaml"]
 ...

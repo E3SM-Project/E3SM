@@ -10,7 +10,7 @@ void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manag
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
@@ -346,7 +346,8 @@ void IOPForcing::run_impl (const double dt)
   const auto Q = get_group_out("tracers").m_monolithic_field->get_view<Pack***>();
 
   // Load data from IOP files, if necessary
-  m_iop_data_manager->read_iop_file_data(timestamp());
+  // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?
+  m_iop_data_manager->read_iop_file_data(start_of_step_ts());
 
   // Define local IOP param values
   const auto iop_dosubsidence     = m_iop_data_manager->get_params().get<bool>("iop_dosubsidence");

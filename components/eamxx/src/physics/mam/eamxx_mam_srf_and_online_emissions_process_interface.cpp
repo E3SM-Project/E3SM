@@ -31,7 +31,7 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
 // ================================================================
 void MAMSrfOnlineEmiss::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -106,7 +106,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ dms;
   // File name, name and sectors
-  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
   srf_emiss_species_.push_back(dms);  // add to the vector
@@ -116,7 +116,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ so2;
   // File name, name and sectors
-  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_SO2");
+  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_so2");
   so2.species_name = "so2";
   so2.sectors      = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(so2);  // add to the vector
@@ -256,7 +256,7 @@ void MAMSrfOnlineEmiss::set_grids(
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
 }
 
 // ================================================================
@@ -310,7 +310,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
 
   // Current month ( 0-based)
-  const int curr_month = timestamp().get_month() - 1;
+  const int curr_month = start_of_step_ts().get_month() - 1;
 
   // Load the first month into data_end.
 
@@ -322,7 +322,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
     srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, timestamp(), curr_month, *ispec_srf.horizInterp_,
+        ispec_srf.dataReader_, start_of_step_ts(), curr_month, *ispec_srf.horizInterp_,
         ispec_srf.data_end_);  // output
   }
 
@@ -340,7 +340,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Time dependent data
   marineOrganicsFunc::update_marine_organics_data_from_file(
-      morg_dataReader_, timestamp(), curr_month, *morg_horizInterp_,
+      morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
       morg_data_end_);  // output
 
   //-----------------------------------------------------------------
@@ -369,7 +369,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
               constituent_fluxes);  // in-out
   Kokkos::fence();
   // Gather time and state information for interpolation
-  const auto ts = timestamp() + dt;
+  const auto ts = end_of_step_ts();
 
   //--------------------------------------------------------------------
   // Online emissions from dust and sea salt

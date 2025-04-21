@@ -23,7 +23,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
@@ -256,8 +256,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.w2tune        = m_params.get<double>("w2tune");
   runtime_options.length_fac    = m_params.get<double>("length_fac");
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
-  runtime_options.Ckh           = m_params.get<double>("Ckh");
-  runtime_options.Ckm           = m_params.get<double>("Ckm");
+  runtime_options.Ckh           = m_params.get<double>("coeff_kh");
+  runtime_options.Ckm           = m_params.get<double>("coeff_km");
   runtime_options.shoc_1p5tke = m_params.get<bool>("shoc_1p5tke");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these

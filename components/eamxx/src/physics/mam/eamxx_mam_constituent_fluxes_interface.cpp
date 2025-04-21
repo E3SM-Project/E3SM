@@ -22,7 +22,7 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
 // ================================================================
 void MAMConstituentFluxes::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -64,7 +64,7 @@ void MAMConstituentFluxes::set_grids(
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 size_t MAMConstituentFluxes::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
 }
 
 // ================================================================
@@ -163,9 +163,10 @@ void MAMConstituentFluxes::run_impl(const double dt) {
     team.team_barrier();
     // vertical heights has to be computed after computing dry mixing ratios
     // for atmosphere
-    compute_vertical_layer_heights(team,       // in
-                                   dry_atm,    // out
-                                   icol);      // in
+    compute_vertical_layer_heights(team,     // in
+                                   dry_atm,  // out
+                                   icol);    // in
+    team.team_barrier();
     compute_updraft_velocities(team, wet_atm,  // in
                                dry_atm,        // out
                                icol);          // in
@@ -175,11 +176,14 @@ void MAMConstituentFluxes::run_impl(const double dt) {
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
+  Kokkos::fence();
 
   update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
                                          constituent_fluxes_,
                                          // output
                                          wet_aero_);
+  Kokkos::fence();
+
 }  // run_impl ends
 
 // =============================================================================

@@ -10,7 +10,7 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [mam4_optics, rrtmgp]
-  schedule_type: Sequential
+  schedule_type: sequential
   mam4_optics:
     mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
     mam4_mode2_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
@@ -34,22 +34,22 @@ atmosphere_processes:
     rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [Physics GLL]
-  Physics GLL:
-    aliases: [Physics]
+  grids_names: [physics_gll]
+  physics_gll:
+    aliases: [physics]
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:   72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height : 1.0
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

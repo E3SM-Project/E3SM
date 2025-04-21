@@ -10,17 +10,17 @@ time_stepping:
 
 atmosphere_processes:
   atm_procs_list: [MLCorrection]
-  MLCorrection:
-    ML_model_path_tq: NONE
-    ML_model_path_uv: NONE
-    ML_model_path_sfc_fluxes: NONE
-    ML_output_fields: ["qv","T_mid"]
-    ML_correction_unit_test: True
+  ml_correction:
+    ml_model_path_tq: NONE
+    ml_model_path_uv: NONE
+    ml_model_path_sfc_fluxes: NONE
+    ml_output_fields: ["qv","T_mid"]
+    ml_correction_unit_test: True
 grids_manager:
-  Type: Mesh Free
-  grids_names: [Physics]
-  Physics:
-    aliases: [Point Grid]
+  type: mesh_free
+  grids_names: [physics]
+  physics:
+    aliases: [point_grid]
     type: point_grid
     number_of_global_columns:   3
     number_of_vertical_levels:  128

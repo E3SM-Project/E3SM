@@ -21,7 +21,7 @@ void MAMOptics::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
   Units n_unit(1 / kg, "#/kg");  // number mixing ratios [# / kg air]
   const auto m2 = pow(m, 2);
@@ -32,6 +32,9 @@ void MAMOptics::set_grids(
   nswbands_ = mam4::modal_aer_opt::nswbands;     // number of shortwave bands
   nlwbands_ = mam4::modal_aer_opt::nlwbands;     // number of longwave bands
 
+  len_temporary_views_ = get_len_temporary_views();
+  buffer_.set_len_temporary_views(len_temporary_views_);
+  buffer_.set_num_scratch(num_2d_scratch_);
   // Define the different field layouts that will be used for this process
 
   // Define aerosol optics fields computed by this process.
@@ -88,7 +91,49 @@ void MAMOptics::set_grids(
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                   len_temporary_views_);
+}
+
+int MAMOptics::get_len_temporary_views() {
+  int work_len = 0;
+  // work_
+  work_len += ncol_ * mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  // tau_ssa_g_sw_, tau_ssa_sw_, tau_sw_, tau_f_sw_
+  const int nlev_f = nlev_ + 1;
+  work_len += 4 * ncol_ * nswbands_ * nlev_f;
+  return work_len;
+}
+void MAMOptics::init_temporary_views() {
+  auto work_ptr      = (Real *)buffer_.temporary_views.data();
+  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
+  work_              = mam_coupling::view_2d(work_ptr, ncol_, work_len);
+  work_ptr += ncol_ * work_len;
+
+  // shortwave aerosol scattering asymmetry parameter [unitless]
+  tau_ssa_g_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  const int nlev_f = nlev_ + 1;
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+  // shortwave aerosol single-scattering albedo [unitless]
+  tau_ssa_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+  // shortwave aerosol extinction optical depth [unitless]
+  tau_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+  // aerosol forward scattered fraction * tau * w
+  tau_f_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  work_ptr += ncol_ * nswbands_ * nlev_f;
+
+  /// error check
+  // NOTE: workspace_provided can be larger than workspace_used, but let's try
+  // to use the minimum amount of memory
+  const int workspace_used     = work_ptr - buffer_.temporary_views.data();
+  const int workspace_provided = buffer_.temporary_views.extent(0);
+  EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
@@ -148,7 +193,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
-  // prescribed volcanic aerosols.
   ssa_cmip6_sw_ =
       mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
   af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
@@ -156,29 +200,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
   ext_cmip6_lw_ =
       mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
-  // FIXME: We need to get ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_,
-  // ext_cmip6_lw_ from a netcdf file.
-  // We will rely on eamxx to interpolate/map data from netcdf files.
-  // The io interface in eamxx is being upgraded.
-  // Thus, I will wait until changes in the eamxx's side are completed.
-  Kokkos::deep_copy(ssa_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(af_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_sw_, 0.0);
-  Kokkos::deep_copy(ext_cmip6_lw_, 0.0);
 
-  const int work_len = mam4::modal_aer_opt::get_work_len_aerosol_optics();
-  work_              = mam_coupling::view_2d("work", ncol_, work_len);
-
-  // shortwave aerosol scattering asymmetry parameter [unitless]
-  tau_ssa_g_sw_ =
-      mam_coupling::view_3d("tau_ssa_g_sw_", ncol_, nswbands_, nlev_ + 1);
-  // shortwave aerosol single-scattering albedo [unitless]
-  tau_ssa_sw_ =
-      mam_coupling::view_3d("tau_ssa_sw_", ncol_, nswbands_, nlev_ + 1);
-  // shortwave aerosol extinction optical depth [unitless]
-  tau_sw_ = mam_coupling::view_3d("tau_sw_", ncol_, nswbands_, nlev_ + 1);
-  // aerosol forward scattered fraction * tau * w
-  tau_f_sw_ = mam_coupling::view_3d("tau_f_sw_", ncol_, nswbands_, nlev_ + 1);
+  init_temporary_views();
 
   // read table info
   {
@@ -257,7 +280,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
         const auto &fname = m_params.get<std::string>(table_name);
         // read data
         // need to update table name
-        params_aero.set("Filename", fname);
+        params_aero.set("filename", fname);
         AtmosphereInput refindex_aerosol(params_aero, grid_, host_views_aero,
                                          layouts_aero);
         refindex_aerosol.read_variables();
@@ -293,6 +316,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands", nswbands_);
   Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_,
                     get_idx_rrtmgp_from_rrtmg_swbands_host);
+  calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
   constexpr Real zero = 0.0;
@@ -338,11 +362,12 @@ void MAMOptics::run_impl(const double dt) {
   const auto &work                           = work_;
   const auto &dry_aero                       = dry_aero_;
   const auto &aerosol_optics_device_data     = aerosol_optics_device_data_;
+  const auto &calsize_data =  calsize_data_;
+
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
-        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
         const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
 
         // FIXME: dry mass pressure interval [Pa]
@@ -352,7 +377,6 @@ void MAMOptics::run_impl(const double dt) {
         auto ssa_cmip6_sw_icol = ekat::subview(ssa_cmip6_sw, icol);
         auto af_cmip6_sw_icol  = ekat::subview(af_cmip6_sw, icol);
         auto ext_cmip6_sw_icol = ekat::subview(ext_cmip6_sw, icol);
-        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
         // tau_w: aerosol single scattering albedo * tau
         auto tau_w_icol = ekat::subview(tau_ssa_sw, icol);
@@ -375,12 +399,29 @@ void MAMOptics::run_impl(const double dt) {
         mam4::aer_rad_props::aer_rad_props_sw(
             team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol, af_cmip6_sw_icol,
             ext_cmip6_sw_icol, tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol,
-            aerosol_optics_device_data, aodvis(icol), work_icol);
+            aerosol_optics_device_data, calsize_data,  aodvis(icol), work_icol);
 
-        team.team_barrier();
+      });
+  Kokkos::fence();
+  Kokkos::parallel_for(
+      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const Int icol = team.league_rank();  // column index
+        // absorption optical depth, per layer [unitless]
+        auto odap_aer_icol = ekat::subview(aero_tau_lw, icol);
+        const auto atm     = mam_coupling::atmosphere_for_column(dry_atm, icol);
+
+        // FIXME: dry mass pressure interval [Pa]
+        auto zi   = ekat::subview(dry_atm.z_iface, icol);
+        auto pdel = ekat::subview(p_del, icol);
+        auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
+
+        // fetch column-specific subviews into aerosol prognostics
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+
         mam4::aer_rad_props::aer_rad_props_lw(
             team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
-            aerosol_optics_device_data, odap_aer_icol);
+            aerosol_optics_device_data, calsize_data, odap_aer_icol);
       });
   Kokkos::fence();
   // TODO: We will need to generate optical inputs files with  band ordering

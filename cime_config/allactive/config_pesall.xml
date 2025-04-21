@@ -107,7 +107,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez|pm-gpu|muller-gpu|jlse">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu|pm-gpu|muller-gpu|alvarez-gpu|jlse">
       <pes compset="any" pesize="any">
         <comment>allactive: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -263,7 +263,7 @@
   <!-- 2000_DATM%JRA_ELM%SPBC_MPASSI_MPASO%DATMFORCED_MOSART_SGLC_SWAV_SIAC_SESP -->
   <!-- ATM_GRID is ne30np4.pg2  ICE_GRID is EC30to60E2r2 -->
   <grid name="a%ne30np4">
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>"pm-cpu basic 4 nodes, 256 partition, 128x1, ~6 sypd"</comment>
         <ntasks>
@@ -507,7 +507,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu ">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.*" pesize="any">
         <comment>pm-cpu: ne120-wcycl on 42 nodes 128x1 ~0.7 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -1010,7 +1010,7 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
         <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 8 nodes, stacked layout, 128x1 4-5 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -1090,9 +1090,9 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="summit|ascent|polaris">
+    <mach name="summit|ascent|polaris|aurora">
       <pes compset="any" pesize="any">
-        <comment>summit|ascent|polaris: any compset on ne30np4 grid</comment>
+        <comment>summit|ascent|polaris|aurora: any compset ne30np4 grid on 2 nodes</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1103,16 +1103,6 @@
           <ntasks_glc>-2</ntasks_glc>
           <ntasks_wav>-2</ntasks_wav>
         </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
         <comment>summit|ascent|polaris: BGC compset on ne30np4 grid</comment>
@@ -1126,16 +1116,6 @@
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
         </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
       </pes>
       <pes compset=".*SCREAM.*" pesize="any">
         <comment>summit|ascent|polaris: SCREAM atm compset on ne30np4 grid</comment>
@@ -1149,16 +1129,6 @@
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
         </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>1</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_glc>1</nthrds_glc>
-          <nthrds_wav>1</nthrds_wav>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
       </pes>
     </mach>
     <mach name="improv">
@@ -1413,7 +1383,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="any">
         <comment> pm-cpu --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 8 nodes, stacked layout, 128x1 4-5 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -1797,20 +1767,20 @@
     </mach>
     <mach name="sunspot|aurora">
       <pes compset="any" pesize="any">
-        <comment>allactive+sunspot|aurora: default, 96 mpi x 1 omp @ root 0</comment>
+        <comment>allactive+sunspot|aurora: default, 1-node x 1 omp @ root 0</comment>
         <ntasks>
-          <ntasks_atm>96</ntasks_atm>
-          <ntasks_lnd>96</ntasks_lnd>
-          <ntasks_rof>96</ntasks_rof>
-          <ntasks_ice>96</ntasks_ice>
-          <ntasks_ocn>96</ntasks_ocn>
-          <ntasks_glc>96</ntasks_glc>
-          <ntasks_wav>96</ntasks_wav>
-          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>12</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="any" pesize="any">
         <comment>allactive+pm-cpu: default, 1 node, 96 tasks, 1 thread</comment>
         <ntasks>
@@ -1827,7 +1797,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4">
-    <mach name="pm-gpu|muller-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
       <pes compset="any" pesize="any">
         <comment>"pm-gpu ne30np4 and ne30np4.pg2  2 nodes, 4x16"</comment>
         <ntasks>
@@ -1871,7 +1841,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="any" pesize="any">
         <comment>"pm-cpu ne30np4 and ne30np4.pg2 2 nodes, stacked, 1 thread, 128x1"</comment>
         <ntasks>
@@ -2198,7 +2168,7 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC" pesize="any">
         <comment>pm-cpu: 8 nodes, 128x1</comment>
         <ntasks>
@@ -2550,7 +2520,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-gpu|muller-gpu">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
       <pes compset="any" pesize="any">
         <comment>pm-gpu conus 2 nodes, 4x1 except 16 threads in LND</comment>
         <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
@@ -2617,7 +2587,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="any" pesize="any">
         <comment>pm-cpu: conus 2 nodes</comment>
         <ntasks>
@@ -2640,7 +2610,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%r05_g%mpas.gis1to10kmR2_w%null_z%null_m%EC30to60E2r2">
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="M">
         <comment>pm-cpu: GIS 1-to-10km (high-res) baseline config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -2715,7 +2685,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis20km_w%null_z%null_m%IcoswISC30E3r5">
-    <mach name="chrysalis|pm-cpu|alvarez">
+    <mach name="chrysalis|pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>

@@ -59,7 +59,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -328,13 +328,8 @@ void Nudging::run_impl (const double dt)
   using view_1d       = KT::view_1d<PackT>;
   using view_2d       = KT::view_2d<PackT>;
 
-  // Have to add dt because first time iteration is at 0 seconds where you will
-  // not have any data from the field. The timestamp is only iterated at the
-  // end of the full step in scream.
-  auto ts = timestamp()+dt;
-
   // Perform time interpolation
-  m_time_interp.perform_time_interpolation(ts);
+  m_time_interp.perform_time_interpolation(end_of_step_ts());
 
   // If the input data contains "masked" values (sometimes also called "filled" values),
   // the horiz remapping would smear them around. To prevent that, we need to "cure"

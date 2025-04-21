@@ -153,7 +153,7 @@ struct TracerData {
   // only for zonal files
   view_1d zonal_levs_;
 
-  void allocate_temporal_views() {
+  void allocate_temporary_views() {
     // BEG and OUT data views.
     EKAT_REQUIRE_MSG(ncol_ != int(-1), "Error! ncols has not been set. \n");
     EKAT_REQUIRE_MSG(nlev_ != int(-1), "Error! nlevs has not been set. \n");
@@ -296,7 +296,7 @@ inline void setup_tracer_data(TracerData &tracer_data,             // out
                               const int cyclical_ymd)              // in
 {
   scorpio::register_file(trace_data_file, scorpio::Read);
-  if (not scorpio::has_time_dim(trace_data_file)) {
+  if(not scorpio::has_time_dim(trace_data_file)) {
     scorpio::mark_dim_as_time(trace_data_file, "time");
   }
   // by default, I am assuming a zonal file.

@@ -20,8 +20,8 @@ inline void create_grids_manager (int ncols, int nlevs, const std::string& latlo
       "Error! You did not initialize pyeamxx, or you already finalized it!\n");
   auto& comm = PySession::get().comm;
   ekat::ParameterList gm_params;
-  std::vector<std::string> grids_names = {"Physics"};
-  auto& pl = gm_params.sublist("Physics");
+  std::vector<std::string> grids_names = {"physics"};
+  auto& pl = gm_params.sublist("physics");
   pl.set("type",std::string("point_grid"));
   pl.set("number_of_global_columns",ncols);
   pl.set("number_of_vertical_levels",nlevs);

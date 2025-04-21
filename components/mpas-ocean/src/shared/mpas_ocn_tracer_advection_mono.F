@@ -66,7 +66,7 @@ module ocn_tracer_advection_mono
    subroutine ocn_tracer_advection_mono_tend( &
                                         tend, tracers, layerThickness, &
                                         normalThicknessFlux, w, dt,    &
-                                        computeBudgets)!{{{
+                                        computeBudgets, skipTracer)!{{{
 
       !-----------------------------------------------------------------
       ! Input/Output parameters
@@ -92,6 +92,9 @@ module ocn_tracer_advection_mono
 
       logical, intent(in) :: &
          computeBudgets        !< [in] Flag to compute active tracer budgets
+
+      logical, dimension(:), intent(in) :: &
+         skipTracer            !< [in] Flag to skip tracer in tracers
 
       !-----------------------------------------------------------------
       ! Local variables
@@ -220,6 +223,7 @@ module ocn_tracer_advection_mono
 
       ! Loop over tracers. One tracer is advected at a time.
       do iTracer = 1, numTracers
+        if (skipTracer(iTracer)) cycle
 
 #ifdef _ADV_TIMERS
         call mpas_timer_start('cell init')

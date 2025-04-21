@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: model_output
-Averaging Type: average
-Fields:
-  Physics GLL:
-    Field Names:
+averaging_type: average
+fields:
+  physics_gll:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -73,14 +73,14 @@ Fields:
       - VapWaterPath
       - ZonalVapFlux
       - MeridionalVapFlux
-  Dynamics:
-    Field Names:
+  dynamics:
+    field_names:
       - Qdp_dyn
       - v_dyn
       - vtheta_dp_dyn
       - dp3d_dyn
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nmins
-Checkpoint Control:
+checkpoint_control:
 ...

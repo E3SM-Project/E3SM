@@ -39,7 +39,7 @@ void sl_traj_h2d (TracerArrays<MT>& ta, Real* dep_points, Real* vnode,
 # endif
   ko::fence();
   ta.alloc_if_not();
-  const Int nelemd = ta.nelemd, qsize = ta.qsize, np2 = ta.np2, nlev = ta.nlev;
+  const Int nelemd = ta.nelemd, np2 = ta.np2, nlev = ta.nlev;
   const DepPointsH<MT> cart_h(dep_points, nelemd, nlev, np2, ndim);
   ko::deep_copy(ta.dep_points, cart_h);
   if (vnode) {

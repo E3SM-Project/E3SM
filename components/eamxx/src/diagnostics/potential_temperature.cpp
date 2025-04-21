@@ -8,10 +8,10 @@ namespace scream
 PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  EKAT_REQUIRE_MSG(params.isParameter("Temperature Kind"),
-      "Error! PotentialTemperatureDiagnostic requires 'Temperature Kind' in its input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("temperature_kind"),
+      "Error! PotentialTemperatureDiagnostic requires 'temperature_kind' in its input parameters.\n");
   
-  auto pt_type = params.get<std::string>("Temperature Kind");
+  auto pt_type = params.get<std::string>("temperature_kind");
 
   if (pt_type=="Tot"){
     m_ptype = "PotentialTemperature";
@@ -31,7 +31,7 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto grid  = grids_manager->get_grid("Physics");
+  auto grid  = grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column

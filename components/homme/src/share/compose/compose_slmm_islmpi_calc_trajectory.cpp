@@ -223,7 +223,9 @@ void traj_calc_own_next_step (IslMpi<MT>& cm, const DepPoints<MT>& dep_points,
 
 template <typename VdepT, typename MT>
 void traj_copy_next_step (IslMpi<MT>& cm, const VdepT& vdep) {
+#ifndef NDEBUG
   const auto myrank = cm.p->rank();
+#endif
   const auto ndim = cm.dep_points_ndim;
 #ifdef COMPOSE_PORT
   const auto& mylid_with_comm = cm.mylid_with_comm_d;
@@ -286,24 +288,23 @@ calc_v_departure (IslMpi<MT>& cm, const Int nets, const Int nete,
   // routine should use vnode instead of vdep in subsequent calculations.
   slmm_assert(step > 0);
 
-  const auto ndim = cm.dep_points_ndim;
-
 #ifdef COMPOSE_PORT
   const auto& vnode = cm.tracer_arrays->vnode;
   const auto& vdep  = cm.tracer_arrays->vdep;
 #else
+  const auto ndim = cm.dep_points_ndim;
   CA4<const Real> vnode(vnode_r, cm.nelemd, cm.nlev, cm.np2, ndim);
   CA4<      Real> vdep (vdep_r , cm.nelemd, cm.nlev, cm.np2, ndim);
 #endif
-  slmm_assert(vnode.extent_int(3) == ndim);
-  slmm_assert(vdep .extent_int(3) == ndim);
+  slmm_assert(vnode.extent_int(3) == cm.dep_points_ndim);
+  slmm_assert(vdep .extent_int(3) == cm.dep_points_ndim);
 
 #ifdef COMPOSE_PORT
   const auto& dep_points = cm.tracer_arrays->dep_points;
 #else
   DepPointsH<MT> dep_points(dep_points_r, cm.nelemd, cm.nlev, cm.np2, ndim);
 #endif
-  slmm_assert(dep_points.extent_int(3) == ndim);
+  slmm_assert(dep_points.extent_int(3) == cm.dep_points_ndim);
 
   // See comments in homme::islmpi::step for details. Each substep follows
   // essentially the same pattern.
