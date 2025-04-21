@@ -368,13 +368,13 @@ struct ComputeShocMixShocLengthData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
   bool shoc_1p5tke;
-  Real *tke, *brunt, *tscale, *zt_grid, *dz_zt, *tk, *l_inf;
+  Real *tke, *brunt, *zt_grid, *dz_zt, *tk, *l_inf;
 
   // Outputs
   Real *shoc_mix;
 
   ComputeShocMixShocLengthData(Int shcol_, Int nlev_, bool shoc_1p5tke_) :
-    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &dz_zt, &tk, &shoc_mix }, { &tscale, &l_inf }}), shcol(shcol_), nlev(nlev_), shoc_1p5tke(shoc_1p5tke_) {}
+    PhysicsTestData({{ shcol_, nlev_ }, { shcol_ }}, {{ &tke, &brunt, &zt_grid, &dz_zt, &tk, &shoc_mix }, { &l_inf }}), shcol(shcol_), nlev(nlev_), shoc_1p5tke(shoc_1p5tke_) {}
 
   PTD_STD_DEF(ComputeShocMixShocLengthData, 3, shcol, nlev, shoc_1p5tke);
 };

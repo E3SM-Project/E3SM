@@ -125,11 +125,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
     //   need to define dz, brunt vaisalla frequency, and tk.
 
     // Brunt Vaisalla frequency [s-1]
-    static constexpr Real brunt_1p5[nlev] = {0.0001,-0.0001,0.0001,-0.0001,0.0001};
+    static constexpr Real brunt_1p5[nlev] = {0.01,-0.01,0.01,-0.01,0.01};
     // Define the heights on the zt grid [m]
     static constexpr Real dz_zt_1p5[nlev] = {50, 100, 30, 20, 10};
     // Eddy viscocity [m2 s-1]
-    static constexpr Real tk_cons_1p5 = 2.0;
+    static constexpr Real tk_cons_1p5 = 0.1;
 
     // Activate 1.5 TKE closure
     SDS.shoc_1p5tke = true;
@@ -154,8 +154,8 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
     // Verify that if Brunt Vaisalla frequency is unstable that mixing length
     //  is equal to vertical grid spacing.  If brunt is stable, then verify that
     //  mixing length is less than the vertical grid spacing.
-    for (Int s = 0; s < shcol; ++s){
-      for (Int n = 0; n < nlev; ++n){
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         if (SDS.brunt[offset] <= 0){
            REQUIRE(SDS.shoc_mix[offset] == SDS.dz_zt[offset]);

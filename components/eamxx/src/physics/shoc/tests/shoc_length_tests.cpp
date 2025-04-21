@@ -170,7 +170,6 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
         const auto offset = n + s * nlev;
 
         SDS.tk[offset] = tk[n];
-	SDS.brunt[offset] = 0;
       }
     }
 
