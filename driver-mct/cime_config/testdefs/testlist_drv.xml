@@ -7,11 +7,6 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="cray" category="prebeta">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
     </machines>
   </test>
   <test name="ERI" grid="ne30_g16" compset="X">
@@ -40,11 +35,6 @@
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -107,11 +97,6 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
@@ -169,16 +154,6 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
       <machine name="eos" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
@@ -194,31 +169,16 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="cray" category="prebeta">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
     </machines>
   </test>
   <test name="ERS_Ld3" grid="f45_g37_rx1" compset="A">
     <machines>
-      <machine name="edison" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
       <machine name="hobart" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prealpha">
-        <options>
-          <option name="wallclock">00:30:00</option>
-        </options>
-      </machine>
-      <machine name="stampede" compiler="intel" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
