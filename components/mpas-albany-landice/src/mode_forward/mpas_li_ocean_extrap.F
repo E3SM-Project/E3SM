@@ -348,12 +348,12 @@ contains
          if (config_recalculate_thermal_forcing) then
             
             !combine fields into one variable to expedite extrapolation
-            oceanField(:,:,1) = MPAS_3dOceanTemperature(:,:) * validOceanMask(:,:)
-            oceanField(:,:,2) = MPAS_3dOceanSalinity(:,:) * validOceanMask(:,:)
+            oceanField(1,:,:) = MPAS_3dOceanTemperature(:,:) * validOceanMask(:,:)
+            oceanField(2,:,:) = MPAS_3dOceanSalinity(:,:) * validOceanMask(:,:)
          else
 
-            oceanField(:,:,1) = ismip6shelfMelt_3dThermalForcing * validOceanMask(:,:)
-            oceanField(:,:,2) = invalid_value_TF
+            oceanField(1,:,:) = ismip6shelfMelt_3dThermalForcing * validOceanMask(:,:)
+            oceanField(2,:,:) = invalid_value_TF
          endif
          
          ! initialize the invalid data locations with fill value
@@ -366,7 +366,7 @@ contains
                   ! zero where valid ocean data does not exist
                elseif (validOceanMask(iLayer,iCell) == 0) then
                   ! everywhere else where valid ocean data does not exist, insert invalid value outside of validOceanMask
-                  oceanField(iLayer,iCell,:) = invalid_value_TF
+                  oceanField(:,iLayer,iCell) = invalid_value_TF
                endif
             enddo
          enddo
@@ -409,8 +409,8 @@ contains
 
          ! Reassign extrapolated TF back to primary TF field
          if (config_recalculate_thermal_forcing) then
-            MPAS_3dOceanTemperature(:,:) = oceanField(:,:,1)
-            MPAS_3dOceanSalinity(:,:) = oceanField(:,:,2)
+            MPAS_3dOceanTemperature(:,:) = oceanField(1,:,:)
+            MPAS_3dOceanSalinity(:,:) = oceanField(2,:,:)
 
             call recalculate_thermal_forcing(domain, err)
 
@@ -423,7 +423,7 @@ contains
                enddo
             enddo
          else 
-            ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(:,:,1)
+            ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(1,:,:)
          endif
 
       endif
@@ -521,7 +521,7 @@ contains
 
       ! perform horizontal extrapolation until the validOceanMask is unchanged
       allocate(validOceanMaskOld(nISMIP6OceanLayers,nCells+1))
-      allocate(oceanFieldOld(nISMIP6OceanLayers,nCells+1,2))
+      allocate(oceanFieldOld(2,nISMIP6OceanLayers,nCells+1))
       allocate(fieldSum(2))
       validOceanMaskOld(:,:) = validOceanMask(:,:)
       oceanFieldOld(:,:,:) = oceanField(:,:,:)
@@ -546,14 +546,14 @@ contains
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
                          
                         do iField = 1, 2  
-                           if ( oceanFieldOld(iLayer,jCell,iField) > 1.0e6_RKIND) then
+                           if ( oceanFieldOld(iField,iLayer,jCell) > 1.0e6_RKIND) then
                               ! raise error if an invalid ocean data value is used
                               call mpas_log_write("ocean data value used for extrapolation is invalid" // &
                                    "in horizontal extrapolations: cell id=$i, iLayer=$i, iField=$i, value=$r", &
-                                   MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1, iField/), realArgs=(/oceanField(iLayer-1,iCell,iField)/))
+                                   MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1, iField/), realArgs=(/oceanField(iField,iLayer-1,iCell)/))
                               err = ior(err,1)
                            else
-                              fieldSum(iField) = fieldSum(iField) + (oceanFieldOld(iLayer,jCell,iField) * areaCell(jCell))
+                              fieldSum(iField) = fieldSum(iField) + (oceanFieldOld(iField,iLayer,jCell) * areaCell(jCell))
                            endif
 
                            if (.not. config_recalculate_thermal_forcing) then
@@ -579,12 +579,12 @@ contains
                   do iField = 1, 2
                      ! perform area-weighted averaging of ocean fields
                      if ( nValidNeighb == 0 ) then
-                        oceanField(iLayer,iCell,iField) = oceanFieldOld(iLayer,iCell,iField)
+                        oceanField(iField,iLayer,iCell) = oceanFieldOld(iField,iLayer,iCell)
                      else
-                        oceanField(iLayer,iCell,iField) = ( weightCellLocal * oceanFieldOld(iLayer,iCell,iField) * areaCell(iCell) + &
-                                & ((1.0_RKIND - weightCellLocal) * (fieldSum(iField) / nValidNeighb)) ) / &
-                                                 & ( weightCellLocal * areaCell(iCell) + &
-                                                 & (1.0_RKIND - weightCellLocal) * (areaSum / nValidNeighb) )
+                        oceanField(iField,iLayer,iCell) = ( weightCellLocal * oceanFieldOld(iField,iLayer,iCell) * areaCell(iCell) + &
+                           & ((1.0_RKIND - weightCellLocal) * (fieldSum(iField) / nValidNeighb)) ) / &
+                                            & ( weightCellLocal * areaCell(iCell) + &
+                                            & (1.0_RKIND - weightCellLocal) * (areaSum / nValidNeighb) )
                      endif
 
                      if (.not. config_recalculate_thermal_forcing) then
@@ -708,19 +708,19 @@ contains
             if ( (validOceanMask(iLayer,iCell) == 0) .and. (validOceanMask(iLayer-1,iCell) == 1) &
                     .and. (availOceanMask(iLayer-1,iCell) == 1) ) then
                   do iField = 1, 2
-                     if (oceanField(iLayer-1,iCell,iField) > 1.0e6_RKIND) then
+                     if (oceanField(iField,iLayer-1,iCell) > 1.0e6_RKIND) then
                         ! raise error if an invalid ocean data value is used
                         call mpas_log_write("ocean data value used for extrapolation is invalid" // &
                            "in vertical extrapolations: cell id=$i, iLayer=$i, TF=$r", &
-                           MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/oceanField(iLayer-1,iCell,iField)/))
+                           MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/oceanField(iField,iLayer-1,iCell)/))
                         err = ior(err,1)
                      else
                         if (config_recalculate_thermal_forcing) then
                            !if extrapolating temp/salt, assign value equal to overlying cell
-                           oceanField(iLayer,iCell,iField) = oceanField(iLayer-1,iCell,iField)
+                           oceanField(iField,iLayer,iCell) = oceanField(iField,iLayer-1,iCell)
                         else
                            !if extrapolating thermal forcing, need to account for depth-dependent difference in freezing temp
-                           oceanField(iLayer,iCell,iField) = oceanField(iLayer-1,iCell,iField) - &
+                           oceanField(iField,iLayer,iCell) = oceanField(iField,iLayer-1,iCell) - &
                               (ismip6shelfMelt_zOcean(iLayer-1) - ismip6shelfMelt_zOcean(iLayer)) * &
                               oceanFreezingTempDepthDependence
                            exit
