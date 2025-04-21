@@ -634,7 +634,7 @@ contains
          tracerGroupExponentialDecayRate ! exp decay rate for forcing
       
       integer, dimension(:), pointer :: &
-         masksTSRegion                !mask for TS restoring region
+         nMasksTSRegion                !mask for TS restoring region
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          tracerGroupPistonVelocity,        &! forcing piston velocity
@@ -1063,12 +1063,14 @@ contains
                                      tracerGroupSurfaceRestoringValue)
 
             call mpas_pool_get_array(meshPool, "masksTSRegion", &
-                               masksTSRegion)
+                              nMasksTSRegion)
+            call mpas_log_write( 'new MasksTS max = $i', intArgs=(/maxval(nMasksTSRegion)/))
+
 
             ! Note: monthly surface salinity restoring is a special
             ! case for tracer restoring
             call ocn_tracer_surface_restoring_compute(groupName, &
-                   nTracersGroup, nCellsAll, masksTSRegion, tracerGroup,  &
+                   nTracersGroup, nCellsAll, nMasksTSRegion, tracerGroup,  &
                    tracerGroupPistonVelocity, &
                    tracerGroupSurfaceRestoringValue, &
                    tracerGroupSurfaceFlux, indxSalt, &
