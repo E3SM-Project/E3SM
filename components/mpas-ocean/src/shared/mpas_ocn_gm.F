@@ -425,8 +425,29 @@ contains
 
          nEdges = nEdgesArray(3)
 
+         !--------------------------------------------------------------------------------------------
+         !--------------------------------------------------------------------------------------------
+         ! The simplified GEOMETRIC parameterization
+         !
+         ! K_gm = alpha * int(E)dz * Gamma(z)
+         !        / int(Gamma(z)*M^2/N)dz
+         !                                   (Eq. (4) in Mak et al., 2018)
+         !                                     doi:10.1175/JPO-D-18-0017.1
+         !
+         ! where,
+         !   E = c_diag * |S|^2 * sqrt(N^2) * h^2
+         !     : Diagnostic eddy energy (~APE scaled by c_diag) (Marshall 2012, Mak 2018)
+         !   S = slope = drhoDX / drhoDZ
+         !   h = layer thickness
+         !   M^2 = |grad(b)|
+         !   N^2 = Brunt-Vaisala frequency
+         !   Gamma(z) = N^2 / N^2_ref (Ferreira et a., 2005)
+         !--------------------------------------------------------------------------------------------
+         !--------------------------------------------------------------------------------------------
+
          if (local_config_GM_diagnostic_GEOMETRIC) then
 
+            ! Temp arrays to commpute slope (codes from the submesoscale param)
             allocate(dzTop(nVertLevels + 1))
             allocate(dTdzTop(nVertLevels + 1))
             allocate(dSdzTop(nVertLevels + 1))
@@ -468,8 +489,6 @@ contains
                   dSdzTop(k) = 0.5_RKIND*(dSdzTop1+dSdzTop2)
                end do
 
-!-------------------
-
                eddyEnergyInteg = 0.0_RKIND
                M2NInteg = 0.0_RKIND
                !-------------------------------------------------------------------------
@@ -482,15 +501,15 @@ contains
                                    max(BruntVaisalaFreqTop(kCell2,cell2),1.0E-14_RKIND))
                N2_ref = max(N2_ref, 1.0e-14_RKIND)
 
+               ! N^2 (k=1) / N^2_sfc = 1.0
                structFunction(k) = 1.0_RKIND
 
-               !-------------------------------------------------------------------------
                ! N^2
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(kCell1,cell1) + &
                                                     BruntVaisalaFreqTop(kCell2,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 1.0e-14_RKIND)
-               !-------------------------------------------------------------------------
-               ! S
+
+               ! Slope
                drhoDT = -0.5_RKIND*(thermExpCoeff(kCell1,cell1)+thermExpCoeff(kCell2,cell2))
                drhoDS =  0.5_RKIND*(salineContractCoeff(kCell1,cell1)+salineContractCoeff(kCell2,cell2))
 
@@ -505,22 +524,20 @@ contains
                drhoDz = drhoDT*(0.5_RKIND*(dTdzTop(k)+dTdzTop(k+1))) + &
                         drhoDS*(0.5_RKIND*(dSdzTop(k)+dSdzTop(k+1)))
 
-               slopeMag = abs(drhoDX) / max(abs(drhoDz),1.0e-10_RKIND)
+               slopeMag = abs(drhoDX) / max(abs(drhoDz),1.0e-14_RKIND)
                if ( slopeMag > config_redi_maximum_slope ) then
                   slopeMag = config_redi_maximum_slope
                end if
 
-               !-------------------------------------------------------------------------
-               ! E
+               ! Eddy energy
+               ! E = c_diag * |S|^2 * sqrt(N^2) * h^2
                eddyEnergy = config_GM_geometric_C_diag * slopeMag**2.0_RKIND * &
                             sqrt(BruntVaisalaFreqTopEdge) * layerThickEdgeMean(k,iEdge)**2.0_RKIND
                eddyEnergyInteg = eddyEnergyInteg + eddyEnergy * hML
 
-               !-------------------------------------------------------------------------
                ! M^2
                gradBuoy = abs(gradDensityEddy(k,iEdge) * gravity / rho_sw)
 
-               !-------------------------------------------------------------------------
                ! M^2 / N
                M2N = gradBuoy / sqrt(BruntVaisalaFreqTopEdge)
                M2NInteg = M2NInteg + M2N * hML
@@ -541,19 +558,16 @@ contains
 
 
                   structFunction(minLevelEdgeTop(iEdge)+1) = 1.0_RKIND
-               !else
-               !   cycle
                end if
 
                !-------------------------------------------------------------------------
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
-                  !-------------------------------------------------------------------------
                   ! N^2
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
                                                        BruntVaisalaFreqTop(k,cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 1.0e-14_RKIND)
-                  !-------------------------------------------------------------------------
-                  ! S
+
+                  ! Slope
                   drhoDT = -0.5_RKIND*(thermExpCoeff(k,cell1)+thermExpCoeff(k,cell2))
                   drhoDS =  0.5_RKIND*(salineContractCoeff(k,cell1)+salineContractCoeff(k,cell2))
                   dTdx = (  activeTracers(indexTemperature, k, cell2) &
@@ -567,27 +581,25 @@ contains
                   drhoDz = drhoDT*(0.5_RKIND*(dTdzTop(k)+dTdzTop(k+1))) + &
                            drhoDS*(0.5_RKIND*(dSdzTop(k)+dSdzTop(k+1)))
 
-                  slopeMag = abs(drhoDx) / max(abs(drhoDz),1.0e-10_RKIND)
+                  slopeMag = abs(drhoDx) / max(abs(drhoDz),1.0e-14_RKIND)
                   if ( slopeMag > config_redi_maximum_slope ) then
                      slopeMag = config_redi_maximum_slope
                   end if
 
-                  !-------------------------------------------------------------------------
                   ! Depth integration
                   hAv = 0.5_RKIND*(layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k-1,iEdge))
                   hML = hML + hAv
 
-                  !-------------------------------------------------------------------------
-                  ! E
+                  ! Eddy energy
+                  ! E = c_diag * |S|^2 * sqrt(N^2) * h^2
                   eddyEnergy = config_GM_geometric_C_diag * slopeMag**2.0_RKIND * &
                                sqrt(BruntVaisalaFreqTopEdge) * hAv**2.0_RKIND
                   eddyEnergyInteg = eddyEnergyInteg + eddyEnergy * hAv
-                  !-------------------------------------------------------------------------
+
                   ! M^2 = |gradBuoy|
                   gradBuoy = abs(gradDensityEddy(k,iEdge) * gravity / rho_sw)
 
-                  !-------------------------------------------------------------------------
-                  ! Structure function
+                  ! Structure function (Gamma(z))
                   structFunction(k) = BruntVaisalaFreqTopEdge / N2_ref
 
                   !-------------------------------------------------------------------------
@@ -599,14 +611,18 @@ contains
                M2NInteg = max(M2NInteg,1.0e-14_RKIND)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  ! K_gm = alpha * (int(E)dz / int(Gamma(z)*M^2/N)dz) * Gamma(z)
                   kGeometric = config_GM_geometric_alpha * (eddyEnergyInteg / M2NInteg) * &
                                structFunction(k)
 
+                  ! Cap kGeometric ( GM_min_kappa < kGeometric < GM_max_kappa )
                   if ( kGeometric < config_GM_spatially_variable_min_kappa ) then
                        kGeometric = config_GM_spatially_variable_min_kappa
                   else if ( kGeometric > config_GM_spatially_variable_max_kappa ) then
                             kGeometric = config_GM_spatially_variable_max_kappa
                   end if
+
+                  gmKappaScaling(k,iEdge) = kGeometric / config_GM_spatially_variable_max_kappa
 
                   !if ( k == minLevelEdgeBot(iEdge)+1 ) then
                   !if ( k == maxLevelEdgeTop(iEdge)-1 ) then
@@ -619,8 +635,6 @@ contains
                   !if ( kGeometric /= 50.0_RKIND) then
                   !   print*,M2NInteg, sqrt(BruntVaisalaFreqTopEdge), kGeometric
                   !endif
-
-                  gmKappaScaling(k,iEdge) = kGeometric / config_GM_spatially_variable_max_kappa
 
                   !gmKappaScaling(k,iEdge) = config_GM_spatially_variable_min_kappa
                   !gmKappaScaling(k,iEdge) = 1.0
@@ -638,6 +652,11 @@ contains
             deallocate (structFunction)
 
          end if
+         !--------------------------------------------------------------------------------------------
+         !--------------------------------------------------------------------------------------------
+         !--------------------------------------------------------------------------------------------
+         !--------------------------------------------------------------------------------------------
+         !--------------------------------------------------------------------------------------------
 
 
          ! For config_GM_closure = 'N2_dependent' use a scaling to taper gmBolusKappa
