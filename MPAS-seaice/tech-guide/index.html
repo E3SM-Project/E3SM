@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2afb09e1.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -3529,7 +3529,6 @@ The transport equations describe conservation of quantities such as volume and e
 <p>Since all fields are transported by the same velocity field, the second step is done only once per time step. The other steps are repeated for each field.</p>
 <p>With advanced physics and biogeochemistry (BGC) options, MPAS-Seaice can be configured to include numerous tracer fields, each of which is advected in every thickness category, and many of which are defined in each vertical ice or snow layer. In order to accommodate different tracer combinations and make it easy to add new tracers, the tracer fields are organized in a linked list that depends on which physics and BGC packages are active. The list is arranged with fractional ice area first, followed by the type 1 tracers, type 2 tracers, and finally type 3 tracers. In this way, values computed for parent tracers are always available when needed for computations involving child tracers.</p>
 <h2 id="column-physics">Column Physics</h2>
-<p>The Icepack software has replaced the original <code>colpkg</code> column physics code in MPAS-seaice. The <code>config_column_physics_type = 'column_package'</code> option is still available but is no longer being supported in MPAS-seaice.</p>
 <p>Because of the strong thermal gradients between the (cold) atmosphere and (relatively warm) oceans in polar regions, a large portion of the physics in sea ice models can be described in a vertical column, without reference to neighboring grid cells. MPAS-Seaice shares the same column physics code as CICE through the Icepack library (Hunke et al., 2018), which is maintained by the CICE Consortium. This code includes several options for simulating sea ice thermodynamics, mechanical redistribution (ridging) and associated area and thickness changes. In addition, the model supports a number of tracers, including thickness, enthalpy, ice age, first-year ice area, deformed ice area and volume, melt ponds, snow properties and biogeochemistry.</p>
 <p>Icepack is implemented in MPAS-seaice as a git submodule. Icepack consists of three independent parts, the column physics code, the Icepack driver that supports stand-alone testing of the column physics code, and the Icepack scripts that build and test the Icepack model.  E3SM uses only the column physics code, which is called for each ocean grid cell.  Icepack’s own driver and testing scripts are used when preparing new developments to be merged back to the CICE Consortium’s Icepack repository.</p>
 <p>Icepack includes sophisticated vertical physics and biogeochemical schemes, which include vertical thermodynamics schemes (Bitz and Lipscomb, 1999; Turner et al., 2013; Turner and Hunke, 2015), melt-pond parameterizations (Flocco et al., 2010; Hunke et al., 2013), a delta-Eddington radiation scheme (Briegleb and Light, 2007; Holland et al., 2012a), schemes for transport in thickness space (Lipscomb, 2001), and representations of mechanical redistribution (Lipscomb et al., 2007).</p>
