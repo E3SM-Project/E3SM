@@ -54,6 +54,7 @@ module ocn_gm
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
    logical :: local_config_GM_compute_EdenGreatbatch
+   logical :: local_config_GM_diagnostic_GEOMETRIC
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
    real(kind=RKIND) :: local_config_GM_constant_bclModeSpeed
    real(kind=RKIND) :: gm_minBclModeSpeed_constant, gm_minBclModeSpeed_compute_on
@@ -144,9 +145,10 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: &
                 ssh, fEdge
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
-      integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
+      integer, dimension(:), pointer   :: minLevelEdgeBot, minLevelEdgeTop, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
+      integer                          :: kCell1,kCell2, kEdge
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
       real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
@@ -154,9 +156,15 @@ contains
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
       real(kind=RKIND) :: lt1, lt2, c_min
       real(kind=RKIND) :: sigma, Lr, Length, L_rhines, shearEdgeInv
-      real (kind=RKIND) :: eddyLength, eddyTime
+      real(kind=RKIND) :: eddyLength, eddyTime
+      real(kind=RKIND) :: slopeMag, eddyEnergy, kGeometric, drhoDz, hgrad_rho, M2N, N2_ref
+      real(kind=RKIND) :: eddyEnergyInteg, M2NInteg
+      real(kind=RKIND) :: bvfML, gradBuoy, bvfAv, hML, hAv, indMLDedge
+      real(kind=RKIND) :: dzTop1, dTdzTop1, dSdzTop1
+      real(kind=RKIND) :: dzTop2, dTdzTop2, dSdzTop2
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       real(kind=RKIND), dimension(:), allocatable :: RossbyRadiusTaper
+      real(kind=RKIND), dimension(:), allocatable :: structFunction
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
       real(kind=RKIND) :: c_mode1, resolution, dc_Lr
       ! Dimensions
@@ -189,6 +197,7 @@ contains
       indexSalinity    = indexSalinityPtr
 
       call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
+      call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', minLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -415,6 +424,222 @@ contains
       if (config_use_GM) then
 
          nEdges = nEdgesArray(3)
+
+         if (local_config_GM_diagnostic_GEOMETRIC) then
+
+            allocate(dzTop(nVertLevels + 1))
+            allocate(dTdzTop(nVertLevels + 1))
+            allocate(dSdzTop(nVertLevels + 1))
+            allocate(structFunction(nVertLevels + 1))
+
+            structFunction(:) = 1.0_RKIND
+
+            do iEdge=1,nEdges
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+
+               dcEdgeInv = 1.0_RKIND/dcEdge(iEdge)
+               areaEdge = dcEdge(iEdge)*dvEdge(iEdge)
+
+               dzTop(:)   = -1e-15_RKIND
+               dTdzTop(:) = -1e-15_RKIND
+               dSdzTop(:) = -1e-15_RKIND
+
+               ! prep dz, dTdz and dSdz for this column
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  dzTop1   = 0.5_RKIND*(layerThickness(k-1,cell1)+layerThickness(k,cell1))
+                  dzTop2   = 0.5_RKIND*(layerThickness(k-1,cell2)+layerThickness(k,cell2))
+                  dzTop(k) = 0.5_RKIND*(dzTop1 + dzTop2)
+
+                  dTdzTop1   = (activeTracers(indexTemperature, k - 1, cell1) &
+                                - activeTracers(indexTemperature, k, cell1)) &
+                               /dzTop(k)
+                  dTdzTop2   = (activeTracers(indexTemperature, k - 1, cell2) &
+                                - activeTracers(indexTemperature, k, cell2)) &
+                               /dzTop(k)
+                  dTdzTop(k) = 0.5_RKIND*(dTdzTop1+dTdzTop2)
+
+                  dSdzTop1   = (activeTracers(indexSalinity, k - 1, cell1) &
+                                - activeTracers(indexSalinity, k, cell1)) &
+                               /dzTop(k)
+                  dSdzTop2   = (activeTracers(indexSalinity, k - 1, cell2) &
+                                - activeTracers(indexSalinity, k, cell2)) &
+                               /dzTop(k)
+                  dSdzTop(k) = 0.5_RKIND*(dSdzTop1+dSdzTop2)
+               end do
+
+!-------------------
+
+               eddyEnergyInteg = 0.0_RKIND
+               M2NInteg = 0.0_RKIND
+               !-------------------------------------------------------------------------
+               ! Surface level
+               k = minLevelEdgeBot(iEdge)
+               kCell1 = minLevelCell(cell1)+1
+               kCell2 = minLevelCell(cell2)+1
+               hML = 0.5_RKIND*layerThickEdgeMean(k,iEdge)
+               N2_ref = 0.5_RKIND*(max(BruntVaisalaFreqTop(kCell1,cell1),1.0E-14_RKIND) + &
+                                   max(BruntVaisalaFreqTop(kCell2,cell2),1.0E-14_RKIND))
+               N2_ref = max(N2_ref, 1.0e-14_RKIND)
+
+               structFunction(k) = 1.0_RKIND
+
+               !-------------------------------------------------------------------------
+               ! N^2
+               BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(kCell1,cell1) + &
+                                                    BruntVaisalaFreqTop(kCell2,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 1.0e-14_RKIND)
+               !-------------------------------------------------------------------------
+               ! S
+               drhoDT = -0.5_RKIND*(thermExpCoeff(kCell1,cell1)+thermExpCoeff(kCell2,cell2))
+               drhoDS =  0.5_RKIND*(salineContractCoeff(kCell1,cell1)+salineContractCoeff(kCell2,cell2))
+
+               dTdx = (  activeTracers(indexTemperature, kCell2, cell2) &
+                       - activeTracers(indexTemperature, kCell1, cell1)) &
+                      *dcEdgeInv
+               dSdx = (  activeTracers(indexSalinity, kCell2, cell2) &
+                       - activeTracers(indexSalinity, kCell1, cell1)) &
+                      *dcEdgeInv
+               drhoDx = drhoDT*dTdx + drhoDS*dSdx
+
+               drhoDz = drhoDT*(0.5_RKIND*(dTdzTop(k)+dTdzTop(k+1))) + &
+                        drhoDS*(0.5_RKIND*(dSdzTop(k)+dSdzTop(k+1)))
+
+               slopeMag = abs(drhoDX) / max(abs(drhoDz),1.0e-10_RKIND)
+               if ( slopeMag > config_redi_maximum_slope ) then
+                  slopeMag = config_redi_maximum_slope
+               end if
+
+               !-------------------------------------------------------------------------
+               ! E
+               eddyEnergy = config_GM_geometric_C_diag * slopeMag**2.0_RKIND * &
+                            sqrt(BruntVaisalaFreqTopEdge) * layerThickEdgeMean(k,iEdge)**2.0_RKIND
+               eddyEnergyInteg = eddyEnergyInteg + eddyEnergy * hML
+
+               !-------------------------------------------------------------------------
+               ! M^2
+               gradBuoy = abs(gradDensityEddy(k,iEdge) * gravity / rho_sw)
+
+               !-------------------------------------------------------------------------
+               ! M^2 / N
+               M2N = gradBuoy / sqrt(BruntVaisalaFreqTopEdge)
+               M2NInteg = M2NInteg + M2N * hML
+
+
+               if (minLevelEdgeTop(iEdge) .ge. 1) then
+                  N2_ref = 0.5_RKIND*(max(BruntVaisalaFreqTop(minLevelEdgeTop(iEdge)+1,cell1),1.0E-14_RKIND) + &
+                                      max(BruntVaisalaFreqTop(minLevelEdgeTop(iEdge)+1,cell2),1.0E-14_RKIND))
+                  N2_ref = max(N2_ref, 1.0e-14_RKIND)
+
+                  eddyEnergy = config_GM_geometric_C_diag * slopeMag**2.0_RKIND * &
+                               sqrt(N2_ref) * &
+                               layerThickEdgeMean(minLevelEdgeTop(iEdge)+1,iEdge)**2.0_RKIND
+                  eddyEnergyInteg = hML*eddyEnergy
+
+                  gradBuoy = gradDensityEddy(minLevelEdgeTop(iEdge)+1,iEdge) * gravity / rho_sw
+                  M2NInteg = hML * (gradBuoy / sqrt(N2_ref))
+
+
+                  structFunction(minLevelEdgeTop(iEdge)+1) = 1.0_RKIND
+               !else
+               !   cycle
+               end if
+
+               !-------------------------------------------------------------------------
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  !-------------------------------------------------------------------------
+                  ! N^2
+                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k,cell1) + &
+                                                       BruntVaisalaFreqTop(k,cell2))
+                  BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 1.0e-14_RKIND)
+                  !-------------------------------------------------------------------------
+                  ! S
+                  drhoDT = -0.5_RKIND*(thermExpCoeff(k,cell1)+thermExpCoeff(k,cell2))
+                  drhoDS =  0.5_RKIND*(salineContractCoeff(k,cell1)+salineContractCoeff(k,cell2))
+                  dTdx = (  activeTracers(indexTemperature, k, cell2) &
+                          - activeTracers(indexTemperature, k, cell1)) &
+                         *dcEdgeInv
+                  dSdx = (  activeTracers(indexSalinity, k, cell2) &
+                          - activeTracers(indexSalinity, k, cell1)) &
+                         *dcEdgeInv
+                  drhoDx = drhoDT*dTdx + drhoDS*dSdx
+
+                  drhoDz = drhoDT*(0.5_RKIND*(dTdzTop(k)+dTdzTop(k+1))) + &
+                           drhoDS*(0.5_RKIND*(dSdzTop(k)+dSdzTop(k+1)))
+
+                  slopeMag = abs(drhoDx) / max(abs(drhoDz),1.0e-10_RKIND)
+                  if ( slopeMag > config_redi_maximum_slope ) then
+                     slopeMag = config_redi_maximum_slope
+                  end if
+
+                  !-------------------------------------------------------------------------
+                  ! Depth integration
+                  hAv = 0.5_RKIND*(layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k-1,iEdge))
+                  hML = hML + hAv
+
+                  !-------------------------------------------------------------------------
+                  ! E
+                  eddyEnergy = config_GM_geometric_C_diag * slopeMag**2.0_RKIND * &
+                               sqrt(BruntVaisalaFreqTopEdge) * hAv**2.0_RKIND
+                  eddyEnergyInteg = eddyEnergyInteg + eddyEnergy * hAv
+                  !-------------------------------------------------------------------------
+                  ! M^2 = |gradBuoy|
+                  gradBuoy = abs(gradDensityEddy(k,iEdge) * gravity / rho_sw)
+
+                  !-------------------------------------------------------------------------
+                  ! Structure function
+                  structFunction(k) = BruntVaisalaFreqTopEdge / N2_ref
+
+                  !-------------------------------------------------------------------------
+                  ! M^2 / N
+                  M2N = structFunction(k) * gradBuoy / sqrt(BruntVaisalaFreqTopEdge)
+                  M2NInteg = M2NInteg + M2N * hAv
+               end do
+
+               M2NInteg = max(M2NInteg,1.0e-14_RKIND)
+
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  kGeometric = config_GM_geometric_alpha * (eddyEnergyInteg / M2NInteg) * &
+                               structFunction(k)
+
+                  if ( kGeometric < config_GM_spatially_variable_min_kappa ) then
+                       kGeometric = config_GM_spatially_variable_min_kappa
+                  else if ( kGeometric > config_GM_spatially_variable_max_kappa ) then
+                            kGeometric = config_GM_spatially_variable_max_kappa
+                  end if
+
+                  !if ( k == minLevelEdgeBot(iEdge)+1 ) then
+                  !if ( k == maxLevelEdgeTop(iEdge)-1 ) then
+                  !if ( k == 10 ) then
+                  !   if ( kGeometric > 51.0 ) then
+                  !      print*,eddyEnergyInteg,M2NInteg,kGeometric
+                  !   endif
+                  !endif
+
+                  !if ( kGeometric /= 50.0_RKIND) then
+                  !   print*,M2NInteg, sqrt(BruntVaisalaFreqTopEdge), kGeometric
+                  !endif
+
+                  gmKappaScaling(k,iEdge) = kGeometric / config_GM_spatially_variable_max_kappa
+
+                  !gmKappaScaling(k,iEdge) = config_GM_spatially_variable_min_kappa
+                  !gmKappaScaling(k,iEdge) = 1.0
+                  !gmKappaScaling(k,iEdge) = config_GM_spatially_variable_min_kappa / config_GM_spatially_variable_max_kappa
+               end do
+
+                  !-------------------------------------------------------------------------
+            end do
+
+            !print*, minval(gmKappaScaling(2:nVertLevels-1,1:nEdges)), maxval(gmKappaScaling(2:nVertLevels-1,1:nEdges))
+
+            deallocate (dzTop)
+            deallocate (dTdzTop)
+            deallocate (dSdzTop)
+            deallocate (structFunction)
+
+         end if
+
+
          ! For config_GM_closure = 'N2_dependent' use a scaling to taper gmBolusKappa
          ! based on stratification relative to the maximum in the column
          if (local_config_GM_kappa_lat_depth_variable) then
@@ -442,6 +667,17 @@ contains
                                                      config_GM_spatially_variable_max_kappa,          &
                                                      BruntVaisalaFreqTopEdge/(maxN + 1.0E-10_RKIND)), &
                                                      1.0_RKIND)
+                  !if ( k == 10 ) then
+                  !   print*, gmKappaScaling(k,iEdge)
+                  !endif
+                  !if ( k ==   maxLevelEdgeTop(iEdge)-1) then
+                  !   print*, gmKappaScaling(k,iEdge)*config_GM_spatially_variable_max_kappa
+                  !endif
+                  !if ( k == maxLevelEdgeTop(iEdge)-1 ) then
+                  !   if ( gmKappaScaling(k, iEdge) * config_GM_spatially_variable_max_kappa > 51.0 ) then
+                  !      print*, gmKappaScaling(k, iEdge) * config_GM_spatially_variable_max_kappa
+                  !   endif
+                  !endif
                end do
            enddo
            !$omp end do
@@ -680,7 +916,7 @@ contains
             !$omp end do
             !$omp end parallel
          else if (config_Redi_closure == 'constant'.and. &
-                   config_Redi_horizontal_taper == 'RossbyRadius') then
+                  config_Redi_horizontal_taper == 'RossbyRadius') then
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1, nEdges
@@ -712,7 +948,7 @@ contains
                tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k, iEdge) &
                                  /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw* &
-                                            gradDensityEddy(k,iEdge) 
+                                            gradDensityEddy(k,iEdge)
 
                ! Second to next to the last rows
                do k = minLevelEdgeBot(iEdge) + 2, maxLevelEdgeTop(iEdge) - 1
@@ -841,9 +1077,9 @@ contains
 !
 !  routine ocn_GM_add_to_transport_velocity
 !
-!> \brief   Adds GM to transportVel 
+!> \brief   Adds GM to transportVel
 !> \details
-!>  Adds the GM bolus velocity to the normal transport velocity if enabled  
+!>  Adds the GM bolus velocity to the normal transport velocity if enabled
 !
 !-----------------------------------------------------------------------
 
@@ -859,7 +1095,7 @@ contains
 
        if (.not. config_use_gm) return
 
-       !$omp parallel 
+       !$omp parallel
        !$omp do schedule(runtime) &
        !$omp private(k)
        do iEdge = 1, nEdges
@@ -959,6 +1195,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_diagnostic_GEOMETRIC = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
@@ -972,6 +1209,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .true.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_diagnostic_GEOMETRIC = .false.
 
             RediGMinitValue = 0.0_RKIND
             ! for N2 dependence, we still assign Kappa as a constant to be multiplied by N2 scaling.
@@ -988,6 +1226,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .true.
             local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_diagnostic_GEOMETRIC = .false.
 
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
@@ -1004,7 +1243,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .true.
-
+            local_config_GM_diagnostic_GEOMETRIC = .false.
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
             !$omp parallel
@@ -1014,6 +1253,20 @@ contains
             end do
             !$omp end do
             !$omp end parallel
+         else if (config_GM_closure == 'geometric') then
+            local_config_GM_lat_variable_c2 = .false.
+            local_config_GM_kappa_lat_depth_variable = .false.
+            local_config_GM_compute_Visbeck = .false.
+            local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_diagnostic_GEOMETRIC = .true.
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
+            end do
+            !$omp end do
+            !$omp end parallel
+            RediGMinitValue = 1.0_RKIND
          else
             call mpas_log_write('Invalid choice of config_GM_closure.', MPAS_LOG_CRIT)
             err = 1
