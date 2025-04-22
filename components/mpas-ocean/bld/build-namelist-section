@@ -135,6 +135,8 @@ add_default($nl, 'config_GM_EG_Rhines_factor');
 add_default($nl, 'config_GM_horizontal_taper');
 add_default($nl, 'config_GM_horizontal_ramp_min');
 add_default($nl, 'config_GM_horizontal_ramp_max');
+add_default($nl, 'config_GM_geometric_C_diag');
+add_default($nl, 'config_GM_geometric_alpha');
 add_default($nl, 'config_GMRedi_Rossby_ramp_min');
 add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
@@ -604,27 +606,6 @@ add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5');
-
-####################################################
-# Namelist group: tracer_forcing_freshwaterTracers #
-####################################################
-
-add_default($nl, 'config_use_freshwaterTracers');
-add_default($nl, 'config_use_freshwaterTracers_surface_bulk_forcing');
-add_default($nl, 'config_use_freshwaterTracers_surface_restoring');
-add_default($nl, 'config_use_freshwaterTracers_interior_restoring');
-add_default($nl, 'config_use_freshwaterTracers_exponential_decay');
-add_default($nl, 'config_use_freshwaterTracers_idealAge_forcing');
-add_default($nl, 'config_use_freshwaterTracers_ttd_forcing');
-add_default($nl, 'config_use_freshwaterTracers_surface_value');
-add_default($nl, 'config_use_freshwaterTracers_rainFlux');
-add_default($nl, 'config_use_freshwaterTracers_snowFlux');
-add_default($nl, 'config_use_freshwaterTracers_iceRunoffFlux');
-add_default($nl, 'config_use_freshwaterTracers_riverRunoffFlux');
-add_default($nl, 'config_use_freshwaterTracers_subglacialRunoffFlux');
-add_default($nl, 'config_use_freshwaterTracers_seaIceFreshWaterFlux');
-add_default($nl, 'config_use_freshwaterTracers_icebergFreshWaterFlux');
-add_default($nl, 'config_use_freshwaterTracers_landIceFreshwaterFlux');
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
