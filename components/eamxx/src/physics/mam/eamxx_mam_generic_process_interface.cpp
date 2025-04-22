@@ -366,9 +366,6 @@ void MAMGenericInterface::add_tracers_wet_atm() {
   // cloud ice mass mixing ratio [kg/kg]
   add_tracer<Required>("qi", grid_, q_unit);
 
-  // cloud liquid number mixing ratio [1/kg]
-  add_tracer<Required>("nc", grid_, n_unit);
-
   // cloud ice number mixing ratio [1/kg]
   add_tracer<Required>("ni", grid_, n_unit);
 }

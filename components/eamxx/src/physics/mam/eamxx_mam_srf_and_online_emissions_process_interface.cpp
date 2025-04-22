@@ -62,7 +62,11 @@ void MAMSrfOnlineEmiss::set_grids(
   // Specific humidity [kg/kg]
   add_tracers_wet_atm();
   add_fields_dry_atm();
-
+  
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+  
   //----------- Variables from microphysics scheme -------------
 
   // Surface geopotential [m2/s2]
