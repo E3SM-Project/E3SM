@@ -13,12 +13,12 @@ This means that Omega will need to compute both the pressure and geopotential gr
 
 ### 2.1 Requirement: Support for tilted pressure coordinates for the non-Boussinesq primitive equations
 
-The pressure gradient will compute the horizontal gradients of both the pressure and geopotential to support tilted pressure coordinates in the non-Boussinesq model. 
+The pressure gradient will compute the horizontal gradients of both the pressure and geopotential to support tilted pressure coordinates in the non-Boussinesq model.
 This will allow for the use of a $p^\star$ coordinate, which functions similarly to the $z^\star$ in the Boussinesq MPAS-Ocean model.
 
 ### 2.2 Requirement: Initial support for a simple centered pressure gradient
 
-For initial global cases without ice shelf cavities, the pressure and geopotential gradients will be computed with a simple centered difference approximation. In later versions of Omega, one ore more  high-order pressure gradients will be implemented and will replace the centered approach in production runs.  
+For initial global cases without ice shelf cavities, the pressure and geopotential gradients will be computed with a simple centered difference approximation. In later versions of Omega, one ore more  high-order pressure gradients will be implemented and will replace the centered approach in production runs.
 However, the centered pressure gradient will remain an option for use in idealized testing.
 
 ### 2.3 Requirement: Flexibility to support a high-order pressure gradient
@@ -28,7 +28,7 @@ The pressure gradient framework should be flexible enough to support a high-orde
 ### 2.4 Requirement: Flexibility to support tidal forcing and sea level change
 In later versions of Omega, the pressure gradient will need to be able to include tidal forcing in the geopotential term.
 These tidal forcings include both the tidal potential and the self attraction and loading terms.
-Additionally, other changes to the geoid 
+Additionally, other changes to the geoid
 
 ### 2.5 Requirement: Pressure gradient for barotropic mode
 
@@ -106,8 +106,8 @@ The user will select a pressure gradient option at runtime in the input yaml fil
 An `enum class` will be used to specify options for the pressure gradient used for an Omega simulation:
 ```c++
 enum class PressureGradType{
-   Centered, 
-   HighOrder  
+   Centered,
+   HighOrder
 }
 ```
 The functions to compute the centered and high order pressure gradient terms will be implemented as functors and the pressure gradient class will have private instances of these classes.
@@ -156,7 +156,7 @@ PressureGrad *PressureGrad::get(const std::string &Name);
 
 The public `computePressureGrad` method will rely on private methods for each specific pressure gradient option (centered and high order).
 ```c++
-void PressureGrad::computePressureGrad(const Array2DReal &Tend, 
+void PressureGrad::computePressureGrad(const Array2DReal &Tend,
                                        const Array2DReal &Pressure,
                                        const Array2DReal &Geopotential,
                                        const Array2DReal &SpecVol) {
@@ -167,7 +167,7 @@ OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad)
        KOKKOS_LAMBDA(int ICell, int KChunk) {
           LocCenteredPGrad(Tend, Pressure, Geopotential, SpecVol);
        });
-    } 
+    }
     else if (PressureGradChoice == PressureGradType::HighOrder){
        parallelFor("pgrad-highorder", {NCellsAll, NChunks},
        KOKKOS_LAMBDA(int ICell, int KChunk) {
@@ -180,7 +180,7 @@ OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad)
 
 No operations are needed in the destructor.
 The erase method will remove a named pressure gradient instance, whereas the clear method will remove all of
-them. 
+them.
 Both will call the destructor in the process.
 ```c++
 void PressureGrad::erase(const std::string &Name);
@@ -194,4 +194,3 @@ For a given analytical $v$,  $h$, and $b$, the spatial convergence of the pressu
 
 ### Test: Baroclinic gyre
 The baroclinic gyre test case will test the pressure gradient term in the full non-Boussinesq equations.
-
