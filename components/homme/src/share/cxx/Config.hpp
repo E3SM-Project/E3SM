@@ -17,7 +17,11 @@
 # ifdef HOMMEXX_ENABLE_GPU
 #  define HOMMEXX_VECTOR_SIZE 1
 # else
-#  define HOMMEXX_VECTOR_SIZE 8
+#  ifndef NDEBUG
+#   define HOMMEXX_VECTOR_SIZE 1
+#  else
+#   define HOMMEXX_VECTOR_SIZE 8
+#  endif
 # endif
 #endif
 
