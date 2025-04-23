@@ -182,20 +182,27 @@ void MAMMicrophysics::set_grids(
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
                      grid_name);
 
-  // Define missing units
-  // Note: Technically unnecessary since the units are overridden later
-  // Included to show the actual units within the codebase
+  // Define unit constants for external forcing fields
+  // -----------------------------------------------------------------------------
+  // Note: The following units are technically redundant, as the output units
+  //       are explicitly overridden later for clean NetCDF metadata. However,
+  //       we define them here to document the intended physical units in code.
+  // -----------------------------------------------------------------------------
   constexpr auto molec = ekat::units::Units::nondimensional();
   constexpr auto cm     = m / 100;
   const auto cm2       = pow(cm, 2);
   const auto cm3       = pow(cm, 3);
 
+  // Number of externally forced chemical species
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
+
   FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
   FieldLayout scalar2d_extcnt = grid_->get_2d_vector_layout(extcnt, "ext_cnt");
-  // External forcing of species in [molec/cm3/s]
+
+  // Register computed fields for external forcing
+  // - extfrc: 3D instantaneous forcing rate [molec/cm³/s]
+  // - extfrc_vertsum: Vertically integrated forcing rate [molec/cm²/s]
   add_field<Computed>("extfrc", scalar3d_extcnt, molec / cm3 / s, grid_name);
-  // Integrated external forcing of species in [molec/cm2/s]
   add_field<Computed>("extfrc_vertsum", scalar2d_extcnt, molec / cm2 / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -957,25 +964,29 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 
   auto extfrc_fm = get_field_out("extfrc").get_view<Real***>();
+  // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
+  // to output layout [ncol][extcnt][nlev]
+  // This aligns with expected field storage in the EAMxx infrastructure.
   Kokkos::parallel_for("transpose_extfrc", 
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol_, extcnt, nlev_}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       extfrc_fm(i,j,k) = extfrc_(i,k,j);  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
   });
 
-  // Grid interface heights [m]
+  // Interface heights [m]
   const auto z_int = dry_atm_.z_iface;
   auto extfrc_vertsum = get_field_out("extfrc_vertsum").get_view<Real **>();
 
-  // Vertical integration of external forcing
+  // Integrate external forcing vertically using layer thickness (dz)
+  // extfrc_ is in [molec/cm³/s], dz in [cm], so result is [molec/cm²/s]
   Kokkos::parallel_for("compute_extfrc_vertsum", 
     Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol_, extcnt}),
     KOKKOS_LAMBDA(const int i, const int j) {
       Real sum = 0.0;
       for (int k = 0; k < nlev_; ++k) {
-        Real dz_m = z_int(i,k) - z_int(i,k+1);       // [m]
-        Real dz_cm = dz_m * 100.0;                   // convert to cm
-        sum += extfrc_(i,k,j) * dz_cm;               // [molec/cm^3/s * cm] = molec/cm^2/s
+        Real dz_m = z_int(i,k) - z_int(i,k+1); 
+        Real dz_cm = dz_m * 100.0;
+        sum += extfrc_(i,k,j) * dz_cm;
       }
       extfrc_vertsum(i,j) = sum;
   });
