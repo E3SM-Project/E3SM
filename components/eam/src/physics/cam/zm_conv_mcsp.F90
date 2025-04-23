@@ -1,26 +1,30 @@
 module zm_conv_mcsp
    !----------------------------------------------------------------------------
    ! Purpose: methods for mesoscale coherent structure parameterization (MCSP)
-   !          This scheme essentially 
-   ! 
+   !          This scheme essentially redistributes the ZM heating and drying
+   !          tendencies vertically in order to mimic the effects of mesoscale
+   !          organization. It can also add momentum tendencies, although this
+   !          capability has not been extensively tested
+   !----------------------------------------------------------------------------
    ! References:
    ! 
-   ! Moncrieff, M. W., & Liu, C. (2006). Representing convective organization in
-   ! prediction models by a hybrid strategy. J. Atmos. Sci., 63, 3404–3420.
-   ! https://doi.org/10.1175/JAS3812.1
-   ! 
-   ! Chen, C.-C., Richter, J. H., Liu, C., Moncrieff, M. W., Tang, Q., Lin, W.,
-   !   et al. (2021). Effects of organized convection parameterization on the MJO
-   !   and precipitation in E3SMv1. Part I: Mesoscale heating. J. Adv.
-   !   Mod. Earth Sys., 13, e2020MS002401, https://doi.org/10.1029/2020MS002401
-   ! 
-   ! Moncrieff, M. W., C. Liu, and P. Bogenschutz, 2017: Simulation, Modeling, 
-   !   and Dynamically Based Parameterization of Organized Tropical Convection 
-   !   for Global Climate Models. J. Atmos. Sci., 74, 1363–1380, https://doi.org/10.1175/JAS-D-16-0166.1.
-   ! 
-   ! Moncrieff, M. W. (2019). Toward a Dynamical Foundation for Organized Convection
-   !   Parameterization in GCMs. Geophys. Res. Lett., 46, 14103–14108.
-   !   https://doi.org/10.1029/2019GL085316
+   !   Moncrieff, M. W., & Liu, C. (2006). Representing convective organization in
+   !     prediction models by a hybrid strategy. J. Atmos. Sci., 63, 3404–3420.
+   !     https://doi.org/10.1175/JAS3812.1
+   !
+   !   Chen, C.-C., Richter, J. H., Liu, C., Moncrieff, M. W., Tang, Q., Lin, W.,
+   !     et al. (2021). Effects of organized convection parameterization on the MJO
+   !     and precipitation in E3SMv1. Part I: Mesoscale heating. J. Adv.
+   !     Mod. Earth Sys., 13, e2020MS002401, https://doi.org/10.1029/2020MS002401
+   !
+   !   Moncrieff, M. W., C. Liu, and P. Bogenschutz, 2017: Simulation, Modeling, 
+   !     and Dynamically Based Parameterization of Organized Tropical Convection 
+   !     for Global Climate Models. J. Atmos. Sci., 74, 1363–1380, 
+   !     https://doi.org/10.1175/JAS-D-16-0166.1.
+   !
+   !   Moncrieff, M. W. (2019). Toward a Dynamical Foundation for Organized Convection
+   !     Parameterization in GCMs. Geophys. Res. Lett., 46, 14103–14108.
+   !     https://doi.org/10.1029/2019GL085316
    !
    !----------------------------------------------------------------------------
    use shr_kind_mod,     only: r8=>shr_kind_r8
@@ -45,7 +49,7 @@ contains
 
 subroutine zm_conv_mcsp_init()
    !----------------------------------------------------------------------------
-   ! Purpose: Initialize MCSP output fields
+   ! Purpose: initialize MCSP output fields
    !----------------------------------------------------------------------------
    use cam_history,     only: addfld, horiz_only
    use mpishorthand
@@ -65,7 +69,7 @@ end subroutine zm_conv_mcsp_init
 
 subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
    !----------------------------------------------------------------------------
-   ! Purpose: calculate shear
+   ! Purpose: calculate shear for MCSP
    !----------------------------------------------------------------------------
    use interpolate_data, only: vertinterp
    !----------------------------------------------------------------------------
@@ -115,7 +119,7 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
                               state_s, state_q, state_u, state_v, &
                               ptend_zm_s, ptend_zm_q, ptend )
    !----------------------------------------------------------------------------
-   ! Purpose: Perform MCSP tendency calculations
+   ! Purpose: perform MCSP tendency calculations
    !----------------------------------------------------------------------------
    use physics_types,    only: physics_ptend
    use cam_history,      only: outfld
@@ -314,7 +318,7 @@ subroutine zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
             mcsp_dt_out(i,k) = mcsp_dt_out(i,k) - mcsp_avg_tend_k(i)
          end if
 
-         ! Set output tendencies
+         ! update output tendencies
          if (do_mcsp_t) ptend%s(i,k)   = ptend%s(i,k)   + mcsp_dt_out(i,k)
          if (do_mcsp_q) ptend%q(i,k,1) = ptend%q(i,k,1) + mcsp_dq_out(i,k)
          if (do_mcsp_u) ptend%u(i,k)   = ptend%u(i,k)   + mcsp_du_out(i,k)
