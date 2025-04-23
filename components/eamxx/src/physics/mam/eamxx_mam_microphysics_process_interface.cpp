@@ -182,6 +182,22 @@ void MAMMicrophysics::set_grids(
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
                      grid_name);
 
+  // Define missing units
+  // Note: Technically unnecessary since the units are overridden later
+  // Included to show the actual units within the codebase
+  constexpr auto molec = ekat::units::Units::nondimensional();
+  constexpr auto cm     = m / 100;
+  const auto cm2       = pow(cm, 2);
+  const auto cm3       = pow(cm, 3);
+
+  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+  FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
+  FieldLayout scalar2d_extcnt = grid_->get_2d_vector_layout(extcnt, "ext_cnt");
+  // External forcing of species in [molec/cm3/s]
+  add_field<Computed>("extfrc", scalar3d_extcnt, molec / cm3 / s, grid_name);
+  // Integrated external forcing of species in [molec/cm2/s]
+  add_field<Computed>("extfrc_vertsum", scalar2d_extcnt, molec / cm2 / s, grid_name);
+
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
   {
@@ -456,6 +472,20 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
+
+  // Override unit strings for clean NetCDF output
+  using str_atts_t = std::map<std::string, std::string>;
+
+  {
+    auto& extfrc_field = get_field_out("extfrc");
+    auto& io_atts = extfrc_field.get_header().get_extra_data<str_atts_t>("io: string attributes");
+    io_atts["units"] = "molec/cm3/s";
+
+    auto& extfrc_vertsum_field = get_field_out("extfrc_vertsum");
+    auto& io_atts2 = extfrc_vertsum_field.get_header().get_extra_data<str_atts_t>("io: string attributes");
+    io_atts2["units"] = "molec/cm2/s";
+  }
+
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -925,6 +955,30 @@ void MAMMicrophysics::run_impl(const double dt) {
 
       });  // parallel_for for the column loop
   Kokkos::fence();
+
+  auto extfrc_fm = get_field_out("extfrc").get_view<Real***>();
+  Kokkos::parallel_for("transpose_extfrc", 
+    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol_, extcnt, nlev_}),
+    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+      extfrc_fm(i,j,k) = extfrc_(i,k,j);  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
+  });
+
+  // Grid interface heights [m]
+  const auto z_int = dry_atm_.z_iface;
+  auto extfrc_vertsum = get_field_out("extfrc_vertsum").get_view<Real **>();
+
+  // Vertical integration of external forcing
+  Kokkos::parallel_for("compute_extfrc_vertsum", 
+    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol_, extcnt}),
+    KOKKOS_LAMBDA(const int i, const int j) {
+      Real sum = 0.0;
+      for (int k = 0; k < nlev_; ++k) {
+        Real dz_m = z_int(i,k) - z_int(i,k+1);       // [m]
+        Real dz_cm = dz_m * 100.0;                   // convert to cm
+        sum += extfrc_(i,k,j) * dz_cm;               // [molec/cm^3/s * cm] = molec/cm^2/s
+      }
+      extfrc_vertsum(i,j) = sum;
+  });
 
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
