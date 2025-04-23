@@ -533,17 +533,6 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="stampede2" type="slurm">
-    <directives>
-      <directive>-n {{ total_tasks }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" nodemax="4" strict="true">skx-dev</queue>
-      <queue walltimemax="00:30:00" nodemax="868" strict="true">skx-large</queue>
-      <queue walltimemax="01:00:00" nodemax="128" default="true">skx-normal</queue>
-    </queues>
-  </batch_system>
-
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
@@ -838,14 +827,6 @@
     <queues>
       <queue walltimemax="01:00:00" default="true">lr6</queue>
     </queues>
-   </batch_system>
-
-   <batch_system MACH="gcp10" type="slurm" >
-     <queues>
-       <queue walltimemax="01:30:00" default="true">compute-30</queue> <!--                 0.14214 -->
-       <queue walltimemax="01:30:00" default="true">computep</queue>   <!--enable_placement 0.28428 -->
-       <queue walltimemax="01:30:00" default="true">compute</queue>    <!--                 0.28428 -->
-     </queues>
    </batch_system>
 
    <batch_system MACH="gcp12" type="slurm" >

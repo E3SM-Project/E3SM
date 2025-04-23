@@ -154,6 +154,7 @@ void Cosp::run_impl (const double dt)
     get_field_in("sunlit").sync_to_host();
     get_field_in("surf_radiative_T").sync_to_host();
     get_field_in("T_mid").sync_to_host();
+    get_field_in("p_mid").sync_to_host();
     get_field_in("p_int").sync_to_host();
     get_field_in("cldfrac_rad").sync_to_host();
     get_field_in("eff_radius_qc").sync_to_host();

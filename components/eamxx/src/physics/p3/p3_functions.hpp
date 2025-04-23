@@ -135,8 +135,9 @@ struct Functions
     bool set_cld_frac_l_to_one = false;
     bool set_cld_frac_i_to_one = false;
     bool set_cld_frac_r_to_one = false;
-    bool use_hetfrz_classnuc   = false;
+    bool use_hetfrz_classnuc = false;
     bool use_separate_ice_liq_frac = false;
+    bool extra_p3_diags = false;
 
     void load_runtime_options_from_file(ekat::ParameterList& params) {
       max_total_ni = params.get<double>("max_total_ni", max_total_ni);
@@ -163,8 +164,9 @@ struct Functions
       set_cld_frac_l_to_one = params.get<bool>("set_cld_frac_l_to_one", set_cld_frac_l_to_one);
       set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
       set_cld_frac_r_to_one = params.get<bool>("set_cld_frac_r_to_one", set_cld_frac_r_to_one);
-      use_hetfrz_classnuc   = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
+      use_hetfrz_classnuc = params.get<bool>("use_hetfrz_classnuc", use_hetfrz_classnuc);
       use_separate_ice_liq_frac = params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
+      extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
     }
 
   };
@@ -293,6 +295,22 @@ struct Functions
     view_2d<Spack> vap_liq_exchange;
     // Sum of vap-ice phase change tendencies
     view_2d<Spack> vap_ice_exchange;
+    // extra_p3_diags
+    view_2d<Spack> qr2qv_evap;
+    view_2d<Spack> qi2qv_sublim;
+    view_2d<Spack> qc2qr_accret;
+    view_2d<Spack> qc2qr_autoconv;
+    view_2d<Spack> qv2qi_vapdep;
+    view_2d<Spack> qc2qi_berg;
+    view_2d<Spack> qc2qr_ice_shed;
+    view_2d<Spack> qc2qi_collect;
+    view_2d<Spack> qr2qi_collect;
+    view_2d<Spack> qc2qi_hetero_freeze;
+    view_2d<Spack> qr2qi_immers_freeze;
+    view_2d<Spack> qi2qr_melt;
+    view_2d<Spack> qr_sed;
+    view_2d<Spack> qc_sed;
+    view_2d<Spack> qi_sed;
   };
 
   // This struct stores kokkos views for the lookup tables needed in p3_main()
@@ -1223,6 +1241,18 @@ struct Functions
     const uview_1d<Spack>& vap_liq_exchange,
     const uview_1d<Spack>& vap_ice_exchange,
     const uview_1d<Spack>& liq_ice_exchange,
+    const uview_1d<Spack>& qr2qv_evap,
+    const uview_1d<Spack>& qi2qv_sublim,
+    const uview_1d<Spack>& qc2qr_accret,
+    const uview_1d<Spack>& qc2qr_autoconv,
+    const uview_1d<Spack>& qv2qi_vapdep,
+    const uview_1d<Spack>& qc2qi_berg,
+    const uview_1d<Spack>& qc2qr_ice_shed,
+    const uview_1d<Spack>& qc2qi_collect,
+    const uview_1d<Spack>& qr2qi_collect,
+    const uview_1d<Spack>& qc2qi_hetero_freeze,
+    const uview_1d<Spack>& qr2qi_immers_freeze,
+    const uview_1d<Spack>& qi2qr_melt,
     const uview_1d<Spack>& pratot,
     const uview_1d<Spack>& prctot,
     bool& is_hydromet_present,
@@ -1304,6 +1334,18 @@ struct Functions
     const uview_2d<Spack>& vap_liq_exchange,
     const uview_2d<Spack>& vap_ice_exchange,
     const uview_2d<Spack>& liq_ice_exchange,
+    const uview_2d<Spack>& qr2qv_evap,
+    const uview_2d<Spack>& qi2qv_sublim,
+    const uview_2d<Spack>& qc2qr_accret,
+    const uview_2d<Spack>& qc2qr_autoconv,
+    const uview_2d<Spack>& qv2qi_vapdep,
+    const uview_2d<Spack>& qc2qi_berg,
+    const uview_2d<Spack>& qc2qr_ice_shed,
+    const uview_2d<Spack>& qc2qi_collect,
+    const uview_2d<Spack>& qr2qi_collect,
+    const uview_2d<Spack>& qc2qi_hetero_freeze,
+    const uview_2d<Spack>& qr2qi_immers_freeze,
+    const uview_2d<Spack>& qi2qr_melt,
     const uview_2d<Spack>& pratot,
     const uview_2d<Spack>& prctot,
     const uview_1d<bool>& is_nucleat_possible,
