@@ -146,7 +146,6 @@ module li_advection
            bedTopography,         & ! bed topography
            sfcMassBal,            & ! surface mass balance (potential forcing)
            sfcMassBalApplied,     & ! surface mass balance (actually applied)
-           bareIceAblation,       & ! ablation (melting) of bare ice (potential forcing)
            bareIceAblationApplied, & ! ablation (melting) of bare ice (actually applied)
            groundedSfcMassBalApplied,     & ! surface mass balance on grounded locations (actually applied)
            basalMassBal,          & ! basal mass balance
@@ -284,7 +283,6 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
       call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
-      call mpas_pool_get_array(geometryPool, 'bareIceAblation', bareIceAblation)
       call mpas_pool_get_array(geometryPool, 'bareIceAblationApplied', bareIceAblationApplied)
       call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
@@ -610,7 +608,6 @@ module li_advection
               bedTopography,       &
               sfcMassBal,          &
               sfcMassBalApplied,   &
-              bareIceAblation,     &
               bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
               basalMassBal,        &
@@ -865,7 +862,6 @@ module li_advection
               bedTopography,       &
               sfcMassBal,          &
               sfcMassBalApplied,   &
-              bareIceAblation,     &
               bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
               basalMassBal,        &
@@ -914,13 +910,8 @@ module li_advection
            sfcMassBalApplied !< Output: surface mass balance actually applied on this time step (kg/m^2/s)
 
       real(kind=RKIND), dimension(:), intent(out) :: &
-           bareIceAblation !< Output: bare ice ablation (melting) occurring on on this time step (kg/m^2/s)
-
-      real(kind=RKIND), dimension(:), intent(out) :: &
            bareIceAblationApplied !< Output: applied bare ice ablation (melting) occurring on on this time step (kg/m^2/s).
                                   ! Note that this is the value that actually produces runoff sent to coupler (Fogg_rofl)
-                                  ! and its comparison against 'bareIceAblation' will allow for an assessment of the disparity 
-                                  ! between ablation sent from lnd and the cpl versus what is actually applied.
                                   
       real(kind=RKIND), dimension(:), intent(out) :: &
            groundedSfcMassBalApplied !< Output: surface mass balance actually applied to grounded ice on this time step (kg/m^2/s)
@@ -963,12 +954,6 @@ module li_advection
       ! Initialize applied SMB and BMB fields
       sfcMassBalApplied(:) = sfcMassBal(:)
       basalMassBalApplied(:) = basalMassBal(:)
-
-      ! Initialize bare ice ablation applied field 
-      bareIceAblation(:) = 0.0_RKIND 
-      where (sfcMassBal < 0.0_RKIND)
-            bareIceAblation = -1.0_RKIND * sfcMassBal
-      end where
 
       do iCell = 1, nCells
 

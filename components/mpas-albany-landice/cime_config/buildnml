@@ -256,7 +256,6 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="sfcMassBal"/>')
         lines.append('    <var name="sfcMassBalApplied"/>')
         lines.append('    <var name="basalMassBalApplied"/>')
-        lines.append('    <var name="bareIceAblation"/>')
         lines.append('    <var name="bareIceAblationApplied"/>')
         lines.append('    <var name="avgBareIceAblation"/>')
         lines.append('    <var name="avgBareIceAblationApplied"/>')
