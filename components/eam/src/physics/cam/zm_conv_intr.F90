@@ -606,6 +606,13 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! physics types
    type(physics_state)        :: state1               ! copy of state for evaporation
    type(physics_ptend),target :: ptend_loc            ! output tendencies
+   type(physics_ptend),target :: ptend_mcsp           ! MCSP output tendencies
+
+   ! flags for MCSP tendencies
+   logical :: do_mcsp_t        = .false.
+   logical :: do_mcsp_q(pcnst) = .false.
+   logical :: do_mcsp_u        = .false.
+   logical :: do_mcsp_v        = .false.
 
    ! physics buffer fields
    real(r8), pointer, dimension(:)     :: prec        ! total precipitation
@@ -660,9 +667,6 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    real(r8), dimension(pcols,pver) :: sprd
    real(r8), dimension(pcols,pver) :: frz
    real(r8), dimension(pcols)      :: precz_snum
-
-   logical :: do_mcsp_u = .false.
-   logical :: do_mcsp_v = .false.
 
    !----------------------------------------------------------------------------
 
@@ -759,11 +763,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    lq(:) = .FALSE.
    lq(1) = .TRUE.
 
-   if (zm_param%mcsp_u_coeff>0) do_mcsp_u = .true.
-   if (zm_param%mcsp_v_coeff>0) do_mcsp_v = .true.
-
-   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', &
-                           ls=.true., lq=lq, lu=do_mcsp_u, lv=do_mcsp_v)
+   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq )
 
    !----------------------------------------------------------------------------
    ! Associate pointers with physics buffer fields
@@ -850,14 +850,32 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    !----------------------------------------------------------------------------
    ! mesoscale coherent structure parameterization (MCSP)
-
+   ! Note that this modifies the tendencies produced by zm_convr(), such that
+   ! history variables like ZMDT will include the effects of MCSP
    if (zm_param%mcsp_enabled) then
+
+      if (zm_param%mcsp_t_coeff>0) do_mcsp_t    = .true.
+      if (zm_param%mcsp_q_coeff>0) do_mcsp_q(1) = .true.
+      if (zm_param%mcsp_u_coeff>0) do_mcsp_u    = .true.
+      if (zm_param%mcsp_v_coeff>0) do_mcsp_v    = .true.
+
+      call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
+                               ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
+
       call zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
                               ztodt, jctop, zm_const, zm_param, &
                               state%pmid, state%pint, state%pdel, &
                               state%s, state%q, state%u, state%v, &
-                              ptend_loc )
+                              ptend_loc%s, ptend_loc%q(:,:,1), ptend_mcsp )
+
+      ! add MCSP tendencies to ZM onvective tendencies
+      call physics_ptend_sum( ptend_mcsp, ptend_loc, ncol)
+      call physics_ptend_dealloc(ptend_mcsp)
+
    end if
+
+   !----------------------------------------------------------------------------
+   ! history output from main ZM calculation
 
    call outfld('DCAPE',  dcape, pcols, lchnk )
    call outfld('CAPE_ZM', cape, pcols, lchnk )
@@ -910,6 +928,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('PCONVB  ', pconb, pcols, lchnk )
    call outfld('MAXI  ', maxgsav, pcols, lchnk )
 
+   !----------------------------------------------------------------------------
+   ! update state and ptend_all with ZM+MCSP tendencies
+
    call physics_ptend_init(ptend_all, state%psetcols, 'zm_conv_tend')
 
    ! add tendency from this process to tendencies from other processes
@@ -917,6 +938,9 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    ! update physics state type state1 with ptend_loc 
    call physics_update(state1, ptend_loc, ztodt)
+
+   !----------------------------------------------------------------------------
+   ! convective rain evaporation
 
    ! initialize ptend for next process
    lq(:) = .FALSE.
