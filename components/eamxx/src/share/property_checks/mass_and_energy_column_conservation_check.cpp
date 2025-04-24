@@ -288,7 +288,7 @@ void eamxx_repro_sum(const Real* send, Real* recv,
                        Int nlocal, Int nfld, Int fcomm);
 
 
-void MassAndEnergyColumnConservationCheck::global_fixer()
+void MassAndEnergyColumnConservationCheck::global_fixer(const bool & print_debug_info)
 {
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
@@ -382,6 +382,8 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
 #define DEBUG_FIXER
 
 #ifdef DEBUG_FIXER
+
+  if(print_debug_info) {
   //total energy needed for relative error
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
@@ -389,6 +391,7 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   });
   eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   total_energy_before = (*recv);
+  }
 #endif
 
   using PC = scream::physics::Constants<Real>;
@@ -405,6 +408,7 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   });//adding fix to T
 
 #ifdef DEBUG_FIXER
+  if(print_debug_info){
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
     const int i = team.league_rank();
@@ -427,6 +431,7 @@ void MassAndEnergyColumnConservationCheck::global_fixer()
   eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
 
   std::cout << "here 10D recv= " << std::setprecision(15) << (*recv)/total_energy_before << "\n";
+  }
 #endif
 
 };

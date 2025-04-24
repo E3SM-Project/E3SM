@@ -80,7 +80,7 @@ public:
   // in m_fields.
   void compute_current_energy ();
 
-  void global_fixer();
+  void global_fixer(const bool &);
 
   Real get_echeck();
 

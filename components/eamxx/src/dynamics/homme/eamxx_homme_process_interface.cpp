@@ -449,7 +449,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // Complete homme model initialization
   prim_init_model_f90 ();
 
-#if 1
   if (fv_phys_active()) {
     fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
     // [CGLL ICs in pg2] Remove the CGLL fields from the process. The AD has a
@@ -466,11 +465,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     remove_group("tracers", rgn);
     fv_phys_rrtmgp_active_gases_remap(run_type);
   }
-#endif
-//  if (fv_phys_active()) {
-//    fv_phys_dyn_to_fv_phys(run_type == RunType::Restart);
-//    fv_phys_rrtmgp_active_gases_remap(run_type);
-//  }
 
   // Set up field property checks
   // Note: We are seeing near epsilon negative values in a handful of places.
