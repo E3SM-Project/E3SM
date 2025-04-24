@@ -3,7 +3,7 @@
 #endif
 
 module dimensions_mod
-#if defined(CAM) && !defined(MODEL_CESM)
+#if defined(CAM) && !defined(FVM_TRACERS)
   use constituents, only : qsize_d => pcnst ! _EXTERNAL
 #endif
   implicit none
@@ -18,6 +18,9 @@ module dimensions_mod
 #endif
 #endif
 
+#if defined(CAM) && defined(FVM_TRACERS) 
+  integer, parameter         :: qsize_d =10 ! CAM-SE tracers (currently CAM-SE supports 10 condensate loading tracers)
+#endif
   integer, parameter, public :: np = NP
 
   integer         :: qsize = 0
@@ -31,10 +34,7 @@ module dimensions_mod
   integer, public  :: max_corner_elem               = 1  !  max_elements_attached_to_node-3
   integer, public  :: max_neigh_edges               = 8  !  4 + 4*max_corner_elem
 
-  public :: qsize
-#ifndef MODEL_CESM
-  public :: qsize_d
-#endif
+  public :: qsize,qsize_d
   integer, public :: ne
   integer, public :: ne_x,ne_y   ! used for planar topology- number of elements in each direction
   integer, public :: nelem       ! total number of elements
