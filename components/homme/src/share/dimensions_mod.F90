@@ -31,7 +31,10 @@ module dimensions_mod
   integer, public  :: max_corner_elem               = 1  !  max_elements_attached_to_node-3
   integer, public  :: max_neigh_edges               = 8  !  4 + 4*max_corner_elem
 
-  public :: qsize,qsize_d
+  public :: qsize
+#ifndef MODEL_CESM
+  public :: qsize_d
+#endif
   integer, public :: ne
   integer, public :: ne_x,ne_y   ! used for planar topology- number of elements in each direction
   integer, public :: nelem       ! total number of elements
