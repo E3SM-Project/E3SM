@@ -379,20 +379,15 @@ void MassAndEnergyColumnConservationCheck::global_fixer(const bool & print_debug
   eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   pb_fixer = (*recv);
 
-#define DEBUG_FIXER
-
-#ifdef DEBUG_FIXER
-
   if(print_debug_info) {
-  //total energy needed for relative error
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    const int i = team.league_rank();
-    field_view_s1(i) = m_current_energy(i) * area_view(i);
-  });
-  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-  total_energy_before = (*recv);
+    //total energy needed for relative error
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+      const int i = team.league_rank();
+      field_view_s1(i) = m_current_energy(i) * area_view(i);
+    });
+    eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+    total_energy_before = (*recv);
   }
-#endif
 
   using PC = scream::physics::Constants<Real>;
   const Real cpdry = PC::Cpair;
@@ -407,34 +402,31 @@ void MassAndEnergyColumnConservationCheck::global_fixer(const bool & print_debug
     });
   });//adding fix to T
 
-#ifdef DEBUG_FIXER
   if(print_debug_info){
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
-    const int i = team.league_rank();
-    const auto pseudo_density_i = ekat::subview(pseudo_density, i);
-    const auto T_mid_i          = ekat::subview(T_mid, i);
-    const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
-    const auto qv_i             = ekat::subview(qv, i);
-    const auto qc_i             = ekat::subview(qc, i);
-    const auto qr_i             = ekat::subview(qr, i);
-    const auto qi_i             = ekat::subview(qi, i);
+      const int i = team.league_rank();
+      const auto pseudo_density_i = ekat::subview(pseudo_density, i);
+      const auto T_mid_i          = ekat::subview(T_mid, i);
+      const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
+      const auto qv_i             = ekat::subview(qv, i);
+      const auto qc_i             = ekat::subview(qc, i);
+      const auto qr_i             = ekat::subview(qr, i);
+      const auto qi_i             = ekat::subview(qi, i);
 
-    // Calculate total energy
-    m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
+      // Calculate total energy
+      m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
-    //overwrite the "new" fields with relative change
-    field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i));
-    field_view_s1(i) *= area_view(i);
-  });
+      //overwrite the "new" fields with relative change
+      field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i));
+      field_view_s1(i) *= area_view(i);
+    });
 
-  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-
-  std::cout << "here 10D recv= " << std::setprecision(15) << (*recv)/total_energy_before << "\n";
+    eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+    echeck = (*recv)/total_energy_before;
   }
-#endif
 
-};
+};//global_fixer
 
 
 KOKKOS_INLINE_FUNCTION
@@ -537,9 +529,16 @@ compute_energy_boundary_flux_on_column (const Real vapor_flux,
 }
 
 Real MassAndEnergyColumnConservationCheck::get_echeck(){
-return echeck;
+  return echeck;
 }
 
+Real MassAndEnergyColumnConservationCheck::get_total_energy_before(){
+  return total_energy_before;
+}
+
+Real MassAndEnergyColumnConservationCheck::get_pb_fixer(){
+  return pb_fixer;
+}
 
 
 } // namespace scream

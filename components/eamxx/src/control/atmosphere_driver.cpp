@@ -423,7 +423,6 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto phys_grid_name = phys_grid->name();
-#if 1
   // Get fields needed to run the mass and energy conservation checks. Require that
   // all fields exist.
   EKAT_REQUIRE_MSG (
@@ -436,29 +435,6 @@ void AtmosphereDriver::setup_column_conservation_checks ()
     m_field_mgr->has_field("qc",             phys_grid_name) and
     m_field_mgr->has_field("qr",             phys_grid_name) and
     m_field_mgr->has_field("qi",             phys_grid_name) and
-    m_field_mgr->has_field("vapor_flux",     phys_grid_name) and
-    m_field_mgr->has_field("water_flux",     phys_grid_name) and
-    m_field_mgr->has_field("ice_flux",       phys_grid_name) and
-    m_field_mgr->has_field("heat_flux",      phys_grid_name),
-    "Error! enable_column_conservation_checks=true for some atm process, "
-    "but not all fields needed for this check exist in the FieldManager.\n");
-#endif
-  EKAT_REQUIRE_MSG (
-    m_field_mgr->has_field("pseudo_density", phys_grid_name) and
-    m_field_mgr->has_field("ps",             phys_grid_name) and
-    m_field_mgr->has_field("phis",           phys_grid_name) and
-    m_field_mgr->has_field("horiz_winds",    phys_grid_name) and
-    m_field_mgr->has_field("T_mid",          phys_grid_name) ,
-    "Error! enable_column_conservation_checks=true for some atm process, "
-    "but not all fields needed for this check exist in the FieldManager.\n");
-  EKAT_REQUIRE_MSG (
-    m_field_mgr->has_field("qv",             phys_grid_name) and
-    m_field_mgr->has_field("qc",             phys_grid_name) and
-    m_field_mgr->has_field("qr",             phys_grid_name) and
-    m_field_mgr->has_field("qi",             phys_grid_name) ,
-    "Error! enable_column_conservation_checks=true for some atm process, "
-    "but not all fields needed for this check exist in the FieldManager.\n");
-  EKAT_REQUIRE_MSG (
     m_field_mgr->has_field("vapor_flux",     phys_grid_name) and
     m_field_mgr->has_field("water_flux",     phys_grid_name) and
     m_field_mgr->has_field("ice_flux",       phys_grid_name) and

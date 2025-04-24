@@ -83,6 +83,8 @@ public:
   void global_fixer(const bool &);
 
   Real get_echeck();
+  Real get_total_energy_before();
+  Real get_pb_fixer();
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA

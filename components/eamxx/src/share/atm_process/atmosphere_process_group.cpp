@@ -321,7 +321,8 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
   }// for (auto atm_proc : m_atm_processes) 
 
   for (auto atm_proc : m_atm_processes) {
-// rethink this later for more generality for fixers
+//WRONG -- this needs to be in the above block with all conditionals on fluxes, T, etc.
+//how to put it in?
     if (atm_proc->has_energy_fixer()) {
       atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
     }

@@ -8,6 +8,9 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <sstream>
+#include <iomanip>
+
 
 namespace scream
 {
@@ -149,19 +152,14 @@ void AtmosphereProcess::run (const double dt) {
                               true, true, true);
 
     if (has_energy_fixer()){
-      //compute_energy_after();
       const bool & debug_info = has_energy_fixer_debug_info();
       fix_energy(dt_sub, debug_info );
-
-      //if debug recompute new energy and confirm
-      //print out diagnostics?
     }
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
       run_column_conservation_check();
     }
-
   }
 
   // Complete tendency calculations (if any)
@@ -1188,11 +1186,15 @@ void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_inf
   conservation_check->set_dt(dt);
   conservation_check->global_fixer(print_debug_info);
 
-//  m_atm_logger->info("EAMxx:: energy fixer, energy error after" + std::to_string(conservation_check->get_echeck()) );
+  if(print_debug_info){
+    //print everything about the fixer only in debug mode
+    m_atm_logger->info("EAMxx:: energy fixer, PB T tendency " + std::to_string( conservation_check->get_pb_fixer() ) );
+    m_atm_logger->info("EAMxx:: energy fixer, total energy before fix " + std::to_string( conservation_check->get_total_energy_before() ) );
+    std::stringstream ss;
+    ss << "EAMxx:: energy fixer, rel energy error after fix " << std::setprecision(15) << conservation_check->get_echeck() << "\n";
+    m_atm_logger->info(ss.str());
+  }
+
 }
-
-
-
-
 
 } // namespace scream
