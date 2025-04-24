@@ -762,11 +762,14 @@ contains
 !
 !> \brief   computes a tracer tendences from frazil within the ocean
 !> \author  Nicole Jeffery
-!> \date    11/26/2024
+!> \date    04/24/2025
 !> \details
-!>  This routine computes a tracer tendencies for ecosys tracers due to  frazil ice
+!>  This routine computes tracer tendencies for ecosys tracers due to frazil ice
 !>  Tendencies are retrieved by calling ocn_frazil_forcing_ecosys      
-!
+!>  This implementation currently releases the total ecosys concentration of accumulated
+!>  internal frazil into the surface ocean layer because the sea ice model computes
+!>  the ecosys frazil flux from the ocean surface ecosys concentration and the
+!>  frazil mass flux.      
 !-----------------------------------------------------------------------
 
    subroutine ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
