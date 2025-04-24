@@ -389,7 +389,6 @@
       <value compset="_MPASO">48</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
@@ -402,6 +401,8 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC01to60E3r1">1440</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%IcoswISC30E3r5">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%SOwISC12to30E3r4">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
