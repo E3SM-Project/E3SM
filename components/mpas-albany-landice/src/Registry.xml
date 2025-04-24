@@ -1727,21 +1727,6 @@ is the value of that variable from the *previous* time level!
 					 <var name="oceanField" type="real" dimensions="TWO nISMIP6OceanLayers nCells Time" units="none"
 								descriptions="Generic field used to extrapolate either ocean temperature and salinity, or thermal forcing. This field gets updated on each iteration of the extrapolation scheme. At end of extrapolation, those fields are set equal to oceanField. oceanField thus does not normally need to be output."
 					 />
-                <var name="connectedMarineMask" type="integer" dimensions="nCells Time" units="none"
-                        description="for debugging"
-                />
-                    
-                <var name="altConnectedMarineMask" type="integer" dimensions="nCells Time" units="none"
-                        description="for debugging"
-                />
-
-                <var name="origGrowMask" type="integer" dimensions="nCells Time" units="none"
-                        description="for debugging"
-                />
-
-                <var name="altGrowMask" type="integer" dimensions="nCells Time" units="none"
-                        description="for debugging"
-                />
         </var_struct>
 <!-- ================ -->
 
@@ -1822,11 +1807,11 @@ is the value of that variable from the *previous* time level!
        <var name="seedMask" type="integer" dimensions="nCells" units="none"
 	       description="seed mask for flood fill"
 	       persistence="scratch"
-               />
+          />
        <var name="growMask" type="integer" dimensions="nCells" units="none"
                description="grow mask for flood fill"
                persistence="scratch"
-               />
+          />
 	</var_struct>
 
 <!-- ================ -->
