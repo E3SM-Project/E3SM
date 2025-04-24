@@ -1043,7 +1043,7 @@ subroutine  copy_aream_from_area(mbappid)
       integer                  :: mpigrp_cplid ! coupler pes
       integer                  :: mpigrp_old   !  component group pes
       integer                  :: ierr, context_id
-      character*200            :: appname, outfile, wopts, ropts
+      character*200            :: appname, outfile, wopts, ropts, infile
       character(CL)            :: rtm_mesh, rof_domain
       character(CL)            :: lnd_domain
       character(CL)            :: ocn_domain
@@ -1142,14 +1142,16 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             else   ! data atm
               ! we need to read the atm mesh on coupler, from domain file 
-               ierr = iMOAB_LoadMesh(mbaxid, trim(atm_mesh)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING", 0)
+               infile = trim(atm_mesh)//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' loading atm domain mesh from file '//trim(atm_mesh) &
+                   , ' with options ' // trim(ropts)
+               endif
+               ierr = iMOAB_LoadMesh(mbaxid, infile, ropts, 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load atm domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load atm domain mesh on coupler  ')
-               endif
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' load atm domain mesh from file '//trim(atm_mesh)
                endif
                ! right now, turn atm_pg_active to true
                atm_pg_active = .true. ! FIXME TODO 
@@ -1315,11 +1317,13 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             else
               ! we need to read the ocean mesh on coupler, from domain file 
+               infile = trim(ocn_domain)//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
                if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' loading ocn domain mesh from file '//trim(ocn_domain)
+                  write(logunit,'(A)') subname//' loading ocn domain mesh from file '//trim(infile) &
+                   , ' with options ' // trim(ropts)
                endif
-               ierr = iMOAB_LoadMesh(mboxid, trim(ocn_domain)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
+               ierr = iMOAB_LoadMesh(mboxid, infile, ropts, 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load ocean domain mesh on coupler  ')
@@ -1429,14 +1433,16 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             else
                 ! we need to read the ocean mesh on coupler, from domain file 
-               ierr = iMOAB_LoadMesh(mbofxid, trim(ocn_domain)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
+               infile = trim(ocn_domain)//C_NULL_CHAR
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' load ocn domain mesh from file for second ocn instance '//trim(ocn_domain) &
+                  , ' with options '//trim(ropts)
+               endif
+               ierr = iMOAB_LoadMesh(mbofxid, infile, ropts, 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load second ocean domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load second ocean domain mesh on coupler  ')
-               endif
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' load ocn domain mesh from file for second ocn instance '//trim(ocn_domain)
                endif
                ! need to add global id tag to the app, it will be used in restart
                tagtype = 0  ! dense, integer
@@ -1506,16 +1512,13 @@ subroutine  copy_aream_from_area(mbappid)
             outfile = trim(lnd_domain)//C_NULL_CHAR
             nghlay = 0 ! no ghost layers 
             if (seq_comm_iamroot(CPLID) ) then
-               write(logunit, *) "load land domain file from file: ", trim(lnd_domain), &
+               write(logunit, *) "loading land domain file from file: ", trim(lnd_domain), &
                  " with options: ", trim(ropts)
             endif
             ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
                call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
-            endif
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit,'(A)') subname//' load lnd domain mesh from file '//trim(lnd_domain)
             endif
             ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
@@ -1634,14 +1637,16 @@ subroutine  copy_aream_from_area(mbappid)
                endif
             else
                ! we need to read the mesh ice (domain file) 
-               ierr = iMOAB_LoadMesh(mbixid, trim(ice_domain)//C_NULL_CHAR, &
-                "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION", 0)
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
+               infile = trim(ice_domain)//C_NULL_CHAR
+               if (seq_comm_iamroot(CPLID)) then
+                  write(logunit,'(A)') subname//' loading ice domain mesh from file '//infile &
+                    , ' with options '//trim(ropts)
+               endif
+               ierr = iMOAB_LoadMesh(mbixid, infile, ropts, 0)
                if ( ierr /= 0 ) then
                   write(logunit,*) 'Failed to load ice domain mesh on coupler'
                   call shr_sys_abort(subname//' ERROR Failed to load ice domain mesh on coupler  ')
-               endif
-               if (seq_comm_iamroot(CPLID)) then
-                  write(logunit,'(A)') subname//' load ice domain mesh from file '//trim(ice_domain)
                endif
                ! need to add global id tag to the app, it will be used in restart
                tagtype = 0  ! dense, integer
@@ -1746,7 +1751,7 @@ subroutine  copy_aream_from_area(mbappid)
             appname = "COUPLE_MROF"//C_NULL_CHAR
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
 
-            ! load mesh from scrip file passed from river model
+            ! load mesh from scrip file passed from river model, if domain file is not available
             call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh,rof_domain=rof_domain)
             if ( trim(rof_domain) == 'none' ) then
                outfile = trim(rtm_mesh)//C_NULL_CHAR
@@ -1756,14 +1761,14 @@ subroutine  copy_aream_from_area(mbappid)
                ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
             endif
             nghlay = 0 ! no ghost layers 
-            ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
             if (seq_comm_iamroot(CPLID)) then
-               write(logunit,'(A)') subname//' load rof from file '//trim(outfile)
+               write(logunit,'(A)') subname//' loading rof from file '//trim(outfile) &
+                  , ' with options ', trim(ropts)
             endif
+            ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
             if ( ierr .ne. 0  ) then
                call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
             end if
-            
              ! need to add global id tag to the app, it will be used in restart
             tagtype = 0  ! dense, integer
             numco = 1
@@ -1911,7 +1916,7 @@ subroutine  copy_aream_from_area(mbappid)
     endif
     write(lnum,"(I0.2)") num_moab_exports
     if (seq_comm_iamroot(CPLID) ) then
-       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//lnum//' called in direction '//trim(dir)//' for fields '//trim(tagname)
+       write(logunit,'(A)') subname//' '//comp%ntype//' at moab count '//trim(lnum)//' called in direction '//trim(dir)//' for fields '//trim(tagname)
     endif
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       ! number_proj = number_proj+1 ! count the number of projections
