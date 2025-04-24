@@ -966,11 +966,16 @@ void MAMMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 
   auto extfrc_fm = get_field_out("extfrc").get_view<Real***>();
+  // Create local copies to safely access class members in device code on GPUs
+  const int ncol_local = ncol_;
+  const int extcnt_local = extcnt;
+  const int nlev_local = nlev_;
+
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
   Kokkos::parallel_for("transpose_extfrc", 
-    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol_, extcnt, nlev_}),
+    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol_local, extcnt_local, nlev_local}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       extfrc_fm(i,j,k) = extfrc_(i,k,j);  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
   });
@@ -982,10 +987,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Integrate external forcing vertically using layer thickness (dz)
   // extfrc_ is in [molec/cm³/s], dz in [cm], so result is [molec/cm²/s]
   Kokkos::parallel_for("compute_extfrc_vertsum", 
-    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol_, extcnt}),
+    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol_local, extcnt_local}),
     KOKKOS_LAMBDA(const int i, const int j) {
       Real sum = 0.0;
-      for (int k = 0; k < nlev_; ++k) {
+      for (int k = 0; k < nlev_local; ++k) {
         Real dz_m = z_int(i,k) - z_int(i,k+1); 
         Real dz_cm = dz_m * 100.0;
         sum += extfrc_(i,k,j) * dz_cm;
