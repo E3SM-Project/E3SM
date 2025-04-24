@@ -210,28 +210,25 @@ contains
          enddo
          deallocate(seedOceanMaskHorizOld)
 
-         ! Calculate mask of connected ocean
+         ! Calculate mask of bedTopography below sea level that is connected to
+         ! the ocean
          call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
          call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
          call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
-         ! connectedMarineMask => seedMaskField % array
-         !altConnectedMarineMask => seedMaskField % array
-         altConnectedMarineMask(:) = 0
-         connectedMarineMask(:) = 0
+         connectedMarineMask => seedMaskField % array
+         connectedMarineMask(:) = 0 
+         
          call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
          call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
-         !growMask => growMaskField % array
+         growMask => growMaskField % array
          growMask(:) = 0
-         !altGrowMask => growMaskField % array
-         altGrowMask(:) = 0
-
+         
          do iCell = 1, nCells
             ! seedMask = open ocean cells in contact with the domain boundary
             if ((bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND)) then
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   if (cellsOnCell(iNeighbor, iCell) == nCells + 1) then
                      connectedMarineMask(iCell) = 1
-                     altConnectedMarineMask(iCell) = 1
                      exit  ! no need to keep checking neighbors
                   endif
                enddo
@@ -239,21 +236,45 @@ contains
             ! growMask - all marine cells
             if (bedTopography(iCell) < config_sea_level) then
                growMask(iCell) = 1
-
-               if (thickness(iCell) == 0.0_RKIND) then
-                  altGrowMask(iCell) = 1
-               endif
             endif
          enddo
         
-         ! update halos
-         call mpas_timer_start("halo updates")
-         call mpas_dmpar_field_halo_exch(domain, 'connectedMarineMask')
-         call mpas_dmpar_field_halo_exch(domain, 'altConnectedMarineMask')
-         call mpas_timer_stop("halo updates")
-         
          ! now create mask of all marine locations connected to open ocean - to be used below to screen out lakes
          call li_flood_fill(connectedMarineMask, growMask, domain)
+         
+         ! Calculate mask of ice-free cells with bedTopography below sea level
+         ! and that are connected the ocean (again through only ice-free cells).
+         ! Used in combination with connectedMarineMask to remove designation of 
+         ! inland seas as connected ocean cells
+         call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+         call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+         call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+         altConnectedMarineMask => seedMaskField % array
+         altConnectedMarineMask(:) = 0
+
+         call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+         call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+         altGrowMask => growMaskField % array
+         altGrowMask(:) = 0
+
+         do iCell = 1, nCells
+            ! seedMask = open ocean cells in contact with the domain boundary
+            if ((bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND)) then
+               do iNeighbor = 1, nEdgesOnCell(iCell)
+                  if (cellsOnCell(iNeighbor, iCell) == nCells + 1) then
+                     altConnectedMarineMask(iCell) = 1
+                     exit  ! no need to keep checking neighbors
+                  endif
+               enddo
+            endif
+            ! altGrowMask - all marine cells without ice
+            if ( (bedTopography(iCell) < config_sea_level) .and. (thickness(iCell) == 0.0_RKIND) ) then
+               altGrowMask(iCell) = 1
+            endif
+         enddo
+        
+         ! now create mask of all marine locations connected to open ocean
+         ! through ice-free cells - to be used below to screen out lakes
          call li_flood_fill(altConnectedMarineMask, altGrowMask, domain)
          
          ! alter orig3dOceanMask if necessary to avoid errors
