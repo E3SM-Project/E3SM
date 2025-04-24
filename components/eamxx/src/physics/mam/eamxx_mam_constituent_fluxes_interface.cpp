@@ -36,6 +36,11 @@ void MAMConstituentFluxes::set_grids(
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
+
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+  
   static constexpr Units m2(m * m, "m2");
   // Constituent fluxes at the surface (gasses and aerosols)
   //[units: kg/m2/s (mass) or #/m2/s (number)]

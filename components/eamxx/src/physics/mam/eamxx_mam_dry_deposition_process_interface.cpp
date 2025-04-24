@@ -73,6 +73,10 @@ void MAMDryDep::set_grids(
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
+  
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
 
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;

@@ -89,6 +89,10 @@ void MAMMicrophysics::set_grids(
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
 
