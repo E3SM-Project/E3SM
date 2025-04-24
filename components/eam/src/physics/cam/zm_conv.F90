@@ -26,7 +26,8 @@ module zm_conv
   use zm_conv_cape,           only: compute_dilute_cape
   use zm_conv_types,          only: zm_const_t, zm_param_t
   use zm_conv_util,           only: qsat_hpa ! remove after moving cldprp to new module
-  use zm_microphysics,        only: zm_mphy, zm_aero_t
+  use zm_aero,                only: zm_aero_t
+  use zm_microphysics,        only: zm_mphy
   use zm_microphysics_state,  only: zm_microp_st, zm_microp_st_alloc, zm_microp_st_dealloc, zm_microp_st_ini, zm_microp_st_gb
 
   implicit none
