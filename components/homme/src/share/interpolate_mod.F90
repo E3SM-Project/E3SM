@@ -106,7 +106,7 @@ module interpolate_mod
   public :: minmax_tracers
   public :: interpolate_2d
   public :: interpolate_create
-#ifdef CAM
+#if defined(CAM) && defined(MODEL_CESM)
   public :: vec_latlon_to_contra
 #endif
 
@@ -583,7 +583,7 @@ contains
 
   end function interpolate_2d
 
-#ifdef CAM
+#if defined(CAM) && defined(MODEL_CESM)
   !===============================
   !(Nair) Bilinear interpolation for every GLL grid cell
   !===============================
@@ -1434,7 +1434,7 @@ subroutine interpolate_ce(cart,fld_cube,npts,fld, fillvalue)
 end subroutine interpolate_ce
 
 
-#ifdef CAM
+#if defined(CAM) && defined(MODEL_CESM)
   ! =======================================
   ! interpolate_scalar
   !
@@ -1673,7 +1673,7 @@ end subroutine interpolate_ce
   end subroutine interpolate_scalar3d
 #endif
 
-#ifdef CAM
+#if defined(CAM) && defined(MODEL_CESM)
   ! =======================================
   ! interpolate_vector
   !
@@ -1911,7 +1911,7 @@ end subroutine interpolate_ce
   end subroutine interpolate_vector3d
 #endif
 
-#ifdef CAM
+#if defined(CAM) && defined(MODEL_CESM)
   subroutine vec_latlon_to_contra(elem,nphys,nhalo,nlev,fld,fvm)
     use fvm_control_volume_mod, only: fvm_struct
     use dimensions_mod,         only: fv_nphys
