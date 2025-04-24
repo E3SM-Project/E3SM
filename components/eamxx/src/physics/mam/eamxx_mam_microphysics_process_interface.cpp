@@ -892,8 +892,9 @@ void MAMMicrophysics::run_impl(const double dt) {
         // These output values need to be put somewhere:
         Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
-        // Output: values are dvel, dvlx
+        // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
+        team.team_barrier();
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
@@ -915,9 +916,9 @@ void MAMMicrophysics::run_impl(const double dt) {
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
-        for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, mam4::pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
-        }
+        });
 
       });  // parallel_for for the column loop
   Kokkos::fence();
