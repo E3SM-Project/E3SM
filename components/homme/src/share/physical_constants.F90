@@ -41,7 +41,7 @@ module physical_constants
   public                                   :: g                         ! m s^-2
   public                                   :: omega                     ! s^-1
   public                                   :: Rgas
-  real (kind=real_kind), public, parameter :: Cp = shr_const_cpdair
+  real (kind=real_kind), public, parameter :: Cp = shr_const_cpdair     ! cpair from the "physconst" module in CAM is not a constant
   public                                   :: p0                        ! Pa
   public                                   :: MWDAIR
   public                                   :: Rwater_vapor
