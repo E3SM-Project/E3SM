@@ -182,7 +182,10 @@ contains
     ! 0 is a valid value of pio_buffer_size_limit
     ! -1 is the value used by CIME to let the library choose the buffer limit
     if(pio_buffer_size_limit>=-1) then
-       call pio_set_buffer_size_limit(pio_buffer_size_limit, prev_limit=cur_buffer_size_limit)
+       if(pio_buffer_size_limit == -1) then
+          pio_buffer_size_limit = 134217728
+       end if
+       call pio_set_buffer_size_limit(pio_buffer_size_limit)
        if(comp_comm_iam(1)==0) then
           if(pio_buffer_size_limit >= 0) then
             write(shr_log_unit,*) 'Set pio_buffer_size_limit to : ', pio_buffer_size_limit, ' (bytes)'
@@ -676,14 +679,6 @@ contains
        iotype = pio_iotype_netcdf4p
     else if ( typename .eq. 'NETCDF4C') then
        iotype = pio_iotype_netcdf4c
-#ifndef PIO1
-    else if ( typename .eq. 'ADIOS') then
-       iotype = pio_iotype_adios
-    else if ( typename .eq. 'ADIOSC') then
-       iotype = pio_iotype_adiosc
-    else if ( typename .eq. 'HDF5') then
-       iotype = pio_iotype_hdf5
-#endif
     else if ( typename .eq. 'NOTHING') then
        iotype = defaulttype
     else if ( typename .eq. 'DEFAULT') then
@@ -739,8 +734,7 @@ contains
     if(pio_stride == 1 .and. .not. pio_async_interface) then
        pio_root = 0
     endif
-    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX .and.&
-        pio_rearranger .ne. PIO_REARR_ANY) then
+    if(pio_rearranger .ne. PIO_REARR_SUBSET .and. pio_rearranger .ne. PIO_REARR_BOX) then
        write(shr_log_unit,*) 'pio_rearranger value, ',pio_rearranger,&
             ', not supported - using PIO_REARR_BOX'
        pio_rearranger = PIO_REARR_BOX
