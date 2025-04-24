@@ -61,4 +61,6 @@ contains
     omp_get_nested=0
   end function omp_get_nested
 
+#endif
+
 end module thread_mod

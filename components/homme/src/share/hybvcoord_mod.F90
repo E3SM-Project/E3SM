@@ -26,8 +26,6 @@ type, public :: hvcoord_t
   real(r8) etam(plev)   ! eta-levels at midpoints
   real(r8) etai(plevp)  ! eta-levels at interfaces
   real(r8) dp0(plev)      ! average layer thickness
-  real(r8) hybd(plev)   ! difference in b (hybi) across layers
-  real(r8) prsfac       ! log pressure extrapolation factor (time, space independent)
 end type
 #endif
 
