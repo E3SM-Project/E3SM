@@ -1,0 +1,20 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.1hourlyAVG_native.h
+iotype: pnetcdf
+averaging_type: average
+max_snapshots_per_file: 1 # only one snapshot per file
+fields:
+  physics_pg2:
+    field_names:
+    - snow_depth_land
+    - isccp_ctptau
+    - modis_ctptau
+    - misr_cthtau
+    - cosp_sunlit
+    - isccp_cldtot
+output_control:
+  frequency: 1
+  frequency_units: nhours
+restart:
+  force_new_file: true

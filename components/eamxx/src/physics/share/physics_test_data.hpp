@@ -6,6 +6,8 @@
 #include "ekat/util/ekat_math_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
 #include <random>
 #include <vector>
@@ -69,6 +71,9 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_DATA_COPY_CTOR(name, num_args) \
   name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
+#define PTD_DATA_COPY_CTOR_INIT(name, num_args)                         \
+  name(const name& rhs) : name(PTD_ONES(num_args), rhs.init) { *this = rhs; }
+
 #define  PTD_ASS0()           ((void) (0))
 #define  PTD_ASS1(first)      first = rhs.first; PTD_ASS0()
 #define  PTD_ASS2(first, ...) first = rhs.first; PTD_ASS1(__VA_ARGS__)
@@ -127,6 +132,9 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
+#define PTD_ASSIGN_OP_INIT(name, num_scalars, ...)                      \
+  name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); init = rhs.init; return *this; }
+
 #define PTD_RW_SCALARS(num_scalars, ...) \
   void read_scalars(const ekat::FILEPtr& fid) { EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate baselines for some BFB unit tests"); PTD_RW##num_scalars(read, __VA_ARGS__); } \
   void write_scalars(const ekat::FILEPtr& fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
@@ -142,6 +150,12 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_STD_DEF(name, num_scalars, ...) \
   PTD_DATA_COPY_CTOR(name, num_scalars);     \
   PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__) \
+  PTD_RW() \
+  PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
+
+#define PTD_STD_DEF_INIT(name, num_scalars, ...) \
+  PTD_DATA_COPY_CTOR_INIT(name, num_scalars);     \
+  PTD_ASSIGN_OP_INIT(name, num_scalars, __VA_ARGS__) \
   PTD_RW() \
   PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
 
@@ -411,6 +425,79 @@ class PhysicsTestData
   PTDImpl<Real> m_reals; // manage real data with this member
   PTDImpl<Int>  m_ints;  // manage int data with this member
   PTDImpl<char> m_bools; // manage bool data with this member, use chars internally to dodge vector<bool> specialization
+};
+
+enum BASELINE_ACTION {
+  NONE,
+  COMPARE,
+  GENERATE
+};
+
+/**
+ * In $phys_unit_tests_common.hpp, the UnitWrap struct should have an inner struct "Base"
+ * that inherits from the struct below. This will ensure common BFB baseline unit tests
+ * are set up in a consistent manner.
+ */
+struct UnitBase
+{
+
+  std::string     m_baseline_path;
+  std::string     m_test_name;
+  BASELINE_ACTION m_baseline_action;
+  ekat::FILEPtr   m_fid;
+
+  UnitBase() :
+    m_baseline_path(""),
+    m_test_name(Catch::getResultCapture().getCurrentTestName()),
+    m_baseline_action(NONE),
+    m_fid()
+  {
+    auto& ts = ekat::TestSession::get();
+    if (ts.flags["c"]) {
+      m_baseline_action = COMPARE;
+    }
+    else if (ts.flags["g"]) {
+      m_baseline_action = GENERATE;
+    }
+    else if (ts.flags["n"]) {
+      m_baseline_action = NONE;
+    }
+    m_baseline_path = ts.params["b"];
+
+    EKAT_REQUIRE_MSG( !(m_baseline_action != NONE && m_baseline_path == ""),
+                      "Unit test flags problem: baseline actions were requested but no baseline path was provided");
+
+    std::string baseline_name = m_baseline_path + "/" + m_test_name;
+    if (m_baseline_action == COMPARE) {
+      m_fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "r"));
+      EKAT_REQUIRE_MSG(m_fid, "Missing baselines: " << baseline_name);
+    }
+    else if (m_baseline_action == GENERATE) {
+      m_fid = ekat::FILEPtr(fopen(baseline_name.c_str(), "w"));
+    }
+  }
+
+  ~UnitBase() = default;
+
+  std::mt19937_64 get_engine()
+  {
+    if (m_baseline_action != COMPARE) {
+      // We can use any seed
+      int seed;
+      auto engine = setup_random_test(nullptr, &seed);
+      if (m_baseline_action == GENERATE) {
+        // Write the seed
+        ekat::write(&seed, 1, m_fid);
+      }
+      return engine;
+    }
+    else {
+      // Read the seed
+      int seed;
+      ekat::read(&seed, 1, m_fid);
+      return setup_random_test(seed);
+    }
+  }
 };
 
 }  // namespace scream

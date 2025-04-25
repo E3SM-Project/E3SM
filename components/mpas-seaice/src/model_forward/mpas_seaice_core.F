@@ -416,8 +416,6 @@ module seaice_core
       use mpas_decomp
       use seaice_icepack, only: &
            seaice_icepack_finalize
-      use seaice_column, only: &
-           seaice_column_finalize
       use seaice_mesh_pool, only: &
            seaice_mesh_pool_destroy
 
@@ -436,11 +434,9 @@ module seaice_core
 
       ! finalize column
       call mpas_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
-      if (trim(config_column_physics_type) == "icepack") then
+!      if (trim(config_column_physics_type) == "icepack") then
          call seaice_icepack_finalize(domain)
-      else if (trim(config_column_physics_type) == "column_package") then
-         call seaice_column_finalize(domain)
-      endif ! config_column_physics_type
+!      endif ! config_column_physics_type
 
       call seaice_analysis_finalize(domain, ierr)
 

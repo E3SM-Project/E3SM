@@ -21,9 +21,10 @@ namespace scream {
  */
 
 class MAMWetscav : public MAMGenericInterface {
-  using KT          = ekat::KokkosTypes<DefaultDevice>;
-  using view_2d     = typename KT::template view_2d<Real>;
-  using int_view_2d = typename KT::template view_2d<int>;
+  using KT           = ekat::KokkosTypes<DefaultDevice>;
+  using view_2d      = typename KT::template view_2d<Real>;
+  using view_2d_host = typename KT::template view_2d<Real>::HostMirror;
+  using int_view_2d  = typename KT::template view_2d<int>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
@@ -98,6 +99,10 @@ class MAMWetscav : public MAMGenericInterface {
   view_2d dlf_;
 
   int num_2d_scratch_ = 39;
+  //
+  view_2d scavimptblnum_;
+
+  view_2d scavimptblvol_;
 
   // Aerosol states
   mam_coupling::AerosolState dry_aero_tends_;

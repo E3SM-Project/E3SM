@@ -199,6 +199,21 @@ Int Functions<S,D>
     const auto oliq_ice_exchange   = ekat::subview(history_only.liq_ice_exchange, i);
     const auto ovap_liq_exchange   = ekat::subview(history_only.vap_liq_exchange, i);
     const auto ovap_ice_exchange   = ekat::subview(history_only.vap_ice_exchange, i);
+    const auto oqr2qv_evap         = ekat::subview(history_only.qr2qv_evap, i);
+    const auto oqi2qv_sublim       = ekat::subview(history_only.qi2qv_sublim, i);
+    const auto oqc2qr_accret       = ekat::subview(history_only.qc2qr_accret,i);
+    const auto oqc2qr_autoconv     = ekat::subview(history_only.qc2qr_autoconv,i);
+    const auto oqv2qi_vapdep       = ekat::subview(history_only.qv2qi_vapdep,i);
+    const auto oqc2qi_berg         = ekat::subview(history_only.qc2qi_berg,i);
+    const auto oqc2qr_ice_shed     = ekat::subview(history_only.qc2qr_ice_shed,i);
+    const auto oqc2qi_collect      = ekat::subview(history_only.qc2qi_collect,i);
+    const auto oqr2qi_collect      = ekat::subview(history_only.qr2qi_collect,i);
+    const auto oqc2qi_hetero_freeze = ekat::subview(history_only.qc2qi_hetero_freeze,i);
+    const auto oqr2qi_immers_freeze = ekat::subview(history_only.qr2qi_immers_freeze,i);
+    const auto oqi2qr_melt         = ekat::subview(history_only.qi2qr_melt,i);
+    const auto oqr_sed             = ekat::subview(history_only.qr_sed, i);
+    const auto oqc_sed             = ekat::subview(history_only.qc_sed, i);
+    const auto oqi_sed             = ekat::subview(history_only.qi_sed, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
@@ -258,6 +273,8 @@ Int Functions<S,D>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
+      oqr2qv_evap, oqi2qv_sublim, oqc2qr_accret, oqc2qr_autoconv, oqv2qi_vapdep,
+      oqc2qi_berg, oqc2qr_ice_shed, oqc2qi_collect, oqr2qi_collect, oqc2qi_hetero_freeze, oqr2qi_immers_freeze, oqi2qr_melt,
       pratot, prctot, hydrometeorsPresent, nk, runtime_options);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
@@ -278,21 +295,21 @@ Int Functions<S,D>
     cloud_sedimentation(
       qc_incld, rho, inv_rho, ocld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, team, workspace,
       nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
-      oqc, onc, nc_incld, mu_c, lamc, qtend_ignore, ntend_ignore,
+      oqc, onc, nc_incld, mu_c, lamc, oqc_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf(i));
 
     // Rain sedimentation:  (adaptive substepping)
     rain_sedimentation(
       rho, inv_rho, rhofacr, ocld_frac_r, inv_dz, qr_incld, team, workspace,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
-      onr, nr_incld, mu_r, lamr, oprecip_liq_flux, qtend_ignore, ntend_ignore,
+      onr, nr_incld, mu_r, lamr, oprecip_liq_flux, oqr_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf(i), runtime_options);
 
     // Ice sedimentation:  (adaptive substepping)
     ice_sedimentation(
       rho, inv_rho, rhofaci, ocld_frac_i, inv_dz, team, workspace, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, oqi, qi_incld, oni, ni_incld,
-      oqm, qm_incld, obm, bm_incld, qtend_ignore, ntend_ignore,
+      oqm, qm_incld, obm, bm_incld, oqi_sed, ntend_ignore,
       lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i), runtime_options);
 
     // homogeneous freezing of cloud and rain

@@ -18,7 +18,7 @@ f"""#include "catch2/catch.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"
-#include "physics/{phys}/{phys}_functions_f90.hpp"
+#include "physics/{phys}/tests/infra/{phys}_test_data.hpp"
 
 #include "{phys}_unit_tests_common.hpp"
 
@@ -27,7 +27,7 @@ namespace {phys} {{
 namespace unit_test {{
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::{get_data_test_struct_name(sub)} {{
+struct UnitWrap::UnitTest<D>::{get_data_test_struct_name(sub)} : public UnitWrap::UnitTest<D>::Base {{
 
 {gen_code}
 
@@ -43,7 +43,8 @@ TEST_CASE("{sub}_bfb", "[{phys}]")
 {{
   using TestStruct = scream::{phys}::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::{get_data_test_struct_name(sub)};
 
-  TestStruct::run_bfb();
+  TestStruct t;
+  t.run_bfb();
 }}
 
 }} // empty namespace
@@ -84,7 +85,7 @@ template<typename S, typename D>
 FILEPATH, FILECREATE, INSERT_REGEX, ID_SELF_BEGIN_REGEX, ID_SELF_END_REGEX, DESC = range(6)
 PIECES = OrderedDict([
     ("f90_c2f_bind", (
-        lambda phys, sub, gb: f"{phys}_iso_c.f90",
+        lambda phys, sub, gb: f"tests/infra/{phys}_iso_c.f90",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_c2f_bind"),
         lambda phys, sub, gb: re.compile(fr"^\s*end\s+module\s{phys}_iso_c"), # put at end of module
         lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_c"), # sub_c begin
@@ -92,17 +93,17 @@ PIECES = OrderedDict([
         lambda *x           : "The c to f90 fortran subroutine(<name>_c)"
     )),
 
-    ("f90_f2c_bind"  , (
-        lambda phys, sub, gb: f"{phys}_iso_f.f90",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
-        lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
-        lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
-        lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
-        lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
-    )),
+    # ("f90_f2c_bind"  , (
+    #     lambda phys, sub, gb: f"{phys}_iso_f.f90",
+    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "f90_f2c_bind"),
+    #     lambda phys, sub, gb: re.compile(r"^\s*end\s+interface"), # put at end of interface
+    #     lambda phys, sub, gb: get_subroutine_begin_regex(sub + "_f"), # sub_f begin
+    #     lambda phys, sub, gb: get_subroutine_end_regex(sub + "_f"),   # sub_f begin
+    #     lambda *x           : "The f90 to c fortran subroutine(<name>_f)"
+    # )),
 
     ("cxx_c2f_bind_decl"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_bind_decl"),
         lambda phys, sub, gb: get_cxx_close_block_regex(comment='extern "C" : end _c decls'), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_c"), # cxx_c decl
@@ -111,7 +112,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_glue_decl"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_decl"),
         lambda phys, sub, gb: re.compile(r'^\s*extern\s+"C"'), # put before _f decls
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data) decl
@@ -120,7 +121,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_glue_impl" , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.cpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_glue_impl"),
         lambda phys, sub, gb: re.compile(r"^\s*// end _c impls"), # reqs special comment
         lambda phys, sub, gb: get_cxx_function_begin_regex(sub), # cxx(data)
@@ -129,7 +130,7 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_c2f_data"  , (
-        lambda phys, sub, gb: f"{phys}_functions_f90.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_c2f_data"),
         lambda phys, sub, gb: re.compile(r"^\s*// Glue functions to call fortran"),  # reqs special comment
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_struct_name(sub)), # struct Sub
@@ -137,23 +138,23 @@ PIECES = OrderedDict([
         lambda *x           : "The cxx data struct definition(struct Data)"
     )),
 
-    ("cxx_f2c_bind_decl"  , (
-        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
-        lambda phys, sub, gb: get_plain_comment_regex(comment="end _host function decls"), # reqs special comment
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_host"), # cxx_host decl
-        lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
-        lambda *x           : "The f90 to cxx function declaration(<name>_host)"
-    )),
+    # ("cxx_f2c_bind_decl"  , (
+    #     lambda phys, sub, gb: f"tests/infra/{phys}_test_data.hpp",
+    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_decl"),
+    #     lambda phys, sub, gb: get_plain_comment_regex(comment="end _f function decls"), # reqs special comment
+    #     lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"), # cxx_f decl
+    #     lambda phys, sub, gb: re.compile(r".*;\s*$"),                   # ;
+    #     lambda *x           : "The f90 to cxx function declaration(<name>_f)"
+    # )),
 
-    ("cxx_f2c_bind_impl"  , (
-        lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
-        lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
-        lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
-        lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_host"),      # cxx_f
-        lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
-        lambda *x           : "The f90 to cxx function implementation(<name>_host)"
-    )),
+    # ("cxx_f2c_bind_impl"  , (
+    #     lambda phys, sub, gb: f"tests/infra/{phys}_test_data.cpp",
+    #     lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_f2c_bind_impl"),
+    #     lambda phys, sub, gb: get_namespace_close_regex(phys),          # insert at end of namespace
+    #     lambda phys, sub, gb: get_cxx_function_begin_regex(sub + "_f"),      # cxx_f
+    #     lambda phys, sub, gb: get_cxx_close_block_regex(at_line_start=True), # terminating }
+    #     lambda *x           : "The f90 to cxx function implementation(<name>_f)"
+    # )),
 
     ("cxx_func_decl", (
         lambda phys, sub, gb: f"{phys}_functions.hpp",
@@ -183,9 +184,9 @@ PIECES = OrderedDict([
     )),
 
     ("cxx_bfb_unit_decl", (
-        lambda phys, sub, gb: f"tests/{phys}_unit_tests_common.hpp",
+        lambda phys, sub, gb: f"tests/infra/{phys}_unit_tests_common.hpp",
         lambda phys, sub, gb: expect_exists(phys, sub, gb, "cxx_bfb_unit_decl"),
-        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True), # insert at end of test struct
+        lambda phys, sub, gb: get_cxx_close_block_regex(semicolon=True, comment="UnitWrap"), # Insert at end of UnitWrap struc
         lambda phys, sub, gb: get_cxx_struct_begin_regex(get_data_test_struct_name(sub)), # struct decl
         lambda phys, sub, gb: re.compile(r".*;\s*$"), # end of struct decl
         lambda *x           : "The cxx unit test struct declaration"
@@ -202,7 +203,7 @@ PIECES = OrderedDict([
 
     ("cxx_eti", (
         lambda phys, sub, gb: f"eti/{phys}_{sub}.cpp",
-        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti"),
+        lambda phys, sub, gb: create_template(phys, sub, gb, "cxx_eti", force=True),
         lambda phys, sub, gb: re.compile(".*"), # insert at top of file
         lambda phys, sub, gb: re.compile(".*"), # start at top of file
         lambda phys, sub, gb: get_namespace_close_regex("scream"), #end of file
@@ -230,7 +231,7 @@ PIECES = OrderedDict([
 ])
 
 # physics map. maps the name of a physics packages containing the original fortran subroutines to:
-#   (path-to-origin, path-to-cxx-src)
+#   (path-to-origin, path-to-cxx-src, init-code)
 ORIGIN_FILES, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
@@ -247,6 +248,16 @@ PHYSICS = {
         ("components/eam/src/control/apply_iop_forcing.F90", "components/eam/src/dynamics/se/se_iop_intr_mod.F90", "components/eam/src/control/iop_data_mod.F90", "components/eam/src/control/history_iop.F90"),
         "components/eamxx/src/physics/dp",
         "dp_init(d.plev, true);"
+    ),
+    "gw" : (
+        ("components/eam/src/physics/cam/gw/gw_common.F90",
+         "components/eam/src/physics/cam/gw/gw_convect.F90",
+         "components/eam/src/physics/cam/gw/gw_diffusion.F90",
+         "components/eam/src/physics/cam/gw/gw_oro.F90",
+         "components/eam/src/physics/cam/gw/gw_utils.F90",
+         "components/eam/src/physics/cam/gw/gw_front.F90"),
+        "components/eamxx/src/physics/gw",
+        "gw_init();"
     ),
 }
 
@@ -749,6 +760,7 @@ def parse_f90_args(line):
     [('elem', 'type::element_t', 'inout', (':',))]
     >>> parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out')
     [('iopfile_out', 'type::string', 'out', None)]
+
     """
     expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
     metadata_str, names_str = line.split("::")
@@ -1105,6 +1117,23 @@ def gen_arg_cxx_decls(arg_data, kokkos=False):
     get_type     = get_kokkos_type if kokkos else get_cxx_type
     arg_types    = [get_type(item) for item in arg_data]
     arg_sig_list = [f"{arg_type} {arg_name}" for arg_name, arg_type in zip(arg_names, arg_types)]
+
+    # For permanent sigs, we want them to look nice
+    if kokkos:
+        list_with_comments = []
+        intent_map = {"in" : "Inputs", "inout" : "Inputs/Outputs", "out" : "Outputs"}
+        curr = None
+        for arg_sig, arg_datum in zip(arg_sig_list, arg_data):
+            intent = arg_datum[ARG_INTENT]
+            if intent != curr:
+                fullname = intent_map[intent]
+                list_with_comments.append(f"// {fullname}")
+                curr = intent
+
+            list_with_comments.append(arg_sig)
+
+        arg_sig_list = list_with_comments
+
     return arg_sig_list
 
 ###############################################################################
@@ -1359,6 +1388,17 @@ def group_data(arg_data, filter_out_intent=None, filter_scalar_custom_types=Fals
     return fst_dims, snd_dims, trd_dims, all_dims, scalars, real_data, int_data, bool_data
 
 ###############################################################################
+def get_list_of_lists(items, indent):
+###############################################################################
+    result = "{\n"
+    for item in items:
+        result += f"{indent}{{{item}}},\n"
+    result = result.rstrip(",\n")
+    result += f"\n{indent[0:-2]}}}"
+
+    return result
+
+###############################################################################
 def gen_struct_api(physics, struct_name, arg_data):
 ###############################################################################
     r"""
@@ -1385,20 +1425,27 @@ def gen_struct_api(physics, struct_name, arg_data):
     bool_vec = []
     for data, data_vec in zip([real_data, int_data, bool_data], [real_vec, int_vec, bool_vec]):
         for dims, items in data.items():
-            dim_cxx_vec.append(f"{{ {', '.join(['{}_'.format(item) for item in dims])} }}")
-            data_vec.append(f"{{ {', '.join(['&{}'.format(item) for item in items])} }}")
+            dim_cxx_vec.append(f"{', '.join(['{}_'.format(item) for item in dims])}")
+            data_vec.append(f"{', '.join(['&{}'.format(item) for item in items])}")
 
-    parent_call = f"  PhysicsTestData({{{', '.join(dim_cxx_vec)}}}, {{{', '.join(real_vec)}}}"
-    if int_vec or bool_vec:
-        parent_call += f", {{{', '.join(int_vec)}}}"
+    parent_call = "  PhysicsTestData("
+    parent_call += get_list_of_lists(dim_cxx_vec, "      ")
+    parent_call += ",\n    "
+    parent_call += get_list_of_lists(real_vec, "      ")
+
+    if int_vec:
+        parent_call += ",\n    "
+        parent_call += get_list_of_lists(int_vec, "      ")
     if bool_vec:
-        parent_call += f", {{{', '.join(bool_vec)}}}"
-    parent_call += ")"
+        parent_call += ",\n    "
+        parent_call += get_list_of_lists(bool_vec, "      ")
 
-    parent_call += f", {', '.join(['{0}({0}_)'.format(name) for name, _ in cons_args])}"
+    parent_call += "),\n"
 
-    parent_call += " {}"
+    parent_call += f"    {', '.join(['{0}({0}_)'.format(name) for name, _ in cons_args])}"
+
     result.append(parent_call)
+    result.append("{}")
     result.append("")
 
     result.append("PTD_STD_DEF({}, {}, {});".\
@@ -1761,6 +1808,9 @@ f"""struct {struct_name}{inheritance} {{
 }};
 
 """
+
+        result = "\n".join([item.rstrip() for item in result.splitlines()])
+
         return result
 
     ###########################################################################
@@ -1774,7 +1824,7 @@ f"""struct {struct_name}{inheritance} {{
         arg_data  = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data)
 
-        return f"void {sub}_host({', '.join(arg_decls)});"
+        return f"void {sub}_f({', '.join(arg_decls)});"
 
     ###########################################################################
     def gen_cxx_f2c_bind_impl(self, phys, sub, force_arg_data=None):
@@ -1784,7 +1834,104 @@ f"""struct {struct_name}{inheritance} {{
         >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
         void fake_sub_f(Real* foo1, Real* foo2, Real* bar1, Real* bar2, Real* bak1, Real* bak2, Real* tracerd1, Real* tracerd2, Real gag, Real* baz, Int* bag, Int* bab1, Int* bab2, bool val, bool* vals, Int shcol, Int nlev, Int nlevi, Int ntracers, Int* ball1, Int* ball2)
         {
-          // TODO
+        #if 0
+          using SHF        = Functions<Real, DefaultDevice>;
+          using Scalar     = typename SHF::Scalar;
+          using Spack      = typename SHF::Spack;
+          using KT         = typename SHF::KT;
+          using ExeSpace   = typename KT::ExeSpace;
+          using MemberType = typename SHF::MemberType;
+        <BLANKLINE>
+          using view_2d = typename SHF::view_2d<Spack>;
+          using view_1d = typename SHF::view_1d<Real>;
+          using view_3d = typename SHF::view_3d<Spack>;
+          using iview_1d = typename SHF::view_1d<Int>;
+          using bview_1d = typename SHF::view_1d<bool>;
+        <BLANKLINE>
+          static constexpr Int num_arrays_2 = 4;
+          std::vector<view_2d> temp_d_2(num_arrays_2);
+          std::vector<int> dim_2_0_sizes = {shcol, shcol, shcol, shcol};
+          std::vector<int> dim_2_1_sizes = {nlevi, nlevi, nlev, nlev};
+          ekat::host_to_device({bak1, bak2, bar1, bar2}, dim_2_0_sizes, dim_2_1_sizes, temp_d_2);
+        <BLANKLINE>
+          static constexpr Int num_arrays_1 = 3;
+          std::vector<view_1d> temp_d_1(num_arrays_1);
+          std::vector<int> dim_1_0_sizes = {shcol, shcol, shcol};
+          ScreamDeepCopy::copy_to_device({baz, foo1, foo2}, dim_1_0_sizes, temp_d_1);
+        <BLANKLINE>
+          static constexpr Int num_arrays_3 = 2;
+          std::vector<view_3d> temp_d_3(num_arrays_3);
+          std::vector<int> dim_3_0_sizes = {shcol, shcol};
+          std::vector<int> dim_3_1_sizes = {nlev, nlev};
+          std::vector<int> dim_3_2_sizes = {ntracers, ntracers};
+          ekat::host_to_device({tracerd1, tracerd2}, dim_3_0_sizes, dim_3_1_sizes, dim_3_2_sizes, temp_d_3);
+        <BLANKLINE>
+          static constexpr Int inum_arrays_1 = 3;
+          std::vector<iview_1d> itemp_d_1(inum_arrays_1);
+          std::vector<int> idim_1_0_sizes = {shcol, shcol, shcol};
+          ScreamDeepCopy::copy_to_device({bag, ball1, ball2}, idim_1_0_sizes, itemp_d_1);
+        <BLANKLINE>
+          static constexpr Int bnum_arrays_1 = 1;
+          std::vector<bview_1d> btemp_d_1(bnum_arrays_1);
+          std::vector<int> bdim_1_0_sizes = {shcol};
+          ScreamDeepCopy::copy_to_device({vals}, bdim_1_0_sizes, btemp_d_1);
+        <BLANKLINE>
+          view_2d
+            bak1_d(temp_d_2[0]),
+            bak2_d(temp_d_2[1]),
+            bar1_d(temp_d_2[2]),
+            bar2_d(temp_d_2[3]);
+        <BLANKLINE>
+          view_1d
+            baz_d(temp_d_1[0]),
+            foo1_d(temp_d_1[1]),
+            foo2_d(temp_d_1[2]);
+        <BLANKLINE>
+          view_3d
+            tracerd1_d(temp_d_3[0]),
+            tracerd2_d(temp_d_3[1]);
+        <BLANKLINE>
+          iview_1d
+            bag_d(itemp_d_1[0]),
+            ball1_d(itemp_d_1[1]),
+            ball2_d(itemp_d_1[2]);
+        <BLANKLINE>
+          bview_1d
+            vals_d(btemp_d_1[0]);
+        <BLANKLINE>
+          const Int nk_pack = ekat::npack<Spack>(nlev);
+          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+            const Int i = team.league_rank();
+        <BLANKLINE>
+            const auto bak1_s = ekat::subview(bak1_d, i);
+            const auto bak2_s = ekat::subview(bak2_d, i);
+            const auto bar1_s = ekat::subview(bar1_d, i);
+            const auto bar2_s = ekat::subview(bar2_d, i);
+            const Scalar baz_s = baz_d(i);
+            const Scalar foo1_s = foo1_d(i);
+            const Scalar foo2_s = foo2_d(i);
+            const auto tracerd1_s = ekat::subview(tracerd1_d, i);
+            const auto tracerd2_s = ekat::subview(tracerd2_d, i);
+        <BLANKLINE>
+            const Scalar bag_s = bag_d(i);
+            const Scalar ball1_s = ball1_d(i);
+            const Scalar ball2_s = ball2_d(i);
+        <BLANKLINE>
+            const Scalar vals_s = vals_d(i);
+        <BLANKLINE>
+            SHF::fake_sub(foo1_s, foo2_s, bar1_s, bar2_s, bak1_s, bak2_s, tracerd1_s, tracerd2_s, gag, baz_s, bag_s, bab1, bab2, val, vals_s, shcol, nlev, nlevi, ntracers, ball1_s, ball2_s);
+          });
+          std::vector<view_1d> tempout_d_1(num_arrays_1);
+          std::vector<int> dim_1_0_out_sizes = {shcol};
+          ScreamDeepCopy::copy_to_host({baz}, dim_1_0_out_sizes, tempout_d_1);
+        <BLANKLINE>
+          std::vector<iview_1d> itempout_d_1(inum_arrays_1);
+          std::vector<int> idim_1_0_out_sizes = {shcol, shcol};
+          ScreamDeepCopy::copy_to_host({ball1, ball2}, idim_1_0_out_sizes, itempout_d_1);
+        <BLANKLINE>
+        #endif
+        <BLANKLINE>
         }
         <BLANKLINE>
         >>> print(gb.gen_cxx_f2c_bind_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
@@ -2134,7 +2281,9 @@ f"""{decl}
         arg_data = force_arg_data if force_arg_data else self._get_arg_data(phys, sub)
         arg_decls = gen_arg_cxx_decls(arg_data, kokkos=True)
 
-        return f"  KOKKOS_FUNCTION\n  static void {sub}({', '.join(arg_decls)});"
+        arg_decls_str = ("\n    ".join([item if item.startswith("//") else f"{item}," for item in arg_decls])).rstrip(",")
+
+        return f"  KOKKOS_FUNCTION\n  static void {sub}(\n    {arg_decls_str});"
 
     ###########################################################################
     def gen_cxx_incl_impl(self, phys, sub, force_arg_data=None):
@@ -2191,36 +2340,36 @@ f"""{decl}
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA))
           static void run_bfb()
           {
-            auto engine = setup_random_test();
+            auto engine = Base::get_engine();
         <BLANKLINE>
-            FakeSubData f90_data[] = {
+            FakeSubData baseline_data[] = {
               // TODO
             };
         <BLANKLINE>
-            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
+            static constexpr Int num_runs = sizeof(baseline_data) / sizeof(FakeSubData);
         <BLANKLINE>
             // Generate random input data
-            // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-            for (auto& d : f90_data) {
+            // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+            for (auto& d : baseline_data) {
               d.randomize(engine);
             }
         <BLANKLINE>
-            // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+            // Create copies of data for use by test. Needs to happen before read calls so that
             // inout data is in original state
-            FakeSubData cxx_data[] = {
+            FakeSubData test_data[] = {
               // TODO
             };
         <BLANKLINE>
             // Assume all data is in C layout
         <BLANKLINE>
             // Get data from fortran
-            for (auto& d : f90_data) {
+            for (auto& d : baseline_data) {
               // expects data in C layout
               fake_sub(d);
             }
         <BLANKLINE>
-            // Get data from cxx
-            for (auto& d : cxx_data) {
+            // Get data from test
+            for (auto& d : test_data) {
               d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
               fake_sub_f(d.foo1, d.foo2, d.bar1, d.bar2, d.bak1, d.bak2, d.tracerd1, d.tracerd2, d.gag, d.baz, d.bag, &d.bab1, &d.bab2, d.val, d.vals, d.shcol, d.nlev, d.nlevi, d.ntracers, d.ball1, d.ball2);
               d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
@@ -2229,17 +2378,17 @@ f"""{decl}
             // Verify BFB results, all data should be in C layout
             if (SCREAM_BFB_TESTING) {
               for (Int i = 0; i < num_runs; ++i) {
-                FakeSubData& d_f90 = f90_data[i];
-                FakeSubData& d_cxx = cxx_data[i];
-                REQUIRE(d_f90.bab1 == d_cxx.bab1);
-                REQUIRE(d_f90.bab2 == d_cxx.bab2);
-                for (Int k = 0; k < d_f90.total(d_f90.baz); ++k) {
-                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.baz));
-                  REQUIRE(d_f90.baz[k] == d_cxx.baz[k]);
-                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball1));
-                  REQUIRE(d_f90.ball1[k] == d_cxx.ball1[k]);
-                  REQUIRE(d_f90.total(d_f90.baz) == d_cxx.total(d_cxx.ball2));
-                  REQUIRE(d_f90.ball2[k] == d_cxx.ball2[k]);
+                FakeSubData& d_baseline = baseline_data[i];
+                FakeSubData& d_test = test_data[i];
+                REQUIRE(d_baseline.bab1 == d_test.bab1);
+                REQUIRE(d_baseline.bab2 == d_test.bab2);
+                for (Int k = 0; k < d_baseline.total(d_baseline.baz); ++k) {
+                  REQUIRE(d_baseline.total(d_baseline.baz) == d_test.total(d_test.baz));
+                  REQUIRE(d_baseline.baz[k] == d_test.baz[k]);
+                  REQUIRE(d_baseline.total(d_baseline.baz) == d_test.total(d_test.ball1));
+                  REQUIRE(d_baseline.ball1[k] == d_test.ball1[k]);
+                  REQUIRE(d_baseline.total(d_baseline.baz) == d_test.total(d_test.ball2));
+                  REQUIRE(d_baseline.ball2[k] == d_test.ball2[k]);
                 }
         <BLANKLINE>
               }
@@ -2248,80 +2397,80 @@ f"""{decl}
         >>> print(gb.gen_cxx_bfb_unit_impl("shoc", "fake_sub", force_arg_data=UT_ARG_DATA_ALL_SCALAR))
           static void run_bfb()
           {
-            auto engine = setup_random_test();
+            auto engine = Base::get_engine();
         <BLANKLINE>
-            FakeSubData f90_data[max_pack_size] = {
+            FakeSubData baseline_data[max_pack_size] = {
               // TODO
             };
         <BLANKLINE>
-            static constexpr Int num_runs = sizeof(f90_data) / sizeof(FakeSubData);
+            static constexpr Int num_runs = sizeof(baseline_data) / sizeof(FakeSubData);
         <BLANKLINE>
             // Generate random input data
-            // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-            for (auto& d : f90_data) {
+            // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+            for (auto& d : baseline_data) {
               d.randomize(engine);
             }
         <BLANKLINE>
-            // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+            // Create copies of data for use by test and sync it to device. Needs to happen before fortran calls so that
             // inout data is in original state
-            view_1d<FakeSubData> cxx_device("cxx_device", max_pack_size);
-            const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-            std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
-            Kokkos::deep_copy(cxx_device, cxx_host);
+            view_1d<FakeSubData> test_device("test_device", max_pack_size);
+            const auto test_host = Kokkos::create_mirror_view(test_device);
+            std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, test_host.data());
+            Kokkos::deep_copy(test_device, test_host);
         <BLANKLINE>
             // Get data from fortran
-            for (auto& d : f90_data) {
+            for (auto& d : baseline_data) {
               fake_sub(d);
             }
         <BLANKLINE>
-            // Get data from cxx. Run fake_sub from a kernel and copy results back to host
+            // Get data from test. Run fake_sub from a kernel and copy results back to host
             Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
               const Int offset = i * Spack::n;
         <BLANKLINE>
               // Init pack inputs
               Spack bar1, bar2, foo1, foo2;
               for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-                bar1[s] = cxx_device(vs).bar1;
-                bar2[s] = cxx_device(vs).bar2;
-                foo1[s] = cxx_device(vs).foo1;
-                foo2[s] = cxx_device(vs).foo2;
+                bar1[s] = test_device(vs).bar1;
+                bar2[s] = test_device(vs).bar2;
+                foo1[s] = test_device(vs).foo1;
+                foo2[s] = test_device(vs).foo2;
               }
         <BLANKLINE>
               // Init outputs
               Spack baz1(0), baz2(0);
         <BLANKLINE>
         <BLANKLINE>
-              Functions::fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, cxx_device(0).gag1, cxx_device(0).gag2, cxx_device(0).gal1, cxx_device(0).gal2, cxx_device(0).bal1, cxx_device(0).bal2, cxx_device(0).bit1, cxx_device(0).bit2, cxx_device(0).gut1, cxx_device(0).gut2, cxx_device(0).gat1, cxx_device(0).gat2);
+              Functions::fake_sub(foo1, foo2, bar1, bar2, baz1, baz2, test_device(0).gag1, test_device(0).gag2, test_device(0).gal1, test_device(0).gal2, test_device(0).bal1, test_device(0).bal2, test_device(0).bit1, test_device(0).bit2, test_device(0).gut1, test_device(0).gut2, test_device(0).gat1, test_device(0).gat2);
         <BLANKLINE>
-              // Copy spacks back into cxx_device view
+              // Copy spacks back into test_device view
               for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-                cxx_device(vs).bar1 = bar1[s];
-                cxx_device(vs).bar2 = bar2[s];
-                cxx_device(vs).baz1 = baz1[s];
-                cxx_device(vs).baz2 = baz2[s];
+                test_device(vs).bar1 = bar1[s];
+                test_device(vs).bar2 = bar2[s];
+                test_device(vs).baz1 = baz1[s];
+                test_device(vs).baz2 = baz2[s];
               }
         <BLANKLINE>
             });
         <BLANKLINE>
-            Kokkos::deep_copy(cxx_host, cxx_device);
+            Kokkos::deep_copy(test_host, test_device);
         <BLANKLINE>
             // Verify BFB results
             if (SCREAM_BFB_TESTING) {
               for (Int i = 0; i < num_runs; ++i) {
-                FakeSubData& d_f90 = f90_data[i];
-                FakeSubData& d_cxx = cxx_host[i];
-                REQUIRE(d_f90.bar1 == d_cxx.bar1);
-                REQUIRE(d_f90.bar2 == d_cxx.bar2);
-                REQUIRE(d_f90.baz1 == d_cxx.baz1);
-                REQUIRE(d_f90.baz2 == d_cxx.baz2);
-                REQUIRE(d_f90.gal1 == d_cxx.gal1);
-                REQUIRE(d_f90.gal2 == d_cxx.gal2);
-                REQUIRE(d_f90.bal1 == d_cxx.bal1);
-                REQUIRE(d_f90.bal2 == d_cxx.bal2);
-                REQUIRE(d_f90.gut1 == d_cxx.gut1);
-                REQUIRE(d_f90.gut2 == d_cxx.gut2);
-                REQUIRE(d_f90.gat1 == d_cxx.gat1);
-                REQUIRE(d_f90.gat2 == d_cxx.gat2);
+                FakeSubData& d_baseline = baseline_data[i];
+                FakeSubData& d_test = test_host[i];
+                REQUIRE(d_baseline.bar1 == d_test.bar1);
+                REQUIRE(d_baseline.bar2 == d_test.bar2);
+                REQUIRE(d_baseline.baz1 == d_test.baz1);
+                REQUIRE(d_baseline.baz2 == d_test.baz2);
+                REQUIRE(d_baseline.gal1 == d_test.gal1);
+                REQUIRE(d_baseline.gal2 == d_test.gal2);
+                REQUIRE(d_baseline.bal1 == d_test.bal1);
+                REQUIRE(d_baseline.bal2 == d_test.bal2);
+                REQUIRE(d_baseline.gut1 == d_test.gut1);
+                REQUIRE(d_baseline.gut2 == d_test.gut2);
+                REQUIRE(d_baseline.gat1 == d_test.gat1);
+                REQUIRE(d_baseline.gat2 == d_test.gat2);
               }
             }
           } // run_bfb
@@ -2336,15 +2485,15 @@ f"""{decl}
 """
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }"""
 
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
         check_scalars, check_arrays = "", ""
         for scalar in scalars:
-            check_scalars += f"        REQUIRE(d_f90.{scalar[0]} == d_cxx.{scalar[0]});\n"
+            check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
@@ -2363,50 +2512,55 @@ f"""{decl}
                         all_data[k] = v
 
             for _, data in all_data.items():
-                check_arrays += f"        for (Int k = 0; k < d_f90.total(d_f90.{data[0]}); ++k) {{\n"
+                check_arrays += f"        for (Int k = 0; k < d_baseline.total(d_baseline.{data[0]}); ++k) {{\n"
                 for datum in data:
-                    check_arrays += f"          REQUIRE(d_f90.total(d_f90.{data[0]}) == d_cxx.total(d_cxx.{datum}));\n"
-                    check_arrays += f"          REQUIRE(d_f90.{datum}[k] == d_cxx.{datum}[k]);\n"
+                    check_arrays += f"          REQUIRE(d_baseline.total(d_baseline.{data[0]}) == d_test.total(d_test.{datum}));\n"
+                    check_arrays += f"          REQUIRE(d_baseline.{datum}[k] == d_test.{datum}[k]);\n"
 
                 check_arrays += "        }\n"
 
         if has_array:
             result = \
-"""  static void run_bfb()
+"""  void run_bfb()
   {{
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    {data_struct} f90_data[] = {{
+    // Set up inputs
+    {data_struct} baseline_data[] = {{
       // TODO
     }};
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof({data_struct});{gen_random}
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
-    {data_struct} cxx_data[] = {{
+    {data_struct} test_data[] = {{
       // TODO
     }};
 
-    // Assume all data is in C layout
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {{
+      for (auto& d : baseline_data) {{
+        d.read(Base::m_fid);
+      }}
+    }}
 
-    // Get data from fortran
-    for (auto& d : f90_data) {{
-      // expects data in C layout
+    // Get data from test
+    for (auto& d : test_data) {{
       {sub}(d);
     }}
 
-    // Get data from cxx
-    for (auto& d : cxx_data) {{{c2f_transpose_code}
-      {sub}_f({arg_data_args});{f2c_transpose_code}
-    }}
-
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {{
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {{
       for (Int i = 0; i < num_runs; ++i) {{
-        {data_struct}& d_f90 = f90_data[i];
-        {data_struct}& d_cxx = cxx_data[i];
+        {data_struct}& d_baseline = baseline_data[i];
+        {data_struct}& d_test = test_data[i];
 {check_scalars}{check_arrays}
+      }}
+    }}
+    else if (this->m_baseline_action == GENERATE) {{
+      for (Int i = 0; i < num_runs; ++i) {{
+        test_data[i].write(Base::m_fid);
       }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
@@ -2435,7 +2589,7 @@ f"""{decl}
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
         {ireal_assigns}
       }}
-""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = cxx_device(vs).{0};".format(ireal) for ireal in ireals]))
+""".format(ireals=", ".join(ireals), ireal_assigns="\n        ".join(["{0}[s] = test_device(vs).{0};".format(ireal) for ireal in ireals]))
 
             spack_output_init = ""
             if ooreals:
@@ -2445,41 +2599,41 @@ f"""// Init outputs
 """
 
             scalars = group_data(arg_data)[4]
-            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'cxx_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
+            func_call = f"Functions::{sub}({', '.join([(scalar if scalar in reals else 'test_device(0).{}'.format(scalar)) for scalar, _ in scalars])});"
 
             spack_output_to_dview = ""
             if oreals:
                 spack_output_to_dview = \
-"""// Copy spacks back into cxx_device view
+"""// Copy spacks back into test_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {{
         {}
       }}
-""".format("\n        ".join(["cxx_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
+""".format("\n        ".join(["test_device(vs).{0} = {0}[s];".format(oreal) for oreal in oreals]))
 
             result = \
-"""  static void run_bfb()
+"""  void run_bfb()
   {{
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    {data_struct} f90_data[max_pack_size] = {{
+    {data_struct} baseline_data[max_pack_size] = {{
       // TODO
     }};
 
-    static constexpr Int num_runs = sizeof(f90_data) / sizeof({data_struct});{gen_random}
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by test and sync it to device. Needs to happen before read calls so that
     // inout data is in original state
-    view_1d<{data_struct}> cxx_device("cxx_device", max_pack_size);
-    const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
-    Kokkos::deep_copy(cxx_device, cxx_host);
+    view_1d<{data_struct}> test_device("test_device", max_pack_size);
+    const auto test_host = Kokkos::create_mirror_view(test_device);
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, test_host.data());
+    Kokkos::deep_copy(test_device, test_host);
 
     // Get data from fortran
-    for (auto& d : f90_data) {{
+    for (auto& d : baseline_data) {{
       {sub}(d);
     }}
 
-    // Get data from cxx. Run {sub} from a kernel and copy results back to host
+    // Get data from test. Run {sub} from a kernel and copy results back to host
     Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {{
       const Int offset = i * Spack::n;
 
@@ -2491,13 +2645,13 @@ f"""// Init outputs
       {spack_output_to_dview}
     }});
 
-    Kokkos::deep_copy(cxx_host, cxx_device);
+    Kokkos::deep_copy(test_host, test_device);
 
     // Verify BFB results
     if (SCREAM_BFB_TESTING) {{
       for (Int i = 0; i < num_runs; ++i) {{
-        {data_struct}& d_f90 = f90_data[i];
-        {data_struct}& d_cxx = cxx_host[i];
+        {data_struct}& d_baseline = baseline_data[i];
+        {data_struct}& d_test = test_host[i];
 {check_scalars}      }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
@@ -2598,7 +2752,7 @@ template struct Functions<Real,DefaultDevice>;
         ... "fake_line_after_2",
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file shoc_functions_f90.cpp, would replace:
+        In file tests/infra/shoc_test_data.cpp, would replace:
         void fake_sub(FakeSubData& d)
         {
           // bad line
@@ -2622,7 +2776,7 @@ template struct Functions<Real,DefaultDevice>;
         ... "fake_line_after_2",
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_glue_impl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file shoc_functions_f90.cpp, at line 2, would insert:
+        In file tests/infra/shoc_test_data.cpp, at line 2, would insert:
         void fake_sub(FakeSubData& d)
         {
           shoc_init(d.nlev, true);
@@ -2651,7 +2805,7 @@ template struct Functions<Real,DefaultDevice>;
         ... "fake_line_after_2",
         ... ]
         >>> gb.gen_piece("shoc", "fake_sub", "cxx_c2f_bind_decl", force_arg_data=UT_ARG_DATA, force_file_lines=force_file_lines)
-        In file shoc_functions_f90.cpp, would replace:
+        In file tests/infra/shoc_test_data.cpp, would replace:
         void fake_sub_c();
         <BLANKLINE>
         WITH:
@@ -2722,5 +2876,7 @@ template struct Functions<Real,DefaultDevice>;
                     except SystemExit as e:
                         print(f"Warning: failed to generate subroutine {sub} piece {piece} for physics {phys}, error: {e}")
                         all_success = False
+
+        print("ALL_SUCCESS" if all_success else "THERE WERE FAILURES")
 
         return all_success

@@ -4,12 +4,27 @@ module gw_utils
 ! This module contains utility code for the gravity wave modules.
 !
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use iso_c_binding, only: c_double, c_float, c_bool
+#endif
+
 implicit none
 private
 save
 
-! Real kind for gravity wave parameterization.
-integer, public, parameter :: r8 = selected_real_kind(12)
+#ifdef SCREAM_CONFIG_IS_CMAKE
+#include "eamxx_config.f"
+#  ifdef SCREAM_DOUBLE_PRECISION
+  integer,parameter,public :: r8 = c_double ! 8 byte real, compatible with c type double
+#  else
+  integer,parameter,public :: r8 = c_float ! 4 byte real, compatible with c type float
+#  endif
+  integer,parameter,public :: btype  = c_bool ! boolean type, compatible with c
+#else
+  ! Real kind for gravity wave parameterization.
+  integer, public, parameter :: r8 = selected_real_kind(12)
+  integer,parameter,public :: btype = kind(.true.) ! native logical
+#endif
 
 ! Public interface
 public :: get_unit_vector

@@ -52,6 +52,9 @@ void MAMOptics::set_grids(
   FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
   add_tracers_wet_atm();
   add_fields_dry_atm();
+    
+  // cloud liquid number mixing ratio [1/kg]
+  add_tracer<Required>("nc", grid_, n_unit);
 
   // layout for 2D (1d horiz X 1d vertical) variables
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();

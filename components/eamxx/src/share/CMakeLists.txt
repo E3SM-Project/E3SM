@@ -17,6 +17,7 @@ set(SHARE_SRC
   field/field.cpp
   field/field_group.cpp
   field/field_manager.cpp
+  field/field_sync.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
   grid/grid_import_export.cpp

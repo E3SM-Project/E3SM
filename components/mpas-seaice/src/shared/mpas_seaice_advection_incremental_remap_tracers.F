@@ -192,8 +192,7 @@ contains
          pkgTracerVerticalHumicsActive, &
          pkgTracerVerticalDONActive, &
          pkgTracerVerticalIronActive, &
-         pkgTracerZAerosolsActive, &
-         pkgTracerZSalinityActive
+         pkgTracerZAerosolsActive
 
     logical, pointer :: &
          config_use_level_meltponds
@@ -289,8 +288,6 @@ contains
                                                                pkgTracerVerticalIronActive)
     call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZAerosolsActive', &
                                                                pkgTracerZAerosolsActive)
-    call MPAS_pool_get_package(domain % blocklist % packages, 'pkgTracerZSalinityActive', &
-                                                               pkgTracerZSalinityActive)
 
     configPool => domain % blocklist % configs
     call MPAS_pool_get_config(configPool, "config_use_level_meltponds", config_use_level_meltponds)
@@ -469,10 +466,6 @@ contains
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsIce','brineFraction')
        call add_tracer_to_tracer_linked_list(tracersHead, 'verticalAerosolsSnow','snowVolumeCategory')
     endif
-
-    ! vertical salinity
-    if (pkgTracerZSalinityActive) &
-       call add_tracer_to_tracer_linked_list(tracersHead, 'verticalSalinity',            'brineFraction')
 
     if (verboseTracers) then
        thisTracer => tracersHead

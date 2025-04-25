@@ -435,18 +435,20 @@
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">preempt</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">shared</queue>
       <queue walltimemax="00:45:00" nodemax="1792" strict="true">overrun</queue>
-      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
-  <batch_system MACH="muller-cpu" type="nersc_slurm">
+  <batch_system MACH="pm-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
-      <queue walltimemax="00:30:00" nodemax="16" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="16" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="3072" strict="true">overrun</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -474,44 +476,60 @@
       <directive> -G 0</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:45:00" nodemax="64" default="true">regular</queue>
-      <queue walltimemax="00:45:00" nodemax="64" strict="true">preempt</queue>
-      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+      <queue walltimemax="00:45:00" nodemax="150" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
+      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
-  <batch_system MACH="pm-cpu" type="nersc_slurm">
+  <batch_system MACH="muller-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
-      <queue walltimemax="00:30:00" nodemax="3072" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="3072" strict="true">preempt</queue>
-      <queue walltimemax="00:30:00" nodemax="3072" strict="true">shared</queue>
-      <queue walltimemax="00:30:00" nodemax="3072" strict="true">overrun</queue>
+      <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">preempt</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
-  <batch_system MACH="alvarez" type="nersc_slurm">
+  <batch_system MACH="alvarez-gpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=gpu</directive>
+    </directives>
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-node=4</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
+    <directives compiler="nvidiagpu">
+      <directive> --gpus-per-node=4</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives compiler="gnu">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:45:00" nodemax="150" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
+      <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="alvarez-cpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
       <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
-    </queues>
-  </batch_system>
-
-  <batch_system MACH="stampede2" type="slurm">
-    <directives>
-      <directive>-n {{ total_tasks }}</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" nodemax="4" strict="true">skx-dev</queue>
-      <queue walltimemax="00:30:00" nodemax="868" strict="true">skx-large</queue>
-      <queue walltimemax="01:00:00" nodemax="128" default="true">skx-normal</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -809,14 +827,6 @@
     <queues>
       <queue walltimemax="01:00:00" default="true">lr6</queue>
     </queues>
-   </batch_system>
-
-   <batch_system MACH="gcp10" type="slurm" >
-     <queues>
-       <queue walltimemax="01:30:00" default="true">compute-30</queue> <!--                 0.14214 -->
-       <queue walltimemax="01:30:00" default="true">computep</queue>   <!--enable_placement 0.28428 -->
-       <queue walltimemax="01:30:00" default="true">compute</queue>    <!--                 0.28428 -->
-     </queues>
    </batch_system>
 
    <batch_system MACH="gcp12" type="slurm" >

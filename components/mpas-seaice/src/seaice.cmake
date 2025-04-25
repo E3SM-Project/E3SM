@@ -47,41 +47,6 @@ list(APPEND RAW_SOURCES
   core_seaice/icepack/columnphysics/icepack_zbgc_shared.F90
 )
 
-# column
-list(APPEND RAW_SOURCES
-  core_seaice/column/ice_colpkg.F90
-  core_seaice/column/ice_kinds_mod.F90
-  core_seaice/column/ice_warnings.F90
-  core_seaice/column/ice_colpkg_shared.F90
-  core_seaice/column/constants/cesm/ice_constants_colpkg.F90
-  core_seaice/column/ice_therm_shared.F90
-  core_seaice/column/ice_orbital.F90
-  core_seaice/column/ice_mushy_physics.F90
-  core_seaice/column/ice_therm_mushy.F90
-  core_seaice/column/ice_atmo.F90
-  core_seaice/column/ice_age.F90
-  core_seaice/column/ice_firstyear.F90
-  core_seaice/column/ice_flux_colpkg.F90
-  core_seaice/column/ice_meltpond_cesm.F90
-  core_seaice/column/ice_meltpond_lvl.F90
-  core_seaice/column/ice_meltpond_topo.F90
-  core_seaice/column/ice_therm_vertical.F90
-  core_seaice/column/ice_therm_bl99.F90
-  core_seaice/column/ice_therm_0layer.F90
-  core_seaice/column/ice_itd.F90
-  core_seaice/column/ice_colpkg_tracers.F90
-  core_seaice/column/ice_therm_itd.F90
-  core_seaice/column/ice_shortwave.F90
-  core_seaice/column/ice_mechred.F90
-  core_seaice/column/ice_aerosol.F90
-  core_seaice/column/ice_brine.F90
-  core_seaice/column/ice_algae.F90
-  core_seaice/column/ice_zbgc.F90
-  core_seaice/column/ice_zbgc_shared.F90
-  core_seaice/column/ice_zsalinity.F90
-  core_seaice/column/ice_snow.F90
-)
-
 # shared
 list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_time_integration.F
@@ -105,7 +70,6 @@ list(APPEND RAW_SOURCES
   core_seaice/shared/mpas_seaice_diagnostics.F
   core_seaice/shared/mpas_seaice_numerics.F
   core_seaice/shared/mpas_seaice_constants.F
-  core_seaice/shared/mpas_seaice_column.F
   core_seaice/shared/mpas_seaice_icepack.F
   core_seaice/shared/mpas_seaice_diagnostics.F
   core_seaice/shared/mpas_seaice_error.F

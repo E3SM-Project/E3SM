@@ -268,6 +268,7 @@ _TESTS = {
         "tests" : (
             "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
             "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
+            "SMS_Lh4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             )
         },
 
@@ -749,6 +750,7 @@ _TESTS = {
             "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-6",
             "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
+            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             )
     },
 

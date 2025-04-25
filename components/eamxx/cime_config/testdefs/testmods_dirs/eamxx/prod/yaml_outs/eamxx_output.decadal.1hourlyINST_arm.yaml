@@ -3,7 +3,7 @@
 filename_prefix: eamxx_output.decadal.1hourlyINST_arm.h
 iotype: pnetcdf
 averaging_type: instant
-max_snapshots_per_file: 24  # one file per day
+max_snapshots_per_file: 1 # only one snapshot per file
 horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_DecadalSites_c20240130.nc
 fields:
   physics_pg2:

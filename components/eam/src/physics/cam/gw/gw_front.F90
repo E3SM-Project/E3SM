@@ -5,7 +5,7 @@ module gw_front
 ! from gw_drag in May 2013.
 !
 
-use gw_utils, only: r8
+use gw_utils, only: r8, btype
 use gw_common, only: pver, pgwv, cref
 
 implicit none
@@ -128,7 +128,7 @@ subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
   integer :: k, l
 
   ! Whether or not to launch waves in this column.
-  logical :: launch_wave(ncol)
+  logical(btype) :: launch_wave(ncol)
 
   ! Zonal/meridional wind averaged over source region.
   real(r8) :: usrc(ncol), vsrc(ncol)

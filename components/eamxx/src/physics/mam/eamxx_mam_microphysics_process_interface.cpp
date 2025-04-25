@@ -89,6 +89,10 @@ void MAMMicrophysics::set_grids(
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
 
@@ -383,9 +387,6 @@ int MAMMicrophysics::get_len_temporary_views() {
   work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
   work_len += ncol_ * nlev_ * extcnt;
-  // dflx_, dvel_
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  work_len += 2 * ncol_ * gas_pcnst;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
@@ -405,14 +406,8 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
   work_ptr += ncol_ * nlev_ * extcnt;
-  // Work arrays for return values from
-  // perform_atmospheric_chemistry_and_microphysics
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  dflx_                   = view_2d(work_ptr, ncol_, gas_pcnst);
-  work_ptr += ncol_ * gas_pcnst;
-  dvel_ = view_2d(work_ptr, ncol_, gas_pcnst);
-  work_ptr += ncol_ * gas_pcnst;
-  /// error check
+
+  // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
   // to use the minimum amount of memory
   const int workspace_used     = work_ptr - buffer_.temporary_views.data();
@@ -782,9 +777,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int month              = start_of_step_ts().get_month();  // 1-based
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
-  auto &dflx                   = dflx_;
-  auto &dvel                   = dvel_;
+  const int pcnst              = mam4::pcnst;
 
+  //NOTE: we need to initialize photo_rates_
+  Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphyscs
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
@@ -897,13 +893,11 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        view_1d dflx_col =
-            ekat::subview(dflx, icol);  // deposition velocity [1/cm/s]
-        view_1d dvel_col =
-            ekat::subview(dvel, icol);  // deposition flux [1/cm^2/s]
-
-        // Output: values are dvel, dvlx
+        Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
+        Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
+        // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
+        team.team_barrier();
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
@@ -925,11 +919,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
-        Kokkos::parallel_for(
-            Kokkos::TeamThreadRange(team, offset_aerosol, mam4::pcnst),
-            [&](const int ispc) {
-              constituent_fluxes(icol, ispc) -= dflx_col(ispc - offset_aerosol);
-            });
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
+          constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
+        });
+
       });  // parallel_for for the column loop
   Kokkos::fence();
 

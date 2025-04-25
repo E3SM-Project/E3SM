@@ -87,6 +87,11 @@ void MAMAci::set_grids(
   add_tracers_wet_atm();
   add_fields_dry_atm();
 
+  // cloud liquid number mixing ratio [1/kg]
+  // NOTE: Advected by dynamics only, ACI vertically mixes nc
+  // Updates to nc from ACI are applied in P3 microphysics
+  add_tracer<Required>("nc", grid_, n_unit, 1, TracerAdvection::DynamicsOnly);
+  
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
 

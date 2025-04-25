@@ -6,7 +6,7 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "tms_functions.hpp"
-#include "tms_functions_f90.hpp"
+#include "tms_test_data.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
 namespace scream {
@@ -14,18 +14,18 @@ namespace tms {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestComputeTMS {
+struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     // Should property tests be created?
   } // run_property
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    ComputeTMSData f90_data[] = {
+    ComputeTMSData baseline_data[] = {
       //             ncols, nlevs
       ComputeTMSData(12,    72),
       ComputeTMSData(8,     12),
@@ -33,53 +33,55 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS {
       ComputeTMSData(2,     7)
     };
 
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeTMSData);
+
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine, { {d.sgh, {0.5, 1.5}} });
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before read calls so that
     // inout data is in original state
     ComputeTMSData cxx_data[] = {
-      ComputeTMSData(f90_data[0]),
-      ComputeTMSData(f90_data[1]),
-      ComputeTMSData(f90_data[2]),
-      ComputeTMSData(f90_data[3])
+      ComputeTMSData(baseline_data[0]),
+      ComputeTMSData(baseline_data[1]),
+      ComputeTMSData(baseline_data[2]),
+      ComputeTMSData(baseline_data[3])
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      compute_tms(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_fid);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      compute_tms_f(d.ncols, d.nlevs,
-                    d.u_wind, d.v_wind, d.t_mid, d.p_mid, d.exner,
-                    d.z_mid, d.sgh, d.landfrac, d.ksrf, d.taux, d.tauy);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      compute_tms(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(ComputeTMSData);
-
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (int r = 0; r<num_runs; ++r) {
-        ComputeTMSData& d_f90 = f90_data[r];
+        ComputeTMSData& d_baseline = baseline_data[r];
         ComputeTMSData& d_cxx = cxx_data[r];
-        REQUIRE(d_f90.total(d_f90.ksrf) == d_cxx.total(d_cxx.ksrf));
-        REQUIRE(d_f90.total(d_f90.taux) == d_cxx.total(d_cxx.taux));
-        REQUIRE(d_f90.total(d_f90.tauy) == d_cxx.total(d_cxx.tauy));
+        REQUIRE(d_baseline.total(d_baseline.ksrf) == d_cxx.total(d_cxx.ksrf));
+        REQUIRE(d_baseline.total(d_baseline.taux) == d_cxx.total(d_cxx.taux));
+        REQUIRE(d_baseline.total(d_baseline.tauy) == d_cxx.total(d_cxx.tauy));
 
-        for (int i=0; i<d_f90.total(d_f90.ksrf); ++i) {
-          REQUIRE(d_f90.ksrf[i] == d_cxx.ksrf[i]);
-          REQUIRE(d_f90.taux[i] == d_cxx.taux[i]);
-          REQUIRE(d_f90.tauy[i] == d_cxx.tauy[i]);
+        for (int i=0; i<d_baseline.total(d_baseline.ksrf); ++i) {
+          REQUIRE(d_baseline.ksrf[i] == d_cxx.ksrf[i]);
+          REQUIRE(d_baseline.taux[i] == d_cxx.taux[i]);
+          REQUIRE(d_baseline.tauy[i] == d_cxx.tauy[i]);
         }
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int i = 0; i < num_runs; ++i) {
+        cxx_data[i].write(Base::m_fid);
       }
     }
   } // run_bfb
@@ -91,16 +93,12 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS {
 
 namespace {
 
-//TEST_CASE("compute_tms_property", "tms")
-//{
-//  using TestStruct = scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;
-//  TestStruct::run_property();
-//}
-
 TEST_CASE("compute_tms_bfb", "tms")
 {
   using TestStruct = scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;
-  TestStruct::run_bfb();
+
+  TestStruct t;
+  t.run_bfb();
 }
 
 } // empty namespace
