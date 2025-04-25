@@ -3399,7 +3399,7 @@
 <h1 id="field-contraction-diagnostics">Field contraction diagnostics</h1>
 <p>In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
-We call these horizontal and vertical reduction.</p>
+We call these horizontal and vertical reductions.</p>
 <h2 id="horizontal-reduction">Horizontal reduction</h2>
 <p>We currently offer only one horizontal reduction <span class="arithmatex">\(C\)</span>, and it is defined as</p>
 <div class="arithmatex">\[
@@ -3458,19 +3458,19 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code></
 </tr>
 <tr>
 <td><code>X_vert_avg_dz_weighted</code></td>
-<td><span class="arithmatex">\(dz_{k}\)</span></td>
-<td>Average across all levels, weighted by <span class="arithmatex">\(dz_{k}\)</span></td>
+<td><span class="arithmatex">\(\Delta z_{k}\)</span></td>
+<td>Average across all levels, weighted by <span class="arithmatex">\(\Delta z_{k}\)</span></td>
 </tr>
 <tr>
 <td><code>X_vert_sum_dz_weighted</code></td>
-<td><span class="arithmatex">\(dz_{k}\)</span></td>
-<td>Sum across all levels, weighted by <span class="arithmatex">\(dz_{k}\)</span></td>
+<td><span class="arithmatex">\(\Delta z_{k}\)</span></td>
+<td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta z_{k}\)</span></td>
 </tr>
 </tbody>
 </table>
 <p>The only supported weighting for now is that of either
 <code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>, in units of Pa,
-or <code>dz</code> field in EAMxx, <span class="arithmatex">\(dz_{k}\)</span>, in units of m.
+or <code>dz</code> field in EAMxx, <span class="arithmatex">\(\Delta z_{k}\)</span>, in units of m.
 In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
 where g is the gravitational acceleration, in units of m/s<span class="arithmatex">\(^2\)</span>.</p>
 <h2 id="example">Example</h2>
@@ -3482,11 +3482,12 @@ where g is the gravitational acceleration, in units of m/s<span class="arithmate
 <span class="nt">fields</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dz_weighted</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span>
+<span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span><span class="w">  </span><span class="c1"># K * Pa * s / (m * m) </span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dz_weighted</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
