@@ -110,7 +110,7 @@ module interpolate_mod
      module procedure interpolate_vector3d
   end interface
 
-  type (interpolate_t), target, public ::  interp_p
+  type (interpolate_t), target ::  interp_p
 
   ! store the  lat-lon grid
   ! gridtype = 1       equally spaced, including poles (FV scalars output grid)
@@ -131,12 +131,15 @@ module interpolate_mod
   real (kind=real_kind), pointer, public   :: gweight(:) => NULL()
 
   integer :: gridtype = 1        !
-  integer, public :: itype = 1           ! 0 = native high order
+  integer :: itype = 1           ! 0 = native high order
                                  ! 1 = bilinear
 
   integer :: auto_grid = 0        ! 0 = interpolation grid set by namelist
                                   ! 1 = grid set via mesh resolution
 
+#ifdef MODEL_CESM
+  public :: interp_p, itype
+#endif
 
 contains
 
