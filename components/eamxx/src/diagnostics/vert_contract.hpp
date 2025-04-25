@@ -7,9 +7,9 @@
 namespace scream {
 
 /*
- * This diagnostic will calculate the area-weighted average of a field
- * across the COL tag dimension, producing an N-1 dimensional field
- * that is area-weighted average of the input field.
+ * This diagnostic will calculate the dp- or dz-weighted average of a field
+ * across the LEV tag dimension, producing an N-1 dimensional field
+ * that is a weighted average of the input field.
  */
 
 class VertContractDiag : public AtmosphereDiagnostic {
@@ -18,7 +18,7 @@ class VertContractDiag : public AtmosphereDiagnostic {
   VertContractDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name() const { return "VertContract"; }
+  std::string name() const { return "VertContractDiag"; }
 
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
@@ -36,6 +36,8 @@ class VertContractDiag : public AtmosphereDiagnostic {
   std::string m_diag_name;
   // Name of contraction method (avg, sum)
   std::string m_contract_method;
+  // Name of weighting method (dp, dz)
+  std::string m_weighting_method;
 
   // Need some weighting, if unweighted, we will make it 1
   Field m_weighting;

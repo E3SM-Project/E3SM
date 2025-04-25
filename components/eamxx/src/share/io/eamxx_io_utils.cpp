@@ -139,7 +139,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
-  std::regex vert_contract ("([A-Za-z0-9_]+)_vert_(avg|sum)$");
+  std::regex vert_contract ("([A-Za-z0-9_]+)_vert_(avg|sum)_(dp|dz)_weighted$");
 
   std::string diag_name;
   std::smatch matches;
@@ -203,7 +203,8 @@ create_diagnostic (const std::string& diag_field_name,
     diag_name = "VertContractDiag";
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
-    params.set<std::string>("contract_method", matches[3].str());
+    params.set<std::string>("contract_method", matches[2].str());
+    params.set<std::string>("weighting_method", matches[3].str());
   }
   else
   {

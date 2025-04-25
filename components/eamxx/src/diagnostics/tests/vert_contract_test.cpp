@@ -31,9 +31,6 @@ TEST_CASE("vert_contract") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  // A numerical tolerance
-  auto tol = std::numeric_limits<Real>::epsilon() * 100;
-
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -56,14 +53,17 @@ TEST_CASE("vert_contract") {
   FieldIdentifier fin2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier fin3_fid("qc", scalar3d_layout, kg / kg, grid->name());
   FieldIdentifier pd_fid("pseudo_density", scalar1d_layout, Pa, grid->name());
+  FieldIdentifier dz_fid("dz", scalar1d_layout, m, grid->name());
 
   Field fin2(fin2_fid);
   Field fin3(fin3_fid);
   Field pd(pd_fid);
+  Field dz(dz_fid);
 
   fin2.allocate_view();
   fin3.allocate_view();
   pd.allocate_view();
+  dz.allocate_view();
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
@@ -76,22 +76,28 @@ TEST_CASE("vert_contract") {
   register_diagnostics();
 
   ekat::ParameterList params;
-  REQUIRE_THROWS(diag_factory.create("VerContractDiag", comm,
-                                     params));  // No 'field_name' parameter
+  // instantiation works because we don't do anything in the constructor
+  auto bad_diag = diag_factory.create("VertContractDiag", comm, params);
+  // this will throw because no field_name was provided
+  REQUIRE_THROWS(bad_diag->set_grids(gm));
 
   fin2.get_header().get_tracking().update_time_stamp(t0);
   fin3.get_header().get_tracking().update_time_stamp(t0);
   pd.get_header().get_tracking().update_time_stamp(t0);
+  dz.get_header().get_tracking().update_time_stamp(t0);
   randomize(fin2, engine, pdf);
   randomize(fin3, engine, pdf);
   randomize(pd, engine, pdf);
+  randomize(dz, engine, pdf);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
   params.set<std::string>("contract_method", "avg");
+  params.set<std::string>("weighting_method", "dp");
   auto diag_wavg = diag_factory.create("VertContractDiag", comm, params);
   params.set<std::string>("contract_method", "sum");
+  params.set<std::string>("weighting_method", "dz");
   auto diag_wsum = diag_factory.create("VertContractDiag", comm, params);
   diag_wavg->set_grids(gm);
   diag_wsum->set_grids(gm);
@@ -131,11 +137,10 @@ TEST_CASE("vert_contract") {
   REQUIRE(views_are_equal(diag_wavg_f, diag1_m));
 
   // Repeat for another case, but for sum
-  auto pd_wsum = pd.clone();
-  pd_wsum.scale(sp(1.0) / g);
-  vert_contraction<Real>(diag2_m, fin3, pd_wsum, &comm);
+  auto dz_wsum = dz.clone();
+  vert_contraction<Real>(diag2_m, fin3, dz_wsum, &comm);
   diag_wsum->set_required_field(fin3);
-  diag_wsum->set_required_field(pd);
+  diag_wsum->set_required_field(dz);
   diag_wsum->initialize(t0, RunType::Initial);
   diag_wsum->compute_diagnostic();
   auto diag_wsum_f = diag_wsum->get_diagnostic();
