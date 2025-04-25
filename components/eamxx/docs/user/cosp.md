@@ -47,19 +47,19 @@ A minimal example:
 ```shell
 ./atmchange output_yaml_files=eamxx_daily_output.yaml
 cat << EOF > eamxx_cosp_daily_output.yaml
-Averaging Type: Average
-Fields:
-  Physics PG2:
-    Field Names:
+averaging_type: average
+fields:
+  physics_pg2:
+    field_names:
     - isccp_cldtot
     - isccp_ctptau
     - modis_ctptau
     - misr_cthtau
     - cosp_sunlit
-Max Snapshots Per File: 1
+max_snapshots_per_file: 1
 filename_prefix: eamxx
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: ndays
 EOF
 ```

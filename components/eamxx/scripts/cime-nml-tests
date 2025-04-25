@@ -156,7 +156,7 @@ class TestBuildnml(unittest.TestCase):
 
         # atm config should match case test opts
         case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
-        atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
+        atm_freq    = run_cmd_assert_result(self, "./atmquery frequency --value", from_dir=case)
         self.assertEqual(case_rest_n, atm_freq)
 
         # Change XML and check that atmquery reflects this change
@@ -165,7 +165,7 @@ class TestBuildnml(unittest.TestCase):
         run_cmd_assert_result(self, f"./xmlchange REST_N={new_rest_n}", from_dir=case)
         run_cmd_assert_result(self, "./case.setup", from_dir=case)
         new_case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
-        new_atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
+        new_atm_freq    = run_cmd_assert_result(self, "./atmquery frequency --value", from_dir=case)
         self.assertEqual(new_case_rest_n, new_rest_n)
         self.assertEqual(new_atm_freq, new_rest_n)
 
@@ -195,8 +195,8 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        # Add testOnly proc
-        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly")], case)
+        # Add test_only proc
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
 
         # Test case 1: append to base, then to last. Should give all 3 entries stacked
         run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 1'", from_dir=case)
@@ -311,11 +311,11 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa,p3,testOnly")], case)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
 
-        # If we are able to change subcycles of testOnly then we know the atmchange
+        # If we are able to change subcycles of test_only then we know the atmchange
         # above added the necessary atm proc XML block.
-        self._chg_atmconfig([("testOnly::number_of_subcycles", "42")], case)
+        self._chg_atmconfig([("test_only::number_of_subcycles", "42")], case)
 
     ###########################################################################
     def test_atmchanges_for_atm_procs_add_invalid(self):
@@ -329,7 +329,7 @@ class TestBuildnml(unittest.TestCase):
         stat, out, err = run_cmd ("./atmchange mac_aero_mic::atm_procs_list=shoc,cldfraction,spa,p3,spiderman",
                                   from_dir=case)
 
-        expect (stat!=0,"Command './atmchange mac_aero_mic::atm_procs_list=shoc,cldFraction,spa,p3,spiderman' should have failed")
+        expect (stat!=0,"Command './atmchange mac_aero_mic::atm_procs_list=shoc,cld_fraction,spa,p3,spiderman' should have failed")
 
     ###########################################################################
     def test_buffer_unchanged_with_bad_change_syntax(self):
@@ -369,11 +369,11 @@ class TestBuildnml(unittest.TestCase):
 
         out = run_cmd_no_fail ("./atmchange mac_aero_mic::atm_procs_list=shoc,_my_group_",from_dir=case)
 
-        self._chg_atmconfig([("_my_group_::atm_procs_list", "testOnly")], case)
+        self._chg_atmconfig([("_my_group_::atm_procs_list", "test_only")], case)
 
-        # If we are able to change subcycles of testOnly then we know the atmchange
+        # If we are able to change subcycles of test_only then we know the atmchange
         # above added the necessary atm proc XML block.
-        self._chg_atmconfig([("testOnly::number_of_subcycles", "42")], case)
+        self._chg_atmconfig([("test_only::number_of_subcycles", "42")], case)
 
     ###########################################################################
     def test_atmchanges_for_atm_procs_remove(self):
@@ -383,7 +383,7 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cldFraction,spa")], case)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa")], case)
 
         stat, output, error = run_cmd("./atmquery --grep p3",from_dir=case)
         expect (output=="", "There is still a trace of the removed process")

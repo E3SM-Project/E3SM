@@ -142,7 +142,7 @@ struct HommeFormatArray {
     static_assert(rank == 2, "rank 2 array");
     // These routines are not used on the GPU, but they can be called from
     // KOKKOS_FUNCTIONs on CPU in GPU builds. Avoid nvcc warnings as follows:
-#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__ || defined __SYCL_DEVICE_ONLY__
     return unused();
 #else
     assert(i >= 0);
@@ -153,7 +153,7 @@ struct HommeFormatArray {
   COMPOSE_FORCEINLINE_FUNCTION 
   T& operator() (const Int& ie, const Int& k, const Int& lev) const {
     static_assert(rank == 3, "rank 3 array");
-#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__ || defined __SYCL_DEVICE_ONLY__
     return unused();
 #else
     assert(k >= 0);
@@ -167,7 +167,7 @@ struct HommeFormatArray {
   T& operator() (const Int& ie, const Int& q_or_timelev, const Int& k,
                  const Int& lev) const {
     static_assert(rank == 4, "rank 4 array");
-#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__ || defined __SYCL_DEVICE_ONLY__
     return unused();
 #else
     assert(q_or_timelev >= 0);
@@ -182,7 +182,7 @@ struct HommeFormatArray {
   T& operator() (const Int& ie, const Int& timelev, const Int& q, const Int& k,
                  const Int& lev) const {
     static_assert(rank == 5, "rank 4 array");
-#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__ || defined __SYCL_DEVICE_ONLY__
     return unused();
 #else
     assert(timelev >= 0);
@@ -211,7 +211,7 @@ private:
   COMPOSE_FORCEINLINE_FUNCTION
   void check (Int ie, Int k = -1, Int lev = -1, Int q_or_timelev = -1,
               Int timelev = -1) const {
-#if defined COMPOSE_BOUNDS_CHECK && ! (defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__)
+#if defined COMPOSE_BOUNDS_CHECK && ! (defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__ || defined __SYCL_DEVICE_ONLY__)
     assert(ie >= 0 && ie < static_cast<Int>(ie_data_ptr.size()));
     if (k >= 0) assert(k < np2);
     if (lev >= 0) assert(lev < nlev);

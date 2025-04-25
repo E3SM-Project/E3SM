@@ -203,7 +203,7 @@ void call_function_dropmixnuc(
     const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
     const MAMAci::view_2d cloud_frac_prev,
     const mam_coupling::AerosolState &dry_aero, const int nlev,
-    const bool &enable_aero_vertical_mix,
+    const int top_lev, const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
     MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
@@ -423,7 +423,7 @@ void call_function_dropmixnuc(
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
             ekat::subview(wtke, icol), ekat::subview(ccn, icol), coltend_view,
-            coltend_cw_view,
+            coltend_cw_view, top_lev,
             // work arrays
             raercol_cw_view, raercol_view, ekat::subview(nact, icol),
             ekat::subview(mact, icol), ekat::subview(eddy_diff, icol),

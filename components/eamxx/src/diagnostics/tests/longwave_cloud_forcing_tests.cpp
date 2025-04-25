@@ -25,10 +25,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -127,8 +127,7 @@ void run(std::mt19937_64& engine)
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field LWCF_f = diag_out.clone();
-    LWCF_f.deep_copy<double,Host>(0.0);
-    LWCF_f.sync_to_dev();
+    LWCF_f.deep_copy(0);
     const auto& LWCF_v = LWCF_f.get_view<Real*>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();

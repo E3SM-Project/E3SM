@@ -20,10 +20,10 @@ create_gm (const ekat::Comm& comm, const int ncols) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", 1);
 
@@ -123,9 +123,9 @@ void run(std::mt19937_64& engine)
   Field preicp_total_f = diag_total->get_diagnostic().clone();
   Field preicp_liq_f   = diag_liq->get_diagnostic().clone();
   Field preicp_ice_f   = diag_ice->get_diagnostic().clone();
-  preicp_total_f.deep_copy<double>(0.0);
-  preicp_liq_f.deep_copy<double>(0.0);
-  preicp_ice_f.deep_copy<double>(0.0);
+  preicp_total_f.deep_copy(0);
+  preicp_liq_f.deep_copy(0);
+  preicp_ice_f.deep_copy(0);
   auto precip_total_v = preicp_total_f.get_view<Real*>();
   auto precip_liq_v   = preicp_liq_f.get_view<Real*>();
   auto precip_ice_v   = preicp_ice_f.get_view<Real*>();

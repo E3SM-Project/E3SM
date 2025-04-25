@@ -20,6 +20,7 @@ FieldManager (const std::shared_ptr<const GridsManager>& gm)
   // For each grid, initialize maps
   for (auto gname : m_grids_mgr->get_grid_names()) {
     m_fields[gname] = std::map<ci_string,std::shared_ptr<Field>>();
+    m_field_groups[gname] = std::map<ci_string, std::shared_ptr<FieldGroup>>();
     m_group_requests[gname] = std::map<std::string, std::set<GroupRequest>>();
   }
 
@@ -83,7 +84,7 @@ void FieldManager::register_field (const FieldRequest& req)
   //       that each field belongs to.
   for (const auto& group_name : req.groups) {
     // Get group (and init ptr, if necessary)
-    auto& group_info = m_field_groups[group_name];
+    auto& group_info = m_field_group_info[group_name];
     if (not group_info) {
       group_info = std::make_shared<FieldGroupInfo>(group_name);
     }
@@ -98,8 +99,8 @@ void FieldManager::register_field (const FieldRequest& req)
       group_info->m_grid_registered[id.name()].push_back(grid_name);
     }
 
-    // Ensure that each group in m_field_groups also appears in the m_group_requests map by
-    // adding a "trivial" GroupRequest for this group, meaning no bundling and pack size 1.
+    // Ensure that each group in m_field_group_info also appears in the m_group_requests map by
+    // adding a "trivial" GroupRequest for this group, meaning no monolithic allocation and pack size 1.
     register_group(GroupRequest(group_name, grid_name));
   }
 }
@@ -116,12 +117,12 @@ void FieldManager::register_group (const GroupRequest& req)
   // and create an empty group info (if it does not already exist)
   m_group_requests[req.grid][req.name].insert(req);
 
-  auto& group_info = m_field_groups[req.name];
+  auto& group_info = m_field_group_info[req.name];
   if (not group_info) {
     group_info = std::make_shared<FieldGroupInfo>(req.name);
-    group_info->m_bundled = (req.bundled);
-  } else if (not group_info->m_bundled) {
-    group_info->m_bundled = (req.bundled);
+    group_info->m_monolithic_allocation = (req.monolithic_alloc==MonolithicAlloc::Required);
+  } else if (not group_info->m_monolithic_allocation) {
+    group_info->m_monolithic_allocation = (req.monolithic_alloc==MonolithicAlloc::Required);
   }
 
   if (not ekat::contains(group_info->m_requested_grids, req.grid)) {
@@ -134,12 +135,12 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
 {
   EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
       "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
-  auto& group = m_field_groups[group_name];
+  auto& group = m_field_group_info[group_name];
   if (not group) {
     group = std::make_shared<FieldGroupInfo>(group_name);
   }
-  EKAT_REQUIRE_MSG (not group->m_bundled,
-      "Error! Cannot add fields to a group that is bundled.\n"
+  EKAT_REQUIRE_MSG (not group->m_monolithic_allocation,
+      "Error! Cannot add fields to a group that has a monolithic allocation.\n"
       "   field name: " + field_name + "\n"
       "   group name: " + group_name + "\n");
 
@@ -169,8 +170,8 @@ bool FieldManager::
 has_group (const std::string& group_name, const std::string& grid_name) const {
   // Return true if there exists a group "name" and group
   // "name" has at least one field registered on "grid_name"
-  if (m_field_groups.count(group_name)>0) {
-    auto& group_info = m_field_groups.at(group_name);
+  if (m_field_group_info.count(group_name)>0) {
+    auto& group_info = m_field_group_info.at(group_name);
     for (auto& fname : group_info->m_fields_names) {
       if (ekat::contains(group_info->m_grid_registered.at(fname), grid_name)) {
         return true;
@@ -207,13 +208,13 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
   EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
     "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
 
-  auto info = *m_field_groups.at(group_name);
+  auto info = *m_field_group_info.at(group_name);
 
-  if (info.m_bundled) {
-    // All fields in a bundled group should exist on any grid in that group
+  if (info.m_monolithic_allocation) {
+    // All fields in a group with a monolithic allocation should exist on any grid in that group
     for (const auto& fname : info.m_fields_names) {
       EKAT_REQUIRE_MSG(has_field(fname, grid_name),
-        "Internal FieldManager Error! Bundled groups must contain all "
+        "Internal FieldManager Error! Groups with monolithic allocation must contain all "
         "fields in m_fields_names on any grid from m_grids_in_group.\n"
         "The following field should, but does not, exist:\n"
         "  - Group: " + group_name + "\n"
@@ -221,7 +222,7 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
         "  - Grid:  " + grid_name + "\n");
     }
   } else {
-    // For non-bundled groups, remove fields in the group
+    // For all other groups, remove fields in the group
     // that do not exist on the requested grid
     std::list<ci_string> remove_fnames;
     for (const auto& fname : info.m_fields_names) {
@@ -240,7 +241,7 @@ get_group_info (const std::string& group_name, const std::string& grid_name) con
 }
 
 FieldGroup FieldManager::
-get_field_group (const std::string& group_name, const std::string& grid_name) const
+get_field_group (const std::string& group_name, const std::string& grid_name)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
@@ -248,29 +249,35 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
   EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
       "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
 
-  // Create an empty group
-  FieldGroup group(group_name);
-
-  // Set the info in the group
-  group.m_info = std::make_shared<FieldGroupInfo>(get_group_info(group_name, grid_name));
-
-  // Find all the fields registered on given grid and set them in the group
-  for (const auto& fname : group.m_info->m_fields_names) {
-    group.m_fields[fname] = m_fields.at(grid_name).at(fname);
+  // If FieldGroup has already been built, return that
+  if (m_field_groups.at(grid_name).find(group_name) != m_field_groups.at(grid_name).end()) {
+    return *m_field_groups.at(grid_name).at(group_name);
   }
 
-  // Fetch the bundle field (if bundled)
-  if (group.m_info->m_bundled) {
+  // FieldGroup does not yet exist, create entry in m_field_groups
+  auto& group = m_field_groups[grid_name][group_name];
+  group = std::make_shared<FieldGroup>(group_name);
+
+  // Set the info in the group
+  group->m_info = std::make_shared<FieldGroupInfo>(get_group_info(group_name, grid_name));
+
+  // Find all the fields registered on given grid and set them in the group
+  for (const auto& fname : group->m_info->m_fields_names) {
+    group->m_individual_fields[fname] = m_fields.at(grid_name).at(fname);
+  }
+
+  // Fetch the monolithic field (if applicable)
+  if (group->m_info->m_monolithic_allocation) {
     // All fields in a group have the same parent, get the parent from the 1st one
-    const auto& parent_header = group.m_fields.begin()->second->get_header().get_parent();
+    const auto& parent_header = group->m_individual_fields.begin()->second->get_header().get_parent();
 
     EKAT_REQUIRE_MSG(parent_header!=nullptr,
-      "Error! A field belonging to a bundled field group is missing its 'parent'.\n");
+      "Error! A field belonging to a field group with monolithic allocation is missing its 'parent'.\n");
 
     const auto& parent_id = parent_header->get_identifier();
 
     EKAT_REQUIRE_MSG(has_field(parent_id.name(), grid_name),
-      "Internal FieldManager Error! Bundled field must exist in the FieldManager:\n"
+      "Internal FieldManager Error! Parent field must exist in the FieldManager:\n"
       "  - Group: " + group_name + "\n"
       "  - Bundeled field: " + parent_id.name() + "\n"
       "  - Grid:  " + grid_name + "\n");
@@ -282,7 +289,7 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
     bool all_children_in_group = true;
     for (auto child : parent_header->get_children()) {
       bool in_group = false;
-      for (auto f : group.m_fields) {
+      for (auto f : group->m_individual_fields) {
         if (child.lock()->get_identifier() == f.second->get_header().get_identifier()) {
           in_group = true;
           break;
@@ -294,18 +301,18 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
       }
     }
 
-    // Set m_bundle field
+    // Set m_monolithic_field field
     if (all_children_in_group) {
       // If all children are in the group, this is the parent group and
-      // we can just query the bundle and set here
-      group.m_bundle = parent_field;
+      // we can just query the monolithic field and set here
+      group->m_monolithic_field = parent_field;
     } else {
       // If children exist that aren't in this group, we need to get a
       // subfield of the parent group containing indices of group fields
       std::vector<int> ordered_subview_indices;
-      for (auto fn : group.m_info->m_fields_names) {
+      for (auto fn : group->m_info->m_fields_names) {
         const auto parent_child_index =
-          m_field_groups.at(parent_field->name())->m_subview_idx.at(fn);
+          m_field_group_info.at(parent_field->name())->m_subview_idx.at(fn);
         ordered_subview_indices.push_back(parent_child_index);
       }
       std::sort(ordered_subview_indices.begin(),ordered_subview_indices.end());
@@ -315,16 +322,16 @@ get_field_group (const std::string& group_name, const std::string& grid_name) co
       EKAT_REQUIRE_MSG (ordered_subview_indices.size()==span,
         "Error! Non-contiguous subview indices found in group \""+group_name+"\"\n");
 
-      group.m_bundle = std::make_shared<Field>(
+      group->m_monolithic_field = std::make_shared<Field>(
         parent_field->subfield(
           group_name, parent_header->get_identifier().get_units(),
-          group.m_info->m_subview_dim,
+          group->m_info->m_subview_dim,
           ordered_subview_indices.front(), ordered_subview_indices.back()+1));
 
     }
   }
 
-  return group;
+  return *group;
 }
 
 void FieldManager::
@@ -349,8 +356,8 @@ void FieldManager::registration_begins ()
 void FieldManager::registration_ends ()
 {
   // This method is responsible of allocating the fields in the repo. The most delicate part is
-  // the allocation of fields group, in the case where bundling is required. If we are not able
-  // to honor requests for bundling, we will error out. An example of a scenario where we can't
+  // the allocation of fields group, in the case where a monolithic allocation is required. If we
+  // are not able to honor requests, we will error out. An example of a scenario where we can't
   // honor all requests is given by the three groups G1=(A,B), G2=(B,C), and G3=(A,C). Clearly,
   // only two of these groups can have contiguous allocation.
 
@@ -366,10 +373,10 @@ void FieldManager::registration_ends ()
 
   // This is the sequence of operations that allows us to establish if (and how) we can honor
   // all the requests:
-  //  1) ensure all bundled groups contain the desired members. This means that we need to
-  //     loop over GroupRequest (GR), and make sure there are fields registered in those
-  //     groups (querying m_field_groups info structs).
-  //  2) Focus only on GR that require a bundled group, discarding others.
+  //  1) ensure all groups with a monolithic allocation contain the desired members. This means that
+  //     we need to loop over GroupRequest (GR), and make sure there are fields registered in those
+  //     groups (querying m_field_group_info info structs).
+  //  2) Focus only on GR that require a monolithic allocation, discarding others.
   //     All the remaining group can simply "grab" individual fields later (and they
   //     can even grab some "individual" fields, and some fields that are slices of
   //     another group).
@@ -382,63 +389,67 @@ void FieldManager::registration_ends ()
   //     Note: to build a cluster, take any group not yet in a cluster. Then iteratively
   //     add any group that intersects the cluster, until no intersections are found.
   //  4) If there is no group in the cluster that contains all the fields of the cluster,
-  //     create the cluster group C. In order to accommodate all requests for bundled groups,
-  //     we must be able to allocate C bundled.
+  //     create the cluster group C. In order to accommodate all requests for groups,
+  //     we must be able to allocate C contiguously.
   //  5) For each cluster, call the function contiguous_superset from eamxx_utils.hpp
   //     (see that file for details). If the fcn fails to find an ordering of the cluster's
-  //     field that accommodate all bundled requests, it will return an empty list.
+  //     field that accommodate all requests, it will return an empty list.
   //     Otherwise it will return the ordering of all fields in the cluster that allows all
   //     groups of the cluster to be a contiguous subset of C.
-  //  Note: this can be done independent of grid since each grid will contain that same fields
-  //        in a bundled group.
+  //  Note: this can be done independent of grid since each grid will contain the same fields
 
   // Start by processing group request. This function checks that all group fields are properly
   // registered on the appropriate grid and the FieldGroupInfo is up to date. If group G is
   // requested, we make sure to register the union of all fields in group G on any grids they appear.
-  pre_process_bundled_group_requests();
+  pre_process_monolithic_group_requests();
 
-  // Gather a list of groups to be bundled
-  std::list<std::string> groups_to_bundle;
+  // Gather a list of groups whose fields require monolithic allocation
+  std::list<std::string> groups_with_monolithic_allocation;
   for (auto& grid_it : m_grids_mgr->get_repo()) {
     for (const auto& greqs : m_group_requests.at(grid_it.second->name())) {
       for (const auto& r : greqs.second) {
-        if (r.bundled) {
-          // There's at least one request for this group to be bundled.
-          groups_to_bundle.push_back(greqs.first);
+        if (r.monolithic_alloc==MonolithicAlloc::Required) {
+          // There's at least one request for this group to be allocated.
+          groups_with_monolithic_allocation.push_back(greqs.first);
           break;
         }
       }
     }
   }
   // TODO: Is this still needed? Probably no.
-  ::scream::sort(groups_to_bundle);
-  groups_to_bundle.unique();
+  ::scream::sort(groups_with_monolithic_allocation);
+  groups_with_monolithic_allocation.unique();
 
   // Homme currently wants qv to be the first tracer. We should be able to
   // modify Homme, to use something like qv_idx. However, that requires
   // extensive changes in Homme. Instead, we hack our way around this limitatin
   // (for now), and rearrange groups/fields so that we can expect qv to be the
   // first tracer.
+  // Note: there are potentially two groups of tracers, "tracers" (which
+  // homme advects) and "turbulence_advected_tracers" (which shoc advects).
+  // "turbulence_advected_tracers" is guarenteed to be a subset of "tracers", so
+  // moving qv first in "tracers" will do the same for "turbulence_advected_tracers".
+  // Only homme requires qv first, so we only need to move qv if "tracers" exist.
   bool qv_must_come_first = false;
-  if (ekat::contains(groups_to_bundle,"tracers")
+  if (ekat::contains(groups_with_monolithic_allocation,"tracers")
       and
-      ekat::contains(m_field_groups["tracers"]->m_fields_names, "qv")) {
+      ekat::contains(m_field_group_info["tracers"]->m_fields_names, "qv")) {
     // Bring tracers to the front, so it will be processed first
-    auto it = ekat::find(groups_to_bundle,"tracers");
-    std::swap(*it,groups_to_bundle.front());
+    auto it = ekat::find(groups_with_monolithic_allocation,"tracers");
+    std::swap(*it,groups_with_monolithic_allocation.front());
 
-    // Adding the 'fake' group G=(qv) at the front of groups_to_bundle ensures qv won't be put
+    // Adding the 'fake' group G=(qv) at the front of groups_with_monolithic_allocation ensures qv won't be put
     // in the middle of the tracers group. We use a highly unlikely group name, to avoid clashing
     // with a real group name. Later, after having found an global ordering for the tracers fields,
     // we will remove this group.
-    groups_to_bundle.push_front("__qv__");
-    m_field_groups.emplace("__qv__",std::make_shared<FieldGroupInfo>("__qv__"));
-    m_field_groups.at("__qv__")->m_fields_names.push_back("qv");
+    groups_with_monolithic_allocation.push_front("__qv__");
+    m_field_group_info.emplace("__qv__",std::make_shared<FieldGroupInfo>("__qv__"));
+    m_field_group_info.at("__qv__")->m_fields_names.push_back("qv");
     qv_must_come_first = true;
   }
 
-  // Do all the bundling stuff only if there are groups do bundle at all.
-  if (groups_to_bundle.size()>0) {
+  // Do all the monolithic allocation stuff only if there are groups which require it.
+  if (groups_with_monolithic_allocation.size()>0) {
     using namespace ShortFieldTagsNames;
 
     // A cluster is a list of names of groups in the cluster
@@ -457,22 +468,22 @@ void FieldManager::registration_ends ()
 
     std::list<cluster_type> clusters;
     std::list<std::string> added_to_a_cluster;
-    while (added_to_a_cluster.size()<groups_to_bundle.size()) {
+    while (added_to_a_cluster.size()<groups_with_monolithic_allocation.size()) {
       cluster_type c;
-      auto first = groups_to_bundle.begin();
+      auto first = groups_with_monolithic_allocation.begin();
       c.push_front(*first);
-      groups_to_bundle.erase(first);
+      groups_with_monolithic_allocation.erase(first);
 
-      for (const auto& gn : groups_to_bundle) {
+      for (const auto& gn : groups_with_monolithic_allocation) {
         if (ekat::contains(added_to_a_cluster,gn)) {
           // This group has been added to a cluster already
           continue;
         }
 
         // Get the fields of this group
-        const auto& fnames = m_field_groups.at(gn)->m_fields_names;
+        const auto& fnames = m_field_group_info.at(gn)->m_fields_names;
         for (const auto& c_gn : c) {
-          const auto& c_fnames = m_field_groups.at(c_gn)->m_fields_names;
+          const auto& c_fnames = m_field_group_info.at(c_gn)->m_fields_names;
           if (intersect(fnames,c_fnames)) {
             // Ok, group gn intersects the cluser in at least one group (c_gn).
             // We add gn to the cluster, then break
@@ -493,19 +504,19 @@ void FieldManager::registration_ends ()
 
       LOL_t groups_fields;
       for (const auto& gn : cluster) {
-        groups_fields.push_back(m_field_groups.at(gn)->m_fields_names);
+        groups_fields.push_back(m_field_group_info.at(gn)->m_fields_names);
         ::scream::sort(groups_fields.back());
       }
 
       auto cluster_ordered_fields = contiguous_superset(groups_fields);
 
       if (cluster_ordered_fields.size()==0) {
-        // We were not able to accommodate all the requests bundling the groups
+        // We were not able to accommodate all the allocation requests for the groups
         // in this cluster. We have to error out. But first, let's print some
         // information, so the developers/users can have a shot at fixing this
-        // (e.g., by changing the request for bundling in some Atm Proc).
+        // (e.g., by changing the request for monolithic allocation in some Atm Proc).
         std::cout << "Error! Field manager was not able to accommodate the following\n"
-                  << "       requests for bundled groups:\n";
+                  << "       requests for monolithically allocated groups:\n";
         for (const auto& gn : cluster) {
           std::cout << "   - " << gn << "\n";
         }
@@ -517,7 +528,7 @@ void FieldManager::registration_ends ()
       // Ok, if we got here, it means we can allocate the cluster as a field, and then subview all the groups
       // Steps:
       //  - check if there's a group in the cluster containing all the fields. If yes, use that group
-      //    name for the bundled field, otherwise make one up from the names of all groups in the cluster.
+      //    name for the grouped field, otherwise make one up from the names of all groups in the cluster.
       //  - allocate the cluster field F.
       //  - loop over the groups in the cluster, and subview F at the proper (contiguous) indices.
 
@@ -547,7 +558,7 @@ void FieldManager::registration_ends ()
       // Check if there is a group with all the fields. Notice that it is enough to check
       // if any list in the LOL has the same length as cluster_ordered_fields.
       // If not, we will set cluster_name = $group1_name | $group2_name | ...
-      // Note: cluster_name will be the name of the field bundling all fields in the cluster's groups
+      // Note: cluster_name will be the name of the field allocating all fields in the cluster's groups
       std::string cluster_name;
       for (const auto& gn : cluster) {
         // Start building cluster_name by "or-ing" all gn's.
@@ -557,7 +568,7 @@ void FieldManager::registration_ends ()
           cluster_name += " | " + gn;
         }
 
-        const auto& fnames = m_field_groups.at(gn)->m_fields_names;
+        const auto& fnames = m_field_group_info.at(gn)->m_fields_names;
         if (fnames.size()==cluster_ordered_fields.size()) {
           // Found a group in the cluster that contains all fields.
           cluster_name = gn;
@@ -593,7 +604,7 @@ void FieldManager::registration_ends ()
           lt = f_layout.type();
           } else {
             EKAT_REQUIRE_MSG (lt==id.get_layout().type(),
-                "Error! Found a group to bundle containing fields with different layouts.\n"
+                "Error! Found a group containing fields with different layouts.\n"
                 "       Group name: " + cluster_name + "\n"
                 "       Layout 1: " + e2str(lt) + "\n"
                 "       Layout 2: " + e2str(id.get_layout().type()) + "\n");
@@ -601,7 +612,7 @@ void FieldManager::registration_ends ()
         }
 
         EKAT_REQUIRE_MSG(lt==LayoutType::Scalar2D || lt==LayoutType::Scalar3D,
-            "Error! We can only bundle scalar fields. Found " + e2str(lt) + " fields instead.\n");
+            "Error! We can only monolithically allocate scalar fields. Found " + e2str(lt) + " fields instead.\n");
 
         FieldLayout c_layout = FieldLayout::invalid();
         if (lt==LayoutType::Scalar2D) {
@@ -610,8 +621,8 @@ void FieldManager::registration_ends ()
           c_layout = cluster_grid->get_3d_vector_layout(f_layout.tags().back()==LEV,cluster_ordered_fields.size());
         }
 
-        // The units for the bundled field are nondimensional, cause checking whether
-        // all fields in the bundle have the same units so we can use those is too long and pointless.
+        // The units for the monolithic field are nondimensional, cause checking whether
+        // all fields in the group have the same units so we can use those is too long and pointless.
         auto nondim = ekat::units::Units::nondimensional();
 
         // Allocate cluster field
@@ -664,13 +675,13 @@ void FieldManager::registration_ends ()
 
       if (ekat::contains(cluster,"__qv__")) {
         // Erase the 'fake group' we added (to guarantee qv would be first/last in the tracers)
-        m_field_groups.erase(m_field_groups.find("__qv__"));
+        m_field_group_info.erase(m_field_group_info.find("__qv__"));
         cluster.erase(ekat::find(cluster,"__qv__"));
       }
 
       // Now, update the group info of all the field groups in the cluster
       for (const auto& gn : cluster) {
-        auto& info = *m_field_groups.at(gn);
+        auto& info = *m_field_group_info.at(gn);
         const auto n = info.size();
 
         // Find the first field of this group in the ordered cluster names.
@@ -690,15 +701,15 @@ void FieldManager::registration_ends ()
             "Error! Something went wrong while looking for fields of this group in the ordered cluster.\n"
             "       Group name: " + gn + "\n");
 
-        // Update the list of fields in the group info, mark it as bundled,
-        // and update the subfield indices too.
+        // Update the list of fields in the group info, mark it as monolithically
+        // allocated, and update the subfield indices too.
         info.m_fields_names.clear();
         for (auto it=first; it!=last; ++it) {
           info.m_fields_names.push_back(*it);
           info.m_subview_dim = 1; // Assumption is checked above
           info.m_subview_idx [*it] = std::distance(cluster_ordered_fields.begin(),it);
         }
-        info.m_bundled = true;
+        info.m_monolithic_allocation = true;
 
         // The subview indices will need to be corrected in the case of this group being
         // itself a subfile of the cluster field. We are guarenteed that the indices
@@ -726,7 +737,7 @@ void FieldManager::registration_ends ()
       it.second->allocate_view();
     }
 
-    for (const auto& it : m_field_groups) {
+    for (const auto& it : m_field_group_info) {
       if (m_group_requests.at(grid_name).find(it.first)!=m_group_requests.at(grid_name).end()) {
         // Get fields in this group
         auto group_info = it.second;
@@ -748,7 +759,7 @@ void FieldManager::clean_up() {
   m_fields.clear();
 
   // Clean group info
-  m_field_groups.clear();
+  m_field_group_info.clear();
 
   // Reset repo state
   m_repo_state = RepoState::Clean;
@@ -794,27 +805,27 @@ void FieldManager::add_field (const Field& f) {
   if (m_repo_state==RepoState::Clean) m_repo_state = RepoState::Closed;
 }
 
-void FieldManager::pre_process_bundled_group_requests () {
-  // For each bundled group, loop over all fields in the group and register
+void FieldManager::pre_process_monolithic_group_requests () {
+  // For each group, loop over all fields in the group and register
   // on to each grid the group is requested on (if necessary)
-  for (auto [group_name, group_info] : m_field_groups) {
-    if (not group_info->m_bundled) continue;
-    // Gather all grids in this bundled group. We need to check
+  for (auto [group_name, group_info] : m_field_group_info) {
+    if (not group_info->m_monolithic_allocation) continue;
+    // Gather all grids in this group. We need to check
     // both grids that already exist in the group and grids that
     // at one point were requested by the group.
-    std::list<ci_string> grids_in_bundle;
+    std::list<ci_string> grids_in_group;
     for (auto field_name : group_info->m_fields_names) {
       for (auto grid_name : group_info->m_grid_registered.at(field_name)) {
-        if (not ekat::contains(grids_in_bundle, grid_name)) grids_in_bundle.push_back(grid_name);
+        if (not ekat::contains(grids_in_group, grid_name)) grids_in_group.push_back(grid_name);
       }
     }
     for (auto grid_name : group_info->m_requested_grids) {
-      if (not ekat::contains(grids_in_bundle, grid_name)) grids_in_bundle.push_back(grid_name);
+      if (not ekat::contains(grids_in_group, grid_name)) grids_in_group.push_back(grid_name);
     }
 
-    // Register fields on all grids in bundle
+    // Register fields on all grids
     for (auto field_name : group_info->m_fields_names) {
-      for (auto grid_name : grids_in_bundle) {
+      for (auto grid_name : grids_in_group) {
         // Field already registered on grid, nothing to do
         if (has_field(field_name, grid_name)) continue;
 

@@ -20,7 +20,7 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
 
-  auto grid  = grids_manager->get_grid("Physics");
+  auto grid  = grids_manager->get_grid("physics");
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 

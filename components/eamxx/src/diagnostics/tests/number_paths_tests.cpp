@@ -19,10 +19,10 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"Point Grid"});
-  auto &pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names", vos_t{"point_grid"});
+  auto &pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"Physics"});
+  pl.set("aliases", vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -69,23 +69,23 @@ void run(std::mt19937_64 &engine) {
   ekat::ParameterList params;
 
   REQUIRE_THROWS(
-      diag_factory.create("NumberPath", comm, params));  // No 'Number Kind'
-  params.set<std::string>("Number Kind", "Foo");
+      diag_factory.create("NumberPath", comm, params));  // No 'number_kind'
+  params.set<std::string>("number_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("NumberPath", comm,
-                                     params));  // Invalid 'Number Kind'
+                                     params));  // Invalid 'number_kind'
 
   // Liquid
-  params.set<std::string>("Number Kind", "Liq");
+  params.set<std::string>("number_kind", "Liq");
   auto diag_liq = diag_factory.create("NumberPath", comm, params);
   diag_liq->set_grids(gm);
   diags.emplace("lnp", diag_liq);
   // Ice
-  params.set<std::string>("Number Kind", "Ice");
+  params.set<std::string>("number_kind", "Ice");
   auto diag_ice = diag_factory.create("NumberPath", comm, params);
   diag_ice->set_grids(gm);
   diags.emplace("inp", diag_ice);
   // Rain
-  params.set<std::string>("Number Kind", "Rain");
+  params.set<std::string>("number_kind", "Rain");
   auto diag_rain = diag_factory.create("NumberPath", comm, params);
   diag_rain->set_grids(gm);
   diags.emplace("rnp", diag_rain);

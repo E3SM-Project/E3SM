@@ -5,6 +5,10 @@ module vdiff_lu_solver
 ! This module was created solely to share vd_lu_decomp and vd_lu_solve
 ! between gw_drag and diffusion_solver.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use gw_utils, only: r8
+#endif
+
 implicit none
 private
 save
@@ -16,7 +20,10 @@ public :: vd_lu_solve
 public :: lu_decomp
 
 ! 8-byte real.
+
+#ifndef SCREAM_CONFIG_IS_CMAKE
 integer, parameter :: r8 = selected_real_kind(12)
+#endif
 
 ! Type to hold the sparse matrix decomposition from vd_lu_decomp.
 type :: lu_decomp

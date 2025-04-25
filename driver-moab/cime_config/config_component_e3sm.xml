@@ -279,6 +279,24 @@
     </desc>
   </entry>
 
+  <entry id="CPL_COMPUTE_MAPS_ONLINE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <values match="last">
+      <value/>
+    </values>
+    <group>run_coupling</group>
+    <file>env_run.xml</file>
+    <desc>User option to specify whether MOAB coupler maps should be computed 
+      online or to load precomputed maps from disk at runtime (similar to MCT).
+      Note that this option enforces the same behavior for all coupler maps 
+      (A-O, A-L, R-L, I-O etc) except R2O at the moment 
+      (which is always loaded from disk). Default is false to replicate behavior
+      of existing MCT coupler.
+    </desc>
+  </entry>
+
   <entry id="CCSM_BGC">
     <type>char</type>
     <valid_values>none,CO2A,CO2A_OI,CO2B,CO2C,CO2C_OI,CO2_DMSA</valid_values>

@@ -15,18 +15,19 @@ atmosphere_processes:
     compute_tendencies: [T_mid,qc]
     do_prescribed_ccn: false
     use_hetfrz_classnuc: false
+    internal_diagnostics_level: 2
 
 grids_manager:
-  Type: Mesh Free
-  grids_names: [Physics]
-  Physics:
+  type: mesh_free
+  grids_names: [physics]
+  physics:
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   precip_liq_surf_mass: 0.0
   precip_ice_surf_mass: 0.0
   hetfrz_immersion_nucleation_tend: 0.1
@@ -34,6 +35,6 @@ initial_conditions:
   hetfrz_deposition_nucleation_tend: 0.1
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

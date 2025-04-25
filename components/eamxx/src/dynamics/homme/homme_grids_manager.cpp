@@ -65,16 +65,16 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
   const auto from = from_grid->name();
   const auto to   = to_grid->name();
 
-  EKAT_REQUIRE_MSG ( from=="Dynamics" || to=="Dynamics",
-    "Error! Either source or target grid must be 'Dynamics'.\n");
+  EKAT_REQUIRE_MSG ( from=="dynamics" || to=="dynamics",
+    "Error! Either source or target grid must be 'dynamics'.\n");
 
-  const bool p2d = to=="Dynamics";
+  const bool p2d = to=="dynamics";
 
-  if (from=="Physics GLL" || to=="Physics GLL") {
+  if (from=="physics_gll" || to=="physics_gll") {
     using PDR = PhysicsDynamicsRemapper;
 
-    auto dyn_grid = get_grid("Dynamics");
-    auto phys_grid = get_grid("Physics GLL");
+    auto dyn_grid = get_grid("dynamics");
+    auto phys_grid = get_grid("physics_gll");
 
     auto pd_remapper = std::make_shared<PDR>(phys_grid,dyn_grid);
     if (p2d) {
@@ -83,7 +83,7 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
       return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
-    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'Physics GLL' phys grid.\n");
+    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
   }
   return nullptr;
 }
@@ -93,11 +93,11 @@ build_grids ()
 {
   // Get the physics grid specs
   const ci_string pg_type      = m_params.get<std::string>("physics_grid_type");
-  const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance","None");
+  const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance","none");
 
   // Get the physics grid code
   std::vector<int> pg_codes {
-    m_pg_codes["GLL"]["None"],  // We always need this to read/write dyn grid stuff
+    m_pg_codes["gll"]["none"],  // We always need this to read/write dyn grid stuff
     m_pg_codes[pg_type][pg_rebalance]
   };
   // In case the two pg codes are the same...
@@ -116,25 +116,25 @@ build_grids ()
   build_dynamics_grid ();
 
   // Also the GLL grid with no rebalance is needed for sure
-  build_physics_grid("GLL","None");
+  build_physics_grid("gll","none");
 
-  // If (pg type,rebalance) is (GLL,None), this will be a no op
+  // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type,pg_rebalance);
 
-  // Make "Physics" be an alias to whatever the pair (pg_type,rebalance) refers to
-  std::string pg_name = "Physics " + pg_type;
-  if (pg_rebalance!="None") {
+  // Make "physics" be an alias to whatever the pair (pg_type,rebalance) refers to
+  std::string pg_name = "physics_" + pg_type;
+  if (pg_rebalance!="none") {
     pg_name += " " + pg_rebalance;
   }
 
-  this->alias_grid(pg_name,"Physics");
+  this->alias_grid(pg_name,"physics");
 
   // Clean up temporaries used during grid initialization
   cleanup_grid_init_data_f90 ();
 }
 
 void HommeGridsManager::build_dynamics_grid () {
-  const std::string name = "Dynamics";
+  const std::string name = "dynamics";
   if (has_grid(name)) {
     return;
   }
@@ -146,7 +146,7 @@ void HommeGridsManager::build_dynamics_grid () {
   const int nlelem = get_num_local_elems_f90();
   const int nlev   = get_nlev_f90();
 
-  auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
+  auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
   dyn_grid->setSelfPointer(dyn_grid);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
@@ -193,8 +193,8 @@ void HommeGridsManager::build_dynamics_grid () {
 
 void HommeGridsManager::
 build_physics_grid (const ci_string& type, const ci_string& rebalance) {
-  std::string name = "Physics " + type;
-  if (rebalance != "None") {
+  std::string name = "physics_" + type;
+  if (rebalance != "none") {
     name += " " + rebalance;
   }
 
@@ -203,7 +203,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     return;
   }
 
-  if (type=="PG2") {
+  if (type=="pg2") {
     fvphyshack = true;
   }
 
@@ -259,7 +259,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 
   // If one of the hybrid vcoord arrays is there, they all are
   // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
-  if (get_grid("Dynamics")->has_geometry_data("hyam")) {
+  if (get_grid("dynamics")->has_geometry_data("hyam")) {
     auto layout_mid = phys_grid->get_vertical_layout(true);
     auto layout_int = phys_grid->get_vertical_layout(false);
     using namespace ekat::units;
@@ -274,7 +274,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto ilev = phys_grid->create_geometry_data("ilev",layout_int,mbar);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
-      auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
+      auto f_d = get_grid("dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
       f.sync_to_host();
     }
@@ -331,8 +331,8 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
 
   // Read vcoords into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",filename);
-  vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
+  vcoord_reader_pl.set("filename",filename);
+  vcoord_reader_pl.set<vos_t>("field_names",{"hyai","hybi","hyam","hybm"});
 
   auto layout_mid = dyn_grid->get_vertical_layout(true);
   auto layout_int = dyn_grid->get_vertical_layout(false);
@@ -390,10 +390,10 @@ build_pg_codes () {
   //    - 0: GLL grid
   //    - N: FV phys grid, with NxN points
 
-  m_pg_codes["GLL"]["None"] =  0;
-  m_pg_codes["GLL"]["Twin"] = 10;
-  m_pg_codes["PG2"]["None"] =  2;
-  m_pg_codes["PG2"]["Twin"] = 12;
+  m_pg_codes["gll"]["none"] =  0;
+  m_pg_codes["gll"]["twin"] = 10;
+  m_pg_codes["pg2"]["none"] =  2;
+  m_pg_codes["pg2"]["twin"] = 12;
 }
 
 } // namespace scream

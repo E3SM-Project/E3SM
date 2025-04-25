@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
 filename_prefix: rrtmgp_standalone_output${SUFFIX}
-Averaging Type: Instant
-Max Snapshots Per File: 1
-Field Names:
+averaging_type: instant
+max_snapshots_per_file: 1
+field_names:
   - T_mid
   - LW_flux_up
   - LW_flux_dn
@@ -28,6 +28,6 @@ Field Names:
   - eff_radius_qi_at_cldtop
  
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

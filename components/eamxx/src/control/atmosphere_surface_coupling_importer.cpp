@@ -21,7 +21,7 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs();      // Number of columns on this rank
@@ -226,7 +226,8 @@ void SurfaceCouplingImporter::overwrite_iop_imports (const bool called_during_in
   const auto has_Tg    = m_iop_data_manager->has_iop_field("Tg");
 
   // Read IOP file for current time step, if necessary
-  m_iop_data_manager->read_iop_file_data(timestamp());
+  // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?
+  m_iop_data_manager->read_iop_file_data(start_of_step_ts());
 
   static constexpr Real latvap = C::LatVap;
   static constexpr Real stebol = C::stebol;

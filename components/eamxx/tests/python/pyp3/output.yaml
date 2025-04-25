@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: p3_standalone_${EXEC_TYPE}
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   - qi
   - qc
   - qr
@@ -13,6 +13,6 @@ Field Names:
   - micro_vap_liq_exchange
   - micro_vap_ice_exchange
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

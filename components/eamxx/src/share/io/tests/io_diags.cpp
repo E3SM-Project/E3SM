@@ -42,7 +42,7 @@ public:
     using namespace ShortFieldTagsNames;
     using FL = FieldLayout;
 
-    const auto grid = gm->get_grid("Point Grid");
+    const auto grid = gm->get_grid("point_grid");
     const auto& grid_name = grid->name();
     m_num_cols  = grid->get_num_local_dofs(); // Number of columns on this rank
     m_num_levs  = grid->get_num_vertical_levels();  // Number of levels per column
@@ -81,7 +81,7 @@ protected:
   }
 
   void initialize_impl (const RunType /* run_type */ ) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
   // Clean up
@@ -169,7 +169,7 @@ void write (const int seed, const ekat::Comm& comm)
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -187,11 +187,11 @@ void write (const int seed, const ekat::Comm& comm)
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_diags"));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", std::string("INSTANT"));
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", std::string("instant"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -221,7 +221,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields
   auto fm0 = get_fm(grid,t0,seed);
@@ -251,8 +251,8 @@ void read (const int seed, const ekat::Comm& comm)
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("filename",filename);
+  reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
   Field one = f0.clone("one");

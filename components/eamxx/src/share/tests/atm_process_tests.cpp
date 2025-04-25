@@ -27,25 +27,25 @@ ekat::ParameterList create_test_params ()
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
-  params.set<std::string>("schedule_type","Sequential");
+  params.set<std::string>("schedule_type","sequential");
   params.set<strvec_t>("atm_procs_list",{"Foo","BarBaz"});
 
   auto& p0 = params.sublist("Foo");
-  p0.set<std::string>("Type", "Foo");
-  p0.set<std::string>("Grid Name", "Point Grid");
+  p0.set<std::string>("type", "Foo");
+  p0.set<std::string>("grid_name", "point_grid");
 
   auto& p1 = params.sublist("BarBaz");
   p1.set<strvec_t>("atm_procs_list",{"Bar","Baz"});
-  p1.set<std::string>("Type", "Group");
-  p1.set<std::string>("schedule_type","Sequential");
+  p1.set<std::string>("type", "group");
+  p1.set<std::string>("schedule_type","sequential");
 
   auto& p1_0 = p1.sublist("Bar");
-  p1_0.set<std::string>("Type", "Bar");
-  p1_0.set<std::string>("Grid Name", "Point Grid");
+  p1_0.set<std::string>("type", "Bar");
+  p1_0.set<std::string>("grid_name", "point_grid");
 
   auto& p1_1 = p1.sublist("Baz");
-  p1_1.set<std::string>("Type", "Baz");
-  p1_1.set<std::string>("Grid Name", "Point Grid");
+  p1_1.set<std::string>("type", "Baz");
+  p1_1.set<std::string>("grid_name", "point_grid");
 
   return params;
 }
@@ -74,7 +74,7 @@ public:
     : AtmosphereDiagnostic(comm, params)
   {
     m_name = params.name();
-    m_grid_name = params.get<std::string> ("Grid Name");
+    m_grid_name = params.get<std::string> ("grid_name");
   }
 
   // Return some sort of name, linked to PType
@@ -209,7 +209,7 @@ public:
     : AtmosphereProcess(comm, params)
   {
     m_name = params.name();
-    m_grid_name = params.get<std::string> ("Grid Name");
+    m_grid_name = params.get<std::string> ("grid_name");
   }
 
   // Return some sort of name, linked to PType
@@ -469,15 +469,15 @@ TEST_CASE("field_checks", "") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto gm = create_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Create a parameter list
   ekat::ParameterList params ("Atmosphere Processes");
-  params.set<std::string>("Grid Name", "Point Grid");
+  params.set<std::string>("grid_name", "point_grid");
 
   const auto lt = grid->get_3d_scalar_layout(true);
-  FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"Point Grid");
-  FieldIdentifier fid_T("Temperature",lt,K,"Point Grid");
+  FieldIdentifier fid_T_tend("Temperature tendency",lt,K/s,"point_grid");
+  FieldIdentifier fid_T("Temperature",lt,K,"point_grid");
   Field T(fid_T), T_tend(fid_T_tend);
   T.allocate_view();
   T_tend.allocate_view();
@@ -535,8 +535,8 @@ TEST_CASE ("subcycling") {
   auto gm = create_gm(comm);
 
   ekat::ParameterList params, params_sub;
-  params.set<std::string>("Grid Name", "Point Grid");
-  params_sub.set<std::string>("Grid Name", "Point Grid");
+  params.set<std::string>("grid_name", "point_grid");
+  params_sub.set<std::string>("grid_name", "point_grid");
   params_sub.set<int>("number_of_subcycles", 5);
 
   // Create and init two atm procs, one subcycled and one not subcycled
@@ -598,19 +598,19 @@ TEST_CASE ("diagnostics") {
 
   // Create the identity diagnostic
   ekat::ParameterList params_identity("DiagIdentity");
-  params_identity.set<std::string>("Grid Name", "Point Grid");
+  params_identity.set<std::string>("grid_name", "point_grid");
   auto diag_identity = std::make_shared<DiagIdentity>(comm,params_identity);
   diag_identity->set_grids(gm);
 
   // Create the sum diagnostic
   ekat::ParameterList params_sum("DiagSum");
-  params_sum.set<std::string>("Grid Name", "Point Grid");
+  params_sum.set<std::string>("grid_name", "point_grid");
   auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
   diag_sum->set_grids(gm);
 
   // Create the fail diagnostic
   ekat::ParameterList params_fail("DiagFail");
-  params_fail.set<std::string>("Grid Name", "Point Grid");
+  params_fail.set<std::string>("grid_name", "point_grid");
   auto diag_fail = std::make_shared<DiagFail>(comm,params_fail);
   diag_fail->set_grids(gm);
 
@@ -624,9 +624,9 @@ TEST_CASE ("diagnostics") {
     REQUIRE_THROWS(diag_fail->set_computed_field(f));
     if (name == "Field A") {
       diag_identity->set_required_field(f.get_const());
-      f.deep_copy<double,Host>(1.0);
+      f.deep_copy<Host>(1.0);
     } else {
-      f.deep_copy<double,Host>(2.0);
+      f.deep_copy<Host>(2.0);
     } 
     input_fields.emplace(name,f);
   }

@@ -743,7 +743,7 @@ contains
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom, &
                                     transport_alg, prim_step_type
-    use global_norms_mod,     only: test_global_integral, print_cfl
+    use global_norms_mod,     only: test_global_integral, print_cfl, dss_hvtensor
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
@@ -771,7 +771,6 @@ contains
     real (kind=real_kind) :: dt                 ! timestep
 
     ! variables used to calculate CFL
-    real (kind=real_kind) :: dtnu               ! timestep*viscosity parameter
     real (kind=real_kind) :: dt_dyn_vis         ! viscosity timestep used in dynamics
     real (kind=real_kind) :: dt_tracer_vis      ! viscosity timestep used in tracers
 
@@ -832,7 +831,6 @@ contains
     end if
 
 
-    ! compute most restrictive dt*nu for use by variable res viscosity:
     ! compute timestep seen by viscosity operator:
     dt_dyn_vis = tstep
     if (dt_tracer_factor>1 .and. tstep_type == 1) then
@@ -840,10 +838,7 @@ contains
        dt_dyn_vis = 2*tstep
     endif
     dt_tracer_vis=tstep*dt_tracer_factor
-    
-    ! compute most restrictive condition:
-    ! note: dtnu ignores subcycling
-    dtnu=max(dt_dyn_vis*max(nu,nu_div), dt_tracer_vis*nu_q)
+
     ! compute actual viscosity timesteps with subcycling
     dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
     dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
@@ -982,10 +977,11 @@ contains
     endif
 
     call model_init2(elem(:), hybrid,deriv1,hvcoord,tl,nets,nete)
+    ! apply dss and bilinear projection to tensor coefficients
+    call dss_hvtensor(elem,hybrid,nets,nete)
 
     ! advective and viscious CFL estimates
-    ! may also adjust tensor coefficients based on CFL
-    call print_cfl(elem,hybrid,nets,nete,dtnu)
+    call print_cfl(elem,hybrid,nets,nete)
 
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
     ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.

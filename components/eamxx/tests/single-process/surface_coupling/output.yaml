@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: surface_coupling_output
-Averaging Type: Instant
-Max Snapshots Per File: 1
+averaging_type: instant
+max_snapshots_per_file: 1
 fill_value: -99999.0
-Field Names:
+field_names:
   # IMPORTER
   - sfc_alb_dir_vis
   - sfc_alb_dir_nir
@@ -20,6 +20,6 @@ Field Names:
   - precip_liq_surf_mass
   - precip_ice_surf_mass
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

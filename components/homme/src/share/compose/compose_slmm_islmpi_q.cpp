@@ -232,7 +232,9 @@ template <typename MT>
 void copy_q (IslMpi<MT>& cm, const Int& nets,
              const QExtrema<MT>& q_min, const QExtrema<MT>& q_max) {
   slmm_assert(cm.mylid_with_comm_tid_ptr_h.size() == 2);
+#ifndef NDEBUG
   const auto myrank = cm.p->rank();
+#endif
   const auto& q_tgt = cm.tracer_arrays->q;
   const auto& mylid_with_comm = cm.mylid_with_comm_d;
   const auto& ed_d = cm.ed_d;
