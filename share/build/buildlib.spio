@@ -145,10 +145,8 @@ def buildlib(bldroot, installpath, case):
     # elif which_h5dump is not None:
     #     os.environ["HDF5"] = os.path.dirname(os.path.dirname(which_h5dump))
 
-    # Before E3SM upgrades scorpio submodule to 1.5.0 or higher, keep WITH_HDF5
-    # CMake option OFF by default.
-    # if "HDF5_ROOT" in os.environ:
-    #    cmake_opts += "-DWITH_HDF5:BOOL=ON "
+    if "HDF5_ROOT" in os.environ:
+       cmake_opts += "-DWITH_HDF5:BOOL=ON "
 
     # Same deal with libz and szip
     if "ZLIB_ROOT" in os.environ:
