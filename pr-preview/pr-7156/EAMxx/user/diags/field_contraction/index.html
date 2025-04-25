@@ -9,14 +9,14 @@
       
       
       
-        <link rel="prev" href="../../eamxx_params/">
+        <link rel="prev" href="../">
       
       
         <link rel="next" href="../../presentations/">
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.2afb09e1.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -1752,6 +1752,10 @@
     
       
         
+          
+        
+      
+        
       
     
     
@@ -1766,8 +1770,9 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" checked>
         
           
-          <label class="md-nav__link" for="__nav_3_3_2_13" id="__nav_3_3_2_13_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -1776,8 +1781,14 @@
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_2_13" id="__nav_3_3_2_13_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_2_13">
@@ -1785,6 +1796,8 @@
             Diagnostics
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
             
               
                 
@@ -3423,7 +3436,7 @@ C_{\dots} = \sum_{k} w_{k} \cdot F_{\dots k}
 <p>where <span class="arithmatex">\(F_{\dots k}\)</span> is the field at level <span class="arithmatex">\(k\)</span>,
 and <span class="arithmatex">\(w_{k}\)</span> is the weight at level <span class="arithmatex">\(k\)</span>.</p>
 <p>To select the vertical reduction, you only need to suffix
-a field name <code>X</code> with <code>_vert_(avg|sum)</code></p>
+a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code></p>
 <table>
 <thead>
 <tr>
@@ -3434,19 +3447,32 @@ a field name <code>X</code> with <code>_vert_(avg|sum)</code></p>
 </thead>
 <tbody>
 <tr>
-<td><code>X_vert_avg</code></td>
+<td><code>X_vert_avg_dp_weighted</code></td>
 <td><span class="arithmatex">\(\Delta p_{k}\)</span></td>
 <td>Average across all levels, weighted by <span class="arithmatex">\(\Delta p_{k}\)</span></td>
 </tr>
 <tr>
-<td><code>X_vert_sum</code></td>
+<td><code>X_vert_sum_dp_weighted</code></td>
 <td><span class="arithmatex">\(\Delta p_{k}\)</span></td>
 <td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta p_{k}\)</span></td>
 </tr>
+<tr>
+<td><code>X_vert_avg_dz_weighted</code></td>
+<td><span class="arithmatex">\(dz_{k}\)</span></td>
+<td>Average across all levels, weighted by <span class="arithmatex">\(dz_{k}\)</span></td>
+</tr>
+<tr>
+<td><code>X_vert_sum_dz_weighted</code></td>
+<td><span class="arithmatex">\(dz_{k}\)</span></td>
+<td>Sum across all levels, weighted by <span class="arithmatex">\(dz_{k}\)</span></td>
+</tr>
 </tbody>
 </table>
-<p>The only supported weighting for now is that of
-<code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>.</p>
+<p>The only supported weighting for now is that of either
+<code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>, in units of Pa,
+or <code>dz</code> field in EAMxx, <span class="arithmatex">\(dz_{k}\)</span>, in units of m.
+In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
+where g is the gravitational acceleration, in units of m/s<span class="arithmatex">\(^2\)</span>.</p>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -3456,9 +3482,11 @@ a field name <code>X</code> with <code>_vert_(avg|sum)</code></p>
 <span class="nt">fields</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dz_weighted</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>

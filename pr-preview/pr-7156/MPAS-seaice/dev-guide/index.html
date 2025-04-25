@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.4af4bdda.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2afb09e1.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
@@ -1746,6 +1746,10 @@
     
       
         
+          
+        
+      
+        
       
     
     
@@ -1760,8 +1764,9 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" >
         
           
-          <label class="md-nav__link" for="__nav_3_3_2_13" id="__nav_3_3_2_13_label" tabindex="0">
-            
+          <div class="md-nav__link md-nav__container">
+            <a href="../../EAMxx/user/diags/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -1770,8 +1775,14 @@
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_3_2_13" id="__nav_3_3_2_13_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_3_2_13">
@@ -1779,6 +1790,8 @@
             Diagnostics
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
             
               
                 
@@ -3640,16 +3653,14 @@ cd SimulationScripts/archive/PolarGroup
 <p>For debugging E3SM, search the script for 'debug' and follow the instructions.</p>
 <p>The following examples describe how to use the script for development in Icepack.  Similar procedures could be used for any MPAS-SI physics development.</p>
 <h3 id="set-up-and-run-baselines">Set up and run baselines</h3>
-<p>Create a file containing modified namelist options. The file <code>nset01.nlk</code> in this example creates baselines for two types of column physics and turns off the <code>snicar_ad</code> radiation scheme.</p>
+<p>Create a file containing modified namelist options. The file <code>nset01.nlk</code> in this example turns off the <code>snicar_ad</code> radiation scheme.</p>
 <div class="highlight"><pre><span></span><code>$ less nset01.nlk
 [mpassi]
-config_column_physics_type = {&#39;column_package&#39;,&#39;icepack&#39;}
 config_use_snicar_ad = {.false.}
 </code></pre></div>
 <p>Notes:</p>
 <ul>
 <li>A .nlk file without any config settings will create a baseline using default settings.</li>
-<li>The <code>column_package</code> option is still available but is no longer being supported in MPAS-seaice.</li>
 </ul>
 <p>Fetch E3SM (choose any name for the directory baselines01):</p>
 <div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -f git@github.com:E3SM-Project/E3SM
@@ -3660,7 +3671,7 @@ config_use_snicar_ad = {.false.}
 <p>Submit:</p>
 <div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -q
 </code></pre></div>
-<p>Examine the diagnostic output (compares the icepack run with the column_package run in this example):</p>
+<p>Examine the diagnostic output:</p>
 <div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s baselines01 -k nset01.nlk -e -a -v
 </code></pre></div>
 <h3 id="set-up-a-sandbox-for-model-development-to-be-compared-with-the-baselines">Set up a sandbox for model development, to be compared with the baselines</h3>
