@@ -16,7 +16,13 @@ module thread_mod
   implicit none
   private
 
-#ifndef MODEL_CESM
+#ifdef MODEL_CESM
+  integer, public, pointer :: NThreads   ! total number of threads
+                                         ! standalone HOMME: from namelist
+                                         ! in CAM: set by driver
+  integer, public, pointer :: hthreads   ! computed based on nthreads, vthreads,nelemd
+  integer, public, pointer :: vthreads   ! not used unless set in namelist
+#else
  integer, public :: NThreads   ! total number of threads
                                 ! standalone HOMME: from namelist
                                 ! in CAM: set by driver

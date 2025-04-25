@@ -16,7 +16,6 @@ private
 !            interfaces   p(k) = hyai(k)*ps0 + hybi(k)*ps
 !            midpoints    p(k) = hyam(k)*ps0 + hybm(k)*ps
 !-----------------------------------------------------------------------
-#ifndef MODEL_CESM
 type, public :: hvcoord_t
   real(r8) ps0          ! base state surface-pressure for level definitions
   real(r8) hyai(plevp)  ! ps0 component of hybrid coordinate - interfaces
@@ -26,8 +25,11 @@ type, public :: hvcoord_t
   real(r8) etam(plev)   ! eta-levels at midpoints
   real(r8) etai(plevp)  ! eta-levels at interfaces
   real(r8) dp0(plev)      ! average layer thickness
-end type
+#ifdef MODEL_CESM
+  real(r8) hybd(plev)   ! difference in b (hybi) across layers
+  real(r8) prsfac       ! log pressure extrapolation factor (time, space independent)
 #endif
+end type
 
 public :: hvcoord_init, set_layer_locations
 contains

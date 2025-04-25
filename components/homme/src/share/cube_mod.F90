@@ -83,7 +83,9 @@ module cube_mod
   public  :: CubeElemCount
   public  :: CubeSetupEdgeIndex
   public  :: ref2sphere
-
+#ifdef MODEL_CESM
+  public  :: dmap_elementlocal
+#endif
 
   ! public interface to REFERECE element map
 #if HOMME_QUAD_PREC

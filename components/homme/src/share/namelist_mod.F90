@@ -10,7 +10,7 @@ module namelist_mod
   use kinds,      only: real_kind, iulog
   use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
-#ifdef CAM
+#if defined(CAM) && !defined(MODEL_CESM)
   use dyn_grid,   only: fv_nphys
 #endif
   use physical_constants, only: rearth, rrearth, omega
