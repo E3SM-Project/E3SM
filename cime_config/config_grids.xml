@@ -1182,7 +1182,7 @@
 
     <model_grid alias="EAIslandx8x32v1pg2_IcoswISC30E3r5">
       <grid name="atm">ne0np4_EAIsland8x32v1.pg2</grid>
-      <grid name="lnd">IcoswISC30E3r5</grid>
+      <grid name="lnd">ne0np4_EAIsland8x32v1.pg2</grid>
       <grid name="ocnice">IcoswISC30E3r5</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
