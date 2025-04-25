@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
 
+# Ensure cacts package is installed and up to date
+pip install --user --upgrade cacts
 
-# Check if CACTS is installed and up to date (if not install it)
-if ! pip show cacts > /dev/null 2>&1; then
-    echo "Module 'CACTS' not found. Installing from pypi.org"
-    python3 -m pip install --user cacts
-elif pip list --outdated | grep -q "^cacts "; then
-    # Check if the installed version is outdated
-    echo "An outdated version of 'CACTS' is installed. Updating to the latest version."
-    python3 -m pip install --user --upgrade cacts
-fi
-
+# Run cacts
 cacts "$@"
