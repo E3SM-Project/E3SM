@@ -986,7 +986,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol, extcnt}),
     KOKKOS_LAMBDA(const int i, const int j) {
       Real sum = 0.0;
-      for (int k = 0; k < nlev_local; ++k) {
+      for (int k = 0; k < nlev; ++k) {
         Real dz_m = z_int(i,k) - z_int(i,k+1); 
         Real dz_cm = dz_m * 100.0;
         sum += extfrc(i,k,j) * dz_cm;
