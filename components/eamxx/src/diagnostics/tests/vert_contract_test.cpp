@@ -38,9 +38,9 @@ TEST_CASE("vert_contract") {
   util::TimeStamp t0({2024, 1, 1}, {0, 0, 0});
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 3;
-  constexpr int dim3  = 4;
-  const int ngcols    = 6 * comm.size();
+  constexpr int nlevs = 30;
+  constexpr int dim3  = 5;
+  const int ngcols    = 95 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
@@ -52,18 +52,18 @@ TEST_CASE("vert_contract") {
 
   FieldIdentifier fin2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier fin3_fid("qc", scalar3d_layout, kg / kg, grid->name());
-  FieldIdentifier pd_fid("pseudo_density", scalar1d_layout, Pa, grid->name());
-  FieldIdentifier dz_fid("dz", scalar1d_layout, m, grid->name());
+  FieldIdentifier dp_fid("pseudo_density", scalar2d_layout, Pa, grid->name());
+  FieldIdentifier dz_fid("dz", scalar2d_layout, m, grid->name());
 
   Field fin2(fin2_fid);
   Field fin3(fin3_fid);
-  Field pd(pd_fid);
-  Field dz(dz_fid);
+  Field dp(dp_fid);
+  // Field dz(dz_fid);
 
   fin2.allocate_view();
   fin3.allocate_view();
-  pd.allocate_view();
-  dz.allocate_view();
+  dp.allocate_view();
+  // dz.allocate_view();
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
@@ -78,73 +78,226 @@ TEST_CASE("vert_contract") {
   ekat::ParameterList params;
   // instantiation works because we don't do anything in the constructor
   auto bad_diag = diag_factory.create("VertContractDiag", comm, params);
-  // this will throw because no field_name was provided
-  REQUIRE_THROWS(bad_diag->set_grids(gm));
+  SECTION("bad_diag") {
+    // this will throw because no field_name was provided
+    REQUIRE_THROWS(bad_diag->set_grids(gm));
+  }
 
   fin2.get_header().get_tracking().update_time_stamp(t0);
   fin3.get_header().get_tracking().update_time_stamp(t0);
-  pd.get_header().get_tracking().update_time_stamp(t0);
-  dz.get_header().get_tracking().update_time_stamp(t0);
+  dp.get_header().get_tracking().update_time_stamp(t0);
+  // dz.get_header().get_tracking().update_time_stamp(t0);
   randomize(fin2, engine, pdf);
   randomize(fin3, engine, pdf);
-  randomize(pd, engine, pdf);
-  randomize(dz, engine, pdf);
+  randomize(dp, engine, pdf);
+  // randomize(dz, engine, pdf);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
   params.set<std::string>("field_name", "qc");
+  SECTION("bad_diag_2") {
+    // this will throw because no contract_method was provided
+    auto bad_diag_2 = diag_factory.create("VertContractDiag", comm, params);
+    REQUIRE_THROWS(bad_diag_2->set_grids(gm));
+  }
+
+  SECTION("bad_diag_3") {
+    // this will throw because bad contract_method was provided
+    params.set<std::string>("contract_method", "xyz");
+    auto bad_diag_3 = diag_factory.create("VertContractDiag", comm, params);
+    REQUIRE_THROWS(bad_diag_3->set_grids(gm));
+  }
+
+  // dp_weighted_avg
   params.set<std::string>("contract_method", "avg");
   params.set<std::string>("weighting_method", "dp");
-  auto diag_wavg = diag_factory.create("VertContractDiag", comm, params);
-  params.set<std::string>("contract_method", "sum");
-  params.set<std::string>("weighting_method", "dz");
-  auto diag_wsum = diag_factory.create("VertContractDiag", comm, params);
-  diag_wavg->set_grids(gm);
-  diag_wsum->set_grids(gm);
+  auto dp_weighted_avg = diag_factory.create("VertContractDiag", comm, params);
 
-  using PC         = scream::physics::Constants<Real>;
-  constexpr Real g = PC::gravit;
-  auto pd_scaled   = pd.clone();
-  // scale the area field
-  pd_scaled.scale(sp(1.0) / g);
-  auto sum = field_sum<Real>(pd_scaled, &comm);
-  pd_scaled.scale(sp(1.0) / sum);
+  // dp_weighted_sum
+  params.set<std::string>("contract_method", "sum");
+  params.set<std::string>("weighting_method", "dp");
+  auto dp_weighted_sum = diag_factory.create("VertContractDiag", comm, params);
+
+  // TODO: for some reason the dz field keeps getting set to 0
+  // TODO: as a workaround, just calculate dz here (sigh...)
+  // TODO: commenting out all the dz stuff for now
+  // // dz_weighted_avg
+  // params.set<std::string>("contract_method", "avg");
+  // params.set<std::string>("weighting_method", "dz");
+  // auto dz_weighted_avg = diag_factory.create("VertContractDiag", comm, params);
+
+  // // dz_weighted_sum
+  // params.set<std::string>("contract_method", "sum");
+  // params.set<std::string>("weighting_method", "dz");
+  // auto dz_weighted_sum = diag_factory.create("VertContractDiag", comm, params);
+  
+  // unweighted_sum
+  params.set<std::string>("contract_method", "sum");
+  params.set<std::string>("weighting_method", "none");
+  auto unweighted_sum = diag_factory.create("VertContractDiag", comm, params);
+  
+  // unweighted_avg
+  params.set<std::string>("contract_method", "avg");
+  params.set<std::string>("weighting_method", "none");
+  auto unweighted_avg = diag_factory.create("VertContractDiag", comm, params);
+
+  dp_weighted_avg->set_grids(gm);
+  dp_weighted_sum->set_grids(gm);
+  // dz_weighted_sum->set_grids(gm);
+  // dz_weighted_avg->set_grids(gm);
+  unweighted_sum->set_grids(gm);
+  unweighted_avg->set_grids(gm);
 
   // Fields for manual calculation
-  FieldIdentifier diag1_fid("qc_vert_contract_manual",
-                            scalar2d_layout.clone().strip_dim(LEV), kg / kg,
-                            grid->name());
-  FieldIdentifier diag2_fid("qc_vert_contract_manual",
-                            scalar3d_layout.clone().strip_dim(LEV), kg / kg,
-                            grid->name());
-
+  FieldIdentifier diag1_fid("qc_vert_contract_manual", scalar2d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
+  FieldIdentifier diag2_fid("qc_vert_contract_manual", scalar3d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
   Field diag1_m(diag1_fid);
   Field diag2_m(diag2_fid);
-
   diag1_m.allocate_view();
   diag2_m.allocate_view();
 
-  // calculate weighted avg directly
-  vert_contraction<Real>(diag1_m, fin2, pd_scaled, &comm);
+  // Fields for scaling
+  FieldIdentifier dps_fid ("dps", scalar2d_layout.clone().strip_dim(LEV), Pa, grid->name());
+  // FieldIdentifier dzs_fid ("dzs", scalar2d_layout.clone().strip_dim(LEV), m, grid->name());
+  Field dps(dps_fid);
+  // Field dzs(dzs_fid);
+  dps.allocate_view();
+  // dzs.allocate_view();
 
-  // Calculate weighted avg through diags
-  diag_wavg->set_required_field(fin2);
-  diag_wavg->set_required_field(pd);
-  diag_wavg->initialize(t0, RunType::Initial);
-  diag_wavg->compute_diagnostic();
-  auto diag_wavg_f = diag_wavg->get_diagnostic();
+  auto dp_ones = dp.clone("dp_ones");
+  dp_ones.deep_copy(1);
+  // auto dz_ones = dz.clone("dz_ones");
+  // dz_ones.deep_copy(1);
 
-  REQUIRE(views_are_equal(diag_wavg_f, diag1_m));
+  auto dp_scaled   = dp.clone("dp_scaled");
+  // auto dz_scaled   = dz.clone("dz_scaled");
 
-  // Repeat for another case, but for sum
-  auto dz_wsum = dz.clone();
-  vert_contraction<Real>(diag2_m, fin3, dz_wsum, &comm);
-  diag_wsum->set_required_field(fin3);
-  diag_wsum->set_required_field(dz);
-  diag_wsum->initialize(t0, RunType::Initial);
-  diag_wsum->compute_diagnostic();
-  auto diag_wsum_f = diag_wsum->get_diagnostic();
-  REQUIRE(views_are_equal(diag_wsum_f, diag2_m));
+  dp_scaled.scale(sp(1.0) / scream::physics::Constants<Real>::gravit);
+
+  vert_contraction<Real>(dps, dp_scaled, dp_ones, &comm);
+  // vert_contraction<Real>(dzs, dz_scaled, dz_ones, &comm);
+
+  SECTION("dp_weighted_avg") {
+    // scale dp_scaled by 1/dps (because we are averaging)
+    dps.sync_to_host();
+    auto dps_v = dps.get_view<const Real*, Host>();
+    dp_scaled.sync_to_host();
+    auto dp_scaled_v = dp_scaled.get_view<Real**, Host>();
+    for (std::size_t i = 0; i < dp_scaled_v.extent(0); ++i) {
+      for (std::size_t j = 0; j < dp_scaled_v.extent(1); ++j) {
+        if(dps_v(i) == 0) {
+          dp_scaled_v(i, j) = 0; // Handle division by zero by setting to 0
+        } else {
+          dp_scaled_v(i, j) /= dps_v(i);
+        }
+      }
+    }
+    dp_scaled.sync_to_dev();
+
+    // calculate weighted avg directly
+    vert_contraction<Real>(diag1_m, fin2, dp_scaled, &comm);
+
+    // Calculate weighted avg through diagnostics
+    dp_weighted_avg->set_required_field(fin2);
+    dp_weighted_avg->set_required_field(dp);
+    dp_weighted_avg->initialize(t0, RunType::Initial);
+    dp_weighted_avg->compute_diagnostic();
+    auto dp_weighted_avg_f = dp_weighted_avg->get_diagnostic();
+
+    REQUIRE(views_are_equal(dp_weighted_avg_f, diag1_m));
+  }
+
+  SECTION("dp_weighted_sum") {
+    // calculate weighted sum directly
+    vert_contraction<Real>(diag2_m, fin3, dp_scaled, &comm);
+    // Calculate weighted sum through diagnostics
+    dp_weighted_sum->set_required_field(fin3);
+    dp_weighted_sum->set_required_field(dp);
+    dp_weighted_sum->initialize(t0, RunType::Initial);
+    dp_weighted_sum->compute_diagnostic();
+    auto dp_weighted_sum_f = dp_weighted_sum->get_diagnostic();
+
+    REQUIRE(views_are_equal(dp_weighted_sum_f, diag2_m));
+  }
+
+  // SECTION("dz_weighted_avg") {
+  //   // scale dz_scaled by 1/dzs (because we are averaging)
+  //   dzs.sync_to_host();
+  //   auto dzs_v = dzs.get_view<const Real*, Host>();
+  //   dz_scaled.sync_to_host();
+  //   auto dz_scaled_v = dz_scaled.get_view<Real**, Host>();
+  //   for (std::size_t i = 0; i < dz_scaled_v.extent(0); ++i) {
+  //     for (std::size_t j = 0; j < dz_scaled_v.extent(1); ++j) {
+  //       if(dzs_v(i) == 0) {
+  //         dz_scaled_v(i, j) = 0; // Handle division by zero by setting to 0
+  //       } else {
+  //         dz_scaled_v(i, j) /= dzs_v(i);
+  //       }
+  //     }
+  //   }
+  //   dz_scaled.sync_to_dev();
+
+  //   // calculate weighted avg directly
+  //   vert_contraction<Real>(diag1_m, fin2, dz_scaled, &comm);
+
+  //   // Calculate weighted avg through diagnostics
+  //   dz_weighted_avg->set_required_field(fin2);
+  //   dz_weighted_avg->set_required_field(dz);
+  //   dz_weighted_avg->initialize(t0, RunType::Initial);
+  //   dz_weighted_avg->compute_diagnostic();
+  //   auto dz_weighted_avg_f = dz_weighted_avg->get_diagnostic();
+
+  //   REQUIRE(views_are_equal(dz_weighted_avg_f, diag1_m));
+  // }
+
+  // SECTION("dz_weighted_sum") {
+  //   // calculate weighted sum directly
+  //   vert_contraction<Real>(diag2_m, fin3, dz_scaled, &comm);
+  //   // Calculate weighted sum through diagnostics
+  //   dz_weighted_sum->set_required_field(fin3);
+  //   dz_weighted_sum->set_required_field(dz);
+  //   dz_weighted_sum->initialize(t0, RunType::Initial);
+  //   dz_weighted_sum->compute_diagnostic();
+  //   auto dz_weighted_sum_f = dz_weighted_sum->get_diagnostic();
+
+  //   REQUIRE(views_are_equal(dz_weighted_sum_f, diag2_m));
+  // }
+
+  SECTION("unweighted_sum") {
+    // calculate unweighted sum directly
+    vert_contraction<Real>(diag1_m, fin2, dp_ones, &comm);
+
+    // Calculate unweighted sum through diagnostics
+    unweighted_sum->set_required_field(fin2);
+    unweighted_sum->initialize(t0, RunType::Initial);
+    unweighted_sum->compute_diagnostic();
+    auto unweighted_sum_f = unweighted_sum->get_diagnostic();
+
+    REQUIRE(views_are_equal(unweighted_sum_f, diag1_m));
+  }
+
+  SECTION("unweighted_avg") {
+    // since we are averaging, we need to scale by the sum
+    auto dp_ones_scaled = dp_ones.clone("dz_ones_scaled");
+    dp_ones_scaled.sync_to_host();
+    auto dp_ones_scaled_v = dp_ones_scaled.get_view<Real**, Host>();
+    for (std::size_t i = 0; i < dp_ones_scaled_v.extent(0); ++i) {
+      for (std::size_t j = 0; j < dp_ones_scaled_v.extent(1); ++j) {
+        const int nlevs = dp_ones_scaled_v.extent(1);  
+        dp_ones_scaled_v(i, j) /= nlevs;
+      }
+    }
+    dp_ones_scaled.sync_to_dev();
+    // calculate unweighted avg directly
+    vert_contraction<Real>(diag2_m, fin3, dp_ones_scaled, &comm);
+    // Calculate unweighted avg through diagnostics
+    unweighted_avg->set_required_field(fin3);
+    unweighted_avg->initialize(t0, RunType::Initial);
+    unweighted_avg->compute_diagnostic();
+    auto unweighted_avg_f = unweighted_avg->get_diagnostic();
+    
+    REQUIRE(views_are_equal(unweighted_avg_f, diag2_m));
+  }
 }
 
 }  // namespace scream

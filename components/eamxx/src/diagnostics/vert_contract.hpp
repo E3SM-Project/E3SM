@@ -28,19 +28,24 @@ class VertContractDiag : public AtmosphereDiagnostic {
  public:
 #endif
   void compute_diagnostic_impl();
-
- protected:
   void initialize_impl(const RunType /*run_type*/);
+  // Additional function to scale the weights
+  void scale_wts(Field &wts, const Field &wts_sum);
+
 
   // Name of each field (because the diagnostic impl is generic)
   std::string m_diag_name;
   // Name of contraction method (avg, sum)
   std::string m_contract_method;
-  // Name of weighting method (dp, dz)
+  // Name of weighting method (dp, dz, none)
   std::string m_weighting_method;
 
   // Need some weighting, if unweighted, we will make it 1
   Field m_weighting;
+  // Need a weighting field set to all ones
+  Field m_weighting_one;
+  // Need weighting summed vertically
+  Field m_weighting_sum;
 };
 
 }  // namespace scream
