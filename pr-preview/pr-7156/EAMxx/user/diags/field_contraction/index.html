@@ -3429,14 +3429,15 @@ a field name <code>X</code> with <code>_horiz_avg</code> in the output requests.
 </tbody>
 </table>
 <h2 id="vertical-reduction">Vertical reduction</h2>
-<p>We currently offer two vertical reductions <span class="arithmatex">\(C\)</span>, defined as</p>
+<p>We currently offer three vertical reductions <span class="arithmatex">\(C\)</span>, defined as</p>
 <div class="arithmatex">\[
 C_{\dots} = \sum_{k} w_{k} \cdot F_{\dots k}
 \]</div>
 <p>where <span class="arithmatex">\(F_{\dots k}\)</span> is the field at level <span class="arithmatex">\(k\)</span>,
 and <span class="arithmatex">\(w_{k}\)</span> is the weight at level <span class="arithmatex">\(k\)</span>.</p>
 <p>To select the vertical reduction, you only need to suffix
-a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code></p>
+a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code> or
+<code>_vert_(avg|sum)</code> in the output yaml files.</p>
 <table>
 <thead>
 <tr>
@@ -3466,12 +3467,25 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code></
 <td><span class="arithmatex">\(\Delta z_{k}\)</span></td>
 <td>Sum across all levels, weighted by <span class="arithmatex">\(\Delta z_{k}\)</span></td>
 </tr>
+<tr>
+<td><code>X_vert_avg</code></td>
+<td>1</td>
+<td>Average across all levels</td>
+</tr>
+<tr>
+<td><code>X_vert_sum</code></td>
+<td>1</td>
+<td>Sum across all levels</td>
+</tr>
 </tbody>
 </table>
-<p>The only supported weighting for now is that of either
-<code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>, in units of Pa,
-or <code>dz</code> field in EAMxx, <span class="arithmatex">\(\Delta z_{k}\)</span>, in units of m.
-In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
+<p>The supported weighting options for now are</p>
+<ul>
+<li><code>pseudo_density</code> field in EAMxx, <span class="arithmatex">\(\Delta p_{k}\)</span>, in units of Pa;</li>
+<li><code>dz</code> field in EAMxx, <span class="arithmatex">\(\Delta z_{k}\)</span>, in units of m;</li>
+<li>and no weighting, which is equivalent to using a weight of 1.</li>
+</ul>
+<p>In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
 where g is the gravitational acceleration, in units of m/s<span class="arithmatex">\(^2\)</span>.</p>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
@@ -3488,6 +3502,8 @@ where g is the gravitational acceleration, in units of m/s<span class="arithmate
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dp_weighted</span><span class="w">  </span><span class="c1"># K * Pa * s / (m * m) </span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dz_weighted</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
