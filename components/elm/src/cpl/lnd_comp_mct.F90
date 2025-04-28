@@ -1340,7 +1340,7 @@ contains
 #endif
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices 
-    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm(1,1) )
+    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm )
     if ( ierr > 0) then
       call endrun('Error: fail to get seq_flds_x2l_fields for land moab instance on component')
     endif
