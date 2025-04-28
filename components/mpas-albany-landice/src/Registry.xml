@@ -1725,9 +1725,15 @@ is the value of that variable from the *previous* time level!
                         description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_param_type = AMfit. 1 prescribes AMberg at that cell, 0 prescribed AMmelt."
 					 />
 					 <var name="oceanField" type="real" dimensions="TWO nISMIP6OceanLayers nCells Time" units="none"
-								descriptions="Generic field used to extrapolate either ocean temperature and salinity, or thermal forcing. This field gets updated on each iteration of the extrapolation scheme. At end of extrapolation, those fields are set equal to oceanField. oceanField thus does not normally need to be output."
+								description="Generic field used to extrapolate either ocean temperature and salinity, or thermal forcing. This field gets updated on each iteration of the extrapolation scheme. At end of extrapolation, those fields are set equal to oceanField. oceanField thus does not normally need to be output."
 					 />
-        </var_struct>
+					 <var name="connectedMarineMask" type="integer" dimensions="nCells Time" units="none" default_value="0"
+								description="Mask of cells below sea level in contact with open ocean (including ice cells)."
+					 />
+					 <var name="altConnectedMarineMask" type="integer" dimensions="nCells Time" units="none" default_value="0"
+								description="Mask of ice-free cells below sea level in contact with open ocean."
+		  			 />
+		  </var_struct>
 <!-- ================ -->
 
 	<!-- Scratch Variables -->
@@ -1804,11 +1810,11 @@ is the value of that variable from the *previous* time level!
 	       description="local indices of each vertex"
 	       persistence="scratch"
 	       />
-       <var name="seedMask" type="integer" dimensions="nCells" units="none"
+       <var name="seedMask" type="integer" dimensions="nCells Time" units="none"
 	       description="seed mask for flood fill"
 	       persistence="scratch"
           />
-       <var name="growMask" type="integer" dimensions="nCells" units="none"
+       <var name="growMask" type="integer" dimensions="nCells Time" units="none"
                description="grow mask for flood fill"
                persistence="scratch"
           />
