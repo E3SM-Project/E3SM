@@ -276,7 +276,7 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm, 
   integer  :: kpbl2d_in(pcols)
   integer  :: kpbl2d_reverse_in(pcols)
   real(r8), pointer :: pblh(:)
-  real(r8) :: dx(pcols),dy(pcols)
+  real(r8),allocatable,dimension(:) :: dx,dy
 
   real(r8), pointer :: oro_drag_convexity(:)
   real(r8), pointer :: oro_drag_asymmetry(:,:)
@@ -289,6 +289,7 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm, 
   !-----------------------------------------------------------------------
 
   ncol=state%ncol
+  allocate(dx(ncol),dy(ncol))
   !convert heights above surface to heights above sea level
   !obtain z,dz,dx,dy,and k for pblh
   kpbl2d_in=0_r8
@@ -392,8 +393,8 @@ function pblh_get_level_idx(height_array,pblheight)
   pblh_get_level_idx = -1
   found=.false.
   !get the pblh level index and return
-  do k = 1, pver
-    if((pblheight >= height_array(k+1).and.pblheight <height_array(k)))then
+  do k = 2, pver
+    if((pblheight >= height_array(k).and.pblheight <height_array(k-1)))then
       pblh_get_level_idx =  k+1
       found=.true.
       return
