@@ -776,8 +776,10 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
       ! For only component pes
       if (comp(1)%iamin_compid) then
-             ! Allocate and initialize area correction factors on component processes
+         ! Allocate and initialize area correction factors on component processes
          ! get areas, first allocate memory
+         ! Side Note:: !!! TODO mblsize on component side is always the size of comp domain for mct, too
+         ! that is the whole point, we are using the same order, and the same grid size as mct driver
          lsize = comp(1)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
@@ -882,6 +884,22 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
        ! send data to coupler exchange ? everything, not only fluxes ?
       call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields, context_exch='areacor')
    endif
+
+   ! as a quick fix, set the correction factors on component side, on MOAB tags mdl2drv and drv2mdl 
+   !  exactly as those from mct; hopefully, we will see zero differences with MOABCOMP
+
+   lsize = comp(1)%mblsize
+   tagname = 'mdl2drv'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%mdl2drv)
+   if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' cannot set new mdl2drv values for moab like those for mct  ')
+   endif
+   tagname = 'drv2mdl'//C_NULL_CHAR
+   ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%drv2mdl)
+   if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' cannot set new mdldrv2mdl2drv values for moab like those for mct  ')
+   endif
+
 
   end subroutine component_init_areacor_moab
   !===============================================================================
