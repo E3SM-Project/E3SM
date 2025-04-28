@@ -240,6 +240,11 @@ contains
          call li_flood_fill(seedMask, growMask, domain)
          
          connectedMarineMask(:) = seedMask(:)
+         
+         ! halo update
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'connectedMarineMask')
+         call mpas_timer_stop("halo updates")
 
          ! Calculate mask of ice-free cells with bedTopography below sea level
          ! and that are connected the ocean (again through only ice-free cells).
@@ -269,6 +274,11 @@ contains
          call li_flood_fill(seedMask, growMask, domain)
          
          altConnectedMarineMask(:) = seedMask(:)
+         
+         ! halo update
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'altConnectedMarineMask')
+         call mpas_timer_stop("halo updates")
          
          ! alter orig3dOceanMask if necessary to avoid errors
          do iCell = 1, nCells
