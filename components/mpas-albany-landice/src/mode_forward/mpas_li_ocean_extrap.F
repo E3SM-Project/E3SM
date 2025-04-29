@@ -381,7 +381,7 @@ contains
          endif
          
          ! initialize the invalid data locations with fill value
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             do iLayer = 1, nISMIP6OceanLayers
                if ((connectedMarineMask(iCell) == 0) .and. (bedTopography(iCell) < config_sea_level)) then
                   ! Don't assign invalid value to lakes/inland seas disconnected from global ocean
