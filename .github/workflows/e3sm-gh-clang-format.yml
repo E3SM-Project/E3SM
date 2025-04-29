@@ -1,0 +1,67 @@
+name: "clang format"
+
+# if .{cpp,hpp} files are touched in a PR, lint them!
+
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'components/eamxx/**/*.cpp'
+      - 'components/eamxx/**/*.hpp'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format-linter:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: tj-actions/changed-files@v46
+      id: changed-files
+      with:
+        files: 'components/eamxx/**/*.{cpp,hpp}'
+        separator: " "
+    # displays the diff, as compared to the changes that *would* be made
+    - uses: DoozyX/clang-format-lint-action@v0.20
+      with:
+        source: ${{ steps.changed-files.outputs.all_changed_files }}
+        exclude: ''
+        extensions: 'hpp,cpp'
+        clangFormatVersion: 14
+        style: llvm
+
+    # - uses: tj-actions/changed-files@v46
+    #   id: changed-files
+    #   with:
+    #     files: 'components/eamxx/**/*.{cpp,hpp}'
+    #     separator: " "
+    # - name: cleanup file list
+    #   env:
+    #     CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+    #   run: |
+    #     inc_regex=''
+    #     for file in ${CHANGED_FILES}; do
+    #       esc_dot="${file//./\.}"
+    #       inc_regex+=".*${esc_dot//\//\\/}|"
+    #     done
+    #     echo "${inc_regex}"
+    #     echo "INC_REGEX_ENV=(${inc_regex%|})" >> "$GITHUB_ENV"
+    # - uses: jidicula/clang-format-action@v4.15.0
+    #   with:
+    #     clang-format-version: '14'
+    #     check-path: 'components/eamxx'
+    #     fallback-style: 'llvm'
+    #     include-regex: "${{ env.INC_REGEX_ENV }}"
+
+# - name: Generate list using Markdown
+#   run: |
+#     echo "This is the lead in sentence for the list" >> $GITHUB_STEP_SUMMARY
+#     echo "" >> $GITHUB_STEP_SUMMARY # this is a blank line
+#     echo "- Lets add a bullet point" >> $GITHUB_STEP_SUMMARY
+#     echo "- Lets add a second bullet point" >> $GITHUB_STEP_SUMMARY
+#     echo "- How about a third one?" >> $GITHUB_STEP_SUMMARY
