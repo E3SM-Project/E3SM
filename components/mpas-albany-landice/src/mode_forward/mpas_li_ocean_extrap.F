@@ -195,7 +195,6 @@ contains
                   enddo
                endif
             enddo
-            seedOceanMaskHorizOld(:) = seedOceanMaskHoriz(:)
             ! Update halos
             ! Note: halo updates could be skipped for a number of iterations equal to the
             ! number of halo rows as a possible performance improvement in the future.
@@ -204,6 +203,7 @@ contains
             call mpas_dmpar_field_halo_exch(domain, 'growOceanMaskHoriz')
             call mpas_dmpar_field_halo_exch(domain, 'seedOceanMaskHoriz')
             call mpas_timer_stop("halo updates")
+            seedOceanMaskHorizOld(:) = seedOceanMaskHoriz(:)
          enddo
          deallocate(seedOceanMaskHorizOld)
 
