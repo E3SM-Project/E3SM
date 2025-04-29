@@ -17,7 +17,7 @@
       <tfile disposition="move">casename.cpl.ha2x1d.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.cpl.ha2x1h.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.cpl.hl2x1yr_glc.1976-01-01-00000.nc</tfile>
-      <tfile disposition="copy">rpointer.drv_0001</tfile>
+      <tfile disposition="ignore">rpointer.drv_0001</tfile>
       <tfile disposition="copy">rpointer.drv</tfile>
       <tfile disposition="ignore">casenamenot.cpl.r.1976-01-01-00000.nc</tfile>
     </test_file_names>
