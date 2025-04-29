@@ -4629,7 +4629,7 @@ module li_calving
       allocate(seedMaskOld(nCells+1))
       seedMaskOld(:) = 0
 
-      newMaskCountLocal = sum(seedMask)
+      newMaskCountLocal = sum(seedMask(1:nCellsSolve))
 
       ! Outer loop over processors; Inner loop over cells on that processor
 
