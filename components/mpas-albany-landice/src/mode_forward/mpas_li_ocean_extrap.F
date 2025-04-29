@@ -395,6 +395,11 @@ contains
             enddo
          enddo
 
+         ! halo update
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'oceanField')
+         call mpas_timer_stop("halo updates")
+
          ! deallocate scratch fields used for flood fill
          call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
          call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
