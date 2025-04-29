@@ -1329,6 +1329,9 @@
       <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/gcc-native-13.2; else echo "$MGARD_ROOT"; fi}</env>
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/gcc-native-13.2; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/gcc-native-13.2; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="LD_LIBRARY_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/Log_IO_VOL/latest/cray-mpich-8.1.31/gcc-native-13.2/lib:$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="HDF5_PLUGIN_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/Log_IO_VOL/latest/cray-mpich-8.1.31/gcc-native-13.2/lib</env>
+      <env name="HDF5_VOL_CONNECTOR">LOG under_vol=0;under_info={}</env>
     </environment_variables>
     <environment_variables compiler="craycray.*" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/crayclang-15.0.1/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
