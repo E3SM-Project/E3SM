@@ -8,6 +8,6 @@
 !        any change below
 !----------------------------------------------------------------------------------
  rtmhist_fincl2 = 'RIVER_DISCHARGE_OVER_LAND_LIQ'
- frivinp_rtm = '/lcrc/group/e3sm/data/inputdata/rof/mosart/MOSART_Global_half_20210422.nc'
- parafile = '/lcrc/group/e3sm/data/inputdata/rof/mosart/global_reservoir_halfdegree_c20200917.nc'
+ frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_Global_half_20210422.nc'
+ parafile = '$DIN_LOC_ROOT/rof/mosart/global_reservoir_halfdegree_c20200917.nc'
 
