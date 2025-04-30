@@ -3,11 +3,19 @@
 #endif
 
 module dimensions_mod
-#if defined(CAM) && !defined(FVM_TRACERS)
-  use constituents, only : qsize_d => pcnst ! _EXTERNAL
-#endif
+#ifdef CAM
+#ifdef FVM_TRACERS
   implicit none
   private
+
+  integer, parameter         :: qsize_d =10 ! CAM-SE tracers (currently CAM-SE supports 10 condensate loading tracers)
+#else
+  use constituents, only : qsize_d => pcnst ! _EXTERNAL
+
+  implicit none
+  private
+#endif
+#endif
 
 ! set MAX number of tracers.  actual number of tracers is a run time argument  
 #ifndef CAM
@@ -18,9 +26,6 @@ module dimensions_mod
 #endif
 #endif
 
-#if defined(CAM) && defined(FVM_TRACERS) 
-  integer, parameter         :: qsize_d =10 ! CAM-SE tracers (currently CAM-SE supports 10 condensate loading tracers)
-#endif
   integer, parameter, public :: np = NP
 
   integer         :: qsize = 0

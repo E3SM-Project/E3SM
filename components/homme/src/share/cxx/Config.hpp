@@ -12,16 +12,12 @@
 # ifdef HAVE_CONFIG_H
 #  include "config.h.c"
 # endif
-#else
+#elif !defined(HOMMEXX_VECTOR_SIZE) 
 // Establish a good candidate vector size for eam builds
 # ifdef HOMMEXX_ENABLE_GPU
 #  define HOMMEXX_VECTOR_SIZE 1
 # else
-#  ifndef NDEBUG
-#   define HOMMEXX_VECTOR_SIZE 1
-#  else
-#   define HOMMEXX_VECTOR_SIZE 8
-#  endif
+#  define HOMMEXX_VECTOR_SIZE 8
 # endif
 #endif
 
