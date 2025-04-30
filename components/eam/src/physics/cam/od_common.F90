@@ -276,7 +276,7 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm, 
   integer  :: kpbl2d_in(pcols)
   integer  :: kpbl2d_reverse_in(pcols)
   real(r8), pointer :: pblh(:)
-  real(r8),allocatable,dimension(:) :: dx,dy
+  real(r8) :: dx(pcols),dy(pcols)
 
   real(r8), pointer :: oro_drag_convexity(:)
   real(r8), pointer :: oro_drag_asymmetry(:,:)
@@ -289,7 +289,6 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm, 
   !-----------------------------------------------------------------------
 
   ncol=state%ncol
-  allocate(dx(ncol),dy(ncol))
   !convert heights above surface to heights above sea level
   !obtain z,dz,dx,dy,and k for pblh
   kpbl2d_in=0_r8
@@ -395,7 +394,7 @@ function pblh_get_level_idx(height_array,pblheight)
   !get the pblh level index and return
   do k = 2, pver
     if((pblheight >= height_array(k).and.pblheight <height_array(k-1)))then
-      pblh_get_level_idx =  k+1
+      pblh_get_level_idx =  k
       found=.true.
       return
     endif
@@ -782,8 +781,8 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   !model timestep and other parameters
   real(r8), intent(in) ::  g,rd,rv,fv,cp,pi,deltim,rcl
   !input model grid length
-  real(r8), dimension(:), intent(in)   ::  dxmeter
-  real(r8), dimension(:), intent(in)   ::  dymeter
+  real(r8), dimension(its:ite), intent(in)   ::  dxmeter
+  real(r8), dimension(its:ite), intent(in)   ::  dymeter
   !input topo variables 
   real(r8), dimension( ims:ime,ndir_asymmetry ), intent(in) ::  oa4
   real(r8), dimension( ims:ime,ndir_efflength ), intent(in) ::  ol4
