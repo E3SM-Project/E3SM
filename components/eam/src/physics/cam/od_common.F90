@@ -781,8 +781,8 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   !model timestep and other parameters
   real(r8), intent(in) ::  g,rd,rv,fv,cp,pi,deltim,rcl
   !input model grid length
-  real(r8), dimension(its:ite), intent(in)   ::  dxmeter
-  real(r8), dimension(its:ite), intent(in)   ::  dymeter
+  real(r8), dimension(:), intent(in)   ::  dxmeter
+  real(r8), dimension(:), intent(in)   ::  dymeter
   !input topo variables 
   real(r8), dimension( ims:ime,ndir_asymmetry ), intent(in) ::  oa4
   real(r8), dimension( ims:ime,ndir_efflength ), intent(in) ::  ol4
@@ -967,8 +967,8 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   !
   !--- calculate length of grid for flow-blocking drag
   !
-  delx=dxmeter
-  dely=dymeter  
+  delx(its:ite)=dxmeter(its:ite)
+  dely(its:ite)=dymeter(its:ite)
   !
   !
   !-----initialize arrays
