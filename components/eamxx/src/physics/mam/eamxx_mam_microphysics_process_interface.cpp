@@ -182,17 +182,6 @@ void MAMMicrophysics::set_grids(
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
                      grid_name);
 
-  // Define unit constants for external forcing fields
-  // -----------------------------------------------------------------------------
-  // Note: The following units are technically redundant, as the output units
-  //       are explicitly overridden later for clean NetCDF metadata. However,
-  //       we define them here to document the intended physical units in code.
-  // -----------------------------------------------------------------------------
-  constexpr auto molec = ekat::units::Units::nondimensional();
-  constexpr auto cm     = m / 100;
-  const auto cm2       = pow(cm, 2);
-  const auto cm3       = pow(cm, 3);
-
   // Number of externally forced chemical species
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
@@ -200,10 +189,10 @@ void MAMMicrophysics::set_grids(
   FieldLayout scalar2d_extcnt = grid_->get_2d_vector_layout(extcnt, "ext_cnt");
 
   // Register computed fields for external forcing
-  // - extfrc: 3D instantaneous forcing rate [molec/cm³/s]
-  // - extfrc_vertsum: Vertically integrated forcing rate [molec/cm²/s]
-  add_field<Computed>("extfrc", scalar3d_extcnt, molec / cm3 / s, grid_name);
-  add_field<Computed>("extfrc_vertsum", scalar2d_extcnt, molec / cm2 / s, grid_name);
+  // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
+  // - extfrc_vertsum: Vertically integrated forcing rate [kg/m²/s]
+  add_field<Computed>("extfrc", scalar3d_extcnt, kg / m3 / s, grid_name);
+  add_field<Computed>("extfrc_vertsum", scalar2d_extcnt, kg / m2 / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -477,19 +466,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
-
-  // Override unit strings for clean NetCDF output
-  using str_atts_t = std::map<std::string, std::string>;
-
-  {
-    auto& extfrc_field = get_field_out("extfrc");
-    auto& io_atts = extfrc_field.get_header().get_extra_data<str_atts_t>("io: string attributes");
-    io_atts["units"] = "molec/cm3/s";
-
-    auto& extfrc_vertsum_field = get_field_out("extfrc_vertsum");
-    auto& io_atts2 = extfrc_vertsum_field.get_header().get_extra_data<str_atts_t>("io: string attributes");
-    io_atts2["units"] = "molec/cm2/s";
-  }
   
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
@@ -967,31 +943,51 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   auto extfrc_fm = get_field_out("extfrc").get_view<Real***>();
 
+  // Avogadro's number [molecules/mol]
+  const Real Avogadro = haero::Constants::avogadro;
+  // Mapping from external forcing species index to physics constituent index
+  // NOTE: These indices should match the species in extfrc_lst
+  // TODO: getting rid of hard-coded indices
+  const int extfrc_pcnst_index[extcnt] = {3, 6, 14, 27, 28, 13, 18, 30, 5};
+
+  // Heights at vertical interfaces [m]
+  const auto z_int = dry_atm_.z_iface;
+
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
   Kokkos::parallel_for("transpose_extfrc", 
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
-      extfrc_fm(i,j,k) = extfrc(i,k,j);  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
+      const int pcnst_idx = extfrc_pcnst_index[j];
+      const Real molar_mass_g_per_mol = mam4::gas_chemistry::adv_mass[pcnst_idx]; // g/mol
+      
+      // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
+      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
   });
 
-  // Interface heights [m]
-  const auto z_int = dry_atm_.z_iface;
+  // Output: vertically integrated forcing [kg/m²/s]
   auto extfrc_vertsum = get_field_out("extfrc_vertsum").get_view<Real **>();
 
-  // Integrate external forcing vertically using layer thickness (dz)
-  // extfrc_ is in [molec/cm³/s], dz in [cm], so result is [molec/cm²/s]
+  // Integrate external forcing vertically
+  // Modify units to MKS units
   Kokkos::parallel_for("compute_extfrc_vertsum", 
     Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol, extcnt}),
     KOKKOS_LAMBDA(const int i, const int j) {
+      const int pcnst_idx = extfrc_pcnst_index[j];
+      const Real molar_mass_g_per_mol = mam4::gas_chemistry::adv_mass[pcnst_idx]; // g/mol
+
       Real sum = 0.0;
       for (int k = 0; k < nlev; ++k) {
         Real dz_m = z_int(i,k) - z_int(i,k+1); 
+        // Convert to cm (since extfrc is in molecules/cm³/s)
         Real dz_cm = dz_m * 100.0;
         sum += extfrc(i,k,j) * dz_cm;
       }
-      extfrc_vertsum(i,j) = sum;
+      // Convert from molecules/cm²/s to kg/m²/s:
+      // [molecules/cm²/s] × [g/mol / molecules] = [g/mol⋅cm²⋅s]
+      // Convert g → kg (× 1e-3), cm² → m² (× 1e4) → total factor: 1e-3 × 1e4 = 10
+      extfrc_vertsum(i,j) = sum * (molar_mass_g_per_mol / Avogadro) * 10;
   });
 
   // postprocess output
