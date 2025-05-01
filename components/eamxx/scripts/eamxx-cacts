@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Ensure cacts package is installed and up to date
-pip install --user --upgrade cacts
+python3 -m pip install --user --trusted-host pypi.org --upgrade cacts
 
 # Run cacts
 cacts "$@"
