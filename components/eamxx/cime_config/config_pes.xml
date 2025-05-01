@@ -19,7 +19,6 @@
   </grid>
   <grid name="a%ne4np4">
     <mach name="pm-gpu|muller-gpu|alvarez-gpu">
-      <!-- Compset longname is 2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP -->
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne4 eamxx F case, 1 nodes, 4x1</comment>
         <ntasks>
@@ -55,6 +54,51 @@
           <nthrds_lnd>7</nthrds_lnd>
           <nthrds_ice>7</nthrds_ice>
         </nthrds>
+      </pes>
+    </mach>
+    <mach name="anvil|compy">
+      <pes compset="any" pesize="any">
+        <comment>anvil/compy: ne4 eamxx 1 node CPU</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="chrysalis">
+      <pes compset="any" pesize="any">
+        <comment>chrysalis: ne4 eamxx 1 node CPU</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="gcp12">
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
+        <comment>gcp12: ne4 eamxx F case, 1 nodes, 56x1</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_cpl>-1</ntasks_cpl>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
       </pes>
     </mach>
   </grid>
@@ -107,6 +151,21 @@
           <ntasks_lnd>-2</ntasks_lnd>
           <ntasks_rof>-2</ntasks_rof>
           <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="gcp12">
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
+        <comment>gcp12: ne30 eamxx F case, 4 nodes, 56x1 CPU</comment>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ocn>-4</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
