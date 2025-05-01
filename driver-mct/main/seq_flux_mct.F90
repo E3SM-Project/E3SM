@@ -307,7 +307,7 @@ contains
     charnsea = 0.0_r8
     allocate( ustarwav(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate ustarwav',ier)
-    ustarwav = 0.0_r8
+    ustarwav = 0.0_r8 
     allocate( z0wav(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate z0wav',ier)
     z0wav = 0.0_r8
@@ -1463,7 +1463,7 @@ contains
        index_o2x_So_roce_16O = mct_aVect_indexRA(o2x,'So_roce_16O', perrWith='quiet')
        index_o2x_So_roce_HDO = mct_aVect_indexRA(o2x,'So_roce_HDO', perrWith='quiet')
        index_o2x_So_roce_18O = mct_aVect_indexRA(o2x,'So_roce_18O', perrWith='quiet')
-       if (wav_ocn_coup == 'two' .or. wav_atm_coup == 'two') then
+       if (wav_ocn_coup == 'twoway' .or. wav_atm_coup == 'twoway') then
           index_w2x_Sw_Charn = mct_aVect_indexRA(w2x,'Sw_Charn')
           index_w2x_Sw_Z0 = mct_aVect_indexRA(w2x,'Sw_Z0')
           index_w2x_Sw_Ustar = mct_aVect_indexRA(w2x,'Sw_Ustar')
@@ -1572,7 +1572,7 @@ contains
              tocn(n) = o2x%rAttr(index_o2x_So_t   ,n)
              uocn(n) = o2x%rAttr(index_o2x_So_u   ,n)
              vocn(n) = o2x%rAttr(index_o2x_So_v   ,n)
-             if (wav_atm_coup == 'two') then
+             if (wav_atm_coup == 'twoway') then
                      charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
                      ustarwav(n) = w2x%rAttr(index_w2x_Sw_Ustar   ,n)
                      z0wav(n) = w2x%rAttr(index_w2x_Sw_Z0   ,n)
@@ -1655,7 +1655,7 @@ contains
             duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
        u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
-       if (wav_atm_coup == 'two') then     
+       if (wav_atm_coup == 'twoway') then     
           call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
             tocn , emask, seq_flux_atmocn_minwind, &

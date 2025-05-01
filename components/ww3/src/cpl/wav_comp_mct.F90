@@ -137,7 +137,7 @@
                           usspf
       use w3wdatmd, only: time, w3ndat, w3setw, wlv, va, ust, ice 
       use w3adatmd, only: ussp, w3naux, w3seta, sxx, sxy, syy, fliwnd, flcold, dw, cg, wn, hs, fp0, thp0, &
-                          charn, tauwix, tauwiy, tauox, tauoy, tauocx, tauocy, usero
+                          charn, z0,ustar2, tauwix, tauwiy, tauox, tauoy, tauocx, tauocy
       use w3idatmd, only: inflags1, inflags2,w3seti, w3ninp
       USE W3IDATMD, ONLY: TC0, CX0, CY0, TCN, CXN, CYN, ICEP1, ICEP5, TI1, TI5
       USE W3IDATMD, ONLY: TW0, WX0, WY0, DT0, TWN, WXN, WYN, DTN
@@ -1185,14 +1185,21 @@ CONTAINS
 
              if (wav_ocn_coup .eq. 'twoway' .or. wav_atm_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Charn,jsea) = CHARN(jsea)
-               w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = UST(jsea) ! Friction velocity
-               w2x_w%rattr(index_w2x_Sw_Z0,jsea) = USERO(jsea,1) ! Z0 surface roughness length
+               w2x_w%rattr(index_w2x_Sw_Ustar,jsea) = USTAR2(jsea) ! Friction velocity
+               w2x_w%rattr(index_w2x_Sw_Z0,jsea) = Z0(jsea) ! Z0 surface roughness length
             endif
             if (wav_ocn_coup .eq. 'twoway') then
                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
 
+               w2x_w%rattr(index_w2x_Faww_Tawx,jsea) = 1000*TAUWIX(jsea) !Conversion to N m^{-2} by multiplying by density of water (See eqn 2.99 WW3 Manual)
+               w2x_w%rattr(index_w2x_Faww_Tawy,jsea) = 1000*TAUWIY(jsea)
+               w2x_w%rattr(index_w2x_Fwow_Twox,jsea) = 1000*TAUOX(jsea)
+               w2x_w%rattr(index_w2x_Fwow_Twoy,jsea) = 1000*TAUOY(jsea)
+               w2x_w%rattr(index_w2x_Faow_Tocx,jsea) = TAUOCX(jsea)
+               w2x_w%rattr(index_w2x_Faow_Tocy,jsea) = TAUOCY(jsea)
+               
                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = USSP(jsea,1)
                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = USSP(jsea,nk+1)
                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = USSP(jsea,2)

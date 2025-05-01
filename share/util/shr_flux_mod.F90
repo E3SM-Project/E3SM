@@ -137,7 +137,8 @@ end subroutine shr_flux_adjust_constants
 !
 !     2011-Mar-13 - J. Nusbaumer - Water Isotope ocean flux added.
 !     2019-May-16 - Jack Reeves Eyre (UA) and Kai Zhang (PNNL) - Added COARE/Fairall surface flux scheme option (ocn_surface_flux_scheme .eq. 1) based on code from Thomas Toniazzo (Bjerknes Centre, Bergen) ”
-!     2024-Jul-10 - E. Thomas ethomas@lanl.gov - implementing Coare3.0 w/ Wave coupling (uses charnock paramter from WW3)
+!     2024-Jul - E. Thomas ethomas@lanl.gov - implementing Coare3.0 w/ Wave coupling
+!     2025-Mar - E. Thomas ethomas@lanl.gov - implementing Large+Yeager(default) Flux shceme w/ Wave coupling
 ! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
@@ -367,8 +368,12 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         !------------------------------------------------------------
         !--- neutral coefficients, z/L = 0.0 ---
         stable = 0.5_R8 + sign(0.5_R8 , delt)
-        if (wav_atm_coup .eq. 'two') then
-           cdn_wav = cdn_wave(loc_karman,zref,z0wav)
+        if (wav_atm_coup .eq. 'twoway') then
+           if (z0wav(n) == 0.0_R8 ) then 
+              cdn_wav = cdn_wave(loc_karman,zref,0.0001_R8)
+           else
+              cdn_wav = cdn_wave(loc_karman,zref,z0wav(n))
+           endif
            rdn = sqrt(cdn_wav)
            ! rdn calculated from Z0 will be constant
         else
@@ -379,19 +384,20 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         ren    = 0.0346_R8 !cexcd
 
         !--- ustar, tstar, qstar ---
-        write(s_logunit,*) 'ET EDIT: ustar first', ustar
-        if (wav_atm_coup .eq. 'two') then
-           ustar = ustar_wav
+        if (wav_atm_coup .eq. 'twoway') then
+           if (ustarwav(n) == 0.0_R8 ) then 
+              ustar = ustarwav(n)+0.1_R8
+           else
+              ustar = ustarwav(n)
+           endif
         else
            ustar = rdn * vmag
         endif
         tstar = rhn * delt
         qstar = ren * delq
         ustar_prev = ustar*2.0_R8
-        write(s_logunit,*) 'ET EDIT: z0', z0wav
-        write(s_logunit,*) 'ET EDIT: cdn_wav:', cdn_wav
-        write(s_logunit,*) 'ET EDIT: rdn:', rdn
-        write(s_logunit,*) 'ET EDIT: ustar first', ustar
+        write(s_logunit,*) 'ET EDIT: cdn_wav first:', cdn_wav
+        write(s_logunit,*) 'ET EDIT: rdn first:', rdn
         if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
         tau_diff = 1.e100_R8
         wind_adj = wind0
@@ -425,7 +431,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
            psimh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psimhu(xqq)
            psixh  = -5.0_R8*hol*stable + (1.0_R8-stable)*psixhu(xqq)
  
-           if (wav_atm_coup .ne. 'two') then
+           if (wav_atm_coup .ne. 'twoway') then
               !--- shift wind speed using old coefficient ---
               rd   = rdn / max(1.0_R8 + rdn/loc_karman*(alz-psimh), 1.e-3_r8)
               u10n = vmag * rd / rdn
@@ -444,6 +450,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
            !--- update ustar, tstar, qstar using updated, shifted coeffs --
            ustar = rd * vmag
+           write(s_logunit,*) 'ET EDIT: number iterations', iter
+           write(s_logunit,*) 'ET EDIT: ustar iteration', ustar
            tstar = rh * delt
            qstar = re * delq
 
@@ -459,6 +467,8 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
               vmag = max(seq_flux_atmocn_minwind, vmag)
            end if
         enddo
+        write(s_logunit,*) 'ET EDIT final num iter:', iter
+        write(s_logunit,*) 'ET EDIT: final ustar:', ustar
         if (iter < 1) then
            write(s_logunit,*) ustar,ustar_prev,flux_con_tol,flux_con_max_iter
            call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
@@ -561,7 +571,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
             endif
          endif
         ssq    = 0.98_R8 * qsat(ts(n)) / rbot(n)   ! sea surf hum (kg/kg)
-        if (wav_atm_coup .eq. 'two') then 
+        if (wav_atm_coup .eq. 'twoway') then 
            call cor30a(ubot(n),vbot(n),tbot(n),qbot(n),rbot(n) &  ! in atm params
                  & ,us(n),vs(n),ts(n),ssq                   &  ! in surf params
                  & ,zpbl,zbot(n),zbot(n),zref,ztref,ztref   &  ! in heights
@@ -1156,21 +1166,6 @@ END subroutine shr_flux_atmOcn_UA
 !===============================================================================
 ! Functions used by default surface flux scheme for Wave Coupling
 !===============================================================================
-function z0_wave(charn, us, g) result(z0wav)
-       implicit none
-
-       ! input variables
-       real(R8), intent(in) :: charn ! charcnock parameter
-       real(R8), intent(in) :: us ! u star
-       real(R8), intent(in) :: g ! gravity
-
-       ! local variables
-       real(R8) :: z0wav
-
-       z0wav = charn * (us**2) / g
-
-end function z0_wave
-
 function cdn_wave(kappa,zr,z0) result(cdn_wav)
        implicit none
        
@@ -1186,8 +1181,8 @@ function cdn_wave(kappa,zr,z0) result(cdn_wav)
        a = zr / z0 
        b = log(a)
        cdn_wav = (kappa**2) / (b**2)  
-
 end function cdn_wave
+
 !===============================================================================
 ! Functions/subroutines used by UA surface flux scheme.
 !===============================================================================
@@ -2701,7 +2696,7 @@ zrt=zrft ! reference height for st.diagn.T,q
     tsr = (dt-dter*jcool)*von/(log(zt/zot10)-psit_30(zt/L10))
     qsr = (dq-dqer*jcool)*von/(log(zq/zot10)-psit_30(zq/L10))
 
-    if (wav_atm_coup .eq. 'two') then
+    if (wav_atm_coup .eq. 'twoway') then
        charn = charnsea !use Charnock coefficient from active wave model (Janssen 1989, 1991)
     else
        ! parametrisation for Charney parameter (section 3c of Fairall et al. 2003)

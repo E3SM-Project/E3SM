@@ -165,7 +165,7 @@ module seq_flds_mod
   logical            :: add_iac_to_cplstate  ! .true. if iac fields are added to coupler history files
   character(len=CS)  :: wav_ocn_coup     ! 'twoway' if wave-ocean two-way coupling turned on
   character(len=CS)  :: wav_atm_coup     ! 'twoway' if wave-ocean two-way coupling turned on
-  character(len=CS)  :: wav_ice_coup     ! 'two' if wave-ice two-way coupling turned on
+  character(len=CS)  :: wav_ice_coup     ! 'twoway' if wave-ice two-way coupling turned on
   !----------------------------------------------------------------------------
   ! metadata
   !----------------------------------------------------------------------------
@@ -2723,14 +2723,15 @@ contains
 
     if (wav_atm_coup == 'twoway' .or. wav_ocn_coup == 'twoway') then
        call seq_flds_add(w2x_states,'Sw_Charn')
-       if (wav_ocn_coup == 'two') call seq_flds_add(x2o_states,'Sw_Charn')
+       if (wav_ocn_coup == 'twoway') call seq_flds_add(x2o_states,'Sw_Charn')
        longname = 'Charnock coefficent based on sea state'
        stdname  = 'Charnock_coefficent_based_on_sea_state'
        units    = ''
        attname  = 'Sw_Charn'
        call metadata_set(attname, longname, stdname, units)
+
        call seq_flds_add(w2x_states,'Sw_Ustar')
-       if (wav_ocn_coup == 'two') call seq_flds_add(x2o_states,'Sw_Ustar')
+       if (wav_ocn_coup == 'twoway') call seq_flds_add(x2o_states,'Sw_Ustar')
        longname = 'Friction Velocity based on sea state'
        stdname  = 'Frcition_velocity_based_on_sea_state'
        units    = ''
@@ -2738,7 +2739,7 @@ contains
        call metadata_set(attname, longname, stdname, units)
        
        call seq_flds_add(w2x_states,'Sw_Z0')
-       if (wav_ocn_coup == 'two') call seq_flds_add(x2o_states,'Sw_Z0')
+       if (wav_ocn_coup == 'twoway') call seq_flds_add(x2o_states,'Sw_Z0')
        longname = 'Surface Roughness Length based on wave state'
        stdname  = 'Surface_roughness_length_based_on_wave_state'
        units    = ''

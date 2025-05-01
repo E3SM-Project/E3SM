@@ -4071,6 +4071,14 @@
                          description="Charnock coeff accounting for the wave stress (Janssen 1989, 1991)"
                          packages="activeWavePKG"
                 />
+		 <var name="z0wav" type="real" dimensions="nCells Time" units="m"
+                         description="surface Roughness length accounting for the wave state"
+                         packages="activeWavePKG"
+                />
+		 <var name="ustarwav" type="real" dimensions="nCells Time" units=""
+                         description="Friction Velocity from Wave model "
+                         packages="activeWavePKG"
+                />
                 <var name="waveSupportedZonalWindStress" type="real" dimensions="nCells Time" units="N m^{-2}"
                          description="Zonal Wave supported stress (Stress from atmosphere to waves)"
                          packages="activeWavePKG"
