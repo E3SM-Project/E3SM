@@ -222,6 +222,15 @@ module elm_varctl
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
   character(len=256), public :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
+  character(len=256), public :: fates_photosynth_acclimation = ''       ! nonacclimating, kumarathunge2019
+  character(len=256), public :: fates_stomatal_model = ''               ! stomatal conductance model, Ball-berry or Medlyn
+  character(len=256), public :: fates_stomatal_assimilation = ''        ! net or gross assimilation modes
+  character(len=256), public :: fates_leafresp_model = ''               ! Leaf maintenance respiration model, Ryan or Atkin
+  character(len=256), public :: fates_cstarvation_model = ''            ! linear or exponential function
+  character(len=256), public :: fates_regeneration_model = ''           ! default, TRS, or TRS without seed dynamics
+  character(len=256), public :: fates_hydro_solver = ''                 ! 1D Taylor, 2D Picard, 2D Newton
+  character(len=256), public :: fates_radiation_model = ''              ! Norman or two-stream radiation model
+  character(len=256), public :: fates_electron_transport_model = ''     ! FvCB or JB electron transport model
   logical, public            :: use_fates_fixed_biogeog = .false.       ! true => use fixed biogeography mode
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
@@ -234,6 +243,7 @@ module elm_varctl
   logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode
   logical, public            :: use_fates_lupft = .false.               ! true => FATES land use x pft mode
   logical, public            :: use_fates_potentialveg = .false.        ! true => FATES potential veg only
+  logical, public            :: use_fates_daylength_factor = .false.    ! true => enable fates to use host land model daylength factor
   character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
