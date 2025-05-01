@@ -15,7 +15,7 @@ namespace scream
 ekat::logger::LogLevel str2LogLevel (const std::string& s) {
   using namespace ekat::logger;
 
-  ekat::logger::LogLevel log_level;
+  ekat::logger::LogLevel log_level = LogLevel::err;
   if (s=="off") {
     log_level = LogLevel::off;
   } else if (s=="trace") {

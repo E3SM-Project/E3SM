@@ -479,7 +479,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const std::string fail_handling_type_str =
       driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "warning");
 
-  CheckFailHandling fail_handling_type;
+  CheckFailHandling fail_handling_type = CheckFailHandling::Fatal;
   if (fail_handling_type_str == "warning") {
     fail_handling_type = CheckFailHandling::Warning;
   } else if (fail_handling_type_str == "fatal") {
@@ -995,7 +995,7 @@ void AtmosphereDriver::create_logger () {
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
   auto str2lev = [](const std::string& s, const std::string& name) {
-    LogLevel lev;
+    LogLevel lev = LogLevel::err;
     if (s=="trace") {
       lev = LogLevel::trace;
     } else if (s=="debug") {
