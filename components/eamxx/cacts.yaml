@@ -39,12 +39,13 @@ project:
   name: EAMxx
   baseline_gen_label: baseline_gen
   baseline_summary_file: baseline_list
-  cmake_vars_names:
-    enable_baselines:
+  cmake_settings:
+    baselines_on:
       SCREAM_ENABLE_BASELINE_TESTS: ON
-    generate_baselines:
+    baselines_off:
+      SCREAM_ENABLE_BASELINE_TESTS: OFF
+    baselines_only:
       SCREAM_ONLY_GENERATE_BASELINES: ON
-    baselines_dir: SCREAM_BASELINES_DIR
   cdash:
     drop_site: my.cdash.org
     drop_location: /submit.php?project=E3SM
