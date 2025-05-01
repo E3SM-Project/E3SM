@@ -228,6 +228,8 @@ configurations:
     description: null
     uses_baselines: True
     on_by_default: True
+    cmake_args:
+      SCREAM_BASELINES_DIR: ${machine.baselines_dir}/${build.longname}
 
   dbg:
     longname: full_debug
