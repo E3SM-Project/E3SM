@@ -1912,7 +1912,11 @@ my @groups = qw(run_modes
                 wave_coupling
                 gotm
                 forcing
+<<<<<<< HEAD
 		precip_scaling
+=======
+		sfwf_forcing
+>>>>>>> d8a61e7ea1 (namelist variable for water flux conservation in ocean-only simulation)
                 coupling
                 shortwaveradiation
                 self_attraction_loading
