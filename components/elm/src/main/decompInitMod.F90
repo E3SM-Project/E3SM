@@ -28,7 +28,9 @@ module decompInitMod
   implicit none
   !
   ! !PUBLIC MEMBER FUNCTIONS:
+#ifdef HAVE_MOAB
   public decompInit_moab         ! initializes lnd grid decomposition using MOAB partitioners
+#endif
   public decompInit_lnd          ! initializes lnd grid decomposition into clumps and processors
   public decompInit_clumps       ! initializes atm grid decomposition into clumps
   public decompInit_gtlcp         ! initializes g,l,c,p decomp info
@@ -107,7 +109,7 @@ contains
     if (clump_pproc > 0) then
        nclumps = clump_pproc * npes
        if (nclumps < npes) then
-          write(iulog,*) 'decompInit_lnd(): Number of gridcell clumps= ',nclumps, &
+          write(iulog,*) 'decompInit_moab(): Number of gridcell clumps= ',nclumps, &
                ' is less than the number of processes = ', npes
           call endrun(msg=errMsg(__FILE__, __LINE__))
        end if
@@ -160,7 +162,7 @@ contains
     endif
     procinfo%nclumps = clump_pproc
     procinfo%cid(:)  = -1
-    procinfo%ncells  = neproc
+    procinfo%ncells  = neoproc
     procinfo%ntunits  = 0
     procinfo%nlunits = 0
     procinfo%ncols   = 0
@@ -269,16 +271,16 @@ contains
       call endrun('Error: fail to query information for visible elements')
 
     ! assign clumps to proc round robin
-    cid = (iam+1)*clump_pproc
-    do n = cid,cid+clump_pproc
-      ! clumps(n)%owner = eproc_ownership(n) ! store the process that owns the cell
-      ! procinfo%cid(cid) = eglobal_ids(n)   ! store the global ID of the cell
-      clumps(n)%owner = iam     ! store the process that owns the clump
-      procinfo%cid(n-cid) = n   ! store the global clump ID
-    enddo
+   !  cid = (iam+1)*clump_pproc
+   !  do n = cid,cid+clump_pproc
+   !    ! clumps(n)%owner = eproc_ownership(n) ! store the process that owns the cell
+   !    ! procinfo%cid(cid) = eglobal_ids(n)   ! store the global ID of the cell
+   !    clumps(n)%owner = iam     ! store the process that owns the clump
+   !    procinfo%cid(n-cid+1) = n   ! store the global clump ID
+   !  enddo
 
     ! set the begginning and end range for the local array space
-    procinfo%begg = cell_id_offset + 1 - neoproc
+    procinfo%begg = cell_id_offset - neoproc + 1
     procinfo%endg = cell_id_offset ! beginning + local-owned + local-ghosted
 
     !
@@ -293,9 +295,10 @@ contains
     allocate (clump_endg        (clump_pproc          ))
 
     print *, 'clump_pproc = ', clump_pproc, '; npes = ', npes, '; procinfo%begg = ', procinfo%begg, '; procinfo%endg = ', procinfo%endg
+
     allocate (local_clump_info  (1:3*clump_pproc      ))
-    !  allocate (global_clump_info (1:3*clump_pproc*npes ))
-    allocate (global_clump_info (1:800 )) ! for now hardcode it.
+     allocate (global_clump_info (1:3*clump_pproc*npes ))
+   !  allocate (global_clump_info (1:800 )) ! for now hardcode it.
     allocate (thread_count      (1:npes               ))
 
     clump_ncells(:) = ncells_per_clump
@@ -311,6 +314,7 @@ contains
        local_clump_info((m-1)*3 + 1) = clump_ncells(m)
        local_clump_info((m-1)*3 + 2) = clump_begg  (m)
        local_clump_info((m-1)*3 + 3) = clump_endg  (m)
+      !  local_clump_info((m-1)*3 + 3) = m * (iam+1) ! [1 : nclumps]
     end do
 
     call MPI_Allgather(local_clump_info, 3*clump_pproc, MPI_INTEGER, &
@@ -319,21 +323,18 @@ contains
     count = 0
     thread_count(:) = 0
     do m = 1, nclumps
-       cowner = clumps(m)%owner
+       cowner = clumps(m)%owner + 1
 
-       clumps(m)%ncells = global_clump_info(cowner*3 + thread_count(cowner)*3 + 1)
-       clumps(m)%begg   = global_clump_info(cowner*3 + thread_count(cowner)*3 + 2)
-       clumps(m)%endg   = global_clump_info(cowner*3 + thread_count(cowner)*3 + 3)
-
+       clumps(m)%ncells = global_clump_info((cowner-1)*3 + thread_count(cowner)*3 + 1)
+       clumps(m)%begg   = global_clump_info((cowner-1)*3 + thread_count(cowner)*3 + 2)
+       clumps(m)%endg   = global_clump_info((cowner-1)*3 + thread_count(cowner)*3 + 3)
        thread_count(cowner) = thread_count(cowner) + 1
-    enddo
 
-    deallocate (clump_ncells      )
-    deallocate (clump_begg        )
-    deallocate (clump_endg        )
-    deallocate (local_clump_info  )
-    deallocate (global_clump_info )
-    deallocate (thread_count      )
+       if (iam .eq. 0) then
+          print *, 'cowner: ', cowner, '; clumps(m)%ncells = ', clumps(m)%ncells, ' clumps(m)%begg = ', clumps(m)%begg, ' clumps(m)%endg = ', clumps(m)%endg, ' thread_count(cowner) = ', thread_count(cowner)
+       end if
+
+    enddo
 
     ! Set ldecomp
     call get_proc_bounds(beg, end)
@@ -346,20 +347,47 @@ contains
     ! set the global ids
     !  ldecomp%gdc2glo(beg:end) = eglobal_ids(:)
 
+    allocate(lcid(lns))
+    lcid(:) = 0
     ! now let us arrange owned elements first and ghosted elements in the end
     oind = beg
-    gind = beg + neoproc ! offset by owned elements on the process
-    do n = 1, neproc
-      if (eproc_ownership(n) /= iam) then
-         ! found a ghosted element
-         ldecomp%gdc2glo(gind) = eglobal_ids(n)
-         gind = gind + 1
-      else
-         ! found an owned element
-         ldecomp%gdc2glo(oind) = eglobal_ids(n)
-         oind = oind + 1
+    !gind = beg + neoproc ! offset by owned elements on the process
+    cid = 1 ! starting clump id
+    offset = clump_ncells(1)
+    do n = 1, neoproc
+      ! if (eproc_ownership(n) /= iam) then
+      !    ! found a ghosted element
+      !    ldecomp%gdc2glo(gind) = eglobal_ids(n)
+      !    lcid(eglobal_ids(n)) = eproc_ownership(n) + 1 !gind
+      !    gind = gind + 1
+      ! else
+      !    ! found an owned element
+      !    ldecomp%gdc2glo(oind) = eglobal_ids(n)
+      !    lcid(eglobal_ids(n)) = eproc_ownership(n) + 1 !oind
+      !    oind = oind + 1
+      ! end if
+
+      ! found an owned element
+      ldecomp%gdc2glo(oind) = eglobal_ids(n)
+      ! lcid(eglobal_ids(n)) = iam + 1 !oind
+      if (n > offset) then
+         cid = cid + 1
+         offset = offset + clump_ncells(cid)
       end if
+      ! lcid(eglobal_ids(n)) = iam * clump_pproc + cid !oind
+      lcid(eglobal_ids(n)) = eproc_ownership(n) + 1
+      ! lcid(eglobal_ids(n)) = mod(eglobal_ids(n)-1,npes)
+      oind = oind + 1
     enddo
+
+    deallocate (clump_ncells      )
+    deallocate (clump_begg        )
+    deallocate (clump_endg        )
+    deallocate (local_clump_info  )
+    deallocate (global_clump_info )
+    deallocate (thread_count      )
+
+    !! global->local>map (global_id) -> returns local_id
 
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
     allocate(gindex(beg:end))
@@ -1075,6 +1103,7 @@ contains
        ! an is the row-major order 1d-index into the global ixj grid.
        an  = ldecomp%gdc2glo(anumg)
        cid = lcid(an)
+       !cid = global_to_local(an)
        ln  = anumg
        if(max_topounits > 1) then
           if (present(glcmask)) then
