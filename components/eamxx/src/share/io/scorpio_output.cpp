@@ -1343,6 +1343,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
   auto diag = scream::create_diagnostic(diag_field_name,sim_grid);
 
   // Some diags need some extra setup or trigger extra behaviors
+  // TODO: move this to the diag class itself, then query bool + string
   std::string diag_avg_cnt_name = "";
   auto& params = diag->get_params();
   if (diag->name()=="FieldAtPressureLevel") {
@@ -1358,6 +1359,10 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
                         + params.get<std::string>("height_units") + "_above_sealevel";
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
     }
+  } else if (diag->name()=="AerosolOpticalDepth550nm") {
+    params.set<double>("mask_value", m_fill_value);
+    m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+    diag_avg_cnt_name = "_" + diag->name();
   }
 
   // Ensure there's an entry in the map for this diag, so .at(diag_name) always works
