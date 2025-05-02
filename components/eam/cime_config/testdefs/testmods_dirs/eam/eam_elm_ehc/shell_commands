@@ -1,16 +1,22 @@
+if [ `./xmlquery --value MACH` == chrysalis ]; then
+  ./xmlchange MAX_TASKS_PER_NODE=64
+  ./xmlchange MAX_MPITASKS_PER_NODE=64
+fi
+
+ppn=`./xmlquery MAX_MPITASKS_PER_NODE --value`
+
+./xmlchange NTASKS_ATM=$(($ppn * 20))
+./xmlchange NTASKS_CPL=$(($ppn * 20))
+./xmlchange NTASKS_OCN=$(($ppn * 20))
+./xmlchange NTASKS_ICE=$(($ppn * 20))
+./xmlchange NTASKS_LND=$(($ppn * 20))
+
 ./xmlchange -append CAM_CONFIG_OPTS="-co2_cycle"
 ./xmlchange NCPL_BASE_PERIOD=year
 ./xmlchange ATM_NCPL=17520
 ./xmlchange IAC_NCPL=1
 ./xmlchange RUN_STARTDATE=2015-01-01
 ./xmlchange JOB_WALLCLOCK_TIME=4:00:00
-./xmlchange MAX_MPITASKS_PER_NODE=64
-./xmlchange MAX_TASKS_PER_NODE=64
-./xmlchange NTASKS_ATM=1280
-./xmlchange NTASKS_CPL=1280
-./xmlchange NTASKS_OCN=1280
-./xmlchange NTASKS_ICE=1280
-./xmlchange NTASKS_LND=1280
 
 DIN_LOC_ROOT=`./xmlquery DIN_LOC_ROOT --value`
 rundir=`./xmlquery RUNDIR --value`
@@ -22,17 +28,24 @@ export iesm_dyn_source=landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc
 
 cp -r $DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/input $scratchdir
 cp $DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/configuration/log_conf.xml $rundir
-cp $DIN_LOC_ROOT/iac/giac/glm/glm.fut.conf.chrysalis  $rundir/glm.fut.conf
 
 # separate restarts for carbon scaling on or off; maybe not
-cp $DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/restart/ssp2rcp45/chrysalis/restart.* $rundir
+mach=`./xmlquery MACH --value`
+cp $DIN_LOC_ROOT/iac/giac/gcam/gcam_6_0/restart/ssp2rcp45/$mach/restart.* $rundir
 
 cp $DIN_LOC_ROOT/lnd/clm2/rawdata/LUT_input_files_current/iESM_Ref_CropPast2015_c10142019.nc $rundir/iESM_Init_CropPast.nc
 cp $DIN_LOC_ROOT/lnd/clm2/rawdata/LUT_input_files_current/surfdata_360x720_mcrop2015_c07082020.nc $rundir/surfdata_360x720_mcrop_init.nc
 cp $DIN_LOC_ROOT/iac/giac/glm2iac/$iesm_dyn_source $rundir
 cp $DIN_LOC_ROOT/iac/giac/glm2iac/surfdata_360x720_potveg.nc $rundir
 cp $DIN_LOC_ROOT/iac/giac/glm2iac/mksurf_landuse_iESM_720x360.nc $rundir
-cp $DIN_LOC_ROOT/iac/giac/glm2iac/iac_in_chrysalis $rundir/iac_in
+if [ `./xmlquery --value MACH` == chrysalis ]
+then
+  cp $DIN_LOC_ROOT/iac/giac/glm/glm.fut.conf.chrysalis  $rundir/glm.fut.conf
+  cp $DIN_LOC_ROOT/iac/giac/glm2iac/iac_in_chrysalis $rundir/iac_in
+else
+  cp $DIN_LOC_ROOT/iac/giac/glm/glm.fut.conf  $rundir/glm.fut.conf
+  cp $DIN_LOC_ROOT/iac/giac/glm2iac/iac_in $rundir/iac_in
+fi
 
 cp $rundir/iESM_Init_CropPast.nc $rundir/iESM_Dyn_CropPast.nc
 cp $rundir/surfdata_360x720_mcrop_init.nc  $rundir/surfdata_360x720_mcrop_dyn.nc
