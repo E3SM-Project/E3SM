@@ -947,9 +947,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // TODO: getting rid of hard-coded indices
   const int extfrc_pcnst_index[extcnt] = {3, 6, 14, 27, 28, 13, 18, 30, 5};
 
-  // Heights at vertical interfaces [m]
-  const auto z_int = dry_atm_.z_iface;
-
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
