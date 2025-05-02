@@ -1260,8 +1260,50 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!--sfwf balance -->
+
+<entry id="config_sfwf_balance" type="logical"
+        category="sfwf_forcing" group="sfwf_forcing">
+If true, precipitation fluxes from data atmosphere was adjusted to constrain the freshwater conservation. To be used with data precipitation (rain+snow) fluxes coming from the atmospehre model and runoff fluxes coming from the land model.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sfwf_balance_type" type="integer"
+        category="sfwf_forcing" group="sfwf_forcing">
+The option for the water conservation scheme. The default is 0 that used a fixed factor applied on the precipitation fluxes. option 1 used the dynamical factor calculated with the annual mean and global mean precipitation (rain + snow), runoff and evaporation fluxes over ocean using data spanned for 1-year. 
+
+Valid values: 0 or 1 
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_factor" type="real"
+        category="sfwf_forcing" group="sfwf_forcing">
+Factors applied on precipitation flux to adjust freshwater conservation in ocean model. 
+
+Valid values: any non-negative value, no scaling if if set to 1.0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sfwf_history_days" type="integer"
+        category="sfwf_forcing" group="sfwf_forcing">
+The number of days over for which the history span of water conservation is computed. The default is 365 days (1 years).
+
+Valid values: Any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- coupling -->
+
+<entry id="config_ais_ice_runoff_history_days" type="integer"
+	category="coupling" group="coupling">
+The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day).
+
+Valid values: Any positive integer
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <entry id="config_remove_ais_river_runoff" type="logical"
 	category="coupling" group="coupling">
