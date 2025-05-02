@@ -80,7 +80,10 @@ contains
     use elm_varctl                , only: fsurdat, fatmlndfrc, flndtopo, fglcmask, noland, version
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
-    use decompInitMod             , only: decompInit_moab, decompInit_lnd, decompInit_clumps, decompInit_gtlcp
+    use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
+#ifdef HAVE_MOAB
+    use decompInitMod             , only: decompInit_moab
+#endif
     use domainMod                 , only: domain_check, ldomain, domain_init
     use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
@@ -202,7 +205,9 @@ contains
     ! and enable ghost halo-layers for each task to describe shared entities.
     ! Now let us create that MOAB app that represents the full ELM mesh
     ! ------------------------------------------------------------------------
+#ifdef HAVE_MOAB
     call init_moab_land_internal()
+#endif
 
     ! ------------------------------------------------------------------------
     ! Determine clm gridcell decomposition and processor bounds for gridcells
@@ -210,10 +215,12 @@ contains
 
     domain_decomp_type = "moab" ! hard-code it for testing
     select case (trim(domain_decomp_type))
+#ifdef HAVE_MOAB
     case ("moab")
       !call decompInit_lnd_moab(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
       call decompInit_moab(mlndghostid, ni, nj, amask)
       deallocate(amask)
+#endif
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
