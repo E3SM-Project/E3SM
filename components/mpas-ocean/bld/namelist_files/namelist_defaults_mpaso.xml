@@ -372,6 +372,12 @@
 <config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>
 <config_sgr_salinity_prescribed>0.0</config_sgr_salinity_prescribed>
 
+<!-- sfwf_forcing --> 
+<config_sfwf_balance>.false.</config_sfwf_balance>
+<config_sfwf_balance_type>0</config_sfwf_balance_type>
+<config_precip_factor>1.0</config_precip_factor>
+<config_sfwf_history_days>366</config_sfwf_history_days>
+
 <!-- coupling -->
 <config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
 <config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
