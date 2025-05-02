@@ -102,7 +102,7 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
     m_weighting_sum.allocate_view();
     m_weighting_one = m_weighting.clone("vert_contract_wts_one");
     m_weighting_one.deep_copy(sp(1));
-    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one, &m_comm);
+    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one);
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
@@ -182,12 +182,12 @@ void VertContractDiag::compute_diagnostic_impl() {
 
   // if dp|dz_weighted and avg, we need to scale the weighting by its 1/sum
   if ((m_weighting_method == "dp" || m_weighting_method == "dz") && m_contract_method == "avg") {
-    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one, &m_comm);
+    vert_contraction<Real>(m_weighting_sum, m_weighting, m_weighting_one);
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
   // call the vert_contraction impl that will take care of everything
-  vert_contraction<Real>(d, f, m_weighting, &m_comm);
+  vert_contraction<Real>(d, f, m_weighting);
 }
 
 }  // namespace scream
