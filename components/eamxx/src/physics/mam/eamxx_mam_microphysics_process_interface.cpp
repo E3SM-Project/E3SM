@@ -94,7 +94,7 @@ void MAMMicrophysics::set_grids(
   add_tracer<Required>("nc", grid_, n_unit);
 
   constexpr auto m2 = pow(m, 2);
-  constexpr auto s2 = pow(s, 2); 
+  constexpr auto s2 = pow(s, 2);
 
   // Surface geopotential [m2/s2]
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
