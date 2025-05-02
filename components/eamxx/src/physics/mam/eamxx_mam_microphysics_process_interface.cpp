@@ -956,7 +956,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
-      const Real molar_mass_g_per_mol = mam4::gas_chemistry::adv_mass[pcnst_idx]; // g/mol
+      auto molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
       
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
       extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
