@@ -70,6 +70,7 @@ module ocn_comp_mct
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
    use ocn_scaled_dismf
+!  use ocn_forcing_sfwf 
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -120,6 +121,8 @@ module ocn_comp_mct
    type (domain_type), pointer:: domain
    integer :: itimestep, &  ! time step number for MPAS
               ocn_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
+
+   real (kind=RKIND) :: precFactor 
 
 !=======================================================================
 
@@ -234,6 +237,11 @@ contains
     real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
     real (kind=RKIND), pointer :: &
        runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
+
+    ! freshwater balance adjustment 
+    logical, pointer :: config_sfwf_balance
+    integer, pointer :: config_sfwf_balance_type
+    real (kind=RKIND), pointer :: config_precip_factor
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
@@ -914,6 +922,22 @@ contains
     ! these are used for ocn-glc thermal forcing coupling
     call init_glc_z_levels(domain, ierr_local)
     ierr = ior(ierr, ierr_local)
+
+    !configuration for freshwater conservation
+    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', &
+                              config_sfwf_balance)
+    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', &
+                              config_sfwf_balance_type)
+    call mpas_pool_get_config(domain % configs, 'config_precip_factor', &
+                              config_precip_factor)
+
+    if (config_sfwf_balance) then 
+       if (config_sfwf_balance_type == 0 ) then 
+          precFactor = config_precip_factor
+       else 
+          precFactor = 1.0
+       end if 
+    end if 
 
 !-----------------------------------------------------------------------
 !
@@ -2381,7 +2405,7 @@ contains
         end if
 
         if ( rainFluxField % isActive ) then
-           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
+           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n) * precFactor
         end if
         if ( atmosphericPressureField % isActive ) then
            atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n)
@@ -3959,7 +3983,7 @@ contains
            icebergHeatFlux(i) = x2o_om(n, index_x2o_Fioi_bergh)
         end if
         if ( snowFluxField % isActive ) then
-           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow)
+           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow) * precFactor
         end if
         if ( seaIceFreshWaterFluxField % isActive ) then
            seaIceFreshWaterFlux(i) = x2o_om(n, index_x2o_Fioi_meltw)
