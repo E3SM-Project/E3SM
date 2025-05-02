@@ -174,8 +174,8 @@ TEST_CASE("vert_contract") {
 
   dp_scaled.scale(sp(1.0) / scream::physics::Constants<Real>::gravit);
 
-  vert_contraction<Real>(dps, dp_scaled, dp_ones, &comm);
-  // vert_contraction<Real>(dzs, dz_scaled, dz_ones, &comm);
+  vert_contraction<Real>(dps, dp_scaled, dp_ones);
+  // vert_contraction<Real>(dzs, dz_scaled, dz_ones);
 
   SECTION("dp_weighted_avg") {
     // scale dp_scaled by 1/dps (because we are averaging)
@@ -195,7 +195,7 @@ TEST_CASE("vert_contract") {
     dp_scaled.sync_to_dev();
 
     // calculate weighted avg directly
-    vert_contraction<Real>(diag1_m, fin2, dp_scaled, &comm);
+    vert_contraction<Real>(diag1_m, fin2, dp_scaled);
 
     // Calculate weighted avg through diagnostics
     dp_weighted_avg->set_required_field(fin2);
@@ -209,7 +209,7 @@ TEST_CASE("vert_contract") {
 
   SECTION("dp_weighted_sum") {
     // calculate weighted sum directly
-    vert_contraction<Real>(diag2_m, fin3, dp_scaled, &comm);
+    vert_contraction<Real>(diag2_m, fin3, dp_scaled);
     // Calculate weighted sum through diagnostics
     dp_weighted_sum->set_required_field(fin3);
     dp_weighted_sum->set_required_field(dp);
@@ -238,7 +238,7 @@ TEST_CASE("vert_contract") {
   //   dz_scaled.sync_to_dev();
 
   //   // calculate weighted avg directly
-  //   vert_contraction<Real>(diag1_m, fin2, dz_scaled, &comm);
+  //   vert_contraction<Real>(diag1_m, fin2, dz_scaled);
 
   //   // Calculate weighted avg through diagnostics
   //   dz_weighted_avg->set_required_field(fin2);
@@ -252,7 +252,7 @@ TEST_CASE("vert_contract") {
 
   // SECTION("dz_weighted_sum") {
   //   // calculate weighted sum directly
-  //   vert_contraction<Real>(diag2_m, fin3, dz_scaled, &comm);
+  //   vert_contraction<Real>(diag2_m, fin3, dz_scaled);
   //   // Calculate weighted sum through diagnostics
   //   dz_weighted_sum->set_required_field(fin3);
   //   dz_weighted_sum->set_required_field(dz);
@@ -265,7 +265,7 @@ TEST_CASE("vert_contract") {
 
   SECTION("unweighted_sum") {
     // calculate unweighted sum directly
-    vert_contraction<Real>(diag1_m, fin2, dp_ones, &comm);
+    vert_contraction<Real>(diag1_m, fin2, dp_ones);
 
     // Calculate unweighted sum through diagnostics
     unweighted_sum->set_required_field(fin2);
@@ -289,7 +289,7 @@ TEST_CASE("vert_contract") {
     }
     dp_ones_scaled.sync_to_dev();
     // calculate unweighted avg directly
-    vert_contraction<Real>(diag2_m, fin3, dp_ones_scaled, &comm);
+    vert_contraction<Real>(diag2_m, fin3, dp_ones_scaled);
     // Calculate unweighted avg through diagnostics
     unweighted_avg->set_required_field(fin3);
     unweighted_avg->initialize(t0, RunType::Initial);
