@@ -1,3 +1,4 @@
 fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_0.5x0.5_50pfts_simyr1850_c240208.nc' 
 finidat     = '$DIN_LOC_ROOT/lnd/clm2/initdata_map/20250122_CBGCv2.r05.chrysalis.I1850GSWCNPPHSWFMCROP.rgsp.elm.r.0616-01-01-00000.nc'
 paramfile = '$DIN_LOC_ROOT//lnd/clm2/paramdata/clm_params_c230517_phs_50pfts.nc'
+flanduse_timeseries='$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c240222.nc'
