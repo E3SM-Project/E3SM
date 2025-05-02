@@ -239,10 +239,16 @@ contains
        runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
     ! freshwater balance adjustment 
+<<<<<<< HEAD
     logical, pointer :: config_use_precip_scaling
     character (len=StrKIND), pointer :: config_precip_scaling_mode
     real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
     real(kind=RKIND), pointer :: scalingFactor
+=======
+    logical, pointer :: config_sfwf_balance
+    integer, pointer :: config_sfwf_balance_type
+    real (kind=RKIND), pointer :: config_precip_factor
+>>>>>>> d8a61e7ea1 (namelist variable for water flux conservation in ocean-only simulation)
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
@@ -948,6 +954,7 @@ contains
     ierr = ior(ierr, ierr_local)
 
     !configuration for freshwater conservation
+<<<<<<< HEAD
     call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
     if (config_use_precip_scaling) then 
       ! independent of space so should be no need to loop over blocks
@@ -955,6 +962,21 @@ contains
       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
       call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
       call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
+=======
+    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', &
+                              config_sfwf_balance)
+    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', &
+                              config_sfwf_balance_type)
+    call mpas_pool_get_config(domain % configs, 'config_precip_factor', &
+                              config_precip_factor)
+
+    if (config_sfwf_balance) then 
+       if (config_sfwf_balance_type == 0 ) then 
+          precFactor = config_precip_factor
+       else 
+          precFactor = 1.0
+       end if 
+>>>>>>> d8a61e7ea1 (namelist variable for water flux conservation in ocean-only simulation)
     end if 
 
 !-----------------------------------------------------------------------
