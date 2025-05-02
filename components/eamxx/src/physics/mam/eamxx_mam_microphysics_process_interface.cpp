@@ -186,13 +186,10 @@ void MAMMicrophysics::set_grids(
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
   FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
-  FieldLayout scalar2d_extcnt = grid_->get_2d_vector_layout(extcnt, "ext_cnt");
 
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
-  // - extfrc_vertsum: Vertically integrated forcing rate [kg/m²/s]
   add_field<Computed>("extfrc", scalar3d_extcnt, kg / m3 / s, grid_name);
-  add_field<Computed>("extfrc_vertsum", scalar2d_extcnt, kg / m2 / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -964,30 +961,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
       extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
-  });
-
-  // Output: vertically integrated forcing [kg/m²/s]
-  auto extfrc_vertsum = get_field_out("extfrc_vertsum").get_view<Real **>();
-
-  // Integrate external forcing vertically
-  // Modify units to MKS units
-  Kokkos::parallel_for("compute_extfrc_vertsum", 
-    Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {ncol, extcnt}),
-    KOKKOS_LAMBDA(const int i, const int j) {
-      const int pcnst_idx = extfrc_pcnst_index[j];
-      const Real molar_mass_g_per_mol = mam4::gas_chemistry::adv_mass[pcnst_idx]; // g/mol
-
-      Real sum = 0.0;
-      for (int k = 0; k < nlev; ++k) {
-        Real dz_m = z_int(i,k) - z_int(i,k+1); 
-        // Convert to cm (since extfrc is in molecules/cm³/s)
-        Real dz_cm = dz_m * 100.0;
-        sum += extfrc(i,k,j) * dz_cm;
-      }
-      // Convert from molecules/cm²/s to kg/m²/s:
-      // [molecules/cm²/s] × [g/mol / molecules] = [g/mol⋅cm²⋅s]
-      // Convert g → kg (× 1e-3), cm² → m² (× 1e4) → total factor: 1e-3 × 1e4 = 10
-      extfrc_vertsum(i,j) = sum * (molar_mass_g_per_mol / Avogadro) * 10;
   });
 
   // postprocess output
