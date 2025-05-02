@@ -234,6 +234,14 @@ add_default($nl, 'config_use_sgr_opt_salt_prescribed');
 add_default($nl, 'config_sgr_temperature_prescribed');
 add_default($nl, 'config_sgr_salinity_prescribed');
 
+###############################
+# Namelist group: sfwf_forcing#
+###############################
+add_default($nl, 'config_sfwf_balance');
+add_default($nl, 'config_sfwf_balance_type');
+add_default($nl, 'config_precip_factor');
+add_default($nl, 'config_sfwf_history_days');
+
 ############################
 # Namelist group: coupling #
 ############################
