@@ -10,7 +10,7 @@ module glc_cpl_indices
   SAVE
   public
 
-  integer , parameter, private:: glc_nec_max = 100
+  integer , parameter, private:: glc_nzoc_max = 100
 
   ! Note that, in both the drv -> glc and the glc -> drv fields, index 0 means bare land
 
@@ -22,7 +22,8 @@ module glc_cpl_indices
   integer, public :: index_x2g_So_htv    = 0 !Ice shelf ocean heat transfer velocity
   integer, public :: index_x2g_So_stv    = 0 !Ice shelf ocean salinity transfer velocity
   integer, public :: index_x2g_So_rhoeff = 0 !Ocean effective pressure
-  integer, public :: index_x2g_So_tf2d   = 0 !Ocean thermal forcing at predefined critical depth
+  integer, public :: index_x2g_So_tf3d(glc_nzoc_max)   = 0 !Ocean thermal forcing at specified z-levels
+  integer, public :: index_x2g_So_tf3d_mask(glc_nzoc_max)   = 0 !mask of ocean thermal forcing at specified z-levels
   integer, public :: index_x2g_Fogx_qiceli = 0 !Subshelf mass flux
   integer, public :: index_x2g_Fogx_qicehi = 0 !Subshelf heat flux for the ice sheet
 
@@ -48,13 +49,19 @@ contains
 
   subroutine glc_cpl_indices_set( )
 
+    use glc_zocnclass_mod
+
     !-------------------------------------------------------------
     type(mct_aVect)   :: g2x      ! temporary
     type(mct_aVect)   :: x2g      ! temporary
-    integer           :: num 
-    character(len= 2) :: cnum
-    character(len=64) :: name
+
+    integer :: glc_nzoc
+    integer :: iLev
+    character(len=2) :: cnum
+    character(len=64) :: varname
     !-------------------------------------------------------------
+
+    glc_nzoc = glc_get_num_zocn_classes()
 
     ! create temporary attribute vectors
 
@@ -71,7 +78,17 @@ contains
     index_x2g_Fogx_qiceli =               mct_avect_indexra(x2g,'Fogx_qiceli',perrwith='quiet')
     index_x2g_Fogx_qicehi =               mct_avect_indexra(x2g,'Fogx_qicehi',perrwith='quiet')
     index_x2g_So_rhoeff =                 mct_avect_indexra(x2g,'So_rhoeff',perrwith='quiet')
-    index_x2g_So_tf2d =                   mct_avect_indexra(x2g,'So_tf2d',perrwith='quiet')
+
+    if (glc_nzoc > 0) then
+       do iLev = 1, glc_nzoc
+          cnum = glc_zocnclass_as_string(iLev)
+          varname = 'So_tf3d' // cnum
+          index_x2g_So_tf3d(iLev) = mct_avect_indexra(x2g, trim(varname))
+
+          varname = 'So_tf3d_mask' // cnum
+          index_x2g_So_tf3d_mask(iLev) = mct_avect_indexra(x2g, trim(varname))
+       enddo
+    endif
 
     !Following block of x2g/g2x vectors are used internally within coupler for subshelf melt flux
     !calculations (and so do not have directly-related export-side arrays)
