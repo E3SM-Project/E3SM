@@ -676,7 +676,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     }
     scream::mam_coupling::advance_tracer_data(
         ElevatedEmissionsDataReader_[i], *ElevatedEmissionsHorizInterp_[i], ts,
-        elevated_emiss_time_state_, elevated_emis_data_[i], dry_atm_.p_mid,
+        elevated_emiss_time_state_[i], elevated_emis_data_[i], dry_atm_.p_mid,
         dry_atm_.z_iface, elevated_emis_output);
     i++;
     Kokkos::fence();
