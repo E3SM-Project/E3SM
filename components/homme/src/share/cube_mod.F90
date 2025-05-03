@@ -788,11 +788,15 @@ contains
              if ( rotate_grid /= 0) then
                 lat = elem%spherep(i,j)%lat
                 lon = elem%spherep(i,j)%lon
-             	elem%fcor(i,j)= 2*omega* &
+                elem%fcor(i,j)= 2*omega* &
                      (-cos(lon)*cos(lat)*sin(rangle) + sin(lat)*cos(rangle))
              else
                 elem%fcor(i,j) = 2.0D0*omega*SIN(elem%spherep(i,j)%lat)
              endif
+#ifdef HOMMEDA
+             !DA term, only nonrotated version
+             elem%fcorcosine(i,j) = 2.0D0*omega*COS(elem%spherep(i,j)%lat)
+#endif
        end do
     end do
 
