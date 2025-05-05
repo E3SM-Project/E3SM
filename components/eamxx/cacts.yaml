@@ -1,0 +1,322 @@
+# Configuration file for TestProjectBuilds (TPB)
+#
+# There are three main sections: project, machines build_types
+#   - project: contains basic info on the project
+#   - machines: contains a list of machines on which testing is allowed
+#   - configurations: contains a list of build types that can be built
+#
+# The machines and configurations sections CAN contain an entry "default", which
+# defines some defaults for all machines/build_types. Other entries will OVERWRITE anything
+# that is also set in the default entry. It is recommended to keep the default
+# entry, since it can be used to list ALL possible settings, for documentation purposes.
+#
+# Upon parsing the yaml file, CACTS will create one Project, one Machine, and one or
+# more BuildType objects. These objects will contain members with *the same* name as the
+# configs in the yaml file. Notice the settings names are hard-coded, so you can't add
+# a new setting and hope that it gets set in the object.
+#
+# The objects settings CAN be used in the yaml file to programmatically set other options.
+# For instance, a build type can use properties of the project/machine to set a cmake var.
+# The syntax is ${<obj>.<prop>}, where <obj> is 'project', 'machine', or 'build', and
+# and <prop> must be a valid attribute of the corresponding object (see the
+# corresponding py files for valid options). If you use the ${..} syntax,
+# we recommend that you wrap the entry in quotes, to avoid any surprise with YAML parsers.
+# The ${..} syntax is actually more powerful than that, and can perform any python operation,
+# with some restriction (e.g., imports or tinkering with global vars is prohibited,
+# for security purposes.
+#
+# In addition to the ${..} syntax, CACTS also supports bash commands evaluation,
+# with the syntax $(cmd). This can be used in conjunction with ${}. E.g., one can do
+#  NetCDF_Fortran_ROOT: $(${machine.env_setup} && nf-config --prefix)
+# Python expressions ${..} are always evaluated first, bash expressions $(..) are
+# evaluated afterwards.
+
+##########################################################################################
+#                                 PROJECT SETTINGS                                       #
+##########################################################################################
+
+project:
+  name: EAMxx
+  baseline_gen_label: baseline_gen
+  baseline_summary_file: baseline_list
+  cmake_vars_names:
+    enable_baselines:
+      SCREAM_ENABLE_BASELINE_TESTS: ON
+    generate_baselines:
+      SCREAM_ONLY_GENERATE_BASELINES: ON
+    baselines_dir: SCREAM_BASELINES_DIR
+  cdash:
+    drop_site: my.cdash.org
+    drop_location: /submit.php?project=E3SM
+    build_prefix: scream_unit_tests_ # final build name is build_prefix + build.longname
+    curl_ssl_off: True # Sets CTEST_CURL_OPTIONS to bypass ssl verification
+  # NOTE: CACTS will also set project.root_dir at runtime, so you can actually use
+  # ${project.root_dir} in the machines/configurations sections
+
+##########################################################################################
+#                                   MACHINES                                             #
+##########################################################################################
+
+machines:
+  # CACTS will also set an entry machine.name, where the value of name matches the yaml map section name
+  default:
+    cxx_compiler: mpicxx
+    c_compiler: mpicc
+    ftn_compiler: mpifort
+    mach_file: "${project.root_dir}/cmake/machine-files/${machine.name}.cmake"
+    gpu_arch: null
+    batch: null
+    num_bld_res: null
+    num_run_res: null
+    baselines_dir: null
+    valg_supp_file: null
+    node_regex: null
+
+  mappy:
+    env_setup:
+        - 'module purge'
+        - 'module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas'
+        - 'export GATOR_INITIAL_MB=4000MB'
+        - 'export NetCDF_Fortran_ROOT=$(nf-config --prefix)'
+        - 'export NetCDF_C_ROOT=$(nc-config --prefix)'
+        - 'export PnetCDF_C_ROOT=$(pnetcdf-config --prefix)'
+    baselines_dir: "/sems-data-store/ACME/baselines/scream/master-baselines"
+    node_regex: mappy
+    valg_supp_file: "${project.root_dir}/scripts/jenkins/valgrind/mappy.supp"
+
+  pm-cpu:
+    cxx_compiler: CC
+    c_compiler: cc
+    ftn_compiler: ftn
+    env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-cpu_gnu)"]
+    batch: "salloc --account e3sm_g --constraint=cpu --time 00:30:00 --nodes=1 -q debug"
+    baselines_dir: "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-cpu"
+
+  pm-gpu:
+    cxx_compiler: CC
+    c_compiler: cc
+    ftn_compiler: ftn
+    env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.pm-gpu_gnugpu)"]
+    batch: "salloc --account e3sm_g --constraint=gpu --time 02:00:00 --nodes=4 --gpus-per-node=4 --gpu-bind=none --exclusive -q regular"
+    baselines_dir: "/global/cfs/cdirs/e3sm/baselines/gnu/scream/pm-gpu"
+    gpu_arch: cuda
+    num_run_res: 4
+
+  chrysalis:
+    cxx_compiler: "mpic++"
+    c_compiler  : "mpicc"
+    ftn_compiler: "mpif90"
+    env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=1"]
+    batch: "srun --mpi=pmi2 -l -N 1 --kill-on-bad-exit --cpu_bind=cores"
+    baselines_dir: "/lcrc/group/e3sm/baselines/chrys/intel/scream"
+
+  weaver:
+    env_setup:
+      - "source /etc/profile.d/modules.sh"
+      - "module purge"
+      - "module load cmake/3.25.1 git/2.39.1 python/3.10.8 py-netcdf4/1.5.8 gcc/11.3.0 cuda/11.8.0 openmpi netcdf-c netcdf-fortran parallel-netcdf netlib-lapack"
+      - "export HDF5_USE_FILE_LOCKING=FALSE"
+
+    baselines_dir: "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"
+    batch: "bsub -I -q rhel8 -n 4 -gpu num=4"
+    num_run_res: 4 # four gpus
+    gpu_arch: "cuda"
+
+  compy:
+    cxx_compiler: "mpiicpc"
+    c_compiler  : "mpiicc"
+    ftn_compiler: "mpiifort"
+    env_setup:
+      - "export PROJECT=e3sm"
+      - "eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.compy_intel)"
+    batch: "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm"
+
+  ghci-snl-cpu:
+    baselines_dir: "/projects/e3sm/baselines/scream/ghci-snl-cpu"
+    env_setup: ["export GATOR_INITIAL_MB=4000MB"]
+
+  ghci-snl-cuda:
+    baselines_dir: "/projects/e3sm/baselines/scream/ghci-snl-cuda"
+    gpu_arch: "cuda"
+    num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
+
+  ghci-oci:
+    env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
+
+  lassen:
+    baselines_dir: "/projects/e3sm/baselines/scream/master-baselines"
+    env_setup:
+      - "module --force purge"
+      - "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2"
+      - "export LLNL_USE_OMPI_VARS='y'"
+      - "export PATH=/usr/workspace/e3sm/netcdf/bin:$PATH"
+      - "export LD_LIBRARY_PATH=/usr/workspace/e3sm/netcdf/lib:$LD_LIBRARY_PATH"
+    batch: "bsub -Ip -qpdebug"
+    num_run_res: 4 # four gpus
+    gpu_arch: "cuda"
+
+  ruby-intel:
+    env_setup:
+      - "module --force purge"
+      - "module use --append /usr/workspace/e3sm/install/quartz/modulefiles"
+      - "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"
+    batch: "salloc --partition=pdebug"
+
+  dane-intel:
+    env_setup:
+      - "module --force purge"
+      - "module use --append /usr/workspace/e3sm/install/quartz/modulefiles"
+      - "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"
+    batch: "salloc --partition=pdebug"
+
+  quartz-intel:
+    env_setup:
+      - "module --force purge"
+      - "module use --append /usr/workspace/e3sm/install/quartz/modulefiles"
+      - "module load StdEnv cmake/3.19.2 mkl/2022.1.0 intel-classic/2021.6.0-magic mvapich2/2.3.7 hdf5/1.12.2 netcdf-c/4.9.0 netcdf-fortran/4.6.0 parallel-netcdf/1.12.3 python/3.9.12 screamML-venv/0.0.1"
+    batch: "salloc --partition=pdebug"
+
+  quartz-gcc:
+    env_setup:
+      - "module --force purge"
+      - "module load StdEnv cmake/3.16.8 mkl/2019.0 gcc-8.3.1 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3"
+    batch: "salloc --partition=pdebug"
+
+  syrah:
+    env_setup:
+      - "module --force purge"
+      - "module load StdEnv cmake/3.16.8 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1 pnetcdf/1.9.0 mvapich2/2.3"
+    batch: "salloc --partition=pdebug --time=60"
+
+  anlgce:
+    env_setup:
+      - ". /nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/sh"
+      - "module purge"
+      - "module load autoconf/2.69-bmnwajj automake/1.16.3-r7w24o4 libtool/2.4.6-uh3mpsu m4/1.4.19-7fztfyz cmake/3.20.5-zyz2eld gcc/11.1.0-qsjmpcg zlib/1.2.11-p7dmb5p"
+      - "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/lib:$LD_LIBRARY_PATH"
+      - "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0/bin:$PATH"
+      - "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0"
+      - "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"
+
+  anlgce-ub22:
+    env_setup:
+      - ". /nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/init/sh"
+      - "module purge"
+      - "module load gcc/12.1.0"
+      - "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/lib:$LD_LIBRARY_PATH"
+      - "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0/bin:$PATH"
+      - "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0"
+      - "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"
+
+##########################################################################################
+#                              PROJECT CONFIGURATIONS                                    #
+##########################################################################################
+
+configurations:
+  # CACTS will also set an entry build.name, where the value of name matches the yaml map section name
+  default:
+    longname: null # If not set, will default to build.name
+    description: null
+    uses_baselines: True
+    on_by_default: True
+
+  dbg:
+    longname: full_debug
+    description: "debug build with double precision"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_DEFAULT_BFB: True
+      Kokkos_ENABLE_DEBUG_BOUNDS_CHECK: True
+  sp:
+    longname: full_sp_debug
+    description: "debug build with single precision"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_DEFAULT_BFB: True
+      SCREAM_DOUBLE_PRECISION: False
+
+  fpe:
+    longname: debug_nopack_fpe
+    description: "debug build packsize=1 and floating point exceptions enabled"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_DEFAULT_BFB: True
+      SCREAM_PACK_SIZE: 1
+      SCREAM_FPE: True
+    uses_baselines: False
+    on_by_default: "${machine.gpu_arch is None}"
+
+  opt:
+    longname: release
+    description: "release build in double precision"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Release
+
+  cov:
+    longname: coverage
+    description: "debug build running gcov for coverage monitoring"
+    coverage: True
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_ENABLE_COVERAGE: True
+      SCREAM_TEST_SIZE: SHORT
+    uses_baselines: False
+    on_by_default: False
+
+  valg:
+    longname: valgrind
+    description: "Release build where tests run through valgrind"
+    cmake_args:
+      CMAKE_BUILD_TYPE: RelWithDebInfo
+      EKAT_ENABLE_VALGRIND: True
+      SCREAM_PACK_SIZE: 1
+      SCREAM_TEST_MAX_THREADS: 2
+      SCREAM_TEST_SIZE: SHORT
+      EKAT_VALGRIND_SUPPRESSION_FILE: ${valg_supp_file}
+    uses_baselines: False
+    on_by_default: False
+
+  csm:
+    longname: compute_sanitizer_memcheck
+    description: "debug with compute sanitizer memcheck"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_ENABLE_COMPUTE_SANITIZER: True
+      EKAT_COMPUTE_SANITIZER_OPTIONS: "--tool=memcheck"
+      SCREAM_TEST_SIZE: SHORT
+    uses_baselines: False
+    on_by_default: False
+
+  csr:
+    longname: compute_sanitizer_racecheck
+    description: "debug with compute sanitizer racecheck"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_ENABLE_COMPUTE_SANITIZER: True
+      EKAT_COMPUTE_SANITIZER_OPTIONS: "--tool=racecheck --racecheck-detect-level=error"
+      SCREAM_TEST_SIZE: SHORT
+    uses_baselines: False
+    on_by_default: False
+
+  csi:
+    longname: compute_sanitizer_initcheck
+    description: "debug with compute sanitizer initcheck"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_ENABLE_COMPUTE_SANITIZER: True
+      EKAT_COMPUTE_SANITIZER_OPTIONS: "--tool=initcheck"
+      SCREAM_TEST_SIZE: SHORT
+    uses_baselines: False
+    on_by_default: False
+
+  css:
+    longname: compute_sanitizer_synccheck
+    description: "debug with compute sanitizer synccheck"
+    cmake_args:
+      CMAKE_BUILD_TYPE: Debug
+      EKAT_ENABLE_COMPUTE_SANITIZER: True
+      EKAT_COMPUTE_SANITIZER_OPTIONS: "--tool=synccheck"
+      SCREAM_TEST_SIZE: SHORT
+    uses_baselines: False
+    on_by_default: False
+

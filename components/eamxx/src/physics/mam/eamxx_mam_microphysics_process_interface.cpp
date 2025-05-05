@@ -406,9 +406,7 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
   work_ptr += ncol_ * nlev_ * extcnt;
-  // Work arrays for return values from
-  // perform_atmospheric_chemistry_and_microphysics
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
   // to use the minimum amount of memory
@@ -779,6 +777,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int month              = start_of_step_ts().get_month();  // 1-based
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
+  const int pcnst              = mam4::pcnst;
 
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
@@ -896,8 +895,9 @@ void MAMMicrophysics::run_impl(const double dt) {
         // These output values need to be put somewhere:
         Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
-        // Output: values are dvel, dvlx
+        // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
+        team.team_barrier();
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
@@ -919,9 +919,9 @@ void MAMMicrophysics::run_impl(const double dt) {
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
-        for(int ispc = offset_aerosol; ispc < mam4::pcnst; ++ispc) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
-        }
+        });
 
       });  // parallel_for for the column loop
   Kokkos::fence();

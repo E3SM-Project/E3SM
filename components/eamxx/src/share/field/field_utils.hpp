@@ -190,9 +190,9 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 // - Weight is assumed to be (in order of checking/impl):
 //   - rank-1, with only LEV/ILEV dimension
 //   - rank-2, with only COL and LEV/ILEV dimensions
+// NOTE: we assume the LEV/ILEV dimension is NOT partitioned.
 template <typename ST>
-void vert_contraction(const Field &f_out, const Field &f_in,
-                      const Field &weight, const ekat::Comm *comm = nullptr) {
+void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight) {
   using namespace ShortFieldTagsNames;
 
   const auto &l_out = f_out.get_header().get_identifier().get_layout();
@@ -266,7 +266,7 @@ void vert_contraction(const Field &f_out, const Field &f_in,
       "Error! Weight field must have the same data type as input field.");
 
   // All good, call the implementation
-  impl::vert_contraction<ST>(f_out, f_in, weight, comm);
+  impl::vert_contraction<ST>(f_out, f_in, weight);
 }
 
 template<typename ST>

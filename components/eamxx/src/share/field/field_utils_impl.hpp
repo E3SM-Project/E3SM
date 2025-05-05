@@ -378,8 +378,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 }
 
 template <typename ST>
-void vert_contraction(const Field &f_out, const Field &f_in,
-                      const Field &weight, const ekat::Comm *comm) {
+void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight) {
   using KT          = ekat::KokkosTypes<DefaultDevice>;
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
   using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
@@ -451,17 +450,6 @@ void vert_contraction(const Field &f_out, const Field &f_in,
     } break;
     default:
       EKAT_ERROR_MSG("Error! Unsupported field rank in vert_contraction.\n");
-  }
-
-  if(comm) {
-    // TODO: use device-side MPI calls
-    // TODO: the dev ptr causes problems; revisit this later
-    // TODO: doing cuda-aware MPI allreduce would be ~10% faster
-    Kokkos::fence();
-    f_out.sync_to_host();
-    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(),
-                     l_out.size(), MPI_SUM);
-    f_out.sync_to_dev();
   }
 }
 
