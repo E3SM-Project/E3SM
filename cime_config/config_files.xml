@@ -286,6 +286,7 @@
       <value component="allactive">$SRCROOT/cime_config/allactive/config_pesall.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
       <value component="eam"      >$SRCROOT/components/eam/cime_config/config_pes.xml</value>
+      <value component="scream"   >$SRCROOT/components/eamxx/cime_config/config_pes.xml</value>
       <value component="elm"      >$SRCROOT/components/elm/cime_config/config_pes.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_pes.xml</value>
       <value component="mpaso"    >$SRCROOT/components/mpas-ocean/cime_config/config_pes.xml</value>
