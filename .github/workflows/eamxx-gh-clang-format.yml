@@ -26,8 +26,14 @@ jobs:
       with:
         files: 'components/eamxx/**/*.{cpp,hpp}'
         separator: " "
-    # displays the diff, comparing to the changes that *would* be made
-    - uses: DoozyX/clang-format-lint-action@v0.20
+    # 1. runs clang-format on the files changed by this PR, and returns pass/fail
+    #    error code.
+    # 2. prints the diff to screen (action log), comparing to the changes
+    #    that *would* be made
+    # 3. the mjschmidt modification to DoozyX/clang-format-lint-action@v0.20
+    #    adds a Step summary to the workflow page, and, on failure, lists the
+    #    files that fail the clang-format test
+    - uses: mjschmidt271/clang-format-lint-action@v1.0.0
       with:
         source: ${{ steps.changed-files.outputs.all_changed_files }}
         exclude: ''
