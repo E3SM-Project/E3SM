@@ -292,7 +292,7 @@ class GHCISNLHip(Machine):
         super().setup_base(name="ghci-snl-hip")
         cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-hip"
         cls.gpu_arch = "hip"
-        cls.num_run_res = int(run_cmd_no_fail("rocm-smi --showproductname | grep 'GPU\[' | awk '{print $1}' | sort -u | wc -l"))
+        cls.num_run_res = int(run_cmd_no_fail(r"rocm-smi --showproductname | grep 'GPU\[' | awk '{print $1}' | sort -u | wc -l"))
         cls.cxx_compiler = "mpicxx"
         cls.env_setup = ["source /etc/profile.d/setup-user-env.sh && export MPICH_CXX=hipcc"]
 
