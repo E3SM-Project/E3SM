@@ -464,7 +464,6 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
       <value compset="_EAMXX.*_ELM.*MPASO">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
@@ -486,7 +485,6 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
