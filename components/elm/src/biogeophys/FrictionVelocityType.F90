@@ -177,12 +177,11 @@ contains
             ptr_patch=this%ram1_patch, default='inactive')
     end if
 
-    if (use_cn) then
-       this%fv_patch(begp:endp) = spval
-       call hist_addfld1d (fname='FV', units='m/s', &
-            avgflag='A', long_name='friction velocity for dust model', &
-            ptr_patch=this%fv_patch, default='inactive')
-    end if
+    ! Removed use_cn because friction velocity can be useful for other configurations
+    this%fv_patch(begp:endp) = spval
+    call hist_addfld1d (fname='FV', units='m/s', &
+         avgflag='A', long_name='friction velocity', &
+         ptr_patch=this%fv_patch, default='inactive')
 
     if (use_cn) then
        this%z0hv_patch(begp:endp) = spval
