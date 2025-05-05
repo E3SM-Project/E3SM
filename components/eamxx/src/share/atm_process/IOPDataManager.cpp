@@ -345,7 +345,6 @@ read_fields_from_file_for_iop (const std::string& file_name,
   const auto lon = m_params.get<Real>("target_longitude");
   auto remapper = std::make_shared<IOPRemapper>(io_grid,grid,lat,lon);
 
-  remapper->registration_begins();
   for (const auto& f : fields) {
     remapper->register_field_from_tgt(f);
   }

@@ -33,9 +33,6 @@ public:
 
   // ----- Registration/setup methods ---- //
 
-  // Call this before you begin registering fields with this remapper.
-  void registration_begins ();
-
   // This method registers a source field to be remapped to a target field.
   void register_field (const Field& src, const Field& tgt);
 
@@ -45,7 +42,6 @@ public:
 
   // Call this to indicate that field registration is complete.
   void registration_ends ();
-
 
   //  ------- Getter methods ------- //
   RepoState get_state () const { return m_state; }

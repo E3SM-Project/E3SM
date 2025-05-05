@@ -11,20 +11,13 @@ AbstractRemapper (const grid_ptr_type& src_grid,
 }
 
 void AbstractRemapper::
-registration_begins () {
-  EKAT_REQUIRE_MSG(m_state==RepoState::Clean,
-      "Error! Cannot start registration on a non-clean repo.\n"
-      "       Did you call 'registration_begins' already?\n");
-
-  m_state = RepoState::Open;
-}
-
-void AbstractRemapper::
 register_field (const Field& src, const Field& tgt)
 {
-  EKAT_REQUIRE_MSG(m_state==RepoState::Open,
+  EKAT_REQUIRE_MSG(m_state!=RepoState::Closed,
       "Error! Cannot register fields in the remapper at this time.\n"
-      "       Did you forget to call 'registration_begins' or called 'registeration_ends' already?");
+      "       Did you already call 'registeration_ends'?");
+
+  m_state = RepoState::Open;
 
   EKAT_REQUIRE_MSG(src.is_allocated(), "Error! Source field is not yet allocated.\n");
   EKAT_REQUIRE_MSG(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
@@ -110,13 +103,11 @@ void AbstractRemapper::remap_fwd ()
       "Error! Cannot perform remapping at this time.\n"
       "       Did you forget to call 'registration_ends'?\n");
 
-  if (m_state!=RepoState::Clean) {
-    EKAT_REQUIRE_MSG (m_fwd_allowed,
-        "Error! Forward remap is not allowed by this remapper.\n");
-    EKAT_REQUIRE_MSG (not m_has_read_only_tgt_fields,
-        "Error! Forward remap IS allowed by this remapper, but some of the tgt fields are read-only\n");
-    remap_fwd_impl ();
-  }
+  EKAT_REQUIRE_MSG (m_fwd_allowed,
+      "Error! Forward remap is not allowed by this remapper.\n");
+  EKAT_REQUIRE_MSG (not m_has_read_only_tgt_fields,
+      "Error! Forward remap IS allowed by this remapper, but some of the tgt fields are read-only\n");
+  remap_fwd_impl ();
 }
 
 void AbstractRemapper::remap_bwd ()
@@ -125,13 +116,11 @@ void AbstractRemapper::remap_bwd ()
       "Error! Cannot perform remapping at this time.\n"
       "       Did you forget to call 'registration_ends'?\n");
 
-  if (m_state!=RepoState::Clean) {
-    EKAT_REQUIRE_MSG (m_bwd_allowed,
-        "Error! Backward remap is not allowed by this remapper.\n");
-    EKAT_REQUIRE_MSG (not m_has_read_only_src_fields,
-        "Error! Backward remap IS allowed by this remapper, but some of the src fields are read-only\n");
-    remap_bwd_impl ();
-  }
+  EKAT_REQUIRE_MSG (m_bwd_allowed,
+      "Error! Backward remap is not allowed by this remapper.\n");
+  EKAT_REQUIRE_MSG (not m_has_read_only_src_fields,
+      "Error! Backward remap IS allowed by this remapper, but some of the src fields are read-only\n");
+  remap_bwd_impl ();
 }
 
 void AbstractRemapper::

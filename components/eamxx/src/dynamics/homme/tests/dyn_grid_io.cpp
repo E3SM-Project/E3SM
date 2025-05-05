@@ -120,7 +120,6 @@ TEST_CASE("dyn_grid_io")
   std::uniform_real_distribution<Real> pdf(0.01,100.0);
   auto engine = setup_random_test(&comm);
   auto dyn2ctrl = gm->create_remapper(dyn_grid,phys_grid);
-  dyn2ctrl->registration_begins();
   for (const auto& fn : fnames) {
     auto fd = fm->get_field(fn,dyn_grid->name());
     auto fc = fm_ctrl->get_field(fn,phys_grid->name());

@@ -256,7 +256,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     }
 
     // Register all output fields in the remapper.
-    m_vert_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"sim");
       const auto tgt = io_fm->get_field(src.name(), io_grid->name());
@@ -312,7 +311,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     }
 
     // Register all output fields in the remapper.
-    m_horiz_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"before_horizontal_remap");
       const auto tgt = io_fm->get_field(src.name(), io_grid->name());

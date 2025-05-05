@@ -12,7 +12,7 @@ IdentityRemapper (const grid_ptr_type grid,
 }
 
 void IdentityRemapper::set_aliasing (const Aliasing aliasing) {
-  EKAT_REQUIRE_MSG (get_state()==RepoState::Clean,
+  EKAT_REQUIRE_MSG (m_num_fields==0,
       "Error! Aliasing in IdentityRemapper must be set *before* registration starts.\n");
   m_aliasing = aliasing;
 }
