@@ -241,7 +241,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // Now create a new FM on io grid, and create copies of output fields on that grid,
     // using the remapper to get the correct identifier on the tgt grid
     auto io_fm = std::make_shared<fm_type>(io_grid);
-    io_fm->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"sim");
       const auto tgt_fid = m_vert_remapper->create_tgt_fid(src.get_header().get_identifier());
@@ -296,7 +295,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Create a FM on the horiz remapper tgt grid, and register fields on it
     auto io_fm = std::make_shared<fm_type>(io_grid);
-    io_fm->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"before_horizontal_remap");
       const auto tgt_fid = m_horiz_remapper->create_tgt_fid(src.get_header().get_identifier());

@@ -92,9 +92,6 @@ TEST_CASE("dyn_grid_io")
   // The FM we will manually remap onto
   auto fm_ctrl= std::make_shared<FieldManager> (phys_grid);
 
-  fm->registration_begins();
-  fm_ctrl->registration_begins();
-
   const int ps = HOMMEXX_PACK_SIZE;
   util::TimeStamp t0({2000,1,1},{0,0,0});
 

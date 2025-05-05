@@ -123,7 +123,6 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
   FieldIdentifier fid4("field_packed",grid->get_3d_scalar_layout(true),kg/m,gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR{fid1});
   fm->register_field(FR{fid2});
   fm->register_field(FR{fid3});

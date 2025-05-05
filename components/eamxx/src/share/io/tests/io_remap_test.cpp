@@ -620,7 +620,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   // Register fields with fm
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-  fm->registration_begins();
   fm->register_field(FR{fid_ps,"output"});
   fm->register_field(FR{fid_pm,"output",Pack::n});
   fm->register_field(FR{fid_pi,"output",Pack::n});

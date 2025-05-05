@@ -537,7 +537,6 @@ void AtmosphereDriver::create_fields()
 
   // Create FM
   m_field_mgr = std::make_shared<field_mgr_type>(m_grids_manager);
-  m_field_mgr->registration_begins();
 
   // Before registering fields, check that Field Requests for tracers are compatible
   // and store the correct type of turbulence advection for each tracer

@@ -55,7 +55,6 @@ create_fm (const std::shared_ptr<const AbstractGrid>& grid)
   FieldIdentifier fid2("horiz_winds",vector3d,m/s,gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR(fid1));
   fm->register_field(FR(fid2));
   fm->registration_ends();
