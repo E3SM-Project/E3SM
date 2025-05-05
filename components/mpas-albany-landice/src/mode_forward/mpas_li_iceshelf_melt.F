@@ -1459,8 +1459,8 @@ module li_iceshelf_melt
                                                                 !because faceMeltSpeed is only below water-line
       character(len=StrKIND), pointer :: config_TF_param_type
       logical, pointer :: config_recalculate_thermal_forcing
-      real (kind=RKIND) :: dzAccumulated, total, dz
-      integer :: err_tmp, kk, counter, iLayer
+      real (kind=RKIND) :: dzAccumulated, dz
+      integer :: err_tmp, kk, iLayer
 
       err = 0
       call mpas_log_write('Starting face melt routine')
@@ -1536,7 +1536,7 @@ module li_iceshelf_melt
                            dzAccumulated = 0.0_RKIND
                            do iLayer = 1, kk
                               if (zOcean(iLayer) >= bedTopography(iCell)) then
-                                dz = abs(zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer))
+                                dz = zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer)
                                 TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
                                         / (dzAccumulated + dz) + ismip6shelfMelt_deltaT(iCell)
                                 dzAccumulated = dzAccumulated + dz
@@ -1550,8 +1550,6 @@ module li_iceshelf_melt
                   ! Depth-weighted average between 200-500m
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
-                     total = 0.0_RKIND
-                     counter = 0
                      
                      kk = 1
                      ! Find deepest zOcean above ocean floor
@@ -1569,7 +1567,7 @@ module li_iceshelf_melt
                            if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) &
                                  .and. (bedTopography(iCell) <= zOcean(iLayer))) then
 
-                              dz = abs(zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer))
+                              dz = zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer)
                               TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
                                    / (dzAccumulated + dz) + ismip6shelfMelt_deltaT(iCell)
                               dzAccumulated = dzAccumulated + dz

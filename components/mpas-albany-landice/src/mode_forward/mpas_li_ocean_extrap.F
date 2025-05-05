@@ -118,9 +118,6 @@ contains
       integer, dimension(:), pointer :: seedMask, growMask, connectedMarineMask, altConnectedMarineMask
       real (kind=RKIND), dimension(:,:,:), pointer :: oceanField
 
-      !debugg:
-      integer :: i, saltDimSize, tempDimSize
-      
       ! No init is needed.
       err = 0
       err_tmp = 0
@@ -313,7 +310,6 @@ contains
             enddo
          enddo
 
-         ! make it a 3D mask based on the topography (loop through nISMIP6OceanLayers)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
@@ -828,9 +824,6 @@ contains
       real (kind=RKIND), dimension(:), allocatable :: freezingTemperature
       real (kind=RKIND) :: inverseSalt, phaseChange, tempDiff, saltDiff, newTemp, gadeSlope
 
-      !debugging:
-      integer :: saltDimSize, tempDimSize, i
-
       block => domain % blocklist
       do while (associated(block))
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -879,9 +872,7 @@ contains
             enddo
 
             !Start alteration just above iceberg depth or bedTopography and work upwards
-            iLayer = icebergCellVertID
-            do while (iLayer > 0)
-            
+            do iLayer = icebergCellVertID, 1, -1 
                ! Calculate Gade slope (slope of submarine melt mixing line) at each z-level. Assumes ice at pressure melting temperature
                if (MPAS_3dOceanSalinity(iLayer,iCell) == 0) then
                   gadeSlope = 0.0_RKIND
@@ -900,15 +891,10 @@ contains
                newTemp = (gadeSlope * saltDiff) + MPAS_3dOceanTemperature(iLayer + 1, iCell)
                ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
                ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
-               if (newTemp < MPAS_3dOceanTemperature(iLayer,iCell)) then
-                  MPAS_3dOceanTemperature(iLayer,iCell) = newTemp
-               endif
+                MPAS_3dOceanTemperature(iLayer,iCell) = min(newTemp,MPAS_3dOceanTemperature(iLayer,iCell))
+           
                ! Ensure no artificially adjusted temperatures fall below the freezing temperature
-               if (MPAS_3dOceanTemperature(iLayer, iCell) < freezingTemperature(iLayer)) then
-                  MPAS_3dOceanTemperature(iLayer, iCell) = freezingTemperature(iLayer)
-               endif
-            
-               iLayer = iLayer - 1 !Reiterate upwards through water column
+               MPAS_3dOceanTemperature(iLayer, iCell) = max(freezingTemperature(iLayer), MPAS_3dOceanTemperature(iLayer,iCell))
             enddo
             
             do iLayer = 1, nISMIP6OceanLayers
