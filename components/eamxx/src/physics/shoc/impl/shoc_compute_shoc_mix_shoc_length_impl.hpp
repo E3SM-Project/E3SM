@@ -34,9 +34,10 @@ void Functions<S,D>
     const Spack brunt2 = ekat::max(0, brunt(k));
 
    if (shoc_1p5tke){
+
         // If 1.5 TKE closure then set length scale to vertical grid spacing for
-	//   cells with unstable brunt vaisalla frequency.
-	shoc_mix(k) = dz_zt(k);
+	//   cells with unstable brunt vaisalla frequency.  Otherwise, overwrite the length
+	//   scale in stable cells with the new definition.
 
 	// Search for stable cells
         const auto stable_mask = brunt(k) > 0;
@@ -46,8 +47,8 @@ void Functions<S,D>
         // Limit the stability corrected length scale between 0.1*dz and dz
 	const auto limited_len = ekat::min(dz_zt(k),ekat::max(0.1*dz_zt(k),length_tmp));
 
-        // Overwrite the length scale in stable cells with the new definition
-        shoc_mix(k).set(stable_mask, limited_len);
+        // Set length scale to vertical grid if unstable, otherwise the stability adjusted value.
+        shoc_mix(k).set(stable_mask, limited_len, dz_zt(k));
 
      }else{
         shoc_mix(k) = ekat::min(maxlen,
