@@ -1,11 +1,4 @@
 
-#!/bin/sh
-#------------------------------------------------------
-# MAM4xx adds additionaltracers to the simulation
-# Increase number of tracers for MAM4xx simulations
-#------------------------------------------------------
-
-$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/update_eamxx_num_tracers.sh -b
 
 #------------------------------------------------------
 # Add aerosol microphysics process, force ne4pg2
@@ -15,6 +8,26 @@ $CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/up
 alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
 
 ATMCHANGE physics::atm_procs_list="mac_aero_mic,rrtmgp,mam4_aero_microphys" -b
+
+#------------------------------------------------------
+# Set rest of the options to default
+#------------------------------------------------------
+
+# Set mac_aero_mic to default
+ATMCHANGE mac_aero_mic::atm_procs_list="tms,shoc,cld_fraction,spa,p3" -b
+
+#Set precribed ccn to the default value
+ATMCHANGE p3::do_prescribed_ccn=true -b
+
+#Set predicted ccn to the default value (it is TRUE by default)
+ATMCHANGE p3::do_predict_nc=true -b
+
+#Switch to turn on heterogeneous freezing due to prognostic aerosols
+ATMCHANGE p3::use_hetfrz_classnuc=false -b
+
+#------------------------------------------------------
+# Files for ne4pg2 emissions
+#------------------------------------------------------
 
 ATMCHANGE mam4_aero_microphys::mam4_so2_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
 ATMCHANGE mam4_aero_microphys::mam4_so4_a1_elevated_emiss_file_name='${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne4pg2_c20241008.nc' -b
