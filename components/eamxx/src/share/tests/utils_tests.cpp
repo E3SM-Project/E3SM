@@ -144,6 +144,12 @@ TEST_CASE ("time_stamp") {
     REQUIRE (ts2.get_num_steps()==6);
   }
 
+  SECTION ("fractional_update") {
+    // Check update with fractional seconds
+    REQUIRE ((ts1+0.999)==ts1);
+    REQUIRE ((ts1+0.9999)!=ts1); // When seconds frac is <0.001 or >0.999 we round
+  }
+
   SECTION ("leap_years") {
     // Check leap year correctness
     TS ts2({2000,2,28},{23,59,59});
