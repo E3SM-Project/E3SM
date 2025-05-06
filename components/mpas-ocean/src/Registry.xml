@@ -119,6 +119,9 @@
 		<dim name="nGlcZLevels" definition="namelist:config_n_glc_z_levels"
                         description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling"
 		/>
+                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_sfwf_history_days"
+                         description="The number of days stored in the history of surface freshwater fluxes."
+                />
 	</dims>
 
 	<!--*************************************-->
@@ -772,8 +775,8 @@
 					description="Factors applied on precipitation flux to adjust freshwater conservation in ocean model."
                        		 	possible_values="Any positive integer"
                 />
-                <nml_option name="config_sfwf_history_days" type="integer" default_value="365" units="days"
-                       			description="The number of days over one or multiple years. The default is 365 days (1 years)."
+                <nml_option name="config_sfwf_history_days" type="integer" default_value="366" units="days"
+                       			description="The number of days over one or multiple years. The default is 366 days (1 years + 1day)."
                        			possible_values="Any positive integer"
                 />
 	</nml_record>
@@ -1806,6 +1809,7 @@
 		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
 		<package name="subgridWetDryPKG" description="This package includes variables required for subgrid wetting and drying."/>
 		<package name="scaledDISMFPKG" description="This package includes variables required scaling data ice-shelf melt fluxes based on the running mean of removed ice runoff."/>
+		<package name="scaledSFWFPKG" description="This package includes variables required deriving freshwater scaling factors to constrain the water balances."/>
 	</packages>
 
 	<streams>
@@ -2139,7 +2143,16 @@
             <var name="avgRemovedIceRunoff" packages="scaledDISMFPKG"/>
             <var name="totalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
             <var name="nValidTotalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
-            <var name="runningMeanRemovedIceRunoff" packages="scaledDISMFPKG"/>
+	    <var name="runningMeanRemovedIceRunoff" packages="scaledDISMFPKG"/>
+	    <var name="nAccumulatedfwFlux" packages="scaledSFWFPKG"/>
+	    <var name="avgprecFlux" packages="scaledSFWFPKG"/>
+	    <var name="avgfwFlux" packages="scaledSFWFPKG"/>
+            <var name="avgsalFlux" packages="scaledSFWFPKG"/>
+	    <var name="totalAccumulatedprecFluxHistory" packages="scaledSFWFPKG"/>
+	    <var name="totalAccumulatedfwFluxHistory" packages="scaledSFWFPKG"/>
+            <var name="totalAccumulatedsalFluxHistory" packages="scaledSFWFPKG"/>
+            <var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
+	    <var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
 		</stream>
 
 		<stream name="output"
@@ -3964,7 +3977,42 @@
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
-
+                <var name="nAccumulatedfwFlux" type="integer" dimensions="Time"
+                         description="Number of accumulations in time averaging of surface water fluxes"
+                         packages="scaledDISMFPKG"
+                />
+                <var name="avgprecFlux" type="real" dimensions="Time" units="kg s^-1"
+                         description="The daily mean, area integrated value of precipitation flux (rain+snow)."
+                         packages="scaledDISMFPKG"
+		/>
+                <var name="avgfwFlux" type="real" dimensions="Time" units="kg s^-1"
+                         description="The daily mean, area integrated value of freshwater flux (ssh inferred)."
+                         packages="scaledDISMFPKG"
+		/>
+                <var name="avgsalFlux" type="real" dimensions="Time" units="kg s^-1"
+                         description="The daily mean, area integrated value of salinity flux (salinity inferred)."
+                         packages="scaledDISMFPKG"
+                />
+                <var name="totalAccumulatedprecFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
+                         description="The history of accumulated total precipitation fluxes(rain+snow), used to compute a running mean."
+                         packages="scaledSFWFPKG"
+		/>
+                <var name="totalAccumulatedfwFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
+                         description="The history of accumulated freshwater fluxes, used to compute a running mean."
+                         packages="scaledSFWFPKG"
+		/>
+                <var name="totalAccumulatedsalFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
+                         description="The history of accumulated salinity fluxes, used to compute a running mean."
+                         packages="scaledSFWFPKG"
+                />
+                <var name="nValidTotalfwFluxHistory" type="integer" dimensions="Time"
+                         description="The number of valid days used for computing the surface water balance."
+                         packages="scaledSFWFPKG"
+                />
+                <var name="SFWFScalingFactor" type="real" dimensions="Time" units="kg s^-1"
+                         description="The scaling factor of surface freshwater flux, derived over the nValidTotalfwFluxHistory valid entries"
+                         packages="scaledSFWFPKG"
+                />
 
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
