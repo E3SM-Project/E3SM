@@ -35,10 +35,12 @@ KOKKOS_INLINE_FUNCTION constexpr Real safe_min() { return std::numeric_limits<Re
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
     const MemberType &team, const Int &nlev, const Int &nlevi, const uview_1d<const Spack> &thetal,
-    const uview_1d<const Spack> &qw, const uview_1d<const Spack> &w_field, const uview_1d<const Spack> &thl_sec,
-    const uview_1d<const Spack> &qw_sec, const uview_1d<const Spack> &wthl_sec, const uview_1d<const Spack> &w_sec,
-    const uview_1d<const Spack> &wqw_sec, const uview_1d<const Spack> &qwthl_sec, const uview_1d<const Spack> &w3,
-    const uview_1d<const Spack> &pres, const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid,
+    const uview_1d<const Spack> &qw, const uview_1d<const Spack> &w_field,
+    const uview_1d<const Spack> &thl_sec, const uview_1d<const Spack> &qw_sec,
+    const uview_1d<const Spack> &wthl_sec, const uview_1d<const Spack> &w_sec,
+    const uview_1d<const Spack> &wqw_sec, const uview_1d<const Spack> &qwthl_sec,
+    const uview_1d<const Spack> &w3, const uview_1d<const Spack> &pres,
+    const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid,
     const Workspace &workspace, const uview_1d<Spack> &shoc_cldfrac, const uview_1d<Spack> &shoc_ql,
     const uview_1d<Spack> &wqls, const uview_1d<Spack> &wthv_sec, const uview_1d<Spack> &shoc_ql2) {
   // Define temporary variables
@@ -95,17 +97,20 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
 
     // Find parameters for vertical velocity
     Spack Skew_w, w1_1, w1_2, w2_1, w2_2, a;
-    shoc_assumed_pdf_vv_parameters(w_first, w2sec, w3var, w_tol_sqd, Skew_w, w1_1, w1_2, w2_1, w2_2, a);
+    shoc_assumed_pdf_vv_parameters(w_first, w2sec, w3var, w_tol_sqd, Skew_w, w1_1, w1_2, w2_1, w2_2,
+                                   a);
 
     // Find parameters for thetal
     Spack thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2;
-    shoc_assumed_pdf_thl_parameters(wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w, a, thl_tol,
-                                    w_thresh, thl1_1, thl1_2, thl2_1, thl2_2, sqrtthl2_1, sqrtthl2_2);
+    shoc_assumed_pdf_thl_parameters(wthlsec, sqrtw2, sqrtthl, thlsec, thl_first, w1_1, w1_2, Skew_w,
+                                    a, thl_tol, w_thresh, thl1_1, thl1_2, thl2_1, thl2_2,
+                                    sqrtthl2_1, sqrtthl2_2);
 
     // Find parameters for total water mixing ratio
     Spack qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2;
-    shoc_assumed_pdf_qw_parameters(wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a, rt_tol, w_thresh,
-                                   qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1, sqrtqw2_2);
+    shoc_assumed_pdf_qw_parameters(wqwsec, sqrtw2, Skew_w, sqrtqt, qwsec, w1_2, w1_1, qw_first, a,
+                                   rt_tol, w_thresh, qw1_1, qw1_2, qw2_1, qw2_2, sqrtqw2_1,
+                                   sqrtqw2_2);
 
     // Convert from tilde variables to "real" variables
     shoc_assumed_pdf_tilde_to_real(w_first, sqrtw2, w1_1);
@@ -113,8 +118,9 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
 
     // Find within-plume correlations.
     Spack r_qwthl_1;
-    shoc_assumed_pdf_inplume_correlations(sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2, qwthlsec, qw1_1, qw_first,
-                                          thl1_1, thl_first, qw1_2, thl1_2, r_qwthl_1);
+    shoc_assumed_pdf_inplume_correlations(sqrtqw2_1, sqrtthl2_1, a, sqrtqw2_2, sqrtthl2_2, qwthlsec,
+                                          qw1_1, qw_first, thl1_1, thl_first, qw1_2, thl1_2,
+                                          r_qwthl_1);
 
     // Begin to compute cloud property statistics
     Spack Tl1_1, Tl1_2;
@@ -140,10 +146,10 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
                          " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
                          "  qw1_1, qw1_2, qw2_1, qw2_2:"
                          " %16.9e, %16.9e, %16.9e, %16.9e\n",
-                         index_range[i], Tl1_1[i], Tl1_2[i], thl_first[i], qw_first[i], pval[i], thlsec[i], qwsec[i],
-                         w2sec[i], w_first[i], w3var[i], qwthlsec[i], wqwsec[i], wthlsec[i], a[i], w1_1[i], w1_2[i],
-                         w2_1[i], w2_2[i], thl1_1[i], thl1_2[i], thl2_1[i], thl2_2[i], qw1_1[i], qw1_2[i], qw2_1[i],
-                         qw2_2[i]);
+                         index_range[i], Tl1_1[i], Tl1_2[i], thl_first[i], qw_first[i], pval[i],
+                         thlsec[i], qwsec[i], w2sec[i], w_first[i], w3var[i], qwthlsec[i],
+                         wqwsec[i], wthlsec[i], a[i], w1_1[i], w1_2[i], w2_1[i], w2_2[i], thl1_1[i],
+                         thl1_2[i], thl2_1[i], thl2_2[i], qw1_1[i], qw1_2[i], qw2_1[i], qw2_2[i]);
         }
       }
     }
@@ -159,7 +165,9 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
           n_mask++;
         }
       }
-      Kokkos::printf("WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n", n_mask);
+      Kokkos::printf(
+          "WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n",
+          n_mask);
     }
     if (is_small_Tl1_2.any()) {
       Tl1_2.set(is_small_Tl1_2, Tl_min);
@@ -169,7 +177,9 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
           n_mask++;
         }
       }
-      Kokkos::printf("WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n", n_mask);
+      Kokkos::printf(
+          "WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n",
+          n_mask);
     }
 
     // Compute qs and beta
@@ -182,8 +192,8 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
     Spack s1, std_s1, qn1, C1, ql1, s2, std_s2, qn2, C2, ql2;
 
     // First plume
-    shoc_assumed_pdf_compute_s(qw1_1, qs1, beta1, pval, thl2_1, qw2_1, sqrtthl2_1, sqrtqw2_1, r_qwthl_1, s1, std_s1,
-                               qn1, C1);
+    shoc_assumed_pdf_compute_s(qw1_1, qs1, beta1, pval, thl2_1, qw2_1, sqrtthl2_1, sqrtqw2_1,
+                               r_qwthl_1, s1, std_s1, qn1, C1);
 
     // Second plume
     // Only compute variables of the second plume if the two plumes are not equal
@@ -195,8 +205,8 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
 
     const auto nequal = !equal;
     if (nequal.any()) {
-      shoc_assumed_pdf_compute_s(qw1_2, qs2, beta2, pval, thl2_2, qw2_2, sqrtthl2_2, sqrtqw2_2, r_qwthl_1, s2, std_s2,
-                                 qn2, C2);
+      shoc_assumed_pdf_compute_s(qw1_2, qs2, beta2, pval, thl2_2, qw2_2, sqrtthl2_2, sqrtqw2_2,
+                                 r_qwthl_1, s2, std_s2, qn2, C2);
     }
 
     ql1 = ekat::min(qn1, qw1_1);
@@ -209,8 +219,8 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_assumed_pdf(
     shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));
 
     // Compute cloud liquid variance (CLUBB formulation, adjusted to SHOC parameters based)
-    shoc_assumed_pdf_compute_cloud_liquid_variance(a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2, shoc_ql(k),
-                                                   shoc_ql2(k));
+    shoc_assumed_pdf_compute_cloud_liquid_variance(a, s1, ql1, C1, std_s1, s2, ql2, C2, std_s2,
+                                                   shoc_ql(k), shoc_ql2(k));
 
     // Compute liquid water flux
     shoc_assumed_pdf_compute_liquid_water_flux(a, w1_1, w_first, ql1, w1_2, ql2, wqls(k));

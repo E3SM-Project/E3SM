@@ -72,8 +72,8 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                     const int seed) {
+std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                     const util::TimeStamp &t0, const int seed) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -100,8 +100,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
 }
 
 // Returns fields after initialization
-void write(const std::string &avg_type, const std::string &freq_units, const int freq, const int seed,
-           const ekat::Comm &comm) {
+void write(const std::string &avg_type, const std::string &freq_units, const int freq,
+           const int seed, const ekat::Comm &comm) {
   // Create grid
   auto gm   = get_gm(comm);
   auto grid = gm->get_grid("point_grid");
@@ -158,8 +158,8 @@ void write(const std::string &avg_type, const std::string &freq_units, const int
   om.finalize();
 }
 
-void read(const std::string &avg_type, const std::string &freq_units, const int freq, const int seed,
-          const ekat::Comm &comm) {
+void read(const std::string &avg_type, const std::string &freq_units, const int freq,
+          const int seed, const ekat::Comm &comm) {
   // Only INSTANT writes at t=0
   bool instant = avg_type == "INSTANT";
 
@@ -183,18 +183,19 @@ void read(const std::string &avg_type, const std::string &freq_units, const int 
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_filled";
-  auto filename        = casename + "." + avg_type + "." + freq_units + "_x" + std::to_string(freq) + ".np" +
-                  std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  auto filename = casename + "." + avg_type + "." + freq_units + "_x" + std::to_string(freq) +
+                  ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);
 
-  // We set the value n to each input field for each odd valued timestep and FillValue for each even valued timestep
-  // Hence, at output step N = snap*freq, we should get
+  // We set the value n to each input field for each odd valued timestep and FillValue for each even
+  // valued timestep Hence, at output step N = snap*freq, we should get
   //  avg=INSTANT: output = N if (N%2=0), else Fillvalue
   //  avg=MAX:     output = N if (N%2=0), else N-1
   //  avg=MIN:     output = N + 1, where n is the first timesnap of the Nth output step.
-  //                        we add + 1 more in cases where (N%2=0) because that means the first snap was filled.
+  //                        we add + 1 more in cases where (N%2=0) because that means the first snap
+  //                        was filled.
   //  avg=AVERAGE: output = a + M+1 = a + M*(M+1)/M
   // The last one comes from
   //   a + 2*(1 + 2 +..+M)/M =

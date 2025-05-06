@@ -70,7 +70,8 @@ TEST_CASE("scream_ad_test") {
     ad.run(dt);
     if (atm_comm.am_i_root()) {
       std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i + 1 << " completed";
-      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100 * (i + 1) / nsteps << "%]\n";
+      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100 * (i + 1) / nsteps
+                << "%]\n";
     }
   }
   ad.finalize();

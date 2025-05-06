@@ -61,52 +61,56 @@ template <typename S, typename D> void copy_data(const S *src, D *dst, int n) {
 }
 
 // Utility for common IO operation failure
-void check_scorpio_noerr(const int err, const std::string &func_name, const std::string &pioc_func_name) {
-  EKAT_REQUIRE_MSG(err == PIO_NOERR, "Error! Something went wrong while performing a pio operation.\n"
-                                     " - pio error code: " +
-                                         std::to_string(err) +
-                                         "\n"
-                                         " - from interface function: scorpio::" +
-                                         func_name +
-                                         "\n"
-                                         " - calling PIOc function: PIOc_" +
-                                         pioc_func_name + "\n");
+void check_scorpio_noerr(const int err, const std::string &func_name,
+                         const std::string &pioc_func_name) {
+  EKAT_REQUIRE_MSG(err == PIO_NOERR,
+                   "Error! Something went wrong while performing a pio operation.\n"
+                   " - pio error code: " +
+                       std::to_string(err) +
+                       "\n"
+                       " - from interface function: scorpio::" +
+                       func_name +
+                       "\n"
+                       " - calling PIOc function: PIOc_" +
+                       pioc_func_name + "\n");
 }
 
 void check_scorpio_noerr(const int err, const std::string &filename, const std::string &func_name,
                          const std::string &pioc_func_name) {
-  EKAT_REQUIRE_MSG(err == PIO_NOERR, "Error! Something went wrong while performing a pio operation.\n"
-                                     " - pio error code: " +
-                                         std::to_string(err) +
-                                         "\n"
-                                         " - filename: " +
-                                         filename +
-                                         "\n"
-                                         " - from interface function: scorpio::" +
-                                         func_name +
-                                         "\n"
-                                         " - calling PIOc function: " +
-                                         pioc_func_name + "\n");
+  EKAT_REQUIRE_MSG(err == PIO_NOERR,
+                   "Error! Something went wrong while performing a pio operation.\n"
+                   " - pio error code: " +
+                       std::to_string(err) +
+                       "\n"
+                       " - filename: " +
+                       filename +
+                       "\n"
+                       " - from interface function: scorpio::" +
+                       func_name +
+                       "\n"
+                       " - calling PIOc function: " +
+                       pioc_func_name + "\n");
 }
 
 void check_scorpio_noerr(const int err, const std::string &filename, const std::string &entity_type,
                          const std::string &entity_name, const std::string &func_name,
                          const std::string &pioc_func_name) {
-  EKAT_REQUIRE_MSG(err == PIO_NOERR, "Error! Something went wrong while performing a pio operation.\n"
-                                     " - pio error code: " +
-                                         std::to_string(err) +
-                                         "\n"
-                                         " - filename: " +
-                                         filename +
-                                         "\n"
-                                         " - " +
-                                         entity_type + ": " + entity_name +
-                                         "\n"
-                                         " - from interface function: scorpio::" +
-                                         func_name +
-                                         "\n"
-                                         " - calling PIOc function: " +
-                                         pioc_func_name + "\n");
+  EKAT_REQUIRE_MSG(err == PIO_NOERR,
+                   "Error! Something went wrong while performing a pio operation.\n"
+                   " - pio error code: " +
+                       std::to_string(err) +
+                       "\n"
+                       " - filename: " +
+                       filename +
+                       "\n"
+                       " - " +
+                       entity_type + ": " + entity_name +
+                       "\n"
+                       " - from interface function: scorpio::" +
+                       func_name +
+                       "\n"
+                       " - calling PIOc function: " +
+                       pioc_func_name + "\n");
 }
 
 // Return name of a shared ptr to PIO entity (to use inside ekat::join)
@@ -162,7 +166,9 @@ template <typename T> int nctype() {
 }
 
 template <typename T> const void *ncdata(const T &v) { return reinterpret_cast<const void *>(&v); }
-template <> const void *ncdata(const std::string &v) { return reinterpret_cast<const void *>(v.data()); }
+template <> const void *ncdata(const std::string &v) {
+  return reinterpret_cast<const void *>(v.data());
+}
 
 template <typename T> PIO_Offset nclen(const T &v) { return 1; }
 template <> PIO_Offset nclen(const std::string &v) { return v.size(); }
@@ -262,51 +268,56 @@ struct PeekFile {
 PIOFile &get_file(const std::string &filename, const std::string &context) {
   auto &s = ScorpioSession::instance();
 
-  EKAT_REQUIRE_MSG(s.files.count(filename) == 1, "Error! Could not retrieve the file. File not open.\n"
-                                                 " - filename: " +
-                                                     filename +
-                                                     "\n"
-                                                     "Context:\n"
-                                                     " " +
-                                                     context + "\n");
+  EKAT_REQUIRE_MSG(s.files.count(filename) == 1,
+                   "Error! Could not retrieve the file. File not open.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       "Context:\n"
+                       " " +
+                       context + "\n");
 
   return s.files.at(filename);
 }
 
-PIODim &get_dim(const std::string &filename, const std::string &dimname, const std::string &context) {
+PIODim &get_dim(const std::string &filename, const std::string &dimname,
+                const std::string &context) {
   const auto &f = get_file(filename, context);
-  EKAT_REQUIRE_MSG(f.dims.count(dimname) == 1, "Error! Could not retrieve dimension. Dimension not found.\n"
-                                               " - filename: " +
-                                                   filename +
-                                                   "\n"
-                                                   " - dimname : " +
-                                                   dimname +
-                                                   "\n"
-                                                   " - dims on file: " +
-                                                   print_map_keys(f.dims) +
-                                                   "\n"
-                                                   "Context:\n"
-                                                   " " +
-                                                   context + "\n");
+  EKAT_REQUIRE_MSG(f.dims.count(dimname) == 1,
+                   "Error! Could not retrieve dimension. Dimension not found.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - dimname : " +
+                       dimname +
+                       "\n"
+                       " - dims on file: " +
+                       print_map_keys(f.dims) +
+                       "\n"
+                       "Context:\n"
+                       " " +
+                       context + "\n");
 
   return *f.dims.at(dimname);
 }
 
-PIOVar &get_var(const std::string &filename, const std::string &varname, const std::string &context) {
+PIOVar &get_var(const std::string &filename, const std::string &varname,
+                const std::string &context) {
   const auto &f = get_file(filename, context);
-  EKAT_REQUIRE_MSG(f.vars.count(varname) == 1, "Error! Could not retrieve variable. Variable not found.\n"
-                                               " - filename: " +
-                                                   filename +
-                                                   "\n"
-                                                   " - varname : " +
-                                                   varname +
-                                                   "\n"
-                                                   " - vars on file : " +
-                                                   print_map_keys(f.vars) +
-                                                   "\n"
-                                                   "Context:\n"
-                                                   " " +
-                                                   context + "\n");
+  EKAT_REQUIRE_MSG(f.vars.count(varname) == 1,
+                   "Error! Could not retrieve variable. Variable not found.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - varname : " +
+                       varname +
+                       "\n"
+                       " - vars on file : " +
+                       print_map_keys(f.vars) +
+                       "\n"
+                       "Context:\n"
+                       " " +
+                       context + "\n");
 
   return *f.vars.at(varname);
 }
@@ -341,7 +352,8 @@ void init_subsystem(const ekat::Comm &comm, const int atm_id) {
 #error "Standalone EAMxx requires either PNETCDF or NETCDF iotype to be available in Scorpio"
 #endif
 
-  auto err = PIOc_Init_Intracomm(comm.mpi_comm(), comm.size(), stride, base, s.pio_rearranger, &s.pio_sysid);
+  auto err = PIOc_Init_Intracomm(comm.mpi_comm(), comm.size(), stride, base, s.pio_rearranger,
+                                 &s.pio_sysid);
   check_scorpio_noerr(err, "init_subsystem", "Init_Intracomm");
 
   // Unused in standalone mode
@@ -363,18 +375,20 @@ void finalize_subsystem() {
   EKAT_REQUIRE_MSG(s.pio_sysid != -1, "Error! PIO subsystem was already finalized.\n");
 
   for (auto &it : s.files) {
-    EKAT_REQUIRE_MSG(it.second.num_customers == 0,
-                     "Error! ScorpioSession::finalize called, but a file is still in use elsewhere.\n"
-                     " - filename: " +
-                         it.first + "\n");
+    EKAT_REQUIRE_MSG(
+        it.second.num_customers == 0,
+        "Error! ScorpioSession::finalize called, but a file is still in use elsewhere.\n"
+        " - filename: " +
+            it.first + "\n");
   }
   s.files.clear();
 
   for (auto &it : s.decomps) {
-    EKAT_REQUIRE_MSG(it.second.use_count() == 1,
-                     "Error! ScorpioSession::finalize called, but a decomp is still stored elsewhere.\n"
-                     " - decomp name: " +
-                         it.first + "\n");
+    EKAT_REQUIRE_MSG(
+        it.second.use_count() == 1,
+        "Error! ScorpioSession::finalize called, but a decomp is still stored elsewhere.\n"
+        " - decomp name: " +
+            it.first + "\n");
 
     int err = PIOc_freedecomp(s.pio_sysid, it.second->ncid);
     check_scorpio_noerr(err, "finalize_subsystem", "freedecomp");
@@ -397,24 +411,26 @@ void finalize_subsystem() {
 void register_file(const std::string &filename, const FileMode mode, const IOType iotype) {
   auto &s = ScorpioSession::instance();
   auto &f = s.files[filename];
-  EKAT_REQUIRE_MSG(f.mode == Unset || f.mode == mode, "Error! File was already opened with a different mode.\n"
-                                                      " - filename: " +
-                                                          filename +
-                                                          "\n"
-                                                          " - old mode: " +
-                                                          e2str(f.mode) +
-                                                          "\n"
-                                                          " - new mode: " +
-                                                          e2str(mode) + "\n");
-  EKAT_REQUIRE_MSG(f.mode == Unset || f.iotype == iotype, "Error! File was already opened with a different iotype.\n"
-                                                          " - filename: " +
-                                                              filename +
-                                                              "\n"
-                                                              " - old type: " +
-                                                              iotype2str(f.iotype) +
-                                                              "\n"
-                                                              " - new type: " +
-                                                              iotype2str(iotype) + "\n");
+  EKAT_REQUIRE_MSG(f.mode == Unset || f.mode == mode,
+                   "Error! File was already opened with a different mode.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - old mode: " +
+                       e2str(f.mode) +
+                       "\n"
+                       " - new mode: " +
+                       e2str(mode) + "\n");
+  EKAT_REQUIRE_MSG(f.mode == Unset || f.iotype == iotype,
+                   "Error! File was already opened with a different iotype.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - old type: " +
+                       iotype2str(f.iotype) +
+                       "\n"
+                       " - new type: " +
+                       iotype2str(iotype) + "\n");
 
   if (f.mode == Unset) {
     // First time we ask for this file. Call PIO open routine(s)
@@ -571,9 +587,10 @@ void flush_file(const std::string &filename) {
 void redef(const std::string &filename) {
   auto &f = impl::get_file(filename, "scorpio::redef");
 
-  EKAT_REQUIRE_MSG(f.mode & Write, "Error! Could not call redef on the input file. File is read-only.\n"
-                                   " - filename: " +
-                                       filename + "\n");
+  EKAT_REQUIRE_MSG(f.mode & Write,
+                   "Error! Could not call redef on the input file. File is read-only.\n"
+                   " - filename: " +
+                       filename + "\n");
 
   if (f.enddef) {
     int err = PIOc_redef(f.ncid);
@@ -618,12 +635,13 @@ void define_dim(const std::string &filename, const std::string &dimname, const i
   bool unlimited = length == 0;
 
   if (dim == nullptr) {
-    EKAT_REQUIRE_MSG(f.mode != Append, "Error! Cannot add a new dim when the file is open in append mode.\n"
-                                       " - filename: " +
-                                           filename +
-                                           "\n"
-                                           " - dimname : " +
-                                           dimname + "\n");
+    EKAT_REQUIRE_MSG(f.mode != Append,
+                     "Error! Cannot add a new dim when the file is open in append mode.\n"
+                     " - filename: " +
+                         filename +
+                         "\n"
+                         " - dimname : " +
+                         dimname + "\n");
     // Create new dimension
     dim            = std::make_shared<PIODim>();
     dim->name      = dimname;
@@ -636,18 +654,19 @@ void define_dim(const std::string &filename, const std::string &dimname, const i
     check_scorpio_noerr(err, f.name, "dimension", dimname, "define_dim", "def_dim");
   } else {
     // Already defined. Check that the dim specs are the same.
-    EKAT_REQUIRE_MSG(unlimited == dim->unlimited, "Error! Redefining dimension with different unlimited flag.\n"
-                                                  " - filename: " +
-                                                      filename +
-                                                      "\n"
-                                                      " - dimname : " +
-                                                      dimname +
-                                                      "\n"
-                                                      " - old unlimited:" +
-                                                      (dim->unlimited ? "yes" : "no") +
-                                                      "\n"
-                                                      " - new unlimited:" +
-                                                      (unlimited ? "yes" : "no") + "\n");
+    EKAT_REQUIRE_MSG(unlimited == dim->unlimited,
+                     "Error! Redefining dimension with different unlimited flag.\n"
+                     " - filename: " +
+                         filename +
+                         "\n"
+                         " - dimname : " +
+                         dimname +
+                         "\n"
+                         " - old unlimited:" +
+                         (dim->unlimited ? "yes" : "no") +
+                         "\n"
+                         " - new unlimited:" +
+                         (unlimited ? "yes" : "no") + "\n");
 
     EKAT_REQUIRE_MSG(unlimited || length == dim->length,
                      "Error! Redefining dimension with a different (local) length.\n"
@@ -699,13 +718,14 @@ int get_dimlen_local(const std::string &filename, const std::string &dimname) {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  EKAT_REQUIRE_MSG(has_dim(filename, dimname),
-                   "Error! Could not inquire dimension local length. The dimension is not in the file.\n"
-                   " - filename: " +
-                       filename +
-                       "\n"
-                       " - dimname : " +
-                       dimname + "\n");
+  EKAT_REQUIRE_MSG(
+      has_dim(filename, dimname),
+      "Error! Could not inquire dimension local length. The dimension is not in the file.\n"
+      " - filename: " +
+          filename +
+          "\n"
+          " - dimname : " +
+          dimname + "\n");
 
   const auto &dim = pf.file->dims.at(dimname);
   return dim->offsets == nullptr ? dim->length : dim->offsets->size();
@@ -719,10 +739,11 @@ bool has_time_dim(const std::string &filename) {
 }
 
 int get_time_len(const std::string &filename) {
-  EKAT_REQUIRE_MSG(has_time_dim(filename),
-                   "Error! Could not inquire time dimension length. The time dimension is not in the file.\n"
-                   " - filename: " +
-                       filename + "\n");
+  EKAT_REQUIRE_MSG(
+      has_time_dim(filename),
+      "Error! Could not inquire time dimension length. The time dimension is not in the file.\n"
+      " - filename: " +
+          filename + "\n");
 
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
@@ -734,19 +755,21 @@ std::string get_time_name(const std::string &filename) {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
-  EKAT_REQUIRE_MSG(pf.file->time_dim != nullptr,
-                   "Error! Could not inquire time dimension name. The time dimension is not in the file.\n"
-                   " - filename: " +
-                       filename + "\n");
+  EKAT_REQUIRE_MSG(
+      pf.file->time_dim != nullptr,
+      "Error! Could not inquire time dimension name. The time dimension is not in the file.\n"
+      " - filename: " +
+          filename + "\n");
 
   return pf.file->time_dim->name;
 }
 
 void reset_time_dim_len(const std::string &filename, const int new_length) {
-  EKAT_REQUIRE_MSG(has_time_dim(filename),
-                   "Error! Could not reset time dimension length. The time dimension is not in the file.\n"
-                   " - filename: " +
-                       filename + "\n");
+  EKAT_REQUIRE_MSG(
+      has_time_dim(filename),
+      "Error! Could not reset time dimension length. The time dimension is not in the file.\n"
+      " - filename: " +
+          filename + "\n");
 
   auto &f = impl::get_file(filename, "scorpio::reset_time_dim_len");
 
@@ -795,7 +818,8 @@ void set_var_decomp(PIOVar &var, const std::string &filename) {
                          var.dims[i]->name + "\n");
   }
   EKAT_REQUIRE_MSG(var.dims[0]->offsets != nullptr,
-                   "Error! Calling set_var_decomp, but the var first dimension does not appear to be decomposed.\n"
+                   "Error! Calling set_var_decomp, but the var first dimension does not appear to "
+                   "be decomposed.\n"
                    " - filename: " +
                        filename +
                        "\n"
@@ -834,18 +858,19 @@ void set_var_decomp(PIOVar &var, const std::string &filename) {
   const auto &comm = ScorpioSession::instance().comm;
   comm.all_reduce(&found, &min_found, 1, MPI_MIN);
   comm.all_reduce(&found, &max_found, 1, MPI_MAX);
-  EKAT_REQUIRE_MSG(min_found == max_found, "Error! Decomposition already present on some ranks but not all.\n"
-                                           " - filename: " +
-                                               filename +
-                                               "\n"
-                                               " - varname : " +
-                                               var.name +
-                                               "\n"
-                                               " - var dims: " +
-                                               ekat::join(var.dims, get_entity_name, ",") +
-                                               "\n"
-                                               " - decopm tag: " +
-                                               decomp_tag + "\n");
+  EKAT_REQUIRE_MSG(min_found == max_found,
+                   "Error! Decomposition already present on some ranks but not all.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - varname : " +
+                       var.name +
+                       "\n"
+                       " - var dims: " +
+                       ekat::join(var.dims, get_entity_name, ",") +
+                       "\n"
+                       " - decopm tag: " +
+                       decomp_tag + "\n");
 #endif
 
   if (decomp == nullptr) {
@@ -879,8 +904,8 @@ void set_var_decomp(PIOVar &var, const std::string &filename) {
     // Create PIO decomp
     int maplen          = decomp->offsets.size();
     PIO_Offset *compmap = reinterpret_cast<PIO_Offset *>(decomp->offsets.data());
-    int err = PIOc_init_decomp(s.pio_sysid, nctype(var.dtype), ndims, gdimlen.data(), maplen, compmap, &decomp->ncid,
-                               s.pio_rearranger, nullptr, nullptr);
+    int err = PIOc_init_decomp(s.pio_sysid, nctype(var.dtype), ndims, gdimlen.data(), maplen,
+                               compmap, &decomp->ncid, s.pio_rearranger, nullptr, nullptr);
 
     check_scorpio_noerr(err, filename, "decomp", decomp_tag, "set_var_decomp", "InitDecomp");
   }
@@ -889,8 +914,8 @@ void set_var_decomp(PIOVar &var, const std::string &filename) {
   var.decomp = decomp;
 }
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const std::vector<offset_t> &my_offsets,
-                    const bool allow_reset) {
+void set_dim_decomp(const std::string &filename, const std::string &dimname,
+                    const std::vector<offset_t> &my_offsets, const bool allow_reset) {
   auto &s   = ScorpioSession::instance();
   auto &f   = impl::get_file(filename, "scorpio::set_decomp");
   auto &dim = impl::get_dim(filename, dimname, "scorpio::set_dim_decomp");
@@ -929,15 +954,17 @@ void set_dim_decomp(const std::string &filename, const std::string &dimname, con
       int same         = *dim.offsets == my_offsets;
       const auto &comm = ScorpioSession::instance().comm;
       comm.all_reduce(&same, 1, MPI_MIN);
-      EKAT_REQUIRE_MSG(same == 1, "Error! Attempt to redefine a decomposition with a different dofs distribution.\n"
-                                  " - filename: " +
-                                      filename +
-                                      "\n"
-                                      " - dimname : " +
-                                      dimname +
-                                      "\n"
-                                      "If you are attempting to redefine the decomp, call this function with "
-                                      "throw_if_changing_decomp=false.\n");
+      EKAT_REQUIRE_MSG(
+          same == 1,
+          "Error! Attempt to redefine a decomposition with a different dofs distribution.\n"
+          " - filename: " +
+              filename +
+              "\n"
+              " - dimname : " +
+              dimname +
+              "\n"
+              "If you are attempting to redefine the decomp, call this function with "
+              "throw_if_changing_decomp=false.\n");
 
       // Same decomposition, so we can just return
       return;
@@ -946,18 +973,19 @@ void set_dim_decomp(const std::string &filename, const std::string &dimname, con
 
   // Check that offsets are less than the global dimension length
   for (auto o : my_offsets) {
-    EKAT_REQUIRE_MSG(o >= 0 && o < dim.length, "Error! Offset for dimension decomposition is out of bounds.\n"
-                                               " - filename: " +
-                                                   filename +
-                                                   "\n"
-                                                   " - dimname : " +
-                                                   dimname +
-                                                   "\n"
-                                                   " - dim glen: " +
-                                                   std::to_string(dim.length) +
-                                                   "\n"
-                                                   " - offset  : " +
-                                                   std::to_string(o) + "\n");
+    EKAT_REQUIRE_MSG(o >= 0 && o < dim.length,
+                     "Error! Offset for dimension decomposition is out of bounds.\n"
+                     " - filename: " +
+                         filename +
+                         "\n"
+                         " - dimname : " +
+                         dimname +
+                         "\n"
+                         " - dim glen: " +
+                         std::to_string(dim.length) +
+                         "\n"
+                         " - offset  : " +
+                         std::to_string(o) + "\n");
   }
 
   dim.offsets = std::make_shared<std::vector<offset_t>>(my_offsets);
@@ -971,14 +999,15 @@ void set_dim_decomp(const std::string &filename, const std::string &dimname, con
   }
 }
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const offset_t start, const offset_t count,
-                    const bool allow_reset) {
+void set_dim_decomp(const std::string &filename, const std::string &dimname, const offset_t start,
+                    const offset_t count, const bool allow_reset) {
   std::vector<offset_t> offsets(count);
   std::iota(offsets.begin(), offsets.end(), start);
   set_dim_decomp(filename, dimname, offsets, allow_reset);
 }
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const bool allow_reset) {
+void set_dim_decomp(const std::string &filename, const std::string &dimname,
+                    const bool allow_reset) {
   const auto &comm = ScorpioSession::instance().comm;
 
   const int glen = get_dimlen(filename, dimname);
@@ -998,8 +1027,8 @@ void set_dim_decomp(const std::string &filename, const std::string &dimname, con
 
 // Define var on output file (cannot call on Read/Append files)
 void define_var(const std::string &filename, const std::string &varname, const std::string &units,
-                const std::vector<std::string> &dimensions, const std::string &dtype, const std::string &nc_dtype,
-                const bool time_dep) {
+                const std::vector<std::string> &dimensions, const std::string &dtype,
+                const std::string &nc_dtype, const bool time_dep) {
   auto &f = impl::get_file(filename, "scorpio::define_var");
 
   EKAT_REQUIRE_MSG(f.mode & Write, "Error! Could not define variable. File is read-only.\n"
@@ -1018,12 +1047,13 @@ void define_var(const std::string &filename, const std::string &varname, const s
                        varname + "\n");
 
   if (f.vars.count(varname) == 0) {
-    EKAT_REQUIRE_MSG(f.mode != Append, "Error! Cannot add a new var when the file is open in append mode.\n"
-                                       " - filename: " +
-                                           filename +
-                                           "\n"
-                                           " - varname : " +
-                                           varname + "\n");
+    EKAT_REQUIRE_MSG(f.mode != Append,
+                     "Error! Cannot add a new var when the file is open in append mode.\n"
+                     " - filename: " +
+                         filename +
+                         "\n"
+                         " - varname : " +
+                         varname + "\n");
     // Create new variable
     auto var      = std::make_shared<PIOVar>();
     var->name     = varname;
@@ -1038,25 +1068,27 @@ void define_var(const std::string &filename, const std::string &varname, const s
       dimids.push_back(f.time_dim->ncid);
     }
     for (const auto &dname : dimensions) {
-      EKAT_REQUIRE_MSG(has_dim(filename, dname), "Error! Cannot create variable. Dimension not found.\n"
-                                                 " - filename : " +
-                                                     filename +
-                                                     "\n"
-                                                     " - varname  : " +
-                                                     varname +
-                                                     "\n"
-                                                     " - var dims : " +
-                                                     ekat::join(dimensions, ",") +
-                                                     "\n"
-                                                     " - file dims: " +
-                                                     print_map_keys(f.dims) + "\n");
+      EKAT_REQUIRE_MSG(has_dim(filename, dname),
+                       "Error! Cannot create variable. Dimension not found.\n"
+                       " - filename : " +
+                           filename +
+                           "\n"
+                           " - varname  : " +
+                           varname +
+                           "\n"
+                           " - var dims : " +
+                           ekat::join(dimensions, ",") +
+                           "\n"
+                           " - file dims: " +
+                           print_map_keys(f.dims) + "\n");
       auto dim = f.dims.at(dname);
       var->dims.push_back(dim);
       dimids.push_back(dim->ncid);
     }
 
     // Define the variable in PIO
-    int err = PIOc_def_var(f.ncid, varname.c_str(), nctype(nc_dtype), ndims, dimids.data(), &var->ncid);
+    int err =
+        PIOc_def_var(f.ncid, varname.c_str(), nctype(nc_dtype), ndims, dimids.data(), &var->ncid);
     check_scorpio_noerr(err, f.name, "variable", varname, "define_var", "def_var");
 
     f.vars[varname] = var;
@@ -1072,18 +1104,19 @@ void define_var(const std::string &filename, const std::string &varname, const s
   } else {
     const auto &var = f.vars.at(varname);
     // The variable was already defined. Check that important metadata is the same
-    EKAT_REQUIRE_MSG(var->units == units, "Error! Attempt to redefine variable with different units.\n"
-                                          " - filename : " +
-                                              filename +
-                                              "\n"
-                                              " - varname  : " +
-                                              varname +
-                                              "\n"
-                                              " - old units: " +
-                                              var->units +
-                                              "\n"
-                                              " - new units: " +
-                                              units + "\n");
+    EKAT_REQUIRE_MSG(var->units == units,
+                     "Error! Attempt to redefine variable with different units.\n"
+                     " - filename : " +
+                         filename +
+                         "\n"
+                         " - varname  : " +
+                         varname +
+                         "\n"
+                         " - old units: " +
+                         var->units +
+                         "\n"
+                         " - new units: " +
+                         units + "\n");
     EKAT_REQUIRE_MSG(var->dtype == refine_dtype(dtype),
                      "Error! Attempt to redefine variable with different data type.\n"
                      " - filename : " +
@@ -1110,18 +1143,19 @@ void define_var(const std::string &filename, const std::string &varname, const s
                          "\n"
                          " - new pio dtype: " +
                          refine_dtype(nc_dtype) + "\n");
-    EKAT_REQUIRE_MSG(var->time_dep == time_dep, "Error! Attempt to redefine variable with different time dep flag.\n"
-                                                " - filename : " +
-                                                    filename +
-                                                    "\n"
-                                                    " - varname  : " +
-                                                    varname +
-                                                    "\n"
-                                                    " - old time_dep: " +
-                                                    (var->time_dep ? "yes" : "no") +
-                                                    "\n"
-                                                    " - new time_dep: " +
-                                                    (time_dep ? "yes" : "no") + "\n");
+    EKAT_REQUIRE_MSG(var->time_dep == time_dep,
+                     "Error! Attempt to redefine variable with different time dep flag.\n"
+                     " - filename : " +
+                         filename +
+                         "\n"
+                         " - varname  : " +
+                         varname +
+                         "\n"
+                         " - old time_dep: " +
+                         (var->time_dep ? "yes" : "no") +
+                         "\n"
+                         " - new time_dep: " +
+                         (time_dep ? "yes" : "no") + "\n");
     const auto var_dims = ekat::join(var->dims, get_entity_name, ",");
     EKAT_REQUIRE_MSG(var_dims == ekat::join(dimensions, ","),
                      "Error! Attempt to redefine variable with different dimensions.\n"
@@ -1139,8 +1173,9 @@ void define_var(const std::string &filename, const std::string &varname, const s
   }
 }
 
-void define_var(const std::string &filename, const std::string &varname, const std::vector<std::string> &dimensions,
-                const std::string &dtype, const bool time_dependent) {
+void define_var(const std::string &filename, const std::string &varname,
+                const std::vector<std::string> &dimensions, const std::string &dtype,
+                const bool time_dependent) {
   define_var(filename, varname, "", dimensions, dtype, dtype, time_dependent);
 }
 
@@ -1160,7 +1195,8 @@ void change_var_dtype(PIOVar &var, const std::string &dtype, const std::string &
   }
 }
 
-void change_var_dtype(const std::string &filename, const std::string &varname, const std::string &dtype) {
+void change_var_dtype(const std::string &filename, const std::string &varname,
+                      const std::string &dtype) {
   auto &var = impl::get_var(filename, varname, "scorpio::change_var_dtype");
   change_var_dtype(var, dtype, filename);
 }
@@ -1176,7 +1212,8 @@ const PIOVar &get_var(const std::string &filename, const std::string &varname) {
   return impl::get_var(filename, varname, "scorpio::get_var");
 }
 
-void define_time(const std::string &filename, const std::string &units, const std::string &time_name) {
+void define_time(const std::string &filename, const std::string &units,
+                 const std::string &time_name) {
   auto &f = impl::get_file(filename, "scorpio::define_time");
   EKAT_REQUIRE_MSG(f.time_dim == nullptr, "Error! Attempt to redeclare unlimited dimension.\n"
                                           " - filename: " +
@@ -1191,23 +1228,25 @@ void define_time(const std::string &filename, const std::string &units, const st
 void mark_dim_as_time(const std::string &filename, const std::string &dimname) {
   auto &f = impl::get_file(filename, "scorpio::mark_dim_as_time");
 
-  EKAT_REQUIRE_MSG(not has_time_dim(filename),
-                   "Error! Resetting the time dimension is not allowed once set (even if it's the same).\n"
-                   " - filename: " +
+  EKAT_REQUIRE_MSG(
+      not has_time_dim(filename),
+      "Error! Resetting the time dimension is not allowed once set (even if it's the same).\n"
+      " - filename: " +
+          filename +
+          "\n"
+          " - old time dim name: " +
+          f.time_dim->name +
+          "\n"
+          " - new time dim name: " +
+          dimname + "\n");
+
+  EKAT_REQUIRE_MSG(f.mode == Read,
+                   "Error! Cannot interpret dimension as 'time' dim. File not in Read mode.\n"
+                   " - filename : " +
                        filename +
                        "\n"
-                       " - old time dim name: " +
-                       f.time_dim->name +
-                       "\n"
-                       " - new time dim name: " +
-                       dimname + "\n");
-
-  EKAT_REQUIRE_MSG(f.mode == Read, "Error! Cannot interpret dimension as 'time' dim. File not in Read mode.\n"
-                                   " - filename : " +
-                                       filename +
-                                       "\n"
-                                       " - file mode: " +
-                                       e2str(f.mode) + "\n");
+                       " - file mode: " +
+                       e2str(f.mode) + "\n");
 
   if (f.time_dim == nullptr) {
     EKAT_REQUIRE_MSG(has_dim(filename, dimname),
@@ -1281,13 +1320,15 @@ std::vector<double> get_all_times(const std::string &filename) {
 // If time dim is present, read given time slice (time_index=-1 means "read last record).
 // If time dim is not present, time_index must be -1 (error out otherwise)
 template <typename T>
-void read_var(const std::string &filename, const std::string &varname, T *buf, const int time_index) {
-  EKAT_REQUIRE_MSG(buf != nullptr, "Error! Cannot read from provided pointer. Invalid buffer pointer.\n"
-                                   " - filename: " +
-                                       filename +
-                                       "\n"
-                                       " - varname : " +
-                                       varname + "\n");
+void read_var(const std::string &filename, const std::string &varname, T *buf,
+              const int time_index) {
+  EKAT_REQUIRE_MSG(buf != nullptr,
+                   "Error! Cannot read from provided pointer. Invalid buffer pointer.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - varname : " +
+                       varname + "\n");
 
   const auto &f = impl::get_file(filename, "scorpio::read_var");
   auto &var     = impl::get_var(filename, varname, "scorpio::read_var");
@@ -1318,7 +1359,7 @@ void read_var(const std::string &filename, const std::string &varname, T *buf, c
   std::string pioc_func;
   if (var.decomp) {
     // A decomposed variable, requires read_darray
-    err       = PIOc_read_darray(f.ncid, var.ncid, var.decomp->ncid, var.decomp->offsets.size(), buf);
+    err = PIOc_read_darray(f.ncid, var.ncid, var.decomp->ncid, var.decomp->offsets.size(), buf);
     pioc_func = "read_darray";
   } else {
     // A non-decomposed variable, use PIOc_get_var(a)
@@ -1370,13 +1411,15 @@ void read_var(const std::string &filename, const std::string &varname, T *buf, c
 
 // Write data from user provided buffer into the requested variable
 template <typename T>
-void write_var(const std::string &filename, const std::string &varname, const T *buf, const T *fillValue) {
-  EKAT_REQUIRE_MSG(buf != nullptr, "Error! Cannot write in provided pointer. Invalid buffer pointer.\n"
-                                   " - filename: " +
-                                       filename +
-                                       "\n"
-                                       " - varname : " +
-                                       varname + "\n");
+void write_var(const std::string &filename, const std::string &varname, const T *buf,
+               const T *fillValue) {
+  EKAT_REQUIRE_MSG(buf != nullptr,
+                   "Error! Cannot write in provided pointer. Invalid buffer pointer.\n"
+                   " - filename: " +
+                       filename +
+                       "\n"
+                       " - varname : " +
+                       varname + "\n");
 
   const auto &f = impl::get_file(filename, "scorpio::write_var");
   auto &var     = impl::get_var(filename, varname, "scorpio::write_var");
@@ -1408,7 +1451,8 @@ void write_var(const std::string &filename, const std::string &varname, const T 
   std::string pioc_func;
   if (var.decomp) {
     // A decomposed variable, requires write_darray
-    err       = PIOc_write_darray(f.ncid, var.ncid, var.decomp->ncid, var.decomp->offsets.size(), buf, fillValue);
+    err = PIOc_write_darray(f.ncid, var.ncid, var.decomp->ncid, var.decomp->offsets.size(), buf,
+                            fillValue);
     pioc_func = "write_darray";
   } else {
     // A non-decomposed variable, use PIOc_put_var(a)
@@ -1464,9 +1508,12 @@ template void read_var<double>(const std::string &, const std::string &, double 
 template void read_var<char>(const std::string &, const std::string &, char *, const int);
 
 template void write_var<int>(const std::string &, const std::string &, const int *, const int *);
-template void write_var<long long>(const std::string &, const std::string &, const long long *, const long long *);
-template void write_var<float>(const std::string &, const std::string &, const float *, const float *);
-template void write_var<double>(const std::string &, const std::string &, const double *, const double *);
+template void write_var<long long>(const std::string &, const std::string &, const long long *,
+                                   const long long *);
+template void write_var<float>(const std::string &, const std::string &, const float *,
+                               const float *);
+template void write_var<double>(const std::string &, const std::string &, const double *,
+                                const double *);
 template void write_var<char>(const std::string &, const std::string &, const char *, const char *);
 
 // =============== Attributes operations ================== //
@@ -1475,7 +1522,8 @@ bool has_global_attribute(const std::string &filename, const std::string &attnam
   return has_attribute(filename, "GLOBAL", attname);
 }
 
-bool has_attribute(const std::string &filename, const std::string &varname, const std::string &attname) {
+bool has_attribute(const std::string &filename, const std::string &varname,
+                   const std::string &attname) {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
@@ -1513,7 +1561,8 @@ bool has_attribute(const std::string &filename, const std::string &varname, cons
 }
 
 template <typename T>
-T get_attribute(const std::string &filename, const std::string &varname, const std::string &attname) {
+T get_attribute(const std::string &filename, const std::string &varname,
+                const std::string &attname) {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
@@ -1524,8 +1573,8 @@ T get_attribute(const std::string &filename, const std::string &varname, const s
     varid = impl::get_var(filename, varname, "scorpio::get_attribute").ncid;
   }
 
-  // If the attribute type does not match T, we need a temporary, since we can't pass T* where pio expects
-  // a different type of pointer
+  // If the attribute type does not match T, we need a temporary, since we can't pass T* where pio
+  // expects a different type of pointer
   int att_type, err;
   err = PIOc_inq_atttype(pf.file->ncid, varid, attname.c_str(), &att_type);
   check_scorpio_noerr(err, filename, "attribute", attname, "get_attribute", "inq_atttype");
@@ -1576,15 +1625,19 @@ T get_attribute(const std::string &filename, const std::string &varname, const s
 }
 
 // Explicit instantiation
-template int get_attribute(const std::string &filename, const std::string &varname, const std::string &attname);
+template int get_attribute(const std::string &filename, const std::string &varname,
+                           const std::string &attname);
 template std::int64_t get_attribute(const std::string &filename, const std::string &varname,
                                     const std::string &attname);
-template float get_attribute(const std::string &filename, const std::string &varname, const std::string &attname);
-template double get_attribute(const std::string &filename, const std::string &varname, const std::string &attname);
+template float get_attribute(const std::string &filename, const std::string &varname,
+                             const std::string &attname);
+template double get_attribute(const std::string &filename, const std::string &varname,
+                              const std::string &attname);
 
 // Full specialization for strings
 template <>
-std::string get_attribute(const std::string &filename, const std::string &varname, const std::string &attname) {
+std::string get_attribute(const std::string &filename, const std::string &varname,
+                          const std::string &attname) {
   // If file wasn't open, open it on the fly. See comment in PeekFile class above.
   impl::PeekFile pf(filename);
 
@@ -1609,7 +1662,8 @@ std::string get_attribute(const std::string &filename, const std::string &varnam
 }
 
 template <typename T>
-void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname, const T &att) {
+void set_attribute(const std::string &filename, const std::string &varname,
+                   const std::string &attname, const T &att) {
   const auto &f = impl::get_file(filename, "scorpio::set_any_attribute");
 
   int varid;
@@ -1634,16 +1688,16 @@ void set_attribute(const std::string &filename, const std::string &varname, cons
 }
 
 // Explicit instantiation
-template void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname,
-                            const int &att);
-template void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname,
-                            const std::int64_t &att);
-template void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname,
-                            const float &att);
-template void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname,
-                            const double &att);
-template void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname,
-                            const std::string &att);
+template void set_attribute(const std::string &filename, const std::string &varname,
+                            const std::string &attname, const int &att);
+template void set_attribute(const std::string &filename, const std::string &varname,
+                            const std::string &attname, const std::int64_t &att);
+template void set_attribute(const std::string &filename, const std::string &varname,
+                            const std::string &attname, const float &att);
+template void set_attribute(const std::string &filename, const std::string &varname,
+                            const std::string &attname, const double &att);
+template void set_attribute(const std::string &filename, const std::string &varname,
+                            const std::string &attname, const std::string &att);
 
 } // namespace scorpio
 } // namespace scream

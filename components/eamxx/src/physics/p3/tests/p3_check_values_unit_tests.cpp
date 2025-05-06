@@ -18,7 +18,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Base {
 
   void run_check_values_bfb() {
     // This is not really a bfb test since no results are being checked.
@@ -38,7 +39,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCheckValues : public Uni
 
     // Get data from cxx
     for (auto &d : cvd_cxx) {
-      check_values_host(d.qv, d.temp, d.kts, d.kte, d.timestepcount, d.force_abort, d.source_ind, d.col_loc);
+      check_values_host(d.qv, d.temp, d.kts, d.kte, d.timestepcount, d.force_abort, d.source_ind,
+                        d.col_loc);
     }
   }
 

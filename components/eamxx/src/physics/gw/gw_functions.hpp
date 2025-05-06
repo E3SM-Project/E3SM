@@ -63,11 +63,13 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   KOKKOS_FUNCTION
   static void gwd_compute_tendencies_from_stress_divergence(
       // Inputs
-      const Int &ncol, const Int &pver, const Int &pgwv, const Int &ngwv, const bool &do_taper, const Spack &dt,
-      const Spack &effgw, const uview_1d<const Int> &tend_level, const uview_1d<const Spack> &lat,
-      const uview_1d<const Spack> &dpm, const uview_1d<const Spack> &rdpm, const uview_1d<const Spack> &c,
-      const uview_1d<const Spack> &ubm, const uview_1d<const Spack> &t, const uview_1d<const Spack> &nm,
-      const uview_1d<const Spack> &xv, const uview_1d<const Spack> &yv,
+      const Int &ncol, const Int &pver, const Int &pgwv, const Int &ngwv, const bool &do_taper,
+      const Spack &dt, const Spack &effgw, const uview_1d<const Int> &tend_level,
+      const uview_1d<const Spack> &lat, const uview_1d<const Spack> &dpm,
+      const uview_1d<const Spack> &rdpm, const uview_1d<const Spack> &c,
+      const uview_1d<const Spack> &ubm, const uview_1d<const Spack> &t,
+      const uview_1d<const Spack> &nm, const uview_1d<const Spack> &xv,
+      const uview_1d<const Spack> &yv,
       // Inputs/Outputs
       const uview_1d<Spack> &tau,
       // Outputs

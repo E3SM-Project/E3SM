@@ -71,14 +71,15 @@ std::string find_filename_in_rpointer(const std::string &filename_prefix, const 
                                       const IOControl &control     = {});
 
 // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
-void write_timestamp(const std::string &filename, const std::string &ts_name, const util::TimeStamp &ts,
-                     const bool write_nsteps = false);
-util::TimeStamp read_timestamp(const std::string &filename, const std::string &ts_name, const bool read_nsteps = false);
+void write_timestamp(const std::string &filename, const std::string &ts_name,
+                     const util::TimeStamp &ts, const bool write_nsteps = false);
+util::TimeStamp read_timestamp(const std::string &filename, const std::string &ts_name,
+                               const bool read_nsteps = false);
 
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
-std::shared_ptr<AtmosphereDiagnostic> create_diagnostic(const std::string &diag_name,
-                                                        const std::shared_ptr<const AbstractGrid> &grid);
+std::shared_ptr<AtmosphereDiagnostic>
+create_diagnostic(const std::string &diag_name, const std::shared_ptr<const AbstractGrid> &grid);
 
 } // namespace scream
 #endif // SCREAM_IO_UTILS_HPP

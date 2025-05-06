@@ -94,13 +94,15 @@ void run(std::mt19937_64 &engine, const ekat::Comm &comm, LoggerType &logger) {
   if (!views_are_equal(diag_latent_heat_out, surf_lhf)) {
     // In case of failure, log additional info before aborting with
     // Catch2's REQUIRE macro
-    logger.error("error: surf_lhf_v and diag_latent_heat_out are not passing the views_are_equal test.");
+    logger.error(
+        "error: surf_lhf_v and diag_latent_heat_out are not passing the views_are_equal test.");
     auto surf_lhf_h = Kokkos::create_mirror_view(surf_lhf_v);
     diag_latent_heat_out.sync_to_host();
     auto diag_latent_heat_out_h = diag_latent_heat->get_diagnostic().get_view<Real *, Host>();
     Kokkos::deep_copy(surf_lhf_h, surf_lhf_v);
     for (int i = 0; i < ncols; ++i) {
-      logger.debug("\tat col {}: diag_latent_heat_out = {} surf_lhf = {}", i, diag_latent_heat_out_h(i), surf_lhf_h(i));
+      logger.debug("\tat col {}: diag_latent_heat_out = {} surf_lhf = {}", i,
+                   diag_latent_heat_out_h(i), surf_lhf_h(i));
     }
   }
   REQUIRE(views_are_equal(diag_latent_heat_out, surf_lhf));
@@ -114,7 +116,8 @@ TEST_CASE("surf_upward_latent_heat_flux_test", "[surf_upward_latent_heat_flux_te
   using Device = scream::DefaultDevice;
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  ekat::logger::Logger<> logger("surf_upward_latent_heat_flux_test", ekat::logger::LogLevel::debug, comm);
+  ekat::logger::Logger<> logger("surf_upward_latent_heat_flux_test", ekat::logger::LogLevel::debug,
+                                comm);
   constexpr int num_runs = 5;
   auto engine            = scream::setup_random_test();
   logger.info(" -> Number of randomized runs: {}", num_runs);

@@ -122,7 +122,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     REQUIRE((SDS.thl2_1 > 0 && SDS.thl2_2 > 0));
     REQUIRE((SDS.thl2_2 < thl2_bound_high && SDS.thl2_2 < thl2_bound_high));
     REQUIRE((SDS.sqrtthl2_1 > 0 && SDS.sqrtthl2_2 > 0));
-    REQUIRE((SDS.sqrtthl2_1 < std::sqrt(thl2_bound_high) && SDS.sqrtthl2_2 < std::sqrt(thl2_bound_high)));
+    REQUIRE((SDS.sqrtthl2_1 < std::sqrt(thl2_bound_high) &&
+             SDS.sqrtthl2_2 < std::sqrt(thl2_bound_high)));
 
     // TEST TWO
     // For a case with identical input except wthlsec, verify that
@@ -170,13 +171,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 namespace {
 
 TEST_CASE("shoc_pdf_thl_parameters_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_thl_parameters_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
 
   TestStruct::run_bfb();
 }

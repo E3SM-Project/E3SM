@@ -28,7 +28,8 @@ namespace scream {
 
 class MyDiag : public AtmosphereDiagnostic {
 public:
-  MyDiag(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereDiagnostic(comm, params) {
+  MyDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : AtmosphereDiagnostic(comm, params) {
     // Do nothing
   }
 
@@ -103,8 +104,9 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                     const int seed, const bool add_diag_field = false) {
+std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                     const util::TimeStamp &t0, const int seed,
+                                     const bool add_diag_field = false) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -229,7 +231,8 @@ void read(const int seed, const ekat::Comm &comm) {
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_diags";
-  auto filename = casename + ".INSTANT.nsteps_x1" + ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  auto filename = casename + ".INSTANT.nsteps_x1" + ".np" + std::to_string(comm.size()) + "." +
+                  t0.to_string() + ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);

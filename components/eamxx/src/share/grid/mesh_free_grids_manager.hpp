@@ -34,12 +34,16 @@ protected:
 
   void add_geo_data(const nonconstgrid_ptr_type &grid) const;
 
-  std::string get_reference_grid_name() const { return m_params.get<std::string>("reference_grid"); }
+  std::string get_reference_grid_name() const {
+    return m_params.get<std::string>("reference_grid");
+  }
 
-  remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid, const grid_ptr_type to_grid) const;
+  remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid,
+                                       const grid_ptr_type to_grid) const;
 
   void load_lat_lon(const nonconstgrid_ptr_type &grid, const std::string &filename) const;
-  void load_vertical_coordinates(const nonconstgrid_ptr_type &grid, const std::string &filename) const;
+  void load_vertical_coordinates(const nonconstgrid_ptr_type &grid,
+                                 const std::string &filename) const;
   remap_repo_type m_remappers;
 
   ekat::ParameterList m_params;
@@ -53,9 +57,9 @@ inline std::shared_ptr<GridsManager> create_mesh_free_grids_manager(const ekat::
 }
 
 // Shortcut creator function, for the sake of unit tests
-std::shared_ptr<GridsManager> create_mesh_free_grids_manager(const ekat::Comm &comm, const int num_local_elems,
-                                                             const int num_gp, const int num_vertical_levels,
-                                                             const int num_global_cols);
+std::shared_ptr<GridsManager>
+create_mesh_free_grids_manager(const ekat::Comm &comm, const int num_local_elems, const int num_gp,
+                               const int num_vertical_levels, const int num_global_cols);
 
 inline void register_mesh_free_grids_manager() {
   // A simple grids manager, useful to run physics-only unit tests

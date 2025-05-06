@@ -34,45 +34,47 @@ template <typename Scalar> struct Constants {
   static constexpr Scalar o2mmr       = 0.23143; // o2 mass mixing ratio
   static constexpr Scalar ep_2 =
       MWH2O / MWdry; // ratio of molecular mass of water to the molecular mass of dry air !0.622
-  static constexpr Scalar gravit          = 9.80616;
-  static constexpr Scalar LatVap          = 2501000.0;
-  static constexpr Scalar LatIce          = 333700.0;
-  static constexpr Scalar CpLiq           = 4188.0;
-  static constexpr Scalar Tmelt           = 273.15;
-  static constexpr Scalar T_zerodegc      = Tmelt;
-  static constexpr Scalar T_homogfrz      = Tmelt - 40;
-  static constexpr Scalar T_rainfrz       = Tmelt - 4;
-  static constexpr Scalar Pi              = 3.14159265358979323;
-  static constexpr Scalar RHOW            = RHO_H2O;
-  static constexpr Scalar INV_RHOW        = 1.0 / RHOW;
-  static constexpr Scalar RHO_RIMEMIN     = 50.0;              // Min limit for rime density [kg m-3]
-  static constexpr Scalar RHO_RIMEMAX     = 900.0;             // Max limit for rime density [kg m-3]
-  static constexpr Scalar INV_RHO_RIMEMAX = 1.0 / RHO_RIMEMAX; // Inverse for limits for rime density [kg m-3]
-  static constexpr Scalar THIRD           = 1.0 / 3.0;
-  static constexpr Scalar SXTH            = 1.0 / 6.0;
-  static constexpr Scalar PIOV3           = Pi * THIRD;
-  static constexpr Scalar PIOV6           = Pi * SXTH;
-  static constexpr Scalar BIMM            = 2.0;
-  static constexpr Scalar CONS1           = PIOV6 * RHOW;
-  static constexpr Scalar CONS2           = 4. * PIOV3 * RHOW;
-  static constexpr Scalar CONS3           = 1.0 / (CONS2 * 1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
-  static constexpr Scalar CONS5           = PIOV6 * BIMM;
-  static constexpr Scalar CONS6           = PIOV6 * PIOV6 * RHOW * BIMM;
-  static constexpr Scalar CONS7           = 4. * PIOV3 * RHOW * 1.e-18;
-  static constexpr Scalar QSMALL          = 1.e-14;
-  static constexpr Scalar QTENDSMALL      = 1e-20;
-  static constexpr Scalar BSMALL          = 1.e-15;
-  static constexpr Scalar NSMALL          = 1.e-16;
-  static constexpr Scalar ZERO            = 0.0;
-  static constexpr Scalar ONE             = 1.0;
-  static constexpr Scalar P0              = 100000.0; // reference pressure, Pa
-  static constexpr Scalar RD              = Rair;     // gas constant for dry air, J/kg/K
-  static constexpr Scalar RHOSUR          = P0 / (RD * Tmelt);
-  static constexpr Scalar rhosui          = 60000 / (RD * 253.15);
-  static constexpr Scalar RHO_1000MB      = P0 / (RD * Tmelt);
-  static constexpr Scalar RHO_600MB       = 60000 / (RD * 253.15);
-  static constexpr Scalar CP              = Cpair; // heat constant of air at constant pressure, J/kg
-  static constexpr Scalar INV_CP          = 1.0 / CP;
+  static constexpr Scalar gravit      = 9.80616;
+  static constexpr Scalar LatVap      = 2501000.0;
+  static constexpr Scalar LatIce      = 333700.0;
+  static constexpr Scalar CpLiq       = 4188.0;
+  static constexpr Scalar Tmelt       = 273.15;
+  static constexpr Scalar T_zerodegc  = Tmelt;
+  static constexpr Scalar T_homogfrz  = Tmelt - 40;
+  static constexpr Scalar T_rainfrz   = Tmelt - 4;
+  static constexpr Scalar Pi          = 3.14159265358979323;
+  static constexpr Scalar RHOW        = RHO_H2O;
+  static constexpr Scalar INV_RHOW    = 1.0 / RHOW;
+  static constexpr Scalar RHO_RIMEMIN = 50.0;  // Min limit for rime density [kg m-3]
+  static constexpr Scalar RHO_RIMEMAX = 900.0; // Max limit for rime density [kg m-3]
+  static constexpr Scalar INV_RHO_RIMEMAX =
+      1.0 / RHO_RIMEMAX; // Inverse for limits for rime density [kg m-3]
+  static constexpr Scalar THIRD = 1.0 / 3.0;
+  static constexpr Scalar SXTH  = 1.0 / 6.0;
+  static constexpr Scalar PIOV3 = Pi * THIRD;
+  static constexpr Scalar PIOV6 = Pi * SXTH;
+  static constexpr Scalar BIMM  = 2.0;
+  static constexpr Scalar CONS1 = PIOV6 * RHOW;
+  static constexpr Scalar CONS2 = 4. * PIOV3 * RHOW;
+  static constexpr Scalar CONS3 =
+      1.0 / (CONS2 * 1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
+  static constexpr Scalar CONS5      = PIOV6 * BIMM;
+  static constexpr Scalar CONS6      = PIOV6 * PIOV6 * RHOW * BIMM;
+  static constexpr Scalar CONS7      = 4. * PIOV3 * RHOW * 1.e-18;
+  static constexpr Scalar QSMALL     = 1.e-14;
+  static constexpr Scalar QTENDSMALL = 1e-20;
+  static constexpr Scalar BSMALL     = 1.e-15;
+  static constexpr Scalar NSMALL     = 1.e-16;
+  static constexpr Scalar ZERO       = 0.0;
+  static constexpr Scalar ONE        = 1.0;
+  static constexpr Scalar P0         = 100000.0; // reference pressure, Pa
+  static constexpr Scalar RD         = Rair;     // gas constant for dry air, J/kg/K
+  static constexpr Scalar RHOSUR     = P0 / (RD * Tmelt);
+  static constexpr Scalar rhosui     = 60000 / (RD * 253.15);
+  static constexpr Scalar RHO_1000MB = P0 / (RD * Tmelt);
+  static constexpr Scalar RHO_600MB  = 60000 / (RD * 253.15);
+  static constexpr Scalar CP         = Cpair; // heat constant of air at constant pressure, J/kg
+  static constexpr Scalar INV_CP     = 1.0 / CP;
   //  static constexpr Scalar Tol           = ekat::is_single_precision<Real>::value ? 2e-5 : 1e-14;
   static constexpr Scalar macheps       = std::numeric_limits<Real>::epsilon();
   static constexpr Scalar dt_left_tol   = 1.e-4;
@@ -90,11 +92,12 @@ template <typename Scalar> struct Constants {
   static constexpr Scalar ZVIR          = (RWV / Rair) - 1.0;
   static constexpr Scalar f1r           = 0.78;
   static constexpr Scalar f2r           = 0.32;
-  static constexpr Scalar nmltratio     = 1.0; // ratio of rain number produced to ice number loss from melting
-  static constexpr Scalar basetemp      = 300.0;
-  static constexpr Scalar r_earth       = 6.376e6;  // Radius of the earth in m
-  static constexpr Scalar stebol        = 5.67e-8;  // Stefan-Boltzmann's constant (W/m^2/K^4)
-  static constexpr Scalar omega         = 7.292e-5; // Earth's rotation (rad/sec)
+  static constexpr Scalar nmltratio =
+      1.0; // ratio of rain number produced to ice number loss from melting
+  static constexpr Scalar basetemp = 300.0;
+  static constexpr Scalar r_earth  = 6.376e6;  // Radius of the earth in m
+  static constexpr Scalar stebol   = 5.67e-8;  // Stefan-Boltzmann's constant (W/m^2/K^4)
+  static constexpr Scalar omega    = 7.292e-5; // Earth's rotation (rad/sec)
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
@@ -102,8 +105,9 @@ template <typename Scalar> struct Constants {
   static constexpr int MU_R_TABLE_DIM = 150;
 
   // Turbulent Mountain Stress constants
-  static constexpr Scalar orocnst = 1;     // Converts from standard deviation to height [ no unit ]
-  static constexpr Scalar z0fac   = 0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
+  static constexpr Scalar orocnst = 1; // Converts from standard deviation to height [ no unit ]
+  static constexpr Scalar z0fac =
+      0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
 
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
@@ -116,9 +120,12 @@ template <typename Scalar> struct Constants {
 
   // For use in converting area to length for a column cell
   // World Geodetic System 1984 (WGS84)
-  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator
-  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid
-  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
+  static constexpr Scalar earth_ellipsoid1 =
+      111132.92; // first coefficient, meters per degree longitude at equator
+  static constexpr Scalar earth_ellipsoid2 =
+      559.82; // second expansion coefficient for WGS84 ellipsoid
+  static constexpr Scalar earth_ellipsoid3 =
+      1.175; // third expansion coefficient for WGS84 ellipsoid
 };
 
 // Gases

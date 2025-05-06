@@ -13,9 +13,10 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::ice_supersat_conservation(
-    Spack &qv2qi_vapdep_tend, Spack &qv2qi_nucleat_tend, Spack &qinuc_cnt, const Spack &cld_frac_i, const Spack &qv,
-    const Spack &qv_sat_i, const Spack &t_atm, const Real &dt, const Spack &qi2qv_sublim_tend,
-    const Spack &qr2qv_evap_tend, const bool &use_hetfrz_classnuc, const Smask &context) {
+    Spack &qv2qi_vapdep_tend, Spack &qv2qi_nucleat_tend, Spack &qinuc_cnt, const Spack &cld_frac_i,
+    const Spack &qv, const Spack &qv_sat_i, const Spack &t_atm, const Real &dt,
+    const Spack &qi2qv_sublim_tend, const Spack &qr2qv_evap_tend, const bool &use_hetfrz_classnuc,
+    const Smask &context) {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar cp         = C::CP;
   constexpr Scalar rv         = C::RH2O;

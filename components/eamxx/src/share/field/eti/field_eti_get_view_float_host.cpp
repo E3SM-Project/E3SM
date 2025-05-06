@@ -14,8 +14,11 @@ template Field::get_view_type<const float, Host> Field::get_view<const float, Ho
 template Field::get_view_type<const float *, Host> Field::get_view<const float *, Host>() const;
 template Field::get_view_type<const float **, Host> Field::get_view<const float **, Host>() const;
 template Field::get_view_type<const float ***, Host> Field::get_view<const float ***, Host>() const;
-template Field::get_view_type<const float ****, Host> Field::get_view<const float ****, Host>() const;
-template Field::get_view_type<const float *****, Host> Field::get_view<const float *****, Host>() const;
-template Field::get_view_type<const float ******, Host> Field::get_view<const float ******, Host>() const;
+template Field::get_view_type<const float ****, Host>
+Field::get_view<const float ****, Host>() const;
+template Field::get_view_type<const float *****, Host>
+Field::get_view<const float *****, Host>() const;
+template Field::get_view_type<const float ******, Host>
+Field::get_view<const float ******, Host>() const;
 
 } // namespace scream

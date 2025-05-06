@@ -12,7 +12,8 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::lookup(const Spack &mu_r, const Spack &lamr, Table3 &tab, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::lookup(const Spack &mu_r, const Spack &lamr, Table3 &tab,
+                                             const Smask &context) {
   // find location in scaled mean size space
   const auto dum1    = (mu_r + 1) / lamr;
   const auto dum1_lt = context && (dum1 <= sp(195.e-6));
@@ -60,12 +61,13 @@ KOKKOS_FUNCTION void Functions<S, D>::lookup(const Spack &mu_r, const Spack &lam
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION typename Functions<S, D>::Spack Functions<S, D>::apply_table(const view_2d_table &table,
-                                                                             const Table3 &tab3) {
+KOKKOS_FUNCTION typename Functions<S, D>::Spack
+Functions<S, D>::apply_table(const view_2d_table &table, const Table3 &tab3) {
   const auto rdumii_m_dumii = tab3.rdumii - Spack(tab3.dumii);
   const auto t_im1_jm1      = index(table, tab3.dumii - 1, tab3.dumjj - 1);
   // Linear interpolant.
-  const auto dum1    = (t_im1_jm1 + rdumii_m_dumii * (index(table, tab3.dumii, tab3.dumjj - 1) - t_im1_jm1));
+  const auto dum1 =
+      (t_im1_jm1 + rdumii_m_dumii * (index(table, tab3.dumii, tab3.dumjj - 1) - t_im1_jm1));
   const auto t_im1_j = index(table, tab3.dumii - 1, tab3.dumjj);
   // Linear interpolant.
   const auto dum2 = (t_im1_j + rdumii_m_dumii * (index(table, tab3.dumii, tab3.dumjj) - t_im1_j));
@@ -75,8 +77,8 @@ KOKKOS_FUNCTION typename Functions<S, D>::Spack Functions<S, D>::apply_table(con
 
 template <typename S, typename D>
 void Functions<S, D>::get_global_tables(view_2d_table &vn_table_vals, view_2d_table &vm_table_vals,
-                                        view_2d_table &revap_table_vals, view_1d_table &mu_r_table_vals,
-                                        view_dnu_table &dnu) {
+                                        view_2d_table &revap_table_vals,
+                                        view_1d_table &mu_r_table_vals, view_dnu_table &dnu) {
   auto tables      = p3_init();
   vn_table_vals    = tables.vn_table_vals;
   vm_table_vals    = tables.vm_table_vals;

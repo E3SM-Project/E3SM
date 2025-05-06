@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestDropletSelfCollection : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestDropletSelfCollection : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -29,12 +30,14 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDropletSelfCollection : 
     constexpr Scalar qsmall = C::QSMALL;
 
     constexpr Scalar rho1 = 4.056E-03, rho2 = 6.852E-02, rho3 = 8.852E-02, rho4 = 1.902E-01;
-    constexpr Scalar inv_rho1 = 1.0 / rho1, inv_rho2 = 1.0 / rho2, inv_rho3 = 1.0 / rho3, inv_rho4 = 1.0 / rho4;
+    constexpr Scalar inv_rho1 = 1.0 / rho1, inv_rho2 = 1.0 / rho2, inv_rho3 = 1.0 / rho3,
+                     inv_rho4           = 1.0 / rho4;
     constexpr Scalar qc_incld_small     = 0.9 * qsmall;
     constexpr Scalar qr_incld_small     = 0.9 * qsmall;
     constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
     constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
-    constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06, nc_incld3 = 1.734E+07, nc_incld4 = 9.952E+08;
+    constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06, nc_incld3 = 1.734E+07,
+                     nc_incld4 = 9.952E+08;
 
     DropletSelfCollectionData droplet_self_coll_data[max_pack_size] = {
         // rho, inv_rho, qc_incld, mu_c, nu, nc2nr_autoconv_tend, nc_selfcollect_tend
@@ -61,7 +64,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDropletSelfCollection : 
     // Sync to device
     view_1d<DropletSelfCollectionData> device_data("droplet_self_coll", max_pack_size);
     const auto host_data = Kokkos::create_mirror_view(device_data);
-    std::copy(&droplet_self_coll_data[0], &droplet_self_coll_data[0] + max_pack_size, host_data.data());
+    std::copy(&droplet_self_coll_data[0], &droplet_self_coll_data[0] + max_pack_size,
+              host_data.data());
     Kokkos::deep_copy(device_data, host_data);
 
     // Read baseline data
@@ -121,7 +125,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDropletSelfCollection : 
 namespace {
 
 TEST_CASE("p3_droplet_self_collection", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDropletSelfCollection;
+  using T =
+      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDropletSelfCollection;
 
   T t;
   t.run_phys();

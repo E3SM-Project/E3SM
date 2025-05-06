@@ -40,9 +40,11 @@ public:
 
   virtual void build_grids() = 0;
 
-  remapper_ptr_type create_remapper(const grid_ptr_type &from_grid, const grid_ptr_type &to_grid) const;
+  remapper_ptr_type create_remapper(const grid_ptr_type &from_grid,
+                                    const grid_ptr_type &to_grid) const;
 
-  remapper_ptr_type create_remapper(const std::string &from_grid, const std::string &to_grid) const {
+  remapper_ptr_type create_remapper(const std::string &from_grid,
+                                    const std::string &to_grid) const {
     return create_remapper(get_grid(from_grid), get_grid(to_grid));
   }
 
@@ -59,7 +61,8 @@ protected:
   void add_grid(grid_ptr_type grid);
   void alias_grid(const std::string &grid_name, const std::string &grid_alias);
 
-  virtual remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid, const grid_ptr_type to_grid) const = 0;
+  virtual remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid,
+                                               const grid_ptr_type to_grid) const = 0;
 
 private:
   grid_repo_type m_grids;
@@ -67,8 +70,9 @@ private:
 };
 
 // A short name for the factory for grid managers
-using GridsManagerFactory = ekat::Factory<GridsManager, ekat::CaseInsensitiveString, std::shared_ptr<GridsManager>,
-                                          const ekat::Comm &, const ekat::ParameterList &>;
+using GridsManagerFactory =
+    ekat::Factory<GridsManager, ekat::CaseInsensitiveString, std::shared_ptr<GridsManager>,
+                  const ekat::Comm &, const ekat::ParameterList &>;
 
 } // namespace scream
 

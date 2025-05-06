@@ -8,18 +8,22 @@
 
 namespace scream {
 
-FieldWithinIntervalCheck::FieldWithinIntervalCheck(const Field &f, const std::shared_ptr<const AbstractGrid> &grid,
-                                                   const double lower_bound, const double upper_bound,
-                                                   const bool can_repair, const double lb_repairable,
+FieldWithinIntervalCheck::FieldWithinIntervalCheck(const Field &f,
+                                                   const std::shared_ptr<const AbstractGrid> &grid,
+                                                   const double lower_bound,
+                                                   const double upper_bound, const bool can_repair,
+                                                   const double lb_repairable,
                                                    const double ub_repairable)
-    : m_lb(lower_bound), m_ub(upper_bound), m_lb_repairable(lower_bound), m_ub_repairable(upper_bound), m_grid(grid) {
+    : m_lb(lower_bound), m_ub(upper_bound), m_lb_repairable(lower_bound),
+      m_ub_repairable(upper_bound), m_grid(grid) {
   // Sanity checks
-  EKAT_REQUIRE_MSG(f.rank() <= 6, "Error in FieldWithinIntervalCheck constructor: unsupported field rank.\n"
-                                  "  - Field name: " +
-                                          f.name()
-                                      << "\n"
-                                         "  - Field rank: " +
-                                             std::to_string(f.rank()) + "\n");
+  EKAT_REQUIRE_MSG(f.rank() <= 6,
+                   "Error in FieldWithinIntervalCheck constructor: unsupported field rank.\n"
+                   "  - Field name: " +
+                           f.name()
+                       << "\n"
+                          "  - Field rank: " +
+                              std::to_string(f.rank()) + "\n");
   EKAT_REQUIRE_MSG(field_valid_data_types().has_v(f.data_type()),
                    "Error in FieldWithinIntervalCheck constructor: field data type not supported.\n"
                    "  - Field name: " +
@@ -27,10 +31,13 @@ FieldWithinIntervalCheck::FieldWithinIntervalCheck(const Field &f, const std::sh
                        << "\n"
                           "  - Field rank: " +
                               std::to_string(f.rank()) + "\n");
-  EKAT_ASSERT_MSG(lower_bound <= upper_bound, "lower_bound must be less than or equal to upper_bound.");
+  EKAT_ASSERT_MSG(lower_bound <= upper_bound,
+                  "lower_bound must be less than or equal to upper_bound.");
 
-  EKAT_REQUIRE_MSG(grid == nullptr || f.get_header().get_identifier().get_grid_name() == grid->name(),
-                   "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
+  EKAT_REQUIRE_MSG(grid == nullptr ||
+                       f.get_header().get_identifier().get_grid_name() == grid->name(),
+                   "Error! The name of the input grid does not match the grid name stored in the "
+                   "field identifier.\n"
                    "  - Field name: " +
                        f.name() +
                        "\n"
@@ -46,25 +53,27 @@ FieldWithinIntervalCheck::FieldWithinIntervalCheck(const Field &f, const std::sh
     std::stringstream lb, lbrep;
     lb << m_lb;
     lbrep << lb_repairable;
-    EKAT_REQUIRE_MSG(lb_repairable <= m_lb, "Error! The repairable lower bound is tighter than the lower bound.\n"
-                                            "       The idea is that the check fails, but it is still repairable\n"
-                                            "       if lb_repairable <= F < lb.\n"
-                                            "  - Lower bound: " +
-                                                lb.str() +
-                                                "\n"
-                                                "  - Repairable lower bound: " +
-                                                lbrep.str() + "\n");
+    EKAT_REQUIRE_MSG(lb_repairable <= m_lb,
+                     "Error! The repairable lower bound is tighter than the lower bound.\n"
+                     "       The idea is that the check fails, but it is still repairable\n"
+                     "       if lb_repairable <= F < lb.\n"
+                     "  - Lower bound: " +
+                         lb.str() +
+                         "\n"
+                         "  - Repairable lower bound: " +
+                         lbrep.str() + "\n");
     std::stringstream ub, ubrep;
     ub << m_ub;
     ubrep << ub_repairable;
-    EKAT_REQUIRE_MSG(ub_repairable >= m_ub, "Error! The repairable upper bound is tighter than the upper bound.\n"
-                                            "       The idea is that the check fails, but it is still repairable\n"
-                                            "       if ub < F <= ub_repairable.\n"
-                                            "  - Upper bound: " +
-                                                ub.str() +
-                                                "\n"
-                                                "  - Repairable upper bound: " +
-                                                ubrep.str() + "\n");
+    EKAT_REQUIRE_MSG(ub_repairable >= m_ub,
+                     "Error! The repairable upper bound is tighter than the upper bound.\n"
+                     "       The idea is that the check fails, but it is still repairable\n"
+                     "       if ub < F <= ub_repairable.\n"
+                     "  - Upper bound: " +
+                         ub.str() +
+                         "\n"
+                         "  - Repairable upper bound: " +
+                         ubrep.str() + "\n");
 
     m_ub_repairable = ub_repairable;
     m_lb_repairable = lb_repairable;

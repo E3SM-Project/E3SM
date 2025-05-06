@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     auto engine = Base::get_engine();
@@ -79,7 +80,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : p
 namespace {
 
 TEST_CASE("vd_shoc_solve_bfb", "[shoc]") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestVdShocDecompandSolve;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestVdShocDecompandSolve;
 
   TestStruct().run_bfb();
 }

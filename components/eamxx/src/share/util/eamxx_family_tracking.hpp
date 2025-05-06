@@ -36,7 +36,8 @@ namespace scream {
  * a shared_ptr via lock() anymore).
  */
 
-template <typename DerivedType> class FamilyTracking : public ekat::enable_shared_from_this<DerivedType> {
+template <typename DerivedType>
+class FamilyTracking : public ekat::enable_shared_from_this<DerivedType> {
 public:
   using derived_type  = DerivedType;
   using tracking_type = FamilyTracking<derived_type>;
@@ -65,9 +66,10 @@ protected:
 template <typename DerivedType> FamilyTracking<DerivedType>::FamilyTracking() {
   // Note: we cannot put the static assert in the class decl, cause DerivedType
   //       is still incomplete at that point.
-  static_assert(std::is_base_of<tracking_type, derived_type>::value,
-                "Error! Do not instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
-                "       This class exploits the Curiously Recurring Template Pattern (CRTP).\n");
+  static_assert(
+      std::is_base_of<tracking_type, derived_type>::value,
+      "Error! Do not instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
+      "       This class exploits the Curiously Recurring Template Pattern (CRTP).\n");
 }
 
 template <typename DerivedType> FamilyTracking<DerivedType>::~FamilyTracking() {
@@ -119,7 +121,8 @@ template <typename DerivedType> FamilyTracking<DerivedType>::~FamilyTracking() {
 }
 
 template <typename DerivedType>
-void FamilyTracking<DerivedType>::create_parent_child_link(const std::shared_ptr<derived_type> &parent) {
+void FamilyTracking<DerivedType>::create_parent_child_link(
+    const std::shared_ptr<derived_type> &parent) {
   // Sanity checks
   EKAT_REQUIRE_MSG(this->shared_from_this(), "Error! Failure to get a shared object from *this.\n");
   EKAT_REQUIRE_MSG(m_parent == nullptr, "Error! This object already stores a parent.\n");
@@ -132,7 +135,9 @@ void FamilyTracking<DerivedType>::create_parent_child_link(const std::shared_ptr
 
   // Safety check. This should never happen, but just in case
   for (auto it : parent->get_children()) {
-    EKAT_REQUIRE_MSG(not is_same(it), "Error! This object is already in the list of children of the input parent.\n");
+    EKAT_REQUIRE_MSG(
+        not is_same(it),
+        "Error! This object is already in the list of children of the input parent.\n");
   }
 
   // Add myself as child in my parent's list

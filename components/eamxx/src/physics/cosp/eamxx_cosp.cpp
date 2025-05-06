@@ -12,7 +12,8 @@
 
 namespace scream {
 // =========================================================================================
-Cosp::Cosp(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereProcess(comm, params) {
+Cosp::Cosp(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereProcess(comm, params) {
   // Determine how often to call COSP; units can be steps or hours
   m_cosp_frequency       = m_params.get<Int>("cosp_frequency", 1);
   m_cosp_frequency_units = m_params.get<std::string>("cosp_frequency_units", "steps");
@@ -76,8 +77,9 @@ void Cosp::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   // Effective radii, should be computed in either microphysics or radiation interface
   // TODO: should these be meters or microns? Was meters before, but using "m" instead
   // of "micron" seemed to cause prim_model_finalize to throw error with the following:
-  // ABORTING WITH ERROR: Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).
-  // P3 defines this field with micron instead of meters units, so is this a unit conversion issue?
+  // ABORTING WITH ERROR: Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was
+  // already called). P3 defines this field with micron instead of meters units, so is this a unit
+  // conversion issue?
   add_field<Required>("eff_radius_qc", scalar3d_mid, micron, grid_name);
   add_field<Required>("eff_radius_qi", scalar3d_mid, micron, grid_name);
   // Set of fields used strictly as output
@@ -118,7 +120,8 @@ void Cosp::run_impl(const double dt) {
   if (m_cosp_frequency_units == "steps") {
     cosp_freq_in_steps = m_cosp_frequency;
   } else if (m_cosp_frequency_units == "hours") {
-    EKAT_REQUIRE_MSG((3600 % int(dt)) == 0, "cosp_frequency_units is hours but dt does not evenly divide 1 hour");
+    EKAT_REQUIRE_MSG((3600 % int(dt)) == 0,
+                     "cosp_frequency_units is hours but dt does not evenly divide 1 hour");
     cosp_freq_in_steps = 3600.0 * m_cosp_frequency / dt;
   } else {
     EKAT_ERROR_MSG("cosp_frequency_units " + m_cosp_frequency_units + " not supported");
@@ -215,14 +218,16 @@ void Cosp::run_impl(const double dt) {
     auto isccp_ctptau_h = get_field_out("isccp_ctptau").get_view<Real ***, Host>();
     auto modis_ctptau_h = get_field_out("modis_ctptau").get_view<Real ***, Host>();
     auto misr_cthtau_h  = get_field_out("misr_cthtau").get_view<Real ***, Host>();
-    auto cosp_sunlit_h  = get_field_out("cosp_sunlit")
-                             .get_view<Real *, Host>(); // Copy of sunlit flag with COSP frequency for proper averaging
+    auto cosp_sunlit_h =
+        get_field_out("cosp_sunlit").get_view<Real *, Host>(); // Copy of sunlit flag with COSP
+                                                               // frequency for proper averaging
 
     Real emsfc_lw = 0.99;
     Kokkos::deep_copy(cosp_sunlit_h, sunlit_h);
-    CospFunc::main(m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw, sunlit_h, skt_h,
-                   T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h, cldfrac_h, reff_qc_h, reff_qi_h, dtau067_h,
-                   dtau105_h, isccp_cldtot_h, isccp_ctptau_h, modis_ctptau_h, misr_cthtau_h);
+    CospFunc::main(m_num_cols, m_num_subcols, m_num_levs, m_num_tau, m_num_ctp, m_num_cth, emsfc_lw,
+                   sunlit_h, skt_h, T_mid_h, p_mid_h, p_int_h, z_mid_h, qv_h, qc_h, qi_h, cldfrac_h,
+                   reff_qc_h, reff_qi_h, dtau067_h, dtau105_h, isccp_cldtot_h, isccp_ctptau_h,
+                   modis_ctptau_h, misr_cthtau_h);
     // Remask night values to ZERO since our I/O does not know how to handle masked/missing values
     // in temporal averages; this is all host data, so we can just use host loops like its the 1980s
     for (int i = 0; i < m_num_cols; i++) {

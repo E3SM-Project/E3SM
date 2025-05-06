@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestCheckShocLength : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCheckShocLength : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
@@ -155,13 +156,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCheckShocLength : public
 namespace {
 
 TEST_CASE("shoc_check_length_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_check_length_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
 
   TestStruct().run_bfb();
 }

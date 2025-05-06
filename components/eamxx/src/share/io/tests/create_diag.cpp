@@ -44,9 +44,10 @@ TEST_CASE("create_diag") {
     auto d8 = create_diagnostic("BlaH_123_at_10m_above_surface", grid);
     REQUIRE(std::dynamic_pointer_cast<FieldAtHeight>(d8) != nullptr);
 
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_10.5m", grid));                // missing _above_X
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1km_above_sealevel", grid));   // invalid units
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1m_above_the_surface", grid)); // invalid reference
+    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_10.5m", grid));              // missing _above_X
+    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1km_above_sealevel", grid)); // invalid units
+    REQUIRE_THROWS(
+        create_diagnostic("BlaH_123_at_1m_above_the_surface", grid)); // invalid reference
   }
 
   SECTION("precip_mass_flux") {

@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     // Property tests for the SHOC function
@@ -181,13 +182,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond
 namespace {
 
 TEST_CASE("diag_second_moments_lbycond_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDiagSecondMomentsLbycond;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestDiagSecondMomentsLbycond;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("diag_second_moments_lbycond_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDiagSecondMomentsLbycond;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestDiagSecondMomentsLbycond;
 
   TestStruct().run_bfb();
 }

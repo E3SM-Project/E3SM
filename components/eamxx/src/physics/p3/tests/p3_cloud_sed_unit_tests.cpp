@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestCloudSed : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCloudSed : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -27,7 +28,7 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCloudSed : public UnitWr
     auto engine = Base::get_engine();
 
     CloudSedData csds_baseline[] = {
-        //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc,     precip_liq_surf,
+        //         kts, kte, ktop, kbot, kdir,        dt,    inv_dt, do_predict_nc, precip_liq_surf,
         CloudSedData(1, 72, 27, 72, -1, 1.800E+03, 5.556E-04, false, 0.0),
         CloudSedData(1, 72, 72, 27, 1, 1.800E+03, 5.556E-04, false, 0.0),
         CloudSedData(1, 72, 27, 72, -1, 1.800E+03, 5.556E-04, true, 0.0),
@@ -45,8 +46,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCloudSed : public UnitWr
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     CloudSedData csds_cxx[num_runs] = {
-        CloudSedData(csds_baseline[0]), CloudSedData(csds_baseline[1]), CloudSedData(csds_baseline[2]),
-        CloudSedData(csds_baseline[3]), CloudSedData(csds_baseline[4]),
+        CloudSedData(csds_baseline[0]), CloudSedData(csds_baseline[1]),
+        CloudSedData(csds_baseline[2]), CloudSedData(csds_baseline[3]),
+        CloudSedData(csds_baseline[4]),
     };
 
     // Read baseline data
@@ -58,9 +60,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCloudSed : public UnitWr
 
     // Get data from cxx
     for (auto &d : csds_cxx) {
-      cloud_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.qc_incld, d.rho, d.inv_rho, d.cld_frac_l, d.acn,
-                               d.inv_dz, d.dt, d.inv_dt, d.do_predict_nc, d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc,
-                               &d.precip_liq_surf, d.qc_tend, d.nc_tend);
+      cloud_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.qc_incld, d.rho, d.inv_rho,
+                               d.cld_frac_l, d.acn, d.inv_dz, d.dt, d.inv_dt, d.do_predict_nc, d.qc,
+                               d.nc, d.nc_incld, d.mu_c, d.lamc, &d.precip_liq_surf, d.qc_tend,
+                               d.nc_tend);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {

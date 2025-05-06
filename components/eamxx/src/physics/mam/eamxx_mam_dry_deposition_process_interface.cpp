@@ -10,7 +10,8 @@ namespace scream {
 
 using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
 
-MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params) : MAMGenericInterface(comm, params) {
+MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
@@ -134,9 +135,11 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // -------------------------------------------------------------
   // FIXME: These are diagnostics, remove them from FM after initial evaluation
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", vector2d_pcnst, 1 / m2 / s, grid_name);
+  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", vector2d_pcnst, 1 / m2 / s,
+                      grid_name);
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_interstitial_aerosols", vector2d_pcnst, 1 / m2 / s, grid_name);
+  add_field<Computed>("deposition_flux_of_interstitial_aerosols", vector2d_pcnst, 1 / m2 / s,
+                      grid_name);
 
   // Fractional land use [fraction]
   add_field<Computed>("fraction_landuse", vector2d_class, nondim, grid_name);
@@ -155,8 +158,9 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   const std::string dim_name2 = "class";
 
   // initialize the file read
-  FracLandUseFunc::init_frac_landuse_file_read(ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
-                                               mapping_file, horizInterp_, dataReader_); // output
+  FracLandUseFunc::init_frac_landuse_file_read(ncol_, field_name, dim_name1, dim_name2, grid_,
+                                               frac_landuse_data_file, mapping_file, horizInterp_,
+                                               dataReader_); // output
 
 } // set_grids
 
@@ -244,8 +248,9 @@ void MAMDryDep::init_temporary_views() {
   const int workspace_used     = work_ptr - buffer_.temporary_views.data();
   const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
-                   "Error: workspace_used (" + std::to_string(workspace_used) + ") and workspace_provided (" +
-                       std::to_string(workspace_provided) + ") should be equal. \n");
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" + std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 
 // ================================================================
@@ -314,7 +319,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
@@ -354,9 +360,9 @@ void MAMDryDep::run_impl(const double dt) {
   //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-  compute_tendencies(ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_, land_fraction_, ice_fraction_,
-                     ocean_fraction_, friction_velocity_, aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
-                     wet_dens_, dry_atm_, dry_aero_,
+  compute_tendencies(ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_, land_fraction_,
+                     ice_fraction_, ocean_fraction_, friction_velocity_, aerodynamical_resistance_,
+                     frac_landuse_, dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
                      // Inouts-outputs
                      qqcw_,
                      // Outputs

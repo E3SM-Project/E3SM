@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys_calc_bulk_rhime() {
     // TODO
@@ -84,8 +85,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap
           }
 
           Smask gt_small(qi_tot > qsmall);
-          Spack rho_rime = Functions::calc_bulk_rho_rime(qi_tot, qi_rim, bi_rim,
-                                                         p3::Functions<Real, DefaultDevice>::P3Runtime(), gt_small);
+          Spack rho_rime = Functions::calc_bulk_rho_rime(
+              qi_tot, qi_rim, bi_rim, p3::Functions<Real, DefaultDevice>::P3Runtime(), gt_small);
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -148,9 +149,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap
 
     // Get data from cxx
     for (auto &d : isds_cxx) {
-      ice_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.rho, d.inv_rho, d.rhofaci, d.cld_frac_i, d.inv_dz,
-                             d.dt, d.inv_dt, d.qi, d.qi_incld, d.ni, d.qm, d.qm_incld, d.bm, d.bm_incld, d.ni_incld,
-                             &d.precip_ice_surf, d.qi_tend, d.ni_tend);
+      ice_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.rho, d.inv_rho, d.rhofaci,
+                             d.cld_frac_i, d.inv_dz, d.dt, d.inv_dt, d.qi, d.qi_incld, d.ni, d.qm,
+                             d.qm_incld, d.bm, d.bm_incld, d.ni_incld, &d.precip_ice_surf,
+                             d.qi_tend, d.ni_tend);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -197,7 +199,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap
     // Set up random input data
     for (auto &d : hfds_baseline) {
       const auto qsmall_r = std::make_pair(C::QSMALL / 2, C::QSMALL * 2);
-      d.randomize(engine, {{d.T_atm, {C::T_homogfrz - 10, C::T_homogfrz + 10}}, {d.qc, qsmall_r}, {d.qr, qsmall_r}});
+      d.randomize(engine, {{d.T_atm, {C::T_homogfrz - 10, C::T_homogfrz + 10}},
+                           {d.qc, qsmall_r},
+                           {d.qr, qsmall_r}});
 
       // C++ impl uses constants for latent_heat values. Manually set here
       // so F90 can match
@@ -224,8 +228,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceSed : public UnitWrap
 
     // Get data from cxx
     for (auto &d : hfds_cxx) {
-      homogeneous_freezing_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.T_atm, d.inv_exner, d.qc, d.nc, d.qr, d.nr,
-                                d.qi, d.ni, d.qm, d.bm, d.th_atm);
+      homogeneous_freezing_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.T_atm, d.inv_exner, d.qc,
+                                d.nc, d.qr, d.nr, d.qi, d.ni, d.qm, d.bm, d.th_atm);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {

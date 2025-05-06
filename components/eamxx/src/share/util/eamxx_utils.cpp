@@ -73,7 +73,8 @@ std::vector<std::string> globloc(const std::string &pattern) {
   int return_value = ::glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
   if (return_value != 0) {
     globfree(&glob_result);
-    EKAT_REQUIRE_MSG(return_value == 0, "glob() failed with return value " + std::to_string(return_value));
+    EKAT_REQUIRE_MSG(return_value == 0,
+                     "glob() failed with return value " + std::to_string(return_value));
   }
 
   std::vector<std::string> filenames;

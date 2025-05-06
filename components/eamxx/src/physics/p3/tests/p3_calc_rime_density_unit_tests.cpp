@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -51,8 +52,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public
 
     CalcRimeDensityData calc_rime_density_data[max_pack_size] = {
         // T_atm, rhofaci, table_val_qi_fallspd1, acn, lamc, mu_c, qc_incld, qc2qi_collect_tend
-        {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_small},
-        {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_small},
+        {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small,
+         qc2qi_collect_tend_small},
+        {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small,
+         qc2qi_collect_tend_small},
 
         {t_not_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small,
          qc2qi_collect_tend_not_small},
@@ -69,14 +72,20 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public
         {t_not_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small,
          qc2qi_collect_tend_not_small},
 
-        {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_small},
-        {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_small},
+        {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small,
+         qc2qi_collect_tend_small},
+        {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small,
+         qc2qi_collect_tend_small},
 
-        {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small, qc2qi_collect_tend_not_small},
-        {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small, qc2qi_collect_tend_not_small},
+        {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_small,
+         qc2qi_collect_tend_not_small},
+        {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_small,
+         qc2qi_collect_tend_not_small},
 
-        {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small, qc2qi_collect_tend_small},
-        {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small, qc2qi_collect_tend_small},
+        {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small,
+         qc2qi_collect_tend_small},
+        {t_freezing, rhofaci2, table_val_qi_fallspd2, acn2, lamc2, mu_c2, qc_incld_not_small,
+         qc2qi_collect_tend_small},
 
         {t_freezing, rhofaci1, table_val_qi_fallspd1, acn1, lamc1, mu_c1, qc_incld_not_small,
          qc2qi_collect_tend_not_small},
@@ -87,7 +96,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public
     // Sync to device
     view_1d<CalcRimeDensityData> device_data("calc_rime_density", max_pack_size);
     const auto host_data = Kokkos::create_mirror_view(device_data);
-    std::copy(&calc_rime_density_data[0], &calc_rime_density_data[0] + max_pack_size, host_data.data());
+    std::copy(&calc_rime_density_data[0], &calc_rime_density_data[0] + max_pack_size,
+              host_data.data());
     Kokkos::deep_copy(device_data, host_data);
 
     // Read baseline data
@@ -118,8 +128,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCalcRimeDensity : public
           Spack vtrmi1{0.0};
           Spack rho_qm_cloud{0.0};
 
-          Functions::calc_rime_density(T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c, qc_incld,
-                                       qc2qi_collect_tend, vtrmi1, rho_qm_cloud);
+          Functions::calc_rime_density(T_atm, rhofaci, table_val_qi_fallspd, acn, lamc, mu_c,
+                                       qc_incld, qc2qi_collect_tend, vtrmi1, rho_qm_cloud);
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

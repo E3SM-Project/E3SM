@@ -16,7 +16,8 @@ namespace scream {
 
 class HorizInterpRemapperBase : public AbstractRemapper {
 public:
-  HorizInterpRemapperBase(const grid_ptr_type &fine_grid, const std::string &map_file, const InterpType type);
+  HorizInterpRemapperBase(const grid_ptr_type &fine_grid, const std::string &map_file,
+                          const InterpType type);
 
   ~HorizInterpRemapperBase();
 

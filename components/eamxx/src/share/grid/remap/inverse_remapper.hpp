@@ -32,8 +32,12 @@ public:
   bool compatible_layouts(const FieldLayout &src, const FieldLayout &tgt) const override {
     return m_remapper->compatible_layouts(tgt, src);
   }
-  virtual bool is_valid_src_layout(const FieldLayout &layout) const { return m_remapper->is_valid_tgt_layout(layout); }
-  virtual bool is_valid_tgt_layout(const FieldLayout &layout) const { return m_remapper->is_valid_src_layout(layout); }
+  virtual bool is_valid_src_layout(const FieldLayout &layout) const {
+    return m_remapper->is_valid_tgt_layout(layout);
+  }
+  virtual bool is_valid_tgt_layout(const FieldLayout &layout) const {
+    return m_remapper->is_valid_src_layout(layout);
+  }
 
 protected:
   void remap_fwd_impl() override { m_remapper->remap_bwd(); }

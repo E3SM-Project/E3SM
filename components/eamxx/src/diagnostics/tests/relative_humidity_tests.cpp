@@ -50,8 +50,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
   const int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
@@ -66,8 +66,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   // Input (randomized) views, device
   view_1d temperature("temperature", num_mid_packs), pressure("pressure", num_mid_packs),
-      pseudo_density("pseudo_density", num_mid_packs), pseudo_density_dry("pseudo_density_dry", num_mid_packs),
-      qv("qv", num_mid_packs);
+      pseudo_density("pseudo_density", num_mid_packs),
+      pseudo_density_dry("pseudo_density_dry", num_mid_packs), qv("qv", num_mid_packs);
 
   auto dview_as_real = [&](const view_1d &v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real *>(v.data()), v.size() * packsize);
@@ -75,7 +75,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(10.0, PC::P0), pdf_temp(200.0, 400.0), pdf_qv(0.0, 1e-2), pdf_pseudo_density(1.0, 100.0);
+  RPDF pdf_pres(10.0, PC::P0), pdf_temp(200.0, 400.0), pdf_qv(0.0, 1e-2),
+      pdf_pseudo_density(1.0, 100.0);
 
   // A time stamp
   util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
@@ -162,7 +163,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_mid_packs), [&](const Int &jpack) {
             dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack) * qv_sub(jpack);
-            auto qv_sat_l    = physics::qv_sat_dry(T_mid_v(icol, jpack), p_dry_mid_v(icol, jpack), true, range_mask);
+            auto qv_sat_l    = physics::qv_sat_dry(T_mid_v(icol, jpack), p_dry_mid_v(icol, jpack),
+                                                   true, range_mask);
             qv_sat_l *= dpdry_v(icol, jpack);
             qv_sat_l /= dpwet_v(icol, jpack);
             rh_v(icol, jpack) = qv_v(icol, jpack) / qv_sat_l;

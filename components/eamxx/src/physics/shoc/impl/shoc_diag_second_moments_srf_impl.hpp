@@ -9,9 +9,9 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::shoc_diag_second_moments_srf(const Scalar &wthl_sfc, const Scalar &uw_sfc,
-                                                                   const Scalar &vw_sfc, Scalar &ustar2,
-                                                                   Scalar &wstar) {
+KOKKOS_FUNCTION void
+Functions<S, D>::shoc_diag_second_moments_srf(const Scalar &wthl_sfc, const Scalar &uw_sfc,
+                                              const Scalar &vw_sfc, Scalar &ustar2, Scalar &wstar) {
   // Purpose of this subroutine is to diagnose surface
   // properties needed for the the lower
   // boundary condition for the second order moments needed

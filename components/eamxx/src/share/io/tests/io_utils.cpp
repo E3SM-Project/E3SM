@@ -39,16 +39,24 @@ TEST_CASE("find_filename_in_rpointer") {
   rpointer.close();
 
   // Now test find_filename_in_rpointer with different inputs
+  REQUIRE_THROWS(find_filename_in_rpointer("baz", false, comm, t0, false,
+                                           AVG)); // missing control (needed for rhist files)
   REQUIRE_THROWS(
-      find_filename_in_rpointer("baz", false, comm, t0, false, AVG)); // missing control (needed for rhist files)
-  REQUIRE_THROWS(find_filename_in_rpointer("baz", false, comm, t0, false, AVG, bar_c));   // wrong prefix
-  REQUIRE_THROWS(find_filename_in_rpointer("bar", false, comm, t1, false, AVG, bar_c));   // wrong timestamp
-  REQUIRE_THROWS(find_filename_in_rpointer("bar", true, comm, t0, false, AVG, bar_c));    // bar is not model restart
-  REQUIRE_THROWS(find_filename_in_rpointer("bar", false, comm, t0, false, INST, bar_c));  // wrong avg type
-  REQUIRE_THROWS(find_filename_in_rpointer("bar", false, comm, t0, false, INST, bar2_c)); // wrong freq specs
-  REQUIRE_THROWS(find_filename_in_rpointer("foo", false, comm, t0, false, INST, foo_c));  // foo is model restart
-  REQUIRE_THROWS(find_filename_in_rpointer("foo", true, comm, t0, false, AVG)); // model restart MUST be INSTANT
-  auto not_found = find_filename_in_rpointer("bar", false, comm, t0, true, INST, bar2_c); // Allowed to not find it
+      find_filename_in_rpointer("baz", false, comm, t0, false, AVG, bar_c)); // wrong prefix
+  REQUIRE_THROWS(
+      find_filename_in_rpointer("bar", false, comm, t1, false, AVG, bar_c)); // wrong timestamp
+  REQUIRE_THROWS(find_filename_in_rpointer("bar", true, comm, t0, false, AVG,
+                                           bar_c)); // bar is not model restart
+  REQUIRE_THROWS(
+      find_filename_in_rpointer("bar", false, comm, t0, false, INST, bar_c)); // wrong avg type
+  REQUIRE_THROWS(
+      find_filename_in_rpointer("bar", false, comm, t0, false, INST, bar2_c)); // wrong freq specs
+  REQUIRE_THROWS(find_filename_in_rpointer("foo", false, comm, t0, false, INST,
+                                           foo_c)); // foo is model restart
+  REQUIRE_THROWS(find_filename_in_rpointer("foo", true, comm, t0, false,
+                                           AVG)); // model restart MUST be INSTANT
+  auto not_found = find_filename_in_rpointer("bar", false, comm, t0, true, INST,
+                                             bar2_c); // Allowed to not find it
   REQUIRE(not_found == "");
 
   REQUIRE(find_filename_in_rpointer("bar", false, comm, t0, false, AVG, bar_c) == bar_fname);

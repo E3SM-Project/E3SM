@@ -167,7 +167,8 @@ public:
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
     void initialize(const int ncol, const int nlev, const mam_coupling::WetAtmosphere &wet_atm,
-                    const mam_coupling::AerosolState &wet_aero, const mam_coupling::DryAtmosphere &dry_atm,
+                    const mam_coupling::AerosolState &wet_aero,
+                    const mam_coupling::DryAtmosphere &dry_atm,
                     const mam_coupling::AerosolState &dry_aero) {
       ncol_pre_     = ncol;
       nlev_pre_     = nlev;

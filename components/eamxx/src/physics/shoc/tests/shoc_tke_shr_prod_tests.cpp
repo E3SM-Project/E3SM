@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocShearProd : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocShearProd : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -155,9 +156,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocShearProd : public U
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    ComputeShrProdData baseline_data[] = {//            shcol, nlev
-                                          ComputeShrProdData(10, 71, 72), ComputeShrProdData(10, 12, 13),
-                                          ComputeShrProdData(7, 16, 17), ComputeShrProdData(2, 7, 8)};
+    ComputeShrProdData baseline_data[] = {
+        //            shcol, nlev
+        ComputeShrProdData(10, 71, 72), ComputeShrProdData(10, 12, 13),
+        ComputeShrProdData(7, 16, 17), ComputeShrProdData(2, 7, 8)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
@@ -213,13 +215,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocShearProd : public U
 namespace {
 
 TEST_CASE("shoc_tke_shr_prod_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_shr_prod_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocShearProd;
 
   TestStruct().run_bfb();
 }

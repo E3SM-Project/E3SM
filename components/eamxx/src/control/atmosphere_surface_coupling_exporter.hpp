@@ -34,8 +34,10 @@ public:
   using KT    = ekat::KokkosTypes<DefaultDevice>;
   using Spack = ekat::Pack<Real, SCREAM_SMALL_PACK_SIZE>;
 
-  template <typename DevT, typename DataT> using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
-  template <typename DevT, typename DataT> using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
+  template <typename DevT, typename DataT>
+  using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
+  template <typename DevT, typename DataT>
+  using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
   template <typename DevT, typename ScalarT> using uview_1d = Unmanaged<view_1d<DevT, ScalarT>>;
   template <typename DevT, typename ScalarT> using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
@@ -68,14 +70,15 @@ public:
   // If calling in initialize_impl(), set
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
-  void do_export(const double dt, const bool called_during_initialization = false); // Main export routine
-  void
-  compute_eamxx_exports(const double dt,
-                        const bool called_during_initialization = false); // Export vars are derived from eamxx state
-  void set_constant_exports();                                            // Export vars are set to a constant
+  void do_export(const double dt,
+                 const bool called_during_initialization = false); // Main export routine
+  void compute_eamxx_exports(
+      const double dt,
+      const bool called_during_initialization = false); // Export vars are derived from eamxx state
+  void set_constant_exports();                          // Export vars are set to a constant
   void set_from_file_exports(); // Export vars are set by interpolation of data from files
-  void
-  do_export_to_cpl(const bool called_during_initialization = false); // Finish export by copying data to cpl structures.
+  void do_export_to_cpl(const bool called_during_initialization =
+                            false); // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
@@ -87,10 +90,13 @@ protected:
   void finalize_impl();
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  void create_helper_field(const std::string &name, const FieldLayout &layout, const std::string &grid_name);
+  void create_helper_field(const std::string &name, const FieldLayout &layout,
+                           const std::string &grid_name);
 
   // Query if a local field exists
-  bool has_helper_field(const std::string &name) const { return m_helper_fields.find(name) != m_helper_fields.end(); }
+  bool has_helper_field(const std::string &name) const {
+    return m_helper_fields.find(name) != m_helper_fields.end();
+  }
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;

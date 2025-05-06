@@ -43,8 +43,8 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                     const int seed, const int ps) {
+std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                     const util::TimeStamp &t0, const int seed, const int ps) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -66,7 +66,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
 
-  std::vector<FL> layouts = {FL({COL, LEV}, {nlcols, nlevs}), FL({COL, CMP, ILEV}, {nlcols, 2, nlevs + 1})};
+  std::vector<FL> layouts = {FL({COL, LEV}, {nlcols, nlevs}),
+                             FL({COL, CMP, ILEV}, {nlcols, 2, nlevs + 1})};
 
   auto fm = std::make_shared<FieldManager>(grid);
 
@@ -123,7 +124,8 @@ void write(const int freq, const int seed, const int ps, const ekat::Comm &comm)
   om.finalize();
 }
 
-void read(const int freq, const int seed, const int ps_write, const int ps_read, const ekat::Comm &comm) {
+void read(const int freq, const int seed, const int ps_write, const int ps_read,
+          const ekat::Comm &comm) {
   // Time quantities
   auto t0 = get_t0();
 
@@ -143,8 +145,8 @@ void read(const int freq, const int seed, const int ps_write, const int ps_read,
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_packed_ps" + std::to_string(ps_write);
-  auto filename = casename + ".INSTANT.nsteps" + "_x" + std::to_string(freq) + ".np" + std::to_string(comm.size()) +
-                  "." + t0.to_string() + ".nc";
+  auto filename        = casename + ".INSTANT.nsteps" + "_x" + std::to_string(freq) + ".np" +
+                  std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);

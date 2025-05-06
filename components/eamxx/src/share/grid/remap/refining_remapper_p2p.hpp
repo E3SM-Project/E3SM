@@ -71,7 +71,8 @@ protected:
   // If MpiOnDev=true, we pass device pointers to MPI. Otherwise, we use host mirrors.
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
   template <typename T>
-  using mpi_view_1d = typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
+  using mpi_view_1d =
+      typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
 
   // ----- Data structures for pack/unpack and MPI ----- //
 

@@ -28,8 +28,8 @@ template <> MPI_Datatype get_mpi_type<RealInt>() {
 
 namespace scream {
 
-SCMInput::SCMInput(const std::string &filename, const double lat, const double lon, const std::vector<Field> &fields,
-                   const ekat::Comm &comm)
+SCMInput::SCMInput(const std::string &filename, const double lat, const double lon,
+                   const std::vector<Field> &fields, const ekat::Comm &comm)
     : m_comm(comm), m_filename(filename) {
   auto iotype = scorpio::str2iotype("default");
   scorpio::register_file(m_filename, scorpio::Read, iotype);
@@ -53,15 +53,17 @@ SCMInput::SCMInput(const std::string &filename, const double lat, const double l
     const auto &fid = fh.get_identifier();
     const auto &fl  = fid.get_layout();
 
-    EKAT_REQUIRE_MSG(fl.tags()[0] == FieldTag::Column, "Error! SCMInput only works for physics-type layouts.\n"
-                                                       "  - field name: " +
-                                                           f.name() +
-                                                           "\n"
-                                                           "  - field layout: " +
-                                                           fl.to_string() + "\n");
+    EKAT_REQUIRE_MSG(fl.tags()[0] == FieldTag::Column,
+                     "Error! SCMInput only works for physics-type layouts.\n"
+                     "  - field name: " +
+                         f.name() +
+                         "\n"
+                         "  - field layout: " +
+                         fl.to_string() + "\n");
 
     m_fields.push_back(f.subfield(0, 0));
-    FieldIdentifier fid_io(f.name(), fl.clone().reset_dim(0, ncols), fid.get_units(), m_io_grid->name());
+    FieldIdentifier fid_io(f.name(), fl.clone().reset_dim(0, ncols), fid.get_units(),
+                           m_io_grid->name());
     auto &f_io = m_io_fields.emplace_back(fid_io);
     f_io.allocate_view();
   }
@@ -73,11 +75,13 @@ SCMInput::SCMInput(const std::string &filename, const double lat, const double l
 SCMInput::~SCMInput() { scorpio::release_file(m_filename); }
 
 void SCMInput::create_io_grid() {
-  EKAT_REQUIRE_MSG(scorpio::has_dim(m_filename, "ncol"), "Error! Dimension 'ncol' not found in input file.\n"
-                                                         "  - filename: " +
-                                                             m_filename + "\n");
+  EKAT_REQUIRE_MSG(scorpio::has_dim(m_filename, "ncol"),
+                   "Error! Dimension 'ncol' not found in input file.\n"
+                   "  - filename: " +
+                       m_filename + "\n");
   const int ncols = scorpio::get_dimlen(m_filename, "ncol");
-  const int nlevs = scorpio::has_dim(m_filename, "lev") ? scorpio::get_dimlen(m_filename, "lev") : 1;
+  const int nlevs =
+      scorpio::has_dim(m_filename, "lev") ? scorpio::get_dimlen(m_filename, "lev") : 1;
 
   m_io_grid = create_point_grid("scm_io_grid", ncols, nlevs, m_comm);
 }
@@ -159,7 +163,8 @@ void SCMInput::read_variables(const int time_index) {
 
   auto func_finish = std::chrono::steady_clock::now();
   if (m_atm_logger) {
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start) / 1000.0;
+    auto duration =
+        std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start) / 1000.0;
     m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration.count()) + " seconds");
   }
 }
@@ -180,26 +185,28 @@ void SCMInput::init_scorpio_structures() {
     }
 
     // Check that the variable is in the file.
-    EKAT_REQUIRE_MSG(scorpio::has_var(m_filename, f.name()), "Error! Input file does not store a required variable.\n"
-                                                             " - filename: " +
-                                                                 m_filename +
-                                                                 "\n"
-                                                                 " - varname : " +
-                                                                 f.name() + "\n");
+    EKAT_REQUIRE_MSG(scorpio::has_var(m_filename, f.name()),
+                     "Error! Input file does not store a required variable.\n"
+                     " - filename: " +
+                         m_filename +
+                         "\n"
+                         " - varname : " +
+                         f.name() + "\n");
 
     const auto &var = scorpio::get_var(m_filename, f.name());
-    EKAT_REQUIRE_MSG(var.dim_names() == dim_names, "Error! Layout mismatch for input file variable.\n"
-                                                   " - filename: " +
-                                                       m_filename +
-                                                       "\n"
-                                                       " - varname : " +
-                                                       f.name() +
-                                                       "\n"
-                                                       " - expected dims : " +
-                                                       ekat::join(dim_names, ",") +
-                                                       "\n"
-                                                       " - dims from file: " +
-                                                       ekat::join(var.dim_names(), ",") + "\n");
+    EKAT_REQUIRE_MSG(var.dim_names() == dim_names,
+                     "Error! Layout mismatch for input file variable.\n"
+                     " - filename: " +
+                         m_filename +
+                         "\n"
+                         " - varname : " +
+                         f.name() +
+                         "\n"
+                         " - expected dims : " +
+                         ekat::join(dim_names, ",") +
+                         "\n"
+                         " - dims from file: " +
+                         ekat::join(var.dim_names(), ",") + "\n");
 
     // Check that all dims for this var match the ones on file
     for (int i = 0; i < layout.rank(); ++i) {
@@ -255,9 +262,10 @@ void SCMInput::set_decompositions() {
   }
 
   // Set the decomposition for the partitioned dimension
-  const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-  std::string decomp_dim =
-      m_io_grid->has_special_tag_name(decomp_tag) ? m_io_grid->get_special_tag_name(decomp_tag) : e2str(decomp_tag);
+  const int local_dim    = m_io_grid->get_partitioned_dim_local_size();
+  std::string decomp_dim = m_io_grid->has_special_tag_name(decomp_tag)
+                               ? m_io_grid->get_special_tag_name(decomp_tag)
+                               : e2str(decomp_tag);
 
   auto gids_f  = m_io_grid->get_partitioned_dim_gids();
   auto gids_h  = gids_f.get_view<const AbstractGrid::gid_type *, Host>();

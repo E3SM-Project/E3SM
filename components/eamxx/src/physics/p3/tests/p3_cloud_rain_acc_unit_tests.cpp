@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestCloudRainAccretion : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCloudRainAccretion : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -29,16 +30,19 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCloudRainAccretion : pub
     constexpr Scalar qsmall = C::QSMALL;
 
     constexpr Scalar rho1 = 4.056E-03, rho2 = 6.852E-02, rho3 = 8.852E-02, rho4 = 1.902E-01;
-    constexpr Scalar inv_rho1 = 1.0 / rho1, inv_rho2 = 1.0 / rho2, inv_rho3 = 1.0 / rho3, inv_rho4 = 1.0 / rho4;
+    constexpr Scalar inv_rho1 = 1.0 / rho1, inv_rho2 = 1.0 / rho2, inv_rho3 = 1.0 / rho3,
+                     inv_rho4           = 1.0 / rho4;
     constexpr Scalar qc_incld_small     = 0.9 * qsmall;
     constexpr Scalar qr_incld_small     = 0.9 * qsmall;
     constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
     constexpr Scalar qr_incld_not_small = 2.0 * qsmall;
-    constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06, nc_incld3 = 1.734E+07, nc_incld4 = 9.952E+08;
+    constexpr Scalar nc_incld1 = 9.952E+05, nc_incld2 = 9.952E+06, nc_incld3 = 1.734E+07,
+                     nc_incld4         = 9.952E+08;
     constexpr Scalar inv_qc_relvar_val = 1;
 
     CloudRainAccretionData cloud_rain_acc_data[max_pack_size] = {
-        // rho, inv_rho, qc_incld, nc_incld, qr_incld, qc2qr_accret_tend, nc_accret_tend, inv_qc_relvar
+        // rho, inv_rho, qc_incld, nc_incld, qr_incld, qc2qr_accret_tend, nc_accret_tend,
+        // inv_qc_relvar
         {rho1, inv_rho1, qc_incld_small, nc_incld1, qr_incld_small, inv_qc_relvar_val},
         {rho2, inv_rho2, qc_incld_small, nc_incld2, qr_incld_small, inv_qc_relvar_val},
         {rho3, inv_rho3, qc_incld_small, nc_incld3, qr_incld_small, inv_qc_relvar_val},
@@ -91,8 +95,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCloudRainAccretion : pub
           Spack qc2qr_accret_tend{0.0};
           Spack nc_accret_tend{0.0};
 
-          Functions::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar, qc2qr_accret_tend,
-                                          nc_accret_tend, p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::cloud_rain_accretion(rho, inv_rho, qc_incld, nc_incld, qr_incld, inv_qc_relvar,
+                                          qc2qr_accret_tend, nc_accret_tend,
+                                          p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -125,7 +130,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCloudRainAccretion : pub
 namespace {
 
 TEST_CASE("p3_cloud_rain_accretion", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCloudRainAccretion;
+  using T =
+      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCloudRainAccretion;
 
   T t;
   t.run_phys();

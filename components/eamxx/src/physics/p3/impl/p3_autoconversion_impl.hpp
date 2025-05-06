@@ -8,11 +8,10 @@ namespace scream {
 namespace p3 {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::cloud_water_autoconversion(const Spack &rho, const Spack &qc_incld,
-                                                                 const Spack &nc_incld, const Spack &inv_qc_relvar,
-                                                                 Spack &qc2qr_autoconv_tend, Spack &nc2nr_autoconv_tend,
-                                                                 Spack &ncautr, const P3Runtime &runtime_options,
-                                                                 const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::cloud_water_autoconversion(
+    const Spack &rho, const Spack &qc_incld, const Spack &nc_incld, const Spack &inv_qc_relvar,
+    Spack &qc2qr_autoconv_tend, Spack &nc2nr_autoconv_tend, Spack &ncautr,
+    const P3Runtime &runtime_options, const Smask &context) {
 
   // Khroutdinov and Kogan (2000)
   const auto qc_not_small = qc_incld >= 1e-8 && context;
@@ -35,9 +34,10 @@ KOKKOS_FUNCTION void Functions<S, D>::cloud_water_autoconversion(const Spack &rh
     // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, sp(2.47) );
     sgs_var_coef = 1;
 
-    qc2qr_autoconv_tend.set(qc_not_small, sgs_var_coef * autoconversion_prefactor *
-                                              pow(qc_incld, autoconversion_qc_exponent) *
-                                              pow(nc_incld * sp(1.e-6) * rho, -autoconversion_nc_exponent));
+    qc2qr_autoconv_tend.set(qc_not_small,
+                            sgs_var_coef * autoconversion_prefactor *
+                                pow(qc_incld, autoconversion_qc_exponent) *
+                                pow(nc_incld * sp(1.e-6) * rho, -autoconversion_nc_exponent));
     // note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
     ncautr.set(qc_not_small, qc2qr_autoconv_tend * CONS3);
     nc2nr_autoconv_tend.set(qc_not_small, qc2qr_autoconv_tend * nc_incld / qc_incld);

@@ -11,7 +11,8 @@ NOTES:
 namespace scream {
 
 // =========================================================================================
-MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params) : MAMGenericInterface(comm, params) {
+MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
@@ -45,7 +46,8 @@ void MAMWetscav::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   FieldLayout scalar2d = grid_->get_2d_scalar_layout();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes = grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
+  FieldLayout scalar3d_mid_nmodes =
+      grid_->get_3d_vector_layout(true, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
   FieldLayout scalar2d_pconst = grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
@@ -165,8 +167,8 @@ void MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
   size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
-  std::cout << "used_mem " << used_mem << "requested_buffer_size_in_bytes() " << requested_buffer_size_in_bytes()
-            << "\n";
+  std::cout << "used_mem " << used_mem << "requested_buffer_size_in_bytes() "
+            << requested_buffer_size_in_bytes() << "\n";
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMWetscav.");
 }
@@ -189,8 +191,9 @@ void MAMWetscav::init_temporary_views() {
   const int workspace_used     = work_ptr - buffer_.temporary_views.data();
   const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
-                   "Error: workspace_used (" + std::to_string(workspace_used) + ") and workspace_provided (" +
-                       std::to_string(workspace_provided) + ") should be equal. \n");
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" + std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 // ================================================================
 //  INITIALIZE_IMPL
@@ -304,8 +307,10 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   mam4::wetdep::init_scavimptbl(scavimptblvol_host, scavimptblnum_host);
 
-  scavimptblnum_ = view_2d("scavimptblnum", mam4::aero_model::nimptblgrow_total, mam4::AeroConfig::num_modes());
-  scavimptblvol_ = view_2d("scavimptblvol", mam4::aero_model::nimptblgrow_total, mam4::AeroConfig::num_modes());
+  scavimptblnum_ =
+      view_2d("scavimptblnum", mam4::aero_model::nimptblgrow_total, mam4::AeroConfig::num_modes());
+  scavimptblvol_ =
+      view_2d("scavimptblvol", mam4::aero_model::nimptblgrow_total, mam4::AeroConfig::num_modes());
   Kokkos::deep_copy(scavimptblnum_, scavimptblnum_host);
   Kokkos::deep_copy(scavimptblvol_, scavimptblvol_host);
 }
@@ -314,7 +319,8 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMWetscav::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
@@ -414,7 +420,8 @@ void MAMWetscav::run_impl(const double dt) {
         mam4::Prognostics progs = mam_coupling::aerosols_for_column(dry_aero, icol);
         // fetch column-specific subviews into aerosol tendencies
         // Note: we are only updating interstitial aerosols.
-        mam4::Tendencies tends = mam_coupling::interstitial_aerosols_tendencies_for_column(dry_aero_tends, icol);
+        mam4::Tendencies tends =
+            mam_coupling::interstitial_aerosols_tendencies_for_column(dry_aero_tends, icol);
         /// shallow_convective_precipitation_production
         const auto rprdsh_icol = ekat::subview(rprdsh, icol);
         // deep_convective_precipitation_production
@@ -445,14 +452,15 @@ void MAMWetscav::run_impl(const double dt) {
 
         auto isprx_icol = ekat::subview(isprx, icol);
 
-        mam4::wetdep::aero_model_wetdep(team, atm, progs, tends, dt,
-                                        // inputs
-                                        cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol, dp_frac_icol,
-                                        sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol, dlf_icol, prain_icol,
-                                        scavimptblnum, scavimptblvol, calsize_data,
-                                        // outputs
-                                        wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-                                        aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
+        mam4::wetdep::aero_model_wetdep(
+            team, atm, progs, tends, dt,
+            // inputs
+            cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol, dp_frac_icol,
+            sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol, dlf_icol, prain_icol,
+            scavimptblnum, scavimptblvol, calsize_data,
+            // outputs
+            wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol, aerdepwetis_icol,
+            aerdepwetcw_icol, work_icol, isprx_icol);
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {

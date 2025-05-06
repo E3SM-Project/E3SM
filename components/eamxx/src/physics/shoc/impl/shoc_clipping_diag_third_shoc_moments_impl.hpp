@@ -7,9 +7,10 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::clipping_diag_third_shoc_moments(const MemberType &team, const Int &nlevi,
-                                                                       const uview_1d<const Spack> &w_sec_zi,
-                                                                       const uview_1d<Spack> &w3) {
+KOKKOS_FUNCTION void
+Functions<S, D>::clipping_diag_third_shoc_moments(const MemberType &team, const Int &nlevi,
+                                                  const uview_1d<const Spack> &w_sec_zi,
+                                                  const uview_1d<Spack> &w3) {
   const Int nlevi_pack = ekat::npack<Spack>(nlevi);
 
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevi_pack), [&](const Int &k) {

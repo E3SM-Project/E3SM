@@ -82,7 +82,8 @@ public:
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const Int &k) {
         cldfrac_liq_prev(i, k) = cldfrac_liq(i, k);
 
-        // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before computing.
+        // Inverse of Exner. In non-rel builds, assert that exner != 0 when in range before
+        // computing.
         const Spack exner   = PF::exner_function(p_mid(i, k));
         const Smask nonzero = (exner != 0);
         EKAT_KERNEL_ASSERT((nonzero || !(ekat::range<IntSmallPack>(k * Spack::n) < nlev)).all());
@@ -90,11 +91,11 @@ public:
 
         tke(i, k) = ekat::max(mintke, tke(i, k));
 
-        // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
-        // and are therefore updated differently to the tracers group's monolithic field. Here, we make
-        // a copy if each of these tracers and pass to shoc_main() so that changes to the tracer group
-        // does not alter tke or qc  values. Then during post processing, we copy back correct values of
-        // tke and qc to tracer group in postprocessing.
+        // Tracers are updated as a group. The tracers tke and qc act as separate inputs to
+        // shoc_main() and are therefore updated differently to the tracers group's monolithic
+        // field. Here, we make a copy if each of these tracers and pass to shoc_main() so that
+        // changes to the tracer group does not alter tke or qc  values. Then during post
+        // processing, we copy back correct values of tke and qc to tracer group in postprocessing.
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i, k) = tke(i, k);
         qc_copy(i, k)  = qc(i, k);
@@ -148,10 +149,11 @@ public:
       const auto exner_int          = PF::exner_function(p_int(i, nlevi_v)[nlevi_p]);
       const auto inv_exner_int_surf = 1 / exner_int;
 
-      wpthlp_sfc(i) = (surf_sens_flux(i) / (cpair * rrho_i(i, nlevi_v)[nlevi_p])) * inv_exner_int_surf;
-      wprtp_sfc(i)  = surf_evap(i) / rrho_i(i, nlevi_v)[nlevi_p];
-      upwp_sfc(i)   = surf_mom_flux(i, 0) / rrho_i(i, nlevi_v)[nlevi_p];
-      vpwp_sfc(i)   = surf_mom_flux(i, 1) / rrho_i(i, nlevi_v)[nlevi_p];
+      wpthlp_sfc(i) =
+          (surf_sens_flux(i) / (cpair * rrho_i(i, nlevi_v)[nlevi_p])) * inv_exner_int_surf;
+      wprtp_sfc(i) = surf_evap(i) / rrho_i(i, nlevi_v)[nlevi_p];
+      upwp_sfc(i)  = surf_mom_flux(i, 0) / rrho_i(i, nlevi_v)[nlevi_p];
+      vpwp_sfc(i)  = surf_mom_flux(i, 1) / rrho_i(i, nlevi_v)[nlevi_p];
 
       const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracer_packs),
@@ -199,17 +201,20 @@ public:
     view_2d cldfrac_liq_prev;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_, const Real z_surf_,
-                       const view_2d_const &T_mid_, const view_2d_const &p_mid_, const view_2d_const &p_int_,
-                       const view_2d_const &pseudo_density_, const view_2d_const &omega_, const view_1d_const &phis_,
+    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+                       const Real z_surf_, const view_2d_const &T_mid_, const view_2d_const &p_mid_,
+                       const view_2d_const &p_int_, const view_2d_const &pseudo_density_,
+                       const view_2d_const &omega_, const view_1d_const &phis_,
                        const view_1d_const &surf_sens_flux_, const view_1d_const &surf_evap_,
-                       const sview_2d_const &surf_mom_flux_, const view_3d_strided &qtracers_, const view_2d &qv_,
-                       const view_2d_const &qc_, const view_2d &qc_copy_, const view_2d &tke_, const view_2d &tke_copy_,
-                       const view_2d &z_mid_, const view_2d &z_int_, const view_2d &dse_, const view_2d &rrho_,
-                       const view_2d &rrho_i_, const view_2d &thv_, const view_2d &dz_, const view_2d &zt_grid_,
-                       const view_2d &zi_grid_, const view_1d &wpthlp_sfc_, const view_1d &wprtp_sfc_,
-                       const view_1d &upwp_sfc_, const view_1d &vpwp_sfc_, const view_2d &wtracer_sfc_,
-                       const view_2d &wm_zt_, const view_2d &inv_exner_, const view_2d &thlm_, const view_2d &qw_,
+                       const sview_2d_const &surf_mom_flux_, const view_3d_strided &qtracers_,
+                       const view_2d &qv_, const view_2d_const &qc_, const view_2d &qc_copy_,
+                       const view_2d &tke_, const view_2d &tke_copy_, const view_2d &z_mid_,
+                       const view_2d &z_int_, const view_2d &dse_, const view_2d &rrho_,
+                       const view_2d &rrho_i_, const view_2d &thv_, const view_2d &dz_,
+                       const view_2d &zt_grid_, const view_2d &zi_grid_, const view_1d &wpthlp_sfc_,
+                       const view_1d &wprtp_sfc_, const view_1d &upwp_sfc_,
+                       const view_1d &vpwp_sfc_, const view_2d &wtracer_sfc_, const view_2d &wm_zt_,
+                       const view_2d &inv_exner_, const view_2d &thlm_, const view_2d &qw_,
                        const view_2d &cldfrac_liq_, const view_2d &cldfrac_liq_prev_) {
       ncol         = ncol_;
       nlev         = nlev_;
@@ -286,7 +291,8 @@ public:
         if (condition.any()) {
           inv_qc_relvar(i, k).set(
               condition,
-              ekat::min(inv_qc_relvar_max, ekat::max(inv_qc_relvar_min, ekat::square(qc(i, k)) / qc2(i, k))));
+              ekat::min(inv_qc_relvar_max,
+                        ekat::max(inv_qc_relvar_min, ekat::square(qc(i, k)) / qc2(i, k))));
         }
 
         // Temperature
@@ -327,11 +333,13 @@ public:
     view_1d heat_flux;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_, const view_2d_const &rrho_,
-                       const view_2d &qv_, const view_2d_const &qw_, const view_2d &qc_, const view_2d_const &qc_copy_,
-                       const view_2d &tke_, const view_2d_const &tke_copy_, const view_3d_strided &qtracers_,
-                       const view_2d_const &qc2_, const view_2d &cldfrac_liq_, const view_2d &inv_qc_relvar_,
-                       const view_2d &T_mid_, const view_2d_const &dse_, const view_2d_const &z_mid_,
+    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+                       const view_2d_const &rrho_, const view_2d &qv_, const view_2d_const &qw_,
+                       const view_2d &qc_, const view_2d_const &qc_copy_, const view_2d &tke_,
+                       const view_2d_const &tke_copy_, const view_3d_strided &qtracers_,
+                       const view_2d_const &qc2_, const view_2d &cldfrac_liq_,
+                       const view_2d &inv_qc_relvar_, const view_2d &T_mid_,
+                       const view_2d_const &dse_, const view_2d_const &z_mid_,
                        const view_1d_const phis_) {
       ncol          = ncol_;
       nlev          = nlev_;
@@ -353,8 +361,9 @@ public:
       phis          = phis_;
     } // set_variables
 
-    void set_mass_and_energy_fluxes(const view_1d_const &surf_evap_, const view_1d_const surf_sens_flux_,
-                                    const view_1d &vapor_flux_, const view_1d &water_flux_, const view_1d &ice_flux_,
+    void set_mass_and_energy_fluxes(const view_1d_const &surf_evap_,
+                                    const view_1d_const surf_sens_flux_, const view_1d &vapor_flux_,
+                                    const view_1d &water_flux_, const view_1d &ice_flux_,
                                     const view_1d &heat_flux_) {
       compute_mass_and_energy_fluxes = true;
       surf_evap                      = surf_evap_;

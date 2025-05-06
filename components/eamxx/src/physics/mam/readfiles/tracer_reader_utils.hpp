@@ -108,7 +108,8 @@ struct TracerData {
     ncol_  = ncol;
     nlev_  = nlev;
     nvars_ = nvars;
-    EKAT_REQUIRE_MSG(nvars_ <= int(MAX_NVARS_TRACER), "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+    EKAT_REQUIRE_MSG(nvars_ <= int(MAX_NVARS_TRACER),
+                     "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
   }
 
   int ncol_{-1};
@@ -181,7 +182,9 @@ struct TracerData {
 };
 
 KOKKOS_INLINE_FUNCTION
-Real linear_interp(const Real &x0, const Real &x1, const Real &t) { return (1 - t) * x0 + t * x1; } // linear_interp
+Real linear_interp(const Real &x0, const Real &x1, const Real &t) {
+  return (1 - t) * x0 + t * x1;
+} // linear_interp
 
 // time[3]={year,month, day}
 inline util::TimeStamp convert_date(const int date) {
@@ -202,12 +205,14 @@ inline int compute_number_days_from_zero(const util::TimeStamp &ts) {
   return ts.get_year() * 365 + ts.get_month() * 30 + ts.get_day();
 }
 
-inline void create_linoz_chlorine_reader(const std::string &linoz_chlorine_file, const util::TimeStamp &model_time,
+inline void create_linoz_chlorine_reader(const std::string &linoz_chlorine_file,
+                                         const util::TimeStamp &model_time,
                                          const int chlorine_loading_ymd, // in format YYYYMMDD
                                          std::vector<Real> &values, std::vector<int> &time_secs) {
   auto time_stamp_beg = convert_date(chlorine_loading_ymd);
 
-  const int offset_time = compute_number_days_from_zero(time_stamp_beg) - compute_number_days_from_zero(model_time);
+  const int offset_time =
+      compute_number_days_from_zero(time_stamp_beg) - compute_number_days_from_zero(model_time);
   scorpio::register_file(linoz_chlorine_file, scorpio::Read);
   const int nlevs_time = scorpio::get_time_len(linoz_chlorine_file);
   for (int itime = 0; itime < nlevs_time; ++itime) {
@@ -246,10 +251,10 @@ inline void get_time_from_ncfile(const std::string &file_name,
     dates.push_back(date);
   } // end itime
 
-  EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0, "Error! Current model time (" + std::to_string(cyclical_ymd) +
-                                                ") is not within " + "Tracer time period: [" +
-                                                std::to_string(dates[0]) + ", " + "(" +
-                                                std::to_string(dates[nlevs_time - 1]) + ").\n");
+  EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0,
+                   "Error! Current model time (" + std::to_string(cyclical_ymd) +
+                       ") is not within " + "Tracer time period: [" + std::to_string(dates[0]) +
+                       ", " + "(" + std::to_string(dates[nlevs_time - 1]) + ").\n");
   scorpio::release_file(file_name);
 }
 
@@ -294,7 +299,8 @@ inline void setup_tracer_data(TracerData &tracer_data,            // out
     nlevs_data       = scorpio::get_dimlen(trace_data_file, "altitude");
     tracer_file_type = ELEVATED_EMISSIONS;
   }
-  EKAT_REQUIRE_MSG(nlevs_data != -1, "Error: The file does not contain either lev or altitude.   \n");
+  EKAT_REQUIRE_MSG(nlevs_data != -1,
+                   "Error: The file does not contain either lev or altitude.   \n");
 
   const int ncols_data = scorpio::get_dimlen(trace_data_file, "ncol");
 
@@ -343,7 +349,8 @@ inline void setup_tracer_data(TracerData &tracer_data,            // out
       }
     } // end itime
 
-    EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0, "Error! Current model time (" + std::to_string(cyclical_ymd) +
+    EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0, "Error! Current model time (" +
+                                                  std::to_string(cyclical_ymd) +
                                                   ") is not within " + "Tracer time period.\n");
 
     tracer_data.offset_time_index_ = cyclical_ymd_index;
@@ -356,8 +363,9 @@ inline void setup_tracer_data(TracerData &tracer_data,            // out
   tracer_data.has_altitude_ = has_altitude;
 }
 inline std::shared_ptr<AbstractRemapper>
-create_horiz_remapper(const std::shared_ptr<const AbstractGrid> &model_grid, const std::string &trace_data_file,
-                      const std::string &map_file, const std::vector<std::string> &var_names, TracerData &tracer_data) {
+create_horiz_remapper(const std::shared_ptr<const AbstractGrid> &model_grid,
+                      const std::string &trace_data_file, const std::string &map_file,
+                      const std::vector<std::string> &var_names, TracerData &tracer_data) {
   using namespace ShortFieldTagsNames;
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
@@ -368,19 +376,22 @@ create_horiz_remapper(const std::shared_ptr<const AbstractGrid> &model_grid, con
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
   if (tracer_data.ncols_data == ncols_model) {
-    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
+    remapper =
+        std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
-    EKAT_REQUIRE_MSG(tracer_data.ncols_data <= ncols_model, "Error! We do not allow to coarsen tracer external "
-                                                            "forcing data to fit the "
-                                                            "model. We only allow\n"
-                                                            "       tracer external forcing data to be at the same or "
-                                                            "coarser resolution "
-                                                            "as the model.\n");
+    EKAT_REQUIRE_MSG(tracer_data.ncols_data <= ncols_model,
+                     "Error! We do not allow to coarsen tracer external "
+                     "forcing data to fit the "
+                     "model. We only allow\n"
+                     "       tracer external forcing data to be at the same or "
+                     "coarser resolution "
+                     "as the model.\n");
     // We must have a valid map file
-    EKAT_REQUIRE_MSG(map_file != "", "ERROR: tracer external forcing data is on a different grid than the "
-                                     "model one,\n"
-                                     "       but tracer external forcing data remap file is missing from "
-                                     "tracer external forcing data parameter list.");
+    EKAT_REQUIRE_MSG(map_file != "",
+                     "ERROR: tracer external forcing data is on a different grid than the "
+                     "model one,\n"
+                     "       but tracer external forcing data remap file is missing from "
+                     "tracer external forcing data parameter list.");
 
     remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
   }
@@ -410,7 +421,8 @@ create_horiz_remapper(const std::shared_ptr<const AbstractGrid> &model_grid, con
 } // create_horiz_remapper
 
 inline std::shared_ptr<AtmosphereInput>
-create_tracer_data_reader(const std::shared_ptr<AbstractRemapper> &horiz_remapper, const std::string &tracer_data_file,
+create_tracer_data_reader(const std::shared_ptr<AbstractRemapper> &horiz_remapper,
+                          const std::string &tracer_data_file,
                           const TracerFileType file_type = NONE) {
   std::vector<Field> io_fields;
   for (int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
@@ -424,7 +436,8 @@ create_tracer_data_reader(const std::shared_ptr<AbstractRemapper> &horiz_remappe
     auto horiz_interp_src_grid = io_grid->clone(horiz_remapper->get_src_grid()->name(), true);
     horiz_interp_src_grid->reset_field_tag_name(LEV, "altitude");
     horiz_interp_src_grid->reset_field_tag_name(ILEV, "altitude_int");
-    return std::make_shared<AtmosphereInput>(tracer_data_file, horiz_interp_src_grid, io_fields, true);
+    return std::make_shared<AtmosphereInput>(tracer_data_file, horiz_interp_src_grid, io_fields,
+                                             true);
   } else {
     // We do not need to rename tags in or clone io_grid for other types of
     // files.
@@ -435,7 +448,8 @@ create_tracer_data_reader(const std::shared_ptr<AbstractRemapper> &horiz_remappe
 
 inline void update_tracer_data_from_file(const std::shared_ptr<AtmosphereInput> &scorpio_reader,
                                          const int time_index, // zero-based
-                                         AbstractRemapper &tracer_horiz_interp, TracerData &tracer_data) {
+                                         AbstractRemapper &tracer_horiz_interp,
+                                         TracerData &tracer_data) {
   // 1. read from field
   scorpio_reader->read_variables(time_index);
   // 2. Run the horiz remapper (it is a do-nothing op if tracer external forcing
@@ -445,19 +459,22 @@ inline void update_tracer_data_from_file(const std::shared_ptr<AtmosphereInput> 
   const int nvars = tracer_data.nvars_;
   //
   for (int i = 0; i < nvars; ++i) {
-    tracer_data.data[TracerDataIndex::END][i] = tracer_horiz_interp.get_tgt_field(i).get_view<Real **>();
+    tracer_data.data[TracerDataIndex::END][i] =
+        tracer_horiz_interp.get_tgt_field(i).get_view<Real **>();
   }
 
   if (tracer_data.file_type == FORMULA_PS) {
     // Recall, the fields are registered in the order: tracers, ps
     // 3. Copy from the tgt field of the remapper into the spa_data
-    tracer_data.ps[TracerDataIndex::END] = tracer_horiz_interp.get_tgt_field(nvars).get_view<Real *>();
+    tracer_data.ps[TracerDataIndex::END] =
+        tracer_horiz_interp.get_tgt_field(nvars).get_view<Real *>();
   }
 
 } // update_tracer_data_from_file
-inline void update_tracer_timestate(const std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
-                                    AbstractRemapper &tracer_horiz_interp, TracerTimeState &time_state,
-                                    TracerData &data_tracer) {
+inline void update_tracer_timestate(const std::shared_ptr<AtmosphereInput> &scorpio_reader,
+                                    const util::TimeStamp &ts,
+                                    AbstractRemapper &tracer_horiz_interp,
+                                    TracerTimeState &time_state, TracerData &data_tracer) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that tracer external forcing assumes monthly data to
   // update.  Not
@@ -475,7 +492,8 @@ inline void update_tracer_timestate(const std::shared_ptr<AtmosphereInput> &scor
 
     // Copy spa_end'data into spa_beg'data, and read in the new spa_end
     for (int ivar = 0; ivar < nvars; ++ivar) {
-      Kokkos::deep_copy(tracer_data[TracerDataIndex::BEG][ivar], tracer_data[TracerDataIndex::END][ivar]);
+      Kokkos::deep_copy(tracer_data[TracerDataIndex::BEG][ivar],
+                        tracer_data[TracerDataIndex::END][ivar]);
     }
 
     if (data_tracer.file_type == FORMULA_PS) {
@@ -499,7 +517,8 @@ inline void update_tracer_timestate(const std::shared_ptr<AtmosphereInput> &scor
 } // END update_tracer_timestate
 
 // This function is based on the SPA::perform_time_interpolation function.
-inline void perform_time_interpolation(const TracerTimeState &time_state, const TracerData &data_tracer) {
+inline void perform_time_interpolation(const TracerTimeState &time_state,
+                                       const TracerData &data_tracer) {
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
   // Gather time stamp info
@@ -550,15 +569,15 @@ inline void perform_time_interpolation(const TracerTimeState &time_state, const 
         });
         // linoz files do not have ps variables.
         if (ivar == 1 && file_type == FORMULA_PS) {
-          ps[TracerDataIndex::OUT](icol) =
-              linear_interp(ps[TracerDataIndex::BEG](icol), ps[TracerDataIndex::END](icol), delta_t_fraction);
+          ps[TracerDataIndex::OUT](icol) = linear_interp(
+              ps[TracerDataIndex::BEG](icol), ps[TracerDataIndex::END](icol), delta_t_fraction);
         }
       });
   Kokkos::fence();
 } // perform_time_interpolation
 
-inline void compute_source_pressure_levels(const view_1d &ps_src, const view_2d &p_src, const const_view_1d &hyam,
-                                           const const_view_1d &hybm) {
+inline void compute_source_pressure_levels(const view_1d &ps_src, const view_2d &p_src,
+                                           const const_view_1d &hyam, const const_view_1d &hybm) {
   constexpr auto P0        = C::P0;
   const int ncols          = ps_src.extent(0);
   const int num_vert_packs = p_src.extent(1);
@@ -567,8 +586,9 @@ inline void compute_source_pressure_levels(const view_1d &ps_src, const view_2d 
   Kokkos::parallel_for(
       "tracer_compute_p_src_loop", policy, KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_vert_packs),
-                             [&](const int k) { p_src(icol, k) = ps_src(icol) * hybm(k) + P0 * hyam(k); });
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_vert_packs), [&](const int k) {
+          p_src(icol, k) = ps_src(icol) * hybm(k) + P0 * hyam(k);
+        });
       });
 } // compute_source_pressure_levels
 
@@ -581,7 +601,8 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c, const const_v
   const int num_vars = input.nvars_;
   // make a local copy of output
   view_2d output_local[MAX_NVARS_TRACER];
-  EKAT_REQUIRE_MSG(num_vars <= int(MAX_NVARS_TRACER), "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+  EKAT_REQUIRE_MSG(num_vars <= int(MAX_NVARS_TRACER),
+                   "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
   for (int ivar = 0; ivar < num_vars; ++ivar) {
     // At this stage, begin/end must have the same horiz dimensions
     EKAT_REQUIRE(input.ncol_ == output[ivar].extent_int(0));
@@ -603,13 +624,14 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c, const const_v
         const auto dataout         = output_local[ivar];
         const auto dataout_at_icol = ekat::subview(dataout, icol);
 
-        mam4::vertical_interpolation::vert_interp(team, levsiz, pver, pin_at_icol, pmid_at_icol, datain_at_icol,
-                                                  dataout_at_icol);
+        mam4::vertical_interpolation::vert_interp(team, levsiz, pver, pin_at_icol, pmid_at_icol,
+                                                  datain_at_icol, dataout_at_icol);
       });
 }
 
-inline void perform_vertical_interpolation(const const_view_1d &altitude_int, const const_view_2d &zi,
-                                           const TracerData &input, const view_2d output[]) {
+inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
+                                           const const_view_2d &zi, const TracerData &input,
+                                           const view_2d output[]) {
   EKAT_REQUIRE_MSG(input.file_type == ELEVATED_EMISSIONS,
                    "Error! vertical interpolation only with altitude variable. \n");
   const int ncols                   = input.ncol_;
@@ -628,7 +650,8 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int, co
 
   // make a local copy of output
   view_2d output_local[MAX_NVARS_TRACER];
-  EKAT_REQUIRE_MSG(num_vars <= int(MAX_NVARS_TRACER), "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
+  EKAT_REQUIRE_MSG(num_vars <= int(MAX_NVARS_TRACER),
+                   "Error! Number of variables is bigger than NVARS_MAXTRACER. \n");
   for (int ivar = 0; ivar < num_vars; ++ivar) {
     // At this stage, begin/end must have the same horiz dimensions
     EKAT_REQUIRE(input.ncol_ == output[ivar].extent_int(0));
@@ -650,7 +673,8 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int, co
           trg_x[pverp - i - 1] = m2km * zi(icol, i);
         }
         team.team_barrier();
-        mam4::vertical_interpolation::rebin(team, nsrc, num_vertical_lev_target, src_x, trg_x, src, trg);
+        mam4::vertical_interpolation::rebin(team, nsrc, num_vertical_lev_target, src_x, trg_x, src,
+                                            trg);
       });
 }
 

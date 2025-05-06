@@ -32,11 +32,13 @@ protected:
   void add_interval_checks();
   // Populate the wet_aero and dry_aero structs.
   void populate_interstitial_wet_aero(mam_coupling::AerosolState &wet_aero);
-  void populate_interstitial_dry_aero(mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer);
+  void populate_interstitial_dry_aero(mam_coupling::AerosolState &dry_aero,
+                                      mam_coupling::Buffer &buffer);
   void populate_gases_dry_aero(mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer);
   void populate_gases_wet_aero(mam_coupling::AerosolState &wet_aero);
   void populate_cloudborne_wet_aero(mam_coupling::AerosolState &wet_aero);
-  void populate_cloudborne_dry_aero(mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer);
+  void populate_cloudborne_dry_aero(mam_coupling::AerosolState &dry_aero,
+                                    mam_coupling::Buffer &buffer);
 
   // Populate the wet_atm and dry_atm struct.
   void populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm, mam_coupling::Buffer &buffer);
@@ -56,7 +58,8 @@ protected:
   void post_process(mam_coupling::AerosolState &wet_aero, mam_coupling::AerosolState &dry_aero,
                     mam_coupling::DryAtmosphere &dry_atm);
   // Physics grid for column information.
-  void set_field_w_scratch_buffer(mam_coupling::view_2d &var, mam_coupling::Buffer &buffer, const bool set_to_zero);
+  void set_field_w_scratch_buffer(mam_coupling::view_2d &var, mam_coupling::Buffer &buffer,
+                                  const bool set_to_zero);
   std::shared_ptr<const AbstractGrid> grid_;
   bool check_fields_intervals_{false};
   // number of horizontal columns and vertical levels

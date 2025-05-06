@@ -126,8 +126,8 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  void create_helper_field(const std::string &name, const std::vector<FieldTag> &tags, const std::vector<int> &dims,
-                           const std::string &grid);
+  void create_helper_field(const std::string &name, const std::vector<FieldTag> &tags,
+                           const std::vector<int> &dims, const std::string &grid);
 
   // Some helper fields.
   std::map<std::string, Field> m_helper_fields;

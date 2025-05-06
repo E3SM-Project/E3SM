@@ -3,15 +3,17 @@
 
 namespace scream {
 
-FieldIdentifier::FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units,
-                                 const std::string &grid_name)
+FieldIdentifier::FieldIdentifier(const std::string &name, const layout_type &layout,
+                                 const Units &units, const std::string &grid_name)
     : FieldIdentifier(name, layout, units, grid_name, DataType::RealType) {
   // Nothing to do here
 }
 
-FieldIdentifier::FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units,
-                                 const std::string &grid_name, const DataType data_type)
-    : m_name(name), m_layout(layout), m_units(units), m_grid_name(grid_name), m_data_type(data_type) {
+FieldIdentifier::FieldIdentifier(const std::string &name, const layout_type &layout,
+                                 const Units &units, const std::string &grid_name,
+                                 const DataType data_type)
+    : m_name(name), m_layout(layout), m_units(units), m_grid_name(grid_name),
+      m_data_type(data_type) {
   update_identifier();
 }
 

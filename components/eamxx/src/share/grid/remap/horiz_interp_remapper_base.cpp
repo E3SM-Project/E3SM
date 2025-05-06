@@ -10,8 +10,8 @@
 
 namespace scream {
 
-HorizInterpRemapperBase::HorizInterpRemapperBase(const grid_ptr_type &fine_grid, const std::string &map_file,
-                                                 const InterpType type)
+HorizInterpRemapperBase::HorizInterpRemapperBase(const grid_ptr_type &fine_grid,
+                                                 const std::string &map_file, const InterpType type)
     : m_fine_grid(fine_grid), m_map_file(map_file), m_type(type), m_comm(fine_grid->get_comm()) {
   // Sanity checks
   EKAT_REQUIRE_MSG(fine_grid->type() == GridType::Point,
@@ -21,7 +21,8 @@ HorizInterpRemapperBase::HorizInterpRemapperBase(const grid_ptr_type &fine_grid,
                        "\n"
                        "  - fine_grid_type: " +
                        e2str(fine_grid->type()) + "\n");
-  EKAT_REQUIRE_MSG(fine_grid->is_unique(), "Error! HorizInterpRemapperBase requires a unique fine grid.\n");
+  EKAT_REQUIRE_MSG(fine_grid->is_unique(),
+                   "Error! HorizInterpRemapperBase requires a unique fine grid.\n");
 
   // This is a special remapper. We only go in one direction
   m_bwd_allowed = false;
@@ -86,19 +87,20 @@ void HorizInterpRemapperBase::registration_ends_impl() {
   for (int i = 0; i < m_num_fields; ++i) {
     const auto &src_dt = m_src_fields[i].get_header().get_identifier().data_type();
     const auto &tgt_dt = m_tgt_fields[i].get_header().get_identifier().data_type();
-    EKAT_REQUIRE_MSG(src_dt == DataType::RealType and tgt_dt == DataType::RealType,
-                     "Error! HorizInterpRmapperBase requires src/tgt fields to have Real data type.\n"
-                     "  - src field name: " +
-                         m_src_fields[i].name() +
-                         "\n"
-                         "  - tgt field name: " +
-                         m_tgt_fields[i].name() +
-                         "\n"
-                         "  - src data type : " +
-                         e2str(src_dt) +
-                         "\n"
-                         "  - tgt data type : " +
-                         e2str(tgt_dt) + "\n");
+    EKAT_REQUIRE_MSG(
+        src_dt == DataType::RealType and tgt_dt == DataType::RealType,
+        "Error! HorizInterpRmapperBase requires src/tgt fields to have Real data type.\n"
+        "  - src field name: " +
+            m_src_fields[i].name() +
+            "\n"
+            "  - tgt field name: " +
+            m_tgt_fields[i].name() +
+            "\n"
+            "  - src data type : " +
+            e2str(src_dt) +
+            "\n"
+            "  - tgt data type : " +
+            e2str(tgt_dt) + "\n");
   }
 
   create_ov_fields();
@@ -125,7 +127,8 @@ void HorizInterpRemapperBase::create_ov_fields() {
   }
 }
 
-template <int PackSize> void HorizInterpRemapperBase::local_mat_vec(const Field &x, const Field &y) const {
+template <int PackSize>
+void HorizInterpRemapperBase::local_mat_vec(const Field &x, const Field &y) const {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
@@ -219,20 +222,22 @@ template <int PackSize> void HorizInterpRemapperBase::local_mat_vec(const Field 
 
           const auto beg = row_offsets(row);
           const auto end = row_offsets(row + 1);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3), [&](const int idx) {
-            const int j          = (idx / dim3) / dim2;
-            const int k          = (idx / dim3) % dim2;
-            const int l          = idx % dim3;
-            y_view(row, j, k, l) = weights(beg) * x_view(col_lids(beg), j, k, l);
-            for (int icol = beg + 1; icol < end; ++icol) {
-              y_view(row, j, k, l) += weights(icol) * x_view(col_lids(icol), j, k, l);
-            }
-          });
+          Kokkos::parallel_for(
+              Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3), [&](const int idx) {
+                const int j          = (idx / dim3) / dim2;
+                const int k          = (idx / dim3) % dim2;
+                const int l          = idx % dim3;
+                y_view(row, j, k, l) = weights(beg) * x_view(col_lids(beg), j, k, l);
+                for (int icol = beg + 1; icol < end; ++icol) {
+                  y_view(row, j, k, l) += weights(icol) * x_view(col_lids(icol), j, k, l);
+                }
+              });
         });
     break;
   }
   default: {
-    EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater are not supported.\n");
+    EKAT_ERROR_MSG("[HorizInterpRemapperBase::local_mat_vec] Error! Fields of rank 4 or greater "
+                   "are not supported.\n");
   }
   }
 }
@@ -254,7 +259,8 @@ std::map<std::string, HorizRemapperData> HorizInterpRemapperBase::s_remapper_dat
 template void HorizInterpRemapperBase::local_mat_vec<1>(const Field &, const Field &) const;
 
 #if SCREAM_PACK_SIZE > 1
-template void HorizInterpRemapperBase::local_mat_vec<SCREAM_PACK_SIZE>(const Field &, const Field &) const;
+template void HorizInterpRemapperBase::local_mat_vec<SCREAM_PACK_SIZE>(const Field &,
+                                                                       const Field &) const;
 #endif
 
 } // namespace scream

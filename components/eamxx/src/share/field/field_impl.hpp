@@ -10,7 +10,8 @@
 
 namespace scream {
 
-template <typename ViewT, typename> Field::Field(const identifier_type &id, const ViewT &view_d) : Field(id) {
+template <typename ViewT, typename>
+Field::Field(const identifier_type &id, const ViewT &view_d) : Field(id) {
   constexpr int N = ViewT::rank;
   using ScalarT   = typename ViewT::traits::value_type;
   using ExeSpace  = typename ViewT::traits::execution_space;
@@ -18,50 +19,54 @@ template <typename ViewT, typename> Field::Field(const identifier_type &id, cons
   EKAT_REQUIRE_MSG((std::is_same<ExeSpace, typename device_t::execution_space>::value),
                    "Error! This constructor of Field requires a view from device.\n");
 
-  EKAT_REQUIRE_MSG(id.data_type() == get_data_type<ScalarT>(),
-                   "Error! Input view data type does not match what is stored in the field identifier.\n"
+  EKAT_REQUIRE_MSG(
+      id.data_type() == get_data_type<ScalarT>(),
+      "Error! Input view data type does not match what is stored in the field identifier.\n"
+      " - field name: " +
+          id.name() +
+          "\n"
+          " - field data type: " +
+          e2str(id.data_type()) + "\n");
+
+  const auto &fl = id.get_layout();
+  EKAT_REQUIRE_MSG(N == fl.rank(),
+                   "Error! This constructor of Field requires a device view of the correct rank.\n"
                    " - field name: " +
                        id.name() +
                        "\n"
-                       " - field data type: " +
-                       e2str(id.data_type()) + "\n");
-
-  const auto &fl = id.get_layout();
-  EKAT_REQUIRE_MSG(N == fl.rank(), "Error! This constructor of Field requires a device view of the correct rank.\n"
-                                   " - field name: " +
-                                       id.name() +
-                                       "\n"
-                                       " - field rank: " +
-                                       std::to_string(fl.rank()) +
-                                       "\n"
-                                       " - view rank : " +
-                                       std::to_string(N) + "\n");
+                       " - field rank: " +
+                       std::to_string(fl.rank()) +
+                       "\n"
+                       " - view rank : " +
+                       std::to_string(N) + "\n");
   for (int i = 0; i < (N - 1); ++i) {
-    EKAT_REQUIRE_MSG(view_d.extent_int(i) == fl.dims()[i], "Error! Input view has the wrong i-th extent.\n"
-                                                           " - field name: " +
-                                                               id.name() +
-                                                               "\n"
-                                                               " - idim: " +
-                                                               std::to_string(i) +
-                                                               "\n"
-                                                               " - layout i-th dim: " +
-                                                               std::to_string(fl.dims()[i]) +
-                                                               "\n"
-                                                               " - view i-th dim: " +
-                                                               std::to_string(view_d.extent(i)) + "\n");
+    EKAT_REQUIRE_MSG(view_d.extent_int(i) == fl.dims()[i],
+                     "Error! Input view has the wrong i-th extent.\n"
+                     " - field name: " +
+                         id.name() +
+                         "\n"
+                         " - idim: " +
+                         std::to_string(i) +
+                         "\n"
+                         " - layout i-th dim: " +
+                         std::to_string(fl.dims()[i]) +
+                         "\n"
+                         " - view i-th dim: " +
+                         std::to_string(view_d.extent(i)) + "\n");
   }
 
   auto &alloc_prop = m_header->get_alloc_properties();
   if (N > 0 and view_d.extent_int(N - 1) != fl.dims().back()) {
-    EKAT_REQUIRE_MSG(view_d.extent_int(N - 1) >= fl.dims()[N - 1], "Error! Input view has the wrong last extent.\n"
-                                                                   " - field name: " +
-                                                                       id.name() +
-                                                                       "\n"
-                                                                       " - layout last dim: " +
-                                                                       std::to_string(fl.dims()[N - 1]) +
-                                                                       "\n"
-                                                                       " - view last dim: " +
-                                                                       std::to_string(view_d.extent(N - 1)) + "\n");
+    EKAT_REQUIRE_MSG(view_d.extent_int(N - 1) >= fl.dims()[N - 1],
+                     "Error! Input view has the wrong last extent.\n"
+                     " - field name: " +
+                         id.name() +
+                         "\n"
+                         " - layout last dim: " +
+                         std::to_string(fl.dims()[N - 1]) +
+                         "\n"
+                         " - view last dim: " +
+                         std::to_string(view_d.extent(N - 1)) + "\n");
 
     // We have a padded view. We don't know what the pack size was, so we pick the largest
     // power of 2 that divides the last extent
@@ -106,7 +111,8 @@ template <typename DT, HostOrDevice HD> auto Field::get_view() const -> get_view
   constexpr int DstRankDynamic = DstView::rank_dynamic;
 
   // Make sure input field is allocated
-  EKAT_REQUIRE_MSG(is_allocated(), "Error! Cannot extract a field's view before allocation happens.\n");
+  EKAT_REQUIRE_MSG(is_allocated(),
+                   "Error! Cannot extract a field's view before allocation happens.\n");
 
   EKAT_REQUIRE_MSG(not m_is_read_only || std::is_const<DstValueType>::value,
                    "Error! Cannot get a view to non-const data if the field is read-only.\n");
@@ -116,11 +122,13 @@ template <typename DT, HostOrDevice HD> auto Field::get_view() const -> get_view
   const auto &field_layout = m_header->get_identifier().get_layout();
 
   EKAT_REQUIRE_MSG(DstRank == field_layout.rank(),
-                   "Error! You can only reshape to a view of the correct rank (equal to the FieldLayout's one).\n");
+                   "Error! You can only reshape to a view of the correct rank (equal to the "
+                   "FieldLayout's one).\n");
 
   // Check the reinterpret cast makes sense for the Dst value types (need integer sizes ratio)
-  EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
-                   "Error! Source field allocation is not compatible with the requested value type.\n");
+  EKAT_REQUIRE_MSG(
+      alloc_prop.template is_compatible<DstValueType>(),
+      "Error! Source field allocation is not compatible with the requested value type.\n");
 
   // Start by reshaping into a ND view with all dynamic extents
   const auto view_ND = get_ND_view<HD, DstValueType, DstRank>();
@@ -156,7 +164,8 @@ template <typename DT, HostOrDevice HD> auto Field::get_view() const -> get_view
   return DstView(view_ND);
 }
 
-template <typename DT, HostOrDevice HD> auto Field::get_strided_view() const -> get_strided_view_type<DT, HD> {
+template <typename DT, HostOrDevice HD>
+auto Field::get_strided_view() const -> get_strided_view_type<DT, HD> {
   // The destination view type on correct mem space
   using DstView = get_strided_view_type<DT, HD>;
   // The dst value types
@@ -170,7 +179,8 @@ template <typename DT, HostOrDevice HD> auto Field::get_strided_view() const -> 
     const auto &fl         = m_header->get_identifier().get_layout();
 
     // Checks
-    EKAT_REQUIRE_MSG(is_allocated(), "Error! Cannot extract a field's view before allocation happens.\n");
+    EKAT_REQUIRE_MSG(is_allocated(),
+                     "Error! Cannot extract a field's view before allocation happens.\n");
     EKAT_REQUIRE_MSG(not m_is_read_only || std::is_const<DstValueType>::value,
                      "Error! Cannot get a view to non-const data if the field is "
                      "read-only.\n");
@@ -204,7 +214,8 @@ template <typename DT, HostOrDevice HD> auto Field::get_strided_view() const -> 
         auto v_np1 = f.get_ND_view<HD, DstValueType, DstRank + 1>();
 
         // As of now, we can only single-slice subview at first or second dimension.
-        EKAT_REQUIRE_MSG(idim == 0 || idim == 1, "Error! Subview dimension index is out of bounds.\n");
+        EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
+                         "Error! Subview dimension index is out of bounds.\n");
 
         // Use correct subview utility
         if (idim == 0) {
@@ -215,8 +226,9 @@ template <typename DT, HostOrDevice HD> auto Field::get_strided_view() const -> 
         // k_end has been set, so we're multi-slicing
       } else if (k_end > 0) {
         // rank doesn't change for multi-slice
-        EKAT_REQUIRE_MSG(DstRank == fl.rank(), "Error! Destination view rank must be equal to parent "
-                                               "field's rank for multi-sliced subview.\n");
+        EKAT_REQUIRE_MSG(DstRank == fl.rank(),
+                         "Error! Destination view rank must be equal to parent "
+                         "field's rank for multi-sliced subview.\n");
         auto v_fullsize = f.get_ND_view<HD, DstValueType, DstRank>();
 
         return DstView(ekat::subview(v_fullsize, Kokkos::make_pair<int, int>(k, k_end), idim));
@@ -254,13 +266,16 @@ template <typename ST, HostOrDevice From, HostOrDevice To> void Field::sync_view
       Kokkos::deep_copy(DeviceExecSpace(), get_view<ST ***, To>(), get_view<const ST ***, From>());
       break;
     case 4:
-      Kokkos::deep_copy(DeviceExecSpace(), get_view<ST ****, To>(), get_view<const ST ****, From>());
+      Kokkos::deep_copy(DeviceExecSpace(), get_view<ST ****, To>(),
+                        get_view<const ST ****, From>());
       break;
     case 5:
-      Kokkos::deep_copy(DeviceExecSpace(), get_view<ST *****, To>(), get_view<const ST *****, From>());
+      Kokkos::deep_copy(DeviceExecSpace(), get_view<ST *****, To>(),
+                        get_view<const ST *****, From>());
       break;
     case 6:
-      Kokkos::deep_copy(DeviceExecSpace(), get_view<ST ******, To>(), get_view<const ST ******, From>());
+      Kokkos::deep_copy(DeviceExecSpace(), get_view<ST ******, To>(),
+                        get_view<const ST ******, From>());
       break;
     default:
       EKAT_ERROR_MSG("Error! Unsupported field rank in Field::sync_to_host.\n");
@@ -401,7 +416,8 @@ template <HostOrDevice HD, typename ST> void Field::deep_copy(const ST value, co
   }
 }
 
-template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_impl(const ST value, const Field &mask) {
+template <HostOrDevice HD, bool use_mask, typename ST>
+void Field::deep_copy_impl(const ST value, const Field &mask) {
   const auto &layout = get_header().get_identifier().get_layout();
   const auto rank    = layout.rank();
   const auto &dims   = layout.dims();
@@ -413,7 +429,8 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
       if (contig)
         details::svm<use_mask>(get_view<ST, HD>(), value, dims, mask.get_view<const int, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST, HD>(), value, dims, mask.get_view<const int, HD>());
+        details::svm<use_mask>(get_strided_view<ST, HD>(), value, dims,
+                               mask.get_view<const int, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST, HD>(), value, dims);
@@ -426,7 +443,8 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
       if (contig)
         details::svm<use_mask>(get_view<ST *, HD>(), value, dims, mask.get_view<const int *, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST *, HD>(), value, dims, mask.get_view<const int *, HD>());
+        details::svm<use_mask>(get_strided_view<ST *, HD>(), value, dims,
+                               mask.get_view<const int *, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST *, HD>(), value, dims);
@@ -437,9 +455,11 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
   case 2:
     if constexpr (use_mask) {
       if (contig)
-        details::svm<use_mask>(get_view<ST **, HD>(), value, dims, mask.get_view<const int **, HD>());
+        details::svm<use_mask>(get_view<ST **, HD>(), value, dims,
+                               mask.get_view<const int **, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST **, HD>(), value, dims, mask.get_view<const int **, HD>());
+        details::svm<use_mask>(get_strided_view<ST **, HD>(), value, dims,
+                               mask.get_view<const int **, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST **, HD>(), value, dims);
@@ -450,9 +470,11 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
   case 3:
     if constexpr (use_mask) {
       if (contig)
-        details::svm<use_mask>(get_view<ST ***, HD>(), value, dims, mask.get_view<const int ***, HD>());
+        details::svm<use_mask>(get_view<ST ***, HD>(), value, dims,
+                               mask.get_view<const int ***, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST ***, HD>(), value, dims, mask.get_view<const int ***, HD>());
+        details::svm<use_mask>(get_strided_view<ST ***, HD>(), value, dims,
+                               mask.get_view<const int ***, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST ***, HD>(), value, dims);
@@ -463,9 +485,11 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
   case 4:
     if constexpr (use_mask) {
       if (contig)
-        details::svm<use_mask>(get_view<ST ****, HD>(), value, dims, mask.get_view<const int ****, HD>());
+        details::svm<use_mask>(get_view<ST ****, HD>(), value, dims,
+                               mask.get_view<const int ****, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST ****, HD>(), value, dims, mask.get_view<const int ****, HD>());
+        details::svm<use_mask>(get_strided_view<ST ****, HD>(), value, dims,
+                               mask.get_view<const int ****, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST ****, HD>(), value, dims);
@@ -476,9 +500,11 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
   case 5:
     if constexpr (use_mask) {
       if (contig)
-        details::svm<use_mask>(get_view<ST *****, HD>(), value, dims, mask.get_view<const int *****, HD>());
+        details::svm<use_mask>(get_view<ST *****, HD>(), value, dims,
+                               mask.get_view<const int *****, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST *****, HD>(), value, dims, mask.get_view<const int *****, HD>());
+        details::svm<use_mask>(get_strided_view<ST *****, HD>(), value, dims,
+                               mask.get_view<const int *****, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST *****, HD>(), value, dims);
@@ -489,9 +515,11 @@ template <HostOrDevice HD, bool use_mask, typename ST> void Field::deep_copy_imp
   case 6:
     if constexpr (use_mask) {
       if (contig)
-        details::svm<use_mask>(get_view<ST ******, HD>(), value, dims, mask.get_view<const int ******, HD>());
+        details::svm<use_mask>(get_view<ST ******, HD>(), value, dims,
+                               mask.get_view<const int ******, HD>());
       else
-        details::svm<use_mask>(get_strided_view<ST ******, HD>(), value, dims, mask.get_view<const int ******, HD>());
+        details::svm<use_mask>(get_strided_view<ST ******, HD>(), value, dims,
+                               mask.get_view<const int ******, HD>());
     } else {
       if (contig)
         details::svm<use_mask>(get_view<ST ******, HD>(), value, dims);
@@ -521,28 +549,31 @@ void Field::update(const Field &x, const ST alpha, const ST beta) {
   // will use such large factors).
   // Similarly, we allow updating a field Y with another X as long as converting the data type of X
   // to the data type of Y does not require narrowing
-  EKAT_REQUIRE_MSG(not is_narrowing_conversion(dt_st, dt),
-                   "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
-                   " - x/y data type  : " +
-                       e2str(dt) +
-                       "\n"
-                       " - coeff data type: " +
-                       e2str(dt_st) + "\n");
-  EKAT_REQUIRE_MSG(not is_narrowing_conversion(rhs_dt, dt),
-                   "Error! Right hand side data type may be narrowed when converted to x data type.\n"
-                   " - rhs data type: " +
-                       e2str(rhs_dt) +
-                       "\n"
-                       " - lhs data type: " +
-                       e2str(dt) + "\n");
+  EKAT_REQUIRE_MSG(
+      not is_narrowing_conversion(dt_st, dt),
+      "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
+      " - x/y data type  : " +
+          e2str(dt) +
+          "\n"
+          " - coeff data type: " +
+          e2str(dt_st) + "\n");
+  EKAT_REQUIRE_MSG(
+      not is_narrowing_conversion(rhs_dt, dt),
+      "Error! Right hand side data type may be narrowed when converted to x data type.\n"
+      " - rhs data type: " +
+          e2str(rhs_dt) +
+          "\n"
+          " - lhs data type: " +
+          e2str(dt) + "\n");
 
   // Check x/y are allocated
   EKAT_REQUIRE_MSG(is_allocated(), "Error! Cannot update field, since it is not allocated.\n"
                                    " - field name: " +
                                        name() + "\n");
-  EKAT_REQUIRE_MSG(x.is_allocated(), "Error! Cannot update field, since source field is not allocated.\n"
-                                     " - field name: " +
-                                         x.name() + "\n");
+  EKAT_REQUIRE_MSG(x.is_allocated(),
+                   "Error! Cannot update field, since source field is not allocated.\n"
+                   " - field name: " +
+                       x.name() + "\n");
 
   const auto &y_l = get_header().get_identifier().get_layout();
   const auto &x_l = x.get_header().get_identifier().get_layout();
@@ -560,7 +591,8 @@ void Field::update(const Field &x, const ST alpha, const ST beta) {
                                    y_l.to_string() + "\n");
 
   // Determine if there is a FillValue that requires extra treatment.
-  bool use_fill = get_header().has_extra_data("mask_value") or x.get_header().has_extra_data("mask_value");
+  bool use_fill =
+      get_header().has_extra_data("mask_value") or x.get_header().has_extra_data("mask_value");
 
   if (dt == DataType::IntType) {
     if (use_fill) {
@@ -629,95 +661,109 @@ void Field::update_impl(const Field &x, const ST alpha, const ST beta) {
   switch (layout.rank()) {
   case 0:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST, HD>(), x.get_view<const XST, HD>(), alpha, beta, fill_val, dims);
+      details::cvh<CM, use_fill>(get_view<ST, HD>(), x.get_view<const XST, HD>(), alpha, beta,
+                                 fill_val, dims);
     else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST, HD>(), x.get_view<const XST, HD>(), alpha, beta, fill_val, dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST, HD>(), x.get_view<const XST, HD>(), alpha,
+                                 beta, fill_val, dims);
     else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST, HD>(), x.get_strided_view<const XST, HD>(), alpha, beta, fill_val, dims);
+      details::cvh<CM, use_fill>(get_view<ST, HD>(), x.get_strided_view<const XST, HD>(), alpha,
+                                 beta, fill_val, dims);
     else
-      details::cvh<CM, use_fill>(get_strided_view<ST, HD>(), x.get_strided_view<const XST, HD>(), alpha, beta, fill_val,
-                                 dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST, HD>(), x.get_strided_view<const XST, HD>(),
+                                 alpha, beta, fill_val, dims);
     break;
   case 1:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST *, HD>(), x.get_view<const XST *, HD>(), alpha, beta, fill_val, dims);
-    else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST *, HD>(), x.get_view<const XST *, HD>(), alpha, beta, fill_val,
-                                 dims);
-    else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST *, HD>(), x.get_strided_view<const XST *, HD>(), alpha, beta, fill_val,
-                                 dims);
-    else
-      details::cvh<CM, use_fill>(get_strided_view<ST *, HD>(), x.get_strided_view<const XST *, HD>(), alpha, beta,
+      details::cvh<CM, use_fill>(get_view<ST *, HD>(), x.get_view<const XST *, HD>(), alpha, beta,
                                  fill_val, dims);
+    else if (x_contig)
+      details::cvh<CM, use_fill>(get_strided_view<ST *, HD>(), x.get_view<const XST *, HD>(), alpha,
+                                 beta, fill_val, dims);
+    else if (y_contig)
+      details::cvh<CM, use_fill>(get_view<ST *, HD>(), x.get_strided_view<const XST *, HD>(), alpha,
+                                 beta, fill_val, dims);
+    else
+      details::cvh<CM, use_fill>(get_strided_view<ST *, HD>(),
+                                 x.get_strided_view<const XST *, HD>(), alpha, beta, fill_val,
+                                 dims);
     break;
   case 2:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST **, HD>(), x.get_view<const XST **, HD>(), alpha, beta, fill_val, dims);
-    else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST **, HD>(), x.get_view<const XST **, HD>(), alpha, beta, fill_val,
-                                 dims);
-    else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST **, HD>(), x.get_strided_view<const XST **, HD>(), alpha, beta, fill_val,
-                                 dims);
-    else
-      details::cvh<CM, use_fill>(get_strided_view<ST **, HD>(), x.get_strided_view<const XST **, HD>(), alpha, beta,
+      details::cvh<CM, use_fill>(get_view<ST **, HD>(), x.get_view<const XST **, HD>(), alpha, beta,
                                  fill_val, dims);
+    else if (x_contig)
+      details::cvh<CM, use_fill>(get_strided_view<ST **, HD>(), x.get_view<const XST **, HD>(),
+                                 alpha, beta, fill_val, dims);
+    else if (y_contig)
+      details::cvh<CM, use_fill>(get_view<ST **, HD>(), x.get_strided_view<const XST **, HD>(),
+                                 alpha, beta, fill_val, dims);
+    else
+      details::cvh<CM, use_fill>(get_strided_view<ST **, HD>(),
+                                 x.get_strided_view<const XST **, HD>(), alpha, beta, fill_val,
+                                 dims);
     break;
   case 3:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST ***, HD>(), x.get_view<const XST ***, HD>(), alpha, beta, fill_val, dims);
+      details::cvh<CM, use_fill>(get_view<ST ***, HD>(), x.get_view<const XST ***, HD>(), alpha,
+                                 beta, fill_val, dims);
     else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST ***, HD>(), x.get_view<const XST ***, HD>(), alpha, beta, fill_val,
-                                 dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST ***, HD>(), x.get_view<const XST ***, HD>(),
+                                 alpha, beta, fill_val, dims);
     else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST ***, HD>(), x.get_strided_view<const XST ***, HD>(), alpha, beta, fill_val,
-                                 dims);
+      details::cvh<CM, use_fill>(get_view<ST ***, HD>(), x.get_strided_view<const XST ***, HD>(),
+                                 alpha, beta, fill_val, dims);
     else
-      details::cvh<CM, use_fill>(get_strided_view<ST ***, HD>(), x.get_strided_view<const XST ***, HD>(), alpha, beta,
-                                 fill_val, dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST ***, HD>(),
+                                 x.get_strided_view<const XST ***, HD>(), alpha, beta, fill_val,
+                                 dims);
     break;
   case 4:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST ****, HD>(), x.get_view<const XST ****, HD>(), alpha, beta, fill_val,
-                                 dims);
+      details::cvh<CM, use_fill>(get_view<ST ****, HD>(), x.get_view<const XST ****, HD>(), alpha,
+                                 beta, fill_val, dims);
     else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST ****, HD>(), x.get_view<const XST ****, HD>(), alpha, beta,
-                                 fill_val, dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST ****, HD>(), x.get_view<const XST ****, HD>(),
+                                 alpha, beta, fill_val, dims);
     else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST ****, HD>(), x.get_strided_view<const XST ****, HD>(), alpha, beta,
-                                 fill_val, dims);
+      details::cvh<CM, use_fill>(get_view<ST ****, HD>(), x.get_strided_view<const XST ****, HD>(),
+                                 alpha, beta, fill_val, dims);
     else
-      details::cvh<CM, use_fill>(get_strided_view<ST ****, HD>(), x.get_strided_view<const XST ****, HD>(), alpha, beta,
-                                 fill_val, dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST ****, HD>(),
+                                 x.get_strided_view<const XST ****, HD>(), alpha, beta, fill_val,
+                                 dims);
     break;
   case 5:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST *****, HD>(), x.get_view<const XST *****, HD>(), alpha, beta, fill_val,
-                                 dims);
-    else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST *****, HD>(), x.get_view<const XST *****, HD>(), alpha, beta,
-                                 fill_val, dims);
-    else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST *****, HD>(), x.get_strided_view<const XST *****, HD>(), alpha, beta,
-                                 fill_val, dims);
-    else
-      details::cvh<CM, use_fill>(get_strided_view<ST *****, HD>(), x.get_strided_view<const XST *****, HD>(), alpha,
+      details::cvh<CM, use_fill>(get_view<ST *****, HD>(), x.get_view<const XST *****, HD>(), alpha,
                                  beta, fill_val, dims);
+    else if (x_contig)
+      details::cvh<CM, use_fill>(get_strided_view<ST *****, HD>(),
+                                 x.get_view<const XST *****, HD>(), alpha, beta, fill_val, dims);
+    else if (y_contig)
+      details::cvh<CM, use_fill>(get_view<ST *****, HD>(),
+                                 x.get_strided_view<const XST *****, HD>(), alpha, beta, fill_val,
+                                 dims);
+    else
+      details::cvh<CM, use_fill>(get_strided_view<ST *****, HD>(),
+                                 x.get_strided_view<const XST *****, HD>(), alpha, beta, fill_val,
+                                 dims);
     break;
   case 6:
     if (x_contig and y_contig)
-      details::cvh<CM, use_fill>(get_view<ST ******, HD>(), x.get_view<const XST ******, HD>(), alpha, beta, fill_val,
-                                 dims);
+      details::cvh<CM, use_fill>(get_view<ST ******, HD>(), x.get_view<const XST ******, HD>(),
+                                 alpha, beta, fill_val, dims);
     else if (x_contig)
-      details::cvh<CM, use_fill>(get_strided_view<ST ******, HD>(), x.get_view<const XST ******, HD>(), alpha, beta,
-                                 fill_val, dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST ******, HD>(),
+                                 x.get_view<const XST ******, HD>(), alpha, beta, fill_val, dims);
     else if (y_contig)
-      details::cvh<CM, use_fill>(get_view<ST ******, HD>(), x.get_strided_view<const XST ******, HD>(), alpha, beta,
-                                 fill_val, dims);
+      details::cvh<CM, use_fill>(get_view<ST ******, HD>(),
+                                 x.get_strided_view<const XST ******, HD>(), alpha, beta, fill_val,
+                                 dims);
     else
-      details::cvh<CM, use_fill>(get_strided_view<ST ******, HD>(), x.get_strided_view<const XST ******, HD>(), alpha,
-                                 beta, fill_val, dims);
+      details::cvh<CM, use_fill>(get_strided_view<ST ******, HD>(),
+                                 x.get_strided_view<const XST ******, HD>(), alpha, beta, fill_val,
+                                 dims);
     break;
   default:
     EKAT_ERROR_MSG("Error! Rank not supported in update_field.\n"
@@ -756,8 +802,9 @@ auto Field::get_ND_view() const -> if_t<(N < MaxRank), get_view_type<data_nd_t<T
     // So far we can only subview at first or second dimension.
     EKAT_REQUIRE_MSG(idim == 0 || idim == 1, "Error! Subview dimension index is out of bounds.\n");
 
-    EKAT_REQUIRE_MSG(idim == 0 || N > 1, "Error! Cannot subview a rank-2 (or less) view along 2nd dimension "
-                                         "without losing LayoutRight.\n");
+    EKAT_REQUIRE_MSG(idim == 0 || N > 1,
+                     "Error! Cannot subview a rank-2 (or less) view along 2nd dimension "
+                     "without losing LayoutRight.\n");
 
     // Use SFINAE-ed get_subview helper function to pick correct
     // subview impl. If N+1<=2 and idim!=0, the code craps out in the check above.
@@ -796,8 +843,9 @@ auto Field::get_ND_view() const -> if_t<N == MaxRank, get_view_type<data_nd_t<T,
                    "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
 
   // Given that N==MaxRank, this field cannot be a subview of another field
-  EKAT_REQUIRE_MSG(m_header->get_parent() == nullptr, "Error! A view of rank " + std::to_string(MaxRank) +
-                                                          " should not be the subview of another field.\n");
+  EKAT_REQUIRE_MSG(m_header->get_parent() == nullptr,
+                   "Error! A view of rank " + std::to_string(MaxRank) +
+                       " should not be the subview of another field.\n");
 
   // Compute extents from FieldLayout
   const auto &alloc_prop = m_header->get_alloc_properties();

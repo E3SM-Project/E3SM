@@ -106,7 +106,8 @@ void RefiningRemapperP2P::setup_mpi_data_structures() {
   // Create the recv buffer(s)
   auto recv_buf_size = ncols_recv * total_col_size;
   m_recv_buffer      = decltype(m_recv_buffer)("RefiningRemapperP2P::recv_buf", recv_buf_size);
-  m_mpi_recv_buffer  = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(), m_recv_buffer);
+  m_mpi_recv_buffer =
+      Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(), m_recv_buffer);
 
   // ----------- Compute SEND metadata -------------- //
 
@@ -122,7 +123,8 @@ void RefiningRemapperP2P::setup_mpi_data_structures() {
   // Create the send buffer(s)
   auto send_buf_size = pids_send_offsets_h(nranks) * total_col_size;
   m_send_buffer      = decltype(m_send_buffer)("RefiningRemapperP2P::send_buf", send_buf_size);
-  m_mpi_send_buffer  = Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(), m_send_buffer);
+  m_mpi_send_buffer =
+      Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(), m_send_buffer);
 
   // ----------- Create Requests ------------ //
 
@@ -176,8 +178,9 @@ void RefiningRemapperP2P::pack_and_send() {
         auto icol           = export_lids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid;
-        send_buf(offset)    = v(icol);
+        auto offset =
+            pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid;
+        send_buf(offset) = v(icol);
       };
       Kokkos::parallel_for(RangePolicy(0, num_exports), pack);
       break;
@@ -192,7 +195,8 @@ void RefiningRemapperP2P::pack_and_send() {
         const int pid       = export_pids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset   = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid * dim1;
+        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum +
+                      pos_within_pid * dim1;
         auto col_pack = [&](const int &k) { send_buf(offset + k) = v(icol, k); };
         auto tvr      = Kokkos::TeamVectorRange(team, dim1);
         Kokkos::parallel_for(tvr, col_pack);
@@ -212,8 +216,8 @@ void RefiningRemapperP2P::pack_and_send() {
         const int pid       = export_pids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset =
-            pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid * f_col_size;
+        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum +
+                      pos_within_pid * f_col_size;
         auto col_pack = [&](const int &idx) {
           const int j            = idx / dim2;
           const int k            = idx % dim2;
@@ -238,8 +242,8 @@ void RefiningRemapperP2P::pack_and_send() {
         const int pid       = export_pids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset =
-            pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid * f_col_size;
+        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum +
+                      pos_within_pid * f_col_size;
         auto col_pack = [&](const int &idx) {
           const int j            = (idx / dim3) / dim2;
           const int k            = (idx / dim3) % dim2;
@@ -318,8 +322,9 @@ void RefiningRemapperP2P::recv_and_unpack() {
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid;
-        v(icol)     = recv_buf(offset);
+        auto offset =
+            pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid;
+        v(icol) = recv_buf(offset);
       };
       Kokkos::parallel_for(RangePolicy(0, num_imports), unpack);
       break;
@@ -334,7 +339,8 @@ void RefiningRemapperP2P::recv_and_unpack() {
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset     = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid * dim1;
+        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum +
+                      pos_within_pid * dim1;
         auto col_unpack = [&](const int &k) { v(icol, k) = recv_buf(offset + k); };
         auto tvr        = Kokkos::TeamVectorRange(team, dim1);
         Kokkos::parallel_for(tvr, col_unpack);
@@ -354,8 +360,8 @@ void RefiningRemapperP2P::recv_and_unpack() {
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset =
-            pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid * f_col_size;
+        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum +
+                      pos_within_pid * f_col_size;
         auto col_unpack = [&](const int &idx) {
           const int j   = idx / dim2;
           const int k   = idx % dim2;
@@ -380,8 +386,8 @@ void RefiningRemapperP2P::recv_and_unpack() {
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset =
-            pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid * f_col_size;
+        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum +
+                      pos_within_pid * f_col_size;
         auto col_unpack = [&](const int &idx) {
           const int j      = (idx / dim3) / dim2;
           const int k      = (idx / dim3) % dim2;

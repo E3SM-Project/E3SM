@@ -11,8 +11,10 @@ namespace cld_fraction {
 template <typename S, typename D>
 void CldFractionFunctions<S, D>::main(const Int nj, const Int nk, const Real ice_threshold,
                                       const Real ice_4out_threshold, const view_2d<const Spack> &qi,
-                                      const view_2d<const Spack> &liq_cld_frac, const view_2d<Spack> &ice_cld_frac,
-                                      const view_2d<Spack> &tot_cld_frac, const view_2d<Spack> &ice_cld_frac_4out,
+                                      const view_2d<const Spack> &liq_cld_frac,
+                                      const view_2d<Spack> &ice_cld_frac,
+                                      const view_2d<Spack> &tot_cld_frac,
+                                      const view_2d<Spack> &ice_cld_frac_4out,
                                       const view_2d<Spack> &tot_cld_frac_4out) {
   using ExeSpace    = typename KT::ExeSpace;
   const Int nk_pack = ekat::npack<Spack>(nk);
@@ -39,7 +41,8 @@ void CldFractionFunctions<S, D>::main(const Int nj, const Int nk, const Real ice
 /*-----------------------------------------------------------------*/
 template <typename S, typename D>
 KOKKOS_FUNCTION void CldFractionFunctions<S, D>::calc_icefrac(const MemberType &team, const Int &nk,
-                                                              const Real &threshold, const uview_1d<const Spack> &qi,
+                                                              const Real &threshold,
+                                                              const uview_1d<const Spack> &qi,
                                                               const uview_1d<Spack> &ice_cld_frac) {
   team.team_barrier();
   const Int nk_pack = ekat::npack<Spack>(nk);
@@ -53,10 +56,9 @@ KOKKOS_FUNCTION void CldFractionFunctions<S, D>::calc_icefrac(const MemberType &
 } // calc_icefrac
 /*-----------------------------------------------------------------*/
 template <typename S, typename D>
-KOKKOS_FUNCTION void CldFractionFunctions<S, D>::calc_totalfrac(const MemberType &team, const Int &nk,
-                                                                const uview_1d<const Spack> &liq_cld_frac,
-                                                                const uview_1d<const Spack> &ice_cld_frac,
-                                                                const uview_1d<Spack> &tot_cld_frac) {
+KOKKOS_FUNCTION void CldFractionFunctions<S, D>::calc_totalfrac(
+    const MemberType &team, const Int &nk, const uview_1d<const Spack> &liq_cld_frac,
+    const uview_1d<const Spack> &ice_cld_frac, const uview_1d<Spack> &tot_cld_frac) {
   team.team_barrier();
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nk_pack), [&](Int k) {

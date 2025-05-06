@@ -78,39 +78,50 @@ public:
         const Spack &pseudo_density_dry_pack(pseudo_density_dry(icol, ipack));
 
         // compute dz from full pressure
-        dz(icol, ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv(icol, ipack));
+        dz(icol, ipack) =
+            PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv(icol, ipack));
 
         /*----------------------------------------------------------------------------------------------------------------------
          *Wet to dry mixing ratios:
          *-------------------------
          *Since state constituents from the host model (or AD) are  wet mixing ratios and P3 needs
-         *these constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratios.
+         *these constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing
+         *ratios.
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        // Units of all constituents below are [kg/kg(dry-air)] for mass and [#/kg(dry-air)] for number
-        qc(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qc(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud liquid mass
-        nc(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(nc(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud liquid numbe
-        qr(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qr(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rain mass
-        nr(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(nr(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rain number
-        qi(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qi(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud ice mass
-        ni(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(ni(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud ice number
-        qm(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qm(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rimmed ice mass
-        bm(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(bm(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rimmed ice number
-        qv(icol, ipack) =
-            PF::calculate_drymmr_from_wetmmr_dp_based(qv(icol, ipack), pseudo_density_pack, pseudo_density_dry_pack);
+        // Units of all constituents below are [kg/kg(dry-air)] for mass and [#/kg(dry-air)] for
+        // number
+        qc(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(qc(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Cloud liquid mass
+        nc(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(
+            nc(icol, ipack), pseudo_density_pack,
+            pseudo_density_dry_pack); // Cloud liquid numbe
+        qr(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(qr(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rain mass
+        nr(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(nr(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rain number
+        qi(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(qi(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Cloud ice mass
+        ni(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(ni(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Cloud ice number
+        qm(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(qm(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rimmed ice mass
+        bm(icol, ipack) =
+            PF::calculate_drymmr_from_wetmmr_dp_based(bm(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rimmed ice number
+        qv(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(
+            qv(icol, ipack), pseudo_density_pack, pseudo_density_dry_pack);
 
         // Water vapor from previous time step
-        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol, ipack), pseudo_density_pack,
-                                                                         pseudo_density_dry_pack);
+        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(
+            qv_prev(icol, ipack), pseudo_density_pack, pseudo_density_dry_pack);
 
         // Exner from full pressure
         const auto &exner      = PF::exner_function(pmid_pack);
@@ -121,13 +132,18 @@ public:
         // Set minimum cloud fraction - avoids division by zero
         // Alternatively set fraction to 1 everywhere to disable subgrid effects
         if (runtime_opts.use_separate_ice_liq_frac) {
-          cld_frac_l(icol, ipack) = runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_l_in_pack, mincld);
-          cld_frac_i(icol, ipack) = runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_i_in_pack, mincld);
+          cld_frac_l(icol, ipack) =
+              runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_l_in_pack, mincld);
+          cld_frac_i(icol, ipack) =
+              runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_i_in_pack, mincld);
         } else {
-          cld_frac_l(icol, ipack) = runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
-          cld_frac_i(icol, ipack) = runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
+          cld_frac_l(icol, ipack) =
+              runtime_opts.set_cld_frac_l_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
+          cld_frac_i(icol, ipack) =
+              runtime_opts.set_cld_frac_i_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
         }
-        cld_frac_r(icol, ipack) = runtime_opts.set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
+        cld_frac_r(icol, ipack) =
+            runtime_opts.set_cld_frac_r_to_one ? 1 : ekat::max(cld_frac_t_in_pack, mincld);
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         if (not runtime_opts.set_cld_frac_r_to_one) {
@@ -136,11 +152,15 @@ public:
           Spack cld_frac_t_in_k, cld_frac_t_in_km1;
           auto range_pack1 = ekat::range<IntSpack>(ipack * Spack::n);
           auto range_pack2 = range_pack1;
-          range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
-          ekat::index_and_shift<-1>(cld_frac_t_in_s, range_pack2, cld_frac_t_in_k, cld_frac_t_in_km1);
+          range_pack2.set(
+              range_pack1 < 1,
+              1); // don't want the shift to go below zero. we mask out that result anyway
+          ekat::index_and_shift<-1>(cld_frac_t_in_s, range_pack2, cld_frac_t_in_k,
+                                    cld_frac_t_in_km1);
 
-          // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top to bottom and
-          // determine if the rain fraction needs to be updated to match the cloud fraction in the layer above.
+          // Hard-coded max-overlap cloud fraction calculation.  Cycle through the layers from top
+          // to bottom and determine if the rain fraction needs to be updated to match the cloud
+          // fraction in the layer above.
           const auto active_range = range_pack1 > 0 && range_pack1 < m_nlev;
           if (active_range.any()) {
             const auto set_to_t_in = cld_frac_t_in_km1 > cld_frac_r(icol, ipack);
@@ -152,8 +172,8 @@ public:
 
     // Local variables
     int m_ncol, m_nlev;
-    Real mincld =
-        0.0001; // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
+    Real mincld = 0.0001; // TODO: These should be stored somewhere as more universal constants.  Or
+                          // maybe in the P3 class hpp
     view_2d_const pmid;
     view_2d_const pmid_dry;
     view_2d_const pseudo_density;
@@ -181,14 +201,17 @@ public:
     // Add runtime_options as a member variable
     P3F::P3Runtime runtime_opts;
     // Assigning local variables
-    void set_variables(const int ncol, const int nlev, const view_2d_const &pmid_, const view_2d_const &pmid_dry_,
-                       const view_2d_const &pseudo_density_, const view_2d_const &pseudo_density_dry_,
-                       const view_2d &T_atm_, const view_2d_const &cld_frac_t_in_, const view_2d_const &cld_frac_l_in_,
-                       const view_2d_const &cld_frac_i_in_, const view_2d &qv_, const view_2d &qc_, const view_2d &nc_,
-                       const view_2d &qr_, const view_2d &nr_, const view_2d &qi_, const view_2d &qm_,
-                       const view_2d &ni_, const view_2d &bm_, const view_2d &qv_prev_, const view_2d &inv_exner_,
-                       const view_2d &th_atm_, const view_2d &cld_frac_l_, const view_2d &cld_frac_i_,
-                       const view_2d &cld_frac_r_, const view_2d &dz_, const P3F::P3Runtime &runtime_options) {
+    void set_variables(const int ncol, const int nlev, const view_2d_const &pmid_,
+                       const view_2d_const &pmid_dry_, const view_2d_const &pseudo_density_,
+                       const view_2d_const &pseudo_density_dry_, const view_2d &T_atm_,
+                       const view_2d_const &cld_frac_t_in_, const view_2d_const &cld_frac_l_in_,
+                       const view_2d_const &cld_frac_i_in_, const view_2d &qv_, const view_2d &qc_,
+                       const view_2d &nc_, const view_2d &qr_, const view_2d &nr_,
+                       const view_2d &qi_, const view_2d &qm_, const view_2d &ni_,
+                       const view_2d &bm_, const view_2d &qv_prev_, const view_2d &inv_exner_,
+                       const view_2d &th_atm_, const view_2d &cld_frac_l_,
+                       const view_2d &cld_frac_i_, const view_2d &cld_frac_r_, const view_2d &dz_,
+                       const P3F::P3Runtime &runtime_options) {
       m_ncol = ncol;
       m_nlev = nlev;
       // IN
@@ -241,7 +264,8 @@ public:
         {
           // this computes rescaled dT
           const Spack T_atm_before_p3 = T_atm(icol, ipack);
-          T_atm(icol, ipack) = (PF::calculate_T_from_theta(th_atm(icol, ipack), pmid(icol, ipack)) - T_atm_before_p3) *
+          T_atm(icol, ipack) = (PF::calculate_T_from_theta(th_atm(icol, ipack), pmid(icol, ipack)) -
+                                T_atm_before_p3) *
                                pseudo_density_dry(icol, ipack) / pseudo_density(icol, ipack);
           // add rescaled dT to T
           T_atm(icol, ipack) += T_atm_before_p3;
@@ -251,29 +275,38 @@ public:
         /*----------------------------------------------------------------------------------------------------------------------
          *DRY-TO-WET MMRs:
          *-----------------
-         *Since the host model (or AD) needs wet mixing ratios, we need to convert dry mixing ratios from P3 to
-         *wet mixing ratios.
+         *Since the host model (or AD) needs wet mixing ratios, we need to convert dry mixing ratios
+         *from P3 to wet mixing ratios.
          *----------------------------------------------------------------------------------------------------------------------
          */
-        // Units of all constituents below are [kg/kg(wet-air)] for mass and [#/kg(wet-air)] for number
-        qc(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qc(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud liquid mass
-        nc(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(nc(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud liquid number
-        qr(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qr(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rain mass
-        nr(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(nr(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rain number
-        qi(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qi(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud ice mass
-        ni(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(ni(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Cloud ice number
-        qm(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qm(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rimmed ice mass
-        bm(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(bm(icol, ipack), pseudo_density_pack,
-                                                                    pseudo_density_dry_pack); // Rimmed ice number
-        qv(icol, ipack) =
-            PF::calculate_wetmmr_from_drymmr_dp_based(qv(icol, ipack), pseudo_density_pack, pseudo_density_dry_pack);
+        // Units of all constituents below are [kg/kg(wet-air)] for mass and [#/kg(wet-air)] for
+        // number
+        qc(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(qc(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Cloud liquid mass
+        nc(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(
+            nc(icol, ipack), pseudo_density_pack,
+            pseudo_density_dry_pack); // Cloud liquid number
+        qr(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(qr(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rain mass
+        nr(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(nr(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rain number
+        qi(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(qi(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Cloud ice mass
+        ni(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(ni(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Cloud ice number
+        qm(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(qm(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rimmed ice mass
+        bm(icol, ipack) =
+            PF::calculate_wetmmr_from_drymmr_dp_based(bm(icol, ipack), pseudo_density_pack,
+                                                      pseudo_density_dry_pack); // Rimmed ice number
+        qv(icol, ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(
+            qv(icol, ipack), pseudo_density_pack, pseudo_density_dry_pack);
         qv_prev(icol, ipack) = qv(icol, ipack);
 
         // Rescale effective radius' into microns
@@ -337,15 +370,16 @@ public:
     view_1d ice_flux;
     view_1d heat_flux;
 
-    void set_variables(const int ncol, const int npack, const view_2d &th_atm_, const view_2d_const &pmid_,
-                       const view_2d_const &pmid_dry_, const view_2d &T_atm_, const view_2d &T_prev_,
-                       const view_2d_const &pseudo_density_, const view_2d_const &pseudo_density_dry_,
-                       const view_2d &qv_, const view_2d &qc_, const view_2d &nc_, const view_2d &qr_,
-                       const view_2d &nr_, const view_2d &qi_, const view_2d &qm_, const view_2d &ni_,
-                       const view_2d &bm_, const view_2d &qv_prev_, const view_2d &diag_eff_radius_qc_,
-                       const view_2d &diag_eff_radius_qi_, const view_2d &diag_eff_radius_qr_,
-                       const view_1d_const &precip_liq_surf_flux_, const view_1d_const &precip_ice_surf_flux_,
-                       const view_1d &precip_liq_surf_mass_, const view_1d &precip_ice_surf_mass_) {
+    void set_variables(
+        const int ncol, const int npack, const view_2d &th_atm_, const view_2d_const &pmid_,
+        const view_2d_const &pmid_dry_, const view_2d &T_atm_, const view_2d &T_prev_,
+        const view_2d_const &pseudo_density_, const view_2d_const &pseudo_density_dry_,
+        const view_2d &qv_, const view_2d &qc_, const view_2d &nc_, const view_2d &qr_,
+        const view_2d &nr_, const view_2d &qi_, const view_2d &qm_, const view_2d &ni_,
+        const view_2d &bm_, const view_2d &qv_prev_, const view_2d &diag_eff_radius_qc_,
+        const view_2d &diag_eff_radius_qi_, const view_2d &diag_eff_radius_qr_,
+        const view_1d_const &precip_liq_surf_flux_, const view_1d_const &precip_ice_surf_flux_,
+        const view_1d &precip_liq_surf_mass_, const view_1d &precip_ice_surf_mass_) {
       m_ncol  = ncol;
       m_npack = npack;
       // IN
@@ -383,8 +417,8 @@ public:
       // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffsnow
     } // set_variables
 
-    void set_mass_and_energy_fluxes(const view_1d &vapor_flux_, const view_1d &water_flux_, const view_1d &ice_flux_,
-                                    const view_1d &heat_flux_) {
+    void set_mass_and_energy_fluxes(const view_1d &vapor_flux_, const view_1d &water_flux_,
+                                    const view_1d &ice_flux_, const view_1d &heat_flux_) {
       compute_mass_and_energy_fluxes = true;
       vapor_flux                     = vapor_flux_;
       water_flux                     = water_flux_;
@@ -397,8 +431,9 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 2; // no 2d vars now, but keeping 1d struct for future expansion
-    // 2d view packed, size (ncol, nlev_packs)
+    static constexpr int num_1d_scalar =
+        2; // no 2d vars now, but keeping 1d struct for future expansion
+           // 2d view packed, size (ncol, nlev_packs)
 #ifdef SCREAM_P3_SMALL_KERNELS
     static constexpr int num_2d_vector = 63;
 #else
@@ -420,11 +455,12 @@ public:
     uview_2d unused;
 
 #ifdef SCREAM_P3_SMALL_KERNELS
-    uview_2d mu_r, T_atm, lamr, logn0r, nu, cdist, cdist1, cdistr, inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r,
-        qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld, inv_dz, inv_rho, ze_ice,
-        ze_rain, prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i, tmparr2, exner, diag_vm_qi,
-        diag_diam_qi, pratot, prctot, qtend_ignore, ntend_ignore, mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx,
-        flux_nx, v_qit, v_nit, flux_nit, flux_bir, flux_qir, flux_qit, v_qr, v_nr;
+    uview_2d mu_r, T_atm, lamr, logn0r, nu, cdist, cdist1, cdistr, inv_cld_frac_i, inv_cld_frac_l,
+        inv_cld_frac_r, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld,
+        bm_incld, inv_dz, inv_rho, ze_ice, ze_rain, prec, rho, rhofacr, rhofaci, acn, qv_sat_l,
+        qv_sat_i, sup, qv_supersat_i, tmparr2, exner, diag_vm_qi, diag_diam_qi, pratot, prctot,
+        qtend_ignore, ntend_ignore, mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx, flux_nx, v_qit,
+        v_nit, flux_nit, flux_bir, flux_qir, flux_qit, v_qr, v_nr;
 #endif
 
     suview_2d col_location;
@@ -471,8 +507,9 @@ protected:
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
 
   std::shared_ptr<const AbstractGrid> m_grid;
-  // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
-  // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs.
+  // Iteration count is internal to P3 and keeps track of the number of times p3_main has been
+  // called. infrastructure.it is passed as an arguement to p3_main and is used for identifying
+  // which iteration an error occurs.
 
 }; // class P3Microphysics
 

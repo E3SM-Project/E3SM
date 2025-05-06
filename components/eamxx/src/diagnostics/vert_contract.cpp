@@ -27,10 +27,11 @@ void VertContractDiag::set_grids(const std::shared_ptr<const GridsManager> grids
                        m_contract_method + "\n");
   // we support either dp or dz weighting, or no weighting at all (none)
   m_weighting_method = m_params.get<std::string>("weighting_method", "none");
-  EKAT_REQUIRE_MSG(m_weighting_method == "dp" || m_weighting_method == "dz" || m_weighting_method == "none",
-                   "Error! VertContractDiag only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
-                   " - weighting_method: " +
-                       m_weighting_method + "\n");
+  EKAT_REQUIRE_MSG(
+      m_weighting_method == "dp" || m_weighting_method == "dz" || m_weighting_method == "none",
+      "Error! VertContractDiag only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
+      " - weighting_method: " +
+          m_weighting_method + "\n");
   m_diag_name = fn + m_contract_method + "_" + m_weighting_method;
 
   auto scalar3d = g->get_3d_scalar_layout(true);
@@ -55,19 +56,21 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
 
-  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3, "Error! Field rank not supported by VertContractDiag.\n"
-                                                             " - field name: " +
-                                                                 fid.name() +
-                                                                 "\n"
-                                                                 " - field layout: " +
-                                                                 layout.to_string() + "\n");
-  EKAT_REQUIRE_MSG(layout.tags().back() == LEV, "Error! VertContractDiag diagnostic expects a layout ending "
-                                                "with the 'LEV' tag.\n"
-                                                " - field name  : " +
-                                                    fid.name() +
-                                                    "\n"
-                                                    " - field layout: " +
-                                                    layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3,
+                   "Error! Field rank not supported by VertContractDiag.\n"
+                   " - field name: " +
+                       fid.name() +
+                       "\n"
+                       " - field layout: " +
+                       layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(layout.tags().back() == LEV,
+                   "Error! VertContractDiag diagnostic expects a layout ending "
+                   "with the 'LEV' tag.\n"
+                   " - field name  : " +
+                       fid.name() +
+                       "\n"
+                       " - field layout: " +
+                       layout.to_string() + "\n");
 
   ekat::units::Units diag_units = fid.get_units();
 
@@ -82,7 +85,8 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
   } else {
     // no weighting needed, so we set it to 1 with layout of (col, lev)
     FieldLayout layout_wts = {{COL, LEV}, {layout.dim(COL), layout.dim(LEV)}};
-    FieldIdentifier f_id("vert_contract_wts", layout_wts, ekat::units::Units::nondimensional(), fid.get_grid_name());
+    FieldIdentifier f_id("vert_contract_wts", layout_wts, ekat::units::Units::nondimensional(),
+                         fid.get_grid_name());
     m_weighting = Field(f_id);
     m_weighting.allocate_view();
     m_weighting.deep_copy(sp(1));
@@ -98,8 +102,8 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
 
   if (m_contract_method == "avg") {
     auto wts_layout = m_weighting.get_header().get_identifier().get_layout();
-    FieldIdentifier wts_sum_fid("vert_contract_wts_sum", wts_layout.clone().strip_dim(LEV), diag_units,
-                                fid.get_grid_name());
+    FieldIdentifier wts_sum_fid("vert_contract_wts_sum", wts_layout.clone().strip_dim(LEV),
+                                diag_units, fid.get_grid_name());
     m_weighting_sum = Field(wts_sum_fid);
     m_weighting_sum.allocate_view();
     m_weighting_one = m_weighting.clone("vert_contract_wts_one");
@@ -108,7 +112,8 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
     VertContractDiag::scale_wts(m_weighting, m_weighting_sum);
   }
 
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(LEV), diag_units, fid.get_grid_name());
+  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(LEV), diag_units,
+                        fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 }
@@ -134,7 +139,8 @@ void VertContractDiag::scale_wts(Field &wts, const Field &wts_sum) {
   const auto wts_sum_v = wts_sum.get_view<const Real *>();
 
   Kokkos::parallel_for(
-      "VertContractDiag::scale_wts" + m_diag_name, RP(0, nlevs * ncols), KOKKOS_LAMBDA(const int &idx) {
+      "VertContractDiag::scale_wts" + m_diag_name, RP(0, nlevs * ncols),
+      KOKKOS_LAMBDA(const int &idx) {
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
         if (wts_sum_v(icol) != 0) {

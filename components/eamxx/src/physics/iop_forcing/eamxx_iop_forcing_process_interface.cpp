@@ -51,11 +51,13 @@ void IOPForcing::set_grids(const std::shared_ptr<const GridsManager> grids_manag
 }
 // =========================================================================================
 void IOPForcing::set_computed_group_impl(const FieldGroup &group) {
-  EKAT_REQUIRE_MSG(group.m_info->size() >= 1, "Error! IOPForcing requires at least qv as tracer input.\n");
+  EKAT_REQUIRE_MSG(group.m_info->size() >= 1,
+                   "Error! IOPForcing requires at least qv as tracer input.\n");
 
   const auto &name = group.m_info->m_group_name;
 
-  EKAT_REQUIRE_MSG(name == "tracers", "Error! IOPForcing was not expecting a field group called '" << name << "\n");
+  EKAT_REQUIRE_MSG(name == "tracers",
+                   "Error! IOPForcing was not expecting a field group called '" << name << "\n");
 
   EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
                    "Error! IOPForcing expects a monolithic allocation for tracers.\n");
@@ -65,9 +67,10 @@ void IOPForcing::set_computed_group_impl(const FieldGroup &group) {
 // =========================================================================================
 size_t IOPForcing::requested_buffer_size_in_bytes() const {
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
-  const int nlevi_packs  = ekat::npack<Pack>(m_num_levs + 1);
-  const auto policy      = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7 + m_num_tracers, policy);
+  const int nlevi_packs = ekat::npack<Pack>(m_num_levs + 1);
+  const auto policy     = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const size_t wsm_bytes =
+      WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7 + m_num_tracers, policy);
 
   return wsm_bytes;
 }
@@ -82,8 +85,9 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager) {
   // WSM data
   m_buffer.wsm_data = mem;
 
-  const auto policy       = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
-  const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7 + m_num_tracers, policy) / sizeof(Pack);
+  const auto policy = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const size_t wsm_npacks =
+      WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7 + m_num_tracers, policy) / sizeof(Pack);
   mem += wsm_npacks;
 
   size_t used_mem = (reinterpret_cast<Real *>(mem) - buffer_manager.get_memory()) * sizeof(Real);
@@ -91,8 +95,8 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager) {
                    "Error! Used memory != requested memory for IOPForcing.\n");
 }
 // =========================================================================================
-void IOPForcing::create_helper_field(const std::string &name, const FieldLayout &layout, const std::string &grid_name,
-                                     const int ps) {
+void IOPForcing::create_helper_field(const std::string &name, const FieldLayout &layout,
+                                     const std::string &grid_name, const int ps) {
   using namespace ekat::units;
   FieldIdentifier id(name, layout, Units::nondimensional(), grid_name);
 
@@ -128,11 +132,14 @@ void IOPForcing::initialize_impl(const RunType run_type) {
 }
 // =========================================================================================
 KOKKOS_FUNCTION
-void IOPForcing::advance_iop_subsidence(const MemberType &team, const int nlevs, const Real dt, const Real ps,
-                                        const view_1d<const Pack> &ref_p_mid, const view_1d<const Pack> &ref_p_int,
-                                        const view_1d<const Pack> &ref_p_del, const view_1d<const Pack> &omega,
-                                        const Workspace &workspace, const view_1d<Pack> &u, const view_1d<Pack> &v,
-                                        const view_1d<Pack> &T, const view_2d<Pack> &Q) {
+void IOPForcing::advance_iop_subsidence(const MemberType &team, const int nlevs, const Real dt,
+                                        const Real ps, const view_1d<const Pack> &ref_p_mid,
+                                        const view_1d<const Pack> &ref_p_int,
+                                        const view_1d<const Pack> &ref_p_del,
+                                        const view_1d<const Pack> &omega,
+                                        const Workspace &workspace, const view_1d<Pack> &u,
+                                        const view_1d<Pack> &v, const view_1d<Pack> &T,
+                                        const view_2d<Pack> &Q) {
   constexpr Real Rair  = C::Rair;
   constexpr Real Cpair = C::Cpair;
 
@@ -164,7 +171,8 @@ void IOPForcing::advance_iop_subsidence(const MemberType &team, const int nlevs,
     ekat::index_and_shift<-1>(s_omega, range_pack, omega_k, omega_km1);
 
     const auto weight = (ref_p_int(k) - ref_p_mid_km1) / (ref_p_mid_k - ref_p_mid_km1);
-    omega_int(k).set(range_pack >= 1 and range_pack <= nlevs - 1, weight * omega_k + (1 - weight) * omega_km1);
+    omega_int(k).set(range_pack >= 1 and range_pack <= nlevs - 1,
+                     weight * omega_k + (1 - weight) * omega_km1);
   });
   omega_int(0)[0]                             = 0;
   omega_int(nlevs / Pack::n)[nlevs % Pack::n] = 0;
@@ -245,7 +253,8 @@ void IOPForcing::advance_iop_subsidence(const MemberType &team, const int nlevs,
     Pack delta_tracer_k, delta_tracer_km1;
     for (int iq = 0; iq < n_q_tracers; ++iq) {
       auto s_delta_tracer = Kokkos::subview(s_delta_Q, iq, Kokkos::ALL());
-      ekat::index_and_shift<-1>(s_delta_tracer, range_pack_for_m1_shift, delta_tracer_k, delta_tracer_km1);
+      ekat::index_and_shift<-1>(s_delta_tracer, range_pack_for_m1_shift, delta_tracer_k,
+                                delta_tracer_km1);
       if (any_at_top)
         delta_tracer_k.set(at_top, s_delta_tracer(0));
       if (any_at_bot)
@@ -263,8 +272,9 @@ void IOPForcing::advance_iop_subsidence(const MemberType &team, const int nlevs,
 // =========================================================================================
 KOKKOS_FUNCTION
 void IOPForcing::advance_iop_forcing(const MemberType &team, const int nlevs, const Real dt,
-                                     const view_1d<const Pack> &divT, const view_1d<const Pack> &divq,
-                                     const view_1d<Pack> &T, const view_1d<Pack> &qv) {
+                                     const view_1d<const Pack> &divT,
+                                     const view_1d<const Pack> &divq, const view_1d<Pack> &T,
+                                     const view_1d<Pack> &qv) {
   const auto nlev_packs = ekat::npack<Pack>(nlevs);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int k) {
     T(k).update(divT(k), dt, 1.0);
@@ -273,9 +283,10 @@ void IOPForcing::advance_iop_forcing(const MemberType &team, const int nlevs, co
 }
 // =========================================================================================
 KOKKOS_FUNCTION
-void IOPForcing::iop_apply_coriolis(const MemberType &team, const int nlevs, const Real dt, const Real lat,
-                                    const view_1d<const Pack> &u_ls, const view_1d<const Pack> &v_ls,
-                                    const view_1d<Pack> &u, const view_1d<Pack> &v) {
+void IOPForcing::iop_apply_coriolis(const MemberType &team, const int nlevs, const Real dt,
+                                    const Real lat, const view_1d<const Pack> &u_ls,
+                                    const view_1d<const Pack> &v_ls, const view_1d<Pack> &u,
+                                    const view_1d<Pack> &v) {
   constexpr Real pi             = C::Pi;
   constexpr Real earth_rotation = C::omega;
 
@@ -314,16 +325,17 @@ void IOPForcing::run_impl(const double dt) {
   m_iop_data_manager->read_iop_file_data(start_of_step_ts());
 
   // Define local IOP param values
-  const auto iop_dosubsidence     = m_iop_data_manager->get_params().get<bool>("iop_dosubsidence");
-  const auto iop_coriolis         = m_iop_data_manager->get_params().get<bool>("iop_coriolis");
-  const auto iop_nudge_tq         = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
-  const auto iop_nudge_uv         = m_iop_data_manager->get_params().get<bool>("iop_nudge_uv");
-  const auto use_large_scale_wind = m_iop_data_manager->get_params().get<bool>("use_large_scale_wind");
-  const auto use_3d_forcing       = m_iop_data_manager->get_params().get<bool>("use_3d_forcing");
-  const auto target_lat           = m_iop_data_manager->get_params().get<Real>("target_latitude");
-  const auto iop_nudge_tscale     = m_iop_data_manager->get_params().get<Real>("iop_nudge_tscale");
-  const auto iop_nudge_tq_low     = m_iop_data_manager->get_params().get<Real>("iop_nudge_tq_low");
-  const auto iop_nudge_tq_high    = m_iop_data_manager->get_params().get<Real>("iop_nudge_tq_high");
+  const auto iop_dosubsidence = m_iop_data_manager->get_params().get<bool>("iop_dosubsidence");
+  const auto iop_coriolis     = m_iop_data_manager->get_params().get<bool>("iop_coriolis");
+  const auto iop_nudge_tq     = m_iop_data_manager->get_params().get<bool>("iop_nudge_tq");
+  const auto iop_nudge_uv     = m_iop_data_manager->get_params().get<bool>("iop_nudge_uv");
+  const auto use_large_scale_wind =
+      m_iop_data_manager->get_params().get<bool>("use_large_scale_wind");
+  const auto use_3d_forcing    = m_iop_data_manager->get_params().get<bool>("use_3d_forcing");
+  const auto target_lat        = m_iop_data_manager->get_params().get<Real>("target_latitude");
+  const auto iop_nudge_tscale  = m_iop_data_manager->get_params().get<Real>("iop_nudge_tscale");
+  const auto iop_nudge_tq_low  = m_iop_data_manager->get_params().get<Real>("iop_nudge_tq_low");
+  const auto iop_nudge_tq_high = m_iop_data_manager->get_params().get<Real>("iop_nudge_tq_high");
 
   // Define local IOP field views
   const Real ps_iop = m_iop_data_manager->get_iop_field("Ps").get_view<const Real, Host>()();
@@ -344,10 +356,12 @@ void IOPForcing::run_impl(const double dt) {
     t_iop  = m_iop_data_manager->get_iop_field("T").get_view<const Pack *>();
   }
   if (iop_nudge_uv) {
-    u_iop = use_large_scale_wind ? m_iop_data_manager->get_iop_field("u_ls").get_view<const Pack *>()
-                                 : m_iop_data_manager->get_iop_field("u").get_view<const Pack *>();
-    v_iop = use_large_scale_wind ? m_iop_data_manager->get_iop_field("v_ls").get_view<const Pack *>()
-                                 : m_iop_data_manager->get_iop_field("v").get_view<const Pack *>();
+    u_iop = use_large_scale_wind
+                ? m_iop_data_manager->get_iop_field("u_ls").get_view<const Pack *>()
+                : m_iop_data_manager->get_iop_field("u").get_view<const Pack *>();
+    v_iop = use_large_scale_wind
+                ? m_iop_data_manager->get_iop_field("v_ls").get_view<const Pack *>()
+                : m_iop_data_manager->get_iop_field("v").get_view<const Pack *>();
   }
 
   // Team policy and workspace manager for eamxx
@@ -393,8 +407,8 @@ void IOPForcing::run_impl(const double dt) {
 
         if (iop_dosubsidence) {
           // Compute subsidence due to large-scale forcing
-          advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega, ws, u_i, v_i,
-                                 T_mid_i, Q_i);
+          advance_iop_subsidence(team, num_levs, dt, ps_i, ref_p_mid, ref_p_int, ref_p_del, omega,
+                                 ws, u_i, v_i, T_mid_i, Q_i);
         }
 
         // Update T and qv according to large scale forcing as specified in IOP file.
@@ -449,8 +463,9 @@ void IOPForcing::run_impl(const double dt) {
           // Compute reference pressures and layer thickness.
           // TODO: Allow geometry data to allocate packsize
           auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs),
-                               [&](const int &k) { s_ref_p_mid(k) = hyam(k) * ps0 + hybm(k) * ps_i; });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const int &k) {
+            s_ref_p_mid(k) = hyam(k) * ps0 + hybm(k) * ps_i;
+          });
           team.team_barrier();
 
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int &k) {

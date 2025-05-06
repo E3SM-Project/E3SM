@@ -18,7 +18,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys_rain_vel() {
     // TODO
@@ -40,7 +41,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWra
     view_2d_table revap_table_vals;
     view_1d_table mu_r_table_vals;
     view_dnu_table dnu;
-    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals,
+                                 dnu);
 
     // Load some lookup inputs, need at least one per pack value
     ComputeRainFallVelocityData crfv_baseline[max_pack_size] = {
@@ -87,8 +89,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWra
           }
 
           Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
-          Functions::compute_rain_fall_velocity(vn_table_vals, vm_table_vals, qr_incld, rhofacr, nr_incld, mu_r, lamr,
-                                                V_qr, V_nr, p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::compute_rain_fall_velocity(vn_table_vals, vm_table_vals, qr_incld, rhofacr,
+                                                nr_incld, mu_r, lamr, V_qr, V_nr,
+                                                p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -170,9 +173,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainSed : public UnitWra
 #if defined(SCREAM_FORCE_RUN_DIFF)
       inv_dt *= 2;
 #endif
-      rain_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.qr_incld, d.rho, d.inv_rho, d.rhofacr,
-                              d.cld_frac_r, d.inv_dz, d.dt, inv_dt, d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr,
-                              &d.precip_liq_surf, d.precip_liq_flux, d.qr_tend, d.nr_tend);
+      rain_sedimentation_host(d.kts, d.kte, d.ktop, d.kbot, d.kdir, d.qr_incld, d.rho, d.inv_rho,
+                              d.rhofacr, d.cld_frac_r, d.inv_dz, d.dt, inv_dt, d.qr, d.nr,
+                              d.nr_incld, d.mu_r, d.lamr, &d.precip_liq_surf, d.precip_liq_flux,
+                              d.qr_tend, d.nr_tend);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {

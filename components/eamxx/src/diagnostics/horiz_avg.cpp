@@ -27,21 +27,24 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
 
-  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3, "Error! Field rank not supported by HorizAvgDiag.\n"
-                                                             " - field name: " +
-                                                                 fid.name() +
-                                                                 "\n"
-                                                                 " - field layout: " +
-                                                                 layout.to_string() + "\n");
-  EKAT_REQUIRE_MSG(layout.tags()[0] == COL, "Error! HorizAvgDiag diagnostic expects a layout starting "
-                                            "with the 'COL' tag.\n"
-                                            " - field name  : " +
-                                                fid.name() +
-                                                "\n"
-                                                " - field layout: " +
-                                                layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3,
+                   "Error! Field rank not supported by HorizAvgDiag.\n"
+                   " - field name: " +
+                       fid.name() +
+                       "\n"
+                       " - field layout: " +
+                       layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(layout.tags()[0] == COL,
+                   "Error! HorizAvgDiag diagnostic expects a layout starting "
+                   "with the 'COL' tag.\n"
+                   " - field name  : " +
+                       fid.name() +
+                       "\n"
+                       " - field layout: " +
+                       layout.to_string() + "\n");
 
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL), fid.get_units(), fid.get_grid_name());
+  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL), fid.get_units(),
+                        fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 

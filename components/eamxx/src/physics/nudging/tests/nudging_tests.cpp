@@ -10,7 +10,8 @@ using namespace scream;
 
 std::shared_ptr<Nudging> create_nudging(const ekat::Comm &comm, const ekat::ParameterList &params,
                                         const std::shared_ptr<FieldManager> &fm,
-                                        const std::shared_ptr<GridsManager> &gm, const util::TimeStamp &t0) {
+                                        const std::shared_ptr<GridsManager> &gm,
+                                        const util::TimeStamp &t0) {
   auto nudging = std::make_shared<Nudging>(comm, params);
   nudging->set_grids(gm);
   for (const auto &req : nudging->get_required_field_requests()) {
@@ -50,7 +51,8 @@ TEST_CASE("nudging_tests") {
   auto postfix             = ".INSTANT.nsteps_x1.np*." + get_t0().to_string() + ".nc";
   auto nudging_data        = "nudging_data" + postfix;
   auto nudging_data_filled = "nudging_data_filled" + postfix;
-  auto map_file            = "map_ncol" + std::to_string(ngcols_data) + "_to_" + std::to_string(ngcols_fine) + ".nc";
+  auto map_file =
+      "map_ncol" + std::to_string(ngcols_data) + "_to_" + std::to_string(ngcols_fine) + ".nc";
 
   // For grids managers, depending on whether ncols/nlevs match the (coarse)
   // values used to generate the data or are finer
@@ -121,7 +123,8 @@ TEST_CASE("nudging_tests") {
       auto tmp1 = U.clone("");
       auto tmp2 = U.clone("");
 
-      auto check_f = [&](const Field &f, const util::TimeStamp &t_prev, const util::TimeStamp &t_next) {
+      auto check_f = [&](const Field &f, const util::TimeStamp &t_prev,
+                         const util::TimeStamp &t_next) {
         compute_field(tmp1, t_prev, comm, 0);
         compute_field(tmp2, t_next, comm, 0);
         tmp1.update(tmp2, 0.5, 0.5);
@@ -339,7 +342,8 @@ TEST_CASE("nudging_tests") {
         for (int ilev = 0; ilev < nlevs_data; ++ilev) {
           glb_fine_h(icol, ilev) = glb_data_h(icol, ilev);
           if (icol < ngcols_data - 1) {
-            glb_fine_h(ngcols_data + icol, ilev) = (glb_data_h(icol, ilev) + glb_data_h(icol + 1, ilev)) / 2;
+            glb_fine_h(ngcols_data + icol, ilev) =
+                (glb_data_h(icol, ilev) + glb_data_h(icol + 1, ilev)) / 2;
           }
         }
       }

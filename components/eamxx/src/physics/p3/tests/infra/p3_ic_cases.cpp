@@ -88,7 +88,8 @@ P3Data::Ptr make_mixed(const Int ncol, const Int nlev) {
       T_atm(k) = 150 + 150 / double(nk) * k;
       if (i > 0)
         T_atm(k) += ((i % 3) - 0.5) / double(nk) * k;
-      d.th_atm(i, k) = T_atm(k) * std::pow(Real(consts::P0 / d.pres(i, k)), Real(consts::RD / consts::CP));
+      d.th_atm(i, k) =
+          T_atm(k) * std::pow(Real(consts::P0 / d.pres(i, k)), Real(consts::RD / consts::CP));
     }
 
     // The next section modifies inout variables to satisfy weird conditions
@@ -122,10 +123,12 @@ P3Data::Ptr make_mixed(const Int ncol, const Int nlev) {
     static constexpr double g = 9.8; // gravity, m/s^2
     for (k = 0; k < nk; ++k) {
       double plo, phi; // pressure at cell edges, Pa
-      plo              = (k == 0) ? std::max<double>(i, d.pres(i, 0) - 0.5 * (d.pres(i, 1) - d.pres(i, 0)) / (1 - 0))
-                                  : 0.5 * (d.pres(i, k - 1) + d.pres(i, k));
-      phi              = (k == nk - 1) ? d.pres(i, nk - 1) + 0.5 * (d.pres(i, nk - 1) - d.pres(i, nk - 2)) / (1 - 0)
-                                       : 0.5 * (d.pres(i, k) + d.pres(i, k + 1));
+      plo              = (k == 0)
+                             ? std::max<double>(i, d.pres(i, 0) - 0.5 * (d.pres(i, 1) - d.pres(i, 0)) / (1 - 0))
+                             : 0.5 * (d.pres(i, k - 1) + d.pres(i, k));
+      phi              = (k == nk - 1)
+                             ? d.pres(i, nk - 1) + 0.5 * (d.pres(i, nk - 1) - d.pres(i, nk - 2)) / (1 - 0)
+                             : 0.5 * (d.pres(i, k) + d.pres(i, k + 1));
       const auto dpres = phi - plo;
       d.dz(i, k)       = consts::RD * T_atm(k) / (g * d.pres(i, k)) * dpres;
     }

@@ -22,8 +22,9 @@ void Functions<S, D>::get_global_ice_lookup_tables(view_ice_table &ice_table_val
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::lookup_ice(const Spack &qi, const Spack &ni, const Spack &qm, const Spack &rhop,
-                                                 TableIce &tab, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::lookup_ice(const Spack &qi, const Spack &ni, const Spack &qm,
+                                                 const Spack &rhop, TableIce &tab,
+                                                 const Smask &context) {
   // find index for qi (normalized ice mass mixing ratio = qi/ni)
   //   dum1 = (log10(qi)+16.)/0.70757  !orig
   //   dum1 = (log10(qi)+16.)*1.41328
@@ -113,8 +114,8 @@ KOKKOS_FUNCTION void Functions<S, D>::lookup_rain(const Spack &qr, const Spack &
 
 template <typename S, typename D>
 KOKKOS_FUNCTION typename Functions<S, D>::Spack
-Functions<S, D>::apply_table_ice(const int &idx, const view_ice_table &ice_table_vals, const TableIce &tab,
-                                 const Smask &context) {
+Functions<S, D>::apply_table_ice(const int &idx, const view_ice_table &ice_table_vals,
+                                 const TableIce &tab, const Smask &context) {
   using ekat::index;
 
   Spack proc;
@@ -127,14 +128,15 @@ Functions<S, D>::apply_table_ice(const int &idx, const view_ice_table &ice_table
 
   // first interpolate for current rimed fraction index
   auto iproc1 = index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi, idxpk) +
-                (tab.dum1 - Spack(tab.dumi) - 1) * (index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi + 1, idxpk) -
-                                                    index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi, idxpk));
+                (tab.dum1 - Spack(tab.dumi) - 1) *
+                    (index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi + 1, idxpk) -
+                     index(ice_table_vals, tab.dumjj, tab.dumii, tab.dumi, idxpk));
 
   // linearly interpolate to get process rates for rimed fraction index + 1
-  auto gproc1 =
-      index(ice_table_vals, tab.dumjj, tab.dumii + 1, tab.dumi, idxpk) +
-      (tab.dum1 - Spack(tab.dumi) - 1) * (index(ice_table_vals, tab.dumjj, tab.dumii + 1, tab.dumi + 1, idxpk) -
-                                          index(ice_table_vals, tab.dumjj, tab.dumii + 1, tab.dumi, idxpk));
+  auto gproc1 = index(ice_table_vals, tab.dumjj, tab.dumii + 1, tab.dumi, idxpk) +
+                (tab.dum1 - Spack(tab.dumi) - 1) *
+                    (index(ice_table_vals, tab.dumjj, tab.dumii + 1, tab.dumi + 1, idxpk) -
+                     index(ice_table_vals, tab.dumjj, tab.dumii + 1, tab.dumi, idxpk));
 
   const auto tmp1 = iproc1 + (tab.dum4 - Spack(tab.dumii) - 1) * (gproc1 - iproc1);
 
@@ -143,15 +145,16 @@ Functions<S, D>::apply_table_ice(const int &idx, const view_ice_table &ice_table
   // first interpolate for current rimed fraction index
 
   iproc1 = index(ice_table_vals, tab.dumjj + 1, tab.dumii, tab.dumi, idxpk) +
-           (tab.dum1 - Spack(tab.dumi) - 1) * (index(ice_table_vals, tab.dumjj + 1, tab.dumii, tab.dumi + 1, idxpk) -
-                                               index(ice_table_vals, tab.dumjj + 1, tab.dumii, tab.dumi, idxpk));
+           (tab.dum1 - Spack(tab.dumi) - 1) *
+               (index(ice_table_vals, tab.dumjj + 1, tab.dumii, tab.dumi + 1, idxpk) -
+                index(ice_table_vals, tab.dumjj + 1, tab.dumii, tab.dumi, idxpk));
 
   // linearly interpolate to get process rates for rimed fraction index + 1
 
-  gproc1 =
-      index(ice_table_vals, tab.dumjj + 1, tab.dumii + 1, tab.dumi, idxpk) +
-      (tab.dum1 - Spack(tab.dumi) - 1) * (index(ice_table_vals, tab.dumjj + 1, tab.dumii + 1, tab.dumi + 1, idxpk) -
-                                          index(ice_table_vals, tab.dumjj + 1, tab.dumii + 1, tab.dumi, idxpk));
+  gproc1 = index(ice_table_vals, tab.dumjj + 1, tab.dumii + 1, tab.dumi, idxpk) +
+           (tab.dum1 - Spack(tab.dumi) - 1) *
+               (index(ice_table_vals, tab.dumjj + 1, tab.dumii + 1, tab.dumi + 1, idxpk) -
+                index(ice_table_vals, tab.dumjj + 1, tab.dumii + 1, tab.dumi, idxpk));
 
   const auto tmp2 = iproc1 + (tab.dum4 - Spack(tab.dumii) - 1) * (gproc1 - iproc1);
 
@@ -162,8 +165,8 @@ Functions<S, D>::apply_table_ice(const int &idx, const view_ice_table &ice_table
 
 template <typename S, typename D>
 KOKKOS_FUNCTION typename Functions<S, D>::Spack
-Functions<S, D>::apply_table_coll(const int &idx, const view_collect_table &collect_table_vals, const TableIce &ti,
-                                  const TableRain &tr, const Smask &context) {
+Functions<S, D>::apply_table_coll(const int &idx, const view_collect_table &collect_table_vals,
+                                  const TableIce &ti, const TableRain &tr, const Smask &context) {
   using ekat::index;
 
   Spack proc;
@@ -175,24 +178,25 @@ Functions<S, D>::apply_table_coll(const int &idx, const view_collect_table &coll
   // current density index
 
   // current rime fraction index
-  auto dproc1 =
-      index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk) +
-      (ti.dum1 - Spack(ti.dumi) - 1) * (index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi + 1, tr.dumj, idxpk) -
-                                        index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk));
+  auto dproc1 = index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk) +
+                (ti.dum1 - Spack(ti.dumi) - 1) *
+                    (index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi + 1, tr.dumj, idxpk) -
+                     index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk));
 
   auto dproc2 =
       index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj + 1, idxpk) +
-      (ti.dum1 - Spack(ti.dumi) - 1) * (index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi + 1, tr.dumj + 1, idxpk) -
-                                        index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj + 1, idxpk));
+      (ti.dum1 - Spack(ti.dumi) - 1) *
+          (index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi + 1, tr.dumj + 1, idxpk) -
+           index(collect_table_vals, ti.dumjj, ti.dumii, ti.dumi, tr.dumj + 1, idxpk));
 
   auto iproc1 = dproc1 + (tr.dum3 - Spack(tr.dumj) - 1) * (dproc2 - dproc1);
 
   // rime fraction index + 1
 
-  dproc1 =
-      index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi, tr.dumj, idxpk) +
-      (ti.dum1 - Spack(ti.dumi) - 1) * (index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi + 1, tr.dumj, idxpk) -
-                                        index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi, tr.dumj, idxpk));
+  dproc1 = index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi, tr.dumj, idxpk) +
+           (ti.dum1 - Spack(ti.dumi) - 1) *
+               (index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi + 1, tr.dumj, idxpk) -
+                index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi, tr.dumj, idxpk));
 
   dproc2 = index(collect_table_vals, ti.dumjj, ti.dumii + 1, ti.dumi, tr.dumj + 1, idxpk) +
            (ti.dum1 - Spack(ti.dumi) - 1) *
@@ -206,10 +210,10 @@ Functions<S, D>::apply_table_coll(const int &idx, const view_collect_table &coll
 
   // current rime fraction index
 
-  dproc1 =
-      index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi, tr.dumj, idxpk) +
-      (ti.dum1 - Spack(ti.dumi) - 1) * (index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi + 1, tr.dumj, idxpk) -
-                                        index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi, tr.dumj, idxpk));
+  dproc1 = index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi, tr.dumj, idxpk) +
+           (ti.dum1 - Spack(ti.dumi) - 1) *
+               (index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi + 1, tr.dumj, idxpk) -
+                index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi, tr.dumj, idxpk));
 
   dproc2 = index(collect_table_vals, ti.dumjj + 1, ti.dumii, ti.dumi, tr.dumj + 1, idxpk) +
            (ti.dum1 - Spack(ti.dumi) - 1) *
@@ -225,10 +229,11 @@ Functions<S, D>::apply_table_coll(const int &idx, const view_collect_table &coll
                (index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi + 1, tr.dumj, idxpk) -
                 index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi, tr.dumj, idxpk));
 
-  dproc2 = index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi, tr.dumj + 1, idxpk) +
-           (ti.dum1 - Spack(ti.dumi) - 1) *
-               (index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi + 1, tr.dumj + 1, idxpk) -
-                index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi, tr.dumj + 1, idxpk));
+  dproc2 =
+      index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi, tr.dumj + 1, idxpk) +
+      (ti.dum1 - Spack(ti.dumi) - 1) *
+          (index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi + 1, tr.dumj + 1, idxpk) -
+           index(collect_table_vals, ti.dumjj + 1, ti.dumii + 1, ti.dumi, tr.dumj + 1, idxpk));
 
   gproc1          = dproc1 + (tr.dum3 - Spack(tr.dumj) - 1) * (dproc2 - dproc1);
   const auto tmp2 = iproc1 + (ti.dum4 - Spack(ti.dumii) - 1) * (gproc1 - iproc1);

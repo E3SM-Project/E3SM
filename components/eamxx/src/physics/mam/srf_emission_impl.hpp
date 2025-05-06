@@ -26,16 +26,19 @@ std::shared_ptr<AbstractRemapper> srfEmissFunctions<S, D>::create_horiz_remapper
   // if the file's grid is same as model's native grid, we identity remapper
   //  (i.e., no interpolation)
   if (ncols_data == ncols_model) {
-    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
+    remapper =
+        std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
-    EKAT_REQUIRE_MSG(ncols_data <= ncols_model, "Error! We do not allow to coarsen srfEmiss data to fit "
-                                                "the model. We only allow\n"
-                                                "srfEmiss data to be at the same or coarser resolution as "
-                                                "the model.\n");
+    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
+                     "Error! We do not allow to coarsen srfEmiss data to fit "
+                     "the model. We only allow\n"
+                     "srfEmiss data to be at the same or coarser resolution as "
+                     "the model.\n");
     // We must have a valid map file
-    EKAT_REQUIRE_MSG(map_file != "", "ERROR: srfEmiss data is on a different grid than the model one,\n"
-                                     "but srfEmiss_remap_file is missing from srfEmiss parameter "
-                                     "list.");
+    EKAT_REQUIRE_MSG(map_file != "",
+                     "ERROR: srfEmiss data is on a different grid than the model one,\n"
+                     "but srfEmiss_remap_file is missing from srfEmiss parameter "
+                     "list.");
 
     remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
   }
@@ -65,9 +68,9 @@ std::shared_ptr<AbstractRemapper> srfEmissFunctions<S, D>::create_horiz_remapper
 } // create_horiz_remapper
 
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput>
-srfEmissFunctions<S, D>::create_srfEmiss_data_reader(const std::shared_ptr<AbstractRemapper> &horiz_remapper,
-                                                     const std::string &srfEmiss_data_file) {
+std::shared_ptr<AtmosphereInput> srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
+    const std::shared_ptr<AbstractRemapper> &horiz_remapper,
+    const std::string &srfEmiss_data_file) {
   std::vector<Field> field_emiss_sectors;
   for (int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
     field_emiss_sectors.push_back(horiz_remapper->get_src_field(i));
@@ -78,14 +81,16 @@ srfEmissFunctions<S, D>::create_srfEmiss_data_reader(const std::shared_ptr<Abstr
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
-KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(const ScalarX &x0, const ScalarX &x1,
+KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(const ScalarX &x0,
+                                                                      const ScalarX &x1,
                                                                       const ScalarT &t) {
   return (1 - t) * x0 + t * x1;
 } // linear_interp
 
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::perform_time_interpolation(const srfEmissTimeState &time_state,
-                                                         const srfEmissInput &data_beg, const srfEmissInput &data_end,
+                                                         const srfEmissInput &data_beg,
+                                                         const srfEmissInput &data_end,
                                                          const srfEmissOutput &data_out) {
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
@@ -135,8 +140,10 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(const srfEmissTimeState
 } // perform_time_interpolation
 
 template <typename S, typename D>
-void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state, const srfEmissInput &data_beg,
-                                            const srfEmissInput &data_end, const srfEmissOutput &data_out) {
+void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state,
+                                            const srfEmissInput &data_beg,
+                                            const srfEmissInput &data_end,
+                                            const srfEmissOutput &data_out) {
   // Beg/End/Tmp month must have all sizes matching
 
   EKAT_REQUIRE_MSG(data_end.data.ncols == data_beg.data.ncols,
@@ -157,11 +164,10 @@ void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state,
 } // srfEmiss_main
 
 template <typename S, typename D>
-void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(std::shared_ptr<AtmosphereInput> &scorpio_reader,
-                                                             const util::TimeStamp &ts,
-                                                             const int time_index, // zero-based
-                                                             AbstractRemapper &srfEmiss_horiz_interp,
-                                                             srfEmissInput &srfEmiss_input) {
+void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    const int time_index, // zero-based
+    AbstractRemapper &srfEmiss_horiz_interp, srfEmissInput &srfEmiss_input) {
   using namespace ShortFieldTagsNames;
 
   start_timer("EAMxx::srfEmiss::update_srfEmiss_data_from_file");
@@ -198,11 +204,10 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(std::shared_ptr<Atm
 } // END update_srfEmiss_data_from_file
 
 template <typename S, typename D>
-void srfEmissFunctions<S, D>::update_srfEmiss_timestate(std::shared_ptr<AtmosphereInput> &scorpio_reader,
-                                                        const util::TimeStamp &ts,
-                                                        AbstractRemapper &srfEmiss_horiz_interp,
-                                                        srfEmissTimeState &time_state, srfEmissInput &srfEmiss_beg,
-                                                        srfEmissInput &srfEmiss_end) {
+void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+    AbstractRemapper &srfEmiss_horiz_interp, srfEmissTimeState &time_state,
+    srfEmissInput &srfEmiss_beg, srfEmissInput &srfEmiss_end) {
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that srfEmiss assumes monthly data to update.  Not
   //        any other frequency.
@@ -224,21 +229,20 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(std::shared_ptr<Atmosphe
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month, srfEmiss_horiz_interp, srfEmiss_end);
+    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month, srfEmiss_horiz_interp,
+                                   srfEmiss_end);
   }
 
 } // END updata_srfEmiss_timestate
 
 template <typename S, typename D>
-void srfEmissFunctions<S, D>::init_srf_emiss_objects(const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
-                                                     const std::string &data_file,
-                                                     const std::vector<std::string> &sectors,
-                                                     const std::string &srf_map_file,
-                                                     // output
-                                                     std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
-                                                     srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
-                                                     srfEmissOutput &SrfEmissData_out,
-                                                     std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
+void srfEmissFunctions<S, D>::init_srf_emiss_objects(
+    const int ncol, const std::shared_ptr<const AbstractGrid> &grid, const std::string &data_file,
+    const std::vector<std::string> &sectors, const std::string &srf_map_file,
+    // output
+    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp, srfEmissInput &SrfEmissData_start,
+    srfEmissInput &SrfEmissData_end, srfEmissOutput &SrfEmissData_out,
+    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
   // Init horizontal remap
   SrfEmissHorizInterp = create_horiz_remapper(grid, data_file, sectors, srf_map_file);
 

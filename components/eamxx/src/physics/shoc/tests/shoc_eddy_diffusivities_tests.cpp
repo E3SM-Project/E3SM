@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -171,7 +172,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public Un
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
         const auto offsets = n + (s + 1) * nlev;
-        if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] & SDS.sterm_zt[offset] < SDS.sterm_zt[offsets]) {
+        if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] &
+            SDS.sterm_zt[offset] < SDS.sterm_zt[offsets]) {
           REQUIRE(SDS.tk[offset] < SDS.tkh[offsets]);
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
         }
@@ -314,13 +316,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public Un
 namespace {
 
 TEST_CASE("shoc_tke_eddy_diffusivities_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_eddy_diffusivities_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct().run_bfb();
 }

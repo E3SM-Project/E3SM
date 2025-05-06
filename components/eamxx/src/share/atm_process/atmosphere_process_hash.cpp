@@ -17,7 +17,8 @@ void hash(const Field::view_dev_t<const Real *> &v, const FieldLayout &lo, HashT
   HashType accum = 0;
   Kokkos::parallel_reduce(
       Kokkos::RangePolicy<ExeSpace>(0, lo.size()),
-      KOKKOS_LAMBDA(const int idx, HashType &accum) { bfbhash::hash(v(idx), accum); }, bfbhash::HashReducer<>(accum));
+      KOKKOS_LAMBDA(const int idx, HashType &accum) { bfbhash::hash(v(idx), accum); },
+      bfbhash::HashReducer<>(accum));
   Kokkos::fence();
   bfbhash::hash(accum, accum_out);
 }
@@ -67,7 +68,8 @@ void hash(const Field::view_dev_t<const Real ****> &v, const FieldLayout &lo, Ha
   bfbhash::hash(accum, accum_out);
 }
 
-void hash(const Field::view_dev_t<const Real *****> &v, const FieldLayout &lo, HashType &accum_out) {
+void hash(const Field::view_dev_t<const Real *****> &v, const FieldLayout &lo,
+          HashType &accum_out) {
   HashType accum   = 0;
   const auto &dims = lo.extents();
   Kokkos::parallel_reduce(
@@ -121,9 +123,9 @@ void hash(const std::list<FieldGroup> &fgs, HashType &accum) {
 
 } // namespace
 
-void AtmosphereProcess ::print_global_state_hash(const std::string &label, const TimeStamp &t, const bool in,
-                                                 const bool out, const bool internal, const Real *mem,
-                                                 const int nmem) const {
+void AtmosphereProcess ::print_global_state_hash(const std::string &label, const TimeStamp &t,
+                                                 const bool in, const bool out, const bool internal,
+                                                 const Real *mem, const int nmem) const {
   const bool compute[4] = {in, out, internal, mem != nullptr};
 
   std::vector<std::string> hash_names;
@@ -229,21 +231,22 @@ void AtmosphereProcess ::print_global_state_hash(const std::string &label, const
        << std::setw(2) << std::setfill('0') << date[1] << "-"                        // Month
        << std::setw(2) << std::setfill('0') << date[2] << "-"                        // Day
        << std::setw(5) << std::setfill('0') << tod << " "                            // Time of day
-       << "(" << label << "), naccum=" << naccum;                                    // Label and number of accum
+       << "(" << label << "), naccum=" << naccum; // Label and number of accum
     log(ss.str());
 
     for (int i = 0; i < naccum; ++i) {
       ss.str(""); // Clear content
       ss.clear(); // Clear error flags
-      ss << std::setw(slen) << std::setfill(' ') << hash_names[i] << ": " << std::hex << std::setfill('0')
-         << std::setw(16) << gaccum[i];
+      ss << std::setw(slen) << std::setfill(' ') << hash_names[i] << ": " << std::hex
+         << std::setfill('0') << std::setw(16) << gaccum[i];
       log(ss.str());
     }
     m_atm_logger->flush();
   }
 }
 
-void AtmosphereProcess::print_fast_global_state_hash(const std::string &label, const TimeStamp &t) const {
+void AtmosphereProcess::print_fast_global_state_hash(const std::string &label,
+                                                     const TimeStamp &t) const {
   HashType laccum = 0;
   hash(m_fields_in, laccum);
   HashType gaccum;

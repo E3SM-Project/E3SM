@@ -20,8 +20,10 @@ namespace scream {
 
 class SurfaceCouplingImporter : public AtmosphereProcess {
 public:
-  template <typename DevT, typename DataT> using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
-  template <typename DevT, typename DataT> using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
+  template <typename DevT, typename DataT>
+  using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
+  template <typename DevT, typename DataT>
+  using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
   template <typename DevT, typename ScalarT> using uview_1d = Unmanaged<view_1d<DevT, ScalarT>>;
   template <typename DevT, typename ScalarT> using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;

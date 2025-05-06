@@ -12,11 +12,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::calc_rime_density(const Spack &T_atm, const Spack &rhofaci,
-                                                        const Spack &table_val_qi_fallspd, const Spack &acn,
-                                                        const Spack &lamc, const Spack &mu_c, const Spack &qc_incld,
-                                                        const Spack &qc2qi_collect_tend, Spack &vtrmi1,
-                                                        Spack &rho_qm_cloud, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::calc_rime_density(
+    const Spack &T_atm, const Spack &rhofaci, const Spack &table_val_qi_fallspd, const Spack &acn,
+    const Spack &lamc, const Spack &mu_c, const Spack &qc_incld, const Spack &qc2qi_collect_tend,
+    Spack &vtrmi1, Spack &rho_qm_cloud, const Smask &context) {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar T_zerodegc = C::T_zerodegc;
   constexpr Scalar bcn        = C::bcn;

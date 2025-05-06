@@ -12,9 +12,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const Spack &rho,
-                                                     Spack &nu, const view_dnu_table &dnu, Spack &lamc, Spack &cdist,
-                                                     Spack &cdist1, const Smask &context) {
+KOKKOS_FUNCTION void
+Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const Spack &rho,
+                                Spack &nu, const view_dnu_table &dnu, Spack &lamc, Spack &cdist,
+                                Spack &cdist1, const Smask &context) {
   lamc.set(context, 0);
   cdist.set(context, 0);
   cdist1.set(context, 0);
@@ -60,7 +61,8 @@ KOKKOS_FUNCTION void Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc,
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
+    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc /
+                           (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c + 1) / lamc);
     cdist1.set(qc_gt_small, nc / tgamma(mu_c + 1));
@@ -68,8 +70,9 @@ KOKKOS_FUNCTION void Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc,
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, Spack &mu_r, Spack &lamr,
-                                                    const P3Runtime &runtime_options, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, Spack &mu_r,
+                                                    Spack &lamr, const P3Runtime &runtime_options,
+                                                    const Smask &context) {
   constexpr auto nsmall = C::NSMALL;
   constexpr auto qsmall = C::QSMALL;
   constexpr auto cons1  = C::CONS1;
@@ -108,14 +111,17 @@ KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, 
     if (either.any()) {
       lamr.set(lt, lammin);
       lamr.set(gt, lammax);
-      ekat_masked_loop(either, s) { nr[s] = lamr[s] * lamr[s] * lamr[s] * qr[s] / mass_to_d3_factor[s]; }
+      ekat_masked_loop(either, s) {
+        nr[s] = lamr[s] * lamr[s] * lamr[s] * qr[s] / mass_to_d3_factor[s];
+      }
     }
   }
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::get_cdistr_logn0r(const Spack &qr, const Spack &nr, const Spack &mu_r,
-                                                        const Spack &lamr, Spack &cdistr, Spack &logn0r,
+KOKKOS_FUNCTION void Functions<S, D>::get_cdistr_logn0r(const Spack &qr, const Spack &nr,
+                                                        const Spack &mu_r, const Spack &lamr,
+                                                        Spack &cdistr, Spack &logn0r,
                                                         const Smask &context) {
   constexpr auto qsmall = C::QSMALL;
 

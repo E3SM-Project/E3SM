@@ -4,7 +4,9 @@ namespace scream {
 
 void Field::sync_to_host(const bool fence) const {
   // Sanity check
-  EKAT_REQUIRE_MSG(is_allocated(), "Error! Input field must be allocated in order to sync host and device views.\n");
+  EKAT_REQUIRE_MSG(
+      is_allocated(),
+      "Error! Input field must be allocated in order to sync host and device views.\n");
 
   // Check for early return if Host and Device are the same memory space
   if (host_and_device_share_memory_space())
@@ -37,7 +39,9 @@ void Field::sync_to_host(const bool fence) const {
 
 void Field::sync_to_dev(const bool fence) const {
   // Sanity check
-  EKAT_REQUIRE_MSG(is_allocated(), "Error! Input field must be allocated in order to sync host and device views.\n");
+  EKAT_REQUIRE_MSG(
+      is_allocated(),
+      "Error! Input field must be allocated in order to sync host and device views.\n");
 
   // Check for early return if Host and Device are the same memory space
   if (host_and_device_share_memory_space())

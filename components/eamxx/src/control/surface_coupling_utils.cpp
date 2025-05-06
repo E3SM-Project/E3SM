@@ -2,8 +2,8 @@
 
 namespace scream {
 
-void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &fh, int vecComp, int &col_offset,
-                                     int &col_stride) {
+void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &fh, int vecComp,
+                                     int &col_offset, int &col_stride) {
   using namespace ShortFieldTagsNames;
 
   // Get this field layout info
@@ -14,7 +14,8 @@ void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &f
   const bool scalar   = lt == LayoutType::Scalar2D || lt == LayoutType::Scalar3D;
   const bool vector   = lt == LayoutType::Vector2D || lt == LayoutType::Vector3D;
   const bool layout3d = lt == LayoutType::Scalar3D || lt == LayoutType::Vector3D;
-  EKAT_REQUIRE_MSG(scalar || vector, "Error! Support for tensor fields not yet implemented in surface coupling.\n");
+  EKAT_REQUIRE_MSG(scalar || vector,
+                   "Error! Support for tensor fields not yet implemented in surface coupling.\n");
   EKAT_REQUIRE_MSG((vecComp < 0) == scalar,
                    "Error! You can and must specify a vector component only for vector fields.\n");
 
@@ -50,15 +51,17 @@ void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &f
 
     const auto parent_lt = parent->get_identifier().get_layout().type();
 
-    EKAT_REQUIRE_MSG(parent_lt == LayoutType::Vector3D, "Error! SurfaceCoupling expects all subfields to have parents "
-                                                        "with LayoutType::Vector3D.\n");
+    EKAT_REQUIRE_MSG(parent_lt == LayoutType::Vector3D,
+                     "Error! SurfaceCoupling expects all subfields to have parents "
+                     "with LayoutType::Vector3D.\n");
 
     const auto &sv_info = fh->get_alloc_properties().get_subview_info();
 
     // Recall: idx = (idim,k) = (dimension where slice happened, index along said dimension).
     // Field class only allows idim=0,1. But we should never be in the case of idim=0, here.
     // If we have idim=0, it means that the parent field did not have COL as tag[0].
-    EKAT_REQUIRE_MSG(sv_info.dim_idx == 1, "Error! Bizarre scenario discovered. Contact developers.\n");
+    EKAT_REQUIRE_MSG(sv_info.dim_idx == 1,
+                     "Error! Bizarre scenario discovered. Contact developers.\n");
 
     // Additional col_offset
     col_offset += sv_info.slice_idx * parent->get_alloc_properties().get_last_extent();

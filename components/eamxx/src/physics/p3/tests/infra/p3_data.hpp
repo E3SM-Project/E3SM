@@ -28,13 +28,14 @@ struct P3Data {
   // In
   Real dt;
   Int it;
-  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, qc, nc, qr, nr, qi, ni, qm,
-      bm, dpres, inv_exner, qv_prev, t_prev;
-  Array2 hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend;
+  Array2 qv, th_atm, pres, dz, nc_nuceat_tend, nccn_prescribed, ni_activated, inv_qc_relvar, qc, nc,
+      qr, nr, qi, ni, qm, bm, dpres, inv_exner, qv_prev, t_prev;
+  Array2 hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend,
+      hetfrz_deposition_nucleation_tend;
   // Out
   Array1 precip_liq_surf, precip_ice_surf;
-  Array2 diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr, rho_qi, qv2qi_depos_tend, precip_liq_flux,
-      precip_ice_flux, cld_frac_r, cld_frac_l, cld_frac_i;
+  Array2 diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr, rho_qi, qv2qi_depos_tend,
+      precip_liq_flux, precip_ice_flux, cld_frac_r, cld_frac_l, cld_frac_i;
   Array3 p3_tend_out;
   Array2 liq_ice_exchange, vap_liq_exchange, vap_ice_exchange;
 

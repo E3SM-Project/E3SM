@@ -12,7 +12,8 @@ static void reduce_hash(void *invec, void *inoutvec, int *len, MPI_Datatype * /*
 }
 
 int all_reduce_HashType(MPI_Comm comm, const HashType *sendbuf, HashType *rcvbuf, int count) {
-  static_assert(sizeof(long long int) == sizeof(HashType), "HashType must have size sizeof(long long int).");
+  static_assert(sizeof(long long int) == sizeof(HashType),
+                "HashType must have size sizeof(long long int).");
   MPI_Op op;
   MPI_Op_create(reduce_hash, true, &op);
   const auto stat = MPI_Allreduce(sendbuf, rcvbuf, count, MPI_LONG_LONG_INT, op, comm);

@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -97,8 +98,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestImpDpInverse : public Un
     auto engine = Base::get_engine();
 
     DpInverseData baseline_data[] = {//            shcol, nlev
-                                     DpInverseData(10, 71), DpInverseData(10, 12), DpInverseData(7, 16),
-                                     DpInverseData(2, 7)};
+                                     DpInverseData(10, 71), DpInverseData(10, 12),
+                                     DpInverseData(7, 16), DpInverseData(2, 7)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
@@ -155,13 +156,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestImpDpInverse : public Un
 namespace {
 
 TEST_CASE("shoc_imp_dp_inverse_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpDpInverse;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpDpInverse;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_imp_dp_inverse_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpDpInverse;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpDpInverse;
 
   TestStruct().run_bfb();
 }

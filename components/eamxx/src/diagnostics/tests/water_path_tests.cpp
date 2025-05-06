@@ -59,8 +59,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   auto policy = ESU::get_default_team_policy(ncols, num_levs);
 
   // Input (randomized) views
-  view_1d pseudo_density("pseudo_density", num_levs), qv("qv", num_levs), qc("qc", num_levs), qr("qr", num_levs),
-      qi("qi", num_levs), qm("qm", num_levs);
+  view_1d pseudo_density("pseudo_density", num_levs), qv("qv", num_levs), qc("qc", num_levs),
+      qr("qr", num_levs), qi("qi", num_levs), qm("qm", num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;

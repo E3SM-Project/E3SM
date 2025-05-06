@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -180,13 +181,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocIntColStab : public 
 namespace {
 
 TEST_CASE("shoc_tke_column_stab_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_column_stab_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct().run_bfb();
 }

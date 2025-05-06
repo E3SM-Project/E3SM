@@ -41,7 +41,8 @@ void combine(const Real &new_val, Real &curr_val, const OutputAvgType avg_type) 
 }
 // This one covers cases where a variable might be masked.
 KOKKOS_INLINE_FUNCTION
-void combine_and_fill(const Real &new_val, Real &curr_val, const OutputAvgType avg_type, const Real fill_value) {
+void combine_and_fill(const Real &new_val, Real &curr_val, const OutputAvgType avg_type,
+                      const Real fill_value) {
   const bool new_fill  = new_val == fill_value;
   const bool curr_fill = curr_val == fill_value;
   if (curr_fill && new_fill) {
@@ -75,8 +76,10 @@ void combine_and_fill(const Real &new_val, Real &curr_val, const OutputAvgType a
 void sort_and_check(std::vector<std::string> &fields) {
   std::sort(fields.begin(), fields.end());
   const bool hasDuplicates = std::adjacent_find(fields.begin(), fields.end()) != fields.end();
-  EKAT_REQUIRE_MSG(!hasDuplicates, "ERROR!!! scorpio_output::check_for_duplicates - One of the output yaml files has "
-                                   "duplicate field entries.  Please check");
+  EKAT_REQUIRE_MSG(
+      !hasDuplicates,
+      "ERROR!!! scorpio_output::check_for_duplicates - One of the output yaml files has "
+      "duplicate field entries.  Please check");
 }
 
 AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
@@ -107,7 +110,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const std::vector<Fie
 }
 
 AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
-                                   const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name)
+                                   const std::shared_ptr<const fm_type> &field_mgr,
+                                   const std::string &grid_name)
     : m_comm(comm), m_add_time_dim(true) {
   using vos_t = std::vector<std::string>;
 
@@ -156,7 +160,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
         break;
       }
     }
-    EKAT_REQUIRE_MSG(grid_found, "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
+    EKAT_REQUIRE_MSG(
+        grid_found,
+        "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
   sort_and_check(m_fields_names);
 
@@ -168,13 +174,15 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file    = params.isParameter("horiz_remap_file");
   const bool use_online_remapper =
-      io_grid->name() != fm_grid->name(); // TODO: QUESTION, Do we anticipate online remapping w/ horiz_remap_from file?
-  // Check that we are not requesting online remapping w/ horiz and/or vertical remapping.  Which is not currently
-  // supported.
+      io_grid->name() !=
+      fm_grid
+          ->name(); // TODO: QUESTION, Do we anticipate online remapping w/ horiz_remap_from file?
+  // Check that we are not requesting online remapping w/ horiz and/or vertical remapping.  Which is
+  // not currently supported.
   if (use_online_remapper) {
-    EKAT_REQUIRE_MSG(
-        !use_vertical_remap_from_file and !use_horiz_remap_from_file,
-        "ERROR: scorpio_output - online remapping not supported with vertical and/or horizontal remapping from file");
+    EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
+                     "ERROR: scorpio_output - online remapping not supported with vertical and/or "
+                     "horizontal remapping from file");
   }
 
   // Try to set the IO grid (checks will be performed)
@@ -211,8 +219,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   auto transfer_io_str_atts = [&](const Field &src, Field &tgt) {
     const std::string io_string_atts_key = "io: string attributes";
     using stratts_t                      = std::map<std::string, std::string>;
-    const auto &src_atts                 = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
-    auto &dst_atts                       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+    const auto &src_atts = src.get_header().get_extra_data<stratts_t>(io_string_atts_key);
+    auto &dst_atts       = tgt.get_header().get_extra_data<stratts_t>(io_string_atts_key);
     for (const auto &[name, val] : src_atts) {
       dst_atts[name] = val;
     }
@@ -265,13 +273,16 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     set_field_manager(io_fm, io_grid->name(), "after_vertical_remap");
   }
 
-  // Online remapper and horizontal remapper follow a similar pattern so we check in the same conditional.
+  // Online remapper and horizontal remapper follow a similar pattern so we check in the same
+  // conditional.
   if (use_online_remapper || use_horiz_remap_from_file) {
 
     // Whic FM is the one pre-horiz-remap depends on whether we did vert remap or not
-    const auto fm_pre_hremap =
-        use_vertical_remap_from_file ? get_field_manager("after_vertical_remap") : get_field_manager("sim");
-    const auto gn = use_vertical_remap_from_file ? m_fm_grid_name.at("after_vertical_remap") : m_fm_grid_name.at("sim");
+    const auto fm_pre_hremap = use_vertical_remap_from_file
+                                   ? get_field_manager("after_vertical_remap")
+                                   : get_field_manager("sim");
+    const auto gn = use_vertical_remap_from_file ? m_fm_grid_name.at("after_vertical_remap")
+                                                 : m_fm_grid_name.at("sim");
     set_field_manager(fm_pre_hremap, gn, "before_horizontal_remap");
 
     // We build a remapper, to remap fields from the fm grid to the io grid
@@ -307,7 +318,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     for (const auto &fname : m_fields_names) {
       const auto src = get_field(fname, "before_horizontal_remap");
       const auto tgt = io_fm->get_field(src.name(), io_grid->name());
-      EKAT_REQUIRE_MSG(src.data_type() == DataType::RealType, "Error! I/O supports only Real data, for now.\n");
+      EKAT_REQUIRE_MSG(src.data_type() == DataType::RealType,
+                       "Error! I/O supports only Real data, for now.\n");
       m_horiz_remapper->register_field(src, tgt);
     }
     m_horiz_remapper->registration_ends();
@@ -345,8 +357,8 @@ void AtmosphereOutput::init() {
     register_dimensions(var_name);
   }
 
-  // Now that the fields have been gathered register the local views which will be used to determine output data to be
-  // written.
+  // Now that the fields have been gathered register the local views which will be used to determine
+  // output data to be written.
   register_views();
 }
 
@@ -356,8 +368,9 @@ void AtmosphereOutput::init_timestep(const util::TimeStamp &start_of_step) {
   }
 }
 
-void AtmosphereOutput::run(const std::string &filename, const bool output_step, const bool checkpoint_step,
-                           const int nsteps_since_last_output, const bool allow_invalid_fields) {
+void AtmosphereOutput::run(const std::string &filename, const bool output_step,
+                           const bool checkpoint_step, const int nsteps_since_last_output,
+                           const bool allow_invalid_fields) {
   // If we do INSTANT output, but this is not an write step,
   // we can immediately return
   const bool is_write_step = output_step or checkpoint_step;
@@ -458,15 +471,16 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
       if (allow_invalid_fields) {
         field.deep_copy(m_fill_value);
       } else {
-        EKAT_REQUIRE_MSG(!m_add_time_dim,
-                         "Error! Time-dependent output field '" + name + "' has not been initialized yet\n.");
+        EKAT_REQUIRE_MSG(!m_add_time_dim, "Error! Time-dependent output field '" + name +
+                                              "' has not been initialized yet\n.");
       }
     }
 
-    const bool is_diagnostic          = (m_diagnostics.find(name) != m_diagnostics.end());
-    const bool is_aliasing_field_view = m_avg_type == OutputAvgType::Instant &&
-                                        field.get_header().get_alloc_properties().get_padding() == 0 &&
-                                        field.get_header().get_parent() == nullptr && not is_diagnostic;
+    const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
+    const bool is_aliasing_field_view =
+        m_avg_type == OutputAvgType::Instant &&
+        field.get_header().get_alloc_properties().get_padding() == 0 &&
+        field.get_header().get_parent() == nullptr && not is_diagnostic;
 
     // Manually update the 'running-tally' views with data from the field,
     // by combining new data with current avg values.
@@ -546,7 +560,8 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
               int i, j, k, l;
               unflatten_idx(idx, extents, i, j, k, l);
               if (do_avg_cnt) {
-                combine_and_fill(new_view_4d(i, j, k, l), avg_view_4d(i, j, k, l), avg_type, fill_value);
+                combine_and_fill(new_view_4d(i, j, k, l), avg_view_4d(i, j, k, l), avg_type,
+                                 fill_value);
               } else {
                 combine(new_view_4d(i, j, k, l), avg_view_4d(i, j, k, l), avg_type);
               }
@@ -561,7 +576,8 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
               int i, j, k, l, m;
               unflatten_idx(idx, extents, i, j, k, l, m);
               if (do_avg_cnt) {
-                combine_and_fill(new_view_5d(i, j, k, l, m), avg_view_5d(i, j, k, l, m), avg_type, fill_value);
+                combine_and_fill(new_view_5d(i, j, k, l, m), avg_view_5d(i, j, k, l, m), avg_type,
+                                 fill_value);
               } else {
                 combine(new_view_5d(i, j, k, l, m), avg_view_5d(i, j, k, l, m), avg_type);
               }
@@ -570,13 +586,15 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
       }
       case 6: {
         auto new_view_6d = field.get_view<const Real ******, Device>();
-        auto avg_view_6d = view_Nd_dev<6>(data, dims[0], dims[1], dims[2], dims[3], dims[4], dims[5]);
+        auto avg_view_6d =
+            view_Nd_dev<6>(data, dims[0], dims[1], dims[2], dims[3], dims[4], dims[5]);
         Kokkos::parallel_for(
             policy, KOKKOS_LAMBDA(int idx) {
               int i, j, k, l, m, n;
               unflatten_idx(idx, extents, i, j, k, l, m, n);
               if (do_avg_cnt) {
-                combine_and_fill(new_view_6d(i, j, k, l, m, n), avg_view_6d(i, j, k, l, m, n), avg_type, fill_value);
+                combine_and_fill(new_view_6d(i, j, k, l, m, n), avg_view_6d(i, j, k, l, m, n),
+                                 avg_type, fill_value);
               } else {
                 combine(new_view_6d(i, j, k, l, m, n), avg_view_6d(i, j, k, l, m, n), avg_type);
               }
@@ -584,7 +602,8 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
         break;
       }
       default:
-        EKAT_ERROR_MSG("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
+        EKAT_ERROR_MSG("Error! Field rank (" + std::to_string(rank) +
+                       ") not supported by AtmosphereOutput.\n");
       }
     }
 
@@ -606,7 +625,8 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
               });
         } else {
           // Divide by steps count only when the summation is complete
-          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) { data[i] /= nsteps_since_last_output; });
+          Kokkos::parallel_for(
+              policy, KOKKOS_LAMBDA(int i) { data[i] /= nsteps_since_last_output; });
         }
       }
       // Bring data to host
@@ -614,8 +634,9 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
       Kokkos::deep_copy(view_host, view_dev);
       auto func_start = std::chrono::steady_clock::now();
       scorpio::write_var(filename, name, view_host.data());
-      auto func_finish  = std::chrono::steady_clock::now();
-      auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
+      auto func_finish = std::chrono::steady_clock::now();
+      auto duration_loc =
+          std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
     }
   }
@@ -628,14 +649,16 @@ void AtmosphereOutput::run(const std::string &filename, const bool output_step, 
       Kokkos::deep_copy(view_host, view_dev);
       auto func_start = std::chrono::steady_clock::now();
       scorpio::write_var(filename, name, view_host.data());
-      auto func_finish  = std::chrono::steady_clock::now();
-      auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
+      auto func_finish = std::chrono::steady_clock::now();
+      auto duration_loc =
+          std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
     }
   }
   if (is_write_step) {
     if (m_atm_logger) {
-      m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write / 1000.0) + " seconds");
+      m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration_write / 1000.0) +
+                         " seconds");
     }
   }
 } // run
@@ -685,7 +708,8 @@ long long AtmosphereOutput::res_dep_memory_footprint() const {
   return rdmf;
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::set_field_manager(const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
+void AtmosphereOutput::set_field_manager(const std::shared_ptr<const fm_type> &field_mgr,
+                                         const std::string &grid_name,
                                          const std::vector<std::string> &modes) {
 
   // Sanity checks
@@ -706,16 +730,18 @@ void AtmosphereOutput::set_field_manager(const std::shared_ptr<const fm_type> &f
   }
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::set_field_manager(const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
-                                         const std::string &mode) {
+void AtmosphereOutput::set_field_manager(const std::shared_ptr<const fm_type> &field_mgr,
+                                         const std::string &grid_name, const std::string &mode) {
   const std::vector<std::string> modes = {mode};
   set_field_manager(field_mgr, grid_name, modes);
 }
 
-std::shared_ptr<const FieldManager> AtmosphereOutput::get_field_manager(const std::string &mode) const {
+std::shared_ptr<const FieldManager>
+AtmosphereOutput::get_field_manager(const std::string &mode) const {
   auto it = m_field_mgrs.find(mode);
-  EKAT_REQUIRE_MSG(it != m_field_mgrs.end(), "ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode +
-                                                 " not found in list of available field managers!.");
+  EKAT_REQUIRE_MSG(it != m_field_mgrs.end(),
+                   "ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode +
+                       " not found in list of available field managers!.");
   return it->second;
 }
 
@@ -724,11 +750,14 @@ std::shared_ptr<const FieldManager> AtmosphereOutput::get_field_manager(const st
 void AtmosphereOutput::set_grid(const std::shared_ptr<const AbstractGrid> &grid) {
   // Sanity checks
   EKAT_REQUIRE_MSG(grid, "Error! Input grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG(grid->is_unique(), "Error! I/O only supports grids which are 'unique', meaning that the\n"
-                                      "       map dof_gid->proc_id is well defined.\n");
-  EKAT_REQUIRE_MSG((grid->get_global_max_dof_gid() - grid->get_global_min_dof_gid() + 1) == grid->get_num_global_dofs(),
-                   "Error! In order for IO to work, the grid must (globally) have dof gids in interval "
-                   "[gid_0,gid_0+num_global_dofs).\n");
+  EKAT_REQUIRE_MSG(grid->is_unique(),
+                   "Error! I/O only supports grids which are 'unique', meaning that the\n"
+                   "       map dof_gid->proc_id is well defined.\n");
+  EKAT_REQUIRE_MSG(
+      (grid->get_global_max_dof_gid() - grid->get_global_min_dof_gid() + 1) ==
+          grid->get_num_global_dofs(),
+      "Error! In order for IO to work, the grid must (globally) have dof gids in interval "
+      "[gid_0,gid_0+num_global_dofs).\n");
 
   // The grid is good. Store it.
   m_io_grid = grid;
@@ -739,7 +768,8 @@ void AtmosphereOutput::register_dimensions(const std::string &name) {
    * Checks that the dimensions associated with a specific variable will be registered with IO file.
    * INPUT:
    *   field_manager: is a pointer to the field_manager for this simulation.
-   *   name: is a string name of the variable who is to be added to the list of variables in this IO stream.
+   *   name: is a string name of the variable who is to be added to the list of variables in this IO
+   * stream.
    */
   using namespace ShortFieldTagsNames;
 
@@ -753,27 +783,29 @@ void AtmosphereOutput::register_dimensions(const std::string &name) {
   const auto &dims = layout.dims();
   for (int i = 0; i < layout.rank(); ++i) {
     // check tag against m_dims map.  If not in there, then add it.
-    std::string tag_name =
-        m_io_grid->has_special_tag_name(tags[i]) ? m_io_grid->get_special_tag_name(tags[i]) : layout.names()[i];
+    std::string tag_name = m_io_grid->has_special_tag_name(tags[i])
+                               ? m_io_grid->get_special_tag_name(tags[i])
+                               : layout.names()[i];
 
     // If t==CMP, and the name stored in the layout is the default ("dim"),
     // we append also the extent, to allow different vector dims in the file
     tag_name += tag_name == "dim" ? std::to_string(dims[i]) : "";
 
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag() == tags[i];
-    int dim_len         = is_partitioned ? m_io_grid->get_partitioned_dim_global_size() : layout.dim(i);
-    auto it_bool        = m_dims.emplace(tag_name, dim_len);
-    EKAT_REQUIRE_MSG(it_bool.second or it_bool.first->second == dim_len,
-                     "Error! Dimension " + tag_name + " on field " + name +
-                         " has conflicting lengths.\n"
-                         "  - old length: " +
-                         std::to_string(m_dims[tag_name]) +
-                         "\n"
-                         "  - new length: " +
-                         std::to_string(dim_len) +
-                         "\n"
-                         "If same name applies to different dims (e.g. physics_gll and physics_pg2 define "
-                         "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
+    int dim_len  = is_partitioned ? m_io_grid->get_partitioned_dim_global_size() : layout.dim(i);
+    auto it_bool = m_dims.emplace(tag_name, dim_len);
+    EKAT_REQUIRE_MSG(
+        it_bool.second or it_bool.first->second == dim_len,
+        "Error! Dimension " + tag_name + " on field " + name +
+            " has conflicting lengths.\n"
+            "  - old length: " +
+            std::to_string(m_dims[tag_name]) +
+            "\n"
+            "  - new length: " +
+            std::to_string(dim_len) +
+            "\n"
+            "If same name applies to different dims (e.g. physics_gll and physics_pg2 define "
+            "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
   }
 } // register_dimensions
 /* ---------------------------------------------------------- */
@@ -811,8 +843,9 @@ void AtmosphereOutput::register_views() {
     }
 
     if (m_track_avg_cnt) {
-      // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
-      // We don't need to track average counts for files that are not tracking the time dim
+      // Now create and store a dev view to track the averaging count for this layout (if we are
+      // tracking) We don't need to track average counts for files that are not tracking the time
+      // dim
       set_avg_cnt_tracking(name, layout);
     }
   }
@@ -838,17 +871,17 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string &name, const Field
     return;
   }
 
-  // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
-  // We don't need to track average counts for files that are not tracking the time dim
+  // Now create and store a dev view to track the averaging count for this layout (if we are
+  // tracking) We don't need to track average counts for files that are not tracking the time dim
   const auto &avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto size            = layout.size();
   const auto tags            = layout.tags();
   if (m_track_avg_cnt) {
     std::string avg_cnt_name = "avg_count" + avg_cnt_suffix;
     for (int i = 0; i < layout.rank(); ++i) {
-      const auto t = layout.tag(i);
-      std::string tag_name =
-          m_io_grid->has_special_tag_name(t) ? m_io_grid->get_special_tag_name(t) : layout.names()[i];
+      const auto t         = layout.tag(i);
+      std::string tag_name = m_io_grid->has_special_tag_name(t) ? m_io_grid->get_special_tag_name(t)
+                                                                : layout.names()[i];
 
       // If t==CMP, and the name stored in the layout is the default ("dim"),
       // we append also the extent, to allow different vector dims in the file
@@ -856,12 +889,14 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string &name, const Field
 
       avg_cnt_name += "_" + tag_name;
     }
-    if (std::find(m_avg_cnt_names.begin(), m_avg_cnt_names.end(), avg_cnt_name) == m_avg_cnt_names.end()) {
+    if (std::find(m_avg_cnt_names.begin(), m_avg_cnt_names.end(), avg_cnt_name) ==
+        m_avg_cnt_names.end()) {
       m_avg_cnt_names.push_back(avg_cnt_name);
     }
     m_field_to_avg_cnt_map.emplace(name, avg_cnt_name);
-    m_dev_views_1d.emplace(avg_cnt_name,
-                           view_1d_dev("", size)); // Note, emplace will only add a new key if one isn't already there
+    m_dev_views_1d.emplace(
+        avg_cnt_name,
+        view_1d_dev("", size)); // Note, emplace will only add a new key if one isn't already there
     m_host_views_1d.emplace(avg_cnt_name, Kokkos::create_mirror(m_dev_views_1d[avg_cnt_name]));
     m_layouts.emplace(avg_cnt_name, layout);
   }
@@ -895,7 +930,8 @@ void AtmosphereOutput::reset_dev_views() {
   }
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::register_variables(const std::string &filename, const std::string &fp_precision,
+void AtmosphereOutput::register_variables(const std::string &filename,
+                                          const std::string &fp_precision,
                                           const scorpio::FileMode mode) {
   using namespace ShortFieldTagsNames;
   using strvec_t = std::vector<std::string>;
@@ -912,7 +948,8 @@ void AtmosphereOutput::register_variables(const std::string &filename, const std
     std::vector<std::string> vec_of_dims;
     for (int i = 0; i < layout.rank(); ++i) {
       const auto t  = layout.tag(i);
-      auto tag_name = m_io_grid->has_special_tag_name(t) ? m_io_grid->get_special_tag_name(t) : layout.names()[i];
+      auto tag_name = m_io_grid->has_special_tag_name(t) ? m_io_grid->get_special_tag_name(t)
+                                                         : layout.names()[i];
       if (tag_name == "dim") {
         tag_name += std::to_string(layout.dim(i));
       }
@@ -949,18 +986,19 @@ void AtmosphereOutput::register_variables(const std::string &filename, const std
                            "  - varname  : " +
                            name + "\n");
       const auto &var = scorpio::get_var(filename, name);
-      EKAT_REQUIRE_MSG(var.dim_names() == vec_of_dims, "Error! Cannot append, due to variable dimensions mismatch.\n"
-                                                       "  - filename : " +
-                                                           filename +
-                                                           "\n"
-                                                           "  - varname  : " +
-                                                           name +
-                                                           "\n"
-                                                           "  - var dims : " +
-                                                           ekat::join(vec_of_dims, ",") +
-                                                           "\n"
-                                                           "  - var dims from file: " +
-                                                           ekat::join(var.dim_names(), ",") + "\n");
+      EKAT_REQUIRE_MSG(var.dim_names() == vec_of_dims,
+                       "Error! Cannot append, due to variable dimensions mismatch.\n"
+                       "  - filename : " +
+                           filename +
+                           "\n"
+                           "  - varname  : " +
+                           name +
+                           "\n"
+                           "  - var dims : " +
+                           ekat::join(vec_of_dims, ",") +
+                           "\n"
+                           "  - var dims from file: " +
+                           ekat::join(var.dim_names(), ",") + "\n");
       EKAT_REQUIRE_MSG(var.units == units, "Error! Cannot append, due to variable units mismatch.\n"
                                            "  - filename : " +
                                                filename +
@@ -973,24 +1011,26 @@ void AtmosphereOutput::register_variables(const std::string &filename, const std
                                                "\n"
                                                "  - var units from file: " +
                                                var.units + "\n");
-      EKAT_REQUIRE_MSG(var.time_dep == m_add_time_dim, "Error! Cannot append, due to time dependency mismatch.\n"
-                                                       "  - filename : " +
-                                                           filename +
-                                                           "\n"
-                                                           "  - varname  : " +
-                                                           name +
-                                                           "\n"
-                                                           "  - var time dep: " +
-                                                           (m_add_time_dim ? "yes" : "no") +
-                                                           "\n"
-                                                           "  - var time dep from file: " +
-                                                           (var.time_dep ? "yes" : "no") + "\n");
+      EKAT_REQUIRE_MSG(var.time_dep == m_add_time_dim,
+                       "Error! Cannot append, due to time dependency mismatch.\n"
+                       "  - filename : " +
+                           filename +
+                           "\n"
+                           "  - varname  : " +
+                           name +
+                           "\n"
+                           "  - var time dep: " +
+                           (m_add_time_dim ? "yes" : "no") +
+                           "\n"
+                           "  - var time dep from file: " +
+                           (var.time_dep ? "yes" : "no") + "\n");
     } else {
       scorpio::define_var(filename, name, units, vec_of_dims, "real", fp_precision, m_add_time_dim);
 
       // Add FillValue as an attribute of each variable
       // FillValue is a protected metadata, do not add it if it already existed
-      if (fp_precision == "double" or (fp_precision == "real" and std::is_same<Real, double>::value)) {
+      if (fp_precision == "double" or
+          (fp_precision == "real" and std::is_same<Real, double>::value)) {
         double fill_value = m_fill_value;
         scorpio::set_attribute(filename, name, "_FillValue", fill_value);
       } else {
@@ -1015,7 +1055,8 @@ void AtmosphereOutput::register_variables(const std::string &filename, const std
         scorpio::set_attribute(filename, name, "sub_fields", children_list);
       }
 
-      // If tracking average count variables then add the name of the tracking variable for this variable
+      // If tracking average count variables then add the name of the tracking variable for this
+      // variable
       if (m_track_avg_cnt) {
         const auto lookup = m_field_to_avg_cnt_map.at(name);
         scorpio::set_attribute(filename, name, "averaging_count_tracker", lookup);
@@ -1048,7 +1089,8 @@ void AtmosphereOutput::register_variables(const std::string &filename, const std
       const auto layout = m_layouts.at(name);
       auto vec_of_dims  = set_vec_of_dims(layout);
       if (mode == scorpio::FileMode::Append) {
-        // Similar to the regular fields above, check that the var is in the file, and has the right properties
+        // Similar to the regular fields above, check that the var is in the file, and has the right
+        // properties
         EKAT_REQUIRE_MSG(scorpio::has_var(filename, name),
                          "Error! Cannot append, due to variable missing from the file.\n"
                          "  - filename : " +
@@ -1057,47 +1099,51 @@ void AtmosphereOutput::register_variables(const std::string &filename, const std
                              "  - varname  : " +
                              name + "\n");
         const auto &var = scorpio::get_var(filename, name);
-        EKAT_REQUIRE_MSG(var.dim_names() == vec_of_dims, "Error! Cannot append, due to variable dimensions mismatch.\n"
-                                                         "  - filename : " +
-                                                             filename +
-                                                             "\n"
-                                                             "  - varname  : " +
-                                                             name +
-                                                             "\n"
-                                                             "  - var dims : " +
-                                                             ekat::join(vec_of_dims, ",") +
-                                                             "\n"
-                                                             "  - var dims from file: " +
-                                                             ekat::join(var.dim_names(), ",") + "\n");
-        EKAT_REQUIRE_MSG(var.units == unitless, "Error! Cannot append, due to variable units mismatch.\n"
-                                                "  - filename : " +
-                                                    filename +
-                                                    "\n"
-                                                    "  - varname  : " +
-                                                    name +
-                                                    "\n"
-                                                    "  - var units: " +
-                                                    unitless +
-                                                    "\n"
-                                                    "  - var units from file: " +
-                                                    var.units + "\n");
-        EKAT_REQUIRE_MSG(var.time_dep == m_add_time_dim, "Error! Cannot append, due to time dependency mismatch.\n"
-                                                         "  - filename : " +
-                                                             filename +
-                                                             "\n"
-                                                             "  - varname  : " +
-                                                             name +
-                                                             "\n"
-                                                             "  - var time dep: " +
-                                                             (m_add_time_dim ? "yes" : "no") +
-                                                             "\n"
-                                                             "  - var time dep from file: " +
-                                                             (var.time_dep ? "yes" : "no") + "\n");
+        EKAT_REQUIRE_MSG(var.dim_names() == vec_of_dims,
+                         "Error! Cannot append, due to variable dimensions mismatch.\n"
+                         "  - filename : " +
+                             filename +
+                             "\n"
+                             "  - varname  : " +
+                             name +
+                             "\n"
+                             "  - var dims : " +
+                             ekat::join(vec_of_dims, ",") +
+                             "\n"
+                             "  - var dims from file: " +
+                             ekat::join(var.dim_names(), ",") + "\n");
+        EKAT_REQUIRE_MSG(var.units == unitless,
+                         "Error! Cannot append, due to variable units mismatch.\n"
+                         "  - filename : " +
+                             filename +
+                             "\n"
+                             "  - varname  : " +
+                             name +
+                             "\n"
+                             "  - var units: " +
+                             unitless +
+                             "\n"
+                             "  - var units from file: " +
+                             var.units + "\n");
+        EKAT_REQUIRE_MSG(var.time_dep == m_add_time_dim,
+                         "Error! Cannot append, due to time dependency mismatch.\n"
+                         "  - filename : " +
+                             filename +
+                             "\n"
+                             "  - varname  : " +
+                             name +
+                             "\n"
+                             "  - var time dep: " +
+                             (m_add_time_dim ? "yes" : "no") +
+                             "\n"
+                             "  - var time dep from file: " +
+                             (var.time_dep ? "yes" : "no") + "\n");
       } else {
         // Note, unlike with regular output variables, for the average counting
         // variables we don't need to add all of the extra metadata.  So we simply
         // define the variable.
-        scorpio::define_var(filename, name, unitless, vec_of_dims, "real", fp_precision, m_add_time_dim);
+        scorpio::define_var(filename, name, unitless, vec_of_dims, "real", fp_precision,
+                            m_add_time_dim);
       }
     }
   }
@@ -1206,12 +1252,13 @@ void AtmosphereOutput::set_decompositions(const std::string &filename) {
   }
 
   // Set the decomposition for the partitioned dimension
-  const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-  std::string decomp_dim =
-      m_io_grid->has_special_tag_name(decomp_tag) ? m_io_grid->get_special_tag_name(decomp_tag) : e2str(decomp_tag);
-  auto gids_f  = m_io_grid->get_partitioned_dim_gids();
-  auto gids_h  = gids_f.get_view<const AbstractGrid::gid_type *, Host>();
-  auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
+  const int local_dim    = m_io_grid->get_partitioned_dim_local_size();
+  std::string decomp_dim = m_io_grid->has_special_tag_name(decomp_tag)
+                               ? m_io_grid->get_special_tag_name(decomp_tag)
+                               : e2str(decomp_tag);
+  auto gids_f            = m_io_grid->get_partitioned_dim_gids();
+  auto gids_h            = gids_f.get_view<const AbstractGrid::gid_type *, Host>();
+  auto min_gid           = m_io_grid->get_global_min_partitioned_dim_gid();
   std::vector<scorpio::offset_t> offsets(local_dim);
   for (int idof = 0; idof < local_dim; ++idof) {
     offsets[idof] = gids_h[idof] - min_gid;
@@ -1219,18 +1266,20 @@ void AtmosphereOutput::set_decompositions(const std::string &filename) {
   scorpio::set_dim_decomp(filename, decomp_dim, offsets);
 }
 
-void AtmosphereOutput::setup_output_file(const std::string &filename, const std::string &fp_precision,
+void AtmosphereOutput::setup_output_file(const std::string &filename,
+                                         const std::string &fp_precision,
                                          const scorpio::FileMode mode) {
   // Register dimensions with netCDF file.
   for (auto it : m_dims) {
     if (mode == scorpio::FileMode::Append) {
       // Simply check that the dim is in the file, and has the right extent
-      EKAT_REQUIRE_MSG(scorpio::has_dim(filename, it.first), "Error! Cannot append, due to missing dim in the file.\n"
-                                                             "  - filename: " +
-                                                                 filename +
-                                                                 "\n"
-                                                                 "  - dimname : " +
-                                                                 it.first + "\n");
+      EKAT_REQUIRE_MSG(scorpio::has_dim(filename, it.first),
+                       "Error! Cannot append, due to missing dim in the file.\n"
+                       "  - filename: " +
+                           filename +
+                           "\n"
+                           "  - dimname : " +
+                           it.first + "\n");
       EKAT_REQUIRE_MSG(scorpio::get_dimlen(filename, it.first) == it.second,
                        "Error! Cannot append, due to mismatch dim length.\n"
                        "  - filename: " +
@@ -1258,7 +1307,8 @@ void AtmosphereOutput::setup_output_file(const std::string &filename, const std:
 /* ---------------------------------------------------------- */
 // This routine will evaluate the diagnostics stored in this
 // output instance.
-void AtmosphereOutput::compute_diagnostic(const std::string &name, const bool allow_invalid_fields) {
+void AtmosphereOutput::compute_diagnostic(const std::string &name,
+                                          const bool allow_invalid_fields) {
   auto skip_diag = m_diag_computed[name];
   if (skip_diag) {
     // Diagnostic already computed, just return
@@ -1332,7 +1382,8 @@ void AtmosphereOutput::set_diagnostics() {
 }
 
 /* ---------------------------------------------------------- */
-std::shared_ptr<AtmosphereDiagnostic> AtmosphereOutput::create_diagnostic(const std::string &diag_field_name) {
+std::shared_ptr<AtmosphereDiagnostic>
+AtmosphereOutput::create_diagnostic(const std::string &diag_field_name) {
   // We need scream scope resolution, since this->create_diagnostic is hiding it
   auto sim_grid = get_field_manager("sim")->get_grids_manager()->get_grid(m_fm_grid_name.at("sim"));
   auto diag     = scream::create_diagnostic(diag_field_name, sim_grid);
@@ -1342,12 +1393,13 @@ std::shared_ptr<AtmosphereDiagnostic> AtmosphereOutput::create_diagnostic(const 
   auto &params                  = diag->get_params();
   if (diag->name() == "FieldAtPressureLevel") {
     params.set<double>("mask_value", m_fill_value);
-    diag_avg_cnt_name = "_" + params.get<std::string>("pressure_value") + params.get<std::string>("pressure_units");
-    m_track_avg_cnt   = m_track_avg_cnt || m_avg_type != OutputAvgType::Instant;
+    diag_avg_cnt_name =
+        "_" + params.get<std::string>("pressure_value") + params.get<std::string>("pressure_units");
+    m_track_avg_cnt = m_track_avg_cnt || m_avg_type != OutputAvgType::Instant;
   } else if (diag->name() == "FieldAtHeight") {
     if (params.get<std::string>("surface_reference") == "sealevel") {
-      diag_avg_cnt_name =
-          "_" + params.get<std::string>("height_value") + params.get<std::string>("height_units") + "_above_sealevel";
+      diag_avg_cnt_name = "_" + params.get<std::string>("height_value") +
+                          params.get<std::string>("height_units") + "_above_sealevel";
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type != OutputAvgType::Instant;
     }
   }

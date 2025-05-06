@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 5;
@@ -161,8 +162,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public 
     auto engine = Base::get_engine();
 
     ShocDiagObklenData SDS_baseline[] = {//             shcol
-                                         ShocDiagObklenData(12), ShocDiagObklenData(10), ShocDiagObklenData(7),
-                                         ShocDiagObklenData(2)};
+                                         ShocDiagObklenData(12), ShocDiagObklenData(10),
+                                         ShocDiagObklenData(7), ShocDiagObklenData(2)};
 
     // Generate random input data
     for (auto &d : SDS_baseline) {
@@ -171,8 +172,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public 
 
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
-    ShocDiagObklenData SDS_cxx[] = {ShocDiagObklenData(SDS_baseline[0]), ShocDiagObklenData(SDS_baseline[1]),
-                                    ShocDiagObklenData(SDS_baseline[2]), ShocDiagObklenData(SDS_baseline[3])};
+    ShocDiagObklenData SDS_cxx[] = {
+        ShocDiagObklenData(SDS_baseline[0]), ShocDiagObklenData(SDS_baseline[1]),
+        ShocDiagObklenData(SDS_baseline[2]), ShocDiagObklenData(SDS_baseline[3])};
 
     static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocDiagObklenData);
 
@@ -217,13 +219,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public 
 namespace {
 
 TEST_CASE("shoc_diag_obklen_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_diag_obklen_length_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
 
   TestStruct().run_bfb();
 }

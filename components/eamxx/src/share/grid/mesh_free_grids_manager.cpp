@@ -21,7 +21,8 @@ MeshFreeGridsManager::MeshFreeGridsManager(const ekat::Comm &comm, const ekat::P
 }
 
 MeshFreeGridsManager::remapper_ptr_type
-MeshFreeGridsManager::do_create_remapper(const grid_ptr_type /* from_grid */, const grid_ptr_type /* to_grid */) const {
+MeshFreeGridsManager::do_create_remapper(const grid_ptr_type /* from_grid */,
+                                         const grid_ptr_type /* to_grid */) const {
   EKAT_ERROR_MSG("Error! MeshFreeGridsManager does not offer any remapper.\n");
   return nullptr;
 }
@@ -105,7 +106,7 @@ void MeshFreeGridsManager::build_se_grid(const std::string &name, ekat::Paramete
 void MeshFreeGridsManager::build_point_grid(const std::string &name, ekat::ParameterList &params) {
   const int num_global_cols     = params.get<int>("number_of_global_columns");
   const int num_vertical_levels = params.get<int>("number_of_vertical_levels");
-  auto pt_grid                  = create_point_grid(name, num_global_cols, num_vertical_levels, m_comm);
+  auto pt_grid = create_point_grid(name, num_global_cols, num_vertical_levels, m_comm);
 
   const auto units = ekat::units::Units::nondimensional();
 
@@ -173,7 +174,8 @@ void MeshFreeGridsManager::add_geo_data(const nonconstgrid_ptr_type &grid) const
   }
 }
 
-void MeshFreeGridsManager::load_lat_lon(const nonconstgrid_ptr_type &grid, const std::string &filename) const {
+void MeshFreeGridsManager::load_lat_lon(const nonconstgrid_ptr_type &grid,
+                                        const std::string &filename) const {
   using geo_view_host = AtmosphereInput::view_1d_host;
   const auto units    = ekat::units::Units::nondimensional();
 
@@ -185,8 +187,9 @@ void MeshFreeGridsManager::load_lat_lon(const nonconstgrid_ptr_type &grid, const
                                                      {"lon", lon.get_view<Real *, Host>()}};
 
   // Store view layouts
-  std::map<std::string, FieldLayout> layouts = {{"lat", lat.get_header().get_identifier().get_layout()},
-                                                {"lon", lon.get_header().get_identifier().get_layout()}};
+  std::map<std::string, FieldLayout> layouts = {
+      {"lat", lat.get_header().get_identifier().get_layout()},
+      {"lon", lon.get_header().get_identifier().get_layout()}};
 
   // Read lat/lon into host views
   ekat::ParameterList lat_lon_reader_pl;
@@ -240,10 +243,11 @@ void MeshFreeGridsManager::load_vertical_coordinates(const nonconstgrid_ptr_type
 
   // Store view layouts
   using namespace ShortFieldTagsNames;
-  std::map<std::string, FieldLayout> layouts = {{"hyam", hyam.get_header().get_identifier().get_layout()},
-                                                {"hybm", hybm.get_header().get_identifier().get_layout()},
-                                                {"hyai", hyai.get_header().get_identifier().get_layout()},
-                                                {"hybi", hybi.get_header().get_identifier().get_layout()}};
+  std::map<std::string, FieldLayout> layouts = {
+      {"hyam", hyam.get_header().get_identifier().get_layout()},
+      {"hybm", hybm.get_header().get_identifier().get_layout()},
+      {"hyai", hyai.get_header().get_identifier().get_layout()},
+      {"hybi", hybi.get_header().get_identifier().get_layout()}};
 
   // Read hyam/hybm into host views
   ekat::ParameterList vcoord_reader_pl;
@@ -292,9 +296,9 @@ void MeshFreeGridsManager::load_vertical_coordinates(const nonconstgrid_ptr_type
 #endif
 }
 
-std::shared_ptr<GridsManager> create_mesh_free_grids_manager(const ekat::Comm &comm, const int num_local_elems,
-                                                             const int num_gp, const int num_vertical_levels,
-                                                             const int num_global_cols) {
+std::shared_ptr<GridsManager>
+create_mesh_free_grids_manager(const ekat::Comm &comm, const int num_local_elems, const int num_gp,
+                               const int num_vertical_levels, const int num_global_cols) {
   ekat::ParameterList gm_params;
   std::vector<std::string> grids_names;
   if (num_local_elems >= 2) {

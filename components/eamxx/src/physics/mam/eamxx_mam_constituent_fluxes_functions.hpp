@@ -8,11 +8,11 @@ namespace scream {
 
 namespace {
 
-void update_gas_aerosols_using_constituents(const int ncol, const int nlev, const double dt,
-                                            const mam_coupling::DryAtmosphere &dry_atm,
-                                            const MAMConstituentFluxes::const_view_2d &constituent_fluxes,
-                                            // output
-                                            const mam_coupling::AerosolState &wet_aero) {
+void update_gas_aerosols_using_constituents(
+    const int ncol, const int nlev, const double dt, const mam_coupling::DryAtmosphere &dry_atm,
+    const MAMConstituentFluxes::const_view_2d &constituent_fluxes,
+    // output
+    const mam_coupling::AerosolState &wet_aero) {
   using C                      = physics::Constants<Real>;
   static constexpr auto gravit = C::gravit; // Gravity [m/s2]
   static constexpr int pcnst   = mam4::aero_model::pcnst;
@@ -45,7 +45,8 @@ void update_gas_aerosols_using_constituents(const int ncol, const int nlev, cons
                                                      surface_lev);            // input
 
         // Compute the units conversion factor (kg/m2/s to kg/kg)
-        EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del(icol, surface_lev) != 0, "Error! dry_atm.pdel must be non-zero!\n");
+        EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del(icol, surface_lev) != 0,
+                               "Error! dry_atm.pdel must be non-zero!\n");
         const Real rpdel       = 1.0 / dry_atm.p_del(icol, surface_lev);
         const Real unit_factor = dt * gravit * rpdel;
 

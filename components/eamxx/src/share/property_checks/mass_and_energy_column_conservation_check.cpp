@@ -7,11 +7,13 @@
 namespace scream {
 
 MassAndEnergyColumnConservationCheck::MassAndEnergyColumnConservationCheck(
-    const std::shared_ptr<const AbstractGrid> &grid, const Real mass_error_tolerance, const Real energy_error_tolerance,
-    const Field &pseudo_density, const Field &ps, const Field &phis, const Field &horiz_winds, const Field &T_mid,
-    const Field &qv, const Field &qc, const Field &qr, const Field &qi, const Field &vapor_flux,
+    const std::shared_ptr<const AbstractGrid> &grid, const Real mass_error_tolerance,
+    const Real energy_error_tolerance, const Field &pseudo_density, const Field &ps,
+    const Field &phis, const Field &horiz_winds, const Field &T_mid, const Field &qv,
+    const Field &qc, const Field &qr, const Field &qi, const Field &vapor_flux,
     const Field &water_flux, const Field &ice_flux, const Field &heat_flux)
-    : m_grid(grid), m_dt(std::nan("")), m_mass_tol(mass_error_tolerance), m_energy_tol(energy_error_tolerance) {
+    : m_grid(grid), m_dt(std::nan("")), m_mass_tol(mass_error_tolerance),
+      m_energy_tol(energy_error_tolerance) {
   m_num_cols = m_grid->get_num_local_dofs();
   m_num_levs = m_grid->get_num_vertical_levels();
 
@@ -55,7 +57,8 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass() {
         const auto qi_i             = ekat::subview(qi, i);
         const auto qr_i             = ekat::subview(qr, i);
 
-        mass(i) = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
+        mass(i) =
+            compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
       });
 }
 
@@ -85,8 +88,8 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy() {
         const auto qc_i             = ekat::subview(qc, i);
         const auto qr_i             = ekat::subview(qr, i);
 
-        energy(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i, qv_i, qc_i,
-                                                   qr_i, ps(i), phis(i));
+        energy(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i,
+                                                   horiz_winds_i, qv_i, qc_i, qr_i, ps(i), phis(i));
       });
 }
 
@@ -96,8 +99,9 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const 
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
-  EKAT_REQUIRE_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
-                                      "before running check().");
+  EKAT_REQUIRE_MSG(!std::isnan(m_dt),
+                   "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
+                   "before running check().");
   auto dt = m_dt;
 
   const auto pseudo_density = m_fields.at("pseudo_density").get_view<const Real **>();
@@ -135,14 +139,16 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const 
         const auto qr_i             = ekat::subview(qr, i);
 
         // Calculate total mass
-        const Real tm          = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
+        const Real tm =
+            compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
         const Real previous_tm = mass(i);
 
         // Calculate expected total mass. Here, dt should be set to the timestep of the
         // subcycle for the process that called this check. This effectively scales the boundary
         // fluxes by 1/num_subcycles (dt = model_dt/num_subcycles) so that we only include
         // the expected change after one substep (not a full timestep).
-        const Real tm_exp = previous_tm + compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i)) * dt;
+        const Real tm_exp =
+            previous_tm + compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i)) * dt;
 
         // Calculate relative error of total mass
         const Real rel_err_mass = std::abs(tm - tm_exp) / previous_tm;
@@ -169,14 +175,16 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const 
         const auto qr_i             = ekat::subview(qr, i);
 
         // Calculate total energy
-        const Real te = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i, qv_i,
-                                                       qc_i, qr_i, ps(i), phis(i));
+        const Real te =
+            compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
+                                           qv_i, qc_i, qr_i, ps(i), phis(i));
         const Real previous_te = energy(i);
 
         // Calculate expected total energy. See the comment above for an explanation of dt.
         const Real te_exp =
-            previous_te +
-            compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i)) * dt;
+            previous_te + compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i),
+                                                                 ice_flux(i), heat_flux(i)) *
+                              dt;
 
         // Calculate relative error of total energy
         const Real rel_err_energy = std::abs(te - te_exp) / previous_te;
@@ -235,14 +243,16 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const 
       msg << "\n    END OF ADDITIONAL DATA\n";
     }
     res_and_msg.fail_loc_indices.resize(1, maxloc_mass.loc);
-    res_and_msg.fail_loc_tags = m_fields.at("phis").get_header().get_identifier().get_layout().tags();
+    res_and_msg.fail_loc_tags =
+        m_fields.at("phis").get_header().get_identifier().get_layout().tags();
   }
   if (not energy_below_tol) {
     msg << "  - energy error tolerance: " << m_energy_tol << "\n";
     msg << "  - energy relative error: " << maxloc_energy.val << "\n"
         << "    - global dof: " << gids(maxloc_energy.loc) << "\n";
     if (has_latlon) {
-      msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc) << ")\n";
+      msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc)
+          << ")\n";
     }
     if (has_additional_col_info) {
       msg << "    - additional data (w/ local column index):\n";
@@ -254,7 +264,8 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const 
       msg << "\n    END OF ADDITIONAL DATA\n";
     }
     res_and_msg.fail_loc_indices.resize(1, maxloc_energy.loc);
-    res_and_msg.fail_loc_tags = m_fields.at("phis").get_header().get_identifier().get_layout().tags();
+    res_and_msg.fail_loc_tags =
+        m_fields.at("phis").get_header().get_identifier().get_layout().tags();
   }
 
   res_and_msg.msg = msg.str();
@@ -263,12 +274,10 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const 
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column(const KT::MemberType &team, const int nlevs,
-                                                                        const uview_1d<const Real> &pseudo_density,
-                                                                        const uview_1d<const Real> &qv,
-                                                                        const uview_1d<const Real> &qc,
-                                                                        const uview_1d<const Real> &qi,
-                                                                        const uview_1d<const Real> &qr) {
+Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column(
+    const KT::MemberType &team, const int nlevs, const uview_1d<const Real> &pseudo_density,
+    const uview_1d<const Real> &qv, const uview_1d<const Real> &qc, const uview_1d<const Real> &qi,
+    const uview_1d<const Real> &qr) {
   using PC = scream::physics::Constants<Real>;
 
   const Real gravit = PC::gravit;
@@ -279,8 +288,8 @@ Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column(const KT
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column(const Real vapor_flux,
-                                                                                const Real water_flux) {
+Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column(
+    const Real vapor_flux, const Real water_flux) {
   using PC           = scream::physics::Constants<Real>;
   const Real RHO_H2O = PC::RHO_H2O;
 
@@ -290,32 +299,32 @@ Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column(
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column(
     const KT::MemberType &team, const int nlevs, const uview_1d<const Real> &pseudo_density,
-    const uview_1d<const Real> &T_mid, const uview_2d<const Real> &horiz_winds, const uview_1d<const Real> &qv,
-    const uview_1d<const Real> &qc, const uview_1d<const Real> &qr, const Real ps, const Real phis) {
+    const uview_1d<const Real> &T_mid, const uview_2d<const Real> &horiz_winds,
+    const uview_1d<const Real> &qv, const uview_1d<const Real> &qc, const uview_1d<const Real> &qr,
+    const Real ps, const Real phis) {
   using PC          = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;
   const Real LatIce = PC::LatIce;
   const Real gravit = PC::gravit;
   const Real Cpair  = PC::Cpair;
 
-  Real total_energy = ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs, [&](const int lev, Real &local_energy) {
-    const auto u2 = horiz_winds(0, lev) * horiz_winds(0, lev);
-    const auto v2 = horiz_winds(1, lev) * horiz_winds(1, lev);
+  Real total_energy =
+      ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs, [&](const int lev, Real &local_energy) {
+        const auto u2 = horiz_winds(0, lev) * horiz_winds(0, lev);
+        const auto v2 = horiz_winds(1, lev) * horiz_winds(1, lev);
 
-    local_energy +=
-        (T_mid(lev) * Cpair + 0.5 * (u2 + v2) + (LatVap + LatIce) * qv(lev) + LatIce * (qc(lev) + qr(lev))) *
-        pseudo_density(lev) / gravit;
-  });
+        local_energy += (T_mid(lev) * Cpair + 0.5 * (u2 + v2) + (LatVap + LatIce) * qv(lev) +
+                         LatIce * (qc(lev) + qr(lev))) *
+                        pseudo_density(lev) / gravit;
+      });
   total_energy += phis * ps / gravit;
 
   return total_energy;
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_energy_boundary_flux_on_column(const Real vapor_flux,
-                                                                                  const Real water_flux,
-                                                                                  const Real ice_flux,
-                                                                                  const Real heat_flux) {
+Real MassAndEnergyColumnConservationCheck::compute_energy_boundary_flux_on_column(
+    const Real vapor_flux, const Real water_flux, const Real ice_flux, const Real heat_flux) {
   using PC           = scream::physics::Constants<Real>;
   const Real LatVap  = PC::LatVap;
   const Real LatIce  = PC::LatIce;

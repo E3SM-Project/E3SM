@@ -6,10 +6,12 @@
 
 namespace scream {
 
-NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
+                                           const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("number_kind"), "Error! NumberPathDiagnostic requires 'number_kind' in its "
-                                                      "input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("number_kind"),
+                   "Error! NumberPathDiagnostic requires 'number_kind' in its "
+                   "input parameters.\n");
 
   m_kind = m_params.get<std::string>("number_kind");
   if (m_kind == "Liq") {
@@ -77,7 +79,10 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
         auto rho_icol  = ekat::subview(rho, icol);
         Kokkos::parallel_reduce(
             Kokkos::TeamVectorRange(team, num_levs),
-            [&](const int &ilev, Real &lsum) { lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g; }, np(icol));
+            [&](const int &ilev, Real &lsum) {
+              lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g;
+            },
+            np(icol));
         team.team_barrier();
       });
 }

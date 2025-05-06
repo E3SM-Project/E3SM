@@ -42,8 +42,9 @@ inline util::TimeStamp get_last_slice_time() {
   return t;
 }
 
-std::vector<Field> create_fields(const std::shared_ptr<const AbstractGrid> &grid, const bool init_values,
-                                 const bool int_same_as_mid = false, const bool pad_for_packing = true) {
+std::vector<Field> create_fields(const std::shared_ptr<const AbstractGrid> &grid,
+                                 const bool init_values, const bool int_same_as_mid = false,
+                                 const bool pad_for_packing = true) {
   constexpr auto m = ekat::units::m;
   const auto &gn   = grid->name();
 
@@ -103,7 +104,8 @@ std::vector<Field> create_fields(const std::shared_ptr<const AbstractGrid> &grid
         for (int icmp = 0; icmp < ncmps; ++icmp) {
           v3d_m.get_view<Real ***, Host>()(icol, icmp, ilev) = h_value * (v_value + dv / 2) + icmp;
           if (int_same_as_mid) {
-            v3d_i.get_view<Real ***, Host>()(icol, icmp, ilev) = h_value * (v_value + dv / 2) + icmp;
+            v3d_i.get_view<Real ***, Host>()(icol, icmp, ilev) =
+                h_value * (v_value + dv / 2) + icmp;
           } else {
             v3d_i.get_view<Real ***, Host>()(icol, icmp, ilev) = h_value * (v_value) + icmp;
           }

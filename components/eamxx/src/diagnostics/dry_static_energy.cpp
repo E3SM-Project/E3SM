@@ -6,7 +6,8 @@
 namespace scream {
 
 // =========================================================================================
-DryStaticEnergyDiagnostic::DryStaticEnergyDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+DryStaticEnergyDiagnostic::DryStaticEnergyDiagnostic(const ekat::Comm &comm,
+                                                     const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
@@ -48,7 +49,8 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl() {
   using PF         = PhysicsFunctions<DefaultDevice>;
 
   const auto default_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, m_num_levs);
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols,
+                                                                                    m_num_levs);
 
   const auto &dse                = m_diagnostic_output.get_view<Real **>();
   const auto &T_mid              = get_field_in("T_mid").get_view<const Real **>();
@@ -69,10 +71,11 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl() {
         const int icol      = team.league_rank();
         const auto &dz_s    = ekat::subview(tmp_mid, icol);
         const auto &z_int_s = ekat::subview(tmp_int, icol);
-        const auto &z_mid_s = dz_s; // Reuse the memory for z_mid, but set a new variable for code readability.
+        const auto &z_mid_s =
+            dz_s; // Reuse the memory for z_mid, but set a new variable for code readability.
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const Int &ilev) {
-          dz_s(ilev) = PF::calculate_dz(pseudo_density_mid(icol, ilev), p_mid(icol, ilev), T_mid(icol, ilev),
-                                        qv_mid(icol, ilev));
+          dz_s(ilev) = PF::calculate_dz(pseudo_density_mid(icol, ilev), p_mid(icol, ilev),
+                                        T_mid(icol, ilev), qv_mid(icol, ilev));
         });
         team.team_barrier();
 

@@ -12,7 +12,8 @@ constexpr int seconds_per_day       = 86400;
 constexpr int days_per_nonleap_year = 365;
 
 // Universal fill value for variables
-// TODO: When we switch to supporting C++17 we can use a simple `inline constexpr` rather than a struct
+// TODO: When we switch to supporting C++17 we can use a simple `inline constexpr` rather than a
+// struct
 template <typename T> struct DefaultFillValue {
   static constexpr bool is_float = std::is_floating_point<T>::value;
   static constexpr bool is_int   = std::is_integral<T>::value;

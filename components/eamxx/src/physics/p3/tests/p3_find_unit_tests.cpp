@@ -56,7 +56,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::
     Kokkos::deep_copy(qr_not_present, mirror_qrnp);
 
     for (int team_size : {1, max_threads}) {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(1, team_size);
+      const auto policy =
+          ekat::ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(1, team_size);
 
       int errs_for_this_ts = 0;
       Kokkos::parallel_reduce(

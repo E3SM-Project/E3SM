@@ -47,8 +47,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -118,7 +118,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
     auto policy              = RangePolicy(0, ncols);
     Kokkos::parallel_for(
         "", policy, KOKKOS_LAMBDA(const int icol) {
-          p_sealevel_v(icol) = PF::calculate_psl(T_mid_s(icol, surf_lev), p_mid_s(icol, surf_lev), phis_v(icol));
+          p_sealevel_v(icol) =
+              PF::calculate_psl(T_mid_s(icol, surf_lev), p_mid_s(icol, surf_lev), phis_v(icol));
         });
     Kokkos::fence();
     REQUIRE(views_are_equal(diag_out, p_sealevel_f));

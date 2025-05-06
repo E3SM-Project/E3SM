@@ -7,8 +7,9 @@ namespace scream {
 namespace p3 {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::impose_max_total_ni(Spack &ni_local, const Scalar &max_total_ni,
-                                                          const Spack &inv_rho_local, const Smask &context) {
+KOKKOS_FUNCTION void
+Functions<S, D>::impose_max_total_ni(Spack &ni_local, const Scalar &max_total_ni,
+                                     const Spack &inv_rho_local, const Smask &context) {
   //--------------------------------------------------------------------------------
   // Impose maximum total ice number concentration (total of all ice categories).
   // If the sum of all ni(:) exceeds maximum allowable, each category to preserve

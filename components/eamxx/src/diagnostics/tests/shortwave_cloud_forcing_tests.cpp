@@ -48,8 +48,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
   const int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
@@ -64,7 +64,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   // Input (randomized) views
   view_1d SW_flux_dn("SW_flux_dn", num_mid_packs), SW_flux_up("SW_flux_up", num_mid_packs),
-      SW_clrsky_flux_dn("SW_clrsky_flux_dn", num_mid_packs), SW_clrsky_flux_up("SW_clrsky_flux_up", num_mid_packs);
+      SW_clrsky_flux_dn("SW_clrsky_flux_dn", num_mid_packs),
+      SW_clrsky_flux_up("SW_clrsky_flux_up", num_mid_packs);
 
   auto dview_as_real = [&](const view_1d &v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real *>(v.data()), v.size() * packsize);

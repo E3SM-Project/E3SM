@@ -12,10 +12,12 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::compute_shr_prod(const MemberType &team, const Int &nlevi, const Int &nlev,
-                                  const uview_1d<const Spack> &dz_zi, const uview_1d<const Spack> &u_wind,
-                                  const uview_1d<const Spack> &v_wind, const uview_1d<Spack> &sterm) {
+KOKKOS_FUNCTION void Functions<S, D>::compute_shr_prod(const MemberType &team, const Int &nlevi,
+                                                       const Int &nlev,
+                                                       const uview_1d<const Spack> &dz_zi,
+                                                       const uview_1d<const Spack> &u_wind,
+                                                       const uview_1d<const Spack> &v_wind,
+                                                       const uview_1d<Spack> &sterm) {
   // Turbulent coefficient
   const Scalar Ck_sh = 0.1;
 
@@ -34,7 +36,8 @@ Functions<S, D>::compute_shr_prod(const MemberType &team, const Int &nlevi, cons
 
       // calculate vertical gradient of u&v wind
       auto range_pack2 = range_pack1;
-      range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway
+      range_pack2.set(range_pack1 < 1,
+                      1); // don't want the shift to go below zero. we mask out that result anyway
       Spack u_up_grid, u_grid, v_up_grid, v_grid;
       ekat::index_and_shift<-1>(sclr_uwind, range_pack2, u_grid, u_up_grid); // for u_wind
       ekat::index_and_shift<-1>(sclr_vwind, range_pack2, v_grid, v_up_grid); // for v_wind

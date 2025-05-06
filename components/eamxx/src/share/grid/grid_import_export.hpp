@@ -115,7 +115,8 @@ protected:
 // in opposite directions.
 
 template <typename T>
-void GridImportExport::scatter(const MPI_Datatype mpi_data_t, const std::map<int, std::vector<T>> &src,
+void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
+                               const std::map<int, std::vector<T>> &src,
                                std::map<int, std::vector<T>> &dst) const {
   const auto tag = 0;
 
@@ -241,7 +242,8 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t, const std::map<int
 }
 
 template <typename T>
-void GridImportExport::gather(const MPI_Datatype mpi_data_t, const std::map<int, std::vector<T>> &src,
+void GridImportExport::gather(const MPI_Datatype mpi_data_t,
+                              const std::map<int, std::vector<T>> &src,
                               std::map<int, std::vector<T>> &dst) const {
   const auto tag = 0;
 

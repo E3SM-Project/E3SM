@@ -25,8 +25,8 @@
  *  -----
  *  The meaning of these parameters is the following:
  *   - filename: the name of the input file to be read.
- *   - field_names: list of names of fields to load from file. Should match the name in the file and the name in the
- * field manager.
+ *   - field_names: list of names of fields to load from file. Should match the name in the file and
+ * the name in the field manager.
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
@@ -49,7 +49,8 @@ public:
   // --- Constructor(s) & Destructor --- //
   // NOTE: non-trivial constructors simply call the corresponding init method
   AtmosphereInput() = default;
-  AtmosphereInput(const ekat::ParameterList &params, const std::shared_ptr<const fm_type> &field_mgr);
+  AtmosphereInput(const ekat::ParameterList &params,
+                  const std::shared_ptr<const fm_type> &field_mgr);
   AtmosphereInput(const ekat::ParameterList &params, const std::shared_ptr<const grid_type> &grid,
                   const std::map<std::string, view_1d_host> &host_views_1d,
                   const std::map<std::string, FieldLayout> &layouts);
@@ -57,7 +58,8 @@ public:
                   const std::vector<Field> &fields, const bool skip_grid_checks = false);
   // This constructor only sets the minimal info, deferring initialization
   // to when set_field_manager/reset_fields and reset_filename are called
-  AtmosphereInput(const std::vector<std::string> &fields_names, const std::shared_ptr<const grid_type> &grid);
+  AtmosphereInput(const std::vector<std::string> &fields_names,
+                  const std::shared_ptr<const grid_type> &grid);
 
   // Due to resource acquisition (in scorpio), avoid copies
   AtmosphereInput(const AtmosphereInput &) = delete;
@@ -91,7 +93,9 @@ public:
   void finalize();
 
   // Getters
-  std::string get_filename() { return m_filename; } // Simple getter to query the filename for this stream.
+  std::string get_filename() {
+    return m_filename;
+  } // Simple getter to query the filename for this stream.
 
   // Expose the ability to set/reset fields/field_manager for cases like data interpolation,
   // where we swap pointers but all the scorpio data structures are unchanged.
@@ -100,7 +104,9 @@ public:
   void reset_filename(const std::string &filename);
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) { m_atm_logger = atm_logger; }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) {
+    m_atm_logger = atm_logger;
+  }
 
 protected:
   void set_grid(const std::shared_ptr<const AbstractGrid> &grid);

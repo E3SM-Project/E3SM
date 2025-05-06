@@ -12,10 +12,11 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::linear_interp(const MemberType &team, const uview_1d<const Spack> &x1,
-                                                    const uview_1d<const Spack> &x2, const uview_1d<const Spack> &y1,
-                                                    const uview_1d<Spack> &y2, const Int &km1, const Int &km2,
-                                                    const Scalar &minthresh) {
+KOKKOS_FUNCTION void
+Functions<S, D>::linear_interp(const MemberType &team, const uview_1d<const Spack> &x1,
+                               const uview_1d<const Spack> &x2, const uview_1d<const Spack> &y1,
+                               const uview_1d<Spack> &y2, const Int &km1, const Int &km2,
+                               const Scalar &minthresh) {
   const auto sx1     = scalarize(x1);
   const auto sy1     = scalarize(y1);
   const Int km2_pack = ekat::npack<Spack>(km2);

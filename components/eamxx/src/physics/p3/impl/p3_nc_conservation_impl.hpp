@@ -12,16 +12,16 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::nc_conservation(const Spack &nc, const Spack &nc_selfcollect_tend, const Real &dt,
-                                                      Spack &nc_collect_tend, Spack &nc2ni_immers_freeze_tend,
-                                                      Spack &nc_accret_tend, Spack &nc2nr_autoconv_tend,
-                                                      Spack &ncheti_cnt, Spack &nicnt, const bool &use_hetfrz_classnuc,
-                                                      const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::nc_conservation(
+    const Spack &nc, const Spack &nc_selfcollect_tend, const Real &dt, Spack &nc_collect_tend,
+    Spack &nc2ni_immers_freeze_tend, Spack &nc_accret_tend, Spack &nc2nr_autoconv_tend,
+    Spack &ncheti_cnt, Spack &nicnt, const bool &use_hetfrz_classnuc, const Smask &context) {
   Spack sink_nc;
   if (use_hetfrz_classnuc) {
     sink_nc = (nc_collect_tend + ncheti_cnt + nc_accret_tend + nc2nr_autoconv_tend + nicnt) * dt;
   } else {
-    sink_nc = (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend) * dt;
+    sink_nc =
+        (nc_collect_tend + nc2ni_immers_freeze_tend + nc_accret_tend + nc2nr_autoconv_tend) * dt;
   }
   const auto source_nc = nc + nc_selfcollect_tend * dt;
   const auto mask      = sink_nc > source_nc && context;

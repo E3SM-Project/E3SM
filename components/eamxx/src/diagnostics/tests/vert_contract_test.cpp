@@ -148,8 +148,10 @@ TEST_CASE("vert_contract") {
   unweighted_avg->set_grids(gm);
 
   // Fields for manual calculation
-  FieldIdentifier diag1_fid("qc_vert_contract_manual", scalar2d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
-  FieldIdentifier diag2_fid("qc_vert_contract_manual", scalar3d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
+  FieldIdentifier diag1_fid("qc_vert_contract_manual", scalar2d_layout.clone().strip_dim(LEV),
+                            kg / kg, grid->name());
+  FieldIdentifier diag2_fid("qc_vert_contract_manual", scalar3d_layout.clone().strip_dim(LEV),
+                            kg / kg, grid->name());
   Field diag1_m(diag1_fid);
   Field diag2_m(diag2_fid);
   diag1_m.allocate_view();

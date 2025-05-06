@@ -21,7 +21,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     // Property test for the SHOC subroutine:
@@ -135,13 +136,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public Un
 namespace {
 
 TEST_CASE("shoc_second_moments_srf_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_second_moments_srf_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomSrf;
 
   TestStruct().run_bfb();
 }

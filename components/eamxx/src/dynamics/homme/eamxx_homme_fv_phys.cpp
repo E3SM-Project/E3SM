@@ -44,7 +44,9 @@ namespace scream {
 
 bool HommeDynamics::fv_phys_active() const { return m_phys_grid_pgN > 0; }
 
-void HommeDynamics::fv_phys_set_grids() { m_phys_grid_pgN = get_phys_grid_fv_param(m_phys_grid->name()); }
+void HommeDynamics::fv_phys_set_grids() {
+  m_phys_grid_pgN = get_phys_grid_fv_param(m_phys_grid->name());
+}
 
 void HommeDynamics::fv_phys_requested_buffer_size_in_bytes() const {
   if (not fv_phys_active())
@@ -75,7 +77,8 @@ struct HommeDynamics::GllFvRemapTmp {
 
 // Copy physics T,uv state to FT,M to form tendencies in next dynamics step.
 template <typename T_t, typename uv_t, typename FT_t, typename FM_t>
-static void copy_prev(const int ncols, const int npacks, const T_t &T, const uv_t &uv, const FT_t &FT, const FM_t &FM) {
+static void copy_prev(const int ncols, const int npacks, const T_t &T, const uv_t &uv,
+                      const FT_t &FT, const FM_t &FM) {
   using KT          = KokkosTypes<DefaultDevice>;
   using ESU         = ekat::ExeSpaceUtils<KT::ExeSpace>;
   const auto policy = ESU::get_default_team_policy(ncols, npacks);
@@ -110,12 +113,14 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys(const util::TimeStamp &ts, const bool
     t.T_mid       = Homme::ExecView<Real ***>("T_mid_tmp", nelem, npg, npacks * N);
     t.horiz_winds = Homme::ExecView<Real ****>("horiz_winds_tmp", nelem, npg, 2, npacks * N);
     // Really need just the first tracer.
-    const auto qsize = get_group_out("tracers", pgn).m_monolithic_field->get_view<Real ***>().extent_int(1);
-    t.tracers        = Homme::ExecView<Real ****>("tracers_tmp", nelem, npg, qsize, npacks * N);
+    const auto qsize =
+        get_group_out("tracers", pgn).m_monolithic_field->get_view<Real ***>().extent_int(1);
+    t.tracers = Homme::ExecView<Real ****>("tracers_tmp", nelem, npg, qsize, npacks * N);
     remap_dyn_to_fv_phys(&t);
     assert(ncols == nelem * npg);
     Homme::ExecViewUnmanaged<Pack **> T(reinterpret_cast<Pack *>(t.T_mid.data()), ncols, npacks);
-    Homme::ExecViewUnmanaged<Pack ***> uv(reinterpret_cast<Pack *>(t.horiz_winds.data()), ncols, 2, npacks);
+    Homme::ExecViewUnmanaged<Pack ***> uv(reinterpret_cast<Pack *>(t.horiz_winds.data()), ncols, 2,
+                                          npacks);
     copy_prev(ncols, npacks, T, uv, FT, FM);
   } else {
     remap_dyn_to_fv_phys();
@@ -169,22 +174,28 @@ void HommeDynamics::remap_dyn_to_fv_phys(GllFvRemapTmp *t) const {
   const auto npg      = m_phys_grid_pgN * m_phys_grid_pgN;
   const auto &gn      = m_phys_grid->name();
   const auto nlev     = get_field_out("T_mid", gn).get_view<Real **>().extent_int(1);
-  const auto nq       = get_group_out("tracers").m_monolithic_field->get_view<Real ***>().extent_int(1);
+  const auto nq = get_group_out("tracers").m_monolithic_field->get_view<Real ***>().extent_int(1);
   assert(get_field_out("T_mid", gn).get_view<Real **>().extent_int(0) == nelem * npg);
   assert(get_field_out("horiz_winds", gn).get_view<Real ***>().extent_int(1) == 2);
 
-  const auto ps   = Homme::GllFvRemap::Phys1T(get_field_out("ps", gn).get_view<Real *>().data(), nelem, npg);
-  const auto phis = Homme::GllFvRemap::Phys1T(get_field_out("phis", gn).get_view<Real *>().data(), nelem, npg);
-  const auto T = Homme::GllFvRemap::Phys2T(t ? t->T_mid.data() : get_field_out("T_mid", gn).get_view<Real **>().data(),
-                                           nelem, npg, nlev);
-  const auto omega = Homme::GllFvRemap::Phys2T(get_field_out("omega", gn).get_view<Real **>().data(), nelem, npg, nlev);
-  const auto uv    = Homme::GllFvRemap::Phys3T(
-      t ? t->horiz_winds.data() : get_field_out("horiz_winds", gn).get_view<Real ***>().data(), nelem, npg, 2, nlev);
+  const auto ps =
+      Homme::GllFvRemap::Phys1T(get_field_out("ps", gn).get_view<Real *>().data(), nelem, npg);
+  const auto phis =
+      Homme::GllFvRemap::Phys1T(get_field_out("phis", gn).get_view<Real *>().data(), nelem, npg);
+  const auto T = Homme::GllFvRemap::Phys2T(
+      t ? t->T_mid.data() : get_field_out("T_mid", gn).get_view<Real **>().data(), nelem, npg,
+      nlev);
+  const auto omega = Homme::GllFvRemap::Phys2T(
+      get_field_out("omega", gn).get_view<Real **>().data(), nelem, npg, nlev);
+  const auto uv = Homme::GllFvRemap::Phys3T(
+      t ? t->horiz_winds.data() : get_field_out("horiz_winds", gn).get_view<Real ***>().data(),
+      nelem, npg, 2, nlev);
   const auto q = Homme::GllFvRemap::Phys3T(
-      t ? t->tracers.data() : get_group_out("tracers", gn).m_monolithic_field->get_view<Real ***>().data(), nelem, npg,
-      nq, nlev);
-  const auto dp =
-      Homme::GllFvRemap::Phys2T(get_field_out("pseudo_density", gn).get_view<Real **>().data(), nelem, npg, nlev);
+      t ? t->tracers.data()
+        : get_group_out("tracers", gn).m_monolithic_field->get_view<Real ***>().data(),
+      nelem, npg, nq, nlev);
+  const auto dp = Homme::GllFvRemap::Phys2T(
+      get_field_out("pseudo_density", gn).get_view<Real **>().data(), nelem, npg, nlev);
 
   gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, uv, q, &dp);
   Kokkos::fence();
@@ -201,18 +212,20 @@ void HommeDynamics::remap_fv_phys_to_dyn() const {
   const auto npg      = m_phys_grid_pgN * m_phys_grid_pgN;
   const auto &gn      = m_phys_grid->name();
   const auto nlev     = m_helper_fields.at("FT_phys").get_view<const Real **>().extent_int(1);
-  const auto nq       = get_group_in("tracers", gn).m_monolithic_field->get_view<const Real ***>().extent_int(1);
+  const auto nq =
+      get_group_in("tracers", gn).m_monolithic_field->get_view<const Real ***>().extent_int(1);
   assert(m_helper_fields.at("FT_phys").get_view<const Real **>().extent_int(0) == nelem * npg);
 
   const auto uv_ndim = m_helper_fields.at("FM_phys").get_view<const Real ***>().extent_int(1);
   assert(uv_ndim == 2);
 
-  const auto T =
-      Homme::GllFvRemap::CPhys2T(m_helper_fields.at("FT_phys").get_view<const Real **>().data(), nelem, npg, nlev);
-  const auto uv = Homme::GllFvRemap::CPhys3T(m_helper_fields.at("FM_phys").get_view<const Real ***>().data(), nelem,
-                                             npg, uv_ndim, nlev);
-  const auto q  = Homme::GllFvRemap::CPhys3T(
-      get_group_in("tracers", gn).m_monolithic_field->get_view<const Real ***>().data(), nelem, npg, nq, nlev);
+  const auto T = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("FT_phys").get_view<const Real **>().data(), nelem, npg, nlev);
+  const auto uv = Homme::GllFvRemap::CPhys3T(
+      m_helper_fields.at("FM_phys").get_view<const Real ***>().data(), nelem, npg, uv_ndim, nlev);
+  const auto q = Homme::GllFvRemap::CPhys3T(
+      get_group_in("tracers", gn).m_monolithic_field->get_view<const Real ***>().data(), nelem, npg,
+      nq, nlev);
 
   gfr.run_fv_phys_to_dyn(time_idx, T, uv, q);
   Kokkos::fence();
@@ -221,7 +234,8 @@ void HommeDynamics::remap_fv_phys_to_dyn() const {
 }
 
 // See the [rrtmgp active gases] note in share/util/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp
-void HommeDynamics ::fv_phys_rrtmgp_active_gases_init(const std::shared_ptr<const GridsManager> &gm) {
+void HommeDynamics ::fv_phys_rrtmgp_active_gases_init(
+    const std::shared_ptr<const GridsManager> &gm) {
   // NOTE: we would like to avoid this if it's a restart run, but at this point of the
   //       init sequence we still don't know the run type. So we must add the trace gases
   //       fields, and we will deal with them later
@@ -281,10 +295,13 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap(const RunType run_type) {
         auto &f_phys       = get_field_out(e, pgn);
         const auto &v_dgll = f_dgll.get_view<const Real ****>();
         const auto &v_phys = f_phys.get_view<Real **>();
-        assert(v_dgll.extent_int(0) == nelem and v_dgll.extent_int(1) * v_dgll.extent_int(2) == ngll);
-        const auto in_dgll = Homme::GllFvRemap::CPhys3T(v_dgll.data(), nelem, 1, ngll, v_dgll.extent_int(3));
+        assert(v_dgll.extent_int(0) == nelem and
+               v_dgll.extent_int(1) * v_dgll.extent_int(2) == ngll);
+        const auto in_dgll =
+            Homme::GllFvRemap::CPhys3T(v_dgll.data(), nelem, 1, ngll, v_dgll.extent_int(3));
         assert(nelem * npg == v_phys.extent_int(0));
-        const auto out_phys = Homme::GllFvRemap::Phys3T(v_phys.data(), nelem, npg, 1, v_phys.extent_int(1));
+        const auto out_phys =
+            Homme::GllFvRemap::Phys3T(v_phys.data(), nelem, npg, 1, v_phys.extent_int(1));
         gfr.remap_tracer_dyn_to_fv_phys(time_idx, 1, in_dgll, out_phys);
         Kokkos::fence();
 

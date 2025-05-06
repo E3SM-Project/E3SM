@@ -5,7 +5,8 @@
 namespace scream {
 
 // ==============================================================================
-SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm &comm, const ekat::ParameterList &params)
+SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm &comm,
+                                                         const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params), m_name("surface_upward_latent_heat_flux"),
       cf_long_name("surface_upward_latent_heat_flux_due_to_evaporation") {
   // In the future we may add options to include latent heat fluxes due to other water species.
@@ -14,7 +15,8 @@ SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm &comm,
 }
 
 // ==============================================================================
-void SurfaceUpwardLatentHeatFlux::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void SurfaceUpwardLatentHeatFlux::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   Units m2(m * m, "m2");
 

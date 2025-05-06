@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
@@ -174,8 +175,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public
     auto engine = Base::get_engine();
 
     IsotropicTsData baseline_data[] = {//            shcol, nlev
-                                       IsotropicTsData(10, 71), IsotropicTsData(10, 12), IsotropicTsData(7, 16),
-                                       IsotropicTsData(2, 7)};
+                                       IsotropicTsData(10, 71), IsotropicTsData(10, 12),
+                                       IsotropicTsData(7, 16), IsotropicTsData(2, 7)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
@@ -231,13 +232,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public
 namespace {
 
 TEST_CASE("shoc_tke_isotropic_ts_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_isotropic_ts_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct().run_bfb();
 }

@@ -28,7 +28,8 @@ inline bool views_are_equal(const Field &f1, const Field &f2, const ekat::Comm *
 }
 
 template <typename Engine, typename PDF> void randomize(const Field &f, Engine &engine, PDF &&pdf) {
-  EKAT_REQUIRE_MSG(f.is_allocated(), "Error! Cannot randomize the values of a field not yet allocated.\n");
+  EKAT_REQUIRE_MSG(f.is_allocated(),
+                   "Error! Cannot randomize the values of a field not yet allocated.\n");
 
   // Deduce scalar type from pdf
   using ST = decltype(pdf(engine));
@@ -59,7 +60,8 @@ template <typename Engine, typename PDF> void randomize(const Field &f, Engine &
 template <typename Engine, typename PDF, typename MaskType>
 void perturb(Field &f, Engine &engine, PDF &&pdf, const int base_seed, const MaskType &level_mask,
              const Field &dof_gids = Field()) {
-  EKAT_REQUIRE_MSG(f.is_allocated(), "Error! Cannot perturb the values of a field not yet allocated.\n");
+  EKAT_REQUIRE_MSG(f.is_allocated(),
+                   "Error! Cannot perturb the values of a field not yet allocated.\n");
 
   // Deduce scalar type from pdf
   using ST = decltype(pdf(engine));
@@ -98,16 +100,17 @@ void perturb(Field &f, Engine &engine, PDF &&pdf, const int base_seed, const Mas
                                            fl.to_string() + "\n");
 
     const auto &dof_gids_fl = dof_gids.get_header().get_identifier().get_layout();
-    EKAT_REQUIRE_MSG(dof_gids_fl.dim(0) == fl.dim(COL), "Error! Field of DoF GIDs should have the same size as "
-                                                        "perturbed field's column dimension.\n"
-                                                        "  - dof_gids dim: " +
-                                                            std::to_string(dof_gids_fl.dim(0)) +
-                                                            "\n"
-                                                            "  - field name: " +
-                                                            f.name() +
-                                                            "\n"
-                                                            "  - field layout: " +
-                                                            fl.to_string() + "\n");
+    EKAT_REQUIRE_MSG(dof_gids_fl.dim(0) == fl.dim(COL),
+                     "Error! Field of DoF GIDs should have the same size as "
+                     "perturbed field's column dimension.\n"
+                     "  - dof_gids dim: " +
+                         std::to_string(dof_gids_fl.dim(0)) +
+                         "\n"
+                         "  - field name: " +
+                         f.name() +
+                         "\n"
+                         "  - field layout: " +
+                         fl.to_string() + "\n");
     EKAT_REQUIRE_MSG(dof_gids.data_type() == DataType::IntType,
                      "Error! DoF GIDs field must have \"int\" as data type.\n");
   }
@@ -122,7 +125,8 @@ void perturb(Field &f, Engine &engine, PDF &&pdf, const int base_seed, const Mas
 // - The first dimension is for the columns (COL)
 // - There can be only up to 3 dimensions of f_in
 template <typename ST>
-void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weight, const ekat::Comm *comm = nullptr) {
+void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weight,
+                       const ekat::Comm *comm = nullptr) {
   using namespace ShortFieldTagsNames;
 
   const auto &l_out = f_out.get_header().get_identifier().get_layout();
@@ -135,33 +139,38 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
   EKAT_REQUIRE_MSG(l_w.rank() == 1, "Error! The weight field must be rank-1.\n"
                                     "The input weight has rank "
                                         << l_w.rank() << ".\n");
-  EKAT_REQUIRE_MSG(l_w.tags() == std::vector<FieldTag>({COL}), "Error! The weight field must have a column dimension.\n"
-                                                               "The input field has layout "
-                                                                   << l_w.tags() << ".\n");
+  EKAT_REQUIRE_MSG(l_w.tags() == std::vector<FieldTag>({COL}),
+                   "Error! The weight field must have a column dimension.\n"
+                   "The input field has layout "
+                       << l_w.tags() << ".\n");
   EKAT_REQUIRE_MSG(l_in.rank() <= 3, "Error! The input field must be at most rank-3.\n"
                                      "The input field's rank is "
                                          << l_in.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_in.tags()[0] == COL, "Error! The input field must have a column dimension.\n"
                                           "The input field's layout is "
                                               << l_in.to_string() << ".\n");
-  EKAT_REQUIRE_MSG(l_w.dim(0) == l_in.dim(0), "Error! input and weight fields must have the same dimension along "
-                                              "which we are reducing the field.\n"
-                                              "The weight field has dimension "
-                                                  << l_w.dim(0)
-                                                  << " while "
-                                                     "the input field has dimension "
-                                                  << l_in.dim(0) << ".\n");
-  EKAT_REQUIRE_MSG(l_in.dim(0) > 0, "Error! The input field must have a non-zero column dimension.\n"
-                                    "The input field's layout is "
-                                        << l_in.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(l_w.dim(0) == l_in.dim(0),
+                   "Error! input and weight fields must have the same dimension along "
+                   "which we are reducing the field.\n"
+                   "The weight field has dimension "
+                       << l_w.dim(0)
+                       << " while "
+                          "the input field has dimension "
+                       << l_in.dim(0) << ".\n");
+  EKAT_REQUIRE_MSG(l_in.dim(0) > 0,
+                   "Error! The input field must have a non-zero column dimension.\n"
+                   "The input field's layout is "
+                       << l_in.to_string() << ".\n");
   EKAT_REQUIRE_MSG(l_out == l_in.clone().strip_dim(0),
                    "Error! The output field must have the same layout as the input field "
                    "without the column dimension.\n"
                    "The input field's layout is "
-                       << l_in.to_string() << " and the output field's layout is " << l_out.to_string() << ".\n");
+                       << l_in.to_string() << " and the output field's layout is "
+                       << l_out.to_string() << ".\n");
   EKAT_REQUIRE_MSG(f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
                    "Error! All fields must be allocated.");
-  EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(), "Error! In/out fields must have matching data types.");
+  EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(f_out.data_type() == weight.data_type(),
                    "Error! Weight field must have the same data type as input fields.");
 
@@ -179,7 +188,8 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
 //   - rank-1, with only LEV/ILEV dimension
 //   - rank-2, with only COL and LEV/ILEV dimensions
 template <typename ST>
-void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight, const ekat::Comm *comm = nullptr) {
+void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight,
+                      const ekat::Comm *comm = nullptr) {
   using namespace ShortFieldTagsNames;
 
   const auto &l_out = f_out.get_header().get_identifier().get_layout();
@@ -203,8 +213,8 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
   EKAT_REQUIRE_MSG(l_in.rank() >= l_w.rank(), "Error! The input field must have at least as many "
                                               "dimensions as the weight field.\n"
                                               "The input field rank is "
-                                                  << l_in.rank() << " and the weight field rank is " << l_w.rank()
-                                                  << ".\n");
+                                                  << l_in.rank() << " and the weight field rank is "
+                                                  << l_w.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_in.tags().back() == LEV or l_in.tags().back() == ILEV,
                    "Error! The input field must have a level dimension.\n"
                    "The input field layout is "
@@ -217,25 +227,29 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                        << " while "
                           "the input field has last dimension "
                        << l_in.dims().back() << ".\n");
-  EKAT_REQUIRE_MSG(l_in.dims().back() > 0, "Error! The input field must have a non-zero level dimension.\n"
-                                           "The input field layout is "
-                                               << l_in.to_string() << ".\n");
+  EKAT_REQUIRE_MSG(l_in.dims().back() > 0,
+                   "Error! The input field must have a non-zero level dimension.\n"
+                   "The input field layout is "
+                       << l_in.to_string() << ".\n");
   if (l_w.rank() == 2) {
-    EKAT_REQUIRE_MSG(l_w.congruent(l_in.clone().strip_dim(CMP, false)), "Error! Incompatible layouts\n"
-                                                                        "  field in: " +
-                                                                            l_in.to_string() +
-                                                                            "\n"
-                                                                            "  weight: " +
-                                                                            l_w.to_string() + "\n");
+    EKAT_REQUIRE_MSG(l_w.congruent(l_in.clone().strip_dim(CMP, false)),
+                     "Error! Incompatible layouts\n"
+                     "  field in: " +
+                         l_in.to_string() +
+                         "\n"
+                         "  weight: " +
+                         l_w.to_string() + "\n");
   }
   EKAT_REQUIRE_MSG(l_out == l_in.clone().strip_dim(l_in.rank() - 1),
                    "Error! The output field must have the same layout as the input field "
                    "without the level dimension.\n"
                    "The input field layout is "
-                       << l_in.to_string() << " and the output field layout is " << l_out.to_string() << ".\n");
+                       << l_in.to_string() << " and the output field layout is "
+                       << l_out.to_string() << ".\n");
   EKAT_REQUIRE_MSG(f_out.is_allocated() && f_in.is_allocated() && weight.is_allocated(),
                    "Error! All fields must be allocated.");
-  EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(), "Error! In/out fields must have matching data types.");
+  EKAT_REQUIRE_MSG(f_out.data_type() == f_in.data_type(),
+                   "Error! In/out fields must have matching data types.");
   EKAT_REQUIRE_MSG(f_out.data_type() == weight.data_type(),
                    "Error! Weight field must have the same data type as input field.");
 
@@ -297,19 +311,21 @@ template <typename ST> ST field_min(const Field &f, const ekat::Comm *comm = nul
 // those tags, and print it. E.g., f might be a <COL,LEV> field, and the tags/indices
 // refer to a single column, in which case we'll print a whole column worth of data.
 inline void print_field_hyperslab(const Field &f, const std::vector<FieldTag> &tags = {},
-                                  const std::vector<int> &indices = {}, std::ostream &out = std::cout) {
+                                  const std::vector<int> &indices = {},
+                                  std::ostream &out               = std::cout) {
   const auto dt   = f.data_type();
   const auto rank = f.rank();
 
-  EKAT_REQUIRE_MSG(rank >= static_cast<int>(tags.size()), "Error! Requested location incompatible with field rank.\n"
-                                                          "  - field name: " +
-                                                              f.name() +
-                                                              "\n"
-                                                              "  - field rank: " +
-                                                              std::to_string(rank) +
-                                                              "\n"
-                                                              "  - requested indices: (" +
-                                                              ekat::join(indices, ",") + "\n");
+  EKAT_REQUIRE_MSG(rank >= static_cast<int>(tags.size()),
+                   "Error! Requested location incompatible with field rank.\n"
+                   "  - field name: " +
+                       f.name() +
+                       "\n"
+                       "  - field rank: " +
+                       std::to_string(rank) +
+                       "\n"
+                       "  - requested indices: (" +
+                       ekat::join(indices, ",") + "\n");
 
   switch (dt) {
   case DataType::IntType:
@@ -328,35 +344,38 @@ inline void print_field_hyperslab(const Field &f, const std::vector<FieldTag> &t
   }
 }
 
-template <Comparison CMP, typename ST> void compute_mask(const Field &x, const ST value, Field &mask) {
+template <Comparison CMP, typename ST>
+void compute_mask(const Field &x, const ST value, Field &mask) {
   // Sanity checks
   EKAT_REQUIRE_MSG(x.is_allocated(), "Error! Input field was not yet allocated.\n");
   EKAT_REQUIRE_MSG(mask.is_allocated(), "Error! Mask field was not yet allocated.\n");
   EKAT_REQUIRE_MSG(not mask.is_read_only(), "Error! Cannot update mask field, as it is read-only.\n"
                                             " - mask name: " +
                                                 mask.name() + "\n");
-  EKAT_REQUIRE_MSG(mask.data_type() == DataType::IntType, "Error! The data type of the mask field must be 'int'.\n"
-                                                          " - mask field name: "
-                                                              << mask.name()
-                                                              << "\n"
-                                                                 " - mask field data type: "
-                                                              << etoi(mask.data_type()) << "\n");
+  EKAT_REQUIRE_MSG(mask.data_type() == DataType::IntType,
+                   "Error! The data type of the mask field must be 'int'.\n"
+                   " - mask field name: "
+                       << mask.name()
+                       << "\n"
+                          " - mask field data type: "
+                       << etoi(mask.data_type()) << "\n");
 
   const auto &x_layout = x.get_header().get_identifier().get_layout();
   const auto &m_layout = mask.get_header().get_identifier().get_layout();
 
-  EKAT_REQUIRE_MSG(m_layout.congruent(x_layout), "Error! Mask field layout is incompatible with this field.\n"
-                                                 " - field name  : " +
-                                                     x.name() +
-                                                     "\n"
-                                                     " - mask name   : " +
-                                                     mask.name() +
-                                                     "\n"
-                                                     " - field layout: " +
-                                                     x_layout.to_string() +
-                                                     "\n"
-                                                     " - mask layout : " +
-                                                     m_layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(m_layout.congruent(x_layout),
+                   "Error! Mask field layout is incompatible with this field.\n"
+                   " - field name  : " +
+                       x.name() +
+                       "\n"
+                       " - mask name   : " +
+                       mask.name() +
+                       "\n"
+                       " - field layout: " +
+                       x_layout.to_string() +
+                       "\n"
+                       " - mask layout : " +
+                       m_layout.to_string() + "\n");
 
   const auto x_dt   = x.data_type();
   const auto val_dt = get_data_type<ST>();

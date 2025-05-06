@@ -17,7 +17,8 @@ constexpr auto Bot      = VerticalRemapper::Bot;
 constexpr auto TopBot   = VerticalRemapper::TopAndBot;
 constexpr Real mask_val = -99999.0;
 
-template <typename... Args> void print(const std::string &fmt, const ekat::Comm &comm, Args &&...args) {
+template <typename... Args>
+void print(const std::string &fmt, const ekat::Comm &comm, Args &&...args) {
   if (comm.am_i_root()) {
     printf(fmt.c_str(), std::forward<Args>(args)...);
   }
@@ -30,7 +31,8 @@ void print(const std::string &fmt, const ekat::Comm &comm) {
 }
 
 // Helper function to create a grid given the number of dof's and a comm group.
-std::shared_ptr<AbstractGrid> build_grid(const ekat::Comm &comm, const int nldofs, const int nlevs) {
+std::shared_ptr<AbstractGrid> build_grid(const ekat::Comm &comm, const int nldofs,
+                                         const int nlevs) {
   using gid_type = AbstractGrid::gid_type;
 
   auto grid = std::make_shared<PointGrid>("src", nldofs, nlevs, comm);
@@ -44,13 +46,14 @@ std::shared_ptr<AbstractGrid> build_grid(const ekat::Comm &comm, const int nldof
 }
 
 // Helper function to create fields
-Field create_field(const std::string &name, const std::shared_ptr<const AbstractGrid> &grid, const bool twod,
-                   const bool vec, const bool mid = false, const int ps = 1) {
+Field create_field(const std::string &name, const std::shared_ptr<const AbstractGrid> &grid,
+                   const bool twod, const bool vec, const bool mid = false, const int ps = 1) {
   using namespace ShortFieldTagsNames;
   constexpr int vec_dim = 3;
   constexpr auto units  = ekat::units::Units::nondimensional();
-  auto fl               = twod ? (vec ? grid->get_2d_vector_layout(vec_dim) : grid->get_2d_scalar_layout())
-                               : (vec ? grid->get_3d_vector_layout(mid, vec_dim) : grid->get_3d_scalar_layout(mid));
+  auto fl =
+      twod ? (vec ? grid->get_2d_vector_layout(vec_dim) : grid->get_2d_scalar_layout())
+           : (vec ? grid->get_3d_vector_layout(mid, vec_dim) : grid->get_3d_scalar_layout(mid));
   FieldIdentifier fid(name, fl, units, grid->name());
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
@@ -64,8 +67,9 @@ Real data_func(const int col, const int vec, const Real pres) {
   //   - col, the horizontal column,
   //   - vec, the vector dimension, and
   //   - pres, the current pressure
-  // Should ensure that the interpolated values match exactly, since vertical interp is also a linear interpolator.
-  // Note, we don't use the level, because here the vertical interpolation is over pressure, so it represents the level.
+  // Should ensure that the interpolated values match exactly, since vertical interp is also a
+  // linear interpolator. Note, we don't use the level, because here the vertical interpolation is
+  // over pressure, so it represents the level.
   return (col + 1) * pres + vec * 100.0;
 }
 
@@ -129,7 +133,8 @@ void compute_field(const Field &f, const Field &p) {
   f.sync_to_dev();
 }
 
-void extrapolate(const Field &p_src, const Field &p_tgt, const Field &f, const VerticalRemapper::ExtrapType etype_top,
+void extrapolate(const Field &p_src, const Field &p_tgt, const Field &f,
+                 const VerticalRemapper::ExtrapType etype_top,
                  const VerticalRemapper::ExtrapType etype_bot) {
   Field::view_host_t<const Real *> p1d_src, p1d_tgt;
   Field::view_host_t<const Real **> p2d_src, p2d_tgt;
@@ -200,8 +205,8 @@ void extrapolate(const Field &p_src, const Field &p_tgt, const Field &f, const V
 }
 
 // Helper function to create a remap file
-void create_remap_file(const std::string &filename, const int nlevs, const std::vector<std::int64_t> &dofs_p,
-                       const std::vector<Real> &p_tgt) {
+void create_remap_file(const std::string &filename, const int nlevs,
+                       const std::vector<std::int64_t> &dofs_p, const std::vector<Real> &p_tgt) {
   scorpio::register_file(filename, scorpio::FileMode::Write);
   scorpio::define_dim(filename, "lev", nlevs);
   scorpio::define_var(filename, "p_levs", {"lev"}, "real");
@@ -229,8 +234,8 @@ TEST_CASE("create_tgt_grid") {
   // -------------------------------------- //
 
   const int nlevs_src =
-      2 * SCREAM_PACK_SIZE +
-      2; // Make sure we check what happens when the vertical extent is a little larger than the max PACK SIZE
+      2 * SCREAM_PACK_SIZE + 2; // Make sure we check what happens when the vertical extent is a
+                                // little larger than the max PACK SIZE
   const int nlevs_tgt = nlevs_src / 2;
   const int nldofs    = 1;
 
@@ -310,8 +315,8 @@ TEST_CASE("vertical_remapper") {
   // -------------------------------------- //
 
   const int nlevs_src =
-      2 * SCREAM_PACK_SIZE +
-      2; // Make sure we check what happens when the vertical extent is a little larger than the max PACK SIZE
+      2 * SCREAM_PACK_SIZE + 2; // Make sure we check what happens when the vertical extent is a
+                                // little larger than the max PACK SIZE
   const int nldofs = 1;
 
   // -------------------------------------- //
@@ -324,7 +329,8 @@ TEST_CASE("vertical_remapper") {
   print(" -> creating src grid ...done!\n", comm);
 
   // Tgt grid must have same 2d layout as src grid
-  REQUIRE_THROWS(std::make_shared<VerticalRemapper>(src_grid, build_grid(comm, nldofs + 1, nlevs_src)));
+  REQUIRE_THROWS(
+      std::make_shared<VerticalRemapper>(src_grid, build_grid(comm, nldofs + 1, nlevs_src)));
 
   // Helper lambda, to create p_int profile. If it is a 3d field, make same profile on each col
   auto create_pint = [&](const auto &grid, const bool one_d, const Real ptop, const Real pbot) {

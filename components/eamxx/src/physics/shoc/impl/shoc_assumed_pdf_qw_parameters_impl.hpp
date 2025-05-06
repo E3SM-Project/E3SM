@@ -17,9 +17,10 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_qw_parameters(
-    const Spack &wqwsec, const Spack &sqrtw2, const Spack &Skew_w, const Spack &sqrtqt, const Spack &qwsec,
-    const Spack &w1_2, const Spack &w1_1, const Spack &qw_first, const Spack &a, const Scalar rt_tol,
-    const Scalar w_thresh, Spack &qw1_1, Spack &qw1_2, Spack &qw2_1, Spack &qw2_2, Spack &sqrtqw2_1, Spack &sqrtqw2_2) {
+    const Spack &wqwsec, const Spack &sqrtw2, const Spack &Skew_w, const Spack &sqrtqt,
+    const Spack &qwsec, const Spack &w1_2, const Spack &w1_1, const Spack &qw_first, const Spack &a,
+    const Scalar rt_tol, const Scalar w_thresh, Spack &qw1_1, Spack &qw1_2, Spack &qw2_1,
+    Spack &qw2_2, Spack &sqrtqw2_1, Spack &sqrtqw2_2) {
   qw1_1     = qw_first;
   qw1_2     = qw_first;
   qw2_1     = 0;
@@ -35,21 +36,24 @@ KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_qw_parameters(
   const auto tsign = ekat::abs(tmp_val_1 - tmp_val_2);
   Spack Skew_qw(0);
   Skew_qw.set(tsign > sp(0.4), sp(1.2) * Skew_w);
-  Skew_qw.set(tsign > sp(0.2) && tsign <= sp(0.4), (((sp(1.2) * Skew_w) / sp(0.2)) * (tsign - sp(0.2))));
+  Skew_qw.set(tsign > sp(0.2) && tsign <= sp(0.4),
+              (((sp(1.2) * Skew_w) / sp(0.2)) * (tsign - sp(0.2))));
 
   if (condition.any()) {
-    qw2_1.set(condition,
-              ekat::min(100, ekat::max(0, (3 * tmp_val_1 *
-                                               (1 - a * ekat::square(tmp_val_2) - (1 - a) * ekat::square(tmp_val_1)) -
-                                           (Skew_qw - a * ekat::cube(tmp_val_2) - (1 - a) * ekat::cube(tmp_val_1))) /
-                                              (3 * a * (tmp_val_1 - tmp_val_2)))) *
-                  qwsec);
-    qw2_2.set(condition,
-              ekat::min(100, ekat::max(0, (-3 * tmp_val_2 *
-                                               (1 - a * ekat::square(tmp_val_2) - (1 - a) * ekat::square(tmp_val_1)) +
-                                           (Skew_qw - a * ekat::cube(tmp_val_2) - (1 - a) * ekat::cube(tmp_val_1))) /
-                                              (3 * (1 - a) * (tmp_val_1 - tmp_val_2)))) *
-                  qwsec);
+    qw2_1.set(condition, ekat::min(100, ekat::max(0, (3 * tmp_val_1 *
+                                                          (1 - a * ekat::square(tmp_val_2) -
+                                                           (1 - a) * ekat::square(tmp_val_1)) -
+                                                      (Skew_qw - a * ekat::cube(tmp_val_2) -
+                                                       (1 - a) * ekat::cube(tmp_val_1))) /
+                                                         (3 * a * (tmp_val_1 - tmp_val_2)))) *
+                             qwsec);
+    qw2_2.set(condition, ekat::min(100, ekat::max(0, (-3 * tmp_val_2 *
+                                                          (1 - a * ekat::square(tmp_val_2) -
+                                                           (1 - a) * ekat::square(tmp_val_1)) +
+                                                      (Skew_qw - a * ekat::cube(tmp_val_2) -
+                                                       (1 - a) * ekat::cube(tmp_val_1))) /
+                                                         (3 * (1 - a) * (tmp_val_1 - tmp_val_2)))) *
+                             qwsec);
   }
 
   qw1_1.set(condition, tmp_val_2 * sqrtqt + qw_first);

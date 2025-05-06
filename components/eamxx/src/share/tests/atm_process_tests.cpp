@@ -67,7 +67,8 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm) {
 class DummyDiag : public AtmosphereDiagnostic {
 
 public:
-  DummyDiag(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereDiagnostic(comm, params) {
+  DummyDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : AtmosphereDiagnostic(comm, params) {
     m_name      = params.name();
     m_grid_name = params.get<std::string>("grid_name");
   }
@@ -120,7 +121,8 @@ protected:
 
 class DiagIdentity : public DummyDiag {
 public:
-  DiagIdentity(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyDiag(comm, params) {
+  DiagIdentity(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyDiag(comm, params) {
     // Nothing to do here
   }
 
@@ -190,7 +192,8 @@ protected:
 // A dummy atm proc
 class DummyProcess : public scream::AtmosphereProcess {
 public:
-  DummyProcess(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereProcess(comm, params) {
+  DummyProcess(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : AtmosphereProcess(comm, params) {
     m_name      = params.name();
     m_grid_name = params.get<std::string>("grid_name");
   }

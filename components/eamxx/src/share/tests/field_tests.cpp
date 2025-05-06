@@ -236,7 +236,8 @@ TEST_CASE("field", "") {
     REQUIRE(f2.is_allocated());
     REQUIRE(&f1.get_header().get_tracking() == &f2.get_header().get_tracking());
     REQUIRE(&f1.get_header().get_alloc_properties() == &f2.get_header().get_alloc_properties());
-    REQUIRE(f1.get_header().get_identifier().get_layout() == f2.get_header().get_identifier().get_layout());
+    REQUIRE(f1.get_header().get_identifier().get_layout() ==
+            f2.get_header().get_identifier().get_layout());
     REQUIRE(f1.get_internal_view_data<Real>() == f2.get_internal_view_data<Real>());
 
     // Identifiers are separate objects though
@@ -515,8 +516,10 @@ TEST_CASE("field_mgr", "") {
   REQUIRE_THROWS(field_mgr.get_field(bad1));              // Not in field_mgr
   REQUIRE_THROWS(field_mgr.get_field("field1", "grid3")); // Wrong grid
 
-  // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo> &groups, const std::string &name) -> bool {
+  // Check that the groups names are in the header. While at it, make sure that case insensitive
+  // works fine.
+  auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo> &groups,
+                      const std::string &name) -> bool {
     for (auto it : groups) {
       if (it.lock()->m_group_name == name) {
         return true;
@@ -966,7 +969,8 @@ TEST_CASE("sync_subfields") {
   constexpr int nlevs = 8;
 
   // Create field with (col, cmp, lev)
-  FID fid("V", FL({COL, CMP, LEV}, {ncols, ndims, nlevs}), Units::nondimensional(), "the_grid", DataType::IntType);
+  FID fid("V", FL({COL, CMP, LEV}, {ncols, ndims, nlevs}), Units::nondimensional(), "the_grid",
+          DataType::IntType);
   Field f(fid);
   f.allocate_view();
 
@@ -1018,7 +1022,8 @@ TEST_CASE("sync_subfields") {
   for (int c = 1; c < ndims; ++c) {
     auto device_subview = f.get_component(c).get_view<int **, Device>();
     Kokkos::parallel_for(
-        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncols, nlevs}), KOKKOS_LAMBDA(const int icol, const int ilev) {
+        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncols, nlevs}),
+        KOKKOS_LAMBDA(const int icol, const int ilev) {
           if (shared_mem_space)
             EKAT_KERNEL_ASSERT(device_subview(icol, ilev) == c);
           else

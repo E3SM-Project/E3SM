@@ -12,7 +12,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestNrConservation : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     auto engine = Base::get_engine();
@@ -27,8 +28,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestNrConservation : public 
       d.nmltratio = baseline_data[0].nmltratio; // hold nmltratio fixed, it is not packed data
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so
+    // that inout data is in original state
     view_1d<NrConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
     std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
@@ -47,8 +48,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestNrConservation : public 
           const Int offset = i * Spack::n;
 
           // Init pack inputs
-          Spack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend, nr_collect_tend,
-              nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
+          Spack nc2nr_autoconv_tend, ncshdc, ni2nr_melt_tend, nr, nr2ni_immers_freeze_tend,
+              nr_collect_tend, nr_evap_tend, nr_ice_shed_tend, nr_selfcollect_tend;
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             nc2nr_autoconv_tend[s]      = cxx_device(vs).nc2nr_autoconv_tend;
             ncshdc[s]                   = cxx_device(vs).ncshdc;
@@ -61,8 +62,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestNrConservation : public 
             nr_selfcollect_tend[s]      = cxx_device(vs).nr_selfcollect_tend;
           }
 
-          Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc, nc2nr_autoconv_tend,
-                                     cxx_device(offset).dt, cxx_device(offset).nmltratio, nr_collect_tend,
+          Functions::nr_conservation(nr, ni2nr_melt_tend, nr_ice_shed_tend, ncshdc,
+                                     nc2nr_autoconv_tend, cxx_device(offset).dt,
+                                     cxx_device(offset).nmltratio, nr_collect_tend,
                                      nr2ni_immers_freeze_tend, nr_selfcollect_tend, nr_evap_tend);
 
           // Copy spacks back into cxx_device view

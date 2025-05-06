@@ -6,11 +6,10 @@ namespace scream {
 namespace shoc {
 
 template <>
-void Functions<Real, DefaultDevice>::compute_shoc_temperature_disp(const Int &shcol, const Int &nlev,
-                                                                   const view_2d<const Spack> &thetal,
-                                                                   const view_2d<const Spack> &ql,
-                                                                   const view_2d<const Spack> &inv_exner,
-                                                                   const view_2d<Spack> &tabs) {
+void Functions<Real, DefaultDevice>::compute_shoc_temperature_disp(
+    const Int &shcol, const Int &nlev, const view_2d<const Spack> &thetal,
+    const view_2d<const Spack> &ql, const view_2d<const Spack> &inv_exner,
+    const view_2d<Spack> &tabs) {
   using ExeSpace = typename KT::ExeSpace;
 
   const auto nlev_packs = ekat::npack<Spack>(nlev);

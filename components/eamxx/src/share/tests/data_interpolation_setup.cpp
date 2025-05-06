@@ -20,7 +20,8 @@ TEST_CASE("data_interpolation_setup") {
   scorpio::init_subsystem(comm);
 
   // We use raw scorpio calls without decomp, so ensure we're in serial case
-  EKAT_REQUIRE_MSG(comm.size() == 1, "Error! You should run the data_interpolation_setup test with ONE rank.\n");
+  EKAT_REQUIRE_MSG(comm.size() == 1,
+                   "Error! You should run the data_interpolation_setup test with ONE rank.\n");
 
   // Create grid
   std::shared_ptr<const AbstractGrid> grid = create_point_grid("pg", ngcols, nlevs, comm);
@@ -79,7 +80,8 @@ TEST_CASE("data_interpolation_setup") {
     //   - two to be used for linear-hystory interp
     util::TimeStamp time = get_first_slice_time();
 
-    // We keep pressures fields NOT time-dep, so we write outside the loop. Also write hyam/hybm here
+    // We keep pressures fields NOT time-dep, so we write outside the loop. Also write hyam/hybm
+    // here
     auto p1d  = base_fields[6];
     auto p3d  = base_fields[2].alias("p3d");
     auto p2d  = base_fields[0].alias("p2d");

@@ -56,8 +56,8 @@ Int compare(const double &tol, const FortranData::Ptr &ref, const FortranData::P
 
 struct Baseline {
 
-  Baseline(const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int num_qtracers, const Int nadv,
-           const Int repeat) {
+  Baseline(const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int num_qtracers,
+           const Int nadv, const Int repeat) {
     params_.push_back({ic::Factory::standard, repeat, nsteps, ncol, nlev, num_qtracers, nadv, dt});
   }
 
@@ -76,8 +76,8 @@ struct Baseline {
         set_params(ps, *d);
 
         if (ps.repeat > 0 && r == -1) {
-          std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev << ", dt=" << d->dtime
-                    << ", ts=" << ps.nsteps;
+          std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
+                    << ", dt=" << d->dtime << ", ts=" << ps.nsteps;
 
           std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
           std::cout << std::endl;
@@ -118,7 +118,8 @@ struct Baseline {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
         for (int it = 0; it < ps.nsteps; it++) {
-          std::cout << "--- running case # " << case_num << ", timestep # " << it + 1 << " of " << ps.nsteps << " ---\n"
+          std::cout << "--- running case # " << case_num << ", timestep # " << it + 1 << " of "
+                    << ps.nsteps << " ---\n"
                     << std::flush;
           shoc_main(*d);
         }
@@ -132,7 +133,8 @@ struct Baseline {
           const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
           set_params(ps, *d);
           for (int it = 0; it < ps.nsteps; it++) {
-            std::cout << "--- checking case # " << case_num << ", timestep # = " << (it + 1) * ps.nadv << " ---\n"
+            std::cout << "--- checking case # " << case_num
+                      << ", timestep # = " << (it + 1) * ps.nadv << " ---\n"
                       << std::flush;
             read(fid, d_ref);
             shoc_main(*d);
@@ -178,18 +180,21 @@ private:
       const auto &f = fdi.getfield(i);
       int dim, ds[3];
       ekat::read(&dim, 1, fid);
-      EKAT_REQUIRE_MSG(dim == f.dim, "For field " << f.name << " read expected dim " << f.dim << " but got " << dim);
+      EKAT_REQUIRE_MSG(dim == f.dim, "For field " << f.name << " read expected dim " << f.dim
+                                                  << " but got " << dim);
       ekat::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
         EKAT_REQUIRE_MSG(ds[i] == f.extent[i], "For field " << f.name << " read expected dim " << i
-                                                            << " to have extent " << f.extent[i] << " but got "
-                                                            << ds[i]);
+                                                            << " to have extent " << f.extent[i]
+                                                            << " but got " << ds[i]);
       ekat::read(f.data, f.size, fid);
     }
   }
 };
 
-void expect_another_arg(int i, int argc) { EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg."); }
+void expect_another_arg(int i, int argc) {
+  EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg.");
+}
 
 } // namespace
 
@@ -211,7 +216,8 @@ int main(int argc, char **argv) {
                  "  -k <nlev>         Number of vertical levels. Default=72.\n"
                  "  -q <num_qtracers> Number of q tracers. Default=3.\n"
                  "  -l <nadv>         Number of SHOC loops per timestep. Default=15.\n"
-                 "  -r <repeat>       Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
+                 "  -r <repeat>       Number of repetitions, implies timing run (generate + no "
+                 "I/O). Default=0.\n";
 
     return 1;
   }

@@ -10,7 +10,8 @@
 
 namespace scream {
 // =========================================================================================
-SurfaceCouplingImporter::SurfaceCouplingImporter(const ekat::Comm &comm, const ekat::ParameterList &params)
+SurfaceCouplingImporter::SurfaceCouplingImporter(const ekat::Comm &comm,
+                                                 const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {}
 // =========================================================================================
 void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -63,28 +64,32 @@ void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &s
   m_num_cpl_imports    = sc_data_manager.get_num_cpl_fields();
   m_num_scream_imports = sc_data_manager.get_num_scream_fields();
 
-  EKAT_ASSERT_MSG(m_num_scream_imports <= m_num_cpl_imports, "Error! More SCREAM imports than actual cpl imports.\n");
+  EKAT_ASSERT_MSG(m_num_scream_imports <= m_num_cpl_imports,
+                  "Error! More SCREAM imports than actual cpl imports.\n");
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(),
                   "Error! Surface Coupling imports need to have size ncols.\n");
 
   // The import data is of size ncols,num_cpl_imports. All other data is of size num_scream_imports
-  m_cpl_imports_view_h =
-      decltype(m_cpl_imports_view_h)(sc_data_manager.get_field_data_ptr(), m_num_cols, m_num_cpl_imports);
+  m_cpl_imports_view_h = decltype(m_cpl_imports_view_h)(sc_data_manager.get_field_data_ptr(),
+                                                        m_num_cols, m_num_cpl_imports);
   m_cpl_imports_view_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), m_cpl_imports_view_h);
 #ifdef HAVE_MOAB
   // The import data is of size num_cpl_imports, ncol. All other data is of size num_scream_imports
-  m_moab_cpl_imports_view_h =
-      decltype(m_moab_cpl_imports_view_h)(sc_data_manager.get_field_data_moab_ptr(), m_num_cpl_imports, m_num_cols);
-  m_moab_cpl_imports_view_d = Kokkos::create_mirror_view_and_copy(DefaultDevice(), m_moab_cpl_imports_view_h);
+  m_moab_cpl_imports_view_h = decltype(m_moab_cpl_imports_view_h)(
+      sc_data_manager.get_field_data_moab_ptr(), m_num_cpl_imports, m_num_cols);
+  m_moab_cpl_imports_view_d =
+      Kokkos::create_mirror_view_and_copy(DefaultDevice(), m_moab_cpl_imports_view_h);
 #endif
   m_import_field_names = new name_t[m_num_scream_imports];
-  std::memcpy(m_import_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_imports * 32 * sizeof(char));
+  std::memcpy(m_import_field_names, sc_data_manager.get_field_name_ptr(),
+              m_num_scream_imports * 32 * sizeof(char));
 
-  m_cpl_indices_view = decltype(m_cpl_indices_view)(sc_data_manager.get_field_cpl_indices_ptr(), m_num_scream_imports);
-  m_vector_components_view =
-      decltype(m_vector_components_view)(sc_data_manager.get_field_vector_components_ptr(), m_num_scream_imports);
-  m_constant_multiple_view =
-      decltype(m_constant_multiple_view)(sc_data_manager.get_field_constant_multiple_ptr(), m_num_scream_imports);
+  m_cpl_indices_view = decltype(m_cpl_indices_view)(sc_data_manager.get_field_cpl_indices_ptr(),
+                                                    m_num_scream_imports);
+  m_vector_components_view = decltype(m_vector_components_view)(
+      sc_data_manager.get_field_vector_components_ptr(), m_num_scream_imports);
+  m_constant_multiple_view = decltype(m_constant_multiple_view)(
+      sc_data_manager.get_field_constant_multiple_ptr(), m_num_scream_imports);
   m_do_import_during_init_view = decltype(m_do_import_during_init_view)(
       sc_data_manager.get_field_transfer_during_init_ptr(), m_num_scream_imports);
 
@@ -99,14 +104,15 @@ void SurfaceCouplingImporter::initialize_impl(const RunType /* run_type */) {
 
     std::string fname = m_import_field_names[i];
     Field field       = get_field_out(fname);
-    EKAT_REQUIRE_MSG(field.is_allocated(), "Error! Import field view has not been allocated yet.\n");
+    EKAT_REQUIRE_MSG(field.is_allocated(),
+                     "Error! Import field view has not been allocated yet.\n");
 
     // Set view data ptr
     m_column_info_h(i).data = field.get_internal_view_data<Real>();
 
     // Get column info from field utility function
-    get_col_info_for_surface_values(field.get_header_ptr(), m_vector_components_view(i), m_column_info_h(i).col_offset,
-                                    m_column_info_h(i).col_stride);
+    get_col_info_for_surface_values(field.get_header_ptr(), m_vector_components_view(i),
+                                    m_column_info_h(i).col_offset, m_column_info_h(i).col_stride);
 
     // Set constant multiple
     m_column_info_h(i).constant_multiple = m_constant_multiple_view(i);
@@ -124,10 +130,14 @@ void SurfaceCouplingImporter::initialize_impl(const RunType /* run_type */) {
   Kokkos::deep_copy(m_column_info_d, m_column_info_h);
 
   // Set property checks for fields in this proces
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"), m_grid, 0.0, 1.0, true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"), m_grid, 0.0, 1.0, true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"), m_grid, 0.0, 1.0, true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"), m_grid, 0.0, 1.0, true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"), m_grid, 0.0,
+                                                    1.0, true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"), m_grid, 0.0,
+                                                    1.0, true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"), m_grid, 0.0,
+                                                    1.0, true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"), m_grid, 0.0,
+                                                    1.0, true);
 
   // Perform initial import (if any are marked for import during initialization)
   if (any_initial_imports)

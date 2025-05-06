@@ -15,8 +15,9 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_compute_s(
-    const Spack &qw1, const Spack &qs, const Spack &beta, const Spack &pval, const Spack &thl2, const Spack &qw2,
-    const Spack &sqrtthl2, const Spack &sqrtqw2, const Spack &r_qwthl, Spack &s, Spack &std_s, Spack &qn, Spack &C) {
+    const Spack &qw1, const Spack &qs, const Spack &beta, const Spack &pval, const Spack &thl2,
+    const Spack &qw2, const Spack &sqrtthl2, const Spack &sqrtqw2, const Spack &r_qwthl, Spack &s,
+    Spack &std_s, Spack &qn, Spack &C) {
   const Scalar rair     = C::Rair;
   const Scalar basepres = C::P0;
   const Scalar cp       = C::CP;
@@ -29,8 +30,8 @@ KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_compute_s(
                      ekat::pow(pval / basepres, (rair / cp));
   const Spack cqt = 1 / (1 + beta * qs);
 
-  std_s                      = ekat::sqrt(ekat::max(0, ekat::square(cthl) * thl2 + ekat::square(cqt) * qw2 -
-                                                           2 * cthl * sqrtthl2 * cqt * sqrtqw2 * r_qwthl));
+  std_s = ekat::sqrt(ekat::max(0, ekat::square(cthl) * thl2 + ekat::square(cqt) * qw2 -
+                                      2 * cthl * sqrtthl2 * cqt * sqrtqw2 * r_qwthl));
   const auto std_s_not_small = std_s > std::sqrt(Kokkos::Experimental::norm_min_v<Real>) * 100;
   s                          = qw1 - qs * ((1 + beta * qw1) / (1 + beta * qs));
   if (std_s_not_small.any()) {
@@ -39,7 +40,8 @@ KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_compute_s(
   C.set(!std_s_not_small && s > 0, 1);
   const auto std_s_C_not_small = std_s_not_small && C != 0;
   if (std_s_C_not_small.any()) {
-    qn.set(std_s_C_not_small, s * C + (std_s / sqrt2pi) * ekat::exp(-sp(0.5) * ekat::square(s / std_s)));
+    qn.set(std_s_C_not_small,
+           s * C + (std_s / sqrt2pi) * ekat::exp(-sp(0.5) * ekat::square(s / std_s)));
   }
   qn.set(!std_s_not_small && s > 0, s);
 

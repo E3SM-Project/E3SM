@@ -17,21 +17,24 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::p3_main_part1(
-    const MemberType &team, const Int &nk, const bool &predictNc, const bool &do_prescribed_CCN, const Scalar &dt,
-    const uview_1d<const Spack> &pres, const uview_1d<const Spack> &dpres, const uview_1d<const Spack> &dz,
-    const uview_1d<const Spack> &nc_nuceat_tend, const uview_1d<const Spack> &nccn_prescribed,
-    const uview_1d<const Spack> &inv_exner, const uview_1d<const Spack> &exner,
-    const uview_1d<const Spack> &inv_cld_frac_l, const uview_1d<const Spack> &inv_cld_frac_i,
-    const uview_1d<const Spack> &inv_cld_frac_r, const uview_1d<Spack> &T_atm, const uview_1d<Spack> &rho,
-    const uview_1d<Spack> &inv_rho, const uview_1d<Spack> &qv_sat_l, const uview_1d<Spack> &qv_sat_i,
-    const uview_1d<Spack> &qv_supersat_i, const uview_1d<Spack> &rhofacr, const uview_1d<Spack> &rhofaci,
-    const uview_1d<Spack> &acn, const uview_1d<Spack> &qv, const uview_1d<Spack> &th_atm, const uview_1d<Spack> &qc,
-    const uview_1d<Spack> &nc, const uview_1d<Spack> &qr, const uview_1d<Spack> &nr, const uview_1d<Spack> &qi,
-    const uview_1d<Spack> &ni, const uview_1d<Spack> &qm, const uview_1d<Spack> &bm, const uview_1d<Spack> &qc_incld,
-    const uview_1d<Spack> &qr_incld, const uview_1d<Spack> &qi_incld, const uview_1d<Spack> &qm_incld,
-    const uview_1d<Spack> &nc_incld, const uview_1d<Spack> &nr_incld, const uview_1d<Spack> &ni_incld,
-    const uview_1d<Spack> &bm_incld, bool &nucleationPossible, bool &hydrometeorsPresent,
-    const P3Runtime &runtime_options) {
+    const MemberType &team, const Int &nk, const bool &predictNc, const bool &do_prescribed_CCN,
+    const Scalar &dt, const uview_1d<const Spack> &pres, const uview_1d<const Spack> &dpres,
+    const uview_1d<const Spack> &dz, const uview_1d<const Spack> &nc_nuceat_tend,
+    const uview_1d<const Spack> &nccn_prescribed, const uview_1d<const Spack> &inv_exner,
+    const uview_1d<const Spack> &exner, const uview_1d<const Spack> &inv_cld_frac_l,
+    const uview_1d<const Spack> &inv_cld_frac_i, const uview_1d<const Spack> &inv_cld_frac_r,
+    const uview_1d<Spack> &T_atm, const uview_1d<Spack> &rho, const uview_1d<Spack> &inv_rho,
+    const uview_1d<Spack> &qv_sat_l, const uview_1d<Spack> &qv_sat_i,
+    const uview_1d<Spack> &qv_supersat_i, const uview_1d<Spack> &rhofacr,
+    const uview_1d<Spack> &rhofaci, const uview_1d<Spack> &acn, const uview_1d<Spack> &qv,
+    const uview_1d<Spack> &th_atm, const uview_1d<Spack> &qc, const uview_1d<Spack> &nc,
+    const uview_1d<Spack> &qr, const uview_1d<Spack> &nr, const uview_1d<Spack> &qi,
+    const uview_1d<Spack> &ni, const uview_1d<Spack> &qm, const uview_1d<Spack> &bm,
+    const uview_1d<Spack> &qc_incld, const uview_1d<Spack> &qr_incld,
+    const uview_1d<Spack> &qi_incld, const uview_1d<Spack> &qm_incld,
+    const uview_1d<Spack> &nc_incld, const uview_1d<Spack> &nr_incld,
+    const uview_1d<Spack> &ni_incld, const uview_1d<Spack> &bm_incld, bool &nucleationPossible,
+    bool &hydrometeorsPresent, const P3Runtime &runtime_options) {
   // Get access to saturation functions
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -68,12 +71,12 @@ KOKKOS_FUNCTION void Functions<S, D>::p3_main_part1(
     const auto range_pack = ekat::range<IntSmallPack>(k * Spack::n);
     const auto range_mask = range_pack < nk;
 
-    rho(k)     = dpres(k) / dz(k) / g;
-    inv_rho(k) = 1 / rho(k);
-    qv_sat_l(k) =
-        physics::qv_sat_dry(T_atm(k), pres(k), false, range_mask, physics::MurphyKoop, "p3::p3_main_part1 (liquid)");
-    qv_sat_i(k) =
-        physics::qv_sat_dry(T_atm(k), pres(k), true, range_mask, physics::MurphyKoop, "p3::p3_main_part1 (ice)");
+    rho(k)      = dpres(k) / dz(k) / g;
+    inv_rho(k)  = 1 / rho(k);
+    qv_sat_l(k) = physics::qv_sat_dry(T_atm(k), pres(k), false, range_mask, physics::MurphyKoop,
+                                      "p3::p3_main_part1 (liquid)");
+    qv_sat_i(k) = physics::qv_sat_dry(T_atm(k), pres(k), true, range_mask, physics::MurphyKoop,
+                                      "p3::p3_main_part1 (ice)");
 
     qv_supersat_i(k) = qv(k) / qv_sat_i(k) - 1;
 
@@ -96,9 +99,9 @@ KOKKOS_FUNCTION void Functions<S, D>::p3_main_part1(
     nc(k).set(drymass, 0);
     if (not_drymass.any()) {
       hydrometeorsPresent = true; // updated further down
-      // Apply droplet activation here (before other microphysical processes) for consistency with qc increase by
-      // saturation adjustment already applied in macrophysics. If prescribed drop number is used, this is also a good
-      // place to prescribe that value
+      // Apply droplet activation here (before other microphysical processes) for consistency with
+      // qc increase by saturation adjustment already applied in macrophysics. If prescribed drop
+      // number is used, this is also a good place to prescribe that value
 
       if (do_prescribed_CCN) {
         // the SPA equation is of the form:
@@ -155,9 +158,10 @@ KOKKOS_FUNCTION void Functions<S, D>::p3_main_part1(
 
     T_atm(k) = th_atm(k) * exner(k);
 
-    calculate_incloud_mixingratios(qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k), inv_cld_frac_l(k),
-                                   inv_cld_frac_i(k), inv_cld_frac_r(k), qc_incld(k), qr_incld(k), qi_incld(k),
-                                   qm_incld(k), nc_incld(k), nr_incld(k), ni_incld(k), bm_incld(k));
+    calculate_incloud_mixingratios(qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k),
+                                   inv_cld_frac_l(k), inv_cld_frac_i(k), inv_cld_frac_r(k),
+                                   qc_incld(k), qr_incld(k), qi_incld(k), qm_incld(k), nc_incld(k),
+                                   nr_incld(k), ni_incld(k), bm_incld(k));
   });
   team.team_barrier();
 }

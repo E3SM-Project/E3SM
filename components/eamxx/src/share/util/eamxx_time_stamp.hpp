@@ -14,7 +14,8 @@ class TimeStamp {
 public:
   TimeStamp();
   TimeStamp(const std::vector<int> &date, const std::vector<int> &time, const int num_steps = 0);
-  TimeStamp(const int yy, const int mm, int dd, const int h, const int min, const int sec, const int num_steps = 0);
+  TimeStamp(const int yy, const int mm, int dd, const int h, const int min, const int sec,
+            const int num_steps = 0);
   TimeStamp(const TimeStamp &) = default;
 
   // === Query methods === //
@@ -105,7 +106,8 @@ struct TimeInterval {
   double length     = -1; // the interval length
 
   TimeInterval() = default;
-  TimeInterval(const util::TimeStamp &b, const util::TimeStamp &e, TimeLine tl, bool do_compute_length = true)
+  TimeInterval(const util::TimeStamp &b, const util::TimeStamp &e, TimeLine tl,
+               bool do_compute_length = true)
       : beg(b), end(e), timeline(tl) {
     if (do_compute_length)
       compute_length();

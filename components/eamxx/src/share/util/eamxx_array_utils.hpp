@@ -51,16 +51,18 @@ inline std::vector<int> unflatten_idx(const std::vector<int> &dims, const int id
 // Kokkos-friendly versions of the above function, taking a Kokkos::View
 // for the array dimensions, and unpacking directly into N integers.
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int &i) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
+              int &i) {
   EKAT_KERNEL_ASSERT_MSG(dims.size() == 1, "Error! Wrong overload of unflatten_idx called.\n");
   i = idx;
   EKAT_KERNEL_ASSERT_MSG(i >= 0 && i < dims[0], "Error! Flatten index out of bounds.\n");
 }
 
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int &i, int &j) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims, int &i,
+              int &j) {
   EKAT_KERNEL_ASSERT_MSG(dims.size() == 2, "Error! Wrong overload of unflatten_idx called.\n");
 
   i = idx / dims[1];
@@ -71,8 +73,9 @@ KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int 
 }
 
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int &i, int &j, int &k) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims, int &i,
+              int &j, int &k) {
   EKAT_KERNEL_ASSERT_MSG(dims.size() == 3, "Error! Wrong overload of unflatten_idx called.\n");
 
   i = (idx / dims[2]) / dims[1];
@@ -85,8 +88,9 @@ KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int 
 }
 
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int &i, int &j, int &k, int &l) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims, int &i,
+              int &j, int &k, int &l) {
   EKAT_KERNEL_ASSERT_MSG(dims.size() == 4, "Error! Wrong overload of unflatten_idx called.\n");
 
   i = ((idx / dims[3]) / dims[2]) / dims[1];
@@ -101,8 +105,9 @@ KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int 
 }
 
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int &i, int &j, int &k, int &l, int &m) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims, int &i,
+              int &j, int &k, int &l, int &m) {
   EKAT_KERNEL_ASSERT_MSG(dims.size() == 5, "Error! Wrong overload of unflatten_idx called.\n");
 
   i = (((idx / dims[4]) / dims[3]) / dims[2]) / dims[1];
@@ -119,8 +124,9 @@ KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int 
 }
 
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int &i, int &j, int &k, int &l, int &m, int &n) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims, int &i,
+              int &j, int &k, int &l, int &m, int &n) {
   EKAT_KERNEL_ASSERT_MSG(dims.size() == 6, "Error! Wrong overload of unflatten_idx called.\n");
 
   i = ((((idx / dims[5]) / dims[4]) / dims[3]) / dims[2]) / dims[1];
@@ -139,8 +145,9 @@ KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int 
 }
 
 template <typename... Props>
-KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
-                                          int *indices) {
+KOKKOS_INLINE_FUNCTION void
+unflatten_idx(const int idx, const Kokkos::View<int *, Kokkos::LayoutRight, Props...> &dims,
+              int *indices) {
   const int rank = dims.size();
   switch (rank) {
   case 1:
@@ -159,7 +166,8 @@ KOKKOS_INLINE_FUNCTION void unflatten_idx(const int idx, const Kokkos::View<int 
     unflatten_idx(idx, dims, indices[0], indices[1], indices[2], indices[3], indices[4]);
     break;
   case 6:
-    unflatten_idx(idx, dims, indices[0], indices[1], indices[2], indices[3], indices[4], indices[5]);
+    unflatten_idx(idx, dims, indices[0], indices[1], indices[2], indices[3], indices[4],
+                  indices[5]);
     break;
   default:
     EKAT_KERNEL_ERROR_MSG("Error! Unsupported rank.\n");

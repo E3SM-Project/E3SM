@@ -106,7 +106,8 @@ TEST_CASE("horiz_avg") {
   auto diag1_f = diag1->get_diagnostic();
 
   // Manual calculation
-  FieldIdentifier diag0_fid("qc_horiz_avg_manual", scalar1d_layout.clone().strip_dim(COL), kg / kg, grid->name());
+  FieldIdentifier diag0_fid("qc_horiz_avg_manual", scalar1d_layout.clone().strip_dim(COL), kg / kg,
+                            grid->name());
   Field diag0(diag0_fid);
   diag0.allocate_view();
 
@@ -126,7 +127,8 @@ TEST_CASE("horiz_avg") {
   qc1.deep_copy(wavg);
   diag1->compute_diagnostic();
   auto diag1_v2_host = diag1_f.get_view<Real, Host>();
-  REQUIRE_THAT(diag1_v2_host(), Catch::Matchers::WithinRel(wavg, tol)); // Catch2's floating point comparison
+  REQUIRE_THAT(diag1_v2_host(),
+               Catch::Matchers::WithinRel(wavg, tol)); // Catch2's floating point comparison
 
   // other diags
   // Set qc2_v to 5.0 to get weighted average of 5.0
@@ -145,8 +147,8 @@ TEST_CASE("horiz_avg") {
 
   // Try a random case with qc3
   auto qc3_v = qc3.get_view<Real ***>();
-  FieldIdentifier diag3_manual_fid("qc_horiz_avg_manual", scalar3d_layout.clone().strip_dim(COL), kg / kg,
-                                   grid->name());
+  FieldIdentifier diag3_manual_fid("qc_horiz_avg_manual", scalar3d_layout.clone().strip_dim(COL),
+                                   kg / kg, grid->name());
   Field diag3_manual(diag3_manual_fid);
   diag3_manual.allocate_view();
   horiz_contraction<Real>(diag3_manual, qc3, area, &comm);

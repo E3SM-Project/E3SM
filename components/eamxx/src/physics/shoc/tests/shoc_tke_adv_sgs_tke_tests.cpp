@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -189,8 +190,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public U
     auto engine = Base::get_engine();
 
     AdvSgsTkeData baseline_data[] = {//            shcol, nlev
-                                     AdvSgsTkeData(10, 71, 72), AdvSgsTkeData(10, 12, 13), AdvSgsTkeData(7, 16, 17),
-                                     AdvSgsTkeData(2, 7, 8)};
+                                     AdvSgsTkeData(10, 71, 72), AdvSgsTkeData(10, 12, 13),
+                                     AdvSgsTkeData(7, 16, 17), AdvSgsTkeData(2, 7, 8)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
@@ -247,13 +248,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public U
 namespace {
 
 TEST_CASE("shoc_tke_adv_sgs_tke_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_adv_sgs_tke_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
 
   TestStruct().run_bfb();
 }

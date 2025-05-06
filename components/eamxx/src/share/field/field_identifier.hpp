@@ -44,10 +44,11 @@ public:
   FieldIdentifier()                        = delete;
   FieldIdentifier(const FieldIdentifier &) = default;
 
-  FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units, const std::string &grid_name);
+  FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units,
+                  const std::string &grid_name);
 
-  FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units, const std::string &grid_name,
-                  const DataType data_type);
+  FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units,
+                  const std::string &grid_name, const DataType data_type);
 
   // Delete assignment, to prevent overwriting identifiers sneakyly
   FieldIdentifier &operator=(const FieldIdentifier &) = delete;
@@ -92,7 +93,9 @@ protected:
 };
 
 bool operator==(const FieldIdentifier &fid1, const FieldIdentifier &fid2);
-inline bool operator!=(const FieldIdentifier &fid1, const FieldIdentifier &fid2) { return !(fid1 == fid2); }
+inline bool operator!=(const FieldIdentifier &fid1, const FieldIdentifier &fid2) {
+  return !(fid1 == fid2);
+}
 
 } // namespace scream
 

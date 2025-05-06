@@ -49,9 +49,13 @@ public:
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes() const { return m_atm_processes.size(); }
 
-  std::shared_ptr<const atm_proc_type> get_process(const int i) const { return m_atm_processes.at(i); }
+  std::shared_ptr<const atm_proc_type> get_process(const int i) const {
+    return m_atm_processes.at(i);
+  }
 
-  std::shared_ptr<atm_proc_type> get_process_nonconst(const int i) const { return m_atm_processes.at(i); }
+  std::shared_ptr<atm_proc_type> get_process_nonconst(const int i) const {
+    return m_atm_processes.at(i);
+  }
 
   // Returns atmosphere process if contained in this group, error out if not
   std::shared_ptr<atm_proc_type> get_process_nonconst(const std::string &name) const;
@@ -87,8 +91,9 @@ public:
 
   // Adds the mass and energy conservation
   // checks to appropriate physics processes.
-  void setup_column_conservation_checks(const std::shared_ptr<MassAndEnergyColumnConservationCheck> &conservation_check,
-                                        const CheckFailHandling fail_handling_type) const;
+  void setup_column_conservation_checks(
+      const std::shared_ptr<MassAndEnergyColumnConservationCheck> &conservation_check,
+      const CheckFailHandling fail_handling_type) const;
 
   // Add nan checks after each non-group process, for each computed field.
   // If checks fail, we print all input and output fields of that process

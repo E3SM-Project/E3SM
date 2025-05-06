@@ -16,7 +16,8 @@ struct IOControl {
   int frequency               = -1;
   std::string frequency_units = "none";
 
-  int nsamples_since_last_write = 0; // Needed when updating output data, such as with the OAT::Average flag
+  int nsamples_since_last_write =
+      0; // Needed when updating output data, such as with the OAT::Average flag
 
   util::TimeStamp next_write_ts;
   util::TimeStamp last_write_ts;
@@ -24,7 +25,8 @@ struct IOControl {
   // At run time, set dt in the struct, so we can compute next_write_ts correctly,
   // even if freq_units is "nsteps"
   // NOTE: this ASSUMES dt is constant throughout the run (i.e., no time adaptivity).
-  //       An error will be thrown if dt changes, so developers can fix this if we ever support variable dt
+  //       An error will be thrown if dt changes, so developers can fix this if we ever support
+  //       variable dt
   double dt = 0;
 
   bool output_enabled() const { return frequency_units != "none" && frequency_units != "never"; }
@@ -32,9 +34,9 @@ struct IOControl {
   bool is_write_step(const util::TimeStamp &ts) const {
     if (not output_enabled())
       return false;
-    return frequency_units == "nsteps"
-               ? ts.get_num_steps() == next_write_ts.get_num_steps()
-               : (ts.get_date() == next_write_ts.get_date() and ts.get_time() == next_write_ts.get_time());
+    return frequency_units == "nsteps" ? ts.get_num_steps() == next_write_ts.get_num_steps()
+                                       : (ts.get_date() == next_write_ts.get_date() and
+                                          ts.get_time() == next_write_ts.get_time());
   }
 
   void set_frequency_units(const std::string &freq_unit) {
@@ -61,7 +63,8 @@ struct IOControl {
   }
 
   void set_dt(const double dt_in) {
-    EKAT_REQUIRE_MSG(dt == 0 or dt == dt_in, "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
+    EKAT_REQUIRE_MSG(dt == 0 or dt == dt_in,
+                     "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
 
     dt = dt_in;
   }

@@ -7,11 +7,11 @@ namespace scream {
 namespace p3 {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::ice_relaxation_timescale(const Spack &rho, const Spack &temp, const Spack &rhofaci,
-                                          const Spack &table_val_qi2qr_melting, const Spack &table_val_qi2qr_vent_melt,
-                                          const Spack &dv, const Spack &mu, const Spack &sc, const Spack &qi_incld,
-                                          const Spack &ni_incld, Spack &epsi, Spack &epsi_tot, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::ice_relaxation_timescale(
+    const Spack &rho, const Spack &temp, const Spack &rhofaci, const Spack &table_val_qi2qr_melting,
+    const Spack &table_val_qi2qr_vent_melt, const Spack &dv, const Spack &mu, const Spack &sc,
+    const Spack &qi_incld, const Spack &ni_incld, Spack &epsi, Spack &epsi_tot,
+    const Smask &context) {
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar tmelt  = C::Tmelt;
   constexpr Scalar zero   = C::ZERO;
@@ -26,7 +26,8 @@ Functions<S, D>::ice_relaxation_timescale(const Spack &rho, const Spack &temp, c
    * calculate total inverse ice relaxation timescale combined for all ice categories
    * note 'f1pr' values are normalized, so we need to multiply by N
    */
-  epsi.set(any_if, ((table_val_qi2qr_melting + table_val_qi2qr_vent_melt * cbrt(sc) * sqrt(rhofaci * rho / mu)) *
+  epsi.set(any_if, ((table_val_qi2qr_melting +
+                     table_val_qi2qr_vent_melt * cbrt(sc) * sqrt(rhofaci * rho / mu)) *
                     sp(2.0) * pi * rho * dv) *
                        ni_incld);
 

@@ -83,13 +83,15 @@ const Real surface_pressure = 1015e2;
 // Linearly interpolates data at a specific elevation using elevation and
 // data arrays.
 template <size_t N>
-Real interpolate_data(const std::array<Real, N> &ref_elevations, const std::array<Real, N> &ref_data, Real z) {
+Real interpolate_data(const std::array<Real, N> &ref_elevations,
+                      const std::array<Real, N> &ref_data, Real z) {
   auto pos  = std::lower_bound(ref_elevations.begin(), ref_elevations.end(), z);
   Int index = pos - ref_elevations.begin();
   if (index == 0)
     return ref_data[0];
   else if (index < (Int)N) {
-    const Real a = (z - ref_elevations[index - 1]) / (ref_elevations[index] - ref_elevations[index - 1]);
+    const Real a =
+        (z - ref_elevations[index - 1]) / (ref_elevations[index] - ref_elevations[index - 1]);
     return (1.0 - a) * ref_data[index - 1] + a * ref_data[index];
   } else {
     // Don't extrapolate off the end of the table.
@@ -190,7 +192,8 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
     for (Int k = 0; k < nlev; ++k) {
       d.pdel(i, k)      = std::abs(d.presi(i, k + 1) - d.presi(i, k));
       d.inv_exner(i, k) = 1 / pow(d.pres(i, k) / consts::P0, consts::Rair / consts::Cpair);
-      d.host_dse(i, k)  = consts::Cpair * d.thv(i, k) / d.inv_exner(i, k) + consts::gravit * d.zt_grid(i, k);
+      d.host_dse(i, k) =
+          consts::Cpair * d.thv(i, k) / d.inv_exner(i, k) + consts::gravit * d.zt_grid(i, k);
     }
 
     // Zero the other input fields.

@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestClipThirdMoms : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestClipThirdMoms : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -162,13 +163,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestClipThirdMoms : public U
 namespace {
 
 TEST_CASE("shoc_clip_third_moms_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestClipThirdMoms;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestClipThirdMoms;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_clip_third_moms_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestClipThirdMoms;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestClipThirdMoms;
 
   TestStruct().run_bfb();
 }

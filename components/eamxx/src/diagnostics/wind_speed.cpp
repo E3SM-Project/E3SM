@@ -4,7 +4,8 @@
 
 namespace scream {
 
-WindSpeed::WindSpeed(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereDiagnostic(comm, params) {
+WindSpeed::WindSpeed(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
 

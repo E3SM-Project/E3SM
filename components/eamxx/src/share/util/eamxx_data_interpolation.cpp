@@ -28,8 +28,9 @@ DataInterpolation::DataInterpolation(const std::shared_ptr<const AbstractGrid> &
 }
 
 void DataInterpolation::run(const util::TimeStamp &ts) {
-  EKAT_REQUIRE_MSG(m_data_initialized,
-                   "[DataInterpolation] Error! You must call 'init_data_interval' before calling 'run'.\n");
+  EKAT_REQUIRE_MSG(
+      m_data_initialized,
+      "[DataInterpolation] Error! You must call 'init_data_interval' before calling 'run'.\n");
 
   // If we went past the current interval end, we need to update the end state
   if (not m_data_interval.contains(ts)) {
@@ -42,22 +43,23 @@ void DataInterpolation::run(const util::TimeStamp &ts) {
   //       have t_beg>t_end
   util::TimeInterval beg_to_ts(m_data_interval.beg, ts, m_data_interval.timeline);
   double alpha = beg_to_ts.length / m_data_interval.length;
-  EKAT_REQUIRE_MSG(alpha >= 0 and alpha <= 1,
-                   "[DataInterpolation] Error! Input timestamp is outside the current data time interval.\n"
-                   "  data interval beg  ; " +
-                       m_data_interval.beg.to_string() +
-                       "\n"
-                       "  data interval end  ; " +
-                       m_data_interval.end.to_string() +
-                       "\n"
-                       "  input timestamp    ; " +
-                       ts.to_string() +
-                       "\n"
-                       "  interval length    : " +
-                       std::to_string(m_data_interval.length) +
-                       "\n"
-                       "  interpolation coeff: " +
-                       std::to_string(alpha) + "\n");
+  EKAT_REQUIRE_MSG(
+      alpha >= 0 and alpha <= 1,
+      "[DataInterpolation] Error! Input timestamp is outside the current data time interval.\n"
+      "  data interval beg  ; " +
+          m_data_interval.beg.to_string() +
+          "\n"
+          "  data interval end  ; " +
+          m_data_interval.end.to_string() +
+          "\n"
+          "  input timestamp    ; " +
+          ts.to_string() +
+          "\n"
+          "  interval length    : " +
+          std::to_string(m_data_interval.length) +
+          "\n"
+          "  interpolation coeff: " +
+          std::to_string(alpha) + "\n");
 
   for (int i = 0; i < m_nfields; ++i) {
     const auto &beg = m_horiz_remapper_beg->get_tgt_field(i);
@@ -111,8 +113,9 @@ void DataInterpolation::run(const util::TimeStamp &ts) {
     Kokkos::parallel_for(
         "spa_compute_p_src_loop", policy, KOKKOS_LAMBDA(const MemberType &team) {
           const int icol = team.league_rank();
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_vert_packs),
-                               [&](const int k) { p_v(icol, k) = ps_v(icol) * hybm(k) + P0 * hyam(k); });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_vert_packs), [&](const int k) {
+            p_v(icol, k) = ps_v(icol) * hybm(k) + P0 * hyam(k);
+          });
         });
   }
 
@@ -153,8 +156,8 @@ void DataInterpolation::update_end_fields() {
 }
 
 void DataInterpolation::init_data_interval(const util::TimeStamp &t0) {
-  EKAT_REQUIRE_MSG(m_remappers_created,
-                   "[DataInterpolation] Error! Cannot call 'init_data_interval' until after remappers creation.\n");
+  EKAT_REQUIRE_MSG(m_remappers_created, "[DataInterpolation] Error! Cannot call "
+                                        "'init_data_interval' until after remappers creation.\n");
 
   // Create a bare reader. Fields and filename are set inside the update_end_fields call
   strvec_t fnames;
@@ -172,7 +175,7 @@ void DataInterpolation::init_data_interval(const util::TimeStamp &t0) {
   // framework can only load the end slice (since that's what we need at runtime).
   // So, load end state for t=t_beg, then call shift_data_interval
   // NOTE: don't compute length now, since beg time point is invalid (we don't need length yet).
-  m_data_interval            = util::TimeInterval(util::TimeStamp(), t_beg, m_time_database.timeline, false);
+  m_data_interval = util::TimeInterval(util::TimeStamp(), t_beg, m_time_database.timeline, false);
   m_curr_interval_idx.second = t0_interval;
   update_end_fields();
   shift_data_interval();
@@ -180,7 +183,8 @@ void DataInterpolation::init_data_interval(const util::TimeStamp &t0) {
   m_data_initialized = true;
 }
 
-void DataInterpolation::setup_time_database(const strvec_t &input_files, const util::TimeLine timeline,
+void DataInterpolation::setup_time_database(const strvec_t &input_files,
+                                            const util::TimeLine timeline,
                                             const util::TimeStamp &ref_ts) {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
   if (m_dbg_output and m_comm.am_i_root()) {
@@ -209,23 +213,26 @@ void DataInterpolation::setup_time_database(const strvec_t &input_files, const u
   auto ts2str = [](const util::TimeStamp &t) { return t.to_string(); };
   std::vector<std::vector<util::TimeStamp>> times;
   for (const auto &fname : input_files) {
-    EKAT_REQUIRE_MSG(file_readable(input_files.back()), "Error! One of the input files is not readable.\n"
-                                                        " - file   : " +
-                                                            input_files.back() + "\n");
+    EKAT_REQUIRE_MSG(file_readable(input_files.back()),
+                     "Error! One of the input files is not readable.\n"
+                     " - file   : " +
+                         input_files.back() + "\n");
 
     scorpio::register_file(fname, scorpio::Read);
 
     if (not scorpio::has_time_dim(fname)) {
-      EKAT_REQUIRE_MSG(scorpio::has_dim(fname, "time"),
-                       "[DataInterpolation] Error! Input file does not contain a 'time' dimension.\n"
-                       " - file name: " +
-                           fname + "\n");
+      EKAT_REQUIRE_MSG(
+          scorpio::has_dim(fname, "time"),
+          "[DataInterpolation] Error! Input file does not contain a 'time' dimension.\n"
+          " - file name: " +
+              fname + "\n");
       scorpio::mark_dim_as_time(fname, "time");
     }
     auto file_times = scorpio::get_all_times(fname);
-    EKAT_REQUIRE_MSG(file_times.size() > 0, "[DataInterpolation] Error! Input file contains no time variable.\n"
-                                            " - file name: " +
-                                                fname + "\n");
+    EKAT_REQUIRE_MSG(file_times.size() > 0,
+                     "[DataInterpolation] Error! Input file contains no time variable.\n"
+                     " - file name: " +
+                         fname + "\n");
 
     auto t_ref = ref_ts.is_valid() ? ref_ts : read_timestamp(fname, "reference_time_stamp");
 
@@ -236,17 +243,19 @@ void DataInterpolation::setup_time_database(const strvec_t &input_files, const u
     scorpio::release_file(fname);
 
     // Ensure time slices are sorted (it would make code messy otherwise)
-    EKAT_REQUIRE_MSG(std::is_sorted(times.back().begin(), times.back().end()),
-                     "[DataInterpolation] Error! One of the input files has time slices not sorted.\n"
-                     " - file name  : " +
-                         fname +
-                         "\n"
-                         " - time stamps: " +
-                         ekat::join(times.back(), ts2str, ", ") + "\n");
+    EKAT_REQUIRE_MSG(
+        std::is_sorted(times.back().begin(), times.back().end()),
+        "[DataInterpolation] Error! One of the input files has time slices not sorted.\n"
+        " - file name  : " +
+            fname +
+            "\n"
+            " - time stamps: " +
+            ekat::join(times.back(), ts2str, ", ") + "\n");
   }
 
   // Sort the files based on start date
-  auto fileCmp = [](const std::vector<util::TimeStamp> &times1, const std::vector<util::TimeStamp> &times2) {
+  auto fileCmp = [](const std::vector<util::TimeStamp> &times1,
+                    const std::vector<util::TimeStamp> &times2) {
     return times1.front() < times2.front();
   };
   std::sort(times.begin(), times.end(), fileCmp);
@@ -270,19 +279,20 @@ void DataInterpolation::setup_time_database(const strvec_t &input_files, const u
       // Ensure files don't overlap (it would be a mess)
       const auto &prev = times[i - 1];
       const auto &next = times[i];
-      EKAT_REQUIRE_MSG(prev.back() < next.front(),
-                       "[DataInterpolation] Error! The input files contain overlapping time slices.\n"
-                       " - file1 name : " +
-                           input_files[i - 1] +
-                           "\n"
-                           " - file2 name : " +
-                           input_files[i] +
-                           "\n"
-                           " - file1 times: " +
-                           ekat::join(prev, ts2str, ", ") +
-                           "\n"
-                           " - file2 times: " +
-                           ekat::join(next, ts2str, ", ") + "\n");
+      EKAT_REQUIRE_MSG(
+          prev.back() < next.front(),
+          "[DataInterpolation] Error! The input files contain overlapping time slices.\n"
+          " - file1 name : " +
+              input_files[i - 1] +
+              "\n"
+              " - file2 name : " +
+              input_files[i] +
+              "\n"
+              " - file1 times: " +
+              ekat::join(prev, ts2str, ", ") +
+              "\n"
+              " - file2 times: " +
+              ekat::join(next, ts2str, ", ") + "\n");
     }
   }
 
@@ -310,15 +320,18 @@ void DataInterpolation::setup_remappers(const RemapData &data) {
 int DataInterpolation::TimeDatabase::get_next_idx(int prev) const {
   int next = prev + 1;
   if (next >= size()) {
-    EKAT_REQUIRE_MSG(timeline == util::TimeLine::YearlyPeriodic,
-                     "[TimeDatabase::get_next_idx] Error! Requesting slice that is past the database end.\n");
+    EKAT_REQUIRE_MSG(
+        timeline == util::TimeLine::YearlyPeriodic,
+        "[TimeDatabase::get_next_idx] Error! Requesting slice that is past the database end.\n");
     next = next % size();
   }
   return next;
 }
 
 int DataInterpolation::TimeDatabase::find_interval(const util::TimeStamp &t) const {
-  EKAT_REQUIRE_MSG(size() > 1, "[TimeDatabase::find_interval] Error! The database has not been initialized yet.\n");
+  EKAT_REQUIRE_MSG(
+      size() > 1,
+      "[TimeDatabase::find_interval] Error! The database has not been initialized yet.\n");
 
   auto contains = [&](int beg, int end, const util::TimeStamp &t) {
     const auto &t_beg = slices[beg].time;
@@ -340,21 +353,22 @@ int DataInterpolation::TimeDatabase::find_interval(const util::TimeStamp &t) con
   // this is an error (in fact, there should have been an error before!).
   // But if the timeline is YearlyPeriodic, then it must be the case that
   // t is in the interval (slices[N],slices[0]).
-  EKAT_REQUIRE_MSG(timeline == util::TimeLine::YearlyPeriodic and contains(size(), 0, t),
-                   "[TimeDatabase::find_interval] Error! Could not locate interval containing input timestamp.\n"
-                   "  - input time : " +
-                       t.to_string() +
-                       "\n"
-                       "  - timeline   : " +
-                       (timeline == util::TimeLine::Linear ? "linear" : "yearly_periodic") +
-                       "\n"
-                       "  - first slice: " +
-                       slices.front().time.to_string() +
-                       "\n"
-                       "  - last slice : " +
-                       slices.back().time.to_string() +
-                       "\n"
-                       "Did you mean to use YearlyPeriodic timeline?\n");
+  EKAT_REQUIRE_MSG(
+      timeline == util::TimeLine::YearlyPeriodic and contains(size(), 0, t),
+      "[TimeDatabase::find_interval] Error! Could not locate interval containing input timestamp.\n"
+      "  - input time : " +
+          t.to_string() +
+          "\n"
+          "  - timeline   : " +
+          (timeline == util::TimeLine::Linear ? "linear" : "yearly_periodic") +
+          "\n"
+          "  - first slice: " +
+          slices.front().time.to_string() +
+          "\n"
+          "  - last slice : " +
+          slices.back().time.to_string() +
+          "\n"
+          "Did you mean to use YearlyPeriodic timeline?\n");
 
   // Since we are in YearlyPeriodic timeline, the interval starts at the last slice
   return size() - 1;
@@ -373,19 +387,20 @@ int DataInterpolation::get_input_files_dimlen(const std::string &dimname) const 
                                                            fname + "\n");
 
     auto this_file_dimlen = scorpio::get_dimlen(fname, dimname);
-    EKAT_REQUIRE_MSG(dimlen == -1 or dimlen == this_file_dimlen, "Error! Input files do not agree on '" + dimname +
-                                                                     "' dimension length.\n"
-                                                                     "  - file1: " +
-                                                                     m_time_database.files.front() +
-                                                                     "\n"
-                                                                     "  - file2: " +
-                                                                     fname +
-                                                                     "\n"
-                                                                     "  - file1 dim len: " +
-                                                                     std::to_string(dimlen) +
-                                                                     "\n"
-                                                                     "  - file2 dim len: " +
-                                                                     std::to_string(this_file_dimlen) + "\n");
+    EKAT_REQUIRE_MSG(dimlen == -1 or dimlen == this_file_dimlen,
+                     "Error! Input files do not agree on '" + dimname +
+                         "' dimension length.\n"
+                         "  - file1: " +
+                         m_time_database.files.front() +
+                         "\n"
+                         "  - file2: " +
+                         fname +
+                         "\n"
+                         "  - file1 dim len: " +
+                         std::to_string(dimlen) +
+                         "\n"
+                         "  - file2 dim len: " +
+                         std::to_string(this_file_dimlen) + "\n");
     scorpio::release_file(fname);
 
     dimlen = this_file_dimlen;
@@ -404,13 +419,14 @@ void DataInterpolation::setup_horiz_remappers(const RemapData &data) {
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
   if (data.has_iop) {
-    EKAT_REQUIRE_MSG(not ekat::is_invalid(data.iop_lat) and not ekat::is_invalid(data.iop_lon),
-                     "Error! At least one between iop_lat and iop_lon appears to be valid in RemapData.\n"
-                     "  - iop_lat: "
-                         << data.iop_lat
-                         << "\n"
-                            "  - iop_lon: "
-                         << data.iop_lon << "\n");
+    EKAT_REQUIRE_MSG(
+        not ekat::is_invalid(data.iop_lat) and not ekat::is_invalid(data.iop_lon),
+        "Error! At least one between iop_lat and iop_lon appears to be valid in RemapData.\n"
+        "  - iop_lat: "
+            << data.iop_lat
+            << "\n"
+               "  - iop_lon: "
+            << data.iop_lon << "\n");
     // Create grid for IO and load lat/lon field in IO grid from any data file
     auto data_grid = create_point_grid("data", ncols_data, nlevs_data, m_model_grid->get_comm());
     auto lat_f     = data_grid->create_geometry_data("lat", data_grid->get_2d_scalar_layout());
@@ -419,21 +435,25 @@ void DataInterpolation::setup_horiz_remappers(const RemapData &data) {
     latlon_reader.read_variables();
 
     // Create IOP remappers
-    m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid, m_grid_after_hremap, data.iop_lat, data.iop_lon);
-    m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid, m_grid_after_hremap, data.iop_lat, data.iop_lon);
+    m_horiz_remapper_beg =
+        std::make_shared<IOPRemapper>(data_grid, m_grid_after_hremap, data.iop_lat, data.iop_lon);
+    m_horiz_remapper_end =
+        std::make_shared<IOPRemapper>(data_grid, m_grid_after_hremap, data.iop_lat, data.iop_lon);
   } else if (data.hremap_file != "") {
-    m_horiz_remapper_beg = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap, data.hremap_file);
-    m_horiz_remapper_end = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap, data.hremap_file);
+    m_horiz_remapper_beg =
+        std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap, data.hremap_file);
+    m_horiz_remapper_end =
+        std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap, data.hremap_file);
   } else {
     // NO hremap of any kind. 'ncols' from the data must then match the model grid (nlev can differ)
-    EKAT_REQUIRE_MSG(
-        ncols_data == m_model_grid->get_num_global_dofs(),
-        "Error! No horiz remap was requested, but the 'ncol' dim from file does not match with the model grid one.\n"
-        " - model grid num global cols: " +
-            std::to_string(m_model_grid->get_num_global_dofs()) +
-            "\n"
-            " - input data num global cols: " +
-            std::to_string(ncols_data) + "\n");
+    EKAT_REQUIRE_MSG(ncols_data == m_model_grid->get_num_global_dofs(),
+                     "Error! No horiz remap was requested, but the 'ncol' dim from file does not "
+                     "match with the model grid one.\n"
+                     " - model grid num global cols: " +
+                         std::to_string(m_model_grid->get_num_global_dofs()) +
+                         "\n"
+                         " - input data num global cols: " +
+                         std::to_string(ncols_data) + "\n");
 
     using IDR          = IdentityRemapper;
     constexpr auto SAT = IDR::SrcAliasTgt;
@@ -453,14 +473,14 @@ void DataInterpolation::setup_vert_remapper(const RemapData &data) {
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
     int model_nlevs = m_model_grid->get_num_vertical_levels();
     int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
-    EKAT_REQUIRE_MSG(
-        model_nlevs == data_nlevs,
-        "Error! No vertical remap was requested, but the 'lev' dim from file does not match the model grid one.\n"
-        " - model grid num vert levels: " +
-            std::to_string(model_nlevs) +
-            "\n"
-            " - input data num vert levels: " +
-            std::to_string(data_nlevs) + "\n");
+    EKAT_REQUIRE_MSG(model_nlevs == data_nlevs,
+                     "Error! No vertical remap was requested, but the 'lev' dim from file does not "
+                     "match the model grid one.\n"
+                     " - model grid num vert levels: " +
+                         std::to_string(model_nlevs) +
+                         "\n"
+                         " - input data num vert levels: " +
+                         std::to_string(data_nlevs) + "\n");
     m_vert_remapper = std::make_shared<IDR>(m_grid_after_hremap, SAT);
     return;
   }
@@ -499,7 +519,7 @@ void DataInterpolation::setup_vert_remapper(const RemapData &data) {
   auto p_layout = m_vr_type == Static1D ? m_grid_after_hremap->get_vertical_layout(true)
                                         : m_grid_after_hremap->get_3d_scalar_layout(true);
   auto &p_data  = m_helper_pressure_fields["p_data"];
-  p_data        = Field(FieldIdentifier("p_data", p_layout, ekat::units::Pa, m_grid_after_hremap->name()));
+  p_data = Field(FieldIdentifier("p_data", p_layout, ekat::units::Pa, m_grid_after_hremap->name()));
   p_data.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   p_data.allocate_view();
   if (m_vr_type == Dynamic3D) {
@@ -508,8 +528,8 @@ void DataInterpolation::setup_vert_remapper(const RemapData &data) {
   } else if (m_vr_type == Dynamic3DRef) {
     // We load the surface pressure, and reconstruct p_data via p=ps*hybm(k) + p0*hyam(k)
     auto &ps = m_helper_pressure_fields["p_file"];
-    ps       = Field(FieldIdentifier(data.pname, m_grid_after_hremap->get_2d_scalar_layout(), ekat::units::Pa,
-                                     m_grid_after_hremap->name()));
+    ps       = Field(FieldIdentifier(data.pname, m_grid_after_hremap->get_2d_scalar_layout(),
+                                     ekat::units::Pa, m_grid_after_hremap->name()));
     ps.allocate_view();
 
     // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
@@ -517,13 +537,17 @@ void DataInterpolation::setup_vert_remapper(const RemapData &data) {
     auto layout     = m_grid_after_hremap->get_vertical_layout(true);
     auto nondim     = ekat::units::Units::nondimensional();
     DataType real_t = DataType::RealType;
-    auto hyam       = m_grid_after_hremap->create_geometry_data("hyam", layout, nondim, real_t, SCREAM_PACK_SIZE);
-    auto hybm       = m_grid_after_hremap->create_geometry_data("hybm", layout, nondim, real_t, SCREAM_PACK_SIZE);
-    AtmosphereInput hvcoord_reader(m_time_database.files.front(), m_grid_after_hremap, {hyam, hybm}, true);
+    auto hyam =
+        m_grid_after_hremap->create_geometry_data("hyam", layout, nondim, real_t, SCREAM_PACK_SIZE);
+    auto hybm =
+        m_grid_after_hremap->create_geometry_data("hybm", layout, nondim, real_t, SCREAM_PACK_SIZE);
+    AtmosphereInput hvcoord_reader(m_time_database.files.front(), m_grid_after_hremap, {hyam, hybm},
+                                   true);
     hvcoord_reader.read_variables();
   } else if (m_vr_type == Static1D) {
     // Can load p now, since it's static
-    AtmosphereInput p_data_reader(m_time_database.files.front(), m_grid_after_hremap, {p_data.alias(data.pname)}, true);
+    AtmosphereInput p_data_reader(m_time_database.files.front(), m_grid_after_hremap,
+                                  {p_data.alias(data.pname)}, true);
     p_data_reader.read_variables();
   }
   vremap->set_source_pressure(m_helper_pressure_fields["p_data"], VerticalRemapper::Both);
@@ -544,8 +568,10 @@ void DataInterpolation::register_fields_in_remappers() {
   m_horiz_remapper_end->registration_begins();
   for (int i = 0; i < m_nfields; ++i) {
     const auto &f = m_vert_remapper->get_src_field(i);
-    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));
-    m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(
+        f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));
+    m_horiz_remapper_end->register_field_from_tgt(
+        f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name()));
   }
   if (m_vr_type == Dynamic3D or m_vr_type == Dynamic3DRef) {
     const auto &data_p = m_helper_pressure_fields["p_file"];

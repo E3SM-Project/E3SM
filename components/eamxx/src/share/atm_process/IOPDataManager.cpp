@@ -12,24 +12,28 @@
 namespace scream {
 namespace control {
 
-IOPDataManager::IOPDataManager(const ekat::Comm &comm, const ekat::ParameterList &params, const util::TimeStamp &run_t0,
-                               const int model_nlevs, const Field &hyam, const Field &hybm) {
+IOPDataManager::IOPDataManager(const ekat::Comm &comm, const ekat::ParameterList &params,
+                               const util::TimeStamp &run_t0, const int model_nlevs,
+                               const Field &hyam, const Field &hybm) {
   m_comm   = comm;
   m_params = params;
   EKAT_REQUIRE_MSG(m_params.get<bool>("doubly_periodic_mode", false),
                    "Error! Currently doubly_periodic_mode is the only use case for "
                    "intensive observation period files.\n");
 
-  EKAT_REQUIRE_MSG(m_params.isParameter("target_latitude") && m_params.isParameter("target_longitude"),
+  EKAT_REQUIRE_MSG(m_params.isParameter("target_latitude") &&
+                       m_params.isParameter("target_longitude"),
                    "Error! Using intensive observation period files requires "
                    "target_latitude and target_longitude be gives as parameters in "
                    "\"iop_options\" in the input yaml file.\n");
   const auto target_lat = m_params.get<Real>("target_latitude");
   const auto target_lon = m_params.get<Real>("target_longitude");
   EKAT_REQUIRE_MSG(-90 <= target_lat and target_lat <= 90,
-                   "Error! IOP target_lat=" + std::to_string(target_lat) + " outside of expected range [-90, 90].\n");
+                   "Error! IOP target_lat=" + std::to_string(target_lat) +
+                       " outside of expected range [-90, 90].\n");
   EKAT_REQUIRE_MSG(0 <= target_lon and target_lon <= 360,
-                   "Error! IOP target_lat=" + std::to_string(target_lon) + " outside of expected range [0, 360].\n");
+                   "Error! IOP target_lat=" + std::to_string(target_lon) +
+                       " outside of expected range [0, 360].\n");
 
   // Set defaults for some parameters
   if (not m_params.isParameter("iop_srf_prop"))
@@ -66,7 +70,8 @@ IOPDataManager::~IOPDataManager() {
 }
 
 void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int model_nlevs) {
-  EKAT_REQUIRE_MSG(m_params.isParameter("iop_file"), "Error! Using IOP requires defining an iop_file parameter.\n");
+  EKAT_REQUIRE_MSG(m_params.isParameter("iop_file"),
+                   "Error! Using IOP requires defining an iop_file parameter.\n");
 
   const auto iop_file = m_params.get<std::string>("iop_file");
 
@@ -85,8 +90,8 @@ void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int mode
                                    const std::string &srf_varname = "none") {
     EKAT_REQUIRE_MSG(fl.rank() == 0 || fl.rank() == 1, "Error! IOP fields must have rank 0 or 1. "
                                                        "Attempting to setup " +
-                                                           varnames[0] + " with rank " + std::to_string(fl.rank()) +
-                                                           ".\n");
+                                                           varnames[0] + " with rank " +
+                                                           std::to_string(fl.rank()) + ".\n");
 
     // Check if var exists in IOP file. Some variables will
     // need to check alternate names.
@@ -114,8 +119,8 @@ void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int mode
       // Allocate field for variable
       FieldIdentifier fid(iop_varname, fl, ekat::units::Units::nondimensional(), "");
       const auto field_rank = fl.rank();
-      EKAT_REQUIRE_MSG(field_rank <= 1,
-                       "Error! Unexpected field rank " + std::to_string(field_rank) + " for iop file fields.\n");
+      EKAT_REQUIRE_MSG(field_rank <= 1, "Error! Unexpected field rank " +
+                                            std::to_string(field_rank) + " for iop file fields.\n");
       Field field(fid);
       if (fl.has_tag(FieldTag::LevelMidPoint) or fl.has_tag(FieldTag::LevelInterface)) {
         // Request packsize allocation for level layout
@@ -164,13 +169,16 @@ void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int mode
   EKAT_REQUIRE_MSG(has_iop_field("Ps"), "Error! IOP file required to contain variable \"Ps\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("T"), "Error! IOP file required to contain variable \"T\".\n");
   EKAT_REQUIRE_MSG(has_iop_field("q"), "Error! IOP file required to contain variable \"q\".\n");
-  EKAT_REQUIRE_MSG(has_iop_field("divT"), "Error! IOP file required to contain variable \"divT\".\n");
-  EKAT_REQUIRE_MSG(has_iop_field("divq"), "Error! IOP file required to contain variable \"divq\".\n");
+  EKAT_REQUIRE_MSG(has_iop_field("divT"),
+                   "Error! IOP file required to contain variable \"divT\".\n");
+  EKAT_REQUIRE_MSG(has_iop_field("divq"),
+                   "Error! IOP file required to contain variable \"divq\".\n");
 
   // Check for large scale winds and enfore "all-or-nothing" for u and v component
   const bool both_ls    = (has_iop_field("u_ls") and has_iop_field("v_ls"));
   const bool neither_ls = (not(has_iop_field("u_ls") or has_iop_field("v_ls")));
-  EKAT_REQUIRE_MSG(both_ls or neither_ls, "Error! Either u_ls and v_ls both defined in IOP file, or neither.\n");
+  EKAT_REQUIRE_MSG(both_ls or neither_ls,
+                   "Error! Either u_ls and v_ls both defined in IOP file, or neither.\n");
   m_params.set<bool>("use_large_scale_wind", both_ls);
 
   // Require large scale winds if using Coriolis forcing
@@ -248,7 +256,8 @@ void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int mode
   // longitude may be negtive in the iop file, we convert to positive before checking.
   const auto nlats = scorpio::get_dimlen(iop_file, "lat");
   const auto nlons = scorpio::get_dimlen(iop_file, "lon");
-  EKAT_REQUIRE_MSG(nlats == 1 and nlons == 1, "Error! IOP data file requires a single lat/lon pair.\n");
+  EKAT_REQUIRE_MSG(nlats == 1 and nlons == 1,
+                   "Error! IOP data file requires a single lat/lon pair.\n");
   Real iop_file_lat, iop_file_lon;
 
   scorpio::read_var(iop_file, "lat", &iop_file_lat);
@@ -256,17 +265,21 @@ void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int mode
 
   const Real rel_lat_err = std::fabs(iop_file_lat - m_params.get<Real>("target_latitude")) /
                            std::max(std::fabs(m_params.get<Real>("target_latitude")), (Real)0.1);
-  const Real rel_lon_err = std::fabs(std::fmod(iop_file_lon + 360.0, 360.0) - m_params.get<Real>("target_longitude")) /
-                           std::max(m_params.get<Real>("target_longitude"), (Real)0.1);
-  EKAT_REQUIRE_MSG(rel_lat_err < std::numeric_limits<float>::epsilon(),
-                   "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
-  EKAT_REQUIRE_MSG(rel_lon_err < std::numeric_limits<float>::epsilon(),
-                   "Error! IOP file variable \"lon\" does not match target_longitude from IOP parameters.\n");
+  const Real rel_lon_err =
+      std::fabs(std::fmod(iop_file_lon + 360.0, 360.0) - m_params.get<Real>("target_longitude")) /
+      std::max(m_params.get<Real>("target_longitude"), (Real)0.1);
+  EKAT_REQUIRE_MSG(
+      rel_lat_err < std::numeric_limits<float>::epsilon(),
+      "Error! IOP file variable \"lat\" does not match target_latitude from IOP parameters.\n");
+  EKAT_REQUIRE_MSG(
+      rel_lon_err < std::numeric_limits<float>::epsilon(),
+      "Error! IOP file variable \"lon\" does not match target_longitude from IOP parameters.\n");
 
   // Store iop file pressure as helper field with dimension lev+1.
   // Load the first lev entries from iop file, the lev+1 entry will
   // be set when reading iop data.
-  EKAT_REQUIRE_MSG(scorpio::has_var(iop_file, "lev"), "Error! Using IOP file requires variable \"lev\".\n");
+  EKAT_REQUIRE_MSG(scorpio::has_var(iop_file, "lev"),
+                   "Error! Using IOP file requires variable \"lev\".\n");
   const auto file_levs = scorpio::get_dimlen(iop_file, "lev");
   FieldIdentifier fid("iop_file_pressure", FieldLayout({FieldTag::LevelMidPoint}, {file_levs + 1}),
                       ekat::units::Units::nondimensional(), "");
@@ -284,7 +297,8 @@ void IOPDataManager::initialize_iop_file(const util::TimeStamp &run_t0, int mode
 
   // Create model pressure helper field (values will be computed
   // in read_iop_file_data())
-  FieldIdentifier model_pres_fid("model_pressure", fl_vector, ekat::units::Units::nondimensional(), "");
+  FieldIdentifier model_pres_fid("model_pressure", fl_vector, ekat::units::Units::nondimensional(),
+                                 "");
   Field model_pressure(model_pres_fid);
   model_pressure.get_header().get_alloc_properties().request_allocation(Pack::n);
   model_pressure.allocate_view();
@@ -311,13 +325,16 @@ void IOPDataManager::setup_io_info(const std::string &file_name, const grid_ptr 
   }
 }
 
-void IOPDataManager::read_fields_from_file_for_iop(const std::string &file_name, const std::vector<Field> &fields,
-                                                   const std::shared_ptr<const AbstractGrid> &grid) {
-  EKAT_REQUIRE_MSG(fields.size() > 0,
-                   "[IOPDataManager::read_fields_from_file_for_iop] Error! Input fields list is empty.\n");
+void IOPDataManager::read_fields_from_file_for_iop(
+    const std::string &file_name, const std::vector<Field> &fields,
+    const std::shared_ptr<const AbstractGrid> &grid) {
+  EKAT_REQUIRE_MSG(
+      fields.size() > 0,
+      "[IOPDataManager::read_fields_from_file_for_iop] Error! Input fields list is empty.\n");
 
   auto io_grid = m_io_grids[grid->name()];
-  EKAT_REQUIRE_MSG(io_grid != nullptr, "Error! Attempting to read IOP initial conditions on" + grid->name() +
+  EKAT_REQUIRE_MSG(io_grid != nullptr, "Error! Attempting to read IOP initial conditions on" +
+                                           grid->name() +
                                            " grid, but m_io_grid entry has not been created.\n");
 
   if (grid->name() == "physics_gll" and scorpio::has_dim(file_name, "ncol_d")) {
@@ -403,7 +420,8 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
     // where the last level is the first level equal to surface pressure.
     const auto iop_file_pres_v = iop_file_pressure.get_view<Real *>();
     // Sanity check
-    EKAT_REQUIRE_MSG(file_levs + 1 == iop_file_pressure.get_header().get_identifier().get_layout().dim(0),
+    EKAT_REQUIRE_MSG(file_levs + 1 ==
+                         iop_file_pressure.get_header().get_identifier().get_layout().dim(0),
                      "Error! Unexpected size for helper field \"iop_file_pressure\"\n");
     const auto &Ps = surface_pressure.get_view<const Real>();
     Kokkos::parallel_reduce(
@@ -426,10 +444,11 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
         },
         Kokkos::Min<int>(adjusted_file_levs));
 
-    EKAT_REQUIRE_MSG(adjusted_file_levs > 1, "Error! Pressures in iop file " + iop_file +
-                                                 " is are inccorrectly set. "
-                                                 "Surface pressure \"Ps\" (converted to millibar) should be greater "
-                                                 "than at least the 1st entry in midpoint pressures \"lev\".\n");
+    EKAT_REQUIRE_MSG(adjusted_file_levs > 1,
+                     "Error! Pressures in iop file " + iop_file +
+                         " is are inccorrectly set. "
+                         "Surface pressure \"Ps\" (converted to millibar) should be greater "
+                         "than at least the 1st entry in midpoint pressures \"lev\".\n");
 
     // Compute model pressure levels
     const auto model_pres_v = model_pressure.get_view<Real *>();
@@ -437,8 +456,9 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
     const auto hyam_v       = m_helper_fields["hyam"].get_view<const Real *>();
     const auto hybm_v       = m_helper_fields["hybm"].get_view<const Real *>();
     Kokkos::parallel_for(
-        model_nlevs,
-        KOKKOS_LAMBDA(const int ilev) { model_pres_v(ilev) = 1000 * hyam_v(ilev) + Ps() * hybm_v(ilev) / 100; });
+        model_nlevs, KOKKOS_LAMBDA(const int ilev) {
+          model_pres_v(ilev) = 1000 * hyam_v(ilev) + Ps() * hybm_v(ilev) / 100;
+        });
 
     // Find file pressure levels just outside the range of model pressure levels
     Kokkos::parallel_reduce(
@@ -453,7 +473,8 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
         },
         Kokkos::Max<int>(iop_file_start), Kokkos::Min<int>(iop_file_end));
 
-    // If no file pressures are found outide the reference pressure range, set to file level endpoints
+    // If no file pressures are found outide the reference pressure range, set to file level
+    // endpoints
     if (iop_file_start == Kokkos::reduction_identity<int>::max())
       iop_file_start = 0;
     if (iop_file_end == Kokkos::reduction_identity<int>::min())
@@ -500,7 +521,8 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
       // Create temporary fields for reading iop file variables. We use
       // adjusted_file_levels (computed above) which contains an unset
       // value for surface.
-      FieldIdentifier fid(file_varname + "_iop_file", FieldLayout({FieldTag::LevelMidPoint}, {adjusted_file_levs}),
+      FieldIdentifier fid(file_varname + "_iop_file",
+                          FieldLayout({FieldTag::LevelMidPoint}, {adjusted_file_levs}),
                           ekat::units::Units::nondimensional(), "");
       Field iop_file_field(fid);
       iop_file_field.get_header().get_alloc_properties().request_allocation(Pack::n);
@@ -519,7 +541,8 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
       const auto has_srf = m_iop_field_surface_varnames.count(fname) > 0;
       if (has_srf) {
         const auto srf_varname = m_iop_field_surface_varnames[fname];
-        scorpio::read_var(iop_file, srf_varname, &iop_file_v_h(adjusted_file_levs - 1), iop_file_time_idx);
+        scorpio::read_var(iop_file, srf_varname, &iop_file_v_h(adjusted_file_levs - 1),
+                          iop_file_time_idx);
       } else {
         // No surface value exists, compute surface value
         const auto dx = iop_file_v_h(adjusted_file_levs - 2) - iop_file_v_h(adjusted_file_levs - 3);
@@ -528,12 +551,14 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
         else {
           iop_file_pressure.sync_to_host();
           const auto iop_file_pres_v_h = iop_file_pressure.get_view<const Real *, Host>();
-          const auto dy    = iop_file_pres_v_h(adjusted_file_levs - 2) - iop_file_pres_v_h(adjusted_file_levs - 3);
+          const auto dy =
+              iop_file_pres_v_h(adjusted_file_levs - 2) - iop_file_pres_v_h(adjusted_file_levs - 3);
           const auto scale = dy / dx;
 
-          iop_file_v_h(adjusted_file_levs - 1) =
-              (iop_file_pres_v_h(adjusted_file_levs - 1) - iop_file_pres_v_h(adjusted_file_levs - 2)) / scale +
-              iop_file_v_h(adjusted_file_levs - 2);
+          iop_file_v_h(adjusted_file_levs - 1) = (iop_file_pres_v_h(adjusted_file_levs - 1) -
+                                                  iop_file_pres_v_h(adjusted_file_levs - 2)) /
+                                                     scale +
+                                                 iop_file_v_h(adjusted_file_levs - 2);
         }
       }
       iop_file_field.sync_to_dev();
@@ -554,10 +579,14 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
       const auto policy = ESU::get_default_team_policy(1, total_nlevs);
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const KT::MemberType &team) {
-            const auto x_src  = Kokkos::subview(iop_file_pres_v, Kokkos::pair<int, int>(iop_file_start, iop_file_end));
-            const auto x_tgt  = Kokkos::subview(model_pres_v, Kokkos::pair<int, int>(model_start, model_end));
-            const auto input  = Kokkos::subview(iop_file_v, Kokkos::pair<int, int>(iop_file_start, iop_file_end));
-            const auto output = Kokkos::subview(iop_field_v, Kokkos::pair<int, int>(model_start, model_end));
+            const auto x_src = Kokkos::subview(
+                iop_file_pres_v, Kokkos::pair<int, int>(iop_file_start, iop_file_end));
+            const auto x_tgt =
+                Kokkos::subview(model_pres_v, Kokkos::pair<int, int>(model_start, model_end));
+            const auto input =
+                Kokkos::subview(iop_file_v, Kokkos::pair<int, int>(iop_file_start, iop_file_end));
+            const auto output =
+                Kokkos::subview(iop_field_v, Kokkos::pair<int, int>(model_start, model_end));
 
             vert_interp.setup(team, x_src, x_tgt);
             vert_interp.lin_interp(team, x_src, x_tgt, input, output);
@@ -566,13 +595,15 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
 
       // For certain fields we need to make sure to fill in the ends of
       // the interpolated region with the value at model_start/model_end
-      if (fname == "T" || fname == "q" || fname == "u" || fname == "u_ls" || fname == "v" || fname == "v_ls") {
+      if (fname == "T" || fname == "q" || fname == "u" || fname == "u_ls" || fname == "v" ||
+          fname == "v_ls") {
         Kokkos::parallel_for(
             Kokkos::RangePolicy<>(0, model_start + 1),
             KOKKOS_LAMBDA(const int ilev) { iop_field_v(ilev) = iop_file_v(0); });
         Kokkos::parallel_for(
-            Kokkos::RangePolicy<>(model_end - 1, total_nlevs),
-            KOKKOS_LAMBDA(const int ilev) { iop_field_v(ilev) = iop_file_v(adjusted_file_levs - 1); });
+            Kokkos::RangePolicy<>(model_end - 1, total_nlevs), KOKKOS_LAMBDA(const int ilev) {
+              iop_field_v(ilev) = iop_file_v(adjusted_file_levs - 1);
+            });
       }
     }
   }
@@ -583,8 +614,9 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
       const auto divT     = get_iop_field("divT").get_view<const Real *>();
       const auto vertdivT = get_iop_field("vertdivT").get_view<const Real *>();
       const auto divT3d   = get_iop_field("divT3d").get_view<Real *>();
-      const auto nlevs    = get_iop_field("divT3d").get_header().get_identifier().get_layout().dim(0);
-      Kokkos::parallel_for(nlevs, KOKKOS_LAMBDA(const int ilev) { divT3d(ilev) = divT(ilev) + vertdivT(ilev); });
+      const auto nlevs = get_iop_field("divT3d").get_header().get_identifier().get_layout().dim(0);
+      Kokkos::parallel_for(
+          nlevs, KOKKOS_LAMBDA(const int ilev) { divT3d(ilev) = divT(ilev) + vertdivT(ilev); });
     }
   }
   if (has_iop_field("divq3d")) {
@@ -592,8 +624,9 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
       const auto divq     = get_iop_field("divq").get_view<const Real *>();
       const auto vertdivq = get_iop_field("vertdivq").get_view<const Real *>();
       const auto divq3d   = get_iop_field("divq3d").get_view<Real *>();
-      const auto nlevs    = get_iop_field("divq3d").get_header().get_identifier().get_layout().dim(0);
-      Kokkos::parallel_for(nlevs, KOKKOS_LAMBDA(const int ilev) { divq3d(ilev) = divq(ilev) + vertdivq(ilev); });
+      const auto nlevs = get_iop_field("divq3d").get_header().get_identifier().get_layout().dim(0);
+      Kokkos::parallel_for(
+          nlevs, KOKKOS_LAMBDA(const int ilev) { divq3d(ilev) = divq(ilev) + vertdivq(ilev); });
     }
   }
 
@@ -601,7 +634,8 @@ void IOPDataManager::read_iop_file_data(const util::TimeStamp &current_ts) {
   m_time_info.time_idx_of_current_data = iop_file_time_idx;
 }
 
-void IOPDataManager::set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string &grid_name) {
+void IOPDataManager::set_fields_from_iop_data(const field_mgr_ptr field_mgr,
+                                              const std::string &grid_name) {
   if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers", grid_name)) {
     // Zero out all tracers before setting iop tracers (if requested)
     field_mgr->get_field_group("tracers", grid_name).m_monolithic_field->deep_copy(0);
@@ -611,15 +645,17 @@ void IOPDataManager::set_fields_from_iop_data(const field_mgr_ptr field_mgr, con
                                                "data from the IOP file.\n");
 
   // Find which fields need to be written
-  const bool set_ps            = field_mgr->has_field("ps", grid_name) && has_iop_field("Ps");
-  const bool set_T_mid         = field_mgr->has_field("T_mid", grid_name) && has_iop_field("T");
-  const bool set_horiz_winds_u = field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("u");
-  const bool set_horiz_winds_v = field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("v");
-  const bool set_qv            = field_mgr->has_field("qv", grid_name) && has_iop_field("q");
-  const bool set_nc            = field_mgr->has_field("nc", grid_name) && has_iop_field("NUMLIQ");
-  const bool set_qc            = field_mgr->has_field("qc", grid_name) && has_iop_field("CLDLIQ");
-  const bool set_qi            = field_mgr->has_field("qi", grid_name) && has_iop_field("CLDICE");
-  const bool set_ni            = field_mgr->has_field("ni", grid_name) && has_iop_field("NUMICE");
+  const bool set_ps    = field_mgr->has_field("ps", grid_name) && has_iop_field("Ps");
+  const bool set_T_mid = field_mgr->has_field("T_mid", grid_name) && has_iop_field("T");
+  const bool set_horiz_winds_u =
+      field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("u");
+  const bool set_horiz_winds_v =
+      field_mgr->has_field("horiz_winds", grid_name) && has_iop_field("v");
+  const bool set_qv = field_mgr->has_field("qv", grid_name) && has_iop_field("q");
+  const bool set_nc = field_mgr->has_field("nc", grid_name) && has_iop_field("NUMLIQ");
+  const bool set_qc = field_mgr->has_field("qc", grid_name) && has_iop_field("CLDLIQ");
+  const bool set_qi = field_mgr->has_field("qi", grid_name) && has_iop_field("CLDICE");
+  const bool set_ni = field_mgr->has_field("ni", grid_name) && has_iop_field("NUMICE");
 
   // Create views/scalars for these field's data
   view_1d<Real> ps;
@@ -671,8 +707,8 @@ void IOPDataManager::set_fields_from_iop_data(const field_mgr_ptr field_mgr, con
   correct_temperature_and_water_vapor(field_mgr, grid_name);
 
   // Loop over all columns and copy IOP field values to FM views
-  const auto ncols  = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_local_dofs();
-  const auto nlevs  = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
+  const auto ncols = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_local_dofs();
+  const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
   const auto policy = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const KT::MemberType &team) {
@@ -710,7 +746,8 @@ void IOPDataManager::set_fields_from_iop_data(const field_mgr_ptr field_mgr, con
       });
 }
 
-void IOPDataManager::correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr, const std::string &grid_name) {
+void IOPDataManager::correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr,
+                                                         const std::string &grid_name) {
   // Find the first valid level index for t_iop, i.e., first non-zero entry
   int first_valid_idx;
   const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
@@ -727,8 +764,10 @@ void IOPDataManager::correct_temperature_and_water_vapor(const field_mgr_ptr fie
   // levels 0,...,first_valid_idx-1
   if (first_valid_idx > 0) {
     // If we have values of T and q to correct, we must have both T_mid and qv as FM fields
-    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid", grid_name), "Error! IOP requires FM to define T_mid.\n");
-    EKAT_REQUIRE_MSG(field_mgr->has_field("qv", grid_name), "Error! IOP requires FM to define qv.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("T_mid", grid_name),
+                     "Error! IOP requires FM to define T_mid.\n");
+    EKAT_REQUIRE_MSG(field_mgr->has_field("qv", grid_name),
+                     "Error! IOP requires FM to define qv.\n");
 
     // Replace values of T and q where t_iop contains zeros
     auto T_mid = field_mgr->get_field("T_mid", grid_name).get_view<const Real **>();

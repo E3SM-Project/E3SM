@@ -3,7 +3,8 @@
 
 namespace scream {
 
-AtmDensityDiagnostic::AtmDensityDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+AtmDensityDiagnostic::AtmDensityDiagnostic(const ekat::Comm &comm,
+                                           const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
@@ -43,11 +44,12 @@ void AtmDensityDiagnostic::compute_diagnostic_impl() {
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for(
-      "AtmosphereDensityDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs), KOKKOS_LAMBDA(const int &idx) {
-        const int icol = idx / nlevs;
-        const int ilev = idx % nlevs;
-        auto dz =
-            PF::calculate_dz(pseudo_density_mid(icol, ilev), p_mid(icol, ilev), T_mid(icol, ilev), qv_mid(icol, ilev));
+      "AtmosphereDensityDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs),
+      KOKKOS_LAMBDA(const int &idx) {
+        const int icol       = idx / nlevs;
+        const int ilev       = idx % nlevs;
+        auto dz              = PF::calculate_dz(pseudo_density_mid(icol, ilev), p_mid(icol, ilev),
+                                                T_mid(icol, ilev), qv_mid(icol, ilev));
         atm_dens(icol, ilev) = PF::calculate_density(pseudo_density_mid(icol, ilev), dz);
       });
   Kokkos::fence();

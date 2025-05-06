@@ -9,7 +9,8 @@
 namespace scream {
 using namespace cld_fraction;
 // =========================================================================================
-CldFraction::CldFraction(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereProcess(comm, params) {
+CldFraction::CldFraction(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereProcess(comm, params) {
   // Nothing to do here
 }
 
@@ -54,8 +55,9 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // - There are no fields used as both input and output.
 
   // Gather parameters for ice cloud thresholds from parameter list:
-  m_icecloud_threshold              = m_params.get<double>("ice_cloud_threshold", 1e-12);             // Default = 1e-12
-  m_icecloud_for_analysis_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold", 1e-5); // Default = 1e-5
+  m_icecloud_threshold = m_params.get<double>("ice_cloud_threshold", 1e-12); // Default = 1e-12
+  m_icecloud_for_analysis_threshold =
+      m_params.get<double>("ice_cloud_for_analysis_threshold", 1e-5); // Default = 1e-5
 }
 
 // =========================================================================================
@@ -64,8 +66,10 @@ void CldFraction::initialize_impl(const RunType /* run_type */) {
   using Interval = FieldWithinIntervalCheck;
   add_postcondition_check<Interval>(get_field_out("cldfrac_ice"), m_grid, 0.0, 1.0, false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot"), m_grid, 0.0, 1.0, false);
-  add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_analysis"), m_grid, 0.0, 1.0, false);
-  add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"), m_grid, 0.0, 1.0, false);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_analysis"), m_grid, 0.0, 1.0,
+                                    false);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"), m_grid, 0.0, 1.0,
+                                    false);
 }
 
 // =========================================================================================
@@ -79,8 +83,9 @@ void CldFraction::run_impl(const double /* dt */) {
   auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis").get_view<Pack **>();
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis").get_view<Pack **>();
 
-  CldFractionFunc::main(m_num_cols, m_num_levs, m_icecloud_threshold, m_icecloud_for_analysis_threshold, qi,
-                        liq_cld_frac, ice_cld_frac, tot_cld_frac, ice_cld_frac_4out, tot_cld_frac_4out);
+  CldFractionFunc::main(m_num_cols, m_num_levs, m_icecloud_threshold,
+                        m_icecloud_for_analysis_threshold, qi, liq_cld_frac, ice_cld_frac,
+                        tot_cld_frac, ice_cld_frac_4out, tot_cld_frac_4out);
 }
 
 // =========================================================================================

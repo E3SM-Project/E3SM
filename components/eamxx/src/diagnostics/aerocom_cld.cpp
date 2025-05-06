@@ -8,14 +8,17 @@
 
 namespace scream {
 
-AeroComCld::AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"), "Error! AeroComCld requires 'aero_com_cld_kind' in its "
-                                                            "input parameters.\n");
+AeroComCld::AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereDiagnostic(comm, params) {
+  EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"),
+                   "Error! AeroComCld requires 'aero_com_cld_kind' in its "
+                   "input parameters.\n");
 
   m_topbot = m_params.get<std::string>("aero_com_cld_kind");
   // check if m_topbot is "Bot" or "Top", else error out
-  EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top", "Error! AeroComCld requires 'aero_com_cld_kind' "
-                                                           "to be 'Bot' or 'Top' in its input parameters.\n");
+  EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
+                   "Error! AeroComCld requires 'aero_com_cld_kind' "
+                   "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
 void AeroComCld::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -34,8 +37,9 @@ void AeroComCld::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   m_ndiag     = aercom_util.size;
 
   // Ensure m_index_map and m_units_map match
-  EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(), "Error! Some inconsistency in AeroComCld: index and units "
-                                                             "maps do not match!\n");
+  EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
+                   "Error! Some inconsistency in AeroComCld: index and units "
+                   "maps do not match!\n");
   // Ensure m_index_map and m_ndiag match
   EKAT_REQUIRE_MSG(static_cast<int>(m_index_map.size()) == m_ndiag,
                    "Error! Some inconsistency in AeroComCld: index and units "
@@ -168,13 +172,15 @@ void AeroComCld::compute_diagnostic_impl() {
 
         auto topbot_calcs = [&](int ilay) {
           // Only do the calculation if certain conditions are met
-          if ((qc_icol(ilay) + qi_icol(ilay)) > q_threshold && (cld_icol(ilay) > cldfrac_tot_threshold)) {
+          if ((qc_icol(ilay) + qi_icol(ilay)) > q_threshold &&
+              (cld_icol(ilay) > cldfrac_tot_threshold)) {
             /* PART I: Probabilistically determining cloud top/bot */
             // Populate clr_tmp as the clear-sky fraction
             // probability of this level, where clr_icol is that of
             // the previous level
-            auto clr_tmp = clr_icol * (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
-                           (1.0 - ekat::impl::min(cld_icol(ilay - 1), Real(1.0 - cldfrac_tot_threshold)));
+            auto clr_tmp =
+                clr_icol * (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
+                (1.0 - ekat::impl::min(cld_icol(ilay - 1), Real(1.0 - cldfrac_tot_threshold)));
             // Temporary variable for probability "weights"
             auto wts = clr_icol - clr_tmp;
             // Temporary variable for liquid "phase"
@@ -191,7 +197,8 @@ void AeroComCld::compute_diagnostic_impl() {
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
-            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) / physconst::gravit / cld_icol(ilay);
+            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) / physconst::gravit /
+                        cld_icol(ilay);
             o_cdnc(icol) += cdnc * phi * wts;
             o_nc(icol) += nc_icol(ilay) * phi * wts;
             o_ni(icol) += ni_icol(ilay) * (1.0 - phi) * wts;

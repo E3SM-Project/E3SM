@@ -7,12 +7,13 @@ namespace scream {
 
 SEGrid::SEGrid(const std::string &grid_name, const int num_my_elements, const int num_gauss_pts,
                const int num_vertical_levels, const ekat::Comm &comm)
-    : AbstractGrid(grid_name, GridType::SE, num_my_elements * num_gauss_pts * num_gauss_pts, num_vertical_levels,
-                   comm) {
+    : AbstractGrid(grid_name, GridType::SE, num_my_elements * num_gauss_pts * num_gauss_pts,
+                   num_vertical_levels, comm) {
   // Sanity checks
   EKAT_REQUIRE_MSG(num_my_elements >= 0, "Error! Number of local elements must be non-negative.\n");
   EKAT_REQUIRE_MSG(num_gauss_pts >= 2, "Error! Number of gauss points must be at least 2.\n");
-  EKAT_REQUIRE_MSG(num_vertical_levels >= 2, "Error! Number of vertical levels must be at least 2.\n");
+  EKAT_REQUIRE_MSG(num_vertical_levels >= 2,
+                   "Error! Number of vertical levels must be at least 2.\n");
 
   m_num_local_elem = num_my_elements;
   m_num_gp         = num_gauss_pts;
@@ -24,22 +25,24 @@ SEGrid::SEGrid(const std::string &grid_name, const int num_my_elements, const in
   // Create the cg dofs field
   using namespace ShortFieldTagsNames;
   const auto units = ekat::units::Units::nondimensional();
-  m_cg_dofs_gids   = Field(
-      FieldIdentifier("cg_gids", FieldLayout({CMP}, {get_num_local_dofs()}), units, this->name(), DataType::IntType));
+  m_cg_dofs_gids   = Field(FieldIdentifier("cg_gids", FieldLayout({CMP}, {get_num_local_dofs()}),
+                                           units, this->name(), DataType::IntType));
   m_cg_dofs_gids.allocate_view();
 
-  m_partitioned_dim_gids =
-      Field(FieldIdentifier("el_gids", FieldLayout({EL}, {m_num_local_elem}), units, this->name(), DataType::IntType));
+  m_partitioned_dim_gids = Field(FieldIdentifier("el_gids", FieldLayout({EL}, {m_num_local_elem}),
+                                                 units, this->name(), DataType::IntType));
   m_partitioned_dim_gids.allocate_view();
 }
 
 FieldLayout SEGrid::get_2d_scalar_layout() const {
   using namespace ShortFieldTagsNames;
 
-  return FieldLayout({EL, GP, GP}, {m_num_local_elem, m_num_gp, m_num_gp}).rename_dims(m_special_tag_names);
+  return FieldLayout({EL, GP, GP}, {m_num_local_elem, m_num_gp, m_num_gp})
+      .rename_dims(m_special_tag_names);
 }
 
-FieldLayout SEGrid::get_2d_vector_layout(const int vector_dim, const std::string &vec_dim_name) const {
+FieldLayout SEGrid::get_2d_vector_layout(const int vector_dim,
+                                         const std::string &vec_dim_name) const {
   using namespace ShortFieldTagsNames;
 
   FieldLayout fl({EL, CMP, GP, GP}, {m_num_local_elem, vector_dim, m_num_gp, m_num_gp});
@@ -80,7 +83,8 @@ FieldLayout SEGrid::get_3d_scalar_layout(const bool midpoints) const {
   int nvl = this->get_num_vertical_levels() + (midpoints ? 0 : 1);
   auto VL = midpoints ? LEV : ILEV;
 
-  return FieldLayout({EL, GP, GP, VL}, {m_num_local_elem, m_num_gp, m_num_gp, nvl}).rename_dims(m_special_tag_names);
+  return FieldLayout({EL, GP, GP, VL}, {m_num_local_elem, m_num_gp, m_num_gp, nvl})
+      .rename_dims(m_special_tag_names);
 }
 
 FieldLayout SEGrid::get_3d_vector_layout(const bool midpoints, const int vector_dim,
@@ -126,8 +130,10 @@ FieldLayout SEGrid::get_3d_tensor_layout(const bool midpoints, const std::vector
   return fl.rename_dims(m_special_tag_names);
 }
 
-std::shared_ptr<AbstractGrid> SEGrid::clone(const std::string &clone_name, const bool shallow) const {
-  auto grid = std::make_shared<SEGrid>(clone_name, m_num_local_elem, m_num_gp, get_num_vertical_levels(), get_comm());
+std::shared_ptr<AbstractGrid> SEGrid::clone(const std::string &clone_name,
+                                            const bool shallow) const {
+  auto grid = std::make_shared<SEGrid>(clone_name, m_num_local_elem, m_num_gp,
+                                       get_num_vertical_levels(), get_comm());
 
   grid->copy_data(*this, shallow);
 

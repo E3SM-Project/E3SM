@@ -55,9 +55,11 @@ public:
   // Add the field to a given group
   void add_to_group(const std::shared_ptr<const FieldGroupInfo> &group);
 
-  // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
-  // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.
-  //       However, if the field has a 'parent' (see FamilyTracking), the parent's ts will not be updated.
+  // Set the time stamp for this field. This can only be called once, due to TimeStamp
+  // implementation. NOTE: if the field has 'children' (see FamilyTracking), their ts will be
+  // updated too.
+  //       However, if the field has a 'parent' (see FamilyTracking), the parent's ts will not be
+  //       updated.
   void update_time_stamp(const TimeStamp &ts);
   void invalidate_time_stamp();
 
@@ -76,9 +78,9 @@ protected:
   TimeStamp m_accum_start;
   ci_string m_accum_type;
 
-  // List of provider/customer processes. A provider is an atm process that computes/updates the field.
-  // A customer is an atm process that uses the field just as an input.
-  // NOTE: do NOT use shared_ptr, since you would create circular references.
+  // List of provider/customer processes. A provider is an atm process that computes/updates the
+  // field. A customer is an atm process that uses the field just as an input. NOTE: do NOT use
+  // shared_ptr, since you would create circular references.
   atm_proc_set_type m_providers;
   atm_proc_set_type m_customers;
 
@@ -93,7 +95,8 @@ protected:
 
 // Use this free function to exploit features of enable_shared_from_this,
 // as well as features from FamilyTracking.
-template <typename... Args> inline std::shared_ptr<FieldTracking> create_tracking(const Args &...args) {
+template <typename... Args>
+inline std::shared_ptr<FieldTracking> create_tracking(const Args &...args) {
   auto ptr = std::make_shared<FieldTracking>(args...);
   ptr->setSelfPointer(ptr);
   return ptr;

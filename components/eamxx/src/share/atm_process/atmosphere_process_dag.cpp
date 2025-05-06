@@ -66,7 +66,8 @@ void AtmProcDAG::create_dag(const group_type &atm_procs) {
 
 void AtmProcDAG::add_surface_coupling(const std::set<FieldIdentifier> &imports,
                                       const std::set<FieldIdentifier> &exports) {
-  EKAT_REQUIRE_MSG(m_nodes.size() > 0, "Error! You need to create the dag before adding surface coupling.\n");
+  EKAT_REQUIRE_MSG(m_nodes.size() > 0,
+                   "Error! You need to create the dag before adding surface coupling.\n");
 
   // Process all imports
   m_nodes.push_back(Node());
@@ -198,7 +199,8 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
           << "  fontsize=30\n"
           << "  label=<\n"
           << "    <table border=\"0\">\n"
-          << "      <tr><td><b><font point-size=\"40\">" << html_fix(n.name) << "</font></b></td></tr>\n";
+          << "      <tr><td><b><font point-size=\"40\">" << html_fix(n.name)
+          << "</font></b></td></tr>\n";
 
     int sz_comp = n.computed.size(), sz_req = n.required.size(), sz_grcomp = n.gr_computed.size(),
         sz_grreq = n.gr_required.size();
@@ -227,8 +229,8 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
           int fid_out    = std::abs(fid);
           fc += "black";
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid_out], fid_verb))
-                << "</font></td></tr>\n";
+          ofile << "      <tr><td align=\"left\">" << fc
+                << html_fix(print_fid(m_fids[fid_out], fid_verb)) << "</font></td></tr>\n";
         }
       }
 
@@ -251,7 +253,8 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
             fc += "black";
           }
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid], fid_verb));
+          ofile << "      <tr><td align=\"left\">" << fc
+                << html_fix(print_fid(m_fids[fid], fid_verb));
           if (ekat::contains(unmet, fid)) {
             ofile << "<b>  *** MISSING ***</b>";
           } else if (ekat::contains(unmet, -fid)) {
@@ -265,15 +268,18 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
       // Computed groups
       if (sz_grcomp > 0) {
         if (n.id == id_begin) {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Input groups:</font></b></td></tr>\n";
+          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Input "
+                   "groups:</font></b></td></tr>\n";
         } else if (n.id != id_end) {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#88621e\">Computed Groups:</font></b></td></tr>\n";
+          ofile << "      <tr><td align=\"left\"><b><font color=\"#88621e\">Computed "
+                   "Groups:</font></b></td></tr>\n";
         }
         for (const auto &gr_fid : n.gr_computed) {
           std::string fc = "<font color=\"";
           fc += "black";
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid], fid_verb));
+          ofile << "      <tr><td align=\"left\">" << fc
+                << html_fix(print_fid(m_fids[gr_fid], fid_verb));
           ofile << "</font></td></tr>\n";
           if (verbosity > 2) {
             ofile << "      <tr><td align=\"left\">  Members:";
@@ -312,15 +318,18 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
       // Required groups
       if (sz_grreq > 0) {
         if (n.name == "End of atm time step") {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Output Groups:</font></b></td></tr>\n";
+          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Output "
+                   "Groups:</font></b></td></tr>\n";
         } else if (n.name != "Begin of atm time step") {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Required Groups:</font></b></td></tr>\n";
+          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Required "
+                   "Groups:</font></b></td></tr>\n";
         }
         for (const auto &gr_fid : n.gr_required) {
           std::string fc = "<font color=\"";
           fc += (ekat::contains(unmet, gr_fid) ? "red" : "black");
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid], fid_verb));
+          ofile << "      <tr><td align=\"left\">" << fc
+                << html_fix(print_fid(m_fids[gr_fid], fid_verb));
           if (ekat::contains(unmet, gr_fid)) {
             ofile << "<b>  *** MISSING ***</b>";
           }

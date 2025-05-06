@@ -73,8 +73,9 @@ void PrecipSurfMassFlux::compute_diagnostic_impl() {
     const auto &t_start = mass_liq.get_header().get_tracking().get_accum_start_time();
     const auto &t_now   = mass_liq.get_header().get_tracking().get_time_stamp();
     if (use_ice) {
-      EKAT_REQUIRE_MSG(dt == (t_now - t_start),
-                       "Error! Liquid and ice precip mass fields have different accumulation time stamps!\n");
+      EKAT_REQUIRE_MSG(
+          dt == (t_now - t_start),
+          "Error! Liquid and ice precip mass fields have different accumulation time stamps!\n");
     } else {
       dt = t_now - t_start;
     }

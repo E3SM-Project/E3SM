@@ -17,8 +17,9 @@ namespace tms {
 //
 // _f function definitions. These expect data in C layout
 //
-void compute_tms_f(int ncols, int nlevs, Real *u_wind, Real *v_wind, Real *t_mid, Real *p_mid, Real *exner, Real *z_mid,
-                   Real *sgh, Real *landfrac, Real *ksrf, Real *taux, Real *tauy) {
+void compute_tms_f(int ncols, int nlevs, Real *u_wind, Real *v_wind, Real *t_mid, Real *p_mid,
+                   Real *exner, Real *z_mid, Real *sgh, Real *landfrac, Real *ksrf, Real *taux,
+                   Real *tauy) {
   using TMSFunc = Functions<Real, DefaultDevice>;
 
   using Scalar     = typename TMSFunc::Scalar;
@@ -36,11 +37,11 @@ void compute_tms_f(int ncols, int nlevs, Real *u_wind, Real *v_wind, Real *t_mid
   ScreamDeepCopy::copy_to_device({sgh, landfrac}, ncols, temp_d_1d);
   ekat::host_to_device({u_wind, v_wind, t_mid, p_mid, exner, z_mid}, ncols, nlevs, temp_d_2d, true);
 
-  view_1d sgh_d(temp_d_1d[0]), landfrac_d(temp_d_1d[1]), ksrf_d("ksrf_d", ncols), taux_d("taux_d", ncols),
-      tauy_d("tauy_d", ncols);
+  view_1d sgh_d(temp_d_1d[0]), landfrac_d(temp_d_1d[1]), ksrf_d("ksrf_d", ncols),
+      taux_d("taux_d", ncols), tauy_d("tauy_d", ncols);
 
-  view_2d u_wind_d(temp_d_2d[0]), v_wind_d(temp_d_2d[1]), t_mid_d(temp_d_2d[2]), p_mid_d(temp_d_2d[3]),
-      exner_d(temp_d_2d[4]), z_mid_d(temp_d_2d[5]);
+  view_2d u_wind_d(temp_d_2d[0]), v_wind_d(temp_d_2d[1]), t_mid_d(temp_d_2d[2]),
+      p_mid_d(temp_d_2d[3]), exner_d(temp_d_2d[4]), z_mid_d(temp_d_2d[5]);
 
   // calculate_tms treats u/v_wind and taux/y as multiple component arrays.
   const auto nlev_packs = ekat::npack<Spack>(nlevs);
@@ -59,8 +60,9 @@ void compute_tms_f(int ncols, int nlevs, Real *u_wind, Real *v_wind, Real *t_mid
       });
 
   // C++ compute_tms function implementation
-  TMSFunc::compute_tms(ncols, nlevs, ekat::scalarize(horiz_wind_d), ekat::scalarize(t_mid_d), ekat::scalarize(p_mid_d),
-                       ekat::scalarize(exner_d), ekat::scalarize(z_mid_d), sgh_d, landfrac_d, ksrf_d, tau_d);
+  TMSFunc::compute_tms(ncols, nlevs, ekat::scalarize(horiz_wind_d), ekat::scalarize(t_mid_d),
+                       ekat::scalarize(p_mid_d), ekat::scalarize(exner_d), ekat::scalarize(z_mid_d),
+                       sgh_d, landfrac_d, ksrf_d, tau_d);
 
   // Transfer data back to individual arrays (only for output variables)
   Kokkos::parallel_for(
@@ -76,8 +78,8 @@ void compute_tms_f(int ncols, int nlevs, Real *u_wind, Real *v_wind, Real *t_mid
 }
 
 void compute_tms(ComputeTMSData &d) {
-  compute_tms_f(d.ncols, d.nlevs, d.u_wind, d.v_wind, d.t_mid, d.p_mid, d.exner, d.z_mid, d.sgh, d.landfrac, d.ksrf,
-                d.taux, d.tauy);
+  compute_tms_f(d.ncols, d.nlevs, d.u_wind, d.v_wind, d.t_mid, d.p_mid, d.exner, d.z_mid, d.sgh,
+                d.landfrac, d.ksrf, d.taux, d.tauy);
 }
 
 } // namespace tms

@@ -14,8 +14,8 @@ namespace scream {
 class SCMInput {
 public:
   // --- Constructor(s) & Destructor --- //
-  SCMInput(const std::string &filename, const double lat, const double lon, const std::vector<Field> &fields,
-           const ekat::Comm &comm);
+  SCMInput(const std::string &filename, const double lat, const double lon,
+           const std::vector<Field> &fields, const ekat::Comm &comm);
 
   ~SCMInput();
 
@@ -27,7 +27,9 @@ public:
   void read_variables(const int time_index = -1);
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) { m_atm_logger = atm_logger; }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) {
+    m_atm_logger = atm_logger;
+  }
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public

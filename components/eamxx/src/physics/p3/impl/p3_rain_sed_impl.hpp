@@ -12,11 +12,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::compute_rain_fall_velocity(const view_2d_table &vn_table_vals, const view_2d_table &vm_table_vals,
-                                            const Spack &qr_incld, const Spack &rhofacr, Spack &nr_incld, Spack &mu_r,
-                                            Spack &lamr, Spack &V_qr, Spack &V_nr, const P3Runtime &runtime_options,
-                                            const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::compute_rain_fall_velocity(
+    const view_2d_table &vn_table_vals, const view_2d_table &vm_table_vals, const Spack &qr_incld,
+    const Spack &rhofacr, Spack &nr_incld, Spack &mu_r, Spack &lamr, Spack &V_qr, Spack &V_nr,
+    const P3Runtime &runtime_options, const Smask &context) {
   Table3 table;
   get_rain_dsd2(qr_incld, nr_incld, mu_r, lamr, runtime_options, context);
 
@@ -31,20 +30,23 @@ Functions<S, D>::compute_rain_fall_velocity(const view_2d_table &vn_table_vals, 
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::rain_sedimentation(
-    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho, const uview_1d<const Spack> &rhofacr,
-    const uview_1d<const Spack> &cld_frac_r, const uview_1d<const Spack> &inv_dz, const uview_1d<Spack> &qr_incld,
-    const MemberType &team, const Workspace &workspace, const view_2d_table &vn_table_vals,
-    const view_2d_table &vm_table_vals, const Int &nk, const Int &ktop, const Int &kbot, const Int &kdir,
-    const Scalar &dt, const Scalar &inv_dt, const uview_1d<Spack> &qr, const uview_1d<Spack> &nr,
-    const uview_1d<Spack> &nr_incld, const uview_1d<Spack> &mu_r, const uview_1d<Spack> &lamr,
-    const uview_1d<Spack> &precip_liq_flux, const uview_1d<Spack> &qr_tend, const uview_1d<Spack> &nr_tend,
-    Scalar &precip_liq_surf, const P3Runtime &runtime_options) {
+    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho,
+    const uview_1d<const Spack> &rhofacr, const uview_1d<const Spack> &cld_frac_r,
+    const uview_1d<const Spack> &inv_dz, const uview_1d<Spack> &qr_incld, const MemberType &team,
+    const Workspace &workspace, const view_2d_table &vn_table_vals,
+    const view_2d_table &vm_table_vals, const Int &nk, const Int &ktop, const Int &kbot,
+    const Int &kdir, const Scalar &dt, const Scalar &inv_dt, const uview_1d<Spack> &qr,
+    const uview_1d<Spack> &nr, const uview_1d<Spack> &nr_incld, const uview_1d<Spack> &mu_r,
+    const uview_1d<Spack> &lamr, const uview_1d<Spack> &precip_liq_flux,
+    const uview_1d<Spack> &qr_tend, const uview_1d<Spack> &nr_tend, Scalar &precip_liq_surf,
+    const P3Runtime &runtime_options) {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qr, V_nr, flux_qx, flux_nx;
   workspace.template take_many_contiguous_unsafe<4>({"V_qr", "V_nr", "flux_qx", "flux_nx"},
                                                     {&V_qr, &V_nr, &flux_qx, &flux_nx});
 
-  const view_1d_ptr_array<Spack, 2> fluxes_ptr = {&flux_qx, &flux_nx}, vs_ptr = {&V_qr, &V_nr}, qnr_ptr = {&qr, &nr};
+  const view_1d_ptr_array<Spack, 2> fluxes_ptr = {&flux_qx, &flux_nx}, vs_ptr = {&V_qr, &V_nr},
+                                    qnr_ptr = {&qr, &nr};
 
   const auto sflux_qx = scalarize(flux_qx);
 
@@ -85,8 +87,9 @@ KOKKOS_FUNCTION void Functions<S, D>::rain_sedimentation(
             const auto range_mask  = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
             const auto qr_gt_small = range_mask && qr_incld(pk) > qsmall;
             if (qr_gt_small.any()) {
-              compute_rain_fall_velocity(vn_table_vals, vm_table_vals, qr_incld(pk), rhofacr(pk), nr_incld(pk),
-                                         mu_r(pk), lamr(pk), V_qr(pk), V_nr(pk), runtime_options, qr_gt_small);
+              compute_rain_fall_velocity(vn_table_vals, vm_table_vals, qr_incld(pk), rhofacr(pk),
+                                         nr_incld(pk), mu_r(pk), lamr(pk), V_qr(pk), V_nr(pk),
+                                         runtime_options, qr_gt_small);
 
               // in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
               // distribution within reasonable bounds by modifying nr_incld.
@@ -100,8 +103,8 @@ KOKKOS_FUNCTION void Functions<S, D>::rain_sedimentation(
           Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
-      generalized_sedimentation<2>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left,
-                                   prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      generalized_sedimentation<2>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir,
+                                   Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       // Update _incld values with end-of-step cell-ave values
       // No prob w/ div by cld_frac_r because set to min of 1e-4 in interface.
@@ -125,7 +128,8 @@ KOKKOS_FUNCTION void Functions<S, D>::rain_sedimentation(
         precip_liq_flux(pk).set(range_mask, precip_liq_flux(pk) + flux_qx_pk);
       });
     }
-    Kokkos::single(Kokkos::PerTeam(team), [&]() { precip_liq_surf += prt_accum * C::INV_RHO_H2O * inv_dt; });
+    Kokkos::single(Kokkos::PerTeam(team),
+                   [&]() { precip_liq_surf += prt_accum * C::INV_RHO_H2O * inv_dt; });
   }
 
   const Int nk_pack = ekat::npack<Spack>(nk);

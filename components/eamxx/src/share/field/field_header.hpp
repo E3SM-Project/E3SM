@@ -46,7 +46,8 @@ public:
   FieldHeader &operator=(const FieldHeader &) = delete;
 
   // Set extra data
-  void set_extra_data(const std::string &key, const ekat::any &data, const bool throw_if_existing = false);
+  void set_extra_data(const std::string &key, const ekat::any &data,
+                      const bool throw_if_existing = false);
 
   template <typename T>
   void set_extra_data(const std::string &key, const T &data, const bool throw_if_existing = false) {
@@ -84,11 +85,14 @@ public:
 
 protected:
   // Friend this function, so it can set up a subfield header
-  friend std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &, std::shared_ptr<FieldHeader>,
+  friend std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &,
+                                                             std::shared_ptr<FieldHeader>,
                                                              const int, const int, const bool);
   // for creating multi-slice subfield (continuous indices)
-  friend std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &, std::shared_ptr<FieldHeader>,
-                                                             const int idim, const int k_beg, const int k_end);
+  friend std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &,
+                                                             std::shared_ptr<FieldHeader>,
+                                                             const int idim, const int k_beg,
+                                                             const int k_end);
 
   // NOTE: the identifier *cannot* be a shared_ptr, b/c we
   //       don't foresee sharing an identifier between two
@@ -169,10 +173,14 @@ template <typename... Args> inline std::shared_ptr<FieldHeader> create_header(co
 // Use this free function to create a header for a field that
 // is the subfield of another field, that is, for something
 // that (in matlab syntax) looks like sf = f(:,1,:)
-std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &id, std::shared_ptr<FieldHeader> parent,
-                                                    const int idim, const int k, const bool dynamic);
-std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &id, std::shared_ptr<FieldHeader> parent,
-                                                    const int idim, const int k_beg, const int k_end);
+std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &id,
+                                                    std::shared_ptr<FieldHeader> parent,
+                                                    const int idim, const int k,
+                                                    const bool dynamic);
+std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &id,
+                                                    std::shared_ptr<FieldHeader> parent,
+                                                    const int idim, const int k_beg,
+                                                    const int k_end);
 
 } // namespace scream
 

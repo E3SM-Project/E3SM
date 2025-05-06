@@ -153,9 +153,15 @@ public:
   void run_column_conservation_check() const;
 
   // Returns pre/postcondition checks
-  std::list<std::pair<CheckFailHandling, prop_check_ptr>> get_precondition_checks() { return m_precondition_checks; }
-  std::list<std::pair<CheckFailHandling, prop_check_ptr>> get_postcondition_checks() { return m_postcondition_checks; }
-  std::pair<CheckFailHandling, prop_check_ptr> get_column_conservation_check() { return m_column_conservation_check; }
+  std::list<std::pair<CheckFailHandling, prop_check_ptr>> get_precondition_checks() {
+    return m_precondition_checks;
+  }
+  std::list<std::pair<CheckFailHandling, prop_check_ptr>> get_postcondition_checks() {
+    return m_postcondition_checks;
+  }
+  std::pair<CheckFailHandling, prop_check_ptr> get_column_conservation_check() {
+    return m_column_conservation_check;
+  }
 
   void init_step_tendencies();
   void compute_step_tendencies(const double dt);
@@ -163,10 +169,18 @@ public:
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::list<FieldRequest> &get_required_field_requests() const { return m_required_field_requests; }
-  const std::list<FieldRequest> &get_computed_field_requests() const { return m_computed_field_requests; }
-  const std::list<GroupRequest> &get_required_group_requests() const { return m_required_group_requests; }
-  const std::list<GroupRequest> &get_computed_group_requests() const { return m_computed_group_requests; }
+  const std::list<FieldRequest> &get_required_field_requests() const {
+    return m_required_field_requests;
+  }
+  const std::list<FieldRequest> &get_computed_field_requests() const {
+    return m_computed_field_requests;
+  }
+  const std::list<GroupRequest> &get_required_group_requests() const {
+    return m_required_group_requests;
+  }
+  const std::list<GroupRequest> &get_computed_group_requests() const {
+    return m_computed_group_requests;
+  }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
@@ -219,22 +233,26 @@ public:
   const FieldGroup &get_group_in(const std::string &group_name) const;
   FieldGroup &get_group_in(const std::string &group_name);
 
-  const FieldGroup &get_group_out(const std::string &group_name, const std::string &grid_name) const;
+  const FieldGroup &get_group_out(const std::string &group_name,
+                                  const std::string &grid_name) const;
   FieldGroup &get_group_out(const std::string &group_name, const std::string &grid_name);
   const FieldGroup &get_group_out(const std::string &group_name) const;
   FieldGroup &get_group_out(const std::string &group_name);
 
-  const Field &get_internal_field(const std::string &field_name, const std::string &grid_name) const;
+  const Field &get_internal_field(const std::string &field_name,
+                                  const std::string &grid_name) const;
   Field &get_internal_field(const std::string &field_name, const std::string &grid_name);
   const Field &get_internal_field(const std::string &field_name) const;
   Field &get_internal_field(const std::string &field_name);
 
   // Add a pre-built property check (PC) for precondition, postcondition,
   // invariant (i.e., pre+post), or column conservation check.
-  void add_precondition_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_precondition_check(const prop_check_ptr &prop_check,
+                              const CheckFailHandling cfh = CheckFailHandling::Fatal);
   void add_postcondition_check(const prop_check_ptr &prop_check,
                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
-  void add_invariant_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_invariant_check(const prop_check_ptr &prop_check,
+                           const CheckFailHandling cfh = CheckFailHandling::Fatal);
   void add_column_conservation_check(const prop_check_ptr &prop_check,
                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
 
@@ -259,14 +277,16 @@ public:
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
   // the array will be hashed and reported as an additional entry
   void print_global_state_hash(const std::string &label, const TimeStamp &t, const bool in = true,
-                               const bool out = true, const bool internal = true, const Real *mem = nullptr,
-                               const int nmem = 0) const;
+                               const bool out = true, const bool internal = true,
+                               const Real *mem = nullptr, const int nmem = 0) const;
 
   // For BFB tracking in production simulations.
   void print_fast_global_state_hash(const std::string &label, const TimeStamp &t) const;
 
   // Set IOP object
-  virtual void set_iop_data_manager(const iop_data_ptr &iop_data_manager) { m_iop_data_manager = iop_data_manager; }
+  virtual void set_iop_data_manager(const iop_data_ptr &iop_data_manager) {
+    m_iop_data_manager = iop_data_manager;
+  }
 
   std::shared_ptr<logger_t> get_logger() const { return m_atm_logger; }
 
@@ -292,11 +312,12 @@ protected:
 
   // Field requests
   template <RequestType RT>
-  void add_field(const std::string &name, const std::string &grid_name, const std::list<std::string> &groups,
-                 const int ps = 1) {
+  void add_field(const std::string &name, const std::string &grid_name,
+                 const std::list<std::string> &groups, const int ps = 1) {
     add_field<RT>(FieldRequest(name, grid_name, groups, ps));
   }
-  template <RequestType RT> void add_field(const std::string &name, const std::string &grid_name, const int ps = 1) {
+  template <RequestType RT>
+  void add_field(const std::string &name, const std::string &grid_name, const int ps = 1) {
     add_field<RT>(name, grid_name, {}, ps);
   }
 
@@ -314,15 +335,18 @@ protected:
 
   template <RequestType RT>
   void add_field(const std::string &name, const FieldLayout &layout, const ekat::units::Units &u,
-                 const std::string &grid_name, const std::list<std::string> &groups, const int ps = 1) {
+                 const std::string &grid_name, const std::list<std::string> &groups,
+                 const int ps = 1) {
     add_field<RT>(FieldIdentifier(name, layout, u, grid_name), groups, ps);
   }
 
-  template <RequestType RT> void add_field(const FieldIdentifier &fid, const std::string &group, const int ps = 1) {
+  template <RequestType RT>
+  void add_field(const FieldIdentifier &fid, const std::string &group, const int ps = 1) {
     add_field<RT>(FieldRequest(fid, group, ps));
   }
 
-  template <RequestType RT> void add_field(const FieldIdentifier &fid, const std::list<std::string> &groups) {
+  template <RequestType RT>
+  void add_field(const FieldIdentifier &fid, const std::list<std::string> &groups) {
     add_field<RT>(FieldRequest(fid, groups));
   }
 
@@ -337,8 +361,9 @@ protected:
 
   // Specialization for add_field to tracer group
   template <RequestType RT>
-  void add_tracer(const std::string &name, std::shared_ptr<const AbstractGrid> grid, const ekat::units::Units &u,
-                  const int ps = 1, const TracerAdvection tracer_advection = TracerAdvection::NoPreference) {
+  void add_tracer(const std::string &name, std::shared_ptr<const AbstractGrid> grid,
+                  const ekat::units::Units &u, const int ps = 1,
+                  const TracerAdvection tracer_advection = TracerAdvection::NoPreference) {
     std::list<std::string> tracer_groups;
     tracer_groups.push_back("tracers");
     if (tracer_advection == TracerAdvection::DynamicsAndTurbulence) {
@@ -443,11 +468,15 @@ protected:
   // for convenience of use (e.g., use a short name for a field/group).
   // Note: these methods do *not* create a copy of the field/group. Also, notice that
   //       these methods need to be called *after* set_fields_and_groups_pointers().
-  void alias_field_in(const std::string &field_name, const std::string &grid_name, const std::string &alias_name);
-  void alias_field_out(const std::string &field_name, const std::string &grid_name, const std::string &alias_name);
+  void alias_field_in(const std::string &field_name, const std::string &grid_name,
+                      const std::string &alias_name);
+  void alias_field_out(const std::string &field_name, const std::string &grid_name,
+                       const std::string &alias_name);
 
-  void alias_group_in(const std::string &group_name, const std::string &grid_name, const std::string &alias_name);
-  void alias_group_out(const std::string &group_name, const std::string &grid_name, const std::string &alias_name);
+  void alias_group_in(const std::string &group_name, const std::string &grid_name,
+                      const std::string &alias_name);
+  void alias_group_out(const std::string &group_name, const std::string &grid_name,
+                       const std::string &alias_name);
 
   // MPI communicator
   ekat::Comm m_comm;
@@ -504,7 +533,8 @@ private:
   void compute_column_conservation_checks_data(const int dt);
 
   // Run an individual property check. The input property_check_category_name
-  void run_property_check(const prop_check_ptr &property_check, const CheckFailHandling check_fail_handling,
+  void run_property_check(const prop_check_ptr &property_check,
+                          const CheckFailHandling check_fail_handling,
                           const PropertyCheckCategory property_check_category) const;
 
   // NOTE: all these members are private, so that derived classes cannot
@@ -586,29 +616,34 @@ protected:
 
 // ================= IMPLEMENTATION ================== //
 
-template <typename FPC, typename... Args> void AtmosphereProcess::add_precondition_check(const Args... args) {
+template <typename FPC, typename... Args>
+void AtmosphereProcess::add_precondition_check(const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_precondition_check(fpc);
 }
-template <typename FPC, typename... Args> void AtmosphereProcess::add_postcondition_check(const Args... args) {
+template <typename FPC, typename... Args>
+void AtmosphereProcess::add_postcondition_check(const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_postcondition_check(fpc);
 }
-template <typename FPC, typename... Args> void AtmosphereProcess::add_invariant_check(const Args... args) {
+template <typename FPC, typename... Args>
+void AtmosphereProcess::add_invariant_check(const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_invariant_check(fpc);
 }
 
 // A short name for the factory for atmosphere processes
-// WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.
-//          You could, but there's no need. You can simply register the common one right below, using your
-//          atmosphere process class name as templated argument. If you roll your own creator function, you
-//          *MUST* ensure that it correctly sets up the self pointer after creating the shared_ptr.
-//          This is *necessary* until we can safely switch to std::enable_shared_from_this.
-//          For more details, see the comments at the top of ekat_std_enable_shared_from_this.hpp.
-using AtmosphereProcessFactory =
-    ekat::Factory<AtmosphereProcess, ekat::CaseInsensitiveString, std::shared_ptr<AtmosphereProcess>,
-                  const ekat::Comm &, const ekat::ParameterList &>;
+// WARNING: you do not need to write your own creator function to register your atmosphere process
+// in the factory.
+//          You could, but there's no need. You can simply register the common one right below,
+//          using your atmosphere process class name as templated argument. If you roll your own
+//          creator function, you *MUST* ensure that it correctly sets up the self pointer after
+//          creating the shared_ptr. This is *necessary* until we can safely switch to
+//          std::enable_shared_from_this. For more details, see the comments at the top of
+//          ekat_std_enable_shared_from_this.hpp.
+using AtmosphereProcessFactory = ekat::Factory<AtmosphereProcess, ekat::CaseInsensitiveString,
+                                               std::shared_ptr<AtmosphereProcess>,
+                                               const ekat::Comm &, const ekat::ParameterList &>;
 
 // Create an atmosphere process, and correctly set up the (weak) pointer to self.
 template <typename AtmProcType>

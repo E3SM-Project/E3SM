@@ -14,7 +14,8 @@ namespace shoc {
 template <typename S, typename D>
 KOKKOS_FUNCTION void
 Functions<S, D>::adv_sgs_tke(const MemberType &team, const Int &nlev, const Real &dtime,
-                             const uview_1d<const Spack> &shoc_mix, const uview_1d<const Spack> &wthv_sec,
+                             const uview_1d<const Spack> &shoc_mix,
+                             const uview_1d<const Spack> &wthv_sec,
                              const uview_1d<const Spack> &sterm_zt, const uview_1d<const Spack> &tk,
                              const uview_1d<Spack> &tke, const uview_1d<Spack> &a_diss) {
 

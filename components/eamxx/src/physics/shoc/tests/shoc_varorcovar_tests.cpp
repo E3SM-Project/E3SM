@@ -22,7 +22,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -65,7 +66,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public 
     CalcShocVarorcovarData SDS(shcol, nlev, nlevi, tunefac);
 
     // Test that the inputs are reasonable.
-    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi && SDS.tunefac == tunefac));
+    REQUIRE(
+        (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi && SDS.tunefac == tunefac));
     REQUIRE(nlevi - nlev == 1);
     REQUIRE(shcol > 0);
 
@@ -323,13 +325,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public 
 namespace {
 
 TEST_CASE("shoc_varorcovar_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_varorcovar_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
 
   TestStruct().run_bfb();
 }

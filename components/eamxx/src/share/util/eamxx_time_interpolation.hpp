@@ -44,7 +44,8 @@ public:
   void print();
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &logger, const std::string &header) {
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &logger,
+                  const std::string &header) {
     m_logger = logger;
     m_header = header;
   }

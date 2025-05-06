@@ -70,7 +70,8 @@ void finalize_subsystem();
 // =================== File operations ================= //
 
 // Opens a file, returns const handle to it (useful for Read mode, to get dims/vars)
-void register_file(const std::string &filename, const FileMode mode, const IOType iotype = IOType::DefaultIOType);
+void register_file(const std::string &filename, const FileMode mode,
+                   const IOType iotype = IOType::DefaultIOType);
 
 // Release a file (if in Write mode, sync and close the file);
 void release_file(const std::string &filename);
@@ -90,7 +91,8 @@ void enddef(const std::string &filename);
 // Define dim on output file (cannot call on Read/Append files)
 void define_dim(const std::string &filename, const std::string &dimname, const int length);
 
-// Check that the given dimension is in the file. If length>0, also check that the length is as expected.
+// Check that the given dimension is in the file. If length>0, also check that the length is as
+// expected.
 bool has_dim(const std::string &filename, const std::string &dimname, const int length = -1);
 
 int get_dimlen(const std::string &filename, const std::string &dimname);
@@ -130,24 +132,26 @@ std::string get_time_name(const std::string &filename);
 // - if allow_reset=true, we simply reset the decomposition (if present).
 // - if allow_reset=false, if a decomposition for this dim is already set, we error out
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const std::vector<offset_t> &my_offsets,
-                    const bool allow_reset = false);
+void set_dim_decomp(const std::string &filename, const std::string &dimname,
+                    const std::vector<offset_t> &my_offsets, const bool allow_reset = false);
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const offset_t start, const offset_t count,
-                    const bool allow_reset = false);
+void set_dim_decomp(const std::string &filename, const std::string &dimname, const offset_t start,
+                    const offset_t count, const bool allow_reset = false);
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const bool allow_reset = false);
+void set_dim_decomp(const std::string &filename, const std::string &dimname,
+                    const bool allow_reset = false);
 
 // ================== Variable operations ================== //
 
 // Define var on output file (cannot call on Read/Append files)
 void define_var(const std::string &filename, const std::string &varname, const std::string &units,
-                const std::vector<std::string> &dimensions, const std::string &dtype, const std::string &nc_dtype,
-                const bool time_dependent = false);
+                const std::vector<std::string> &dimensions, const std::string &dtype,
+                const std::string &nc_dtype, const bool time_dependent = false);
 
 // Shortcut when units are not used, and dtype==nc_dtype
-void define_var(const std::string &filename, const std::string &varname, const std::vector<std::string> &dimensions,
-                const std::string &dtype, const bool time_dependent = false);
+void define_var(const std::string &filename, const std::string &varname,
+                const std::vector<std::string> &dimensions, const std::string &dtype,
+                const bool time_dependent = false);
 
 // This is useful when reading data sets. E.g., if the pio file is storing
 // a var as float, but we need to read it as double, we need to call this.
@@ -157,7 +161,8 @@ void define_var(const std::string &filename, const std::string &varname, const s
 //       the var WILL be read/written as decomposed, you should call this method
 //       BEFORE calling set_dim_decomp, so that the decomp is built directly
 //       with the correct data type (PIO decomps depend on var dtype).
-void change_var_dtype(const std::string &filename, const std::string &varname, const std::string &dtype);
+void change_var_dtype(const std::string &filename, const std::string &varname,
+                      const std::string &dtype);
 
 // Check that the given variable is in the file.
 bool has_var(const std::string &filename, const std::string &varname);
@@ -182,12 +187,14 @@ std::vector<double> get_all_times(const std::string &filename);
 // first dimension (which is not unlimited).
 // NOTE: ETI in the cpp file for int, float, double.
 template <typename T>
-void read_var(const std::string &filename, const std::string &varname, T *buf, const int time_index = -1);
+void read_var(const std::string &filename, const std::string &varname, T *buf,
+              const int time_index = -1);
 
 // Write data from user provided buffer into the requested variable
 // NOTE: ETI in the cpp file for int, float, double.
 template <typename T>
-void write_var(const std::string &filename, const std::string &varname, const T *buf, const T *fillValue = nullptr);
+void write_var(const std::string &filename, const std::string &varname, const T *buf,
+               const T *fillValue = nullptr);
 
 // =============== Attributes operations ================== //
 
@@ -196,19 +203,22 @@ void write_var(const std::string &filename, const std::string &varname, const T 
 //       with Explicit Instantiation only for:
 //         int, std::int64_t, float, double, std::string
 
-bool has_attribute(const std::string &filename, const std::string &varname, const std::string &attname);
+bool has_attribute(const std::string &filename, const std::string &varname,
+                   const std::string &attname);
 
 template <typename T>
-T get_attribute(const std::string &filename, const std::string &varname, const std::string &attname);
+T get_attribute(const std::string &filename, const std::string &varname,
+                const std::string &attname);
 
 template <typename T>
-void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname, const T &att);
+void set_attribute(const std::string &filename, const std::string &varname,
+                   const std::string &attname, const T &att);
 
 // Shortcut, to allow calling set_attribute with compile-time strings, like so
 //   set_attribute(my_file,my_var,my_att_name,"my_value");
 template <int N>
-inline void set_attribute(const std::string &filename, const std::string &varname, const std::string &attname,
-                          const char (&att)[N]) {
+inline void set_attribute(const std::string &filename, const std::string &varname,
+                          const std::string &attname, const char (&att)[N]) {
   set_attribute<std::string>(filename, varname, attname, att);
 }
 

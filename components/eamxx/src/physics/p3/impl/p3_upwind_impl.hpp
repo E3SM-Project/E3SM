@@ -14,10 +14,10 @@ namespace p3 {
 template <typename S, typename D>
 template <Int kdir, int nfield>
 KOKKOS_FUNCTION void Functions<S, D>::calc_first_order_upwind_step(
-    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho, const uview_1d<const Spack> &inv_dz,
-    const MemberType &team, const Int &nk, const Int &k_bot, const Int &k_top, const Scalar &dt_sub,
-    const view_1d_ptr_array<Spack, nfield> &flux, const view_1d_ptr_array<Spack, nfield> &V,
-    const view_1d_ptr_array<Spack, nfield> &r) {
+    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho,
+    const uview_1d<const Spack> &inv_dz, const MemberType &team, const Int &nk, const Int &k_bot,
+    const Int &k_top, const Scalar &dt_sub, const view_1d_ptr_array<Spack, nfield> &flux,
+    const view_1d_ptr_array<Spack, nfield> &V, const view_1d_ptr_array<Spack, nfield> &r) {
   const Int kmin_scalar = (kdir == 1 ? k_bot : k_top);
   const Int kmax_scalar = (kdir == 1 ? k_top : k_bot);
   Int kmin              = kmin_scalar / Spack::n,
@@ -50,8 +50,9 @@ KOKKOS_FUNCTION void Functions<S, D>::calc_first_order_upwind_step(
     }
     for (int f = 0; f < nfield; ++f) {
       // compute flux divergence
-      const auto flux_pkdir = (kdir == -1) ? shift_right(0, (*flux[f])(k)) : shift_left(0, (*flux[f])(k));
-      const auto fluxdiv    = (flux_pkdir - (*flux[f])(k)) * inv_dz(k);
+      const auto flux_pkdir =
+          (kdir == -1) ? shift_right(0, (*flux[f])(k)) : shift_left(0, (*flux[f])(k));
+      const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dz(k);
 
       // update prognostic variables
       (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
@@ -79,9 +80,10 @@ KOKKOS_FUNCTION void Functions<S, D>::calc_first_order_upwind_step(
 template <typename S, typename D>
 template <int nfield>
 KOKKOS_FUNCTION void Functions<S, D>::generalized_sedimentation(
-    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho, const uview_1d<const Spack> &inv_dz,
-    const MemberType &team, const Int &nk, const Int &k_qxtop, Int &k_qxbot, const Int &kbot, const Int &kdir,
-    const Scalar &Co_max, Scalar &dt_left, Scalar &prt_accum, const view_1d_ptr_array<Spack, nfield> &fluxes,
+    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho,
+    const uview_1d<const Spack> &inv_dz, const MemberType &team, const Int &nk, const Int &k_qxtop,
+    Int &k_qxbot, const Int &kbot, const Int &kdir, const Scalar &Co_max, Scalar &dt_left,
+    Scalar &prt_accum, const view_1d_ptr_array<Spack, nfield> &fluxes,
     const view_1d_ptr_array<Spack, nfield> &Vs, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield> &rs) {
   // compute dt_sub
@@ -92,7 +94,8 @@ KOKKOS_FUNCTION void Functions<S, D>::generalized_sedimentation(
   // Move bottom cell down by 1 if not at ground already
   const Int k_temp = (k_qxbot == kbot) ? k_qxbot : k_qxbot - kdir;
 
-  calc_first_order_upwind_step<nfield>(rho, inv_rho, inv_dz, team, nk, k_temp, k_qxtop, kdir, dt_sub, fluxes, Vs, rs);
+  calc_first_order_upwind_step<nfield>(rho, inv_rho, inv_dz, team, nk, k_temp, k_qxtop, kdir,
+                                       dt_sub, fluxes, Vs, rs);
   team.team_barrier();
 
   // accumulated precip during time step
@@ -110,21 +113,25 @@ KOKKOS_FUNCTION void Functions<S, D>::generalized_sedimentation(
 template <typename S, typename D>
 template <int nfield>
 KOKKOS_FUNCTION void Functions<S, D>::calc_first_order_upwind_step(
-    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho, const uview_1d<const Spack> &inv_dz,
-    const MemberType &team, const Int &nk, const Int &k_bot, const Int &k_top, const Int &kdir, const Scalar &dt_sub,
+    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho,
+    const uview_1d<const Spack> &inv_dz, const MemberType &team, const Int &nk, const Int &k_bot,
+    const Int &k_top, const Int &kdir, const Scalar &dt_sub,
     const view_1d_ptr_array<Spack, nfield> &flux, const view_1d_ptr_array<Spack, nfield> &V,
     const view_1d_ptr_array<Spack, nfield> &r) {
   if (kdir == 1)
-    calc_first_order_upwind_step<1, nfield>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub, flux, V, r);
+    calc_first_order_upwind_step<1, nfield>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub,
+                                            flux, V, r);
   else
-    calc_first_order_upwind_step<-1, nfield>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub, flux, V, r);
+    calc_first_order_upwind_step<-1, nfield>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub,
+                                             flux, V, r);
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::calc_first_order_upwind_step(
-    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho, const uview_1d<const Spack> &inv_dz,
-    const MemberType &team, const Int &nk, const Int &k_bot, const Int &k_top, const Int &kdir, const Scalar &dt_sub,
-    const uview_1d<Spack> &flux, const uview_1d<const Spack> &V, const uview_1d<Spack> &r) {
+    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho,
+    const uview_1d<const Spack> &inv_dz, const MemberType &team, const Int &nk, const Int &k_bot,
+    const Int &k_top, const Int &kdir, const Scalar &dt_sub, const uview_1d<Spack> &flux,
+    const uview_1d<const Spack> &V, const uview_1d<Spack> &r) {
   // B/c automatic casting to const does not work in the nested data
   // view_1d_ptr_array (C++ does not provide all legal const casts automatically
   // in nested data structures), we are not enforcing const in the array
@@ -133,11 +140,11 @@ KOKKOS_FUNCTION void Functions<S, D>::calc_first_order_upwind_step(
   // cast here.
   const auto V_nonconst = uview_1d<Spack>(const_cast<Spack *>(V.data()), V.extent_int(0));
   if (kdir == 1)
-    calc_first_order_upwind_step<1, 1>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub, {&flux}, {&V_nonconst},
-                                       {&r});
+    calc_first_order_upwind_step<1, 1>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub,
+                                       {&flux}, {&V_nonconst}, {&r});
   else
-    calc_first_order_upwind_step<-1, 1>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub, {&flux}, {&V_nonconst},
-                                        {&r});
+    calc_first_order_upwind_step<-1, 1>(rho, inv_rho, inv_dz, team, nk, k_bot, k_top, dt_sub,
+                                        {&flux}, {&V_nonconst}, {&r});
 }
 
 } // namespace p3

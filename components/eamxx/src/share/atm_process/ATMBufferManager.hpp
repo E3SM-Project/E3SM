@@ -24,8 +24,9 @@ struct ATMBufferManager {
   // the same time, the total allocation will be the maximum
   // of each request.
   void request_bytes(const size_t num_bytes) {
-    ekat::error::runtime_check(num_bytes % sizeof(Real) == 0,
-                               "Error! Must request number of bytes which is divisible by sizeof(Real).\n");
+    ekat::error::runtime_check(
+        num_bytes % sizeof(Real) == 0,
+        "Error! Must request number of bytes which is divisible by sizeof(Real).\n");
 
     const size_t num_reals = num_bytes / sizeof(Real);
     m_size                 = std::max(num_reals, m_size);

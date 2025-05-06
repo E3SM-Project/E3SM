@@ -106,13 +106,16 @@ struct IOFileSpecs {
   int flush_frequency = std::numeric_limits<int>::max();
 
   bool file_needs_flush() const {
-    return storage.num_snapshots_in_file > 0 and storage.num_snapshots_in_file % flush_frequency == 0;
+    return storage.num_snapshots_in_file > 0 and
+           storage.num_snapshots_in_file % flush_frequency == 0;
   }
 
   // Whether it is a model output, model restart, or history restart file
   FileType ftype = FileType::Unset;
 
-  bool is_restart_file() const { return ftype == FileType::ModelRestart or ftype == FileType::HistoryRestart; }
+  bool is_restart_file() const {
+    return ftype == FileType::ModelRestart or ftype == FileType::HistoryRestart;
+  }
 
   std::string suffix() const {
     if (ftype == FileType::HistoryRestart)

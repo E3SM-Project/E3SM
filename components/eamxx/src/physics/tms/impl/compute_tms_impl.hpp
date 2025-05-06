@@ -7,28 +7,31 @@ namespace scream {
 namespace tms {
 
 template <typename S, typename D>
-void Functions<S, D>::compute_tms(const int &ncols, const int &nlevs, const view_3d<const Scalar> &horiz_wind,
-                                  const view_2d<const Scalar> &t_mid, const view_2d<const Scalar> &p_mid,
-                                  const view_2d<const Scalar> &exner, const view_2d<const Scalar> &z_mid,
-                                  const view_1d<const Scalar> &sgh, const view_1d<const Scalar> &landfrac,
-                                  const view_1d<Scalar> &ksrf, const view_2d<Scalar> &tau_tms) {
+void Functions<S, D>::compute_tms(
+    const int &ncols, const int &nlevs, const view_3d<const Scalar> &horiz_wind,
+    const view_2d<const Scalar> &t_mid, const view_2d<const Scalar> &p_mid,
+    const view_2d<const Scalar> &exner, const view_2d<const Scalar> &z_mid,
+    const view_1d<const Scalar> &sgh, const view_1d<const Scalar> &landfrac,
+    const view_1d<Scalar> &ksrf, const view_2d<Scalar> &tau_tms) {
   using C = physics::Constants<Scalar>;
 
   // Define some constants used
-  const Scalar horomin = 1;          // Minimum value of subgrid orographic height for mountain stress [ m ]
+  const Scalar horomin = 1; // Minimum value of subgrid orographic height for mountain stress [ m ]
   const Scalar z0max   = 100;        // Maximum value of z_0 for orography [ m ]
   const Scalar dv2min  = 0.01;       // Minimum shear squared [ m2/s2 ]
   const Scalar orocnst = C::orocnst; // Converts from standard deviation to height [ no unit ]
-  const Scalar z0fac   = C::z0fac;   // Factor determining z_0 from orographic standard deviation [ no unit ]
-  const Scalar karman  = C::Karman;  // von Karman constant
-  const Scalar gravit  = C::gravit;  // Acceleration due to gravity
-  const Scalar rair    = C::Rair;    // Gas constant for dry air
+  const Scalar z0fac =
+      C::z0fac; // Factor determining z_0 from orographic standard deviation [ no unit ]
+  const Scalar karman = C::Karman; // von Karman constant
+  const Scalar gravit = C::gravit; // Acceleration due to gravity
+  const Scalar rair   = C::Rair;   // Gas constant for dry air
 
   // Loop over columns
   const typename KT::RangePolicy policy(0, ncols);
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const int &i) {
-        // Subview on column, scalarize since we only care about last 2 levels (never loop over levels)
+        // Subview on column, scalarize since we only care about last 2 levels (never loop over
+        // levels)
         const auto u_wind_i = ekat::subview(horiz_wind, i, 0);
         const auto v_wind_i = ekat::subview(horiz_wind, i, 1);
         const auto t_mid_i  = ekat::subview(t_mid, i);
@@ -60,7 +63,8 @@ void Functions<S, D>::compute_tms(const int &ncols, const int &nlevs, const view
           const auto dv2   = ekat::impl::max(tmp_u * tmp_u + tmp_v * tmp_v, dv2min);
 
           const auto ri = 2 * gravit * (t_mid_i(kt) * exner_i(kt) - t_mid_i(kb) * exner_i(kb)) *
-                          (z_mid_i(kt) - z_mid_i(kb)) / ((t_mid_i(kt) * exner_i(kt) + t_mid_i(kb) * exner_i(kb)) * dv2);
+                          (z_mid_i(kt) - z_mid_i(kb)) /
+                          ((t_mid_i(kt) * exner_i(kt) + t_mid_i(kb) * exner_i(kb)) * dv2);
 
           // Calculate the instability function and modify the neutral drag cofficient.
           // We should probably follow more elegant approach like Louis et al (1982) or
@@ -70,12 +74,12 @@ void Functions<S, D>::compute_tms(const int &ncols, const int &nlevs, const view
           cd *= stabfri;
 
           // Compute density, velocity magnitude and stress using bottom level properties
-          const auto rho = p_mid_i(nlevs - 1) / (rair * t_mid_i(nlevs - 1));
-          const auto vmag =
-              std::sqrt(u_wind_i(nlevs - 1) * u_wind_i(nlevs - 1) + v_wind_i(nlevs - 1) * v_wind_i(nlevs - 1));
-          ksrf(i)       = rho * cd * vmag * landfrac(i);
-          tau_tms(i, 0) = -ksrf(i) * u_wind_i(nlevs - 1);
-          tau_tms(i, 1) = -ksrf(i) * v_wind_i(nlevs - 1);
+          const auto rho  = p_mid_i(nlevs - 1) / (rair * t_mid_i(nlevs - 1));
+          const auto vmag = std::sqrt(u_wind_i(nlevs - 1) * u_wind_i(nlevs - 1) +
+                                      v_wind_i(nlevs - 1) * v_wind_i(nlevs - 1));
+          ksrf(i)         = rho * cd * vmag * landfrac(i);
+          tau_tms(i, 0)   = -ksrf(i) * u_wind_i(nlevs - 1);
+          tau_tms(i, 1)   = -ksrf(i) * v_wind_i(nlevs - 1);
         }
       });
 }

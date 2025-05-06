@@ -51,7 +51,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   template <typename S> using view_1d = typename KT::template view_1d<S>;
   template <typename S> using view_2d = typename KT::template view_2d<S>;
 
-  template <typename S, int N> using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
+  template <typename S, int N>
+  using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
   template <typename S> using uview_1d = typename ekat::template Unmanaged<view_1d<S>>;
   template <typename S> using uview_2d = typename ekat::template Unmanaged<view_2d<S>>;
@@ -72,27 +73,30 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack polysvp1(const Spack &t, const bool ice, const Smask &range_mask, const char *caller = nullptr);
+  static Spack polysvp1(const Spack &t, const bool ice, const Smask &range_mask,
+                        const char *caller = nullptr);
 
   //  compute saturation vapor pressure using Murphy and Koop(2005) formulation
   //  MurphyKoop_svp returned in units of pa.
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack MurphyKoop_svp(const Spack &t, const bool ice, const Smask &range_mask, const char *caller = nullptr);
+  static Spack MurphyKoop_svp(const Spack &t, const bool ice, const Smask &range_mask,
+                              const char *caller = nullptr);
 
   // Calls a function to obtain the saturation vapor pressure, and then computes
   // and returns the dry saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat_dry(const Spack &t_atm, const Spack &p_atm, const bool ice, const Smask &range_mask,
-                          const SaturationFcn func_idx = MurphyKoop, const char *caller = nullptr);
+  static Spack qv_sat_dry(const Spack &t_atm, const Spack &p_atm, const bool ice,
+                          const Smask &range_mask, const SaturationFcn func_idx = MurphyKoop,
+                          const char *caller = nullptr);
 
   // Calls qv_sat_dry and converts it to wet mixing ratio
   KOKKOS_FUNCTION
-  static Spack qv_sat_wet(const Spack &t_atm, const Spack &p_atm, const bool ice, const Smask &range_mask,
-                          const Spack &dp_wet, const Spack &dp_dry, const SaturationFcn func_idx = MurphyKoop,
-                          const char *caller = nullptr);
+  static Spack qv_sat_wet(const Spack &t_atm, const Spack &p_atm, const bool ice,
+                          const Smask &range_mask, const Spack &dp_wet, const Spack &dp_dry,
+                          const SaturationFcn func_idx = MurphyKoop, const char *caller = nullptr);
 
   // checks temperature for negatives and NaNs
   KOKKOS_FUNCTION

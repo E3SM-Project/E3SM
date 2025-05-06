@@ -14,15 +14,17 @@ namespace shoc {
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::diag_third_shoc_moments(
     const MemberType &team, const Int &nlev, const Int &nlevi, const Scalar &c_diag_3rd_mom,
-    const uview_1d<const Spack> &w_sec, const uview_1d<const Spack> &thl_sec, const uview_1d<const Spack> &wthl_sec,
-    const uview_1d<const Spack> &isotropy, const uview_1d<const Spack> &brunt, const uview_1d<const Spack> &thetal,
-    const uview_1d<const Spack> &tke, const uview_1d<const Spack> &dz_zt, const uview_1d<const Spack> &dz_zi,
-    const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid, const Workspace &workspace,
-    const uview_1d<Spack> &w3) {
+    const uview_1d<const Spack> &w_sec, const uview_1d<const Spack> &thl_sec,
+    const uview_1d<const Spack> &wthl_sec, const uview_1d<const Spack> &isotropy,
+    const uview_1d<const Spack> &brunt, const uview_1d<const Spack> &thetal,
+    const uview_1d<const Spack> &tke, const uview_1d<const Spack> &dz_zt,
+    const uview_1d<const Spack> &dz_zi, const uview_1d<const Spack> &zt_grid,
+    const uview_1d<const Spack> &zi_grid, const Workspace &workspace, const uview_1d<Spack> &w3) {
   // Define temporary variables
   uview_1d<Spack> isotropy_zi, w_sec_zi, brunt_zi, thetal_zi;
-  workspace.template take_many_contiguous_unsafe<4>({"isotropy_zi", "w_sec_zi", "brunt_zi", "thetal_zi"},
-                                                    {&isotropy_zi, &w_sec_zi, &brunt_zi, &thetal_zi});
+  workspace.template take_many_contiguous_unsafe<4>(
+      {"isotropy_zi", "w_sec_zi", "brunt_zi", "thetal_zi"},
+      {&isotropy_zi, &w_sec_zi, &brunt_zi, &thetal_zi});
 
   // Constants
   const auto largeneg = SC::largeneg;
@@ -36,8 +38,8 @@ KOKKOS_FUNCTION void Functions<S, D>::diag_third_shoc_moments(
   team.team_barrier();
 
   // Diagnose the third moment of the vertical-velocity
-  compute_diag_third_shoc_moment(team, nlev, nlevi, c_diag_3rd_mom, w_sec, thl_sec, wthl_sec, tke, dz_zt, dz_zi,
-                                 isotropy_zi, brunt_zi, w_sec_zi, thetal_zi, w3);
+  compute_diag_third_shoc_moment(team, nlev, nlevi, c_diag_3rd_mom, w_sec, thl_sec, wthl_sec, tke,
+                                 dz_zt, dz_zi, isotropy_zi, brunt_zi, w_sec_zi, thetal_zi, w3);
   team.team_barrier();
 
   // Perform clipping to prevent unrealistically large values from occuring

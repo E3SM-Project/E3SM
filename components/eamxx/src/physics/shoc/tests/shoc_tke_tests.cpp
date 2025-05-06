@@ -20,7 +20,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -315,13 +316,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWra
 namespace {
 
 TEST_CASE("shoc_tke_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
 
   TestStruct().run_bfb();
 }

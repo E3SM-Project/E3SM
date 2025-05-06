@@ -39,8 +39,9 @@ public:
   //   - run_t0: Initial timestamp for the simulation
   //   - model_nlevs: Number of vertical levels in the simulation. Needed since
   //                  the iop file contains a (potentially) different number of levels
-  IOPDataManager(const ekat::Comm &comm, const ekat::ParameterList &params, const util::TimeStamp &run_t0,
-                 const int model_nlevs, const Field &hyam, const Field &hybm);
+  IOPDataManager(const ekat::Comm &comm, const ekat::ParameterList &params,
+                 const util::TimeStamp &run_t0, const int model_nlevs, const Field &hyam,
+                 const Field &hybm);
 
   // Destructor
   ~IOPDataManager();
@@ -72,15 +73,16 @@ public:
   // Note: We only need to use the first column because during
   //       the loading of ICs, every columns will have the same
   //       data.
-  void correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr, const std::string &grid_name);
+  void correct_temperature_and_water_vapor(const field_mgr_ptr field_mgr,
+                                           const std::string &grid_name);
 
   ekat::ParameterList &get_params() { return m_params; }
 
   bool has_iop_field(const std::string &fname) { return m_iop_fields.count(fname) > 0; }
 
   Field get_iop_field(const std::string &fname) {
-    EKAT_REQUIRE_MSG(has_iop_field(fname),
-                     "Error! Requesting IOP field \"" + fname + "\", but field is not stored in object.\n");
+    EKAT_REQUIRE_MSG(has_iop_field(fname), "Error! Requesting IOP field \"" + fname +
+                                               "\", but field is not stored in object.\n");
     return m_iop_fields[fname];
   }
 
@@ -105,12 +107,13 @@ private:
         }
       }
 
-      EKAT_REQUIRE_MSG(time_idx >= 0, "Error! Current model time (" + current_ts.to_string() +
-                                          ") is not within "
-                                          "IOP time period: [" +
-                                          iop_file_begin_time.to_string() + ", " +
-                                          (iop_file_begin_time + iop_file_times_in_sec(n_iop_times - 1)).to_string() +
-                                          ").\n");
+      EKAT_REQUIRE_MSG(
+          time_idx >= 0,
+          "Error! Current model time (" + current_ts.to_string() +
+              ") is not within "
+              "IOP time period: [" +
+              iop_file_begin_time.to_string() + ", " +
+              (iop_file_begin_time + iop_file_times_in_sec(n_iop_times - 1)).to_string() + ").\n");
       return time_idx;
     }
   };

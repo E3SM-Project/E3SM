@@ -17,13 +17,15 @@ Int shoc_main(FortranData &d) {
   EKAT_REQUIRE_MSG(d.nadv > 0, "Invalid nadv");
   const int npbl = d.nlev;
   return shoc_main_host(
-      (int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv, npbl, d.host_dx.data(), d.host_dy.data(),
-      d.thv.data(), d.zt_grid.data(), d.zi_grid.data(), d.pres.data(), d.presi.data(), d.pdel.data(), d.wthl_sfc.data(),
-      d.wqw_sfc.data(), d.uw_sfc.data(), d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers, d.w_field.data(),
-      d.inv_exner.data(), d.phis.data(), d.host_dse.data(), d.tke.data(), d.thetal.data(), d.qw.data(), d.u_wind.data(),
-      d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(), d.tkh.data(), d.tk.data(), d.shoc_ql.data(),
-      d.shoc_cldfrac.data(), d.pblh.data(), d.shoc_mix.data(), d.isotropy.data(), d.w_sec.data(), d.thl_sec.data(),
-      d.qw_sec.data(), d.qwthl_sec.data(), d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(), d.uw_sec.data(),
+      (int)d.shcol, (int)d.nlev, (int)d.nlevi, d.dtime, (int)d.nadv, npbl, d.host_dx.data(),
+      d.host_dy.data(), d.thv.data(), d.zt_grid.data(), d.zi_grid.data(), d.pres.data(),
+      d.presi.data(), d.pdel.data(), d.wthl_sfc.data(), d.wqw_sfc.data(), d.uw_sfc.data(),
+      d.vw_sfc.data(), d.wtracer_sfc.data(), (int)d.num_qtracers, d.w_field.data(),
+      d.inv_exner.data(), d.phis.data(), d.host_dse.data(), d.tke.data(), d.thetal.data(),
+      d.qw.data(), d.u_wind.data(), d.v_wind.data(), d.qtracers.data(), d.wthv_sec.data(),
+      d.tkh.data(), d.tk.data(), d.shoc_ql.data(), d.shoc_cldfrac.data(), d.pblh.data(),
+      d.shoc_mix.data(), d.isotropy.data(), d.w_sec.data(), d.thl_sec.data(), d.qw_sec.data(),
+      d.qwthl_sec.data(), d.wthl_sec.data(), d.wqw_sec.data(), d.wtke_sec.data(), d.uw_sec.data(),
       d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(), d.brunt.data(), d.shoc_ql2.data());
 }
 
@@ -126,7 +128,8 @@ void gen_plot_script(const std::vector<std::shared_ptr<FortranData>> &data, cons
         "                  'qw', 'u_wind', 'v_wind', 'w_field', 'tke', 'tkh',\n"
         "                  'shoc_mix', 'isotropy', 'wtke_sec', 'uw_sec', 'vw_sec', 'wthl_sec',\n"
         "                  'wqw_sec', 'w_sec', 'thl_sec', 'qw_sec',\n"
-        "                  'w3', 'wqls_sec', 'brunt', 'qtracers', 'host_dse', 'inv_exner','shoc_ql2']\n"
+        "                  'w3', 'wqls_sec', 'brunt', 'qtracers', 'host_dse', "
+        "'inv_exner','shoc_ql2']\n"
         "        for i in range(len(plotno)):\n"
         "            if i == 0 or plotno[i] != plotno[i-1]:\n"
         "                if first: axs.append(pl.subplot(5, 5, plotno[i]))\n"

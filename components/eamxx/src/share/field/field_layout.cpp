@@ -23,12 +23,13 @@ FieldLayout::FieldLayout(const std::vector<FieldTag> &tags, const std::vector<in
                                                    "  dims size: " +
                                                    std::to_string(dims.size()) + "\n");
 
-  EKAT_REQUIRE_MSG(names.size() == tags.size(), "Error! Tags and names vectors dimensions mismatch.\n"
-                                                "  tags size : " +
-                                                    std::to_string(tags.size()) +
-                                                    "\n"
-                                                    "  names size: " +
-                                                    std::to_string(names.size()) + "\n");
+  EKAT_REQUIRE_MSG(names.size() == tags.size(),
+                   "Error! Tags and names vectors dimensions mismatch.\n"
+                   "  tags size : " +
+                       std::to_string(tags.size()) +
+                       "\n"
+                       "  names size: " +
+                       std::to_string(names.size()) + "\n");
 
   set_extents();
   compute_type();
@@ -39,15 +40,18 @@ bool FieldLayout::is_vector_layout() const {
   return ekat::count(m_tags, CMP) == 1;
 }
 
-bool FieldLayout::is_tensor_layout() const { return m_type == LayoutType::Tensor2D || m_type == LayoutType::Tensor3D; }
+bool FieldLayout::is_tensor_layout() const {
+  return m_type == LayoutType::Tensor2D || m_type == LayoutType::Tensor3D;
+}
 
 // get the index of the CMP (Components) tag in the FieldLayout
 // e.g., for FieldLayout f({COL, CMP, LEV}, {...});
 // we have get_vector_component_idx(f) = 1
 int FieldLayout::get_vector_component_idx() const {
-  EKAT_REQUIRE_MSG(is_vector_layout(), "Error! 'get_vector_dim' available only for vector layouts.\n"
-                                       "       Current layout: " +
-                                           e2str(type()) + "\n");
+  EKAT_REQUIRE_MSG(is_vector_layout(),
+                   "Error! 'get_vector_dim' available only for vector layouts.\n"
+                   "       Current layout: " +
+                       e2str(type()) + "\n");
 
   using namespace ShortFieldTagsNames;
   return std::distance(m_tags.begin(), ekat::find(m_tags, CMP));
@@ -65,12 +69,13 @@ int FieldLayout::get_vector_dim() const {
 FieldTag FieldLayout::get_vector_tag() const { return m_tags[get_vector_component_idx()]; }
 
 std::vector<int> FieldLayout::get_tensor_components_ids() const {
-  EKAT_REQUIRE_MSG(is_tensor_layout(), "Error! 'get_tensor_dims' available only for tensor layouts.\n"
-                                       "       Current layout: " +
-                                           to_string() +
-                                           "\n"
-                                           "       Layout type   : " +
-                                           e2str(m_type) + "\n");
+  EKAT_REQUIRE_MSG(is_tensor_layout(),
+                   "Error! 'get_tensor_dims' available only for tensor layouts.\n"
+                   "       Current layout: " +
+                       to_string() +
+                       "\n"
+                       "       Layout type   : " +
+                       e2str(m_type) + "\n");
 
   using namespace ShortFieldTagsNames;
 
@@ -117,23 +122,25 @@ FieldLayout &FieldLayout::strip_dim(const FieldTag t, const bool throw_if_not_fo
     }
   }
 
-  EKAT_REQUIRE_MSG(any_match or not throw_if_not_found, "Error! No match found when attempting to strip dim.\n"
-                                                        "  - input tag: " +
-                                                            e2str(t) +
-                                                            "\n"
-                                                            "  - layout   : " +
-                                                            to_string() + "\n");
+  EKAT_REQUIRE_MSG(any_match or not throw_if_not_found,
+                   "Error! No match found when attempting to strip dim.\n"
+                   "  - input tag: " +
+                       e2str(t) +
+                       "\n"
+                       "  - layout   : " +
+                       to_string() + "\n");
 
   return *this;
 }
 
 FieldLayout &FieldLayout::strip_dim(const int idim) {
-  EKAT_REQUIRE_MSG(idim >= 0 and idim < m_rank, "Error! Cannot strip dimension, because it is out of bounds.\n"
-                                                "  - input dim index: " +
-                                                    std::to_string(idim) +
-                                                    "\n"
-                                                    "  - layout rank    : " +
-                                                    std::to_string(m_rank) + "\n");
+  EKAT_REQUIRE_MSG(idim >= 0 and idim < m_rank,
+                   "Error! Cannot strip dimension, because it is out of bounds.\n"
+                   "  - input dim index: " +
+                       std::to_string(idim) +
+                       "\n"
+                       "  - layout rank    : " +
+                       std::to_string(m_rank) + "\n");
 
   m_tags.erase(m_tags.begin() + idim);
   m_names.erase(m_names.begin() + idim);
@@ -145,7 +152,9 @@ FieldLayout &FieldLayout::strip_dim(const int idim) {
   return *this;
 }
 
-FieldLayout &FieldLayout::append_dim(const FieldTag t, const int extent) { return append_dim(t, extent, e2str(t)); }
+FieldLayout &FieldLayout::append_dim(const FieldTag t, const int extent) {
+  return append_dim(t, extent, e2str(t));
+}
 
 FieldLayout &FieldLayout::append_dim(const FieldTag t, const int extent, const std::string &name) {
   m_tags.push_back(t);
@@ -167,7 +176,8 @@ FieldLayout &FieldLayout::rename_dim(const int idim, const std::string &n) {
   return *this;
 }
 
-FieldLayout &FieldLayout::rename_dim(const FieldTag t, const std::string &n, const bool throw_if_not_found) {
+FieldLayout &FieldLayout::rename_dim(const FieldTag t, const std::string &n,
+                                     const bool throw_if_not_found) {
   bool any_match = false;
   for (int i = 0; i < rank(); ++i) {
     if (m_tags[i] == t) {
@@ -176,12 +186,13 @@ FieldLayout &FieldLayout::rename_dim(const FieldTag t, const std::string &n, con
     }
   }
 
-  EKAT_REQUIRE_MSG(any_match or not throw_if_not_found, "Error! No match found when attempting to rename dim.\n"
-                                                        "  - input tag: " +
-                                                            e2str(t) +
-                                                            "\n"
-                                                            "  - layout   : " +
-                                                            to_string() + "\n");
+  EKAT_REQUIRE_MSG(any_match or not throw_if_not_found,
+                   "Error! No match found when attempting to rename dim.\n"
+                   "  - input tag: " +
+                       e2str(t) +
+                       "\n"
+                       "  - layout   : " +
+                       to_string() + "\n");
 
   return *this;
 }
@@ -211,7 +222,8 @@ FieldLayout &FieldLayout::reset_dim(const int idim, const int extent) {
   return *this;
 }
 
-FieldLayout &FieldLayout::reset_dim(const FieldTag t, const int extent, const bool throw_if_not_found) {
+FieldLayout &FieldLayout::reset_dim(const FieldTag t, const int extent,
+                                    const bool throw_if_not_found) {
   bool any_match = false;
   for (int i = 0; i < rank(); ++i) {
     if (m_tags[i] == t) {

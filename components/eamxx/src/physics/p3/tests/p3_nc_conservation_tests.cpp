@@ -12,7 +12,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     auto engine = Base::get_engine();
@@ -26,8 +27,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestNcConservation : public 
       d.dt = baseline_data[0].dt; // Hold this fixed, this is not packed data
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so
+    // that inout data is in original state
     view_1d<NcConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
     std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
@@ -46,8 +47,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestNcConservation : public 
           const Int offset = i * Spack::n;
 
           // Init pack inputs
-          Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend, nc_selfcollect_tend,
-              ncheti_cnt, nicnt;
+          Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend,
+              nc_selfcollect_tend, ncheti_cnt, nicnt;
           Smask context;
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             nc[s]                       = cxx_device(vs).nc;
@@ -61,9 +62,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestNcConservation : public 
             context.set(s, cxx_device(vs).context);
           }
           const bool use_hetfrz_classnuc = false;
-          Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt, nc_collect_tend,
-                                     nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt,
-                                     use_hetfrz_classnuc, context);
+          Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt,
+                                     nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend,
+                                     nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc,
+                                     context);
 
           // Copy spacks back into cxx_device view
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {

@@ -2,13 +2,15 @@
 
 namespace scream {
 
-IdentityRemapper::IdentityRemapper(const grid_ptr_type grid, const Aliasing aliasing) : AbstractRemapper(grid, grid) {
+IdentityRemapper::IdentityRemapper(const grid_ptr_type grid, const Aliasing aliasing)
+    : AbstractRemapper(grid, grid) {
   set_aliasing(aliasing);
 }
 
 void IdentityRemapper::set_aliasing(const Aliasing aliasing) {
-  EKAT_REQUIRE_MSG(get_state() == RepoState::Clean,
-                   "Error! Aliasing in IdentityRemapper must be set *before* registration starts.\n");
+  EKAT_REQUIRE_MSG(
+      get_state() == RepoState::Clean,
+      "Error! Aliasing in IdentityRemapper must be set *before* registration starts.\n");
   m_aliasing = aliasing;
 }
 
@@ -39,7 +41,8 @@ void IdentityRemapper::registration_ends_impl() {
       const auto &tgt = m_tgt_fields[i];
       EKAT_REQUIRE_MSG(
           src.is_aliasing(tgt),
-          "Error! Input fields are not aliasing each other, but aliasing was requested in the IdentityRemapper.\n"
+          "Error! Input fields are not aliasing each other, but aliasing was requested in the "
+          "IdentityRemapper.\n"
           "       To register field when aliasing is active, use register_field_from_tgt/src.\n");
     }
   }

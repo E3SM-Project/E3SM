@@ -4,13 +4,15 @@
 namespace scream {
 
 // =========================================================================================
-SeaLevelPressureDiagnostic::SeaLevelPressureDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+SeaLevelPressureDiagnostic::SeaLevelPressureDiagnostic(const ekat::Comm &comm,
+                                                       const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
 
 // =========================================================================================
-void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void SeaLevelPressureDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   const auto m2 = pow(m, 2);

@@ -10,7 +10,8 @@ ShortwaveCloudForcingDiagnostic::ShortwaveCloudForcingDiagnostic(const ekat::Com
   // Nothing to do here
 }
 
-void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void ShortwaveCloudForcingDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   Units m2(m * m, "m2");
@@ -51,8 +52,8 @@ void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl() {
   Kokkos::parallel_for(
       "ShortwaveCloudForcingDiagnostic", default_policy, KOKKOS_LAMBDA(const MemberType &team) {
         const int icol = team.league_rank();
-        SWCF(icol) =
-            (SW_flux_dn(icol, 0) - SW_flux_up(icol, 0)) - (SW_clrsky_flux_dn(icol, 0) - SW_clrsky_flux_up(icol, 0));
+        SWCF(icol)     = (SW_flux_dn(icol, 0) - SW_flux_up(icol, 0)) -
+                     (SW_clrsky_flux_dn(icol, 0) - SW_clrsky_flux_up(icol, 0));
       });
   Kokkos::fence();
 }

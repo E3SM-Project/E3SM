@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
@@ -172,8 +173,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdHeight : public U
     Int npbl_rand = rand() % 72 + 1;
 
     PblintdHeightData baseline_data[] = {
-        PblintdHeightData(10, 72, 1), PblintdHeightData(10, 72, 72), PblintdHeightData(10, 72, npbl_rand),
-        PblintdHeightData(10, 12, 1), PblintdHeightData(7, 16, 1),   PblintdHeightData(2, 7, 1),
+        PblintdHeightData(10, 72, 1),         PblintdHeightData(10, 72, 72),
+        PblintdHeightData(10, 72, npbl_rand), PblintdHeightData(10, 12, 1),
+        PblintdHeightData(7, 16, 1),          PblintdHeightData(2, 7, 1),
     };
 
     // Generate random input data
@@ -184,8 +186,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdHeight : public U
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     PblintdHeightData cxx_data[] = {
-        PblintdHeightData(baseline_data[0]), PblintdHeightData(baseline_data[1]), PblintdHeightData(baseline_data[2]),
-        PblintdHeightData(baseline_data[3]), PblintdHeightData(baseline_data[4]), PblintdHeightData(baseline_data[5]),
+        PblintdHeightData(baseline_data[0]), PblintdHeightData(baseline_data[1]),
+        PblintdHeightData(baseline_data[2]), PblintdHeightData(baseline_data[3]),
+        PblintdHeightData(baseline_data[4]), PblintdHeightData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
@@ -231,13 +234,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdHeight : public U
 namespace {
 
 TEST_CASE("pblintd_height_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_height_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
 
   TestStruct().run_bfb();
 }

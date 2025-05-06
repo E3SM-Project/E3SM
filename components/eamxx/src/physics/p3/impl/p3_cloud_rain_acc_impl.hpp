@@ -13,11 +13,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::cloud_rain_accretion(const Spack &rho, const Spack &inv_rho,
-                                                           const Spack &qc_incld, const Spack &nc_incld,
-                                                           const Spack &qr_incld, const Spack &inv_qc_relvar,
-                                                           Spack &qc2qr_accret_tend, Spack &nc_accret_tend,
-                                                           const P3Runtime &runtime_options, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::cloud_rain_accretion(
+    const Spack &rho, const Spack &inv_rho, const Spack &qc_incld, const Spack &nc_incld,
+    const Spack &qr_incld, const Spack &inv_qc_relvar, Spack &qc2qr_accret_tend,
+    Spack &nc_accret_tend, const P3Runtime &runtime_options, const Smask &context) {
   constexpr Scalar qsmall = C::QSMALL;
 
   const Scalar accretion_prefactor   = runtime_options.accretion_prefactor;
@@ -34,7 +33,8 @@ KOKKOS_FUNCTION void Functions<S, D>::cloud_rain_accretion(const Spack &rho, con
     // TODO: always default to second branch after BFB stuff is addressed
     if (accretion_qc_exponent == accretion_qr_exponent) {
       qc2qr_accret_tend.set(qr_and_qc_not_small,
-                            sgs_var_coef * accretion_prefactor * pow(qc_incld * qr_incld, accretion_qr_exponent));
+                            sgs_var_coef * accretion_prefactor *
+                                pow(qc_incld * qr_incld, accretion_qr_exponent));
     } else {
       qc2qr_accret_tend.set(qr_and_qc_not_small, sgs_var_coef * accretion_prefactor *
                                                      pow(qc_incld, accretion_qc_exponent) *

@@ -42,24 +42,25 @@ void compute_heating_rate(yakl::Array<T, 2, myMem, myStyle> const &flux_up,
   auto nlay       = flux_up.dimension[1] - 1;
   TIMED_KERNEL(yakl::fortran::parallel_for(
       yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
-        heating_rate(icol, ilay) =
-            (flux_up(icol, ilay + 1) - flux_up(icol, ilay) - flux_dn(icol, ilay + 1) + flux_dn(icol, ilay)) *
-            physconst::gravit / (physconst::Cpair * pdel(icol, ilay));
+        heating_rate(icol, ilay) = (flux_up(icol, ilay + 1) - flux_up(icol, ilay) -
+                                    flux_dn(icol, ilay + 1) + flux_dn(icol, ilay)) *
+                                   physconst::gravit / (physconst::Cpair * pdel(icol, ilay));
       }));
 }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
 template <class View1, class View2, class View3, class View4>
-void compute_heating_rate(View1 const &flux_up, View2 const &flux_dn, View3 const &pdel, View4 const &heating_rate) {
+void compute_heating_rate(View1 const &flux_up, View2 const &flux_dn, View3 const &pdel,
+                          View4 const &heating_rate) {
   using physconst = scream::physics::Constants<Real>;
   using LayoutT   = typename View1::array_layout;
   const int ncol  = (int)flux_up.extent(0);
   const int nlay  = (int)flux_up.extent(1) - 1;
-  TIMED_KERNEL(FLATTEN_MD_KERNEL2(
-      ncol, nlay, icol, ilay,
-      heating_rate(icol, ilay) =
-          (flux_up(icol, ilay + 1) - flux_up(icol, ilay) - flux_dn(icol, ilay + 1) + flux_dn(icol, ilay)) *
-          physconst::gravit / (physconst::Cpair * pdel(icol, ilay));));
+  TIMED_KERNEL(FLATTEN_MD_KERNEL2(ncol, nlay, icol, ilay,
+                                  heating_rate(icol, ilay) =
+                                      (flux_up(icol, ilay + 1) - flux_up(icol, ilay) -
+                                       flux_dn(icol, ilay + 1) + flux_dn(icol, ilay)) *
+                                      physconst::gravit / (physconst::Cpair * pdel(icol, ilay));));
 }
 #endif
 
@@ -78,7 +79,8 @@ inline bool radiation_do(const int irad, const int nstep) {
 // Verify that array only contains values within valid range, and if not
 // report min and max of array
 #ifdef RRTMGP_ENABLE_YAKL
-template <class T> bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream &out = std::cout) {
+template <class T>
+bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream &out = std::cout) {
   bool pass  = true;
   auto _xmin = minval(x);
   auto _xmax = maxval(x);
@@ -105,8 +107,8 @@ template <class T> bool check_range(T x, Real xmin, Real xmax, std::string msg, 
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
 template <class T, typename std::enable_if<T::rank == 1>::type *dummy = nullptr>
-bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax, std::string msg,
-                   std::ostream &out = std::cout) {
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream &out = std::cout) {
   bool pass  = true;
   auto _xmin = conv::minval(x);
   auto _xmax = conv::maxval(x);
@@ -129,8 +131,8 @@ bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_val
 }
 
 template <class T, typename std::enable_if<T::rank == 2>::type *dummy = nullptr>
-bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax, std::string msg,
-                   std::ostream &out = std::cout) {
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream &out = std::cout) {
   bool pass  = true;
   auto _xmin = conv::minval(x);
   auto _xmax = conv::maxval(x);
@@ -157,8 +159,8 @@ bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_val
 }
 
 template <class T, typename std::enable_if<T::rank == 3>::type *dummy = nullptr>
-bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax, std::string msg,
-                   std::ostream &out = std::cout) {
+bool check_range_k(T x, typename T::const_value_type xmin, typename T::const_value_type xmax,
+                   std::string msg, std::ostream &out = std::cout) {
   bool pass  = true;
   auto _xmin = conv::minval(x);
   auto _xmax = conv::maxval(x);

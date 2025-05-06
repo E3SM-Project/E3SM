@@ -21,7 +21,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::Base {
 
   void run_property_fixed() {
     static constexpr Int shcol = 2;
@@ -271,7 +272,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocLinearInt : public U
 
     // The combination of single-precision and randomness generating points
     // close together can result in larger error margins.
-    const auto margin = std::numeric_limits<Real>::epsilon() * (ekat::is_single_precision<Real>::value ? 1000 : 1);
+    const auto margin =
+        std::numeric_limits<Real>::epsilon() * (ekat::is_single_precision<Real>::value ? 1000 : 1);
 
     for (Int s = 0; s < shcol; ++s) {
       if (km1_bigger) {
@@ -325,8 +327,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocLinearInt : public U
 
     LinearInterpData baseline_data[] = {
         //                   shcol, nlev(km1), nlevi(km2), minthresh
-        LinearInterpData(10, 72, 71, 1e-15), LinearInterpData(10, 71, 72, 1e-15), LinearInterpData(1, 15, 16, 1e-15),
-        LinearInterpData(1, 16, 15, 1e-15),  LinearInterpData(1, 5, 6, 1e-15),    LinearInterpData(1, 6, 5, 1e-15),
+        LinearInterpData(10, 72, 71, 1e-15), LinearInterpData(10, 71, 72, 1e-15),
+        LinearInterpData(1, 15, 16, 1e-15),  LinearInterpData(1, 16, 15, 1e-15),
+        LinearInterpData(1, 5, 6, 1e-15),    LinearInterpData(1, 6, 5, 1e-15),
     };
 
     // Generate random input data
@@ -337,8 +340,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocLinearInt : public U
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     LinearInterpData cxx_data[] = {
-        LinearInterpData(baseline_data[0]), LinearInterpData(baseline_data[1]), LinearInterpData(baseline_data[2]),
-        LinearInterpData(baseline_data[3]), LinearInterpData(baseline_data[4]), LinearInterpData(baseline_data[5]),
+        LinearInterpData(baseline_data[0]), LinearInterpData(baseline_data[1]),
+        LinearInterpData(baseline_data[2]), LinearInterpData(baseline_data[3]),
+        LinearInterpData(baseline_data[4]), LinearInterpData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
@@ -381,13 +385,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocLinearInt : public U
 namespace {
 
 TEST_CASE("shoc_linear_interp_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_linear_interp_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
 
   TestStruct().run_bfb();
 }

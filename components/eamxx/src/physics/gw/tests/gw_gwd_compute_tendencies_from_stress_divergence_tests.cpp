@@ -13,7 +13,8 @@ namespace gw {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     auto engine = Base::get_engine();
@@ -40,7 +41,8 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
         GwdComputeTendenciesFromStressDivergenceData(5, 10, true, 0.4, 0.3, init_data[0]),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
+    static constexpr Int num_runs =
+        sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
@@ -104,8 +106,8 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 namespace {
 
 TEST_CASE("gwd_compute_tendencies_from_stress_divergence_bfb", "[gw]") {
-  using TestStruct =
-      scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwdComputeTendenciesFromStressDivergence;
+  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestGwdComputeTendenciesFromStressDivergence;
 
   TestStruct t;
   t.run_bfb();

@@ -73,7 +73,8 @@ int main(int argc, char **argv) {
   r2d lw_flux_up_ref;
   r2d lw_flux_dn_ref;
   logger->info("read_fluxes...");
-  utils_t::read_fluxes(inputfile, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref);
+  utils_t::read_fluxes(inputfile, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref,
+                       lw_flux_up_ref, lw_flux_dn_ref);
 
   // Get dimension sizes
 #ifdef RRTMGP_ENABLE_YAKL
@@ -104,11 +105,11 @@ int main(int argc, char **argv) {
   // data that contains information about absorption coefficients for gases
   logger->info("rrtmgp_initialize...");
 #ifdef RRTMGP_ENABLE_YAKL
-  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw,
-                                 cloud_optics_file_lw, logger);
+  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw,
+                                 cloud_optics_file_sw, cloud_optics_file_lw, logger);
 #else
-  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw,
-                                 cloud_optics_file_lw, logger, 2.0);
+  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw,
+                                 cloud_optics_file_sw, cloud_optics_file_lw, logger, 2.0);
 #endif
 
   // Setup dummy all-sky problem
@@ -122,8 +123,8 @@ int main(int argc, char **argv) {
   r2d rel("rel", ncol, nlay);
   r2d rei("rei", ncol, nlay);
   r2d cld("cld", ncol, nlay);
-  utils_t::dummy_atmos(inputfile, ncol, p_lay, t_lay, sfc_alb_dir_vis, sfc_alb_dir_nir, sfc_alb_dif_vis,
-                       sfc_alb_dif_nir, mu0, lwp, iwp, rel, rei, cld);
+  utils_t::dummy_atmos(inputfile, ncol, p_lay, t_lay, sfc_alb_dir_vis, sfc_alb_dir_nir,
+                       sfc_alb_dif_vis, sfc_alb_dif_nir, mu0, lwp, iwp, rel, rei, cld);
 
   // Setup flux outputs; In a real model run, the fluxes would be
   // input/outputs into the driver (persisting between calls), and
@@ -165,7 +166,8 @@ int main(int argc, char **argv) {
   // Compute band-by-band surface_albedos.
   r2d sfc_alb_dir("sfc_alb_dir", ncol, nswbands);
   r2d sfc_alb_dif("sfc_alb_dif", ncol, nswbands);
-  interface_t::compute_band_by_band_surface_albedos(ncol, nswbands, sfc_alb_dir_vis, sfc_alb_dir_nir, sfc_alb_dif_vis,
+  interface_t::compute_band_by_band_surface_albedos(ncol, nswbands, sfc_alb_dir_vis,
+                                                    sfc_alb_dir_nir, sfc_alb_dif_vis,
                                                     sfc_alb_dif_nir, sfc_alb_dir, sfc_alb_dif);
 
   // Setup some dummy aerosol optical properties
@@ -175,7 +177,8 @@ int main(int argc, char **argv) {
   auto aer_tau_lw = r3d("aer_tau_lw", ncol, nlay, nlwbands);
 #ifdef RRTMGP_ENABLE_YAKL
   yakl::fortran::parallel_for(
-      yakl::fortran::SimpleBounds<3>(nswbands, nlay, ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+      yakl::fortran::SimpleBounds<3>(nswbands, nlay, ncol),
+      YAKL_LAMBDA(int ibnd, int ilay, int icol) {
 #else
   Kokkos::parallel_for(
       MDRP::template get<3>({nswbands, nlay, ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
@@ -186,7 +189,8 @@ int main(int argc, char **argv) {
       });
 #ifdef RRTMGP_ENABLE_YAKL
   yakl::fortran::parallel_for(
-      yakl::fortran::SimpleBounds<3>(nlwbands, nlay, ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+      yakl::fortran::SimpleBounds<3>(nlwbands, nlay, ncol),
+      YAKL_LAMBDA(int ibnd, int ilay, int icol) {
 #else
   Kokkos::parallel_for(
       MDRP::template get<3>({nlwbands, nlay, ncol}), KOKKOS_LAMBDA(int ibnd, int ilay, int icol) {
@@ -214,12 +218,14 @@ int main(int argc, char **argv) {
   logger->info("rrtmgp_main...");
   const Real tsi_scaling = 1;
   interface_t::rrtmgp_main(
-      ncol, nlay, p_lay, t_lay, p_lev, t_lev, gas_concs, sfc_alb_dir, sfc_alb_dif, mu0, lwp, iwp, rel, rei, cld,
-      aer_tau_sw, aer_ssa_sw, aer_asm_sw, aer_tau_lw, cld_tau_sw_bnd, cld_tau_lw_bnd, cld_tau_sw, cld_tau_lw, // outputs
-      sw_flux_up, sw_flux_dn, sw_flux_dn_dir, lw_flux_up, lw_flux_dn, sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn,
-      sw_clnclrsky_flux_dn_dir, sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, sw_clnsky_flux_up,
-      sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir, lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn, lw_clrsky_flux_up,
-      lw_clrsky_flux_dn, lw_clnsky_flux_up, lw_clnsky_flux_dn, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+      ncol, nlay, p_lay, t_lay, p_lev, t_lev, gas_concs, sfc_alb_dir, sfc_alb_dif, mu0, lwp, iwp,
+      rel, rei, cld, aer_tau_sw, aer_ssa_sw, aer_asm_sw, aer_tau_lw, cld_tau_sw_bnd, cld_tau_lw_bnd,
+      cld_tau_sw, cld_tau_lw, // outputs
+      sw_flux_up, sw_flux_dn, sw_flux_dn_dir, lw_flux_up, lw_flux_dn, sw_clnclrsky_flux_up,
+      sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir, sw_clrsky_flux_up, sw_clrsky_flux_dn,
+      sw_clrsky_flux_dn_dir, sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir,
+      lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn, lw_clrsky_flux_up, lw_clrsky_flux_dn,
+      lw_clnsky_flux_up, lw_clnsky_flux_dn, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
       lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger);
 
   // Write fluxes

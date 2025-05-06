@@ -70,8 +70,8 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                     const int seed) {
+std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                     const util::TimeStamp &t0, const int seed) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -117,8 +117,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
 }
 
 // Returns fields after initialization
-void write(const std::string &avg_type, const std::string &freq_units, const int freq, const int seed,
-           const ekat::Comm &comm) {
+void write(const std::string &avg_type, const std::string &freq_units, const int freq,
+           const int seed, const ekat::Comm &comm) {
   // Create grid
   auto gm   = get_gm(comm);
   auto grid = gm->get_grid("point_grid");
@@ -190,8 +190,8 @@ void write(const std::string &avg_type, const std::string &freq_units, const int
   om.finalize();
 }
 
-void read(const std::string &avg_type, const std::string &freq_units, const int freq, const int seed,
-          const ekat::Comm &comm) {
+void read(const std::string &avg_type, const std::string &freq_units, const int freq,
+          const int seed, const ekat::Comm &comm) {
   // Only INSTANT writes at t=0
   bool instant = avg_type == "INSTANT";
 
@@ -215,8 +215,8 @@ void read(const std::string &avg_type, const std::string &freq_units, const int 
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_basic";
-  auto filename        = casename + "." + avg_type + "." + freq_units + "_x" + std::to_string(freq) + ".np" +
-                  std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  auto filename = casename + "." + avg_type + "." + freq_units + "_x" + std::to_string(freq) +
+                  ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);

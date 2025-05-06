@@ -10,7 +10,8 @@ namespace scream {
 
 // --------------- HorizRemapperData ---------------- //
 
-void HorizRemapperData::build(const std::string &map_file, const std::shared_ptr<const AbstractGrid> &fine_grid_in,
+void HorizRemapperData::build(const std::string &map_file,
+                              const std::shared_ptr<const AbstractGrid> &fine_grid_in,
                               const ekat::Comm &comm_in, const InterpType type_in) {
   comm      = comm_in;
   fine_grid = fine_grid_in;
@@ -251,12 +252,13 @@ void HorizRemapperData::create_crs_matrix_structures(std::vector<Triplet> &tripl
     ++row_counts[row_gid2lid.at(triplets[i].row)];
   }
   std::partial_sum(row_counts.begin(), row_counts.end(), row_offsets_h.data() + 1);
-  EKAT_REQUIRE_MSG(row_offsets_h(num_rows) == nnz, "Error! Something went wrong while computing row offsets.\n"
-                                                   "  - local nnz       : " +
-                                                       std::to_string(nnz) +
-                                                       "\n"
-                                                       "  - row_offsets(end): " +
-                                                       std::to_string(row_offsets_h(num_rows)) + "\n");
+  EKAT_REQUIRE_MSG(row_offsets_h(num_rows) == nnz,
+                   "Error! Something went wrong while computing row offsets.\n"
+                   "  - local nnz       : " +
+                       std::to_string(nnz) +
+                       "\n"
+                       "  - row_offsets(end): " +
+                       std::to_string(row_offsets_h(num_rows)) + "\n");
 
   Kokkos::deep_copy(row_offsets, row_offsets_h);
 }

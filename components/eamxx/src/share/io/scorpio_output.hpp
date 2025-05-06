@@ -13,7 +13,8 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
- *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see eamxx_output_manager.hpp
+ *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see
+ eamxx_output_manager.hpp
  *
  *  Similar to other SCREAM classes, output streams have a init, run and finalize routines.
  *  These routines are called during the homonymous steps of the AD.
@@ -55,7 +56,8 @@
  *      min     - minimum value of the field over time interval.
  *      max     - maximum value of the field over time interval.
  *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
- *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
+ *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10
+ days.
  *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - field_names: names of fields defined on grid $grid_name that need to be outputed
@@ -64,9 +66,11 @@
  *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
- *    - frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
+ *    - frequency: the frequency of output writes (in the units specified by ${Output
+ frequency_units})
  *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
- *      snapshots have been written on a single nc file, the class will close the file, and open a new one
+ *      snapshots have been written on a single nc file, the class will close the file, and open a
+ new one
  *  - Checkpointing: parameters for checkpointing control
  *    - frequency: the frequenct of checkpoints writes. This option is used/matters only if
  *      if averaging_type is *not* instant. A value of 0 is interpreted as 'no checkpointing'.
@@ -88,7 +92,8 @@
  *      - item_N
  *
  *   - in case of single-grid tests, you can specify fields names by adding 'field_names' directly
- *     in the top-level parameter list. In that case, you can also add 'io_grid_name' in the top-level
+ *     in the top-level parameter list. In that case, you can also add 'io_grid_name' in the
+ top-level
  *     parameter list.
  *   - each instance of this class can only handle ONE grid, so if multiple grids are specified,
  *     you will need one instance per grid.
@@ -133,7 +138,8 @@ public:
   void init();
   void reset_dev_views();
   void update_avg_cnt_view(const Field &, view_1d_dev &dev_view);
-  void setup_output_file(const std::string &filename, const std::string &fp_precision, const scorpio::FileMode mode);
+  void setup_output_file(const std::string &filename, const std::string &fp_precision,
+                         const scorpio::FileMode mode);
 
   void init_timestep(const util::TimeStamp &start_of_step);
   void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
@@ -144,20 +150,23 @@ public:
   std::shared_ptr<const AbstractGrid> get_io_grid() const { return m_io_grid; }
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) { m_atm_logger = atm_logger; }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) {
+    m_atm_logger = atm_logger;
+  }
 
 protected:
   // Internal functions
   void set_grid(const std::shared_ptr<const AbstractGrid> &grid);
-  void set_field_manager(const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
-                         const std::string &mode);
-  void set_field_manager(const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
-                         const std::vector<std::string> &modes);
+  void set_field_manager(const std::shared_ptr<const fm_type> &field_mgr,
+                         const std::string &grid_name, const std::string &mode);
+  void set_field_manager(const std::shared_ptr<const fm_type> &field_mgr,
+                         const std::string &grid_name, const std::vector<std::string> &modes);
 
   std::shared_ptr<const fm_type> get_field_manager(const std::string &mode) const;
 
   void register_dimensions(const std::string &name);
-  void register_variables(const std::string &filename, const std::string &fp_precision, const scorpio::FileMode mode);
+  void register_variables(const std::string &filename, const std::string &fp_precision,
+                          const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets(const FieldLayout &layout);
   void register_views();
@@ -188,9 +197,11 @@ protected:
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType m_avg_type;
-  Real m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
+  Real m_avg_coeff_threshold =
+      0.5; // % of unfilled values required to not just assign value as FillValue
 
-  // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
+  // Internal maps to the output fields, how the columns are distributed, the file dimensions and
+  // the global ids.
   std::vector<std::string> m_fields_names;
   std::vector<std::string> m_avg_cnt_names;
   std::map<std::string, std::string> m_field_to_avg_cnt_map;

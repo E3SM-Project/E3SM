@@ -22,7 +22,9 @@ struct PyParamList {
 
   PyParamList(const nb::dict &d) : PyParamList(d, "") {}
 
-  PyParamList(const nb::dict &d, const std::string &name) : pl(name), pl_ref(pl) { parse_dict(d, pl); }
+  PyParamList(const nb::dict &d, const std::string &name) : pl(name), pl_ref(pl) {
+    parse_dict(d, pl);
+  }
 
   PyParamList sublist(const std::string &name) {
     PyParamList spl(pl.sublist(name));
@@ -34,8 +36,12 @@ struct PyParamList {
   double get_dbl(const std::string &name) const { return pl_ref.get().get<double>(name); }
   std::string get_str(const std::string &name) const { return pl_ref.get().get<std::string>(name); }
 
-  std::vector<int> get_int_vec(const std::string &name) const { return pl_ref.get().get<std::vector<int>>(name); }
-  std::vector<double> get_dbl_vec(const std::string &name) const { return pl_ref.get().get<std::vector<double>>(name); }
+  std::vector<int> get_int_vec(const std::string &name) const {
+    return pl_ref.get().get<std::vector<int>>(name);
+  }
+  std::vector<double> get_dbl_vec(const std::string &name) const {
+    return pl_ref.get().get<std::vector<double>>(name);
+  }
   std::vector<std::string> get_str_vec(const std::string &name) const {
     return pl_ref.get().get<std::vector<std::string>>(name);
   }
@@ -73,7 +79,8 @@ private:
   }
 
   void parse_list(const nb::list &l, ekat::ParameterList &p, const std::string &key) {
-    EKAT_REQUIRE_MSG(nb::len(l) > 0, "Error! Cannot deduce type for dictionary list entry '" + key + "'\n");
+    EKAT_REQUIRE_MSG(nb::len(l) > 0,
+                     "Error! Cannot deduce type for dictionary list entry '" + key + "'\n");
     auto first       = l[0];
     bool are_ints    = nb::isinstance<nb::int_>(first);
     bool are_floats  = nb::isinstance<nb::float_>(first);

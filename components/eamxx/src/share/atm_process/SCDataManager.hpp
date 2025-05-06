@@ -6,12 +6,14 @@
 
 namespace scream {
 
-// This struct provides a intermediary between the AD and the SurfaceCouplingImport/Export AtmophereProcess
-// classes, allowing SCREAM to access CPL data pointers and info about the fields.
+// This struct provides a intermediary between the AD and the SurfaceCouplingImport/Export
+// AtmophereProcess classes, allowing SCREAM to access CPL data pointers and info about the fields.
 struct SCDataManager {
 
-  template <typename DevT, typename DataT> using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
-  template <typename DevT, typename DataT> using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
+  template <typename DevT, typename DataT>
+  using view_1d = typename KokkosTypes<DevT>::template view_1d<DataT>;
+  template <typename DevT, typename DataT>
+  using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
   using name_t = char[32];
 
@@ -24,8 +26,9 @@ struct SCDataManager {
 #ifdef HAVE_MOAB
                        Real *field_data_moab_ptr,
 #endif
-                       char *field_names, int *field_cpl_indices_ptr, int *field_vector_components_ptr,
-                       Real *field_constant_multiple_ptr, bool *transfer_during_init_ptr) {
+                       char *field_names, int *field_cpl_indices_ptr,
+                       int *field_vector_components_ptr, Real *field_constant_multiple_ptr,
+                       bool *transfer_during_init_ptr) {
     m_num_cpl_fields    = num_cpl_fields;
     m_num_scream_fields = num_scream_fields;
     m_field_size        = field_size;
@@ -34,16 +37,22 @@ struct SCDataManager {
     EKAT_ASSERT_MSG(field_data_ptr != nullptr, "Error! Ptr for field data is null.");
     EKAT_ASSERT_MSG(field_names != nullptr, "Error! Ptr for field names is null.");
     EKAT_ASSERT_MSG(field_cpl_indices_ptr != nullptr, "Error! Ptr for cpl indices is null.");
-    EKAT_ASSERT_MSG(field_vector_components_ptr != nullptr, "Error! Ptr for field vector components is null.");
-    EKAT_ASSERT_MSG(field_constant_multiple_ptr != nullptr, "Error! Ptr for constant multiple is null.");
-    EKAT_ASSERT_MSG(transfer_during_init_ptr != nullptr, "Error! Ptr for initial transfer boolean is null.");
+    EKAT_ASSERT_MSG(field_vector_components_ptr != nullptr,
+                    "Error! Ptr for field vector components is null.");
+    EKAT_ASSERT_MSG(field_constant_multiple_ptr != nullptr,
+                    "Error! Ptr for constant multiple is null.");
+    EKAT_ASSERT_MSG(transfer_during_init_ptr != nullptr,
+                    "Error! Ptr for initial transfer boolean is null.");
     m_field_data = decltype(m_field_data)(field_data_ptr, m_field_size, m_num_cpl_fields);
 #ifdef HAVE_MOAB
-    m_field_data_moab = decltype(m_field_data_moab)(field_data_moab_ptr, m_num_cpl_fields, m_field_size);
+    m_field_data_moab =
+        decltype(m_field_data_moab)(field_data_moab_ptr, m_num_cpl_fields, m_field_size);
 #endif
-    m_field_cpl_indices       = decltype(m_field_cpl_indices)(field_cpl_indices_ptr, m_num_scream_fields);
-    m_field_vector_components = decltype(m_field_vector_components)(field_vector_components_ptr, m_num_scream_fields);
-    m_field_constant_multiple = decltype(m_field_constant_multiple)(field_constant_multiple_ptr, m_num_scream_fields);
+    m_field_cpl_indices = decltype(m_field_cpl_indices)(field_cpl_indices_ptr, m_num_scream_fields);
+    m_field_vector_components =
+        decltype(m_field_vector_components)(field_vector_components_ptr, m_num_scream_fields);
+    m_field_constant_multiple =
+        decltype(m_field_constant_multiple)(field_constant_multiple_ptr, m_num_scream_fields);
     m_field_transfer_during_init =
         decltype(m_field_transfer_during_init)(transfer_during_init_ptr, m_num_scream_fields);
 

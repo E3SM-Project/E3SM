@@ -13,9 +13,9 @@ namespace p3 {
 namespace {
 
 template <typename S, typename IceT, typename CollT>
-void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base, const char *p3_version,
-                            IceT &ice_table_vals, CollT &collect_table_vals, int densize, int rimsize, int isize,
-                            int rcollsize) {
+void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base,
+                            const char *p3_version, IceT &ice_table_vals, CollT &collect_table_vals,
+                            int densize, int rimsize, int isize, int rcollsize) {
   using DeviceIcetable = typename IceT::non_const_type;
   using DeviceColtable = typename CollT::non_const_type;
 
@@ -41,8 +41,8 @@ void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base, c
   std::string version, version_val;
   in >> version >> version_val;
   EKAT_REQUIRE_MSG(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
-  EKAT_REQUIRE_MSG(version_val == p3_version,
-                   "Bad " << filename << ", expected version " << p3_version << ", but got " << version_val);
+  EKAT_REQUIRE_MSG(version_val == p3_version, "Bad " << filename << ", expected version "
+                                                     << p3_version << ", but got " << version_val);
 
   // read tables
   double dum_s;
@@ -83,8 +83,8 @@ void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base, c
 }
 
 template <typename S, typename C, typename MuRT, typename VNT, typename VMT, typename RevapT>
-void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_vals, VMT &vm_table_vals,
-                    RevapT &revap_table_vals) {
+void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_vals,
+                    VMT &vm_table_vals, RevapT &revap_table_vals) {
   using c = scream::physics::Constants<S>;
 
   int ii, jj, kk;
@@ -121,8 +121,9 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
 
   // AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
   // so this section is commented out.
-  Kokkos::deep_copy(mu_r_table_vals_h,
-                    1); // mu_r_constant =1. In other places, this is runtime_options.constant_mu_rain
+  Kokkos::deep_copy(
+      mu_r_table_vals_h,
+      1); // mu_r_constant =1. In other places, this is runtime_options.constant_mu_rain
 
   static constexpr S thrd  = 1. / 3;
   static constexpr S small = 1.e-30;
@@ -173,10 +174,14 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
 
         // note: factor of 4.*mu_r is non-answer changing and only needed to
         //       prevent underflow/overflow errors, same with 3.*mu_r for dum5
-        dum1 += vt * std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd * 1.e-6;
-        dum2 += std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd * 1.e-6;
-        dum3 += vt * std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd * 1.e-6;
-        dum4 += std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd * 1.e-6;
+        dum1 += vt * std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd *
+                1.e-6;
+        dum2 +=
+            std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd * 1.e-6;
+        dum3 += vt * std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) *
+                dd * 1.e-6;
+        dum4 += std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd *
+                1.e-6;
         dum5 += std::pow(vt * dia, 0.5) * std::pow(10, (mu_r + 1) * std::log10(dia) + 3 * mu_r) *
                 std::exp(-lamr * dia) * dd * 1.e-6;
       }
@@ -185,9 +190,10 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
       dum4 = std::max(dum4, small); // to prevent divide-by-zero below
       dum5 = std::max(dum5, small); // to prevent log10-of-zero below
 
-      vn_table_vals_h(jj - 1, ii - 1)    = dum1 / dum2;
-      vm_table_vals_h(jj - 1, ii - 1)    = dum3 / dum4;
-      revap_table_vals_h(jj - 1, ii - 1) = std::pow(10, std::log10(dum5) + (mu_r + 1) * std::log10(lamr) - (3 * mu_r));
+      vn_table_vals_h(jj - 1, ii - 1) = dum1 / dum2;
+      vm_table_vals_h(jj - 1, ii - 1) = dum3 / dum4;
+      revap_table_vals_h(jj - 1, ii - 1) =
+          std::pow(10, std::log10(dum5) + (mu_r + 1) * std::log10(lamr) - (3 * mu_r));
     }
   }
 
@@ -202,7 +208,8 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
   revap_table_vals = revap_table_vals_nc;
 }
 
-template <bool IsRead, typename S> static void action(const ekat::FILEPtr &fid, S *data, const size_t size) {
+template <bool IsRead, typename S>
+static void action(const ekat::FILEPtr &fid, S *data, const size_t size) {
   if constexpr (IsRead) {
     ekat::read(data, size, fid);
   } else {
@@ -211,10 +218,11 @@ template <bool IsRead, typename S> static void action(const ekat::FILEPtr &fid, 
 }
 
 template <bool IsRead, typename MuRT, typename VNT, typename VMT, typename RevapT>
-void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT &vn_table_vals, VMT &vm_table_vals,
-             RevapT &revap_table_vals) {
+void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT &vn_table_vals,
+             VMT &vm_table_vals, RevapT &revap_table_vals) {
   if (masterproc) {
-    std::cout << (IsRead ? "Reading" : "Writing") << " lookup (non-ice) tables in dir " << dir << std::endl;
+    std::cout << (IsRead ? "Reading" : "Writing") << " lookup (non-ice) tables in dir " << dir
+              << std::endl;
   }
 
   std::string extension =
@@ -261,8 +269,8 @@ void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT 
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
-void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT &vn_table_vals,
-                          VMT &vm_table_vals, RevapT &revap_table_vals) {
+void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_table_vals,
+                          VNT &vn_table_vals, VMT &vm_table_vals, RevapT &revap_table_vals) {
   using MuRT_NC   = typename MuRT::non_const_type;
   using VNT_NC    = typename VNT::non_const_type;
   using VMT_NC    = typename VMT::non_const_type;
@@ -273,7 +281,8 @@ void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_tab
   VMT_NC vm_table_vals_nc("vm_table_vals");
   RevapT_NC revap_table_vals_nc("revap_table_vals");
 
-  io_impl<true>(masterproc, dir, mu_r_table_vals_nc, vn_table_vals_nc, vm_table_vals_nc, revap_table_vals_nc);
+  io_impl<true>(masterproc, dir, mu_r_table_vals_nc, vn_table_vals_nc, vm_table_vals_nc,
+                revap_table_vals_nc);
 
   mu_r_table_vals  = mu_r_table_vals_nc;
   vn_table_vals    = vn_table_vals_nc;
@@ -283,7 +292,8 @@ void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_tab
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
 void write_computed_tables(const bool masterproc, const char *dir, const MuRT &mu_r_table_vals,
-                           const VNT &vn_table_vals, const VMT &vm_table_vals, const RevapT &revap_table_vals) {
+                           const VNT &vn_table_vals, const VMT &vm_table_vals,
+                           const RevapT &revap_table_vals) {
   io_impl<false>(masterproc, dir, mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals);
 }
 
@@ -317,23 +327,27 @@ template <typename S, typename DnuT> void compute_dnu(DnuT &dnu_table_vals) {
  * this file, #include p3_functions.hpp instead.
  */
 template <typename S, typename D>
-typename Functions<S, D>::P3LookupTables Functions<S, D>::p3_init(const bool write_tables, const bool masterproc) {
+typename Functions<S, D>::P3LookupTables Functions<S, D>::p3_init(const bool write_tables,
+                                                                  const bool masterproc) {
   P3LookupTables lookup_tables; // This struct could be our global singleton
   auto version           = P3C::p3_version;
   auto p3_lookup_base    = P3C::p3_lookup_base;
   static const char *dir = SCREAM_DATA_DIR "/tables";
   // p3_init_a (reads ice_table, collect_table)
   read_ice_lookup_tables<S>(masterproc, p3_lookup_base, version, lookup_tables.ice_table_vals,
-                            lookup_tables.collect_table_vals, P3C::densize, P3C::rimsize, P3C::isize, P3C::rcollsize);
+                            lookup_tables.collect_table_vals, P3C::densize, P3C::rimsize,
+                            P3C::isize, P3C::rcollsize);
   if (write_tables) {
     // p3_init_b (computes tables mu_r_table, revap_table, vn_table, vm_table)
     compute_tables<S, P3C>(masterproc, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals,
                            lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
-    write_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals,
-                          lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    write_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals,
+                          lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
+                          lookup_tables.revap_table_vals);
   } else {
-    read_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals,
-                         lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    read_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals,
+                         lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
+                         lookup_tables.revap_table_vals);
   }
   // dnu is always computed/hardcoded
   compute_dnu<S>(lookup_tables.dnu_table_vals);

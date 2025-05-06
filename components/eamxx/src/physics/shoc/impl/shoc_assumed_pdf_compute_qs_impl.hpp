@@ -15,21 +15,21 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_compute_qs(const Spack &Tl1_1, const Spack &Tl1_2,
-                                                                         const Spack &pval, const Smask &active_entries,
-                                                                         Spack &qs1, Spack &beta1, Spack &qs2,
-                                                                         Spack &beta2) {
+KOKKOS_INLINE_FUNCTION void
+Functions<S, D>::shoc_assumed_pdf_compute_qs(const Spack &Tl1_1, const Spack &Tl1_2,
+                                             const Spack &pval, const Smask &active_entries,
+                                             Spack &qs1, Spack &beta1, Spack &qs2, Spack &beta2) {
   const Scalar rair  = C::Rair;
   const Scalar rv    = C::RV;
   const Scalar cp    = C::CP;
   const Scalar lcond = C::LatVap;
 
   // Compute MurphyKoop_svp
-  const int liquid = 0;
-  const Spack esval1_1 =
-      scream::physics::Functions<S, D>::MurphyKoop_svp(Tl1_1, liquid, active_entries, "shoc::shoc_assumed_pdf (Tl1_1)");
-  const Spack esval1_2 =
-      scream::physics::Functions<S, D>::MurphyKoop_svp(Tl1_2, liquid, active_entries, "shoc::shoc_assumed_pdf (Tl1_2)");
+  const int liquid     = 0;
+  const Spack esval1_1 = scream::physics::Functions<S, D>::MurphyKoop_svp(
+      Tl1_1, liquid, active_entries, "shoc::shoc_assumed_pdf (Tl1_1)");
+  const Spack esval1_2 = scream::physics::Functions<S, D>::MurphyKoop_svp(
+      Tl1_2, liquid, active_entries, "shoc::shoc_assumed_pdf (Tl1_2)");
   const Spack lstarn(lcond);
 
   qs1   = sp(0.622) * esval1_1 / ekat::max(esval1_1, pval - esval1_1);

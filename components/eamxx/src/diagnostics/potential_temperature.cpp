@@ -8,7 +8,8 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic(const ekat::Comm 
                                                                const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   EKAT_REQUIRE_MSG(params.isParameter("temperature_kind"),
-                   "Error! PotentialTemperatureDiagnostic requires 'temperature_kind' in its input parameters.\n");
+                   "Error! PotentialTemperatureDiagnostic requires 'temperature_kind' in its input "
+                   "parameters.\n");
 
   auto pt_type = params.get<std::string>("temperature_kind");
 
@@ -17,16 +18,18 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic(const ekat::Comm 
   } else if (pt_type == "Liq") {
     m_ptype = "LiqPotentialTemperature";
   } else {
-    EKAT_ERROR_MSG("Error! Invalid choice for 'TemperatureKind' in PotentialTemperatureDiagnostic.\n"
-                   "  - input value: " +
-                   pt_type +
-                   "\n"
-                   "  - valid values: Tot, Liq\n");
+    EKAT_ERROR_MSG(
+        "Error! Invalid choice for 'TemperatureKind' in PotentialTemperatureDiagnostic.\n"
+        "  - input value: " +
+        pt_type +
+        "\n"
+        "  - valid values: Tot, Liq\n");
   }
 }
 
 // =========================================================================================
-void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void PotentialTemperatureDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
@@ -71,7 +74,8 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl() {
         auto temp      = PF::calculate_theta_from_T(T_mid(icol, ilev), p_mid(icol, ilev));
         if (is_liq) {
           // Liquid potential temperature (consistent with how it is calculated in SHOC)
-          theta(icol, ilev) = PF::calculate_thetal_from_theta(temp, T_mid(icol, ilev), q_mid(icol, ilev));
+          theta(icol, ilev) =
+              PF::calculate_thetal_from_theta(temp, T_mid(icol, ilev), q_mid(icol, ilev));
         } else {
           // The total potential temperature
           theta(icol, ilev) = temp;

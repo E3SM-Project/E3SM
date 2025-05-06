@@ -12,7 +12,8 @@
 namespace scream {
 
 // =========================================================================================
-Nudging::Nudging(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereProcess(comm, params) {
+Nudging::Nudging(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereProcess(comm, params) {
   m_datafiles = filename_glob(m_params.get<std::vector<std::string>>("nudging_filenames_patterns"));
   m_timescale = m_params.get<int>("nudging_timescale", 0);
 
@@ -20,19 +21,24 @@ Nudging::Nudging(const ekat::Comm &comm, const ekat::ParameterList &params) : At
   m_use_weights             = m_params.get<bool>("use_nudging_weights", false);
   m_skip_vert_interpolation = m_params.get<bool>("skip_vert_interpolation", false);
   // If we are doing horizontal refine-remapping, we need to get the mapfile from user
-  m_refine_remap_file        = m_params.get<std::string>("nudging_refine_remap_mapfile", "no-file-given");
+  m_refine_remap_file = m_params.get<std::string>("nudging_refine_remap_mapfile", "no-file-given");
   m_refine_remap_vert_cutoff = m_params.get<Real>("nudging_refine_remap_vert_cutoff", 0.0);
-  auto src_pres_type         = m_params.get<std::string>("source_pressure_type", "TIME_DEPENDENT_3D_PROFILE");
+  auto src_pres_type =
+      m_params.get<std::string>("source_pressure_type", "TIME_DEPENDENT_3D_PROFILE");
   if (src_pres_type == "TIME_DEPENDENT_3D_PROFILE") {
     m_src_pres_type = TIME_DEPENDENT_3D_PROFILE;
   } else if (src_pres_type == "STATIC_1D_VERTICAL_PROFILE") {
     m_src_pres_type = STATIC_1D_VERTICAL_PROFILE;
-    // Check for a designated source pressure file, default to first nudging data source if not given.
-    m_static_vertical_pressure_file = m_params.get<std::string>("source_pressure_file", m_datafiles[0]);
-    EKAT_REQUIRE_MSG(m_skip_vert_interpolation == false,
-                     "Error! It makes no sense to not interpolate if src press is uniform and constant ");
+    // Check for a designated source pressure file, default to first nudging data source if not
+    // given.
+    m_static_vertical_pressure_file =
+        m_params.get<std::string>("source_pressure_file", m_datafiles[0]);
+    EKAT_REQUIRE_MSG(
+        m_skip_vert_interpolation == false,
+        "Error! It makes no sense to not interpolate if src press is uniform and constant ");
   } else {
-    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  Current options are "
+    EKAT_ERROR_MSG("ERROR! Nudging::parameter_list - unsupported source_pressure_type provided.  "
+                   "Current options are "
                    "[TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE].  Please check");
   }
   int first_file_levs = scorpio::get_dimlen(m_datafiles[0], "lev");
@@ -93,8 +99,9 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     m_num_src_levs = scorpio::get_dimlen(m_static_vertical_pressure_file, "lev");
   }
   if (m_skip_vert_interpolation) {
-    EKAT_REQUIRE_MSG(m_num_src_levs == m_num_levs, "Error! skip_vert_interpolation requires the vertical level to be "
-                                                       << " the same as model vertical level ");
+    EKAT_REQUIRE_MSG(m_num_src_levs == m_num_levs,
+                     "Error! skip_vert_interpolation requires the vertical level to be "
+                         << " the same as model vertical level ");
   }
 
   /* Check for consistency between nudging files, map file, and remapper */
@@ -107,11 +114,12 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   if (num_cols_src != num_cols_global) {
     // If differing cols, check if remap file is provided
-    EKAT_REQUIRE_MSG(m_refine_remap_file != "no-file-given",
-                     "Error! Nudging::set_grids - the number of columns in the nudging data file "
-                         << std::to_string(num_cols_src) << " does not match the number of columns in the "
-                         << "model grid " << std::to_string(num_cols_global) << ".  Please check the "
-                         << "nudging data file and/or the model grid.");
+    EKAT_REQUIRE_MSG(
+        m_refine_remap_file != "no-file-given",
+        "Error! Nudging::set_grids - the number of columns in the nudging data file "
+            << std::to_string(num_cols_src) << " does not match the number of columns in the "
+            << "model grid " << std::to_string(num_cols_global) << ".  Please check the "
+            << "nudging data file and/or the model grid.");
     // If remap file is provided, check if it is consistent with the nudging data file
     // First get the data from the mapfile
     int num_cols_remap_a = scorpio::get_dimlen(m_refine_remap_file, "n_a");
@@ -119,19 +127,24 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     // Then, check if n_a (source) and n_b (target) are consistent
     EKAT_REQUIRE_MSG(num_cols_remap_a == num_cols_src,
                      "Error! Nudging::set_grids - the number of columns in the nudging data file "
-                         << std::to_string(num_cols_src) << " does not match the number of columns in the "
+                         << std::to_string(num_cols_src)
+                         << " does not match the number of columns in the "
                          << "mapfile " << std::to_string(num_cols_remap_a) << ".  Please check the "
                          << "nudging data file and/or the mapfile.");
     EKAT_REQUIRE_MSG(num_cols_remap_b == num_cols_global,
                      "Error! Nudging::set_grids - the number of columns in the model grid "
-                         << std::to_string(num_cols_global) << " does not match the number of columns in the "
+                         << std::to_string(num_cols_global)
+                         << " does not match the number of columns in the "
                          << "mapfile " << std::to_string(num_cols_remap_b) << ".  Please check the "
                          << "model grid and/or the mapfile.");
-    EKAT_REQUIRE_MSG(m_use_weights == false,
-                     "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
-                         << "from coarse data as well as weighted nudging simultaneously. This is not supported. "
-                         << "If the user wants to use both at their own risk, the user should edit the source code "
-                         << "by deleting this error message.");
+    EKAT_REQUIRE_MSG(
+        m_use_weights == false,
+        "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
+            << "from coarse data as well as weighted nudging simultaneously. This is not "
+               "supported. "
+            << "If the user wants to use both at their own risk, the user should edit the source "
+               "code "
+            << "by deleting this error message.");
     // If we get here, we are good to go!
     m_refine_remap = true;
   } else {
@@ -150,11 +163,12 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     }
     // If the user gives us the vertical cutoff, warn them
     if (m_refine_remap_vert_cutoff > 0.0) {
-      m_atm_logger->warn("[Nudging::set_grids] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
-                         " - vertical cutoff: " +
-                         std::to_string(m_refine_remap_vert_cutoff) +
-                         "\n"
-                         " Please, check your settings. This parameter is only needed if we are remapping.");
+      m_atm_logger->warn(
+          "[Nudging::set_grids] Warning! Non-zero vertical cutoff provided, but it is not needed\n"
+          " - vertical cutoff: " +
+          std::to_string(m_refine_remap_vert_cutoff) +
+          "\n"
+          " Please, check your settings. This parameter is only needed if we are remapping.");
     }
     // Set m_refine_remap to false
     m_refine_remap = false;
@@ -287,8 +301,10 @@ void Nudging::initialize_impl(const RunType /* run_type */) {
     create_helper_field("padded_p_mid_tmp", layout_padded, "");
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
-    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
-    AtmosphereInput src_input(m_static_vertical_pressure_file, grid_ext, {pmid_ext.alias("p_levs")}, true);
+    auto pmid_ext =
+        create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
+    AtmosphereInput src_input(m_static_vertical_pressure_file, grid_ext, {pmid_ext.alias("p_levs")},
+                              true);
     src_input.read_variables(-1);
 
     // For static 1d profile, p_mid_tmp is an alias of p_mid_ext
@@ -359,8 +375,9 @@ void Nudging::run_impl(const double dt) {
           last_good  = ekat::impl::max(last_good, k);
         }
       }
-      EKAT_KERNEL_REQUIRE_MSG(first_good < nlevs and last_good >= 0,
-                                    "[Nudging] Error! Could not locate a non-masked entry in a column.\n");
+      EKAT_KERNEL_REQUIRE_MSG(
+          first_good < nlevs and last_good >= 0,
+          "[Nudging] Error! Could not locate a non-masked entry in a column.\n");
 
       // Fix near TOM
       for (int k = 0; k < first_good; ++k) {
@@ -526,8 +543,8 @@ void Nudging::run_impl(const double dt) {
 // =========================================================================================
 void Nudging::finalize_impl() { m_time_interp.finalize(); }
 // =========================================================================================
-Field Nudging::create_helper_field(const std::string &name, const FieldLayout &layout, const std::string &grid_name,
-                                   const int ps) {
+Field Nudging::create_helper_field(const std::string &name, const FieldLayout &layout,
+                                   const std::string &grid_name, const int ps) {
   using namespace ekat::units;
 
   // For helper fields we don't bother w/ units, so we set them to non-dimensional

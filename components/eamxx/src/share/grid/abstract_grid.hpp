@@ -45,11 +45,11 @@ public:
   using gid_view_h = Field::view_host_t<const gid_type *>;
 
   // Constructor(s) & Destructor
-  AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs, const int num_vertical_lev,
-               const ekat::Comm &comm);
-
-  AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs, const int num_global_dofs,
+  AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
                const int num_vertical_lev, const ekat::Comm &comm);
+
+  AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
+               const int num_global_dofs, const int num_vertical_lev, const ekat::Comm &comm);
 
   virtual ~AbstractGrid() = default;
 
@@ -64,17 +64,21 @@ public:
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
   //       for a vector 3d field on a Point grid it will be (ncols,vector_dim,nlevs)
   FieldLayout get_vertical_layout(const bool midpoints) const;
-  FieldLayout get_vertical_layout(const bool midpoints, const int vector_dim,
-                                  const std::string &vec_dim_name = e2str(FieldTag::Component)) const;
-  virtual FieldLayout get_2d_scalar_layout() const                                                      = 0;
-  virtual FieldLayout get_2d_vector_layout(const int vector_dim, const std::string &vec_dim_name) const = 0;
-  virtual FieldLayout get_2d_tensor_layout(const std::vector<int> &cmp_dims,
-                                           const std::vector<std::string> &cmp_dims_names) const        = 0;
-  virtual FieldLayout get_3d_scalar_layout(const bool midpoints) const                                  = 0;
+  FieldLayout
+  get_vertical_layout(const bool midpoints, const int vector_dim,
+                      const std::string &vec_dim_name = e2str(FieldTag::Component)) const;
+  virtual FieldLayout get_2d_scalar_layout() const                                = 0;
+  virtual FieldLayout get_2d_vector_layout(const int vector_dim,
+                                           const std::string &vec_dim_name) const = 0;
+  virtual FieldLayout
+  get_2d_tensor_layout(const std::vector<int> &cmp_dims,
+                       const std::vector<std::string> &cmp_dims_names) const      = 0;
+  virtual FieldLayout get_3d_scalar_layout(const bool midpoints) const            = 0;
   virtual FieldLayout get_3d_vector_layout(const bool midpoints, const int vector_dim,
-                                           const std::string &vec_dim_name) const                       = 0;
-  virtual FieldLayout get_3d_tensor_layout(const bool midpoints, const std::vector<int> &cmp_dims,
-                                           const std::vector<std::string> &cmp_dims_names) const        = 0;
+                                           const std::string &vec_dim_name) const = 0;
+  virtual FieldLayout
+  get_3d_tensor_layout(const bool midpoints, const std::vector<int> &cmp_dims,
+                       const std::vector<std::string> &cmp_dims_names) const = 0;
 
   // Some shortcut versions of the above ones, where the name of the vector/tensor
   // components are all equal to e2str(CMP)
@@ -132,8 +136,10 @@ public:
   Field create_geometry_data(const FieldIdentifier &fid, const int pack_size = 1);
   Field create_geometry_data(const std::string &name, const FieldLayout &layout,
                              const ekat::units::Units &units = ekat::units::Units::invalid(),
-                             const DataType data_type = DataType::RealType, const int pack_size = 1) {
-    return create_geometry_data(FieldIdentifier(name, layout, units, this->name(), data_type), pack_size);
+                             const DataType data_type        = DataType::RealType,
+                             const int pack_size             = 1) {
+    return create_geometry_data(FieldIdentifier(name, layout, units, this->name(), data_type),
+                                pack_size);
   }
 
   // Sets pre-existing field as geometry data.
@@ -143,14 +149,17 @@ public:
   void set_geometry_data(const Field &f) const;
   void delete_geometry_data(const std::string &name);
 
-  bool has_geometry_data(const std::string &name) const { return m_geo_fields.find(name) != m_geo_fields.end(); }
+  bool has_geometry_data(const std::string &name) const {
+    return m_geo_fields.find(name) != m_geo_fields.end();
+  }
 
   // Get list of currently stored geometry data views
   std::list<std::string> get_geometry_data_names() const;
 
   // Creates a copy of this grid. If shallow=true, the copy shares views with
   // *this, otherwise each stored array is deep copied
-  virtual std::shared_ptr<AbstractGrid> clone(const std::string &clone_name, const bool shallow) const = 0;
+  virtual std::shared_ptr<AbstractGrid> clone(const std::string &clone_name,
+                                              const bool shallow) const = 0;
 
   // Allows to change the number of vertical levels associated with this grid.
   void reset_num_vertical_lev(const int num_vertical_lev);
@@ -167,7 +176,8 @@ public:
     return get_owners(gids_v);
   }
 
-  void get_remote_pids_and_lids(const gid_view_h &gids, std::vector<int> &pids, std::vector<int> &lids) const;
+  void get_remote_pids_and_lids(const gid_view_h &gids, std::vector<int> &pids,
+                                std::vector<int> &lids) const;
   void get_remote_pids_and_lids(const std::vector<gid_type> &gids, std::vector<int> &pids,
                                 std::vector<int> &lids) const {
     gid_view_h gids_v(gids.data(), gids.size());
@@ -240,7 +250,8 @@ protected:
   // Mutable, for lazy calculation
   mutable std::map<gid_type, int> m_gid2lid;
 
-  // For thread safety in modifying mutable items (just in case someone ever runs this code in threaded regions)
+  // For thread safety in modifying mutable items (just in case someone ever runs this code in
+  // threaded regions)
   mutable std::mutex m_mutex;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned

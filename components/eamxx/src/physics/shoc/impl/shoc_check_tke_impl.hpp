@@ -7,7 +7,8 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::check_tke(const MemberType &team, const Int &nlev, const uview_1d<Spack> &tke) {
+KOKKOS_FUNCTION void Functions<S, D>::check_tke(const MemberType &team, const Int &nlev,
+                                                const uview_1d<Spack> &tke) {
   // obtain minimum TKE allowed
   static constexpr auto mintke = SC::mintke; // units:m2/s2
 

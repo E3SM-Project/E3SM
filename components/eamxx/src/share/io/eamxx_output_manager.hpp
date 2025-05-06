@@ -75,17 +75,19 @@ public:
   //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
   //             a restarted simulation. Restart logic is triggered *only* if case_t0<run_t0.
   //  - is_model_restart_output: whether this output stream is to write a model restart file
-  void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params, const util::TimeStamp &run_t0,
-                  const util::TimeStamp &case_t0, const bool is_model_restart_output, const RunType run_type);
+  void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
+                  const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
+                  const bool is_model_restart_output, const RunType run_type);
 
   // This overloads are to make certain unit tests easier
-  void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params, const util::TimeStamp &run_t0,
-                  const util::TimeStamp &case_t0, const bool is_model_restart_output) {
+  void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
+                  const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
+                  const bool is_model_restart_output) {
     auto run_type = case_t0 < run_t0 ? RunType::Restart : RunType::Initial;
     initialize(io_comm, params, run_t0, case_t0, is_model_restart_output, run_type);
   }
-  void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params, const util::TimeStamp &run_t0,
-                  const bool is_model_restart_output) {
+  void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
+                  const util::TimeStamp &run_t0, const bool is_model_restart_output) {
     initialize(io_comm, params, run_t0, run_t0, is_model_restart_output, RunType::Initial);
   }
 
@@ -95,7 +97,9 @@ public:
   //  - grid_names: grid names used for output
   void setup(const std::shared_ptr<fm_type> &field_mgr, const std::set<std::string> &grid_names);
 
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) { m_atm_logger = atm_logger; }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) {
+    m_atm_logger = atm_logger;
+  }
   void add_global(const std::string &name, const ekat::any &global);
 
   void init_timestep(const util::TimeStamp &start_of_step, const Real dt);
@@ -111,13 +115,15 @@ public:
   const IOFileSpecs &output_file_specs() const { return m_output_file_specs; }
 
 protected:
-  std::string compute_filename(const IOFileSpecs &file_specs, const util::TimeStamp &timestamp) const;
+  std::string compute_filename(const IOFileSpecs &file_specs,
+                               const util::TimeStamp &timestamp) const;
 
   void set_file_header(const IOFileSpecs &file_specs);
 
   // Set internal class variables and processes the field_mgr for restart fields
   // to add to the parameter list for a model restart managers.
-  void setup_internals(const std::shared_ptr<fm_type> &field_mgr, const std::set<std::string> &grid_names);
+  void setup_internals(const std::shared_ptr<fm_type> &field_mgr,
+                       const std::set<std::string> &grid_names);
 
   void setup_file(IOFileSpecs &filespecs, const IOControl &control);
 

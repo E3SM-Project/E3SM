@@ -10,8 +10,10 @@
 namespace scream {
 
 void f_z_src(const Real y0, const Real m, const Field &z_data, Field &out_data);
-void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_data, Field &out_data);
-bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol, const bool msg = true);
+void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_data,
+             Field &out_data);
+bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol,
+                            const bool msg = true);
 
 TEST_CASE("field_at_height") {
   using namespace ShortFieldTagsNames;
@@ -39,17 +41,21 @@ TEST_CASE("field_at_height") {
   // Create input data test fields
   FieldIdentifier s_mid_fid("s_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
   FieldIdentifier s_int_fid("s_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
-  FieldIdentifier v_mid_fid("v_mid", FieldLayout({COL, CMP, LEV}, {ncols, ndims, nlevs}), m, grid->name());
-  FieldIdentifier v_int_fid("v_int", FieldLayout({COL, CMP, ILEV}, {ncols, ndims, nlevs + 1}), m, grid->name());
+  FieldIdentifier v_mid_fid("v_mid", FieldLayout({COL, CMP, LEV}, {ncols, ndims, nlevs}), m,
+                            grid->name());
+  FieldIdentifier v_int_fid("v_int", FieldLayout({COL, CMP, ILEV}, {ncols, ndims, nlevs + 1}), m,
+                            grid->name());
   // Create vertical fields z and geo on both midpoints and interfaces
   FieldIdentifier z_surf_fid("z_surf", FieldLayout({COL}, {ncols}), m, grid->name());
   FieldIdentifier z_mid_fid("z_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
   FieldIdentifier z_int_fid("z_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
   FieldIdentifier h_mid_fid("height_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
-  FieldIdentifier h_int_fid("height_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
+  FieldIdentifier h_int_fid("height_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m,
+                            grid->name());
   // Keep track of reference fields for comparison
   FieldIdentifier s_tgt_fid("scalar_target", FieldLayout({COL}, {ncols}), m, grid->name());
-  FieldIdentifier v_tgt_fid("vector_target", FieldLayout({COL, CMP}, {ncols, ndims}), m, grid->name());
+  FieldIdentifier v_tgt_fid("vector_target", FieldLayout({COL, CMP}, {ncols, ndims}), m,
+                            grid->name());
 
   Field s_mid(s_mid_fid);
   Field s_int(s_int_fid);
@@ -144,10 +150,12 @@ TEST_CASE("field_at_height") {
     zsurf_v(ii)              = ii * surf_slope;
     max_surf                 = zsurf_v(ii) > max_surf ? zsurf_v(ii) : max_surf;
     const Real col_thickness = z_top - zsurf_v(ii);
-    min_col_thickness        = min_col_thickness < col_thickness ? col_thickness : min_col_thickness;
-    const Real dz            = (z_top - zsurf_v(ii)) / nlevs;
-    zint_v(ii, 0)            = z_top;
-    geoint_v(ii, 0) = z_top - zsurf_v(ii); // Note, the distance above surface needs to consider the surface height.
+    min_col_thickness = min_col_thickness < col_thickness ? col_thickness : min_col_thickness;
+    const Real dz     = (z_top - zsurf_v(ii)) / nlevs;
+    zint_v(ii, 0)     = z_top;
+    geoint_v(ii, 0) =
+        z_top -
+        zsurf_v(ii); // Note, the distance above surface needs to consider the surface height.
     for (int jj = 0; jj < nlevs; ++jj) {
       zint_v(ii, jj + 1)   = zint_v(ii, jj) - dz;
       zmid_v(ii, jj)       = 0.5 * (zint_v(ii, jj) + zint_v(ii, jj + 1));
@@ -284,7 +292,8 @@ void f_z_src(const Real y0, const Real m, const Field &z_data, Field &out_data) 
 }
 //-------------------------------
 // Calculate the target data.  Note expression here must match the f_z_src abovel
-void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_data, Field &out_data) {
+void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_data,
+             Field &out_data) {
   using namespace ShortFieldTagsNames;
   const auto layout  = out_data.get_header().get_identifier().get_layout();
   const auto &z_view = z_data.get_view<const Real **, Host>();
@@ -324,16 +333,18 @@ void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_da
 bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol, const bool msg) {
   const auto &l0 = f0.get_header().get_identifier().get_layout();
   const auto &l1 = f1.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(l0 == l1, "Error! views_are_approx_equal - the two fields don't have matching layouts.");
-  // Take advantage of field utils update, min and max to assess the max difference between the two fields
-  // simply.
+  EKAT_REQUIRE_MSG(l0 == l1,
+                   "Error! views_are_approx_equal - the two fields don't have matching layouts.");
+  // Take advantage of field utils update, min and max to assess the max difference between the two
+  // fields simply.
   auto ft = f0.clone();
   ft.update(f1, 1.0, -1.0);
   auto d_min = field_min<Real>(ft);
   auto d_max = field_max<Real>(ft);
   if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
     if (msg) {
-      printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min and max errors are "
+      printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The "
+             "min and max errors are "
              "%e and %e respectively.\n",
              f0.name().c_str(), tol, d_min, d_max);
     }

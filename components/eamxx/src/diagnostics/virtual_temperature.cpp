@@ -3,12 +3,14 @@
 
 namespace scream {
 
-VirtualTemperatureDiagnostic::VirtualTemperatureDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+VirtualTemperatureDiagnostic::VirtualTemperatureDiagnostic(const ekat::Comm &comm,
+                                                           const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
 
-void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void VirtualTemperatureDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
@@ -38,10 +40,12 @@ void VirtualTemperatureDiagnostic::compute_diagnostic_impl() {
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for(
-      "VirtualTemperatureDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs), KOKKOS_LAMBDA(const int &idx) {
-        const int icol       = idx / nlevs;
-        const int ilev       = idx % nlevs;
-        virtualT(icol, ilev) = PF::calculate_virtual_temperature(T_mid(icol, ilev), qv_mid(icol, ilev));
+      "VirtualTemperatureDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs),
+      KOKKOS_LAMBDA(const int &idx) {
+        const int icol = idx / nlevs;
+        const int ilev = idx % nlevs;
+        virtualT(icol, ilev) =
+            PF::calculate_virtual_temperature(T_mid(icol, ilev), qv_mid(icol, ilev));
       });
   Kokkos::fence();
 }

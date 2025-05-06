@@ -139,13 +139,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 namespace {
 
 TEST_CASE("shoc_pdf_vv_parameters_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVVParameters;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVVParameters;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_vv_parameters_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVVParameters;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVVParameters;
 
   TestStruct::run_bfb();
 }

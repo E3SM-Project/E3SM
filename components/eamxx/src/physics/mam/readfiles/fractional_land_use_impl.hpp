@@ -11,8 +11,9 @@ namespace frac_landuse {
 
 template <typename S, typename D>
 std::shared_ptr<AbstractRemapper> fracLandUseFunctions<S, D>::create_horiz_remapper(
-    const std::shared_ptr<const AbstractGrid> &model_grid, const std::string &data_file, const std::string &map_file,
-    const std::string &field_name, const std::string &dim_name1, const std::string &dim_name2) {
+    const std::shared_ptr<const AbstractGrid> &model_grid, const std::string &data_file,
+    const std::string &map_file, const std::string &field_name, const std::string &dim_name1,
+    const std::string &dim_name2) {
   using namespace ShortFieldTagsNames;
 
   scorpio::register_file(data_file, scorpio::Read);
@@ -29,12 +30,14 @@ std::shared_ptr<AbstractRemapper> fracLandUseFunctions<S, D>::create_horiz_remap
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
   if (ncols_data == ncols_model) {
-    remapper = std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
+    remapper =
+        std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
-    EKAT_REQUIRE_MSG(ncols_data <= ncols_model, "Error! We do not allow to coarsen fractional land use "
-                                                "data to fit the model. We only allow\n"
-                                                "       fractional land use data to be at the same or "
-                                                "coarser resolution as the model.\n");
+    EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
+                     "Error! We do not allow to coarsen fractional land use "
+                     "data to fit the model. We only allow\n"
+                     "       fractional land use data to be at the same or "
+                     "coarser resolution as the model.\n");
     // We must have a valid map file
     EKAT_REQUIRE_MSG(map_file != "", "ERROR: fractional land use data is on a different grid "
                                      "than the model one,\n"
@@ -65,9 +68,8 @@ std::shared_ptr<AbstractRemapper> fracLandUseFunctions<S, D>::create_horiz_remap
 // -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput>
-fracLandUseFunctions<S, D>::create_data_reader(const std::shared_ptr<AbstractRemapper> &horiz_remapper,
-                                               const std::string &data_file) {
+std::shared_ptr<AtmosphereInput> fracLandUseFunctions<S, D>::create_data_reader(
+    const std::shared_ptr<AbstractRemapper> &horiz_remapper, const std::string &data_file) {
   std::vector<Field> io_fields;
   for (int i = 0; i < horiz_remapper->get_num_fields(); ++i) {
     io_fields.push_back(horiz_remapper->get_src_field(i));
@@ -80,9 +82,9 @@ fracLandUseFunctions<S, D>::create_data_reader(const std::shared_ptr<AbstractRem
 // -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(std::shared_ptr<AtmosphereInput> &scorpio_reader,
-                                                                     AbstractRemapper &horiz_interp,
-                                                                     const_view_2d &input) {
+void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(
+    std::shared_ptr<AtmosphereInput> &scorpio_reader, AbstractRemapper &horiz_interp,
+    const_view_2d &input) {
   start_timer("EAMxx::FracLandUse::update_frac_land_use_data_from_file");
 
   // 1. Read from file
@@ -111,16 +113,16 @@ void fracLandUseFunctions<S, D>::update_frac_land_use_data_from_file(std::shared
 // -------------------------------------------------------------------------------------------
 
 template <typename S, typename D>
-void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(const int ncol, const std::string field_name,
-                                                             const std::string dim_name1, const std::string dim_name2,
-                                                             const std::shared_ptr<const AbstractGrid> &grid,
-                                                             const std::string &data_file,
-                                                             const std::string &mapping_file,
-                                                             // output
-                                                             std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
-                                                             std::shared_ptr<AtmosphereInput> &FracLandUseDataReader) {
+void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
+    const int ncol, const std::string field_name, const std::string dim_name1,
+    const std::string dim_name2, const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file, const std::string &mapping_file,
+    // output
+    std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
+    std::shared_ptr<AtmosphereInput> &FracLandUseDataReader) {
   // Init horizontal remap
-  FracLandUseHorizInterp = create_horiz_remapper(grid, data_file, mapping_file, field_name, dim_name1, dim_name2);
+  FracLandUseHorizInterp =
+      create_horiz_remapper(grid, data_file, mapping_file, field_name, dim_name1, dim_name2);
 
   // Create reader (an AtmosphereInput object)
   FracLandUseDataReader = create_data_reader(FracLandUseHorizInterp, data_file);

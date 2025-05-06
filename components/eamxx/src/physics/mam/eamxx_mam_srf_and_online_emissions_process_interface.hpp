@@ -124,9 +124,10 @@ private:
   // FIXME: Remove the hardwired indices and use a function
   // to find them from an array.
   const std::map<std::string, int> spcIndex_in_pcnst_ = {
-      {"so2", 12},    {"dms", 13},    {"so4_a1", 15}, {"dst_a1", 19}, {"ncl_a1", 20}, {"mom_a1", 21},
-      {"num_a1", 22}, {"so4_a2", 23}, {"ncl_a2", 25}, {"mom_a2", 26}, {"num_a2", 27}, {"dst_a3", 28},
-      {"ncl_a3", 29}, {"num_a3", 35}, {"pom_a4", 36}, {"bc_a4", 37},  {"mom_a4", 38}, {"num_a4", 39}};
+      {"so2", 12},    {"dms", 13},    {"so4_a1", 15}, {"dst_a1", 19}, {"ncl_a1", 20},
+      {"mom_a1", 21}, {"num_a1", 22}, {"so4_a2", 23}, {"ncl_a2", 25}, {"mom_a2", 26},
+      {"num_a2", 27}, {"dst_a3", 28}, {"ncl_a3", 29}, {"num_a3", 35}, {"pom_a4", 36},
+      {"bc_a4", 37},  {"mom_a4", 38}, {"num_a4", 39}};
 
   // A struct carrying all the fields needed to read
   // surface emissions of a species

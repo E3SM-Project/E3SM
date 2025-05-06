@@ -4,12 +4,14 @@
 
 namespace scream {
 
-RelativeHumidityDiagnostic::RelativeHumidityDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+RelativeHumidityDiagnostic::RelativeHumidityDiagnostic(const ekat::Comm &comm,
+                                                       const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
 
-void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void RelativeHumidityDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
@@ -53,15 +55,17 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl() {
 
   Int num_levs = m_num_levs;
   Kokkos::parallel_for(
-      "RelativeHumidityDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * npacks), KOKKOS_LAMBDA(const int &idx) {
+      "RelativeHumidityDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * npacks),
+      KOKKOS_LAMBDA(const int &idx) {
         const int icol        = idx / npacks;
         const int jpack       = idx % npacks;
         const auto range_pack = ekat::range<Pack>(jpack * Pack::n);
         const auto range_mask = range_pack < num_levs;
-        auto qv_sat_l         = physics::qv_sat_wet(T_mid(icol, jpack), p_dry_mid(icol, jpack), true, range_mask,
-                                                    dp_wet(icol, jpack), dp_dry(icol, jpack), physics::MurphyKoop,
-                                                    "RelativeHumidityDiagnostic::compute_diagnostic_impl");
-        RH(icol, jpack)       = qv_mid(icol, jpack) / qv_sat_l;
+        auto qv_sat_l =
+            physics::qv_sat_wet(T_mid(icol, jpack), p_dry_mid(icol, jpack), true, range_mask,
+                                dp_wet(icol, jpack), dp_dry(icol, jpack), physics::MurphyKoop,
+                                "RelativeHumidityDiagnostic::compute_diagnostic_impl");
+        RH(icol, jpack) = qv_mid(icol, jpack) / qv_sat_l;
       });
   Kokkos::fence();
 }

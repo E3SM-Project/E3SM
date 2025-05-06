@@ -35,7 +35,8 @@ struct AerosolOpticsHostData {
 
 using AerosolOpticsDeviceData = mam4::modal_aer_opt::AerosolOpticsDeviceData;
 
-inline void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data, ekat::ParameterList &rrtmg_params,
+inline void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data,
+                                 ekat::ParameterList &rrtmg_params,
                                  std::map<std::string, FieldLayout> &layouts,
                                  std::map<std::string, view_1d_host> &host_views) {
   // Set up input structure to read data from file.
@@ -58,11 +59,15 @@ inline void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data
   auto refindex_im_sw_host   = view_2d_host("refrtabsw_im_host", nswbands, refindex_im);
 
   // absplw(lw_band, mode, refindex_im, refindex_real, coef_number)
-  auto absplw_host = view_5d_host("absplw_host", nlwbands, 1, refindex_im, refindex_real, coef_number);
+  auto absplw_host =
+      view_5d_host("absplw_host", nlwbands, 1, refindex_im, refindex_real, coef_number);
 
-  auto asmpsw_host = view_5d_host("asmpsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
-  auto extpsw_host = view_5d_host("extpsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
-  auto abspsw_host = view_5d_host("abspsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
+  auto asmpsw_host =
+      view_5d_host("asmpsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
+  auto extpsw_host =
+      view_5d_host("extpsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
+  auto abspsw_host =
+      view_5d_host("abspsw_host", nswbands, 1, refindex_im, refindex_real, coef_number);
 
   aerosol_optics_host_data.refindex_real_lw_host = refindex_real_lw_host;
   aerosol_optics_host_data.refindex_im_lw_host   = refindex_im_lw_host;
@@ -73,28 +78,37 @@ inline void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data
   aerosol_optics_host_data.extpsw_host           = extpsw_host;
   aerosol_optics_host_data.abspsw_host           = abspsw_host;
 
-  auto refindex_real_lw_layout = make_layout({nlwbands, refindex_real}, {"lwband", "refindex_real"});
-  auto refindex_im_lw_layout   = make_layout({nlwbands, refindex_im}, {"lwband", "refindex_im"});
-  auto refindex_real_sw_layout = make_layout({nswbands, refindex_real}, {"swband", "refindex_real"});
-  auto refindex_im_sw_layout   = make_layout({nswbands, refindex_im}, {"swband", "refindex_im"});
-  auto absplw_layout           = make_layout({nlwbands, 1, refindex_im, refindex_real, coef_number},
-                                             {"lwband", "mode", "refindex_im", "refindex_real", "coef_number"});
+  auto refindex_real_lw_layout =
+      make_layout({nlwbands, refindex_real}, {"lwband", "refindex_real"});
+  auto refindex_im_lw_layout = make_layout({nlwbands, refindex_im}, {"lwband", "refindex_im"});
+  auto refindex_real_sw_layout =
+      make_layout({nswbands, refindex_real}, {"swband", "refindex_real"});
+  auto refindex_im_sw_layout = make_layout({nswbands, refindex_im}, {"swband", "refindex_im"});
+  auto absplw_layout =
+      make_layout({nlwbands, 1, refindex_im, refindex_real, coef_number},
+                  {"lwband", "mode", "refindex_im", "refindex_real", "coef_number"});
   // use also for extpsw, abspsw
-  auto asmpsw_layout = make_layout({nswbands, 1, refindex_im, refindex_real, coef_number},
-                                   {"swband", "mode", "refindex_im", "refindex_real", "coef_number"});
+  auto asmpsw_layout =
+      make_layout({nswbands, 1, refindex_im, refindex_real, coef_number},
+                  {"swband", "mode", "refindex_im", "refindex_real", "coef_number"});
 
-  rrtmg_params.set<strvec_t>("field_names", {"asmpsw", "extpsw", "abspsw", "absplw", "refindex_real_sw",
-                                             "refindex_im_sw", "refindex_real_lw", "refindex_im_lw"});
+  rrtmg_params.set<strvec_t>("field_names",
+                             {"asmpsw", "extpsw", "abspsw", "absplw", "refindex_real_sw",
+                              "refindex_im_sw", "refindex_real_lw", "refindex_im_lw"});
 
   rrtmg_params.set("skip_grid_checks", true);
 
-  host_views["refindex_real_sw"] = view_1d_host(refindex_real_sw_host.data(), refindex_real_sw_host.size());
+  host_views["refindex_real_sw"] =
+      view_1d_host(refindex_real_sw_host.data(), refindex_real_sw_host.size());
 
-  host_views["refindex_im_sw"] = view_1d_host(refindex_im_sw_host.data(), refindex_im_sw_host.size());
+  host_views["refindex_im_sw"] =
+      view_1d_host(refindex_im_sw_host.data(), refindex_im_sw_host.size());
 
-  host_views["refindex_real_lw"] = view_1d_host(refindex_real_lw_host.data(), refindex_real_lw_host.size());
+  host_views["refindex_real_lw"] =
+      view_1d_host(refindex_real_lw_host.data(), refindex_real_lw_host.size());
 
-  host_views["refindex_im_lw"] = view_1d_host(refindex_im_lw_host.data(), refindex_im_lw_host.size());
+  host_views["refindex_im_lw"] =
+      view_1d_host(refindex_im_lw_host.data(), refindex_im_lw_host.size());
 
   host_views["absplw"] = view_1d_host(absplw_host.data(), absplw_host.size());
 
@@ -114,7 +128,8 @@ inline void set_parameters_table(AerosolOpticsHostData &aerosol_optics_host_data
   layouts.emplace("abspsw", asmpsw_layout);
 }
 // KOKKOS_INLINE_FUNCTION
-inline void read_rrtmg_table(const std::string &table_filename, const int imode, ekat::ParameterList &params,
+inline void read_rrtmg_table(const std::string &table_filename, const int imode,
+                             ekat::ParameterList &params,
                              const std::shared_ptr<const AbstractGrid> &grid,
                              const std::map<std::string, view_1d_host> &host_views_1d,
                              const std::map<std::string, FieldLayout> &layouts,
@@ -161,7 +176,8 @@ inline void read_rrtmg_table(const std::string &table_filename, const int imode,
                          Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultHostExecutionSpace>(
                              {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
                          [&](const int d2, const int d3, const int d4) {
-                           temp_lw_3d_host(d2, d3, d4) = aerosol_optics_host_data.absplw_host(d5, 0, d4, d3, d2);
+                           temp_lw_3d_host(d2, d3, d4) =
+                               aerosol_optics_host_data.absplw_host(d5, 0, d4, d3, d2);
                          });
     Kokkos::fence();
 
@@ -178,7 +194,8 @@ inline void read_rrtmg_table(const std::string &table_filename, const int imode,
                          Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultHostExecutionSpace>(
                              {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
                          [&](const int d2, const int d3, const int d4) {
-                           temp_lw_3d_host(d2, d3, d4) = aerosol_optics_host_data.asmpsw_host(d5, 0, d4, d3, d2);
+                           temp_lw_3d_host(d2, d3, d4) =
+                               aerosol_optics_host_data.asmpsw_host(d5, 0, d4, d3, d2);
                          });
     Kokkos::fence();
     // syn data to device
@@ -188,7 +205,8 @@ inline void read_rrtmg_table(const std::string &table_filename, const int imode,
                          Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultHostExecutionSpace>(
                              {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
                          [&](const int d2, const int d3, const int d4) {
-                           temp_lw_3d_host(d2, d3, d4) = aerosol_optics_host_data.abspsw_host(d5, 0, d4, d3, d2);
+                           temp_lw_3d_host(d2, d3, d4) =
+                               aerosol_optics_host_data.abspsw_host(d5, 0, d4, d3, d2);
                          });
     Kokkos::fence();
     // syn data to device
@@ -198,7 +216,8 @@ inline void read_rrtmg_table(const std::string &table_filename, const int imode,
                          Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultHostExecutionSpace>(
                              {0, 0, 0}, {coef_number, refindex_real, refindex_im}),
                          [&](const int d2, const int d3, const int d4) {
-                           temp_lw_3d_host(d2, d3, d4) = aerosol_optics_host_data.extpsw_host(d5, 0, d4, d3, d2);
+                           temp_lw_3d_host(d2, d3, d4) =
+                               aerosol_optics_host_data.extpsw_host(d5, 0, d4, d3, d2);
                          });
 
     Kokkos::fence();
@@ -208,7 +227,8 @@ inline void read_rrtmg_table(const std::string &table_filename, const int imode,
   } // d5
 }
 
-inline void read_water_refindex(const std::string &table_filename, const std::shared_ptr<const AbstractGrid> &grid,
+inline void read_water_refindex(const std::string &table_filename,
+                                const std::shared_ptr<const AbstractGrid> &grid,
                                 const complex_view_1d &crefwlw, const complex_view_1d &crefwsw) {
   // refractive index for water read in read_water_refindex
   // crefwsw(nswbands) ! complex refractive index for water visible
@@ -224,8 +244,8 @@ inline void read_water_refindex(const std::string &table_filename, const std::sh
   params.set("filename", table_filename);
   params.set("skip_grid_checks", true);
 
-  params.set<strvec_t>("field_names", {"refindex_im_water_lw", "refindex_im_water_sw", "refindex_real_water_lw",
-                                       "refindex_real_water_sw"});
+  params.set<strvec_t>("field_names", {"refindex_im_water_lw", "refindex_im_water_sw",
+                                       "refindex_real_water_lw", "refindex_real_water_sw"});
   // make a list of host views
   std::map<std::string, view_1d_host> host_views_water;
   // fist allocate host views.
@@ -287,7 +307,8 @@ inline void set_refindex_names(std::string surname, ekat::ParameterList &params,
   std::string refindex_im_lw   = "refindex_im_" + surname + "_lw";
 
   params.set("skip_grid_checks", true);
-  params.set<strvec_t>("field_names", {refindex_real_sw, refindex_im_sw, refindex_real_lw, refindex_im_lw});
+  params.set<strvec_t>("field_names",
+                       {refindex_real_sw, refindex_im_sw, refindex_real_lw, refindex_im_lw});
   // allocate host views
   host_views[refindex_real_sw] = view_1d_host(refindex_real_sw, nswbands);
   host_views[refindex_im_sw]   = view_1d_host(refindex_im_sw, nswbands);
@@ -304,10 +325,11 @@ inline void set_refindex_names(std::string surname, ekat::ParameterList &params,
 
 } // set_refindex_aero
 
-inline void set_refindex_aerosol(
-    const int species_id, std::map<std::string, view_1d_host> &host_views,
-    mam_coupling::complex_view_2d::HostMirror &specrefndxsw_host, // complex refractive index for water visible
-    mam_coupling::complex_view_2d::HostMirror &specrefndxlw_host) {
+inline void
+set_refindex_aerosol(const int species_id, std::map<std::string, view_1d_host> &host_views,
+                     mam_coupling::complex_view_2d::HostMirror
+                         &specrefndxsw_host, // complex refractive index for water visible
+                     mam_coupling::complex_view_2d::HostMirror &specrefndxlw_host) {
   std::string sw_real_name = "refindex_real_aer_sw";
   std::string lw_real_name = "refindex_real_aer_lw";
   std::string sw_im_name   = "refindex_im_aer_sw";

@@ -12,7 +12,8 @@ LongwaveCloudForcingDiagnostic::LongwaveCloudForcingDiagnostic(const ekat::Comm 
 }
 
 // =========================================================================================
-void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void LongwaveCloudForcingDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 

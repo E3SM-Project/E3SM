@@ -19,8 +19,8 @@ constexpr int tens_dim1 = 3;
 constexpr int tens_dim2 = 4;
 
 template <typename Engine, typename PDF>
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid, const bool midpoints,
-                   Engine &engine, PDF &pdf) {
+Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid,
+                   const bool midpoints, Engine &engine, PDF &pdf) {
   const auto u   = ekat::units::Units::nondimensional();
   const auto &gn = grid.name();
   Field f;
@@ -43,7 +43,8 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   case LayoutType::Tensor3D:
-    f = Field(FieldIdentifier(name, grid.get_3d_tensor_layout(midpoints, {tens_dim1, tens_dim2}), u, gn));
+    f = Field(
+        FieldIdentifier(name, grid.get_3d_tensor_layout(midpoints, {tens_dim1, tens_dim2}), u, gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   default:

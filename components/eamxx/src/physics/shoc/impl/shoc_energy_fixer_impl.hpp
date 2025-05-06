@@ -18,10 +18,11 @@ namespace shoc {
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::shoc_energy_fixer(
     const MemberType &team, const Int &nlev, const Int &nlevi, const Scalar &dtime, const Int &nadv,
-    const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid, const Scalar &se_b, const Scalar &ke_b,
-    const Scalar &wv_b, const Scalar &wl_b, const Scalar &se_a, const Scalar &ke_a, const Scalar &wv_a,
-    const Scalar &wl_a, const Scalar &wthl_sfc, const Scalar &wqw_sfc, const uview_1d<const Spack> &rho_zt,
-    const uview_1d<const Spack> &tke, const uview_1d<const Spack> &pint, const Workspace &workspace,
+    const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid, const Scalar &se_b,
+    const Scalar &ke_b, const Scalar &wv_b, const Scalar &wl_b, const Scalar &se_a,
+    const Scalar &ke_a, const Scalar &wv_a, const Scalar &wl_a, const Scalar &wthl_sfc,
+    const Scalar &wqw_sfc, const uview_1d<const Spack> &rho_zt, const uview_1d<const Spack> &tke,
+    const uview_1d<const Spack> &pint, const Workspace &workspace,
     const uview_1d<Spack> &host_dse) {
   // Define temporary variables
   auto rho_zi = workspace.take("rho_zi");

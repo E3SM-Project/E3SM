@@ -15,9 +15,9 @@ template <typename S, typename D>
 KOKKOS_FUNCTION void
 Functions<S, D>::isotropic_ts(const MemberType &team, const Int &nlev, const Scalar &lambda_low_in,
                               const Scalar &lambda_high_in, const Scalar &lambda_slope_in,
-                              const Scalar &lambda_thresh_in, const Scalar &brunt_int, const uview_1d<const Spack> &tke,
-                              const uview_1d<const Spack> &a_diss, const uview_1d<const Spack> &brunt,
-                              const uview_1d<Spack> &isotropy) {
+                              const Scalar &lambda_thresh_in, const Scalar &brunt_int,
+                              const uview_1d<const Spack> &tke, const uview_1d<const Spack> &a_diss,
+                              const uview_1d<const Spack> &brunt, const uview_1d<Spack> &isotropy) {
 
   // constants from physics/share
   static constexpr Scalar ggr = C::gravit;
@@ -43,7 +43,8 @@ Functions<S, D>::isotropic_ts(const MemberType &team, const Int &nlev, const Sca
     lambda.set(buoy_sgs_save <= 0, 0); // set lambda to zero where buoy_sgs_save <=0
 
     // Compute the return to isotropic timescale
-    isotropy(k) = ekat::min(Spack(maxiso), tscale / (1 + lambda * buoy_sgs_save * ekat::square(tscale)));
+    isotropy(k) =
+        ekat::min(Spack(maxiso), tscale / (1 + lambda * buoy_sgs_save * ekat::square(tscale)));
   });
 }
 

@@ -47,8 +47,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -111,8 +111,9 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
     Kokkos::parallel_for(
         "", policy, KOKKOS_LAMBDA(const MemberType &team) {
           const int icol = team.league_rank();
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs),
-                               [&](const Int &ilev) { exner_v(icol, ilev) = PF::exner_function(p_mid_v(icol, ilev)); });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const Int &ilev) {
+            exner_v(icol, ilev) = PF::exner_function(p_mid_v(icol, ilev));
+          });
           team.team_barrier();
         });
     Kokkos::fence();

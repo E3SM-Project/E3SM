@@ -15,7 +15,8 @@
 namespace scream::mam_coupling {
 
 inline const std::pair<Real, Real> &physical_min_max(const std::string &field_name) {
-  static const std::map<std::string, std::pair<Real, Real>> limits = {{"nmr", {0, 1e13}}, {"mmr", {-1e-10, 1e-2}}};
+  static const std::map<std::string, std::pair<Real, Real>> limits = {{"nmr", {0, 1e13}},
+                                                                      {"mmr", {-1e-10, 1e-2}}};
 
   auto it = limits.find(field_name);
   if (it == limits.end()) {
@@ -27,8 +28,12 @@ inline const std::pair<Real, Real> &physical_min_max(const std::string &field_na
     return it->second;
   }
 }
-inline Real physical_min(const std::string &field_name) { return physical_min_max(field_name).first; }
-inline Real physical_max(const std::string &field_name) { return physical_min_max(field_name).second; }
+inline Real physical_min(const std::string &field_name) {
+  return physical_min_max(field_name).first;
+}
+inline Real physical_max(const std::string &field_name) {
+  return physical_min_max(field_name).second;
+}
 
 } // namespace scream::mam_coupling
 

@@ -1,6 +1,6 @@
 ---
 BasedOnStyle: LLVM
-ColumnLimit: 120
+ColumnLimit: 100
 AlignConsecutiveAssignments: true
 AlignConsecutiveBitFields: true
 AlignConsecutiveMacros: true

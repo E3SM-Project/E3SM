@@ -48,8 +48,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
   const int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
@@ -63,7 +63,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
 
   // Input (randomized) views
-  view_1d LW_flux_up("LW_flux_up", num_mid_packs), LW_clrsky_flux_up("LW_clrsky_flux_up", num_mid_packs);
+  view_1d LW_flux_up("LW_flux_up", num_mid_packs),
+      LW_clrsky_flux_up("LW_clrsky_flux_up", num_mid_packs);
 
   auto dview_as_real = [&](const view_1d &v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real *>(v.data()), v.size() * packsize);

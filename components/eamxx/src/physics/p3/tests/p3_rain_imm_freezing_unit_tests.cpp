@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestRainImmersionFreezing : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestRainImmersionFreezing : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -60,7 +61,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainImmersionFreezing : 
     // Sync to device
     view_1d<RainImmersionFreezingData> device_data("rain_imm_freezing", max_pack_size);
     const auto host_data = Kokkos::create_mirror_view(device_data);
-    std::copy(&rain_imm_freezing_data[0], &rain_imm_freezing_data[0] + max_pack_size, host_data.data());
+    std::copy(&rain_imm_freezing_data[0], &rain_imm_freezing_data[0] + max_pack_size,
+              host_data.data());
     Kokkos::deep_copy(device_data, host_data);
 
     // Read baseline data
@@ -88,8 +90,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainImmersionFreezing : 
           Spack qr2qi_immers_freeze_tend{0.0};
           Spack nr2ni_immers_freeze_tend{0.0};
 
-          Functions::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld, qr2qi_immers_freeze_tend,
-                                             nr2ni_immers_freeze_tend, p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::rain_immersion_freezing(T_atm, lamr, mu_r, cdistr, qr_incld,
+                                             qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend,
+                                             p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -104,8 +107,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainImmersionFreezing : 
     // Validate results.
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        REQUIRE(rain_imm_freezing_data[s].qr2qi_immers_freeze_tend == host_data[s].qr2qi_immers_freeze_tend);
-        REQUIRE(rain_imm_freezing_data[s].nr2ni_immers_freeze_tend == host_data[s].nr2ni_immers_freeze_tend);
+        REQUIRE(rain_imm_freezing_data[s].qr2qi_immers_freeze_tend ==
+                host_data[s].qr2qi_immers_freeze_tend);
+        REQUIRE(rain_imm_freezing_data[s].nr2ni_immers_freeze_tend ==
+                host_data[s].nr2ni_immers_freeze_tend);
       }
     } else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
@@ -122,7 +127,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainImmersionFreezing : 
 namespace {
 
 TEST_CASE("p3_rain_immersion_freezing", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainImmersionFreezing;
+  using T =
+      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainImmersionFreezing;
 
   T t;
   t.run_phys();

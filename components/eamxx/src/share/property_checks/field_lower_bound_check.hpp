@@ -14,9 +14,11 @@ public:
   // Constructor with lower bound. By default, this property check
   // can *NOT* repair fields that fail the check. If can_repair is true,
   // this class will overwrite values out of bounds with the stored lower bound
-  FieldLowerBoundCheck(const Field &field, const std::shared_ptr<const AbstractGrid> &grid, const double lower_bound,
-                       const bool can_repair = false, const double lb_repairable = -s_max)
-      : FieldWithinIntervalCheck(field, grid, lower_bound, s_max, can_repair, lb_repairable, s_max) {
+  FieldLowerBoundCheck(const Field &field, const std::shared_ptr<const AbstractGrid> &grid,
+                       const double lower_bound, const bool can_repair = false,
+                       const double lb_repairable = -s_max)
+      : FieldWithinIntervalCheck(field, grid, lower_bound, s_max, can_repair, lb_repairable,
+                                 s_max) {
     // Do Nothing
   }
 

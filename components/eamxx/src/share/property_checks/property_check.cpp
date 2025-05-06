@@ -20,19 +20,21 @@ void PropertyCheck::set_fields(const std::list<Field> &fields, const std::list<b
   EKAT_REQUIRE_MSG(fields.size() > 0, "Error! Input fields list is empty.\n"
                                       "  - PropertyCheck name: " +
                                           name() + "\n");
-  EKAT_REQUIRE_MSG(repairable.size() == fields.size(), "Error! The method 'set_fields' requires lists of same size.\n"
-                                                       "  - Fields list size: " +
-                                                           std::to_string(fields.size()) +
-                                                           "\n"
-                                                           "  - Repairable list size: " +
-                                                           std::to_string(repairable.size()) + "\n");
+  EKAT_REQUIRE_MSG(repairable.size() == fields.size(),
+                   "Error! The method 'set_fields' requires lists of same size.\n"
+                   "  - Fields list size: " +
+                       std::to_string(fields.size()) +
+                       "\n"
+                       "  - Repairable list size: " +
+                       std::to_string(repairable.size()) + "\n");
   for (const auto &f : fields) {
-    EKAT_REQUIRE_MSG(f.is_allocated(), "Error! Fields must be allocated *before* being set in a PropertyCheck.\n"
-                                       "  - PropertyCheck name: " +
-                                           name() +
-                                           "\n"
-                                           "  - Field name: " +
-                                           f.name() + "\n");
+    EKAT_REQUIRE_MSG(f.is_allocated(),
+                     "Error! Fields must be allocated *before* being set in a PropertyCheck.\n"
+                     "  - PropertyCheck name: " +
+                         name() +
+                         "\n"
+                         "  - Field name: " +
+                         f.name() + "\n");
   }
 
   // Do an additional sanity check: the repairable fields must be
@@ -42,12 +44,13 @@ void PropertyCheck::set_fields(const std::list<Field> &fields, const std::list<b
   auto it_b = repairable.begin();
   for (; it_b != repairable.end(); ++it_b, ++it_f) {
     if (*it_b) {
-      EKAT_REQUIRE_MSG(not it_f->is_read_only(), "Error! One of the repairable fields is read only.\n"
-                                                 "  - PropertyCheck name: " +
-                                                     name() +
-                                                     "\n"
-                                                     "  - Field name: " +
-                                                     it_f->name() + "\n");
+      EKAT_REQUIRE_MSG(not it_f->is_read_only(),
+                       "Error! One of the repairable fields is read only.\n"
+                       "  - PropertyCheck name: " +
+                           name() +
+                           "\n"
+                           "  - Field name: " +
+                           it_f->name() + "\n");
 
       m_repairable_fields.push_back(&(*it_f));
     }
@@ -56,12 +59,13 @@ void PropertyCheck::set_fields(const std::list<Field> &fields, const std::list<b
 
 void PropertyCheck::set_additional_data_field(const Field &data_field) {
   EKAT_REQUIRE_MSG(data_field.get_header().get_identifier().get_layout().has_tag(FieldTag::Column),
-                   "Error! Additional data field \"" + data_field.name() + "\" for property check \"" + name() +
-                       "\" must be defined on columns.\n");
+                   "Error! Additional data field \"" + data_field.name() +
+                       "\" for property check \"" + name() + "\" must be defined on columns.\n");
 
   // Only add field if it currently does not exist in additional fields list.
-  const bool found_field_in_list = std::find(m_additional_data_fields.begin(), m_additional_data_fields.end(),
-                                             data_field) != m_additional_data_fields.end();
+  const bool found_field_in_list =
+      std::find(m_additional_data_fields.begin(), m_additional_data_fields.end(), data_field) !=
+      m_additional_data_fields.end();
   if (not found_field_in_list) {
     m_additional_data_fields.push_back(data_field);
   }
@@ -69,9 +73,10 @@ void PropertyCheck::set_additional_data_field(const Field &data_field) {
 
 // If a check fails, attempt to repair things. Default is to throw.
 void PropertyCheck::repair() const {
-  EKAT_REQUIRE_MSG(can_repair(), "Error! The method 'repair' was called despite can_repair() returns false.\n"
-                                 "  PropertyCheck name: " +
-                                     name() + "\n");
+  EKAT_REQUIRE_MSG(can_repair(),
+                   "Error! The method 'repair' was called despite can_repair() returns false.\n"
+                   "  PropertyCheck name: " +
+                       name() + "\n");
 
   repair_impl();
 }

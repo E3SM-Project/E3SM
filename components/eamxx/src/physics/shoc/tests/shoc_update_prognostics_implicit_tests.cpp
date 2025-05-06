@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol      = 5;
@@ -247,7 +248,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici
             trc_int_b[s][t] = 0;
           }
           const auto t_offset = t + offset * num_tracer;
-          trc_int_b[s][t]     = trc_int_b[s][t] + SDS.tracer[t_offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
+          trc_int_b[s][t] =
+              trc_int_b[s][t] + SDS.tracer[t_offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
         }
       }
     }
@@ -288,7 +290,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici
             trc_int_a[s][t] = 0;
           }
           const auto t_offset = t + offset * num_tracer;
-          trc_int_a[s][t]     = trc_int_a[s][t] + SDS.tracer[t_offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
+          trc_int_a[s][t] =
+              trc_int_a[s][t] + SDS.tracer[t_offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
         }
       }
 
@@ -313,7 +316,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici
       for (Int t = 0; t < num_tracer; ++t) {
         const auto t_offset = t + s * num_tracer;
         // Calculate spurious source
-        spurious = (trc_int_a[s][t] - trc_int_b[s][t]) / dtime - rho_zi_srf * SDS.wtracer_sfc[t_offset];
+        spurious =
+            (trc_int_a[s][t] - trc_int_b[s][t]) / dtime - rho_zi_srf * SDS.wtracer_sfc[t_offset];
         // Spurious source should be sufficiently small
         REQUIRE(std::abs(spurious) < thresh_check);
       }
@@ -325,8 +329,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici
     auto engine = Base::get_engine();
 
     UpdatePrognosticsImplicitData baseline_data[] = {
-        UpdatePrognosticsImplicitData(10, 71, 72, 19, .5), UpdatePrognosticsImplicitData(10, 12, 13, 7, .25),
-        UpdatePrognosticsImplicitData(7, 16, 17, 2, .1), UpdatePrognosticsImplicitData(2, 7, 8, 1, .1)};
+        UpdatePrognosticsImplicitData(10, 71, 72, 19, .5),
+        UpdatePrognosticsImplicitData(10, 12, 13, 7, .25),
+        UpdatePrognosticsImplicitData(7, 16, 17, 2, .1),
+        UpdatePrognosticsImplicitData(2, 7, 8, 1, .1)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
@@ -397,13 +403,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplici
 namespace {
 
 TEST_CASE("update_prognostics_implicit_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("update_prognostics_implicit_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestUpdatePrognosticsImplicit;
 
   TestStruct().run_bfb();
 }

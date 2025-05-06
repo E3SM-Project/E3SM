@@ -33,11 +33,13 @@ std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGr
 
 std::shared_ptr<FieldManager> clone_fm(const std::shared_ptr<const FieldManager> &fm);
 
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &comm, const Int num_gcols, const Int num_levs);
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &comm, const Int num_gcols,
+                                          const Int num_levs);
 
 template <typename Engine> void randomize_fields(const FieldManager &fm, Engine &engine);
 
-void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveString> &fnames, const int dt);
+void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveString> &fnames,
+                  const int dt);
 
 TEST_CASE("output_restart", "io") {
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -69,7 +71,8 @@ TEST_CASE("output_restart", "io") {
   // Create output params (some options are set below, depending on the run type
   ekat::ParameterList output_params;
   output_params.set<std::string>("floating_point_precision", "real");
-  output_params.set<std::vector<std::string>>("field_names", {"field_1", "field_2", "field_3", "field_4", "field_5"});
+  output_params.set<std::vector<std::string>>(
+      "field_names", {"field_1", "field_2", "field_3", "field_4", "field_5"});
   output_params.set<double>("fill_value", FillValue);
   output_params.set<int>("flush_frequency", 1);
   output_params.sublist("restart").set<bool>("force_new_file", false);
@@ -80,8 +83,8 @@ TEST_CASE("output_restart", "io") {
   output_params.sublist("checkpoint_control").set<bool>("is_unit_testing", "true");
 
   // Creates and runs an OM from output_params and given inputs
-  auto run = [&](std::shared_ptr<FieldManager> fm, const util::TimeStamp &case_t0, const util::TimeStamp &run_t0,
-                 const int nsteps) {
+  auto run = [&](std::shared_ptr<FieldManager> fm, const util::TimeStamp &case_t0,
+                 const util::TimeStamp &run_t0, const int nsteps) {
     OutputManager output_manager;
     output_manager.initialize(comm, output_params, run_t0, case_t0, false);
     output_manager.setup(fm, gm->get_grid_names());
@@ -219,13 +222,15 @@ template <typename Engine> void randomize_fields(const FieldManager &fm, Engine 
 }
 
 /*=============================================================================================*/
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &comm, const Int num_gcols, const Int num_levs) {
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &comm, const Int num_gcols,
+                                          const Int num_levs) {
   auto gm = create_mesh_free_grids_manager(comm, 0, 0, num_levs, num_gcols);
   gm->build_grids();
   return gm;
 }
 /*===================================================================================================*/
-void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveString> &fnames, const int dt) {
+void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveString> &fnames,
+                  const int dt) {
   for (const auto &fname : fnames) {
     auto f = fm.get_field(fname);
     f.sync_to_host();
@@ -253,7 +258,8 @@ void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveS
             if (fname == "field_5") {
               // field_5 is used to test restarts w/ filled values, so
               // we cycle between filled and unfilled states.
-              v(i, j, k) = (v(i, j, k) == FillValue) ? dt : ((v(i, j, k) == 1.0) ? 2.0 * dt : FillValue);
+              v(i, j, k) =
+                  (v(i, j, k) == FillValue) ? dt : ((v(i, j, k) == 1.0) ? 2.0 * dt : FillValue);
             } else {
               v(i, j, k) += dt;
             }

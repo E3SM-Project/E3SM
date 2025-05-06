@@ -13,8 +13,8 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION typename Functions<S, D>::Spack
-Functions<S, D>::calc_bulk_rho_rime(const Spack &qi_tot, Spack &qi_rim, Spack &bi_rim, const P3Runtime &runtime_options,
-                                    const Smask &context) {
+Functions<S, D>::calc_bulk_rho_rime(const Spack &qi_tot, Spack &qi_rim, Spack &bi_rim,
+                                    const P3Runtime &runtime_options, const Smask &context) {
   constexpr Scalar bsmall   = C::BSMALL;
   constexpr Scalar qsmall   = C::QSMALL;
   const Scalar min_rime_rho = runtime_options.min_rime_rho;
@@ -60,21 +60,25 @@ Functions<S, D>::calc_bulk_rho_rime(const Spack &qi_tot, Spack &qi_rim, Spack &b
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::ice_sedimentation(
-    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho, const uview_1d<const Spack> &rhofaci,
-    const uview_1d<const Spack> &cld_frac_i, const uview_1d<const Spack> &inv_dz, const MemberType &team,
-    const Workspace &workspace, const Int &nk, const Int &ktop, const Int &kbot, const Int &kdir, const Scalar &dt,
-    const Scalar &inv_dt, const uview_1d<Spack> &qi, const uview_1d<Spack> &qi_incld, const uview_1d<Spack> &ni,
-    const uview_1d<Spack> &ni_incld, const uview_1d<Spack> &qm, const uview_1d<Spack> &qm_incld,
-    const uview_1d<Spack> &bm, const uview_1d<Spack> &bm_incld, const uview_1d<Spack> &qi_tend,
-    const uview_1d<Spack> &ni_tend, const view_ice_table &ice_table_vals, Scalar &precip_ice_surf,
+    const uview_1d<const Spack> &rho, const uview_1d<const Spack> &inv_rho,
+    const uview_1d<const Spack> &rhofaci, const uview_1d<const Spack> &cld_frac_i,
+    const uview_1d<const Spack> &inv_dz, const MemberType &team, const Workspace &workspace,
+    const Int &nk, const Int &ktop, const Int &kbot, const Int &kdir, const Scalar &dt,
+    const Scalar &inv_dt, const uview_1d<Spack> &qi, const uview_1d<Spack> &qi_incld,
+    const uview_1d<Spack> &ni, const uview_1d<Spack> &ni_incld, const uview_1d<Spack> &qm,
+    const uview_1d<Spack> &qm_incld, const uview_1d<Spack> &bm, const uview_1d<Spack> &bm_incld,
+    const uview_1d<Spack> &qi_tend, const uview_1d<Spack> &ni_tend,
+    const view_ice_table &ice_table_vals, Scalar &precip_ice_surf,
     const P3Runtime &runtime_options) {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
-  workspace.template take_many_contiguous_unsafe<6>({"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit"},
-                                                    {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
+  workspace.template take_many_contiguous_unsafe<6>(
+      {"V_qit", "V_nit", "flux_nit", "flux_bir", "flux_qir", "flux_qit"},
+      {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
 
   const view_1d_ptr_array<Spack, 4> fluxes_ptr = {&flux_qit, &flux_nit, &flux_qir, &flux_bir},
-                                    vs_ptr = {&V_qit, &V_nit, &V_qit, &V_qit}, qnr_ptr = {&qi, &ni, &qm, &bm};
+                                    vs_ptr     = {&V_qit, &V_nit, &V_qit, &V_qit},
+                                    qnr_ptr    = {&qi, &ni, &qm, &bm};
 
   // find top, determine qxpresent
   const auto sqi          = scalarize(qi);
@@ -120,29 +124,34 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_sedimentation(
               // impose lower limits to prevent log(<0)
               ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
-              const auto rhop =
-                  calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), runtime_options, qi_gt_small);
+              const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk),
+                                                   runtime_options, qi_gt_small);
               qm(pk).set(qi_gt_small, qm_incld(pk) * cld_frac_i(pk));
               bm(pk).set(qi_gt_small, bm_incld(pk) * cld_frac_i(pk));
 
               TableIce tab;
               lookup_ice(qi_incld(pk), ni_incld(pk), qm_incld(pk), rhop, tab, qi_gt_small);
 
-              const auto table_val_ni_fallspd = apply_table_ice(0, ice_table_vals, tab, qi_gt_small);
-              const auto table_val_qi_fallspd = apply_table_ice(1, ice_table_vals, tab, qi_gt_small);
-              const auto table_val_ni_lammax  = apply_table_ice(6, ice_table_vals, tab, qi_gt_small);
-              const auto table_val_ni_lammin  = apply_table_ice(7, ice_table_vals, tab, qi_gt_small);
+              const auto table_val_ni_fallspd =
+                  apply_table_ice(0, ice_table_vals, tab, qi_gt_small);
+              const auto table_val_qi_fallspd =
+                  apply_table_ice(1, ice_table_vals, tab, qi_gt_small);
+              const auto table_val_ni_lammax = apply_table_ice(6, ice_table_vals, tab, qi_gt_small);
+              const auto table_val_ni_lammin = apply_table_ice(7, ice_table_vals, tab, qi_gt_small);
 
               // impose mean ice size bounds (i.e. apply lambda limiters)
-              // note that the Nmax and Nmin are normalized and thus need to be multiplied by existing N
+              // note that the Nmax and Nmin are normalized and thus need to be multiplied by
+              // existing N
               ni_incld(pk).set(qi_gt_small, min(ni_incld(pk), table_val_ni_lammax * ni_incld(pk)));
               ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
               ni(pk).set(qi_gt_small, ni_incld(pk) * cld_frac_i(pk));
 
-              V_qit(pk).set(qi_gt_small, ice_sedimentation_factor * table_val_qi_fallspd *
-                                             rhofaci(pk)); // mass-weighted   fall speed (with density factor)
-              V_nit(pk).set(qi_gt_small, ice_sedimentation_factor * table_val_ni_fallspd *
-                                             rhofaci(pk)); // number-weighted fall speed (with density factor)
+              V_qit(pk).set(qi_gt_small,
+                            ice_sedimentation_factor * table_val_qi_fallspd *
+                                rhofaci(pk)); // mass-weighted   fall speed (with density factor)
+              V_nit(pk).set(qi_gt_small,
+                            ice_sedimentation_factor * table_val_ni_fallspd *
+                                rhofaci(pk)); // number-weighted fall speed (with density factor)
             }
             const auto Co_max_local = max(qi_gt_small, 0, V_qit(pk) * dt_left * inv_dz(pk));
             if (Co_max_local > lmax)
@@ -151,8 +160,8 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_sedimentation(
           Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
-      generalized_sedimentation<4>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left,
-                                   prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      generalized_sedimentation<4>(rho, inv_rho, inv_dz, team, nk, k_qxtop, k_qxbot, kbot, kdir,
+                                   Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       // Update _incld values with end-of-step cell-ave values
       // No prob w/ div by cld_frac_i because set to min of 1e-4 in interface.
@@ -165,7 +174,8 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_sedimentation(
 
     } // end CFL substep loop
 
-    Kokkos::single(Kokkos::PerTeam(team), [&]() { precip_ice_surf += prt_accum * C::INV_RHO_H2O * inv_dt; });
+    Kokkos::single(Kokkos::PerTeam(team),
+                   [&]() { precip_ice_surf += prt_accum * C::INV_RHO_H2O * inv_dt; });
   }
 
   const Int nk_pack = ekat::npack<Spack>(nk);
@@ -174,14 +184,16 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_sedimentation(
     ni_tend(pk) = (ni(pk) - ni_tend(pk)) * inv_dt; // Liq. # sedimentation tendency, measure
   });
 
-  workspace.template release_many_contiguous<6>({&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
+  workspace.template release_many_contiguous<6>(
+      {&V_qit, &V_nit, &flux_nit, &flux_bir, &flux_qir, &flux_qit});
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::homogeneous_freezing(
-    const uview_1d<const Spack> &T_atm, const uview_1d<const Spack> &inv_exner, const MemberType &team, const Int &nk,
-    const Int &ktop, const Int &kbot, const Int &kdir, const uview_1d<Spack> &qc, const uview_1d<Spack> &nc,
-    const uview_1d<Spack> &qr, const uview_1d<Spack> &nr, const uview_1d<Spack> &qi, const uview_1d<Spack> &ni,
+    const uview_1d<const Spack> &T_atm, const uview_1d<const Spack> &inv_exner,
+    const MemberType &team, const Int &nk, const Int &ktop, const Int &kbot, const Int &kdir,
+    const uview_1d<Spack> &qc, const uview_1d<Spack> &nc, const uview_1d<Spack> &qr,
+    const uview_1d<Spack> &nr, const uview_1d<Spack> &qi, const uview_1d<Spack> &ni,
     const uview_1d<Spack> &qm, const uview_1d<Spack> &bm, const uview_1d<Spack> &th_atm) {
   constexpr Scalar qsmall          = C::QSMALL;
   constexpr Scalar nsmall          = C::NSMALL;

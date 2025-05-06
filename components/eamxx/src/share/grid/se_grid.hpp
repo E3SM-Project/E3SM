@@ -15,7 +15,8 @@ public:
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
   FieldLayout get_2d_scalar_layout() const override;
-  FieldLayout get_2d_vector_layout(const int vector_dim, const std::string &vec_dim_name) const override;
+  FieldLayout get_2d_vector_layout(const int vector_dim,
+                                   const std::string &vec_dim_name) const override;
   FieldLayout get_2d_tensor_layout(const std::vector<int> &cmp_dims,
                                    const std::vector<std::string> &cmp_names) const override;
   FieldLayout get_3d_scalar_layout(const bool midpoints) const override;
@@ -32,7 +33,8 @@ public:
   Field get_cg_dofs_gids() { return m_cg_dofs_gids; }
   Field get_cg_dofs_gids() const { return m_cg_dofs_gids.get_const(); }
 
-  std::shared_ptr<AbstractGrid> clone(const std::string &clone_name, const bool shallow) const override;
+  std::shared_ptr<AbstractGrid> clone(const std::string &clone_name,
+                                      const bool shallow) const override;
 
   bool check_valid_dofs() const override;
   bool check_valid_lid_to_idx() const override;

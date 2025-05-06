@@ -8,8 +8,8 @@ namespace scream {
 namespace p3 {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::rain_evap_tscale_weight(const Spack &dt_over_tau, Spack &weight,
-                                                              const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::rain_evap_tscale_weight(const Spack &dt_over_tau,
+                                                              Spack &weight, const Smask &context) {
   /*
     Returns weighting between 0 and 1 for how much of the instantaneous
     evaporation rate and how much of the equilibrium evaporation rate to
@@ -22,8 +22,9 @@ KOKKOS_FUNCTION void Functions<S, D>::rain_evap_tscale_weight(const Spack &dt_ov
 } // end tscale_weight
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::rain_evap_equilib_tend(const Spack &A_c, const Spack &ab, const Spack &tau_eff,
-                                                             const Spack &tau_r, Spack &tend, const Smask &context) {
+KOKKOS_FUNCTION void
+Functions<S, D>::rain_evap_equilib_tend(const Spack &A_c, const Spack &ab, const Spack &tau_eff,
+                                        const Spack &tau_r, Spack &tend, const Smask &context) {
   /*
     In equilibrium, the total evaporation must balance the tendency A_c from
     all other processes. The rain evaporation is the fraction (1/tau_r)/(1/tau_eff)
@@ -39,8 +40,9 @@ KOKKOS_FUNCTION void Functions<S, D>::rain_evap_equilib_tend(const Spack &A_c, c
 } // end equilib_tend
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::rain_evap_instant_tend(const Spack &ssat_r, const Spack &ab, const Spack &tau_r,
-                                                             Spack &tend, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::rain_evap_instant_tend(const Spack &ssat_r, const Spack &ab,
+                                                             const Spack &tau_r, Spack &tend,
+                                                             const Smask &context) {
   /*
     The instantaneous rain evap tendency is just the absolute supersaturation
     ssat_r divided by the supersaturation removal timescale for rain tau_r
@@ -53,13 +55,13 @@ KOKKOS_FUNCTION void Functions<S, D>::rain_evap_instant_tend(const Spack &ssat_r
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::evaporate_rain(const Spack &qr_incld, const Spack &qc_incld, const Spack &nr_incld,
-                                const Spack &qi_incld, const Spack &cld_frac_l, const Spack &cld_frac_r,
-                                const Spack &qv, const Spack &qv_prev, const Spack &qv_sat_l, const Spack &qv_sat_i,
-                                const Spack &ab, const Spack &abi, const Spack &epsr, const Spack &epsi_tot,
-                                const Spack &t_atm, const Spack &t_atm_prev, const Spack &dqsdt, const Scalar &dt,
-                                Spack &qr2qv_evap_tend, Spack &nr_evap_tend, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::evaporate_rain(
+    const Spack &qr_incld, const Spack &qc_incld, const Spack &nr_incld, const Spack &qi_incld,
+    const Spack &cld_frac_l, const Spack &cld_frac_r, const Spack &qv, const Spack &qv_prev,
+    const Spack &qv_sat_l, const Spack &qv_sat_i, const Spack &ab, const Spack &abi,
+    const Spack &epsr, const Spack &epsi_tot, const Spack &t_atm, const Spack &t_atm_prev,
+    const Spack &dqsdt, const Scalar &dt, Spack &qr2qv_evap_tend, Spack &nr_evap_tend,
+    const Smask &context) {
   /* Evaporation is basically (qv - sv_sat)/(tau_eff*ab) where tau_eff
      is the total effective supersaturation removal timescale
      and ab is the psychrometric correction for condensational heating
@@ -124,7 +126,8 @@ Functions<S, D>::evaporate_rain(const Spack &qr_incld, const Spack &qc_incld, co
     if (is_freezing.any()) {
       eps_eff.set(is_freezing, epsr + epsi_tot * (1 + (latvap + latice) * inv_cp * dqsdt) / abi);
       A_c.set(is_freezing, (qv - qv_prev) * inv_dt - dqsdt * (t_atm - t_atm_prev) * inv_dt -
-                               (qv_sat_l - qv_sat_i) * (1 + (latvap + latice) * inv_cp * dqsdt) / abi * epsi_tot);
+                               (qv_sat_l - qv_sat_i) * (1 + (latvap + latice) * inv_cp * dqsdt) /
+                                   abi * epsi_tot);
     }
     if (not_freezing.any()) {
       eps_eff.set(not_freezing, epsr);
@@ -152,7 +155,8 @@ Functions<S, D>::evaporate_rain(const Spack &qr_incld, const Spack &qc_incld, co
       rain_evap_equilib_tend(A_c, ab, tau_eff, tau_r, equilib_tend, is_rain_evap);
       rain_evap_instant_tend(ssat_r, ab, tau_r, instant_tend, is_rain_evap);
 
-      qr2qv_evap_tend.set(not_qr_tiny, instant_tend * tscale_weight + equilib_tend * (1 - tscale_weight));
+      qr2qv_evap_tend.set(not_qr_tiny,
+                          instant_tend * tscale_weight + equilib_tend * (1 - tscale_weight));
     }
 
     // Limit evap from exceeding saturation deficit. Analytic integration

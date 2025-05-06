@@ -53,7 +53,8 @@ public:
     auto row_offsets_h = cmvdc(m_row_offsets);
     auto col_lids_h    = cmvdc(m_col_lids);
     auto weights_h     = cmvdc(m_weights);
-    auto col_gids_h    = m_ov_coarse_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type *, Host>();
+    auto col_gids_h =
+        m_ov_coarse_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type *, Host>();
 
     auto row_gids_h = m_tgt_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type *, Host>();
     for (int i = 0; i < nldofs_tgt; ++i) {
@@ -101,7 +102,8 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
 }
 
 template <typename Engine>
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid, Engine &engine) {
+Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid,
+                   Engine &engine) {
   auto f = create_field(name, lt, grid);
 
   // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
@@ -249,10 +251,10 @@ TEST_CASE("refining_remapper") {
     auto r        = std::make_shared<RefiningRemapperRMATester>(tgt_grid, filename);
     auto src_grid = r->get_src_grid();
     r->registration_begins();
-    Field bad_src(
-        FieldIdentifier("", src_grid->get_2d_scalar_layout(), ekat::units::m, src_grid->name(), DataType::IntType));
-    Field bad_tgt(
-        FieldIdentifier("", tgt_grid->get_2d_scalar_layout(), ekat::units::m, tgt_grid->name(), DataType::IntType));
+    Field bad_src(FieldIdentifier("", src_grid->get_2d_scalar_layout(), ekat::units::m,
+                                  src_grid->name(), DataType::IntType));
+    Field bad_tgt(FieldIdentifier("", tgt_grid->get_2d_scalar_layout(), ekat::units::m,
+                                  tgt_grid->name(), DataType::IntType));
     CHECK_THROWS(r->register_field(bad_src, bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();

@@ -3,7 +3,8 @@
 namespace scream {
 
 auto GridsManager::get_grid(const std::string &name) const -> grid_ptr_type {
-  EKAT_REQUIRE_MSG(has_grid(name), "Error! Grids manager '" + this->name() + "' does not provide grid '" + name +
+  EKAT_REQUIRE_MSG(has_grid(name), "Error! Grids manager '" + this->name() +
+                                       "' does not provide grid '" + name +
                                        "'.\n"
                                        "       Avaialble grids are: " +
                                        print_available_grids() + "\n");
@@ -36,10 +37,13 @@ bool GridsManager::has_grid(const std::string &grid_name) const {
   return false;
 }
 
-auto GridsManager::create_remapper(const grid_ptr_type &from_grid, const grid_ptr_type &to_grid) const
+auto GridsManager::create_remapper(const grid_ptr_type &from_grid,
+                                   const grid_ptr_type &to_grid) const
     -> GridsManager::remapper_ptr_type {
-  EKAT_REQUIRE_MSG(has_grid(from_grid->name()), "Error! Source grid '" + from_grid->name() + "' is not supported.\n");
-  EKAT_REQUIRE_MSG(has_grid(to_grid->name()), "Error! Target grid '" + to_grid->name() + "' is not supported.\n");
+  EKAT_REQUIRE_MSG(has_grid(from_grid->name()),
+                   "Error! Source grid '" + from_grid->name() + "' is not supported.\n");
+  EKAT_REQUIRE_MSG(has_grid(to_grid->name()),
+                   "Error! Target grid '" + to_grid->name() + "' is not supported.\n");
 
   remapper_ptr_type remapper;
 
@@ -50,10 +54,11 @@ auto GridsManager::create_remapper(const grid_ptr_type &from_grid, const grid_pt
     remapper = do_create_remapper(from_grid, to_grid);
   }
 
-  EKAT_REQUIRE_MSG(remapper != nullptr,
-                   "Error! A remapper from grid '" + from_grid->name() + "' to grid '" + to_grid->name() +
-                       "' is not available.\n"
-                       "       Perhaps you forgot to add its creation to the implementation of the grids manager?\n");
+  EKAT_REQUIRE_MSG(remapper != nullptr, "Error! A remapper from grid '" + from_grid->name() +
+                                            "' to grid '" + to_grid->name() +
+                                            "' is not available.\n"
+                                            "       Perhaps you forgot to add its creation to the "
+                                            "implementation of the grids manager?\n");
 
   return remapper;
 }
@@ -76,7 +81,8 @@ void GridsManager::add_grid(grid_ptr_type grid) {
 }
 
 auto GridsManager::get_grid_nonconst(const std::string &name) const -> nonconstgrid_ptr_type {
-  EKAT_REQUIRE_MSG(has_grid(name), "Error! Grids manager '" + this->name() + "' does not provide grid '" + name +
+  EKAT_REQUIRE_MSG(has_grid(name), "Error! Grids manager '" + this->name() +
+                                       "' does not provide grid '" + name +
                                        "'.\n"
                                        "       Avaialble grids are: " +
                                        print_available_grids() + "\n");
@@ -116,15 +122,16 @@ void GridsManager::alias_grid(const std::string &grid_name, const std::string &g
   }
 
   auto g = get_grid_nonconst(grid_name);
-  EKAT_REQUIRE_MSG(not has_grid(grid_alias), "Cannot alias grid, since another grid with alias name already exists.\n"
-                                             "  - grids manager: " +
-                                                 this->name() +
-                                                 "\n"
-                                                 "  - grid name    : " +
-                                                 grid_name +
-                                                 "\n"
-                                                 "  - grid alias   : " +
-                                                 grid_alias + "\n");
+  EKAT_REQUIRE_MSG(not has_grid(grid_alias),
+                   "Cannot alias grid, since another grid with alias name already exists.\n"
+                   "  - grids manager: " +
+                       this->name() +
+                       "\n"
+                       "  - grid name    : " +
+                       grid_name +
+                       "\n"
+                       "  - grid alias   : " +
+                       grid_alias + "\n");
 
   g->add_alias(grid_alias);
 }

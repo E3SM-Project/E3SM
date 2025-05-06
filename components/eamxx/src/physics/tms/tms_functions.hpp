@@ -35,7 +35,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   //
   // --------- Functions ---------
   //
-  static void compute_tms(const int &ncols, const int &nlevs, const view_3d<const Scalar> &horiz_wind,
+  static void compute_tms(const int &ncols, const int &nlevs,
+                          const view_3d<const Scalar> &horiz_wind,
                           const view_2d<const Scalar> &t_mid, const view_2d<const Scalar> &p_mid,
                           const view_2d<const Scalar> &exner, const view_2d<const Scalar> &z_mid,
                           const view_1d<const Scalar> &sgh, const view_1d<const Scalar> &landfrac,

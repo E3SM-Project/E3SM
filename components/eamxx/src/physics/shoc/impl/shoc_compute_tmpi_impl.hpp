@@ -7,9 +7,10 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::compute_tmpi(const MemberType &team, const Int &nlevi, const Scalar &dtime,
-                                                   const uview_1d<const Spack> &rho_zi,
-                                                   const uview_1d<const Spack> &dz_zi, const uview_1d<Spack> &tmpi) {
+KOKKOS_FUNCTION void
+Functions<S, D>::compute_tmpi(const MemberType &team, const Int &nlevi, const Scalar &dtime,
+                              const uview_1d<const Spack> &rho_zi,
+                              const uview_1d<const Spack> &dz_zi, const uview_1d<Spack> &tmpi) {
   const auto ggr = C::gravit;
 
   tmpi(0)[0] = 0;

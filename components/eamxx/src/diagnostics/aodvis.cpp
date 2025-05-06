@@ -6,7 +6,8 @@
 
 namespace scream {
 
-AODVis::AODVis(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereDiagnostic(comm, params) {
+AODVis::AODVis(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
 

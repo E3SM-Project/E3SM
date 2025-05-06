@@ -16,6 +16,7 @@ template Field::get_view_type<const int **, Host> Field::get_view<const int **, 
 template Field::get_view_type<const int ***, Host> Field::get_view<const int ***, Host>() const;
 template Field::get_view_type<const int ****, Host> Field::get_view<const int ****, Host>() const;
 template Field::get_view_type<const int *****, Host> Field::get_view<const int *****, Host>() const;
-template Field::get_view_type<const int ******, Host> Field::get_view<const int ******, Host>() const;
+template Field::get_view_type<const int ******, Host>
+Field::get_view<const int ******, Host>() const;
 
 } // namespace scream

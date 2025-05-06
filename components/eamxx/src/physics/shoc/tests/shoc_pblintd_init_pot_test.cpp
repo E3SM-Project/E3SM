@@ -21,7 +21,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -181,13 +182,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public 
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(pblintd_init_pot_data_baseline) / sizeof(PblintdInitPotData);
+      static constexpr Int num_runs =
+          sizeof(pblintd_init_pot_data_baseline) / sizeof(PblintdInitPotData);
       for (Int i = 0; i < num_runs; ++i) {
         Int shcol = pblintd_init_pot_data_cxx[i].shcol;
         Int nlev  = pblintd_init_pot_data_cxx[i].nlev;
         for (Int j = 0; j < shcol; ++j) {
           for (Int k = 0; k < nlev; ++k) {
-            REQUIRE(pblintd_init_pot_data_baseline[i].thv[j * k] == pblintd_init_pot_data_cxx[i].thv[j * k]);
+            REQUIRE(pblintd_init_pot_data_baseline[i].thv[j * k] ==
+                    pblintd_init_pot_data_cxx[i].thv[j * k]);
           }
         }
       }
@@ -207,13 +210,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public 
 namespace {
 
 TEST_CASE("shoc_pblintd_init_pot_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_pblintd_init_pot_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
 
   TestStruct().run_bfb();
 }

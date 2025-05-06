@@ -8,9 +8,11 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::shoc_energy_integrals(
-    const MemberType &team, const Int &nlev, const uview_1d<const Spack> &host_dse, const uview_1d<const Spack> &pdel,
-    const uview_1d<const Spack> &rtm, const uview_1d<const Spack> &rcm, const uview_1d<const Spack> &u_wind,
-    const uview_1d<const Spack> &v_wind, Scalar &se_int, Scalar &ke_int, Scalar &wv_int, Scalar &wl_int) {
+    const MemberType &team, const Int &nlev, const uview_1d<const Spack> &host_dse,
+    const uview_1d<const Spack> &pdel, const uview_1d<const Spack> &rtm,
+    const uview_1d<const Spack> &rcm, const uview_1d<const Spack> &u_wind,
+    const uview_1d<const Spack> &v_wind, Scalar &se_int, Scalar &ke_int, Scalar &wv_int,
+    Scalar &wl_int) {
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
   const auto ggr      = C::gravit;
 
@@ -27,8 +29,8 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_energy_integrals(
   // Kokkos::parallel_reduce calls acting on doubles and saw the same results.
 
   // Compute se_int
-  se_int =
-      ExeSpaceUtils::view_reduction(team, 0, nlev, [&](const int k) -> Spack { return host_dse(k) * pdel(k) / ggr; });
+  se_int = ExeSpaceUtils::view_reduction(
+      team, 0, nlev, [&](const int k) -> Spack { return host_dse(k) * pdel(k) / ggr; });
   team.team_barrier();
 
   // Compute ke_int
@@ -38,12 +40,13 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_energy_integrals(
   team.team_barrier();
 
   // Compute wv_int
-  wv_int = ExeSpaceUtils::view_reduction(team, 0, nlev,
-                                         [&](const int k) -> Spack { return (rtm(k) - rcm(k)) * pdel(k) / ggr; });
+  wv_int = ExeSpaceUtils::view_reduction(
+      team, 0, nlev, [&](const int k) -> Spack { return (rtm(k) - rcm(k)) * pdel(k) / ggr; });
   team.team_barrier();
 
   // Compute wl_int
-  wl_int = ExeSpaceUtils::view_reduction(team, 0, nlev, [&](const int k) -> Spack { return rcm(k) * pdel(k) / ggr; });
+  wl_int = ExeSpaceUtils::view_reduction(
+      team, 0, nlev, [&](const int k) -> Spack { return rcm(k) * pdel(k) / ggr; });
   team.team_barrier();
 }
 

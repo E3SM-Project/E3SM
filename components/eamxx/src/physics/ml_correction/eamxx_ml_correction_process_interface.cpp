@@ -107,8 +107,8 @@ void MLCorrection::run_impl(const double dt) {
   const auto &SW_flux_dn      = get_field_out("SW_flux_dn").get_view<Real **, Host>();
   const auto &sfc_flux_sw_net = get_field_out("sfc_flux_sw_net").get_view<Real *, Host>();
   const auto &sfc_flux_lw_dn  = get_field_out("sfc_flux_lw_dn").get_view<Real *, Host>();
-  const auto &u               = get_field_out("horiz_winds").get_component(0).get_view<Real **, Host>();
-  const auto &v               = get_field_out("horiz_winds").get_component(1).get_view<Real **, Host>();
+  const auto &u = get_field_out("horiz_winds").get_component(0).get_view<Real **, Host>();
+  const auto &v = get_field_out("horiz_winds").get_component(1).get_view<Real **, Host>();
 
   // For precipitation adjustment we need to track the change in column integrated 'qv'
   // So we clone the original qv before ML changes the state so we can back out a qv_tend
@@ -130,30 +130,41 @@ void MLCorrection::run_impl(const double dt) {
   // for qv, we need to stride across number of tracers
   pybind11::object ob1 = py_correction.attr("update_fields")(
       pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols * m_num_levs, T_mid.data(), pybind11::str{}),
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols * m_num_levs, T_mid.data(), pybind11::str{}),
       pybind11::array_t < Real,
       pybind11::array::c_style |
-          pybind11::array::forcecast > (m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),
-      pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols * m_num_levs, u.data(), pybind11::str{}),
-      pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols * m_num_levs, v.data(), pybind11::str{}),
-      pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols, h_lat.data(), pybind11::str{}),
-      pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols, h_lon.data(), pybind11::str{}),
-      pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols, phis.data(), pybind11::str{}),
+          pybind11::array::forcecast >
+              (m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),
       pybind11::array_t < Real,
       pybind11::array::c_style |
-          pybind11::array::forcecast > (m_num_cols * (m_num_levs + 1), SW_flux_dn.data(), pybind11::str{}),
+          pybind11::array::forcecast > (m_num_cols * m_num_levs, u.data(), pybind11::str{}),
       pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols, sfc_alb_dif_vis.data(), pybind11::str{}),
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols * m_num_levs, v.data(), pybind11::str{}),
       pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols, h_lat.data(), pybind11::str{}),
       pybind11::array_t < Real,
-      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),
-      m_num_cols, m_num_levs, num_tracers, dt, ML_model_tq, ML_model_uv, ML_model_sfc_fluxes, datetime_str);
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols, h_lon.data(), pybind11::str{}),
+      pybind11::array_t < Real,
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols, phis.data(), pybind11::str{}),
+      pybind11::array_t < Real,
+      pybind11::array::c_style | pybind11::array::forcecast > (m_num_cols * (m_num_levs + 1),
+                                                               SW_flux_dn.data(), pybind11::str{}),
+      pybind11::array_t < Real,
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols, sfc_alb_dif_vis.data(), pybind11::str{}),
+      pybind11::array_t < Real,
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),
+      pybind11::array_t < Real,
+      pybind11::array::c_style |
+          pybind11::array::forcecast > (m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),
+      m_num_cols, m_num_levs, num_tracers, dt, ML_model_tq, ML_model_uv, ML_model_sfc_fluxes,
+      datetime_str);
   pybind11::gil_scoped_release no_gil;
   ekat::enable_fpes(fpe_mask);
 
@@ -180,8 +191,8 @@ void MLCorrection::run_impl(const double dt) {
           auto rho_icol              = ekat::subview(pseudo_density, icol);
           Real net_column_moistening = 0;
           // Compute WaterVaporPath Difference
-          // The water vapor path (WVP) is calculated as the integral of d_qv over the vertical column
-          // which is converted to the units of precipitation which are kg/m*m
+          // The water vapor path (WVP) is calculated as the integral of d_qv over the vertical
+          // column which is converted to the units of precipitation which are kg/m*m
           //     WVP = sum( d_qv * pseudo_density / gravity ),
           //       where d_qv = qv_new - qv_old
           //       units sanity check
@@ -192,7 +203,9 @@ void MLCorrection::run_impl(const double dt) {
           // Compute WaterVaporPath Difference
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(team, num_levs),
-              [&](const int &ilev, Real &lsum) { lsum += (qnew_icol(ilev) - qold_icol(ilev)) * rho_icol(ilev) / g; },
+              [&](const int &ilev, Real &lsum) {
+                lsum += (qnew_icol(ilev) - qold_icol(ilev)) * rho_icol(ilev) / g;
+              },
               Kokkos::Sum<Real>(net_column_moistening));
           team.team_barrier();
           // Adjust Precipitation

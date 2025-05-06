@@ -7,13 +7,12 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::shoc_length(const MemberType &team, const Int &nlev, const Int &nlevi,
-                                                  const Scalar &length_fac, const Scalar &dx, const Scalar &dy,
-                                                  const uview_1d<const Spack> &zt_grid,
-                                                  const uview_1d<const Spack> &zi_grid,
-                                                  const uview_1d<const Spack> &dz_zt, const uview_1d<const Spack> &tke,
-                                                  const uview_1d<const Spack> &thv, const Workspace &workspace,
-                                                  const uview_1d<Spack> &brunt, const uview_1d<Spack> &shoc_mix) {
+KOKKOS_FUNCTION void Functions<S, D>::shoc_length(
+    const MemberType &team, const Int &nlev, const Int &nlevi, const Scalar &length_fac,
+    const Scalar &dx, const Scalar &dy, const uview_1d<const Spack> &zt_grid,
+    const uview_1d<const Spack> &zi_grid, const uview_1d<const Spack> &dz_zt,
+    const uview_1d<const Spack> &tke, const uview_1d<const Spack> &thv, const Workspace &workspace,
+    const uview_1d<Spack> &brunt, const uview_1d<Spack> &shoc_mix) {
   // Define temporary variable
   auto thv_zi = workspace.take("thv_zi");
 

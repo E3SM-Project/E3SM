@@ -65,7 +65,8 @@ public:
 
   // Init time stamps
   // run_type: -1: deduce from run/case t0, 0: initial, 1: restart
-  void init_time_stamps(const util::TimeStamp &run_t0, const util::TimeStamp &case_t0, int run_type = -1);
+  void init_time_stamps(const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
+                        int run_type = -1);
 
   // Set AD params
   void init_scorpio(const int atm_id = 0);
@@ -83,13 +84,15 @@ public:
   void create_fields();
 
   // Adds cpl import/export information to SCDataManager.
-  void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type, const int num_cpl_fields,
-                                           const int num_scream_fields, const int field_size, Real *data_ptr,
+  void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
+                                           const int num_cpl_fields, const int num_scream_fields,
+                                           const int field_size, Real *data_ptr,
 #ifdef HAVE_MOAB
                                            Real *data_ptr_moab,
 #endif
-                                           char *names_ptr, int *cpl_indices_ptr, int *vec_comps_ptr,
-                                           Real *constant_multiple_ptr, bool *do_transfer_during_init_ptr);
+                                           char *names_ptr, int *cpl_indices_ptr,
+                                           int *vec_comps_ptr, Real *constant_multiple_ptr,
+                                           bool *do_transfer_during_init_ptr);
 
   // Find surface coupling processes and have
   // them setup internal SurfaceCoupling data.
@@ -110,8 +113,9 @@ public:
   // for use in output.
   void add_additional_column_data_to_property_checks();
 
-  void set_provenance_data(std::string caseid = "", std::string rest_caseid = "", std::string hostname = "",
-                           std::string username = "", std::string versionid = "");
+  void set_provenance_data(std::string caseid = "", std::string rest_caseid = "",
+                           std::string hostname = "", std::string username = "",
+                           std::string versionid = "");
 
   // Load initial conditions for atm inputs
   void initialize_fields();
@@ -133,18 +137,18 @@ public:
   //  - params: parameter list with all atm options (organized in sublists)
   //  - run_t0 : the time stamp where the run starts
   //  - case_t0: the time stamp where the original simulation started (for restarts)
-  void initialize(const ekat::Comm &atm_comm, const ekat::ParameterList &params, const util::TimeStamp &run_t0,
-                  const util::TimeStamp &case_t0);
+  void initialize(const ekat::Comm &atm_comm, const ekat::ParameterList &params,
+                  const util::TimeStamp &run_t0, const util::TimeStamp &case_t0);
 
   // Shortcut for tests not doing restart
-  void initialize(const ekat::Comm &atm_comm, const ekat::ParameterList &params, const util::TimeStamp &t0) {
+  void initialize(const ekat::Comm &atm_comm, const ekat::ParameterList &params,
+                  const util::TimeStamp &t0) {
     initialize(atm_comm, params, t0, t0);
   }
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
-  // Inside here you should find calls to the run method of each subcomponent, including parameterizations
-  // and dynamics (HOMME).
-  // Note: dt is assumed to be in seconds
+  // Inside here you should find calls to the run method of each subcomponent, including
+  // parameterizations and dynamics (HOMME). Note: dt is assumed to be in seconds
   void run(const int dt);
 
   // Clean up the driver (finalizes and cleans up all internals)
@@ -160,7 +164,9 @@ public:
 
   const std::shared_ptr<ATMBufferManager> &get_memory_buffer() const { return m_memory_buffer; }
 
-  const std::shared_ptr<AtmosphereProcessGroup> &get_atm_processes() const { return m_atm_process_group; }
+  const std::shared_ptr<AtmosphereProcessGroup> &get_atm_processes() const {
+    return m_atm_process_group;
+  }
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -176,7 +182,8 @@ protected:
   void restart_model();
 
   // Read fields from a file
-  void read_fields_from_file(const std::vector<Field> &fields, const std::shared_ptr<const AbstractGrid> &grid,
+  void read_fields_from_file(const std::vector<Field> &fields,
+                             const std::shared_ptr<const AbstractGrid> &grid,
                              const std::string &file_name);
   void register_groups();
 

@@ -62,7 +62,8 @@ std::shared_ptr<FieldManager> create_fm(const std::shared_ptr<const AbstractGrid
   return fm;
 }
 
-void compute_field(Field f, const util::TimeStamp &time, const ekat::Comm &comm, const int num_masked_levs = 0) {
+void compute_field(Field f, const util::TimeStamp &time, const ekat::Comm &comm,
+                   const int num_masked_levs = 0) {
   const auto &fl = f.get_header().get_identifier().get_layout();
 
   const int ncols = fl.dim(0);
@@ -108,8 +109,9 @@ void compute_field(Field f, const util::TimeStamp &time, const ekat::Comm &comm,
   f.get_header().get_tracking().update_time_stamp(time);
 }
 
-void compute_fields(const std::shared_ptr<FieldManager> &fm, const util::TimeStamp &time, const ekat::Comm &comm,
-                    const int num_masked_levs = 0, const bool update_p_mid = true) {
+void compute_fields(const std::shared_ptr<FieldManager> &fm, const util::TimeStamp &time,
+                    const ekat::Comm &comm, const int num_masked_levs = 0,
+                    const bool update_p_mid = true) {
   if (update_p_mid) {
     // Don't mask pressure
     compute_field(fm->get_field("p_mid"), time, comm, 0);
@@ -121,9 +123,10 @@ void compute_fields(const std::shared_ptr<FieldManager> &fm, const util::TimeSta
   fm->get_field("horiz_winds").get_header().get_tracking().update_time_stamp(time);
 }
 
-std::shared_ptr<OutputManager> create_om(const std::string &filename_prefix, const std::shared_ptr<FieldManager> &fm,
-                                         const std::shared_ptr<GridsManager> &gm, const util::TimeStamp &t0,
-                                         const ekat::Comm &comm) {
+std::shared_ptr<OutputManager> create_om(const std::string &filename_prefix,
+                                         const std::shared_ptr<FieldManager> &fm,
+                                         const std::shared_ptr<GridsManager> &gm,
+                                         const util::TimeStamp &t0, const ekat::Comm &comm) {
   using strvec_t = std::vector<std::string>;
 
   // NOTE: ask "real" fp precision, so even when building in double precision

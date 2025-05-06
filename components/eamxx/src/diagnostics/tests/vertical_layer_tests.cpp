@@ -26,13 +26,14 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 }
 
 //-----------------------------------------------------------------------------------------------//
-template <typename DeviceT, int N> void run(const std::string &diag_name, const std::string &location) {
+template <typename DeviceT, int N>
+void run(const std::string &diag_name, const std::string &location) {
   using PC = scream::physics::Constants<Real>;
 
   const int packsize = N;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);

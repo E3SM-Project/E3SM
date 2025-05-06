@@ -39,9 +39,10 @@ bool all_close(real2d &arr1, real2d &arr2, double tolerance) {
   return true;
 }
 
-void dummy_atmos(std::string inputfile, int ncol, real2d &p_lay, real2d &t_lay, real1d &sfc_alb_dir_vis,
-                 real1d &sfc_alb_dir_nir, real1d &sfc_alb_dif_vis, real1d &sfc_alb_dif_nir, real1d &mu0, real2d &lwp,
-                 real2d &iwp, real2d &rel, real2d &rei, real2d &cld) {
+void dummy_atmos(std::string inputfile, int ncol, real2d &p_lay, real2d &t_lay,
+                 real1d &sfc_alb_dir_vis, real1d &sfc_alb_dir_nir, real1d &sfc_alb_dif_vis,
+                 real1d &sfc_alb_dif_nir, real1d &mu0, real2d &lwp, real2d &iwp, real2d &rel,
+                 real2d &rei, real2d &cld) {
 
   // Setup boundary conditions, solar zenith angle, etc
   // NOTE: this stuff would come from the model in a real run
@@ -62,8 +63,8 @@ void dummy_atmos(std::string inputfile, int ncol, real2d &p_lay, real2d &t_lay, 
   dummy_clouds(scream::rrtmgp::cloud_optics_sw, p_lay, t_lay, lwp, iwp, rel, rei, cld);
 }
 
-void dummy_clouds(CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel,
-                  real2d &rei, real2d &cloud_mask) {
+void dummy_clouds(CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp,
+                  real2d &rel, real2d &rei, real2d &cloud_mask) {
 
   // Problem sizes
   int ncol = t_lay.dimension[0];
@@ -74,24 +75,26 @@ void dummy_clouds(CloudOptics &cloud_optics, real2d &p_lay, real2d &t_lay, real2
   real rel_val = 0.5 * (cloud_optics.get_min_radius_liq() + cloud_optics.get_max_radius_liq());
   real rei_val = 0.5 * (cloud_optics.get_min_radius_ice() + cloud_optics.get_max_radius_ice());
 
-  // Restrict clouds to troposphere (> 100 hPa = 100*100 Pa) and not very close to the ground (< 900 hPa), and
-  // put them in 2/3 of the columns since that's roughly the total cloudiness of earth.
+  // Restrict clouds to troposphere (> 100 hPa = 100*100 Pa) and not very close to the ground (< 900
+  // hPa), and put them in 2/3 of the columns since that's roughly the total cloudiness of earth.
   // Set sane values for liquid and ice water path.
   // NOTE: these "sane" values are in g/m2!
   parallel_for(
       SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
-        cloud_mask(icol, ilay) =
-            p_lay(icol, ilay) > 100._wp * 100._wp && p_lay(icol, ilay) < 900._wp * 100._wp && mod(icol, 3) != 0;
+        cloud_mask(icol, ilay) = p_lay(icol, ilay) > 100._wp * 100._wp &&
+                                 p_lay(icol, ilay) < 900._wp * 100._wp && mod(icol, 3) != 0;
         // Ice and liquid will overlap in a few layers
-        lwp(icol, ilay) = merge(10._wp, 0._wp, cloud_mask(icol, ilay) && t_lay(icol, ilay) > 263._wp);
-        iwp(icol, ilay) = merge(10._wp, 0._wp, cloud_mask(icol, ilay) && t_lay(icol, ilay) < 273._wp);
+        lwp(icol, ilay) =
+            merge(10._wp, 0._wp, cloud_mask(icol, ilay) && t_lay(icol, ilay) > 263._wp);
+        iwp(icol, ilay) =
+            merge(10._wp, 0._wp, cloud_mask(icol, ilay) && t_lay(icol, ilay) < 273._wp);
         rel(icol, ilay) = merge(rel_val, 0._wp, lwp(icol, ilay) > 0._wp);
         rei(icol, ilay) = merge(rei_val, 0._wp, iwp(icol, ilay) > 0._wp);
       });
 }
 
-void read_fluxes(std::string inputfile, real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir, real2d &lw_flux_up,
-                 real2d &lw_flux_dn) {
+void read_fluxes(std::string inputfile, real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir,
+                 real2d &lw_flux_up, real2d &lw_flux_dn) {
 
   // Initialize netcdf reader
   yakl::SimpleNetCDF io;
@@ -114,8 +117,8 @@ void read_fluxes(std::string inputfile, real2d &sw_flux_up, real2d &sw_flux_dn, 
   io.read(lw_flux_dn, "lw_flux_dn");
 }
 
-void write_fluxes(std::string outputfile, real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dir,
-                  real2d &lw_flux_up, real2d &lw_flux_dn) {
+void write_fluxes(std::string outputfile, real2d &sw_flux_up, real2d &sw_flux_dn,
+                  real2d &sw_flux_dir, real2d &lw_flux_up, real2d &lw_flux_dn) {
 
   yakl::SimpleNetCDF io;
   io.create(outputfile);

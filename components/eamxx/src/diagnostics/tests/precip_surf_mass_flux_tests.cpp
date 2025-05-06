@@ -128,7 +128,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   auto precip_ice_v   = preicp_ice_f.get_view<Real *>();
   const auto rhodt    = PC::RHO_H2O * dt;
   Kokkos::parallel_for(
-      "precip_total_surf_mass_flux_test", typename KT::RangePolicy(0, ncols), KOKKOS_LAMBDA(const int &icol) {
+      "precip_total_surf_mass_flux_test", typename KT::RangePolicy(0, ncols),
+      KOKKOS_LAMBDA(const int &icol) {
         precip_liq_v(icol)   = precip_liq_surf_mass_v(icol) / rhodt;
         precip_ice_v(icol)   = precip_ice_surf_mass_v(icol) / rhodt;
         precip_total_v(icol) = precip_liq_v(icol) + precip_ice_v(icol);

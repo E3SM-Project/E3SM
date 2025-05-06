@@ -83,8 +83,9 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
           }
 
           Spack epsr{0.0}, epsc{0.0};
-          Functions::calc_liq_relaxation_timescale(revap_table_vals, rho, self_device(0).f1r, self_device(0).f2r, dv,
-                                                   mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+          Functions::calc_liq_relaxation_timescale(revap_table_vals, rho, self_device(0).f1r,
+                                                   self_device(0).f2r, dv, mu, sc, mu_r, lamr,
+                                                   cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             self_device(vs).epsr = epsr[s];
@@ -114,7 +115,8 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 namespace {
 
 TEST_CASE("p3_calc_liq_relaxation_timescale", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcLiqRelaxationTimescale;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCalcLiqRelaxationTimescale;
 
   T t;
   t.run_phys();

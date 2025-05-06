@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -324,7 +325,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWr
     auto engine = Base::get_engine();
 
     ShocMainData baseline_data[] = {
-        //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
+        //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++
+        //           indexing)
         ShocMainData(12, 72, 73, 5, 300, 15, 72, 0), ShocMainData(8, 12, 13, 3, 300, 10, 8, 3),
         ShocMainData(7, 16, 17, 3, 300, 1, 12, 0), ShocMainData(2, 7, 8, 2, 300, 5, 7, 4)};
 
@@ -459,13 +461,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWr
 namespace {
 
 TEST_CASE("shoc_main_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_main_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
   TestStruct().run_bfb();
 }

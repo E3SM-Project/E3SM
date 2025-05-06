@@ -75,8 +75,8 @@ struct Baseline {
 
     for (int i = i_start; i < i_end; ++i) {   // predict_nc is false or true
       for (int j = j_start; j < j_end; ++j) { // prescribed_CCN is false or true
-        //                 initial condit,     repeat, nsteps, ncol, nlev, dt, prescribe or predict nc, prescribe CCN or
-        //                 not
+        //                 initial condit,     repeat, nsteps, ncol, nlev, dt, prescribe or predict
+        //                 nc, prescribe CCN or not
         params_.push_back({ic::Factory::mixed, repeat, nsteps, ncol, nlev, dt, i > 0, j > 0});
       }
     }
@@ -97,8 +97,9 @@ struct Baseline {
         P3F::p3_init();
 
         if (ps.repeat > 0 && r == -1) {
-          std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev << ", dt=" << d->dt << ", ts=" << d->it
-                    << ", predict_nc=" << d->do_predict_nc << ", prescribed_CCN=" << d->do_prescribed_CCN
+          std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev << ", dt=" << d->dt
+                    << ", ts=" << d->it << ", predict_nc=" << d->do_predict_nc
+                    << ", prescribed_CCN=" << d->do_prescribed_CCN
                     << ", small_packn=" << SCREAM_SMALL_PACK_SIZE << std::endl;
         }
 
@@ -139,7 +140,8 @@ struct Baseline {
         set_params(ps, *d);
         P3F::p3_init();
         for (int it = 0; it < ps.nsteps; it++) {
-          std::cout << "--- running case # " << case_num << ", timestep # " << it + 1 << " of " << ps.nsteps << " ---\n"
+          std::cout << "--- running case # " << case_num << ", timestep # " << it + 1 << " of "
+                    << ps.nsteps << " ---\n"
                     << std::flush;
           p3_main_wrap(*d);
         }
@@ -154,8 +156,8 @@ struct Baseline {
           set_params(ps, *d);
           P3F::p3_init();
           for (int it = 0; it < ps.nsteps; it++) {
-            std::cout << "--- checking case # " << case_num << ", timestep # " << it + 1 << " of " << ps.nsteps
-                      << " ---\n"
+            std::cout << "--- checking case # " << case_num << ", timestep # " << it + 1 << " of "
+                      << ps.nsteps << " ---\n"
                       << std::flush;
             read(fid, d_ref);
             p3_main_wrap(*d);
@@ -205,12 +207,13 @@ private:
       const auto &f = fdi.getfield(i);
       int dim, ds[3];
       ekat::read(&dim, 1, fid);
-      EKAT_REQUIRE_MSG(dim == f.dim, "For field " << f.name << " read expected dim " << f.dim << " but got " << dim);
+      EKAT_REQUIRE_MSG(dim == f.dim, "For field " << f.name << " read expected dim " << f.dim
+                                                  << " but got " << dim);
       ekat::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
         EKAT_REQUIRE_MSG(ds[i] == f.extent[i], "For field " << f.name << " read expected dim " << i
-                                                            << " to have extent " << f.extent[i] << " but got "
-                                                            << ds[i]);
+                                                            << " to have extent " << f.extent[i]
+                                                            << " but got " << ds[i]);
       ekat::read(f.data, f.size, fid);
       // The code below is to force a result difference. This is used by the
       // scream/scripts internal testing to verify that various DIFFs are detected.
@@ -223,7 +226,9 @@ private:
   }
 };
 
-void expect_another_arg(int i, int argc) { EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg."); }
+void expect_another_arg(int i, int argc) {
+  EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg.");
+}
 
 } // namespace
 
@@ -243,7 +248,8 @@ int main(int argc, char **argv) {
                  "  -dt <seconds>       Length of timestep. Default=300.\n"
                  "  -i <cols>           Number of columns. Default=3.\n"
                  "  -k <nlev>           Number of vertical levels. Default=72.\n"
-                 "  -r <repeat>         Number of repetitions, implies timing run (generate + no I/O). Default=0.\n"
+                 "  -r <repeat>         Number of repetitions, implies timing run (generate + no "
+                 "I/O). Default=0.\n"
                  "  --predict-nc       yes|no|both. Default=both.\n"
                  "  --prescribed-ccn   yes|no|both. Default=both.\n";
     return 1;
@@ -318,7 +324,8 @@ int main(int argc, char **argv) {
       expect_another_arg(i, argc);
       ++i;
       prescribed_ccn = std::string(argv[i]);
-      EKAT_REQUIRE_MSG(prescribed_ccn == "yes" || prescribed_ccn == "no" || prescribed_ccn == "both",
+      EKAT_REQUIRE_MSG(prescribed_ccn == "yes" || prescribed_ccn == "no" ||
+                           prescribed_ccn == "both",
                        "Prescribed CCN option value must be one of yes|no|both");
     }
   }

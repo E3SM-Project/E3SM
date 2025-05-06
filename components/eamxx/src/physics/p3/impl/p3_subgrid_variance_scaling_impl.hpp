@@ -7,8 +7,8 @@ namespace scream {
 namespace p3 {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION typename Functions<S, D>::Spack Functions<S, D>::subgrid_variance_scaling(const Spack &relvar,
-                                                                                          const Scalar &expon) {
+KOKKOS_FUNCTION typename Functions<S, D>::Spack
+Functions<S, D>::subgrid_variance_scaling(const Spack &relvar, const Scalar &expon) {
   /* We assume subgrid variations in qc follow a gamma distribution with inverse
      relative variance relvar = 1/(var(qc)/qc**2). In this case, if the tendency
      for a given process is of the form A*qc**expon for a local value of qc, then
@@ -35,8 +35,9 @@ KOKKOS_FUNCTION typename Functions<S, D>::Spack Functions<S, D>::subgrid_varianc
   // Check that expon >0.
   //============================================
   if (expon < 0.0){
-    const auto msg = "expon<0. This might be ok, but isn't unit tested and can drive subgrid_variance_scaling negative.
-  Be careful if you proceed."; EKAT_REQUIRE_MSG( condition, msg );
+    const auto msg = "expon<0. This might be ok, but isn't unit tested and can drive
+  subgrid_variance_scaling negative. Be careful if you proceed."; EKAT_REQUIRE_MSG( condition, msg
+  );
   }
 
   */

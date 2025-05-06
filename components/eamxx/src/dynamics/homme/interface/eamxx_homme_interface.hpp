@@ -58,11 +58,12 @@ int get_num_local_columns_f90(const int pgN);
 int get_num_global_columns_f90(const int pgN);
 int get_num_local_elems_f90();
 int get_num_global_elems_f90();
-void get_dyn_grid_data_f90(AbstractGrid::gid_type *const &dg_gids, AbstractGrid::gid_type *const &cg_gids,
-                           int *const &elgp, AbstractGrid::gid_type *const &elgids, double *const &lat,
+void get_dyn_grid_data_f90(AbstractGrid::gid_type *const &dg_gids,
+                           AbstractGrid::gid_type *const &cg_gids, int *const &elgp,
+                           AbstractGrid::gid_type *const &elgids, double *const &lat,
                            double *const &lon);
-void get_phys_grid_data_f90(const int &pg_type, AbstractGrid::gid_type *const &gids, double *const &lat,
-                            double *const &lon, double *const &area);
+void get_phys_grid_data_f90(const int &pg_type, AbstractGrid::gid_type *const &gids,
+                            double *const &lat, double *const &lon, double *const &area);
 int get_homme_nsplit_f90(const int &atm_dt);
 double get_dx_short_f90(const int elem_idx);
 

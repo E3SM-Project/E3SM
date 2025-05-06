@@ -24,10 +24,11 @@ namespace physics {
 namespace unit_test {
 
 template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
-  KOKKOS_FUNCTION static void saturation_tests(const Scalar &temperature, const Scalar &pressure, Scalar &sat_ice_fp,
-                                               Scalar &sat_liq_fp, Scalar &mix_ice_fr, Scalar &mix_liq_fr,
-                                               Scalar &sat_ice_mkp, Scalar &sat_liq_mkp, Scalar &mix_ice_mkr,
-                                               Scalar &mix_liq_mkr) {
+  KOKKOS_FUNCTION static void saturation_tests(const Scalar &temperature, const Scalar &pressure,
+                                               Scalar &sat_ice_fp, Scalar &sat_liq_fp,
+                                               Scalar &mix_ice_fr, Scalar &mix_liq_fr,
+                                               Scalar &sat_ice_mkp, Scalar &sat_liq_mkp,
+                                               Scalar &mix_ice_mkr, Scalar &mix_liq_mkr) {
     // Nomenclature:
     // subscript "_fp"  stands for "Flatau Pressure"
     // subscript "_fr"  stands for "Flatau mixing Ratios"
@@ -42,18 +43,20 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
     const Spack temps(temperature);
     const Spack pres(pressure);
 
-    // Get values from polysvp1 and qv_sat (qv_sat calls polysvp1 here) to test against "expected" values
+    // Get values from polysvp1 and qv_sat (qv_sat calls polysvp1 here) to test against "expected"
+    // values
     //--------------------------------------
     sat_ice_fp = physics::polysvp1(temps, true, Smask(true))[0];
     sat_liq_fp = physics::polysvp1(temps, false, Smask(true))[0];
 
-    // Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const Smask& range_mask,
+    // Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const
+    // Smask& range_mask,
     //                            const SaturationFcn func_idx, const char* caller)
     mix_ice_fr = physics::qv_sat_dry(temps, pres, true, Smask(true), physics::Polysvp1)[0];
     mix_liq_fr = physics::qv_sat_dry(temps, pres, false, Smask(true), physics::Polysvp1)[0];
 
-    // Get values from MurphyKoop_svp and qv_sat_dry (qv_sat_dry calls MurphyKoop_svp here) to test against "expected"
-    // values
+    // Get values from MurphyKoop_svp and qv_sat_dry (qv_sat_dry calls MurphyKoop_svp here) to test
+    // against "expected" values
     sat_ice_mkp = physics::MurphyKoop_svp(temps, true, Smask(true))[0];
     sat_liq_mkp = physics::MurphyKoop_svp(temps, false, Smask(true))[0];
 
@@ -71,9 +74,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
     This code tests polysvp1 and qv_sat at 0 degrees C, at a very cold T, and at a very hot T
     to make sure our impl gets the same answer as Flatau et al 1992:
     (https://journals.ametsoc.org/jamc/article/31/12/1507/14870/Polynomial-Fits-to-Saturation-Vapor-Pressure)
-    For 0 degrees C, polysvp values can be read directly from Flatau. For other cases, I independently
-    coded up the Flatau scheme (polysvp1) in python and used it to derive the expected values. My python code is
-    in https://github.com/E3SM-Project/scream-docs.git analysis-scripts/test_qv_sat.py
+    For 0 degrees C, polysvp values can be read directly from Flatau. For other cases, I
+    independently coded up the Flatau scheme (polysvp1) in python and used it to derive the expected
+    values. My python code is in https://github.com/E3SM-Project/scream-docs.git
+    analysis-scripts/test_qv_sat.py
    */
 
   TestSaturation()
@@ -89,7 +93,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
 
                  // Following values are picked from Murphy and Koop (2005)
                  // Table C1 titled: "VALUES RECOMMENDED FOR CHECKING COMPUTER CODES"
-                 // Saturation vapor pressure (SVP) values in the table were upto only 5 significant digits.
+                 // Saturation vapor pressure (SVP) values in the table were upto only 5 significant
+                 // digits.
                  {150, atm_pres},
                  {180, atm_pres},
                  {210, atm_pres},
@@ -107,9 +112,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
       Kokkos::View<OutputData *> d_dev("", 1);
       Kokkos::parallel_for(
           1, KOKKOS_LAMBDA(const size_t &) {
-            TestSaturation::saturation_tests(ps.temperature, ps.pressure, d_dev[0].sat_ice_fp, d_dev[0].sat_liq_fp,
-                                             d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr, d_dev[0].sat_ice_mkp,
-                                             d_dev[0].sat_liq_mkp, d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
+            TestSaturation::saturation_tests(
+                ps.temperature, ps.pressure, d_dev[0].sat_ice_fp, d_dev[0].sat_liq_fp,
+                d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr, d_dev[0].sat_ice_mkp,
+                d_dev[0].sat_liq_mkp, d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
           });
       Kokkos::fence();
 
@@ -137,9 +143,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
       Kokkos::View<OutputData *> d_dev("", 1);
       Kokkos::parallel_for(
           1, KOKKOS_LAMBDA(const size_t &) {
-            TestSaturation::saturation_tests(ps.temperature, ps.pressure, d_dev[0].sat_ice_fp, d_dev[0].sat_liq_fp,
-                                             d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr, d_dev[0].sat_ice_mkp,
-                                             d_dev[0].sat_liq_mkp, d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
+            TestSaturation::saturation_tests(
+                ps.temperature, ps.pressure, d_dev[0].sat_ice_fp, d_dev[0].sat_liq_fp,
+                d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr, d_dev[0].sat_ice_mkp,
+                d_dev[0].sat_liq_mkp, d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
           });
       Kokkos::fence();
 
@@ -241,7 +248,9 @@ private:
 
 namespace {
 
-void expect_another_arg(int i, int argc) { EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg."); }
+void expect_another_arg(int i, int argc) {
+  EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg.");
+}
 
 } // namespace
 
@@ -257,7 +266,8 @@ int main(int argc, char **argv) {
                  "Options:\n"
                  "  -g                  Generate baseline file. Default False.\n"
                  "  -b <baseline-file>  Path to baseline file. Required.\n"
-                 "  -t <tol>            Tolerance for relative error. Default machine eps (*10000 for Release).\n";
+                 "  -t <tol>            Tolerance for relative error. Default machine eps (*10000 "
+                 "for Release).\n";
     return 1;
   }
 

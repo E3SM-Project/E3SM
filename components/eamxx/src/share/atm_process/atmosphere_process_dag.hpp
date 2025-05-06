@@ -20,7 +20,8 @@ public:
 
   void init_atm_proc_nodes(const group_type &atm_procs);
 
-  void add_surface_coupling(const std::set<FieldIdentifier> &imports, const std::set<FieldIdentifier> &exports);
+  void add_surface_coupling(const std::set<FieldIdentifier> &imports,
+                            const std::set<FieldIdentifier> &exports);
 
   void write_dag(const std::string &fname, const int verbosity = VERB_MAX) const;
 

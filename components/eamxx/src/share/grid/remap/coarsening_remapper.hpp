@@ -39,8 +39,8 @@ namespace scream {
 
 class CoarseningRemapper : public HorizInterpRemapperBase {
 public:
-  CoarseningRemapper(const grid_ptr_type &src_grid, const std::string &map_file, const bool track_mask = false,
-                     const bool populate_tgt_grid_geo_data = true);
+  CoarseningRemapper(const grid_ptr_type &src_grid, const std::string &map_file,
+                     const bool track_mask = false, const bool populate_tgt_grid_geo_data = true);
 
   ~CoarseningRemapper();
 
@@ -55,7 +55,8 @@ protected:
 
   std::vector<int> get_pids_for_recv(const std::vector<int> &send_to_pids) const;
 
-  std::map<int, std::vector<int>> recv_gids_from_pids(const std::map<int, std::vector<int>> &pid2gids_send) const;
+  std::map<int, std::vector<int>>
+  recv_gids_from_pids(const std::map<int, std::vector<int>> &pid2gids_send) const;
 
   // This class uses itself to remap src grid geo data to the tgt grid. But in order
   // to not pollute the remapper for later use, we must be able to clean it up after
@@ -65,7 +66,8 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  template <int N> void local_mat_vec(const Field &f_src, const Field &f_tgt, const Field &mask) const;
+  template <int N>
+  void local_mat_vec(const Field &f_src, const Field &f_tgt, const Field &mask) const;
   template <int N> void rescale_masked_fields(const Field &f_tgt, const Field &f_mask) const;
   void pack_and_send();
   void recv_and_unpack();
@@ -77,7 +79,8 @@ protected:
 
   // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
   template <typename T>
-  using mpi_view_1d = typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
+  using mpi_view_1d =
+      typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
 
   // Mask fields, if needed
   bool m_track_mask;

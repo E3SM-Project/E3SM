@@ -27,11 +27,11 @@ using namespace ekat::units;
 const int packsize = SCREAM_PACK_SIZE;
 using Pack         = ekat::Pack<Real, packsize>;
 
-std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                          const bool do_randomize);
+std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                          const util::TimeStamp &t0, const bool do_randomize);
 
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &io_comm, const int num_my_elems, const int np,
-                                          const int num_levs);
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &io_comm, const int num_my_elems,
+                                          const int np, const int num_levs);
 
 ekat::ParameterList get_in_params(const ekat::Comm &comm, const util::TimeStamp &t0);
 
@@ -97,8 +97,8 @@ TEST_CASE("se_grid_io") {
 }
 
 /*===================================================================================================*/
-std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                          const bool do_randomize) {
+std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                          const util::TimeStamp &t0, const bool do_randomize) {
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
   using FR = FieldRequest;
@@ -154,8 +154,8 @@ std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGr
   return fm;
 }
 /*==========================================================================================================*/
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &io_comm, const int num_my_elems, const int np,
-                                          const int num_levs) {
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &io_comm, const int num_my_elems,
+                                          const int np, const int num_levs) {
   auto gm = create_mesh_free_grids_manager(io_comm, num_my_elems, np, num_levs, 0);
   gm->build_grids();
 
@@ -166,7 +166,8 @@ ekat::ParameterList get_in_params(const ekat::Comm &comm, const util::TimeStamp 
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
 
-  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." +
+                         t0.to_string() + ".nc";
 
   in_params.set<std::string>("filename", filename);
   in_params.set<vos_type>("field_names", {"field_1", "field_2", "field_3", "field_packed"});

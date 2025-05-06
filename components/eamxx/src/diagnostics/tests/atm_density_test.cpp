@@ -47,8 +47,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 +
-      1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
+                        // some empty slots (packsize>1).
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -62,7 +62,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_qv(1e-6, 1e-3), pdf_pseudodens(1.0, 100.0), pdf_pres(0.0, PC::P0), pdf_temp(200.0, 400.0);
+  RPDF pdf_qv(1e-6, 1e-3), pdf_pseudodens(1.0, 100.0), pdf_pres(0.0, PC::P0),
+      pdf_temp(200.0, 400.0);
 
   // A time stamp
   util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
@@ -124,8 +125,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
         "", policy, KOKKOS_LAMBDA(const MemberType &team) {
           const int icol = team.league_rank();
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const Int &ilev) {
-            auto dz = PF::calculate_dz(pseudo_dens_v(icol, ilev), p_mid_v(icol, ilev), T_mid_v(icol, ilev),
-                                       qv_mid_v(icol, ilev));
+            auto dz = PF::calculate_dz(pseudo_dens_v(icol, ilev), p_mid_v(icol, ilev),
+                                       T_mid_v(icol, ilev), qv_mid_v(icol, ilev));
             atm_density_v(icol, ilev) = PF::calculate_density(pseudo_dens_v(icol, ilev), dz);
           });
           team.team_barrier();

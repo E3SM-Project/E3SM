@@ -6,7 +6,8 @@
 
 namespace scream {
 
-FieldNaNCheck::FieldNaNCheck(const Field &f, const std::shared_ptr<const AbstractGrid> &grid) : m_grid(grid) {
+FieldNaNCheck::FieldNaNCheck(const Field &f, const std::shared_ptr<const AbstractGrid> &grid)
+    : m_grid(grid) {
   // Sanity checks
   EKAT_REQUIRE_MSG(f.rank() <= 6, "Error in FieldNaNCheck constructor: unsupported field rank.\n"
                                   "  - Field name: " +
@@ -22,8 +23,10 @@ FieldNaNCheck::FieldNaNCheck(const Field &f, const std::shared_ptr<const Abstrac
                           "  - Field rank: " +
                               std::to_string(f.rank()) + "\n");
 
-  EKAT_REQUIRE_MSG(grid == nullptr || f.get_header().get_identifier().get_grid_name() == grid->name(),
-                   "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
+  EKAT_REQUIRE_MSG(grid == nullptr ||
+                       f.get_header().get_identifier().get_grid_name() == grid->name(),
+                   "Error! The name of the input grid does not match the grid name stored in the "
+                   "field identifier.\n"
                    "  - Field name: " +
                        f.name() +
                        "\n"
@@ -158,8 +161,8 @@ template <typename ST> PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() c
       if (has_latlon) {
         auto lat = m_grid->get_geometry_data("lat").get_internal_view_data<const Real, Host>();
         auto lon = m_grid->get_geometry_data("lon").get_internal_view_data<const Real, Host>();
-        res_and_msg.msg +=
-            "  - lat/lon: (" + std::to_string(lat[col_lid]) + ", " + std::to_string(lon[col_lid]) + ")\n";
+        res_and_msg.msg += "  - lat/lon: (" + std::to_string(lat[col_lid]) + ", " +
+                           std::to_string(lon[col_lid]) + ")\n";
       }
       bool has_additional_col_info = not additional_data_fields().empty();
       if (has_additional_col_info) {

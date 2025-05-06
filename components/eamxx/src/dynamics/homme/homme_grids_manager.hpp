@@ -29,7 +29,8 @@ protected:
   void build_physics_grid(const ci_string &type, const ci_string &rebalance);
 
 protected:
-  remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid, const grid_ptr_type to_grid) const;
+  remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid,
+                                       const grid_ptr_type to_grid) const;
 
   void build_pg_codes();
 
@@ -46,7 +47,8 @@ protected:
   strmap_t<strmap_t<int>> m_pg_codes;
 };
 
-inline std::shared_ptr<GridsManager> create_homme_grids_manager(const ekat::Comm &comm, const ekat::ParameterList &p) {
+inline std::shared_ptr<GridsManager> create_homme_grids_manager(const ekat::Comm &comm,
+                                                                const ekat::ParameterList &p) {
   return std::make_shared<HommeGridsManager>(comm, p);
 }
 

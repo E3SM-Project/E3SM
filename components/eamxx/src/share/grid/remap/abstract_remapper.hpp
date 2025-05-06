@@ -70,11 +70,16 @@ public:
   virtual FieldLayout create_src_layout(const FieldLayout &tgt_layout) const;
   virtual FieldLayout create_tgt_layout(const FieldLayout &src_layout) const;
   virtual bool compatible_layouts(const FieldLayout &src, const FieldLayout &tgt) const;
-  virtual bool is_valid_src_layout(const FieldLayout &layout) const { return m_src_grid->is_valid_layout(layout); }
-  virtual bool is_valid_tgt_layout(const FieldLayout &layout) const { return m_tgt_grid->is_valid_layout(layout); }
+  virtual bool is_valid_src_layout(const FieldLayout &layout) const {
+    return m_src_grid->is_valid_layout(layout);
+  }
+  virtual bool is_valid_tgt_layout(const FieldLayout &layout) const {
+    return m_tgt_grid->is_valid_layout(layout);
+  }
 
 protected:
-  virtual FieldLayout create_layout(const FieldLayout &from_layout, const grid_ptr_type &to_grid) const;
+  virtual FieldLayout create_layout(const FieldLayout &from_layout,
+                                    const grid_ptr_type &to_grid) const;
 
   void set_grids(const grid_ptr_type &src_grid, const grid_ptr_type &tgt_grid);
 
@@ -84,11 +89,15 @@ protected:
 
   // Override this method to implement the forward remapping process using
   // the protected data members of this class.
-  virtual void remap_fwd_impl() { EKAT_ERROR_MSG("Error! Missing override of remap_fwd_impl for this remapper.\n"); }
+  virtual void remap_fwd_impl() {
+    EKAT_ERROR_MSG("Error! Missing override of remap_fwd_impl for this remapper.\n");
+  }
 
   // Override this method to implement the backward/inverse remapping process
   // using the protected data members of this class.
-  virtual void remap_bwd_impl() { EKAT_ERROR_MSG("Error! Missing override of remap_bwd_impl for this remapper.\n"); }
+  virtual void remap_bwd_impl() {
+    EKAT_ERROR_MSG("Error! Missing override of remap_bwd_impl for this remapper.\n");
+  }
 
   // By default, assume both are allowed.
   bool m_fwd_allowed = true;
@@ -115,8 +124,9 @@ private:
 };
 
 // A short name for an AbstractRemapper factory
-using RemapperFactory = ekat::Factory<AbstractRemapper, ekat::CaseInsensitiveString, std::shared_ptr<AbstractRemapper>,
-                                      const ekat::ParameterList &>;
+using RemapperFactory =
+    ekat::Factory<AbstractRemapper, ekat::CaseInsensitiveString, std::shared_ptr<AbstractRemapper>,
+                  const ekat::ParameterList &>;
 
 } // namespace scream
 

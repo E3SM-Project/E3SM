@@ -24,7 +24,8 @@
 
 namespace scream {
 
-HommeGridsManager::HommeGridsManager(const ekat::Comm &comm, const ekat::ParameterList &p) : m_comm(comm), m_params(p) {
+HommeGridsManager::HommeGridsManager(const ekat::Comm &comm, const ekat::ParameterList &p)
+    : m_comm(comm), m_params(p) {
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
     auto fcomm = MPI_Comm_c2f(comm.mpi_comm());
@@ -52,12 +53,14 @@ HommeGridsManager::~HommeGridsManager() {
   HommeContextUser::singleton().remove_user();
 }
 
-HommeGridsManager::remapper_ptr_type HommeGridsManager::do_create_remapper(const grid_ptr_type from_grid,
-                                                                           const grid_ptr_type to_grid) const {
+HommeGridsManager::remapper_ptr_type
+HommeGridsManager::do_create_remapper(const grid_ptr_type from_grid,
+                                      const grid_ptr_type to_grid) const {
   const auto from = from_grid->name();
   const auto to   = to_grid->name();
 
-  EKAT_REQUIRE_MSG(from == "dynamics" || to == "dynamics", "Error! Either source or target grid must be 'dynamics'.\n");
+  EKAT_REQUIRE_MSG(from == "dynamics" || to == "dynamics",
+                   "Error! Either source or target grid must be 'dynamics'.\n");
 
   const bool p2d = to == "dynamics";
 
@@ -74,7 +77,8 @@ HommeGridsManager::remapper_ptr_type HommeGridsManager::do_create_remapper(const
       return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
-    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
+    ekat::error::runtime_abort(
+        "Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
   }
   return nullptr;
 }
@@ -85,8 +89,9 @@ void HommeGridsManager::build_grids() {
   const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance", "none");
 
   // Get the physics grid code
-  std::vector<int> pg_codes{m_pg_codes["gll"]["none"], // We always need this to read/write dyn grid stuff
-                            m_pg_codes[pg_type][pg_rebalance]};
+  std::vector<int> pg_codes{
+      m_pg_codes["gll"]["none"], // We always need this to read/write dyn grid stuff
+      m_pg_codes[pg_type][pg_rebalance]};
   // In case the two pg codes are the same...
   auto it              = std::unique(pg_codes.begin(), pg_codes.end());
   const int *codes_ptr = pg_codes.data();
@@ -158,8 +163,8 @@ void HommeGridsManager::build_dynamics_grid() {
   auto lon_h     = lon.get_view<Real ***, Host>();
 
   // Get (ie,igp,jgp,gid) data for each dof
-  get_dyn_grid_data_f90(dg_dofs_h.data(), cg_dofs_h.data(), elgpgp_h.data(), elgids_h.data(), lat_h.data(),
-                        lon_h.data());
+  get_dyn_grid_data_f90(dg_dofs_h.data(), cg_dofs_h.data(), elgpgp_h.data(), elgids_h.data(),
+                        lat_h.data(), lon_h.data());
 
   dg_dofs.sync_to_dev();
   cg_dofs.sync_to_dev();
@@ -291,7 +296,7 @@ void HommeGridsManager::build_physics_grid(const ci_string &type, const ci_strin
   if (is_planar_geometry_f90()) {
     // If running with IOP, store grid length size
     FieldLayout scalar0d({}, {});
-    auto dx_short_f                     = phys_grid->create_geometry_data("dx_short", scalar0d, rad);
+    auto dx_short_f = phys_grid->create_geometry_data("dx_short", scalar0d, rad);
     dx_short_f.get_view<Real, Host>()() = get_dx_short_f90(0);
     dx_short_f.sync_to_dev();
   }
@@ -354,8 +359,8 @@ void HommeGridsManager::initialize_vertical_coordinates(const nonconstgrid_ptr_t
 
   // Set vcoords in f90
   // NOTE: homme does the check for these arrays, so no need to do any property check here
-  prim_set_hvcoords_f90(ps0, host_views["hyai"].data(), host_views["hybi"].data(), host_views["hyam"].data(),
-                        host_views["hybm"].data());
+  prim_set_hvcoords_f90(ps0, host_views["hyai"].data(), host_views["hybi"].data(),
+                        host_views["hyam"].data(), host_views["hybm"].data());
 }
 
 void HommeGridsManager::build_pg_codes() {

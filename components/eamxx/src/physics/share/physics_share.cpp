@@ -22,23 +22,26 @@ template <typename ScalarT, typename DeviceT> struct CudaWrap {
   static Scalar pow(Scalar base, Scalar exp) {
     Scalar result;
     RangePolicy policy(0, 1);
-    Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const Int &, Scalar &value) { value = std::pow(base, exp); }, result);
+    Kokkos::parallel_reduce(
+        policy, KOKKOS_LAMBDA(const Int &, Scalar &value) { value = std::pow(base, exp); }, result);
 
     return result;
   }
 
-#define cuda_wrap_single_arg(wrap_name, func_call)                                                                    \
-  static Scalar wrap_name(Scalar input) {                                                                             \
-    Scalar result;                                                                                                    \
-    RangePolicy policy(0, 1);                                                                                         \
-    Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const Int &, Scalar &value) { value = func_call(input); }, result); \
-    return result;                                                                                                    \
+#define cuda_wrap_single_arg(wrap_name, func_call)                                                \
+  static Scalar wrap_name(Scalar input) {                                                         \
+    Scalar result;                                                                                \
+    RangePolicy policy(0, 1);                                                                     \
+    Kokkos::parallel_reduce(                                                                      \
+        policy, KOKKOS_LAMBDA(const Int &, Scalar &value) { value = func_call(input); }, result); \
+    return result;                                                                                \
   }
 
-  cuda_wrap_single_arg(gamma, std::tgamma) cuda_wrap_single_arg(sqrt, std::sqrt) cuda_wrap_single_arg(cbrt, std::cbrt)
-      cuda_wrap_single_arg(log, std::log) cuda_wrap_single_arg(log10, std::log10) cuda_wrap_single_arg(exp, std::exp)
-          cuda_wrap_single_arg(expm1, std::expm1) cuda_wrap_single_arg(tanh, std::tanh)
-              cuda_wrap_single_arg(erf, std::erf)
+  cuda_wrap_single_arg(gamma, std::tgamma) cuda_wrap_single_arg(sqrt, std::sqrt)
+      cuda_wrap_single_arg(cbrt, std::cbrt) cuda_wrap_single_arg(log, std::log)
+          cuda_wrap_single_arg(log10, std::log10) cuda_wrap_single_arg(exp, std::exp)
+              cuda_wrap_single_arg(expm1, std::expm1) cuda_wrap_single_arg(tanh, std::tanh)
+                  cuda_wrap_single_arg(erf, std::erf)
 
 #undef cuda_wrap_single_arg
 };

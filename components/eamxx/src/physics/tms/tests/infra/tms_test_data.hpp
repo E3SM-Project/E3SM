@@ -28,7 +28,8 @@ struct ComputeTMSData : public PhysicsTestData {
 
   ComputeTMSData(int ncols_, int nlevs_)
       : PhysicsTestData({{ncols_}, {ncols_, nlevs_}},
-                        {{&sgh, &landfrac, &ksrf, &taux, &tauy}, {&u_wind, &v_wind, &t_mid, &p_mid, &exner, &z_mid}}),
+                        {{&sgh, &landfrac, &ksrf, &taux, &tauy},
+                         {&u_wind, &v_wind, &t_mid, &p_mid, &exner, &z_mid}}),
         ncols(ncols_), nlevs(nlevs_) {}
 
   PTD_STD_DEF(ComputeTMSData, 2, ncols, nlevs);

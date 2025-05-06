@@ -219,7 +219,8 @@ TEST_CASE("remap", "") {
       //       meaning that the values at the interface between two elements must match.
       //       To do this, we initialize each entry in the dynamic v with the id
       //       of the corresponding physics column.
-      //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
+      //       But since this approach makes checking answers much easier, we use it also for
+      //       phys->dyn.
 
       if (fwd) {
         auto h_s_2d_view  = s_2d_field_phys.get_view<Homme::Real *, Host>();
@@ -422,7 +423,8 @@ TEST_CASE("remap", "") {
               for (int ilev = 0; ilev < NVL; ++ilev) {
                 if (dyn(ie, icomp, ip, jp, ilev) != h_d_dofs(idof)) {
                   printf(" ** 3D Vector ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev, dyn(ie, icomp, ip, jp, ilev));
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev,
+                         dyn(ie, icomp, ip, jp, ilev));
                   printf("expected: = %d\n", h_d_dofs(idof));
                 }
                 REQUIRE(dyn(ie, icomp, ip, jp, ilev) == h_d_dofs(idof));
@@ -460,7 +462,8 @@ TEST_CASE("remap", "") {
               auto gid = h_d_dofs(idof);
               if (dyn(ie, n0, ip, jp, ilev) != gid) {
                 printf(" ** 3D Scalar State ** \n");
-                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, n0, ip, jp, ilev, dyn(ie, n0, ip, jp, ilev));
+                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, n0, ip, jp, ilev,
+                       dyn(ie, n0, ip, jp, ilev));
                 printf("expected: = %d\n", gid);
               }
               REQUIRE(dyn(ie, n0, ip, jp, ilev) == gid);
@@ -495,7 +498,8 @@ TEST_CASE("remap", "") {
               for (int ilev = 0; ilev < NVL; ++ilev) {
                 if (dyn(ie, n0, icomp, ip, jp, ilev) != h_d_dofs(idof)) {
                   printf(" ** 3D Vector State ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev, dyn(ie, n0, icomp, ip, jp, ilev));
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev,
+                         dyn(ie, n0, icomp, ip, jp, ilev));
                   printf("expected: = %d\n", h_d_dofs(idof));
                 }
                 REQUIRE(dyn(ie, n0, icomp, ip, jp, ilev) == h_d_dofs(idof));
@@ -533,7 +537,8 @@ TEST_CASE("remap", "") {
               for (int ilev = 0; ilev < NVL; ++ilev) {
                 if (dyn(ie, iq, ip, jp, ilev) != h_d_dofs(idof)) {
                   printf(" ** 3D Tracer State ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, iq, ip, jp, ilev, dyn(ie, iq, ip, jp, ilev));
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, iq, ip, jp, ilev,
+                         dyn(ie, iq, ip, jp, ilev));
                   printf("expected: = %d\n", h_d_dofs(idof));
                 }
                 REQUIRE(dyn(ie, iq, ip, jp, ilev) == h_d_dofs(idof));
@@ -760,7 +765,8 @@ TEST_CASE("combo_remap", "") {
       //       meaning that the values at the interface between two elements must match.
       //       To do this, we initialize each entry in the dynamic v with the id
       //       of the corresponding column.
-      //       But since this approach makes checking answers much easier, we use it also for phys->dyn.
+      //       But since this approach makes checking answers much easier, we use it also for
+      //       phys->dyn.
 
       if (pdp) {
         auto h_s_2d_view  = s_2d_field_phys.get_view<Homme::Real *, Host>();
@@ -979,7 +985,8 @@ TEST_CASE("combo_remap", "") {
               for (int ilev = 0; ilev < NVL; ++ilev) {
                 if (dyn(ie, icomp, ip, jp, ilev) != h_d_dofs(idof)) {
                   printf(" ** 3D Vector ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev, dyn(ie, icomp, ip, jp, ilev));
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev,
+                         dyn(ie, icomp, ip, jp, ilev));
                   printf("expected: = %d\n", h_d_dofs(idof));
                 }
                 REQUIRE(dyn(ie, icomp, ip, jp, ilev) == h_d_dofs(idof));
@@ -1015,7 +1022,8 @@ TEST_CASE("combo_remap", "") {
               auto gid = h_d_dofs(idof);
               if (dyn(ie, n0, ip, jp, ilev) != gid) {
                 printf(" ** 3D Scalar State ** \n");
-                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, n0, ip, jp, ilev, dyn(ie, n0, ip, jp, ilev));
+                printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, n0, ip, jp, ilev,
+                       dyn(ie, n0, ip, jp, ilev));
                 printf("expected: = %d\n", gid);
               }
               REQUIRE(dyn(ie, n0, ip, jp, ilev) == gid);
@@ -1052,7 +1060,8 @@ TEST_CASE("combo_remap", "") {
               for (int ilev = 0; ilev < NVL; ++ilev) {
                 if (dyn(ie, n0, icomp, ip, jp, ilev) != h_d_dofs(idof)) {
                   printf(" ** 3D Vector State ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev, dyn(ie, n0, icomp, ip, jp, ilev));
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, icomp, ip, jp, ilev,
+                         dyn(ie, n0, icomp, ip, jp, ilev));
                   printf("expected: = %d\n", h_d_dofs(idof));
                 }
                 REQUIRE(dyn(ie, n0, icomp, ip, jp, ilev) == h_d_dofs(idof));
@@ -1090,7 +1099,8 @@ TEST_CASE("combo_remap", "") {
               for (int ilev = 0; ilev < NVL; ++ilev) {
                 if (dyn(ie, iq, ip, jp, ilev) != h_d_dofs(idof)) {
                   printf(" ** 3D Tracer State ** \n");
-                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, iq, ip, jp, ilev, dyn(ie, iq, ip, jp, ilev));
+                  printf("d_out(%d,%d,%d,%d,%d): %2.16f\n", ie, iq, ip, jp, ilev,
+                         dyn(ie, iq, ip, jp, ilev));
                   printf("expected: = %d\n", h_d_dofs(idof));
                 }
                 REQUIRE(dyn(ie, iq, ip, jp, ilev) == h_d_dofs(idof));

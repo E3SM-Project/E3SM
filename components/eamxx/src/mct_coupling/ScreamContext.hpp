@@ -16,8 +16,9 @@ public:
 
   template <typename T, typename... Args> T &create(Args... args) {
     auto key = getKey<T>();
-    EKAT_REQUIRE_MSG(m_objects.find(key) == m_objects.end(), "Error! Object with key '" + (std::string)key.name() +
-                                                                 "' was already created in the scream context.\n");
+    EKAT_REQUIRE_MSG(m_objects.find(key) == m_objects.end(),
+                     "Error! Object with key '" + (std::string)key.name() +
+                         "' was already created in the scream context.\n");
 
     auto &obj = m_objects[key];
     obj.template reset<T>(args...);
@@ -28,7 +29,8 @@ public:
   template <typename T> const T &get() const {
     auto key = getKey<T>();
     EKAT_REQUIRE_MSG(m_objects.find(key) != m_objects.end(),
-                     "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
+                     "Error! Object with key '" + (std::string)key.name() +
+                         "' not found in the scream context.\n");
     const auto &obj = m_objects.at(key);
 
     return ekat::any_cast<T>(obj);
@@ -37,7 +39,8 @@ public:
   template <typename T> T &getNonConst() {
     auto key = getKey<T>();
     EKAT_REQUIRE_MSG(m_objects.find(key) != m_objects.end(),
-                     "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
+                     "Error! Object with key '" + (std::string)key.name() +
+                         "' not found in the scream context.\n");
     auto &obj = m_objects.at(key);
 
     return ekat::any_cast<T>(obj);

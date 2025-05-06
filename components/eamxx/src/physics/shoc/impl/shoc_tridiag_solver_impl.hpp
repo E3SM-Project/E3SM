@@ -8,11 +8,11 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::vd_shoc_decomp(const MemberType &team, const Int &nlev, const uview_1d<const Spack> &kv_term,
-                                const uview_1d<const Spack> &tmpi, const uview_1d<const Spack> &rdp_zt,
-                                const Scalar &dtime, const Scalar &flux, const uview_1d<Scalar> &du,
-                                const uview_1d<Scalar> &dl, const uview_1d<Scalar> &d) {
+KOKKOS_FUNCTION void Functions<S, D>::vd_shoc_decomp(
+    const MemberType &team, const Int &nlev, const uview_1d<const Spack> &kv_term,
+    const uview_1d<const Spack> &tmpi, const uview_1d<const Spack> &rdp_zt, const Scalar &dtime,
+    const Scalar &flux, const uview_1d<Scalar> &du, const uview_1d<Scalar> &dl,
+    const uview_1d<Scalar> &d) {
   const auto ggr = C::gravit;
 
   const auto skv_term = scalarize(kv_term);
@@ -63,9 +63,10 @@ Functions<S, D>::vd_shoc_decomp(const MemberType &team, const Int &nlev, const u
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::vd_shoc_solve(const MemberType &team, const uview_1d<Scalar> &du,
-                                                    const uview_1d<Scalar> &dl, const uview_1d<Scalar> &d,
-                                                    const uview_2d<Spack> &var) {
+KOKKOS_FUNCTION void
+Functions<S, D>::vd_shoc_solve(const MemberType &team, const uview_1d<Scalar> &du,
+                               const uview_1d<Scalar> &dl, const uview_1d<Scalar> &d,
+                               const uview_2d<Spack> &var) {
 #ifdef EKAT_DEFAULT_BFB
   ekat::tridiag::bfb(team, dl, d, du, var);
 #else

@@ -9,8 +9,10 @@
 
 namespace scream {
 
-SPA::SPA(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereProcess(comm, params) {
-  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"), "ERROR: spa_data_file is missing from SPA parameter list.");
+SPA::SPA(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereProcess(comm, params) {
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"),
+                   "ERROR: spa_data_file is missing from SPA parameter list.");
 }
 
 // =========================================================================================
@@ -58,7 +60,8 @@ void SPA::initialize_impl(const RunType /* run_type */) {
 
   // NOTE: SPA does not have an internal persistent state, so run_type is irrelevant
 
-  std::vector<Field> spa_fields = {get_field_out("nccn").alias("CCN3"), get_field_out("aero_g_sw").alias("AER_G_SW"),
+  std::vector<Field> spa_fields = {get_field_out("nccn").alias("CCN3"),
+                                   get_field_out("aero_g_sw").alias("AER_G_SW"),
                                    get_field_out("aero_ssa_sw").alias("AER_SSA_SW"),
                                    get_field_out("aero_tau_sw").alias("AER_TAU_SW"),
                                    get_field_out("aero_tau_lw").alias("AER_TAU_LW")};
@@ -73,20 +76,24 @@ void SPA::initialize_impl(const RunType /* run_type */) {
   // properties compatible with SCREAM_PACK_SIZE.
   // NOTE: we could just add p_int as a required field, but that would be misleading in the DAG
   auto pmid = get_field_in("p_mid");
-  Field pint(FieldIdentifier("p_int", m_model_grid->get_vertical_layout(false), Pa, m_model_grid->name()));
+  Field pint(
+      FieldIdentifier("p_int", m_model_grid->get_vertical_layout(false), Pa, m_model_grid->name()));
   pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   pint.allocate_view();
 
-  util::TimeStamp ref_ts(1, 1, 1, 0, 0, 0); // Beg of any year, since we use yearly periodic timeline
+  util::TimeStamp ref_ts(1, 1, 1, 0, 0,
+                         0); // Beg of any year, since we use yearly periodic timeline
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid, spa_fields);
-  m_data_interpolation->setup_time_database({spa_data_file}, util::TimeLine::YearlyPeriodic, ref_ts);
+  m_data_interpolation->setup_time_database({spa_data_file}, util::TimeLine::YearlyPeriodic,
+                                            ref_ts);
 
   DataInterpolation::RemapData remap_data;
   remap_data.hremap_file = spa_map_file == "none" ? "" : spa_map_file;
   if (m_iop_data_manager != nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
     EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file == "none",
-                     "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
+                     "Error! Cannot define spa_remap_file for cases with an Intensive Observation "
+                     "Period defined. "
                      "The IOP class defines it's own remap from file data -> model data.\n");
 
     // TODO: expose tgt lat/lon in IOPDataManager, to avoid injecting knowledge

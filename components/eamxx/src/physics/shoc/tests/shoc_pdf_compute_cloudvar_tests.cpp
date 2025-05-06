@@ -153,13 +153,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
 namespace {
 
 TEST_CASE("shoc_pdf_compute_cldvar_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompCldVar;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompCldVar;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_compute_cldvar_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompCldVar;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompCldVar;
 
   TestStruct::run_bfb();
 }

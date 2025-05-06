@@ -196,10 +196,11 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   // Init data structures to read and interpolate
   //--------------------------------------------------------------------
   for (srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    srfEmissFunc::init_srf_emiss_objects(ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
-                                         // output
-                                         ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
-                                         ispec_srf.data_out_, ispec_srf.dataReader_);
+    srfEmissFunc::init_srf_emiss_objects(
+        ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
+        // output
+        ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_, ispec_srf.data_out_,
+        ispec_srf.dataReader_);
   } // srf emissions file read init
 
   // -------------------------------------------------------------
@@ -215,8 +216,9 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   const std::string soil_erod_dname = "ncol";
 
   // initialize the file read
-  soilErodibilityFunc::init_soil_erodibility_file_read(ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
-                                                       soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
+  soilErodibilityFunc::init_soil_erodibility_file_read(ncol_, soil_erod_fld_name, soil_erod_dname,
+                                                       grid_, soil_erodibility_data_file,
+                                                       srf_map_file, serod_horizInterp_,
                                                        serod_dataReader_); // output
 
   // -------------------------------------------------------------
@@ -270,8 +272,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Check the interval values for the following fields used by this interface.
   // NOTE: We do not include aerosol and gas species, e.g., soa_a1, num_a1,
   // because we automatically added these fields.
-  const std::map<std::string, std::pair<Real, Real>> ranges_emissions = {{"sst", {-1e10, 1e10}}, // FIXME
-                                                                         {"dstflx", {-1e10, 1e10}}};
+  const std::map<std::string, std::pair<Real, Real>> ranges_emissions = {
+      {"sst", {-1e10, 1e10}}, // FIXME
+      {"dstflx", {-1e10, 1e10}}};
   set_ranges_process(ranges_emissions);
   add_interval_checks();
 
@@ -306,8 +309,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Update surface emissions from file
   //--------------------------------------------------------------------
   for (srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    srfEmissFunc::update_srfEmiss_data_from_file(ispec_srf.dataReader_, start_of_step_ts(), curr_month,
-                                                 *ispec_srf.horizInterp_,
+    srfEmissFunc::update_srfEmiss_data_from_file(ispec_srf.dataReader_, start_of_step_ts(),
+                                                 curr_month, *ispec_srf.horizInterp_,
                                                  ispec_srf.data_end_); // output
   }
 
@@ -316,15 +319,16 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // This data is time-independent, we read all data here for the
   // entire simulation
-  soilErodibilityFunc::update_soil_erodibility_data_from_file(serod_dataReader_, *serod_horizInterp_,
+  soilErodibilityFunc::update_soil_erodibility_data_from_file(serod_dataReader_,
+                                                              *serod_horizInterp_,
                                                               soil_erodibility_); // output
 
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
   // Time dependent data
-  marineOrganicsFunc::update_marine_organics_data_from_file(morg_dataReader_, start_of_step_ts(), curr_month,
-                                                            *morg_horizInterp_,
+  marineOrganicsFunc::update_marine_organics_data_from_file(morg_dataReader_, start_of_step_ts(),
+                                                            curr_month, *morg_horizInterp_,
                                                             morg_data_end_); // output
 
   //-----------------------------------------------------------------
@@ -338,7 +342,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -366,10 +371,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Update time state and if the month has changed, update the data.
   marineOrganicsFunc::update_marine_organics_timestate(morg_dataReader_, ts, *morg_horizInterp_,
                                                        // output
-                                                       morg_timeState_, morg_data_start_, morg_data_end_);
+                                                       morg_timeState_, morg_data_start_,
+                                                       morg_data_end_);
 
   // Call the main marine organics routine to get interpolated forcings.
-  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_, morg_data_end_, morg_data_out_);
+  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_, morg_data_end_,
+                                          morg_data_out_);
 
   // Marine organics emission data read from the file (order is important here)
   const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
@@ -383,10 +390,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   const const_view_1d sst = get_field_in("sst").get_view<const Real *>();
 
   // U wind component [m/s]
-  const const_view_2d u_wind = get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
+  const const_view_2d u_wind =
+      get_field_in("horiz_winds").get_component(0).get_view<const Real **>();
 
   // V wind component [m/s]
-  const const_view_2d v_wind = get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
+  const const_view_2d v_wind =
+      get_field_in("horiz_winds").get_component(1).get_view<const Real **>();
 
   // Dust fluxes [kg/m^2/s]: Four flux values for each column
   const const_view_2d dstflx = get_field_in("dstflx").get_view<const Real **>();
@@ -397,8 +406,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Vertical layer height at midpoints
   const const_view_2d z_mid = dry_atm_.z_mid;
 
-  compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind, dstflx, mpoly, mprot, mlip,
-                                 soil_erodibility, z_mid,
+  compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind, dstflx, mpoly, mprot,
+                                 mlip, soil_erodibility, z_mid,
                                  // output
                                  constituent_fluxes);
   Kokkos::fence();
@@ -413,10 +422,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     // Update time state and if the month has changed, update the data.
     srfEmissFunc::update_srfEmiss_timestate(ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
                                             // output
-                                            ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
+                                            ispec_srf.timeState_, ispec_srf.data_start_,
+                                            ispec_srf.data_end_);
 
     // Call the main srfEmiss routine to get interpolated aerosol forcings.
-    srfEmissFunc::srfEmiss_main(ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_, ispec_srf.data_out_);
+    srfEmissFunc::srfEmiss_main(ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_,
+                                ispec_srf.data_out_);
 
     //--------------------------------------------------------------------
     // Modify units to MKS units (from molecules/cm2/s to kg/m2/s)

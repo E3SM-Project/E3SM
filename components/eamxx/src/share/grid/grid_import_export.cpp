@@ -73,15 +73,16 @@ GridImportExport::GridImportExport(const std::shared_ptr<const AbstractGrid> &un
       }
     }
   }
-  EKAT_REQUIRE_MSG(num_ov_gids == num_imports, "Error! Could not locate the owner of one of the dst grid GIDs.\n"
-                                               "  - rank: " +
-                                                   std::to_string(m_comm.rank()) +
-                                                   "\n"
-                                                   "  - num found: " +
-                                                   std::to_string(num_imports) +
-                                                   "\n"
-                                                   "  - num dst gids: " +
-                                                   std::to_string(num_ov_gids) + "\n");
+  EKAT_REQUIRE_MSG(num_ov_gids == num_imports,
+                   "Error! Could not locate the owner of one of the dst grid GIDs.\n"
+                   "  - rank: " +
+                       std::to_string(m_comm.rank()) +
+                       "\n"
+                       "  - num found: " +
+                       std::to_string(num_imports) +
+                       "\n"
+                       "  - num dst gids: " +
+                       std::to_string(num_ov_gids) + "\n");
   for (int pid = 0, pos = 0; pid < m_comm.size(); ++pid) {
     const auto &lids = pid2lids[pid];
     for (size_t i = 0; i < lids.size(); ++i, ++pos) {

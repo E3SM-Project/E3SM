@@ -20,21 +20,23 @@
 namespace scream {
 
 // Test Constants
-constexpr Real tol        = std::numeric_limits<Real>::epsilon() * 1e5;
-constexpr int slp_switch  = 4; // The frequency that we change the slope of the data written to file.
-constexpr int dt          = 100;
+constexpr Real tol       = std::numeric_limits<Real>::epsilon() * 1e5;
+constexpr int slp_switch = 4; // The frequency that we change the slope of the data written to file.
+constexpr int dt         = 100;
 constexpr int total_snaps = 10;
 constexpr int snap_freq   = 4;
-constexpr int slope_freq =
-    snap_freq; // We will change the slope every slope_freq steps to ensure that the data is not all on the same line.
+constexpr int slope_freq  = snap_freq; // We will change the slope every slope_freq steps to ensure
+                                       // that the data is not all on the same line.
 constexpr int snaps_per_file = 3;
 
 // Functions needed to set the test up
-std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int ncols, const int nlevs);
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                     const int seed);
+std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int ncols,
+                                           const int nlevs);
+std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                     const util::TimeStamp &t0, const int seed);
 util::TimeStamp init_timestamp();
-std::vector<std::string> create_test_data_files(const ekat::Comm &comm, const std::shared_ptr<const GridsManager> &gm,
+std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
+                                                const std::shared_ptr<const GridsManager> &gm,
                                                 const util::TimeStamp &t0, const int seed);
 
 // Functions needed to run the test
@@ -215,10 +217,11 @@ TEST_CASE("eamxx_time_interpolation_data_from_file") {
       auto field_deep = fields_man_deep->get_field(name);
       // Check that the shallow copies match the expected values
       REQUIRE(views_are_approx_equal(field, time_interpolator.get_field(name), tol));
-      // Check that the deep fields which were not updated directly are the same as the ones stored in the time
-      // interpolator.
+      // Check that the deep fields which were not updated directly are the same as the ones stored
+      // in the time interpolator.
       REQUIRE(views_are_equal(field_deep, time_interpolator_deep.get_field(name)));
-      // Check that the deep and shallow fields match showing that both approaches got the correct answer.
+      // Check that the deep and shallow fields match showing that both approaches got the correct
+      // answer.
       REQUIRE(views_are_equal(field, field_deep));
     }
   }
@@ -239,15 +242,17 @@ TEST_CASE("eamxx_time_interpolation_data_from_file") {
 bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol) {
   const auto &l0 = f0.get_header().get_identifier().get_layout();
   const auto &l1 = f1.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(l0 == l1, "Error! views_are_approx_equal - the two fields don't have matching layouts.");
-  // Take advantage of field utils update, min and max to assess the max difference between the two fields
-  // simply.
+  EKAT_REQUIRE_MSG(l0 == l1,
+                   "Error! views_are_approx_equal - the two fields don't have matching layouts.");
+  // Take advantage of field utils update, min and max to assess the max difference between the two
+  // fields simply.
   auto ft = f0.clone();
   ft.update(f1, 1.0, -1.0);
   auto d_min = field_min<Real>(ft);
   auto d_max = field_max<Real>(ft);
   if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
-    printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min and max errors are "
+    printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min "
+           "and max errors are "
            "%e and %e respectively.\n",
            f0.name().c_str(), tol, d_min, d_max);
     return false;
@@ -292,7 +297,8 @@ void update_field_data(const Real slope, const Real dt, Field &field) {
 util::TimeStamp init_timestamp() { return util::TimeStamp({2023, 5, 16}, {0, 0, 0}); }
 /*-----------------------------------------------------------------------------------------------*/
 /* Create a grids manager for the test */
-std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int ncols,
+                                           const int nlevs) {
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
   gm_params.set("grids_names", vos_t{"point_grid"});
@@ -307,8 +313,8 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int nco
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Create a fields manager for the test */
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid, const util::TimeStamp &t0,
-                                     const int seed) {
+std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+                                     const util::TimeStamp &t0, const int seed) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -350,7 +356,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
 /* Construct data for multiple time snaps and write the data to file, to be used for testing
  * the capability of TimeInterpolation to handle data read from multiple files.
  */
-std::vector<std::string> create_test_data_files(const ekat::Comm &comm, const std::shared_ptr<const GridsManager> &gm,
+std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
+                                                const std::shared_ptr<const GridsManager> &gm,
                                                 const util::TimeStamp &t0, const int seed) {
   // We initialize a local field manager to use for output
   auto fm = get_fm(gm->get_grid("point_grid"), t0, seed);

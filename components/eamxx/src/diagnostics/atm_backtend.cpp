@@ -8,8 +8,9 @@ namespace scream {
 
 AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("tendency_name"), "Error! AtmBackTendDiag requires 'tendency_name' in its "
-                                                        "input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("tendency_name"),
+                   "Error! AtmBackTendDiag requires 'tendency_name' in its "
+                   "input parameters.\n");
 
   m_name = m_params.get<std::string>("tendency_name");
 }
@@ -26,12 +27,13 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
 
   // Sanity checks
   const auto &layout = fid.get_layout();
-  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType, "Error! AtmBackTendDiag only supports Real data type field.\n"
-                                                        " - field name: " +
-                                                            fid.name() +
-                                                            "\n"
-                                                            " - field data type: " +
-                                                            e2str(f.data_type()) + "\n");
+  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType,
+                   "Error! AtmBackTendDiag only supports Real data type field.\n"
+                   " - field name: " +
+                       fid.name() +
+                       "\n"
+                       " - field data type: " +
+                       e2str(f.data_type()) + "\n");
 
   using namespace ekat::units;
   // The units are the same except per second

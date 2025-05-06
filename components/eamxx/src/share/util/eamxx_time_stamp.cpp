@@ -33,21 +33,26 @@ bool is_leap_year(const int yy) {
 }
 
 int days_in_month(const int yy, const int mm) {
-  EKAT_REQUIRE_MSG(mm >= 1 && mm <= 12,
-                   "Error! Month out of bounds. Did you call `days_in_month` with yy and mm swapped?\n");
+  EKAT_REQUIRE_MSG(
+      mm >= 1 && mm <= 12,
+      "Error! Month out of bounds. Did you call `days_in_month` with yy and mm swapped?\n");
   constexpr int nonleap_days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   constexpr int leap_days[12]    = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   auto &arr                      = is_leap_year(yy) ? leap_days : nonleap_days;
   return arr[mm - 1];
 }
 
-TimeStamp::TimeStamp() : m_date(3, std::numeric_limits<int>::lowest()), m_time(3, std::numeric_limits<int>::lowest()) {
+TimeStamp::TimeStamp()
+    : m_date(3, std::numeric_limits<int>::lowest()), m_time(3, std::numeric_limits<int>::lowest()) {
   // Nothing to do here
 }
 
-TimeStamp::TimeStamp(const std::vector<int> &date, const std::vector<int> &time, const int num_steps) {
-  EKAT_REQUIRE_MSG(date.size() == 3, "Error! Date should consist of three ints: [year, month, day].\n");
-  EKAT_REQUIRE_MSG(time.size() == 3, "Error! Time of day should consist of three ints: [hour, min, sec].\n");
+TimeStamp::TimeStamp(const std::vector<int> &date, const std::vector<int> &time,
+                     const int num_steps) {
+  EKAT_REQUIRE_MSG(date.size() == 3,
+                   "Error! Date should consist of three ints: [year, month, day].\n");
+  EKAT_REQUIRE_MSG(time.size() == 3,
+                   "Error! Time of day should consist of three ints: [hour, min, sec].\n");
   EKAT_REQUIRE_MSG(num_steps >= 0, "Error! Number of steps should be a non-negative number.\n");
 
   const auto yy   = date[0];
@@ -71,8 +76,8 @@ TimeStamp::TimeStamp(const std::vector<int> &date, const std::vector<int> &time,
   m_num_steps = num_steps;
 }
 
-TimeStamp::TimeStamp(const int yy, const int mm, const int dd, const int h, const int min, const int sec,
-                     const int num_steps)
+TimeStamp::TimeStamp(const int yy, const int mm, const int dd, const int h, const int min,
+                     const int sec, const int num_steps)
     : TimeStamp({yy, mm, dd}, {h, min, sec}, num_steps) {
   // Nothing to do here
 }
@@ -137,10 +142,12 @@ TimeStamp &TimeStamp::operator+=(const double seconds) {
   //       but that should be the case here, for use cases in EAMxx.
   EKAT_REQUIRE_MSG(seconds >= 0, "Error! Cannot rewind time.\n");
   EKAT_REQUIRE_MSG((seconds - round(seconds)) < std::numeric_limits<double>::epsilon() * 10,
-                   "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds << "\n");
+                   "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds
+                                                                                         << "\n");
 
-  EKAT_REQUIRE_MSG(is_valid(), "Error! The time stamp contains uninitialized values.\n"
-                               "       To use this object, use operator= with a valid rhs first.\n");
+  EKAT_REQUIRE_MSG(is_valid(),
+                   "Error! The time stamp contains uninitialized values.\n"
+                   "       To use this object, use operator= with a valid rhs first.\n");
 
   auto &sec  = m_time[2];
   auto &min  = m_time[1];

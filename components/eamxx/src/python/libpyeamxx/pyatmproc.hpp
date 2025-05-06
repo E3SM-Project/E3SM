@@ -36,9 +36,10 @@ struct PyAtmProc {
     const auto &comm = PySession::get().comm;
 
     // Create the atm proc
-    auto &apf           = AtmosphereProcessFactory::instance();
-    const auto &ap_type = params.pl.isParameter("type") ? params.pl.get<std::string>("type") : params.pl.name();
-    ap                  = apf.create(ap_type, comm, params.pl);
+    auto &apf = AtmosphereProcessFactory::instance();
+    const auto &ap_type =
+        params.pl.isParameter("type") ? params.pl.get<std::string>("type") : params.pl.name();
+    ap = apf.create(ap_type, comm, params.pl);
 
     // Create the fields
     auto gm = PySession::get().gm;

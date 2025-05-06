@@ -29,7 +29,9 @@ struct ConvertToRrtmgpSubview {
   int beg;
   int ncol;
 
-  template <typename View> View subview1d(const View &v) const { return View(v, std::make_pair(beg, beg + ncol)); }
+  template <typename View> View subview1d(const View &v) const {
+    return View(v, std::make_pair(beg, beg + ncol));
+  }
 
   template <typename View> View subview2d_impl(const View &v, const int inner_dim) const {
     return View(v, std::make_pair(beg, beg + ncol), std::make_pair(0, inner_dim));
@@ -37,7 +39,8 @@ struct ConvertToRrtmgpSubview {
 
 #ifdef RRTMGP_LAYOUT_LEFT
   template <typename FieldView, typename BufferView>
-  BufferView subview2d(const FieldView &, const BufferView &buffer_view, const int inner_dim) const {
+  BufferView subview2d(const FieldView &, const BufferView &buffer_view,
+                       const int inner_dim) const {
     return BufferView(buffer_view, std::make_pair(0, ncol), Kokkos::ALL);
   }
 #else
@@ -150,7 +153,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_lw_flux_up", scalar2d, W / (m * m), grid_name);
   // Set of required gas concentration fields
   for (auto &it : m_gas_names) {
-    // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
+    // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to
+    // RRTMGP)
     if (it == "o3") {
       // o3 is read from file, or computed by chemistry
       add_field<Required>(it + "_volume_mix_ratio", scalar3d_mid, mol / mol, grid_name);
@@ -266,7 +270,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
       m_grid->set_geometry_data(bounds);
     }
 
-    // If no bounds were in the grid, the bands centerpoint likely wouldn't either. Still, let's check...
+    // If no bounds were in the grid, the bands centerpoint likely wouldn't either. Still, let's
+    // check...
     if (not m_grid->has_geometry_data(prefix + "bands")) {
       auto bounds   = m_grid->get_geometry_data(prefix + "band_bounds");
       auto bounds_h = bounds.get_view<const Real **, Host>();
@@ -283,20 +288,20 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 } // RRTMGPRadiation::set_grids
 
 size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const {
-  const size_t interface_request = Buffer::num_1d_ncol * m_col_chunk_size +
-                                   Buffer::num_2d_nlay * m_col_chunk_size * m_nlay +
-                                   Buffer::num_2d_nlay_p1 * m_col_chunk_size * (m_nlay + 1) +
-                                   Buffer::num_2d_nswbands * m_col_chunk_size * m_nswbands +
-                                   Buffer::num_3d_nlev_nswbands * m_col_chunk_size * (m_nlay + 1) * m_nswbands +
-                                   Buffer::num_3d_nlev_nlwbands * m_col_chunk_size * (m_nlay + 1) * m_nlwbands +
-                                   Buffer::num_3d_nlay_nswbands * m_col_chunk_size * (m_nlay)*m_nswbands +
-                                   Buffer::num_3d_nlay_nlwbands * m_col_chunk_size * (m_nlay)*m_nlwbands +
-                                   Buffer::num_3d_nlay_nswgpts * m_col_chunk_size * (m_nlay)*m_nswgpts +
-                                   Buffer::num_3d_nlay_nlwgpts * m_col_chunk_size * (m_nlay)*m_nlwgpts *
+  const size_t interface_request =
+      Buffer::num_1d_ncol * m_col_chunk_size + Buffer::num_2d_nlay * m_col_chunk_size * m_nlay +
+      Buffer::num_2d_nlay_p1 * m_col_chunk_size * (m_nlay + 1) +
+      Buffer::num_2d_nswbands * m_col_chunk_size * m_nswbands +
+      Buffer::num_3d_nlev_nswbands * m_col_chunk_size * (m_nlay + 1) * m_nswbands +
+      Buffer::num_3d_nlev_nlwbands * m_col_chunk_size * (m_nlay + 1) * m_nlwbands +
+      Buffer::num_3d_nlay_nswbands * m_col_chunk_size * (m_nlay)*m_nswbands +
+      Buffer::num_3d_nlay_nlwbands * m_col_chunk_size * (m_nlay)*m_nlwbands +
+      Buffer::num_3d_nlay_nswgpts * m_col_chunk_size * (m_nlay)*m_nswgpts +
+      Buffer::num_3d_nlay_nlwgpts * m_col_chunk_size * (m_nlay)*m_nlwgpts *
 #if defined(RRTMGP_ENABLE_YAKL) && defined(RRTMGP_ENABLE_KOKKOS)
-                                       2;
+          2;
 #else
-                                       1;
+          1;
 #endif
 
   return interface_request * sizeof(Real);
@@ -313,21 +318,29 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   // 1d arrays
   m_buffer.mu0 = decltype(m_buffer.mu0)("mu0", mem, m_col_chunk_size);
   mem += m_buffer.mu0.totElems();
-  m_buffer.sfc_alb_dir_vis = decltype(m_buffer.sfc_alb_dir_vis)("sfc_alb_dir_vis", mem, m_col_chunk_size);
+  m_buffer.sfc_alb_dir_vis =
+      decltype(m_buffer.sfc_alb_dir_vis)("sfc_alb_dir_vis", mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dir_vis.totElems();
-  m_buffer.sfc_alb_dir_nir = decltype(m_buffer.sfc_alb_dir_nir)("sfc_alb_dir_nir", mem, m_col_chunk_size);
+  m_buffer.sfc_alb_dir_nir =
+      decltype(m_buffer.sfc_alb_dir_nir)("sfc_alb_dir_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dir_nir.totElems();
-  m_buffer.sfc_alb_dif_vis = decltype(m_buffer.sfc_alb_dif_vis)("sfc_alb_dif_vis", mem, m_col_chunk_size);
+  m_buffer.sfc_alb_dif_vis =
+      decltype(m_buffer.sfc_alb_dif_vis)("sfc_alb_dif_vis", mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dif_vis.totElems();
-  m_buffer.sfc_alb_dif_nir = decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_col_chunk_size);
+  m_buffer.sfc_alb_dif_nir =
+      decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dif_nir.totElems();
-  m_buffer.sfc_flux_dir_vis = decltype(m_buffer.sfc_flux_dir_vis)("sfc_flux_dir_vis", mem, m_col_chunk_size);
+  m_buffer.sfc_flux_dir_vis =
+      decltype(m_buffer.sfc_flux_dir_vis)("sfc_flux_dir_vis", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dir_vis.totElems();
-  m_buffer.sfc_flux_dir_nir = decltype(m_buffer.sfc_flux_dir_nir)("sfc_flux_dir_nir", mem, m_col_chunk_size);
+  m_buffer.sfc_flux_dir_nir =
+      decltype(m_buffer.sfc_flux_dir_nir)("sfc_flux_dir_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dir_nir.totElems();
-  m_buffer.sfc_flux_dif_vis = decltype(m_buffer.sfc_flux_dif_vis)("sfc_flux_dif_vis", mem, m_col_chunk_size);
+  m_buffer.sfc_flux_dif_vis =
+      decltype(m_buffer.sfc_flux_dif_vis)("sfc_flux_dif_vis", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dif_vis.totElems();
-  m_buffer.sfc_flux_dif_nir = decltype(m_buffer.sfc_flux_dif_nir)("sfc_flux_dif_nir", mem, m_col_chunk_size);
+  m_buffer.sfc_flux_dif_nir =
+      decltype(m_buffer.sfc_flux_dif_nir)("sfc_flux_dif_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dif_nir.totElems();
   m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_col_chunk_size);
   mem += m_buffer.cosine_zenith.size();
@@ -347,11 +360,14 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   mem += m_buffer.nc.totElems();
   m_buffer.qi = decltype(m_buffer.qi)("qi", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.qi.totElems();
-  m_buffer.cldfrac_tot = decltype(m_buffer.cldfrac_tot)("cldfrac_tot", mem, m_col_chunk_size, m_nlay);
+  m_buffer.cldfrac_tot =
+      decltype(m_buffer.cldfrac_tot)("cldfrac_tot", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.cldfrac_tot.totElems();
-  m_buffer.eff_radius_qc = decltype(m_buffer.eff_radius_qc)("eff_radius_qc", mem, m_col_chunk_size, m_nlay);
+  m_buffer.eff_radius_qc =
+      decltype(m_buffer.eff_radius_qc)("eff_radius_qc", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.eff_radius_qc.totElems();
-  m_buffer.eff_radius_qi = decltype(m_buffer.eff_radius_qi)("eff_radius_qi", mem, m_col_chunk_size, m_nlay);
+  m_buffer.eff_radius_qi =
+      decltype(m_buffer.eff_radius_qi)("eff_radius_qi", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.eff_radius_qi.totElems();
   m_buffer.tmp2d = decltype(m_buffer.tmp2d)("tmp2d", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.tmp2d.totElems();
@@ -372,24 +388,29 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   m_buffer.d_dz = decltype(m_buffer.d_dz)(mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.d_dz.size();
   // 3d arrays
-  m_buffer.sw_flux_up = decltype(m_buffer.sw_flux_up)("sw_flux_up", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_flux_up =
+      decltype(m_buffer.sw_flux_up)("sw_flux_up", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_flux_up.totElems();
-  m_buffer.sw_flux_dn = decltype(m_buffer.sw_flux_dn)("sw_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_flux_dn =
+      decltype(m_buffer.sw_flux_dn)("sw_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_flux_dn.totElems();
-  m_buffer.sw_flux_dn_dir = decltype(m_buffer.sw_flux_dn_dir)("sw_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_flux_dn_dir =
+      decltype(m_buffer.sw_flux_dn_dir)("sw_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_flux_dn_dir.totElems();
-  m_buffer.lw_flux_up = decltype(m_buffer.lw_flux_up)("lw_flux_up", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_flux_up =
+      decltype(m_buffer.lw_flux_up)("lw_flux_up", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_flux_up.totElems();
-  m_buffer.lw_flux_dn = decltype(m_buffer.lw_flux_dn)("lw_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_flux_dn =
+      decltype(m_buffer.lw_flux_dn)("lw_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_flux_dn.totElems();
-  m_buffer.sw_clnclrsky_flux_up =
-      decltype(m_buffer.sw_clnclrsky_flux_up)("sw_clnclrsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnclrsky_flux_up = decltype(m_buffer.sw_clnclrsky_flux_up)(
+      "sw_clnclrsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnclrsky_flux_up.totElems();
-  m_buffer.sw_clnclrsky_flux_dn =
-      decltype(m_buffer.sw_clnclrsky_flux_dn)("sw_clnclrsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnclrsky_flux_dn = decltype(m_buffer.sw_clnclrsky_flux_dn)(
+      "sw_clnclrsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnclrsky_flux_dn.totElems();
-  m_buffer.sw_clnclrsky_flux_dn_dir =
-      decltype(m_buffer.sw_clnclrsky_flux_dn_dir)("sw_clnclrsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnclrsky_flux_dn_dir = decltype(m_buffer.sw_clnclrsky_flux_dn_dir)(
+      "sw_clnclrsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnclrsky_flux_dn_dir.totElems();
   m_buffer.sw_clrsky_flux_up =
       decltype(m_buffer.sw_clrsky_flux_up)("sw_clrsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
@@ -397,8 +418,8 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   m_buffer.sw_clrsky_flux_dn =
       decltype(m_buffer.sw_clrsky_flux_dn)("sw_clrsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clrsky_flux_dn.totElems();
-  m_buffer.sw_clrsky_flux_dn_dir =
-      decltype(m_buffer.sw_clrsky_flux_dn_dir)("sw_clrsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clrsky_flux_dn_dir = decltype(m_buffer.sw_clrsky_flux_dn_dir)(
+      "sw_clrsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clrsky_flux_dn_dir.totElems();
   m_buffer.sw_clnsky_flux_up =
       decltype(m_buffer.sw_clnsky_flux_up)("sw_clnsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
@@ -406,14 +427,14 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   m_buffer.sw_clnsky_flux_dn =
       decltype(m_buffer.sw_clnsky_flux_dn)("sw_clnsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnsky_flux_dn.totElems();
-  m_buffer.sw_clnsky_flux_dn_dir =
-      decltype(m_buffer.sw_clnsky_flux_dn_dir)("sw_clnsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnsky_flux_dn_dir = decltype(m_buffer.sw_clnsky_flux_dn_dir)(
+      "sw_clnsky_flux_dn_dir", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnsky_flux_dn_dir.totElems();
-  m_buffer.lw_clnclrsky_flux_up =
-      decltype(m_buffer.lw_clnclrsky_flux_up)("lw_clnclrsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clnclrsky_flux_up = decltype(m_buffer.lw_clnclrsky_flux_up)(
+      "lw_clnclrsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnclrsky_flux_up.totElems();
-  m_buffer.lw_clnclrsky_flux_dn =
-      decltype(m_buffer.lw_clnclrsky_flux_dn)("lw_clnclrsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clnclrsky_flux_dn = decltype(m_buffer.lw_clnclrsky_flux_dn)(
+      "lw_clnclrsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnclrsky_flux_dn.totElems();
   m_buffer.lw_clrsky_flux_up =
       decltype(m_buffer.lw_clrsky_flux_up)("lw_clrsky_flux_up", mem, m_col_chunk_size, m_nlay + 1);
@@ -428,38 +449,44 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
       decltype(m_buffer.lw_clnsky_flux_dn)("lw_clnsky_flux_dn", mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnsky_flux_dn.totElems();
   // 3d arrays with nswbands dimension (shortwave fluxes by band)
-  m_buffer.sw_bnd_flux_up =
-      decltype(m_buffer.sw_bnd_flux_up)("sw_bnd_flux_up", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_up = decltype(m_buffer.sw_bnd_flux_up)(
+      "sw_bnd_flux_up", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_up.totElems();
-  m_buffer.sw_bnd_flux_dn =
-      decltype(m_buffer.sw_bnd_flux_dn)("sw_bnd_flux_dn", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_dn = decltype(m_buffer.sw_bnd_flux_dn)(
+      "sw_bnd_flux_dn", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_dn.totElems();
-  m_buffer.sw_bnd_flux_dir =
-      decltype(m_buffer.sw_bnd_flux_dir)("sw_bnd_flux_dir", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_dir = decltype(m_buffer.sw_bnd_flux_dir)(
+      "sw_bnd_flux_dir", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_dir.totElems();
-  m_buffer.sw_bnd_flux_dif =
-      decltype(m_buffer.sw_bnd_flux_dif)("sw_bnd_flux_dif", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_dif = decltype(m_buffer.sw_bnd_flux_dif)(
+      "sw_bnd_flux_dif", mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_dif.totElems();
   // 3d arrays with nlwbands dimension (longwave fluxes by band)
-  m_buffer.lw_bnd_flux_up =
-      decltype(m_buffer.lw_bnd_flux_up)("lw_bnd_flux_up", mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
+  m_buffer.lw_bnd_flux_up = decltype(m_buffer.lw_bnd_flux_up)(
+      "lw_bnd_flux_up", mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
   mem += m_buffer.lw_bnd_flux_up.totElems();
-  m_buffer.lw_bnd_flux_dn =
-      decltype(m_buffer.lw_bnd_flux_dn)("lw_bnd_flux_dn", mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
+  m_buffer.lw_bnd_flux_dn = decltype(m_buffer.lw_bnd_flux_dn)(
+      "lw_bnd_flux_dn", mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
   mem += m_buffer.lw_bnd_flux_dn.totElems();
   // 2d arrays with extra nswbands dimension (surface albedos by band)
-  m_buffer.sfc_alb_dir = decltype(m_buffer.sfc_alb_dir)("sfc_alb_dir", mem, m_col_chunk_size, m_nswbands);
+  m_buffer.sfc_alb_dir =
+      decltype(m_buffer.sfc_alb_dir)("sfc_alb_dir", mem, m_col_chunk_size, m_nswbands);
   mem += m_buffer.sfc_alb_dir.totElems();
-  m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("sfc_alb_dif", mem, m_col_chunk_size, m_nswbands);
+  m_buffer.sfc_alb_dif =
+      decltype(m_buffer.sfc_alb_dif)("sfc_alb_dif", mem, m_col_chunk_size, m_nswbands);
   mem += m_buffer.sfc_alb_dif.totElems();
   // 3d arrays with extra band dimension (aerosol optics by band)
-  m_buffer.aero_tau_sw = decltype(m_buffer.aero_tau_sw)("aero_tau_sw", mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.aero_tau_sw =
+      decltype(m_buffer.aero_tau_sw)("aero_tau_sw", mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.aero_tau_sw.totElems();
-  m_buffer.aero_ssa_sw = decltype(m_buffer.aero_ssa_sw)("aero_ssa_sw", mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.aero_ssa_sw =
+      decltype(m_buffer.aero_ssa_sw)("aero_ssa_sw", mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.aero_ssa_sw.totElems();
-  m_buffer.aero_g_sw = decltype(m_buffer.aero_g_sw)("aero_g_sw", mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.aero_g_sw =
+      decltype(m_buffer.aero_g_sw)("aero_g_sw", mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.aero_g_sw.totElems();
-  m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  m_buffer.aero_tau_lw =
+      decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw.totElems();
   // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
   m_buffer.cld_tau_sw_gpt =
@@ -468,11 +495,11 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   m_buffer.cld_tau_lw_gpt =
       decltype(m_buffer.cld_tau_lw_gpt)("cld_tau_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt.totElems();
-  m_buffer.cld_tau_sw_bnd =
-      decltype(m_buffer.cld_tau_sw_bnd)("cld_tau_sw_bnd", mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.cld_tau_sw_bnd = decltype(m_buffer.cld_tau_sw_bnd)("cld_tau_sw_bnd", mem,
+                                                              m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.cld_tau_sw_bnd.totElems();
-  m_buffer.cld_tau_lw_bnd =
-      decltype(m_buffer.cld_tau_lw_bnd)("cld_tau_lw_bnd", mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  m_buffer.cld_tau_lw_bnd = decltype(m_buffer.cld_tau_lw_bnd)("cld_tau_lw_bnd", mem,
+                                                              m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.cld_tau_lw_bnd.totElems();
 #endif
 
@@ -543,56 +570,77 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   mem += m_buffer.sw_flux_up_k.size();
   m_buffer.sw_flux_dn_k = decltype(m_buffer.sw_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_flux_dn_k.size();
-  m_buffer.sw_flux_dn_dir_k = decltype(m_buffer.sw_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_flux_dn_dir_k =
+      decltype(m_buffer.sw_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_flux_dn_dir_k.size();
   m_buffer.lw_flux_up_k = decltype(m_buffer.lw_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_flux_up_k.size();
   m_buffer.lw_flux_dn_k = decltype(m_buffer.lw_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_flux_dn_k.size();
-  m_buffer.sw_clnclrsky_flux_up_k = decltype(m_buffer.sw_clnclrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnclrsky_flux_up_k =
+      decltype(m_buffer.sw_clnclrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnclrsky_flux_up_k.size();
-  m_buffer.sw_clnclrsky_flux_dn_k = decltype(m_buffer.sw_clnclrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnclrsky_flux_dn_k =
+      decltype(m_buffer.sw_clnclrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnclrsky_flux_dn_k.size();
   m_buffer.sw_clnclrsky_flux_dn_dir_k =
       decltype(m_buffer.sw_clnclrsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnclrsky_flux_dn_dir_k.size();
-  m_buffer.sw_clrsky_flux_up_k = decltype(m_buffer.sw_clrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clrsky_flux_up_k =
+      decltype(m_buffer.sw_clrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clrsky_flux_up_k.size();
-  m_buffer.sw_clrsky_flux_dn_k = decltype(m_buffer.sw_clrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clrsky_flux_dn_k =
+      decltype(m_buffer.sw_clrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clrsky_flux_dn_k.size();
-  m_buffer.sw_clrsky_flux_dn_dir_k = decltype(m_buffer.sw_clrsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clrsky_flux_dn_dir_k =
+      decltype(m_buffer.sw_clrsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clrsky_flux_dn_dir_k.size();
-  m_buffer.sw_clnsky_flux_up_k = decltype(m_buffer.sw_clnsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnsky_flux_up_k =
+      decltype(m_buffer.sw_clnsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnsky_flux_up_k.size();
-  m_buffer.sw_clnsky_flux_dn_k = decltype(m_buffer.sw_clnsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnsky_flux_dn_k =
+      decltype(m_buffer.sw_clnsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnsky_flux_dn_k.size();
-  m_buffer.sw_clnsky_flux_dn_dir_k = decltype(m_buffer.sw_clnsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.sw_clnsky_flux_dn_dir_k =
+      decltype(m_buffer.sw_clnsky_flux_dn_dir_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.sw_clnsky_flux_dn_dir_k.size();
-  m_buffer.lw_clnclrsky_flux_up_k = decltype(m_buffer.lw_clnclrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clnclrsky_flux_up_k =
+      decltype(m_buffer.lw_clnclrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnclrsky_flux_up_k.size();
-  m_buffer.lw_clnclrsky_flux_dn_k = decltype(m_buffer.lw_clnclrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clnclrsky_flux_dn_k =
+      decltype(m_buffer.lw_clnclrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnclrsky_flux_dn_k.size();
-  m_buffer.lw_clrsky_flux_up_k = decltype(m_buffer.lw_clrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clrsky_flux_up_k =
+      decltype(m_buffer.lw_clrsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clrsky_flux_up_k.size();
-  m_buffer.lw_clrsky_flux_dn_k = decltype(m_buffer.lw_clrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clrsky_flux_dn_k =
+      decltype(m_buffer.lw_clrsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clrsky_flux_dn_k.size();
-  m_buffer.lw_clnsky_flux_up_k = decltype(m_buffer.lw_clnsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clnsky_flux_up_k =
+      decltype(m_buffer.lw_clnsky_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnsky_flux_up_k.size();
-  m_buffer.lw_clnsky_flux_dn_k = decltype(m_buffer.lw_clnsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
+  m_buffer.lw_clnsky_flux_dn_k =
+      decltype(m_buffer.lw_clnsky_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1);
   mem += m_buffer.lw_clnsky_flux_dn_k.size();
   // 3d arrays with nswbands dimension (shortwave fluxes by band)
-  m_buffer.sw_bnd_flux_up_k = decltype(m_buffer.sw_bnd_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_up_k =
+      decltype(m_buffer.sw_bnd_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_up_k.size();
-  m_buffer.sw_bnd_flux_dn_k = decltype(m_buffer.sw_bnd_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_dn_k =
+      decltype(m_buffer.sw_bnd_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_dn_k.size();
-  m_buffer.sw_bnd_flux_dir_k = decltype(m_buffer.sw_bnd_flux_dir_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_dir_k =
+      decltype(m_buffer.sw_bnd_flux_dir_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_dir_k.size();
-  m_buffer.sw_bnd_flux_dif_k = decltype(m_buffer.sw_bnd_flux_dif_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
+  m_buffer.sw_bnd_flux_dif_k =
+      decltype(m_buffer.sw_bnd_flux_dif_k)(mem, m_col_chunk_size, m_nlay + 1, m_nswbands);
   mem += m_buffer.sw_bnd_flux_dif_k.size();
   // 3d arrays with nlwbands dimension (longwave fluxes by band)
-  m_buffer.lw_bnd_flux_up_k = decltype(m_buffer.lw_bnd_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
+  m_buffer.lw_bnd_flux_up_k =
+      decltype(m_buffer.lw_bnd_flux_up_k)(mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
   mem += m_buffer.lw_bnd_flux_up_k.size();
-  m_buffer.lw_bnd_flux_dn_k = decltype(m_buffer.lw_bnd_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
+  m_buffer.lw_bnd_flux_dn_k =
+      decltype(m_buffer.lw_bnd_flux_dn_k)(mem, m_col_chunk_size, m_nlay + 1, m_nlwbands);
   mem += m_buffer.lw_bnd_flux_dn_k.size();
   // 2d arrays with extra nswbands dimension (surface albedos by band)
   m_buffer.sfc_alb_dir_k = decltype(m_buffer.sfc_alb_dir_k)(mem, m_col_chunk_size, m_nswbands);
@@ -600,22 +648,29 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager) {
   m_buffer.sfc_alb_dif_k = decltype(m_buffer.sfc_alb_dif_k)(mem, m_col_chunk_size, m_nswbands);
   mem += m_buffer.sfc_alb_dif_k.size();
   // 3d arrays with extra band dimension (aerosol optics by band)
-  m_buffer.aero_tau_sw_k = decltype(m_buffer.aero_tau_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.aero_tau_sw_k =
+      decltype(m_buffer.aero_tau_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.aero_tau_sw_k.size();
-  m_buffer.aero_ssa_sw_k = decltype(m_buffer.aero_ssa_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.aero_ssa_sw_k =
+      decltype(m_buffer.aero_ssa_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.aero_ssa_sw_k.size();
   m_buffer.aero_g_sw_k = decltype(m_buffer.aero_g_sw_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.aero_g_sw_k.size();
-  m_buffer.aero_tau_lw_k = decltype(m_buffer.aero_tau_lw_k)(mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  m_buffer.aero_tau_lw_k =
+      decltype(m_buffer.aero_tau_lw_k)(mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw_k.size();
   // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
-  m_buffer.cld_tau_sw_gpt_k = decltype(m_buffer.cld_tau_sw_gpt_k)(mem, m_col_chunk_size, m_nlay, m_nswgpts);
+  m_buffer.cld_tau_sw_gpt_k =
+      decltype(m_buffer.cld_tau_sw_gpt_k)(mem, m_col_chunk_size, m_nlay, m_nswgpts);
   mem += m_buffer.cld_tau_sw_gpt_k.size();
-  m_buffer.cld_tau_lw_gpt_k = decltype(m_buffer.cld_tau_lw_gpt_k)(mem, m_col_chunk_size, m_nlay, m_nlwgpts);
+  m_buffer.cld_tau_lw_gpt_k =
+      decltype(m_buffer.cld_tau_lw_gpt_k)(mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt_k.size();
-  m_buffer.cld_tau_sw_bnd_k = decltype(m_buffer.cld_tau_sw_bnd_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
+  m_buffer.cld_tau_sw_bnd_k =
+      decltype(m_buffer.cld_tau_sw_bnd_k)(mem, m_col_chunk_size, m_nlay, m_nswbands);
   mem += m_buffer.cld_tau_sw_bnd_k.size();
-  m_buffer.cld_tau_lw_bnd_k = decltype(m_buffer.cld_tau_lw_bnd_k)(mem, m_col_chunk_size, m_nlay, m_nlwbands);
+  m_buffer.cld_tau_lw_bnd_k =
+      decltype(m_buffer.cld_tau_lw_bnd_k)(mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.cld_tau_lw_bnd_k.size();
 #endif
 
@@ -681,15 +736,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   std::string cloud_optics_file_lw = m_params.get<std::string>("rrtmgp_cloud_optics_file_lw");
 #ifdef RRTMGP_ENABLE_YAKL
   m_gas_concs.init(gas_names_yakl_offset, m_col_chunk_size, m_nlay);
-  rrtmgp::rrtmgp_initialize(m_gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw,
-                            cloud_optics_file_lw, m_atm_logger);
+  rrtmgp::rrtmgp_initialize(m_gas_concs, coefficients_file_sw, coefficients_file_lw,
+                            cloud_optics_file_sw, cloud_optics_file_lw, m_atm_logger);
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
   const double multiplier = m_params.get<double>("pool_size_multiplier", 1.0);
 
   m_gas_concs_k.init(gas_names_yakl_offset, m_col_chunk_size, m_nlay);
-  interface_t::rrtmgp_initialize(m_gas_concs_k, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw,
-                                 cloud_optics_file_lw, m_atm_logger, multiplier);
+  interface_t::rrtmgp_initialize(m_gas_concs_k, coefficients_file_sw, coefficients_file_lw,
+                                 cloud_optics_file_sw, cloud_optics_file_lw, m_atm_logger,
+                                 multiplier);
   VALIDATE_KOKKOS(m_gas_concs, m_gas_concs_k);
   VALIDATE_KOKKOS(rrtmgp::k_dist_sw, *interface_t::k_dist_sw_k);
   VALIDATE_KOKKOS(rrtmgp::k_dist_lw, *interface_t::k_dist_lw_k);
@@ -698,7 +754,8 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 #endif
 
   // Set property checks for fields in this process
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"), m_grid, 100.0, 500.0, false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"), m_grid, 100.0, 500.0,
+                                                false);
 
   // VMR of n2 and co is currently prescribed as a constant value, read from file
   if (has_computed_field("n2_volume_mix_ratio", m_grid->name())) {
@@ -872,24 +929,25 @@ void RRTMGPRadiation::run_impl(const double dt) {
 
       auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real **>();
       if (name == "h2o") {
-        // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
-        // Convert to vmr
+        // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read
+        // in above Convert to vmr
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(
             policy, KOKKOS_LAMBDA(const MemberType &team) {
               const int icol = team.league_rank();
               Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
-                d_vmr(icol, k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas], d_qv(icol, k), d_qv(icol, k));
+                d_vmr(icol, k) =
+                    PF::calculate_vmr_from_mmr(gas_mol_weights[igas], d_qv(icol, k), d_qv(icol, k));
               });
             });
         Kokkos::fence();
       } else {
         // This gives (dry) mass mixing ratios
-        scream::physics::trcmix(name, m_nlay, m_lat.get_view<const Real *>(), d_pmid, d_vmr, m_co2vmr, m_n2ovmr,
-                                m_ch4vmr, m_f11vmr, m_f12vmr);
+        scream::physics::trcmix(name, m_nlay, m_lat.get_view<const Real *>(), d_pmid, d_vmr,
+                                m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr);
         // Back out volume mixing ratios
         const auto air_mol_weight = PC::MWdry;
-        const auto policy         = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(
             policy, KOKKOS_LAMBDA(const MemberType &team) {
               const int i = team.league_rank();
@@ -904,8 +962,8 @@ void RRTMGPRadiation::run_impl(const double dt) {
     for (int ic = 0; ic < m_num_col_chunks; ++ic) {
       const int beg  = m_col_chunk_beg[ic];
       const int ncol = m_col_chunk_beg[ic + 1] - beg;
-      this->log(LogLevel::debug, "[RRTMGP::run_impl] Col chunk beg,end: " + std::to_string(beg) + ", " +
-                                     std::to_string(beg + ncol) + "\n");
+      this->log(LogLevel::debug, "[RRTMGP::run_impl] Col chunk beg,end: " + std::to_string(beg) +
+                                     ", " + std::to_string(beg + ncol) + "\n");
 
       // d_tint and d_dz are used in eamxx calls and therefore
       // must be layout right
@@ -917,8 +975,12 @@ void RRTMGPRadiation::run_impl(const double dt) {
           init_views,
           // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
           // as the fastest index. For this reason we must copy the data.
-          auto subview_1d = [&](const real1d v) -> real1d { return real1d(v.label(), v.myData, ncol); };
-          auto subview_2d = [&](const real2d v) -> real2d { return real2d(v.label(), v.myData, ncol, v.dimension[1]); };
+          auto subview_1d = [&](const real1d v) -> real1d {
+            return real1d(v.label(), v.myData, ncol);
+          };
+          auto subview_2d = [&](const real2d v) -> real2d {
+            return real2d(v.label(), v.myData, ncol, v.dimension[1]);
+          };
           auto subview_3d = [&](const real3d v) -> real3d {
             return real3d(v.label(), v.myData, ncol, v.dimension[1], v.dimension[2]);
           };
@@ -928,15 +990,19 @@ void RRTMGPRadiation::run_impl(const double dt) {
           auto p_del = subview_2d(m_buffer.p_del); auto t_lev = subview_2d(m_buffer.t_lev);
           auto mu0 = subview_1d(m_buffer.mu0); auto sfc_alb_dir = subview_2d(m_buffer.sfc_alb_dir);
           auto sfc_alb_dif                                      = subview_2d(m_buffer.sfc_alb_dif);
-          auto sfc_alb_dir_vis                                  = subview_1d(m_buffer.sfc_alb_dir_vis);
-          auto sfc_alb_dir_nir                                  = subview_1d(m_buffer.sfc_alb_dir_nir);
-          auto sfc_alb_dif_vis                                  = subview_1d(m_buffer.sfc_alb_dif_vis);
-          auto sfc_alb_dif_nir = subview_1d(m_buffer.sfc_alb_dif_nir); auto qc = subview_2d(m_buffer.qc);
-          auto nc = subview_2d(m_buffer.nc); auto qi = subview_2d(m_buffer.qi);
-          auto cldfrac_tot = subview_2d(m_buffer.cldfrac_tot); auto rel = subview_2d(m_buffer.eff_radius_qc);
-          auto rei = subview_2d(m_buffer.eff_radius_qi); auto sw_flux_up = subview_2d(m_buffer.sw_flux_up);
-          auto sw_flux_dn = subview_2d(m_buffer.sw_flux_dn); auto sw_flux_dn_dir = subview_2d(m_buffer.sw_flux_dn_dir);
-          auto lw_flux_up = subview_2d(m_buffer.lw_flux_up); auto lw_flux_dn = subview_2d(m_buffer.lw_flux_dn);
+          auto sfc_alb_dir_vis = subview_1d(m_buffer.sfc_alb_dir_vis);
+          auto sfc_alb_dir_nir = subview_1d(m_buffer.sfc_alb_dir_nir);
+          auto sfc_alb_dif_vis = subview_1d(m_buffer.sfc_alb_dif_vis);
+          auto sfc_alb_dif_nir = subview_1d(m_buffer.sfc_alb_dif_nir);
+          auto qc = subview_2d(m_buffer.qc); auto nc = subview_2d(m_buffer.nc);
+          auto qi = subview_2d(m_buffer.qi); auto cldfrac_tot = subview_2d(m_buffer.cldfrac_tot);
+          auto rel                                            = subview_2d(m_buffer.eff_radius_qc);
+          auto rei                                            = subview_2d(m_buffer.eff_radius_qi);
+          auto sw_flux_up                                     = subview_2d(m_buffer.sw_flux_up);
+          auto sw_flux_dn                                     = subview_2d(m_buffer.sw_flux_dn);
+          auto sw_flux_dn_dir                                 = subview_2d(m_buffer.sw_flux_dn_dir);
+          auto lw_flux_up                                     = subview_2d(m_buffer.lw_flux_up);
+          auto lw_flux_dn                                     = subview_2d(m_buffer.lw_flux_dn);
           auto sw_clnclrsky_flux_up     = subview_2d(m_buffer.sw_clnclrsky_flux_up);
           auto sw_clnclrsky_flux_dn     = subview_2d(m_buffer.sw_clnclrsky_flux_dn);
           auto sw_clnclrsky_flux_dn_dir = subview_2d(m_buffer.sw_clnclrsky_flux_dn_dir);
@@ -962,12 +1028,14 @@ void RRTMGPRadiation::run_impl(const double dt) {
           auto sfc_flux_dir_nir         = subview_1d(m_buffer.sfc_flux_dir_nir);
           auto sfc_flux_dif_vis         = subview_1d(m_buffer.sfc_flux_dif_vis);
           auto sfc_flux_dif_nir         = subview_1d(m_buffer.sfc_flux_dif_nir);
-          auto aero_tau_sw = subview_3d(m_buffer.aero_tau_sw); auto aero_ssa_sw = subview_3d(m_buffer.aero_ssa_sw);
-          auto aero_g_sw = subview_3d(m_buffer.aero_g_sw); auto aero_tau_lw = subview_3d(m_buffer.aero_tau_lw);
-          auto cld_tau_sw_bnd                                               = subview_3d(m_buffer.cld_tau_sw_bnd);
-          auto cld_tau_lw_bnd                                               = subview_3d(m_buffer.cld_tau_lw_bnd);
-          auto cld_tau_sw_gpt                                               = subview_3d(m_buffer.cld_tau_sw_gpt);
-          auto cld_tau_lw_gpt                                               = subview_3d(m_buffer.cld_tau_lw_gpt););
+          auto aero_tau_sw              = subview_3d(m_buffer.aero_tau_sw);
+          auto aero_ssa_sw              = subview_3d(m_buffer.aero_ssa_sw);
+          auto aero_g_sw                = subview_3d(m_buffer.aero_g_sw);
+          auto aero_tau_lw              = subview_3d(m_buffer.aero_tau_lw);
+          auto cld_tau_sw_bnd           = subview_3d(m_buffer.cld_tau_sw_bnd);
+          auto cld_tau_lw_bnd           = subview_3d(m_buffer.cld_tau_lw_bnd);
+          auto cld_tau_sw_gpt           = subview_3d(m_buffer.cld_tau_sw_gpt);
+          auto cld_tau_lw_gpt           = subview_3d(m_buffer.cld_tau_lw_gpt););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       ConvertToRrtmgpSubview conv = {beg, ncol};
@@ -984,55 +1052,68 @@ void RRTMGPRadiation::run_impl(const double dt) {
           auto p_del_k       = conv.subview2d(d_pdel, m_buffer.p_del_k, m_nlay);
           auto t_lev_k       = conv.subview2d(d_tint, m_buffer.t_lev_k, m_nlay + 1);
           auto sfc_alb_dir_k = m_buffer.sfc_alb_dir_k; auto sfc_alb_dif_k = m_buffer.sfc_alb_dif_k;
-          auto sfc_alb_dir_vis_k                                          = conv.subview1d(d_sfc_alb_dir_vis);
-          auto sfc_alb_dir_nir_k                                          = conv.subview1d(d_sfc_alb_dir_nir);
-          auto sfc_alb_dif_vis_k                                          = conv.subview1d(d_sfc_alb_dif_vis);
-          auto sfc_alb_dif_nir_k                                          = conv.subview1d(d_sfc_alb_dif_nir);
-          auto qc_k                                                       = conv.subview2d(d_qc, m_buffer.qc_k, m_nlay);
-          auto nc_k                                                       = conv.subview2d(d_nc, m_buffer.nc_k, m_nlay);
-          auto qi_k = conv.subview2d(d_qi, m_buffer.qi_k, m_nlay); auto cldfrac_tot_k = m_buffer.cldfrac_tot_k;
-          auto rel_k            = conv.subview2d(d_rel, m_buffer.eff_radius_qc_k, m_nlay);
-          auto rei_k            = conv.subview2d(d_rei, m_buffer.eff_radius_qi_k, m_nlay);
-          auto sw_flux_up_k     = conv.subview2d(d_sw_flux_up, m_buffer.sw_flux_up_k, m_nlay + 1);
-          auto sw_flux_dn_k     = conv.subview2d(d_sw_flux_dn, m_buffer.sw_flux_dn_k, m_nlay + 1);
-          auto sw_flux_dn_dir_k = conv.subview2d(d_sw_flux_dn_dir, m_buffer.sw_flux_dn_dir_k, m_nlay + 1);
-          auto lw_flux_up_k     = conv.subview2d(d_lw_flux_up, m_buffer.lw_flux_up_k, m_nlay + 1);
-          auto lw_flux_dn_k     = conv.subview2d(d_lw_flux_dn, m_buffer.lw_flux_dn_k, m_nlay + 1);
+          auto sfc_alb_dir_vis_k = conv.subview1d(d_sfc_alb_dir_vis);
+          auto sfc_alb_dir_nir_k = conv.subview1d(d_sfc_alb_dir_nir);
+          auto sfc_alb_dif_vis_k = conv.subview1d(d_sfc_alb_dif_vis);
+          auto sfc_alb_dif_nir_k = conv.subview1d(d_sfc_alb_dif_nir);
+          auto qc_k              = conv.subview2d(d_qc, m_buffer.qc_k, m_nlay);
+          auto nc_k              = conv.subview2d(d_nc, m_buffer.nc_k, m_nlay);
+          auto qi_k              = conv.subview2d(d_qi, m_buffer.qi_k, m_nlay);
+          auto cldfrac_tot_k     = m_buffer.cldfrac_tot_k;
+          auto rel_k             = conv.subview2d(d_rel, m_buffer.eff_radius_qc_k, m_nlay);
+          auto rei_k             = conv.subview2d(d_rei, m_buffer.eff_radius_qi_k, m_nlay);
+          auto sw_flux_up_k      = conv.subview2d(d_sw_flux_up, m_buffer.sw_flux_up_k, m_nlay + 1);
+          auto sw_flux_dn_k      = conv.subview2d(d_sw_flux_dn, m_buffer.sw_flux_dn_k, m_nlay + 1);
+          auto sw_flux_dn_dir_k =
+              conv.subview2d(d_sw_flux_dn_dir, m_buffer.sw_flux_dn_dir_k, m_nlay + 1);
+          auto lw_flux_up_k = conv.subview2d(d_lw_flux_up, m_buffer.lw_flux_up_k, m_nlay + 1);
+          auto lw_flux_dn_k = conv.subview2d(d_lw_flux_dn, m_buffer.lw_flux_dn_k, m_nlay + 1);
           auto sw_clnclrsky_flux_up_k =
               conv.subview2d(d_sw_clnclrsky_flux_up, m_buffer.sw_clnclrsky_flux_up_k, m_nlay + 1);
           auto sw_clnclrsky_flux_dn_k =
               conv.subview2d(d_sw_clnclrsky_flux_dn, m_buffer.sw_clnclrsky_flux_dn_k, m_nlay + 1);
-          auto sw_clnclrsky_flux_dn_dir_k =
-              conv.subview2d(d_sw_clnclrsky_flux_dn_dir, m_buffer.sw_clnclrsky_flux_dn_dir_k, m_nlay + 1);
-          auto sw_clrsky_flux_up_k = conv.subview2d(d_sw_clrsky_flux_up, m_buffer.sw_clrsky_flux_up_k, m_nlay + 1);
-          auto sw_clrsky_flux_dn_k = conv.subview2d(d_sw_clrsky_flux_dn, m_buffer.sw_clrsky_flux_dn_k, m_nlay + 1);
+          auto sw_clnclrsky_flux_dn_dir_k = conv.subview2d(
+              d_sw_clnclrsky_flux_dn_dir, m_buffer.sw_clnclrsky_flux_dn_dir_k, m_nlay + 1);
+          auto sw_clrsky_flux_up_k =
+              conv.subview2d(d_sw_clrsky_flux_up, m_buffer.sw_clrsky_flux_up_k, m_nlay + 1);
+          auto sw_clrsky_flux_dn_k =
+              conv.subview2d(d_sw_clrsky_flux_dn, m_buffer.sw_clrsky_flux_dn_k, m_nlay + 1);
           auto sw_clrsky_flux_dn_dir_k =
               conv.subview2d(d_sw_clrsky_flux_dn_dir, m_buffer.sw_clrsky_flux_dn_dir_k, m_nlay + 1);
-          auto sw_clnsky_flux_up_k = conv.subview2d(d_sw_clnsky_flux_up, m_buffer.sw_clnsky_flux_up_k, m_nlay + 1);
-          auto sw_clnsky_flux_dn_k = conv.subview2d(d_sw_clnsky_flux_dn, m_buffer.sw_clnsky_flux_dn_k, m_nlay + 1);
+          auto sw_clnsky_flux_up_k =
+              conv.subview2d(d_sw_clnsky_flux_up, m_buffer.sw_clnsky_flux_up_k, m_nlay + 1);
+          auto sw_clnsky_flux_dn_k =
+              conv.subview2d(d_sw_clnsky_flux_dn, m_buffer.sw_clnsky_flux_dn_k, m_nlay + 1);
           auto sw_clnsky_flux_dn_dir_k =
               conv.subview2d(d_sw_clnsky_flux_dn_dir, m_buffer.sw_clnsky_flux_dn_dir_k, m_nlay + 1);
           auto lw_clnclrsky_flux_up_k =
               conv.subview2d(d_lw_clnclrsky_flux_up, m_buffer.lw_clnclrsky_flux_up_k, m_nlay + 1);
           auto lw_clnclrsky_flux_dn_k =
               conv.subview2d(d_lw_clnclrsky_flux_dn, m_buffer.lw_clnclrsky_flux_dn_k, m_nlay + 1);
-          auto lw_clrsky_flux_up_k = conv.subview2d(d_lw_clrsky_flux_up, m_buffer.lw_clrsky_flux_up_k, m_nlay + 1);
-          auto lw_clrsky_flux_dn_k = conv.subview2d(d_lw_clrsky_flux_dn, m_buffer.lw_clrsky_flux_dn_k, m_nlay + 1);
-          auto lw_clnsky_flux_up_k = conv.subview2d(d_lw_clnsky_flux_up, m_buffer.lw_clnsky_flux_up_k, m_nlay + 1);
-          auto lw_clnsky_flux_dn_k = conv.subview2d(d_lw_clnsky_flux_dn, m_buffer.lw_clnsky_flux_dn_k, m_nlay + 1);
-          auto sw_bnd_flux_up_k = m_buffer.sw_bnd_flux_up_k; auto sw_bnd_flux_dn_k = m_buffer.sw_bnd_flux_dn_k;
-          auto sw_bnd_flux_dir_k = m_buffer.sw_bnd_flux_dir_k; auto sw_bnd_flux_dif_k = m_buffer.sw_bnd_flux_dif_k;
-          auto lw_bnd_flux_up_k = m_buffer.lw_bnd_flux_up_k; auto lw_bnd_flux_dn_k = m_buffer.lw_bnd_flux_dn_k;
-          auto sfc_flux_dir_vis_k                                                  = conv.subview1d(d_sfc_flux_dir_vis);
-          auto sfc_flux_dir_nir_k                                                  = conv.subview1d(d_sfc_flux_dir_nir);
-          auto sfc_flux_dif_vis_k                                                  = conv.subview1d(d_sfc_flux_dif_vis);
-          auto sfc_flux_dif_nir_k = conv.subview1d(d_sfc_flux_dif_nir); auto aero_tau_sw_k = m_buffer.aero_tau_sw_k;
-          auto aero_ssa_sw_k = m_buffer.aero_ssa_sw_k; auto aero_g_sw_k = m_buffer.aero_g_sw_k;
-          auto aero_tau_lw_k                                            = m_buffer.aero_tau_lw_k;
-          auto cld_tau_sw_bnd_k                                         = conv.subview3d(m_buffer.cld_tau_sw_bnd_k);
-          auto cld_tau_lw_bnd_k                                         = conv.subview3d(m_buffer.cld_tau_lw_bnd_k);
-          auto cld_tau_sw_gpt_k                                         = conv.subview3d(m_buffer.cld_tau_sw_gpt_k);
-          auto cld_tau_lw_gpt_k                                         = conv.subview3d(m_buffer.cld_tau_lw_gpt_k););
+          auto lw_clrsky_flux_up_k =
+              conv.subview2d(d_lw_clrsky_flux_up, m_buffer.lw_clrsky_flux_up_k, m_nlay + 1);
+          auto lw_clrsky_flux_dn_k =
+              conv.subview2d(d_lw_clrsky_flux_dn, m_buffer.lw_clrsky_flux_dn_k, m_nlay + 1);
+          auto lw_clnsky_flux_up_k =
+              conv.subview2d(d_lw_clnsky_flux_up, m_buffer.lw_clnsky_flux_up_k, m_nlay + 1);
+          auto lw_clnsky_flux_dn_k =
+              conv.subview2d(d_lw_clnsky_flux_dn, m_buffer.lw_clnsky_flux_dn_k, m_nlay + 1);
+          auto sw_bnd_flux_up_k   = m_buffer.sw_bnd_flux_up_k;
+          auto sw_bnd_flux_dn_k   = m_buffer.sw_bnd_flux_dn_k;
+          auto sw_bnd_flux_dir_k  = m_buffer.sw_bnd_flux_dir_k;
+          auto sw_bnd_flux_dif_k  = m_buffer.sw_bnd_flux_dif_k;
+          auto lw_bnd_flux_up_k   = m_buffer.lw_bnd_flux_up_k;
+          auto lw_bnd_flux_dn_k   = m_buffer.lw_bnd_flux_dn_k;
+          auto sfc_flux_dir_vis_k = conv.subview1d(d_sfc_flux_dir_vis);
+          auto sfc_flux_dir_nir_k = conv.subview1d(d_sfc_flux_dir_nir);
+          auto sfc_flux_dif_vis_k = conv.subview1d(d_sfc_flux_dif_vis);
+          auto sfc_flux_dif_nir_k = conv.subview1d(d_sfc_flux_dif_nir);
+          auto aero_tau_sw_k = m_buffer.aero_tau_sw_k; auto aero_ssa_sw_k = m_buffer.aero_ssa_sw_k;
+          auto aero_g_sw_k = m_buffer.aero_g_sw_k; auto aero_tau_lw_k = m_buffer.aero_tau_lw_k;
+          auto cld_tau_sw_bnd_k = conv.subview3d(m_buffer.cld_tau_sw_bnd_k);
+          auto cld_tau_lw_bnd_k = conv.subview3d(m_buffer.cld_tau_lw_bnd_k);
+          auto cld_tau_sw_gpt_k = conv.subview3d(m_buffer.cld_tau_sw_gpt_k);
+          auto cld_tau_lw_gpt_k = conv.subview3d(m_buffer.cld_tau_lw_gpt_k););
 #endif
 
       // Set gas concs to "view" only the first ncol columns
@@ -1066,157 +1147,169 @@ void RRTMGPRadiation::run_impl(const double dt) {
         Kokkos::deep_copy(d_mu0, h_mu0);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-        TIMED_KERNEL(Kokkos::parallel_for(
-                         policy, KOKKOS_LAMBDA(const MemberType &team) {
-                           const int i    = team.league_rank();
-                           const int icol = i + beg;
+        TIMED_KERNEL(
+            Kokkos::parallel_for(
+                policy, KOKKOS_LAMBDA(const MemberType &team) {
+                  const int i    = team.league_rank();
+                  const int icol = i + beg;
 
-                           // Calculate dz
-                           const auto pseudo_density = ekat::subview(d_pdel, icol);
-                           const auto p_mid          = ekat::subview(d_pmid, icol);
-                           const auto T_mid          = ekat::subview(d_tmid, icol);
-                           const auto qv             = ekat::subview(d_qv, icol);
-                           const auto dz             = ekat::subview(d_dz, i);
-                           PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
-                           team.team_barrier();
+                  // Calculate dz
+                  const auto pseudo_density = ekat::subview(d_pdel, icol);
+                  const auto p_mid          = ekat::subview(d_pmid, icol);
+                  const auto T_mid          = ekat::subview(d_tmid, icol);
+                  const auto qv             = ekat::subview(d_qv, icol);
+                  const auto dz             = ekat::subview(d_dz, i);
+                  PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
+                  team.team_barrier();
 
-                           // Calculate T_int from longwave flux up from the surface, assuming
-                           // blackbody emission with emissivity of 1.
-                           // TODO: Does land model assume something other than emissivity of 1? If so
-                           // we should use that here rather than assuming perfect blackbody emission.
-                           // NOTE: RRTMGP can accept vertical ordering surface to toa, or toa to
-                           // surface. The input data for the standalone test is ordered surface to
-                           // toa, but SCREAM in general assumes data is toa to surface. We account
-                           // for this here by swapping bc_top and bc_bot in the case that the input
-                           // data is ordered surface to toa.
-                           const auto T_int  = ekat::subview(d_tint, i);
-                           const int itop    = (p_mid(0) < p_mid(nlay - 1)) ? 0 : nlay - 1;
-                           const Real bc_top = T_mid(itop);
-                           const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(icol) / stebol));
-                           if (itop == 0) {
-                             CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_top, bc_bot, T_int);
-                           } else {
-                             CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_bot, bc_top, T_int);
-                           }
-                           team.team_barrier();
+                  // Calculate T_int from longwave flux up from the surface, assuming
+                  // blackbody emission with emissivity of 1.
+                  // TODO: Does land model assume something other than emissivity of 1? If so
+                  // we should use that here rather than assuming perfect blackbody emission.
+                  // NOTE: RRTMGP can accept vertical ordering surface to toa, or toa to
+                  // surface. The input data for the standalone test is ordered surface to
+                  // toa, but SCREAM in general assumes data is toa to surface. We account
+                  // for this here by swapping bc_top and bc_bot in the case that the input
+                  // data is ordered surface to toa.
+                  const auto T_int  = ekat::subview(d_tint, i);
+                  const int itop    = (p_mid(0) < p_mid(nlay - 1)) ? 0 : nlay - 1;
+                  const Real bc_top = T_mid(itop);
+                  const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(icol) / stebol));
+                  if (itop == 0) {
+                    CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_top, bc_bot,
+                                                        T_int);
+                  } else {
+                    CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_bot, bc_top,
+                                                        T_int);
+                  }
+                  team.team_barrier();
 
 #ifdef RRTMGP_ENABLE_YAKL
-                           mu0(i + 1)             = d_mu0(i);
-                           sfc_alb_dir_vis(i + 1) = d_sfc_alb_dir_vis(icol);
-                           sfc_alb_dir_nir(i + 1) = d_sfc_alb_dir_nir(icol);
-                           sfc_alb_dif_vis(i + 1) = d_sfc_alb_dif_vis(icol);
-                           sfc_alb_dif_nir(i + 1) = d_sfc_alb_dif_nir(icol);
+                  mu0(i + 1)             = d_mu0(i);
+                  sfc_alb_dir_vis(i + 1) = d_sfc_alb_dir_vis(icol);
+                  sfc_alb_dir_nir(i + 1) = d_sfc_alb_dir_nir(icol);
+                  sfc_alb_dif_vis(i + 1) = d_sfc_alb_dif_vis(icol);
+                  sfc_alb_dif_nir(i + 1) = d_sfc_alb_dif_nir(icol);
 
-                           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
-                             p_lay(i + 1, k + 1) = d_pmid(icol, k);
-                             t_lay(i + 1, k + 1) = d_tmid(icol, k);
-                             z_del(i + 1, k + 1) = d_dz(i, k);
-                             p_del(i + 1, k + 1) = d_pdel(icol, k);
-                             qc(i + 1, k + 1)    = d_qc(icol, k);
-                             nc(i + 1, k + 1)    = d_nc(icol, k);
-                             qi(i + 1, k + 1)    = d_qi(icol, k);
-                             rel(i + 1, k + 1)   = d_rel(icol, k);
-                             rei(i + 1, k + 1)   = d_rei(icol, k);
-                             p_lev(i + 1, k + 1) = d_pint(icol, k);
-                             t_lev(i + 1, k + 1) = d_tint(i, k);
-                           });
+                  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
+                    p_lay(i + 1, k + 1) = d_pmid(icol, k);
+                    t_lay(i + 1, k + 1) = d_tmid(icol, k);
+                    z_del(i + 1, k + 1) = d_dz(i, k);
+                    p_del(i + 1, k + 1) = d_pdel(icol, k);
+                    qc(i + 1, k + 1)    = d_qc(icol, k);
+                    nc(i + 1, k + 1)    = d_nc(icol, k);
+                    qi(i + 1, k + 1)    = d_qi(icol, k);
+                    rel(i + 1, k + 1)   = d_rel(icol, k);
+                    rei(i + 1, k + 1)   = d_rei(icol, k);
+                    p_lev(i + 1, k + 1) = d_pint(icol, k);
+                    t_lev(i + 1, k + 1) = d_tint(i, k);
+                  });
 
-                           p_lev(i + 1, nlay + 1) = d_pint(icol, nlay);
-                           t_lev(i + 1, nlay + 1) = d_tint(i, nlay);
+                  p_lev(i + 1, nlay + 1) = d_pint(icol, nlay);
+                  t_lev(i + 1, nlay + 1) = d_tint(i, nlay);
 
-                           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay)
-                           // order
-                           if (do_aerosol_rad) {
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay), [&](const int &idx) {
-                               auto b                           = idx / nlay;
-                               auto k                           = idx % nlay;
-                               aero_tau_sw(i + 1, k + 1, b + 1) = d_aero_tau_sw(icol, b, k);
-                               aero_ssa_sw(i + 1, k + 1, b + 1) = d_aero_ssa_sw(icol, b, k);
-                               aero_g_sw(i + 1, k + 1, b + 1)   = d_aero_g_sw(icol, b, k);
-                             });
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay), [&](const int &idx) {
-                               auto b                           = idx / nlay;
-                               auto k                           = idx % nlay;
-                               aero_tau_lw(i + 1, k + 1, b + 1) = d_aero_tau_lw(icol, b, k);
-                             });
-                           } else {
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay), [&](const int &idx) {
-                               auto b                           = idx / nlay;
-                               auto k                           = idx % nlay;
-                               aero_tau_sw(i + 1, k + 1, b + 1) = 0;
-                               aero_ssa_sw(i + 1, k + 1, b + 1) = 0;
-                               aero_g_sw(i + 1, k + 1, b + 1)   = 0;
-                             });
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay), [&](const int &idx) {
-                               auto b                           = idx / nlay;
-                               auto k                           = idx % nlay;
-                               aero_tau_lw(i + 1, k + 1, b + 1) = 0;
-                             });
-                           }
+                  // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in
+                  // (col,bnd,lay) order
+                  if (do_aerosol_rad) {
+                    Kokkos::parallel_for(
+                        Kokkos::TeamVectorRange(team, nswbands * nlay), [&](const int &idx) {
+                          auto b                           = idx / nlay;
+                          auto k                           = idx % nlay;
+                          aero_tau_sw(i + 1, k + 1, b + 1) = d_aero_tau_sw(icol, b, k);
+                          aero_ssa_sw(i + 1, k + 1, b + 1) = d_aero_ssa_sw(icol, b, k);
+                          aero_g_sw(i + 1, k + 1, b + 1)   = d_aero_g_sw(icol, b, k);
+                        });
+                    Kokkos::parallel_for(
+                        Kokkos::TeamVectorRange(team, nlwbands * nlay), [&](const int &idx) {
+                          auto b                           = idx / nlay;
+                          auto k                           = idx % nlay;
+                          aero_tau_lw(i + 1, k + 1, b + 1) = d_aero_tau_lw(icol, b, k);
+                        });
+                  } else {
+                    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay),
+                                         [&](const int &idx) {
+                                           auto b                           = idx / nlay;
+                                           auto k                           = idx % nlay;
+                                           aero_tau_sw(i + 1, k + 1, b + 1) = 0;
+                                           aero_ssa_sw(i + 1, k + 1, b + 1) = 0;
+                                           aero_g_sw(i + 1, k + 1, b + 1)   = 0;
+                                         });
+                    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay),
+                                         [&](const int &idx) {
+                                           auto b                           = idx / nlay;
+                                           auto k                           = idx % nlay;
+                                           aero_tau_lw(i + 1, k + 1, b + 1) = 0;
+                                         });
+                  }
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
 #ifdef RRTMGP_LAYOUT_LEFT
-                           // Copy to layout left buffer views
-                           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
-                             p_lay_k(i, k) = d_pmid(icol, k);
-                             t_lay_k(i, k) = d_tmid(icol, k);
-                             z_del_k(i, k) = d_dz(i, k);
-                             p_del_k(i, k) = d_pdel(icol, k);
-                             qc_k(i, k)    = d_qc(icol, k);
-                             nc_k(i, k)    = d_nc(icol, k);
-                             qi_k(i, k)    = d_qi(icol, k);
-                             rel_k(i, k)   = d_rel(icol, k);
-                             rei_k(i, k)   = d_rei(icol, k);
-                             p_lev_k(i, k) = d_pint(icol, k);
-                             t_lev_k(i, k) = d_tint(i, k);
-                           });
+                  // Copy to layout left buffer views
+                  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
+                    p_lay_k(i, k) = d_pmid(icol, k);
+                    t_lay_k(i, k) = d_tmid(icol, k);
+                    z_del_k(i, k) = d_dz(i, k);
+                    p_del_k(i, k) = d_pdel(icol, k);
+                    qc_k(i, k)    = d_qc(icol, k);
+                    nc_k(i, k)    = d_nc(icol, k);
+                    qi_k(i, k)    = d_qi(icol, k);
+                    rel_k(i, k)   = d_rel(icol, k);
+                    rei_k(i, k)   = d_rei(icol, k);
+                    p_lev_k(i, k) = d_pint(icol, k);
+                    t_lev_k(i, k) = d_tint(i, k);
+                  });
 
-                           p_lev_k(i, nlay) = d_pint(icol, nlay);
-                           t_lev_k(i, nlay) = d_tint(i, nlay);
+                  p_lev_k(i, nlay) = d_pint(icol, nlay);
+                  t_lev_k(i, nlay) = d_tint(i, nlay);
 #endif
 
-                           // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay)
-                           // order
-                           if (do_aerosol_rad) {
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay), [&](const int &idx) {
-                               auto b                 = idx / nlay;
-                               auto k                 = idx % nlay;
-                               aero_tau_sw_k(i, k, b) = d_aero_tau_sw(icol, b, k);
-                               aero_ssa_sw_k(i, k, b) = d_aero_ssa_sw(icol, b, k);
-                               aero_g_sw_k(i, k, b)   = d_aero_g_sw(icol, b, k);
-                             });
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay), [&](const int &idx) {
-                               auto b                 = idx / nlay;
-                               auto k                 = idx % nlay;
-                               aero_tau_lw_k(i, k, b) = d_aero_tau_lw(icol, b, k);
-                             });
-                           } else {
-                             // cuda complains (in warning only) about these being not allowed...
-                             // Kokkos::deep_copy(aero_tau_sw_k, 0);
-                             // Kokkos::deep_copy(aero_ssa_sw_k, 0);
-                             // Kokkos::deep_copy(aero_g_sw_k  , 0);
-                             // Kokkos::deep_copy(aero_tau_lw_k, 0);
-                             // So, do the manual labor instead:
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay), [&](const int &idx) {
-                               auto b                 = idx / nlay;
-                               auto k                 = idx % nlay;
-                               aero_tau_sw_k(i, k, b) = 0.0;
-                               aero_ssa_sw_k(i, k, b) = 0.0;
-                               aero_g_sw_k(i, k, b)   = 0.0;
-                             });
-                             Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay), [&](const int &idx) {
-                               auto b                 = idx / nlay;
-                               auto k                 = idx % nlay;
-                               aero_tau_lw_k(i, k, b) = 0.0;
-                             });
-                           }
+                  // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in
+                  // (col,bnd,lay) order
+                  if (do_aerosol_rad) {
+                    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay),
+                                         [&](const int &idx) {
+                                           auto b                 = idx / nlay;
+                                           auto k                 = idx % nlay;
+                                           aero_tau_sw_k(i, k, b) = d_aero_tau_sw(icol, b, k);
+                                           aero_ssa_sw_k(i, k, b) = d_aero_ssa_sw(icol, b, k);
+                                           aero_g_sw_k(i, k, b)   = d_aero_g_sw(icol, b, k);
+                                         });
+                    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay),
+                                         [&](const int &idx) {
+                                           auto b                 = idx / nlay;
+                                           auto k                 = idx % nlay;
+                                           aero_tau_lw_k(i, k, b) = d_aero_tau_lw(icol, b, k);
+                                         });
+                  } else {
+                    // cuda complains (in warning only) about these being not allowed...
+                    // Kokkos::deep_copy(aero_tau_sw_k, 0);
+                    // Kokkos::deep_copy(aero_ssa_sw_k, 0);
+                    // Kokkos::deep_copy(aero_g_sw_k  , 0);
+                    // Kokkos::deep_copy(aero_tau_lw_k, 0);
+                    // So, do the manual labor instead:
+                    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nswbands * nlay),
+                                         [&](const int &idx) {
+                                           auto b                 = idx / nlay;
+                                           auto k                 = idx % nlay;
+                                           aero_tau_sw_k(i, k, b) = 0.0;
+                                           aero_ssa_sw_k(i, k, b) = 0.0;
+                                           aero_g_sw_k(i, k, b)   = 0.0;
+                                         });
+                    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlwbands * nlay),
+                                         [&](const int &idx) {
+                                           auto b                 = idx / nlay;
+                                           auto k                 = idx % nlay;
+                                           aero_tau_lw_k(i, k, b) = 0.0;
+                                         });
+                  }
 #endif
-                         }););
+                }););
       }
       Kokkos::fence();
 #ifdef RRTMGP_ENABLE_KOKKOS
-      COMPARE_ALL_WRAP(std::vector<real3d>({aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw}),
-                       std::vector<real3dk>({aero_tau_sw_k, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k}));
+      COMPARE_ALL_WRAP(
+          std::vector<real3d>({aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw}),
+          std::vector<real3dk>({aero_tau_sw_k, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k}));
 #endif
 
       // Populate GasConcs object to pass to RRTMGP driver
@@ -1245,7 +1338,8 @@ void RRTMGPRadiation::run_impl(const double dt) {
               const int i    = team.league_rank();
               const int icol = i + beg;
               Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
-                tmp2d(i + 1, k + 1) = d_vmr(icol, k); // Note that for YAKL arrays i and k start with index 1
+                tmp2d(i + 1, k + 1) =
+                    d_vmr(icol, k); // Note that for YAKL arrays i and k start with index 1
               });
             });
         Kokkos::fence();
@@ -1361,14 +1455,14 @@ void RRTMGPRadiation::run_impl(const double dt) {
       // Compute band-by-band surface_albedos. This is needed since
       // the AD passes broadband albedos, but rrtmgp require band-by-band.
 #ifdef RRTMGP_ENABLE_YAKL
-      TIMED_KERNEL(rrtmgp::compute_band_by_band_surface_albedos(ncol, nswbands, sfc_alb_dir_vis, sfc_alb_dir_nir,
-                                                                sfc_alb_dif_vis, sfc_alb_dif_nir, sfc_alb_dir,
-                                                                sfc_alb_dif););
+      TIMED_KERNEL(rrtmgp::compute_band_by_band_surface_albedos(
+                       ncol, nswbands, sfc_alb_dir_vis, sfc_alb_dir_nir, sfc_alb_dif_vis,
+                       sfc_alb_dif_nir, sfc_alb_dir, sfc_alb_dif););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      TIMED_KERNEL(interface_t::compute_band_by_band_surface_albedos(ncol, nswbands, sfc_alb_dir_vis_k,
-                                                                     sfc_alb_dir_nir_k, sfc_alb_dif_vis_k,
-                                                                     sfc_alb_dif_nir_k, sfc_alb_dir_k, sfc_alb_dif_k););
+      TIMED_KERNEL(interface_t::compute_band_by_band_surface_albedos(
+                       ncol, nswbands, sfc_alb_dir_vis_k, sfc_alb_dir_nir_k, sfc_alb_dif_vis_k,
+                       sfc_alb_dif_nir_k, sfc_alb_dir_k, sfc_alb_dif_k););
       COMPARE_ALL_WRAP(std::vector<real2d>({sfc_alb_dir, sfc_alb_dif}),
                        std::vector<real2dk>({sfc_alb_dir_k, sfc_alb_dif_k}));
 #endif
@@ -1377,28 +1471,32 @@ void RRTMGPRadiation::run_impl(const double dt) {
       // Run RRTMGP driver
 #ifdef RRTMGP_ENABLE_YAKL
       TIMED_KERNEL(
-          rrtmgp::rrtmgp_main(ncol, m_nlay, p_lay, t_lay, p_lev, t_lev, m_gas_concs, sfc_alb_dir, sfc_alb_dif, mu0, lwp,
-                              iwp, rel, rei, cldfrac_tot, aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
-                              cld_tau_sw_bnd, cld_tau_lw_bnd, cld_tau_sw_gpt, cld_tau_lw_gpt, sw_flux_up, sw_flux_dn,
-                              sw_flux_dn_dir, lw_flux_up, lw_flux_dn, sw_clnclrsky_flux_up, sw_clnclrsky_flux_dn,
-                              sw_clnclrsky_flux_dn_dir, sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir,
-                              sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir, lw_clnclrsky_flux_up,
-                              lw_clnclrsky_flux_dn, lw_clrsky_flux_up, lw_clrsky_flux_dn, lw_clnsky_flux_up,
-                              lw_clnsky_flux_dn, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir, lw_bnd_flux_up,
-                              lw_bnd_flux_dn, eccf, m_atm_logger, m_extra_clnclrsky_diag, m_extra_clnsky_diag););
+          rrtmgp::rrtmgp_main(
+              ncol, m_nlay, p_lay, t_lay, p_lev, t_lev, m_gas_concs, sfc_alb_dir, sfc_alb_dif, mu0,
+              lwp, iwp, rel, rei, cldfrac_tot, aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
+              cld_tau_sw_bnd, cld_tau_lw_bnd, cld_tau_sw_gpt, cld_tau_lw_gpt, sw_flux_up,
+              sw_flux_dn, sw_flux_dn_dir, lw_flux_up, lw_flux_dn, sw_clnclrsky_flux_up,
+              sw_clnclrsky_flux_dn, sw_clnclrsky_flux_dn_dir, sw_clrsky_flux_up, sw_clrsky_flux_dn,
+              sw_clrsky_flux_dn_dir, sw_clnsky_flux_up, sw_clnsky_flux_dn, sw_clnsky_flux_dn_dir,
+              lw_clnclrsky_flux_up, lw_clnclrsky_flux_dn, lw_clrsky_flux_up, lw_clrsky_flux_dn,
+              lw_clnsky_flux_up, lw_clnsky_flux_dn, sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+              lw_bnd_flux_up, lw_bnd_flux_dn, eccf, m_atm_logger, m_extra_clnclrsky_diag,
+              m_extra_clnsky_diag););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      TIMED_KERNEL(interface_t::rrtmgp_main(
-                       ncol, m_nlay, p_lay_k, t_lay_k, p_lev_k, t_lev_k, m_gas_concs_k, sfc_alb_dir_k, sfc_alb_dif_k,
-                       d_mu0, lwp_k, iwp_k, rel_k, rei_k, cldfrac_tot_k, aero_tau_sw_k, aero_ssa_sw_k, aero_g_sw_k,
-                       aero_tau_lw_k, cld_tau_sw_bnd_k, cld_tau_lw_bnd_k, cld_tau_sw_gpt_k, cld_tau_lw_gpt_k,
-                       sw_flux_up_k, sw_flux_dn_k, sw_flux_dn_dir_k, lw_flux_up_k, lw_flux_dn_k, sw_clnclrsky_flux_up_k,
-                       sw_clnclrsky_flux_dn_k, sw_clnclrsky_flux_dn_dir_k, sw_clrsky_flux_up_k, sw_clrsky_flux_dn_k,
-                       sw_clrsky_flux_dn_dir_k, sw_clnsky_flux_up_k, sw_clnsky_flux_dn_k, sw_clnsky_flux_dn_dir_k,
-                       lw_clnclrsky_flux_up_k, lw_clnclrsky_flux_dn_k, lw_clrsky_flux_up_k, lw_clrsky_flux_dn_k,
-                       lw_clnsky_flux_up_k, lw_clnsky_flux_dn_k, sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k,
-                       lw_bnd_flux_up_k, lw_bnd_flux_dn_k, eccf, m_atm_logger, m_extra_clnclrsky_diag,
-                       m_extra_clnsky_diag););
+      TIMED_KERNEL(
+          interface_t::rrtmgp_main(
+              ncol, m_nlay, p_lay_k, t_lay_k, p_lev_k, t_lev_k, m_gas_concs_k, sfc_alb_dir_k,
+              sfc_alb_dif_k, d_mu0, lwp_k, iwp_k, rel_k, rei_k, cldfrac_tot_k, aero_tau_sw_k,
+              aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k, cld_tau_sw_bnd_k, cld_tau_lw_bnd_k,
+              cld_tau_sw_gpt_k, cld_tau_lw_gpt_k, sw_flux_up_k, sw_flux_dn_k, sw_flux_dn_dir_k,
+              lw_flux_up_k, lw_flux_dn_k, sw_clnclrsky_flux_up_k, sw_clnclrsky_flux_dn_k,
+              sw_clnclrsky_flux_dn_dir_k, sw_clrsky_flux_up_k, sw_clrsky_flux_dn_k,
+              sw_clrsky_flux_dn_dir_k, sw_clnsky_flux_up_k, sw_clnsky_flux_dn_k,
+              sw_clnsky_flux_dn_dir_k, lw_clnclrsky_flux_up_k, lw_clnclrsky_flux_dn_k,
+              lw_clrsky_flux_up_k, lw_clrsky_flux_dn_k, lw_clnsky_flux_up_k, lw_clnsky_flux_dn_k,
+              sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k, lw_bnd_flux_up_k,
+              lw_bnd_flux_dn_k, eccf, m_atm_logger, m_extra_clnclrsky_diag, m_extra_clnsky_diag););
       COMPARE_ALL_WRAP(std::vector<real2d>({sw_flux_up,
                                             sw_flux_dn,
                                             sw_flux_dn_dir,
@@ -1439,45 +1537,51 @@ void RRTMGPRadiation::run_impl(const double dt) {
                                              lw_clrsky_flux_dn_k,
                                              lw_clnsky_flux_up_k,
                                              lw_clnsky_flux_dn_k}));
-      COMPARE_ALL_WRAP(
-          std::vector<real3d>({sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir, lw_bnd_flux_up, lw_bnd_flux_dn}),
-          std::vector<real3dk>(
-              {sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k, lw_bnd_flux_up_k, lw_bnd_flux_dn_k}));
+      COMPARE_ALL_WRAP(std::vector<real3d>({sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+                                            lw_bnd_flux_up, lw_bnd_flux_dn}),
+                       std::vector<real3dk>({sw_bnd_flux_up_k, sw_bnd_flux_dn_k, sw_bnd_flux_dir_k,
+                                             lw_bnd_flux_up_k, lw_bnd_flux_dn_k}));
 #endif
 
       // Update heating tendency
 #ifdef RRTMGP_ENABLE_YAKL
       TIMED_INLINE_KERNEL(
-          heating_tendency, auto sw_heating = m_buffer.sw_heating; auto lw_heating = m_buffer.lw_heating;
+          heating_tendency, auto sw_heating = m_buffer.sw_heating;
+          auto lw_heating = m_buffer.lw_heating;
           rrtmgp::compute_heating_rate(sw_flux_up, sw_flux_dn, p_del, sw_heating);
           rrtmgp::compute_heating_rate(lw_flux_up, lw_flux_dn, p_del, lw_heating); {
-            const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+            const auto policy =
+                ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
             Kokkos::parallel_for(
                 policy, KOKKOS_LAMBDA(const MemberType &team) {
                   const int idx  = team.league_rank();
                   const int icol = idx + beg;
                   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &ilay) {
-                    // Combine SW and LW heating into a net heating tendency; use d_rad_heating_pdel temporarily
-                    // Note that for YAKL arrays i and k start with index 1
-                    d_rad_heating_pdel(icol, ilay) = sw_heating(idx + 1, ilay + 1) + lw_heating(idx + 1, ilay + 1);
+                    // Combine SW and LW heating into a net heating tendency; use d_rad_heating_pdel
+                    // temporarily Note that for YAKL arrays i and k start with index 1
+                    d_rad_heating_pdel(icol, ilay) =
+                        sw_heating(idx + 1, ilay + 1) + lw_heating(idx + 1, ilay + 1);
                   });
                 });
           } Kokkos::fence(););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       TIMED_INLINE_KERNEL(
-          heating_tendency, auto sw_heating_k = m_buffer.sw_heating_k; auto lw_heating_k = m_buffer.lw_heating_k;
+          heating_tendency, auto sw_heating_k = m_buffer.sw_heating_k;
+          auto lw_heating_k = m_buffer.lw_heating_k;
           rrtmgp::compute_heating_rate(sw_flux_up_k, sw_flux_dn_k, p_del_k, sw_heating_k);
           rrtmgp::compute_heating_rate(lw_flux_up_k, lw_flux_dn_k, p_del_k, lw_heating_k); {
-            const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+            const auto policy =
+                ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
             Kokkos::parallel_for(
                 policy, KOKKOS_LAMBDA(const MemberType &team) {
                   const int idx  = team.league_rank();
                   const int icol = idx + beg;
                   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &ilay) {
-                    // Combine SW and LW heating into a net heating tendency; use d_rad_heating_pdel temporarily
-                    // Note that for YAKL arrays i and k start with index 1
-                    d_rad_heating_pdel(icol, ilay) = sw_heating_k(idx, ilay) + lw_heating_k(idx, ilay);
+                    // Combine SW and LW heating into a net heating tendency; use d_rad_heating_pdel
+                    // temporarily Note that for YAKL arrays i and k start with index 1
+                    d_rad_heating_pdel(icol, ilay) =
+                        sw_heating_k(idx, ilay) + lw_heating_k(idx, ilay);
                   });
                 });
           } Kokkos::fence(););
@@ -1494,7 +1598,8 @@ void RRTMGPRadiation::run_impl(const double dt) {
           Kokkos::parallel_for(
               Kokkos::RangePolicy<ExeSpace>(0, nswbands * (nlay + 1) * ncol),
               KOKKOS_LAMBDA(const int idx) {
-                // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
+                // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride
+                // accordingly, and add 1.
                 const int ibnd = (idx / ncol) / (nlay + 1) + 1;
                 const int ilev = (idx / ncol) % (nlay + 1) + 1;
                 const int icol = idx % ncol + 1;
@@ -1502,9 +1607,9 @@ void RRTMGPRadiation::run_impl(const double dt) {
                     sw_bnd_flux_dn(icol, ilev, ibnd) - sw_bnd_flux_dir(icol, ilev, ibnd);
               });
           // Compute surface fluxes
-          rrtmgp::compute_broadband_surface_fluxes(ncol, kbot, nswbands, sw_bnd_flux_dir, sw_bnd_flux_dif,
-                                                   sfc_flux_dir_vis, sfc_flux_dir_nir, sfc_flux_dif_vis,
-                                                   sfc_flux_dif_nir););
+          rrtmgp::compute_broadband_surface_fluxes(
+              ncol, kbot, nswbands, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+              sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
       const int kbot_k = nlay;
@@ -1514,7 +1619,8 @@ void RRTMGPRadiation::run_impl(const double dt) {
           Kokkos::parallel_for(
               Kokkos::RangePolicy<ExeSpace>(0, nswbands * (nlay + 1) * ncol),
               KOKKOS_LAMBDA(const int idx) {
-                // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
+                // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride
+                // accordingly, and add 1.
                 const int ibnd = (idx / ncol) / (nlay + 1);
                 const int ilev = (idx / ncol) % (nlay + 1);
                 const int icol = idx % ncol;
@@ -1522,51 +1628,59 @@ void RRTMGPRadiation::run_impl(const double dt) {
                     sw_bnd_flux_dn_k(icol, ilev, ibnd) - sw_bnd_flux_dir_k(icol, ilev, ibnd);
               });
           // Compute surface fluxes
-          interface_t::compute_broadband_surface_fluxes(ncol, kbot_k, nswbands, sw_bnd_flux_dir_k, sw_bnd_flux_dif_k,
-                                                        sfc_flux_dir_vis_k, sfc_flux_dir_nir_k, sfc_flux_dif_vis_k,
-                                                        sfc_flux_dif_nir_k););
-      COMPARE_ALL_WRAP(
-          std::vector<real1d>({sfc_flux_dir_vis, sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir}),
-          std::vector<real1dk>({sfc_flux_dir_vis_k, sfc_flux_dir_nir_k, sfc_flux_dif_vis_k, sfc_flux_dif_nir_k}));
+          interface_t::compute_broadband_surface_fluxes(
+              ncol, kbot_k, nswbands, sw_bnd_flux_dir_k, sw_bnd_flux_dif_k, sfc_flux_dir_vis_k,
+              sfc_flux_dir_nir_k, sfc_flux_dif_vis_k, sfc_flux_dif_nir_k););
+      COMPARE_ALL_WRAP(std::vector<real1d>({sfc_flux_dir_vis, sfc_flux_dir_nir, sfc_flux_dif_vis,
+                                            sfc_flux_dif_nir}),
+                       std::vector<real1dk>({sfc_flux_dir_vis_k, sfc_flux_dir_nir_k,
+                                             sfc_flux_dif_vis_k, sfc_flux_dif_nir_k}));
 #endif
 
       // Compute diagnostic total cloud area (vertically-projected cloud cover)
 #ifdef RRTMGP_ENABLE_YAKL
-      TIMED_KERNEL(real1d cldlow("cldlow", d_cldlow.data() + m_col_chunk_beg[ic], ncol);
-                   real1d cldmed("cldmed", d_cldmed.data() + m_col_chunk_beg[ic], ncol);
-                   real1d cldhgh("cldhgh", d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
-                   real1d cldtot("cldtot", d_cldtot.data() + m_col_chunk_beg[ic], ncol);
-                   // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
-                   // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
-                   // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
-                   // does not matter in practice, as clouds probably should not be produced above 50 hPa and we
-                   // should not be encountering surface pressure above 1200 hPa, but in the event that things go off
-                   // the rails we might want to look at these still.
-                   rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 700e2, std::numeric_limits<Real>::max(), p_lay,
-                                              cld_tau_lw_gpt, cldlow);
-                   rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2, 700e2, p_lay, cld_tau_lw_gpt, cldmed);
-                   rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 0, 400e2, p_lay, cld_tau_lw_gpt, cldhgh);
-                   rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 0, std::numeric_limits<Real>::max(), p_lay,
-                                              cld_tau_lw_gpt, cldtot););
+      TIMED_KERNEL(
+          real1d cldlow("cldlow", d_cldlow.data() + m_col_chunk_beg[ic], ncol);
+          real1d cldmed("cldmed", d_cldmed.data() + m_col_chunk_beg[ic], ncol);
+          real1d cldhgh("cldhgh", d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
+          real1d cldtot("cldtot", d_cldtot.data() + m_col_chunk_beg[ic], ncol);
+          // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with
+          // the exception that I removed the restriction on low clouds to be above (numerically
+          // lower pressures) 1200 hPa, and on high clouds to be below (numerically high pressures)
+          // 50 hPa. This probably does not matter in practice, as clouds probably should not be
+          // produced above 50 hPa and we should not be encountering surface pressure above 1200
+          // hPa, but in the event that things go off the rails we might want to look at these
+          // still.
+          rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 700e2, std::numeric_limits<Real>::max(),
+                                     p_lay, cld_tau_lw_gpt, cldlow);
+          rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2, 700e2, p_lay, cld_tau_lw_gpt,
+                                     cldmed);
+          rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 0, 400e2, p_lay, cld_tau_lw_gpt, cldhgh);
+          rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 0, std::numeric_limits<Real>::max(),
+                                     p_lay, cld_tau_lw_gpt, cldtot););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      TIMED_KERNEL(
-          real1dk cldlow_k(d_cldlow.data() + m_col_chunk_beg[ic], ncol);
-          real1dk cldmed_k(d_cldmed.data() + m_col_chunk_beg[ic], ncol);
-          real1dk cldhgh_k(d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
-          real1dk cldtot_k(d_cldtot.data() + m_col_chunk_beg[ic], ncol);
-          // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
-          // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
-          // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
-          // does not matter in practice, as clouds probably should not be produced above 50 hPa and we
-          // should not be encountering surface pressure above 1200 hPa, but in the event that things go off
-          // the rails we might want to look at these still.
-          interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 700e2, std::numeric_limits<Real>::max(), p_lay_k,
-                                          cld_tau_lw_gpt_k, cldlow_k);
-          interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 400e2, 700e2, p_lay_k, cld_tau_lw_gpt_k, cldmed_k);
-          interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 0, 400e2, p_lay_k, cld_tau_lw_gpt_k, cldhgh_k);
-          interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 0, std::numeric_limits<Real>::max(), p_lay_k,
-                                          cld_tau_lw_gpt_k, cldtot_k););
+      TIMED_KERNEL(real1dk cldlow_k(d_cldlow.data() + m_col_chunk_beg[ic], ncol);
+                   real1dk cldmed_k(d_cldmed.data() + m_col_chunk_beg[ic], ncol);
+                   real1dk cldhgh_k(d_cldhgh.data() + m_col_chunk_beg[ic], ncol);
+                   real1dk cldtot_k(d_cldtot.data() + m_col_chunk_beg[ic], ncol);
+                   // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90
+                   // source, with the exception that I removed the restriction on low clouds to be
+                   // above (numerically lower pressures) 1200 hPa, and on high clouds to be below
+                   // (numerically high pressures) 50 hPa. This probably does not matter in
+                   // practice, as clouds probably should not be produced above 50 hPa and we should
+                   // not be encountering surface pressure above 1200 hPa, but in the event that
+                   // things go off the rails we might want to look at these still.
+                   interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 700e2,
+                                                   std::numeric_limits<Real>::max(), p_lay_k,
+                                                   cld_tau_lw_gpt_k, cldlow_k);
+                   interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 400e2, 700e2, p_lay_k,
+                                                   cld_tau_lw_gpt_k, cldmed_k);
+                   interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 0, 400e2, p_lay_k,
+                                                   cld_tau_lw_gpt_k, cldhgh_k);
+                   interface_t::compute_cloud_area(ncol, nlay, nlwgpts, 0,
+                                                   std::numeric_limits<Real>::max(), p_lay_k,
+                                                   cld_tau_lw_gpt_k, cldtot_k););
       COMPARE_ALL_WRAP(std::vector<real1d>({cldlow, cldmed, cldhgh, cldtot}),
                        std::vector<real1dk>({cldlow_k, cldmed_k, cldhgh_k, cldtot_k}));
 #endif
@@ -1582,23 +1696,29 @@ void RRTMGPRadiation::run_impl(const double dt) {
           auto idx_105 = rrtmgp::get_wavelength_index_lw(10.5e-6);
 
           // Compute cloud-top diagnostics following AeroCom recommendation
-          real1d T_mid_at_cldtop("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1d p_mid_at_cldtop("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1d cldfrac_ice_at_cldtop("cldfrac_ice_at_cldtop", d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic],
-                                       ncol);
-          real1d cldfrac_liq_at_cldtop("cldfrac_liq_at_cldtop", d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic],
-                                       ncol);
-          real1d cldfrac_tot_at_cldtop("cldfrac_tot_at_cldtop", d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic],
-                                       ncol);
-          real1d cdnc_at_cldtop("cdnc_at_cldtop", d_cdnc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+          real1d T_mid_at_cldtop("T_mid_at_cldtop", d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic],
+                                 ncol);
+          real1d p_mid_at_cldtop("p_mid_at_cldtop", d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic],
+                                 ncol);
+          real1d cldfrac_ice_at_cldtop("cldfrac_ice_at_cldtop",
+                                       d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+          real1d cldfrac_liq_at_cldtop("cldfrac_liq_at_cldtop",
+                                       d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+          real1d cldfrac_tot_at_cldtop("cldfrac_tot_at_cldtop",
+                                       d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+          real1d cdnc_at_cldtop("cdnc_at_cldtop", d_cdnc_at_cldtop.data() + m_col_chunk_beg[ic],
+                                ncol);
           real1d eff_radius_qc_at_cldtop("eff_radius_qc_at_cldtop",
-                                         d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+                                         d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic],
+                                         ncol);
           real1d eff_radius_qi_at_cldtop("eff_radius_qi_at_cldtop",
-                                         d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+                                         d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic],
+                                         ncol);
 
-          rrtmgp::compute_aerocom_cloudtop(ncol, nlay, t_lay, p_lay, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
-                                           T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
-                                           cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+          rrtmgp::compute_aerocom_cloudtop(ncol, nlay, t_lay, p_lay, p_del, z_del, qc, qi, rel, rei,
+                                           cldfrac_tot, nc, T_mid_at_cldtop, p_mid_at_cldtop,
+                                           cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop,
+                                           cldfrac_tot_at_cldtop, cdnc_at_cldtop,
                                            eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
@@ -1611,115 +1731,124 @@ void RRTMGPRadiation::run_impl(const double dt) {
 
           real1dk T_mid_at_cldtop_k(d_T_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
           real1dk p_mid_at_cldtop_k(d_p_mid_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1dk cldfrac_ice_at_cldtop_k(d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1dk cldfrac_liq_at_cldtop_k(d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1dk cldfrac_tot_at_cldtop_k(d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+          real1dk cldfrac_ice_at_cldtop_k(d_cldfrac_ice_at_cldtop.data() + m_col_chunk_beg[ic],
+                                          ncol);
+          real1dk cldfrac_liq_at_cldtop_k(d_cldfrac_liq_at_cldtop.data() + m_col_chunk_beg[ic],
+                                          ncol);
+          real1dk cldfrac_tot_at_cldtop_k(d_cldfrac_tot_at_cldtop.data() + m_col_chunk_beg[ic],
+                                          ncol);
           real1dk cdnc_at_cldtop_k(d_cdnc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1dk eff_radius_qc_at_cldtop_k(d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
-          real1dk eff_radius_qi_at_cldtop_k(d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic], ncol);
+          real1dk eff_radius_qc_at_cldtop_k(d_eff_radius_qc_at_cldtop.data() + m_col_chunk_beg[ic],
+                                            ncol);
+          real1dk eff_radius_qi_at_cldtop_k(d_eff_radius_qi_at_cldtop.data() + m_col_chunk_beg[ic],
+                                            ncol);
 
           interface_t::compute_aerocom_cloudtop(
-              ncol, nlay, t_lay_k, p_lay_k, p_del_k, z_del_k, qc_k, qi_k, rel_k, rei_k, cldfrac_tot_k, nc_k,
-              T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k, cldfrac_liq_at_cldtop_k,
-              cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k, eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k););
-      COMPARE_ALL_WRAP(std::vector<real1d>({T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
-                                            cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
-                                            eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop}),
-                       std::vector<real1dk>({T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
-                                             cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
-                                             eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k}));
+              ncol, nlay, t_lay_k, p_lay_k, p_del_k, z_del_k, qc_k, qi_k, rel_k, rei_k,
+              cldfrac_tot_k, nc_k, T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
+              cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
+              eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k););
+      COMPARE_ALL_WRAP(
+          std::vector<real1d>({T_mid_at_cldtop, p_mid_at_cldtop, cldfrac_ice_at_cldtop,
+                               cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+                               eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop}),
+          std::vector<real1dk>({T_mid_at_cldtop_k, p_mid_at_cldtop_k, cldfrac_ice_at_cldtop_k,
+                                cldfrac_liq_at_cldtop_k, cldfrac_tot_at_cldtop_k, cdnc_at_cldtop_k,
+                                eff_radius_qc_at_cldtop_k, eff_radius_qi_at_cldtop_k}));
 #endif
 
       // Copy output data back to FieldManager
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
 #ifdef RRTMGP_ENABLE_YAKL
-      TIMED_KERNEL(Kokkos::parallel_for(
-                       policy, KOKKOS_LAMBDA(const MemberType &team) {
-                         const int i              = team.league_rank();
-                         const int icol           = i + beg;
-                         d_sfc_flux_dir_nir(icol) = sfc_flux_dir_nir(i + 1);
-                         d_sfc_flux_dir_vis(icol) = sfc_flux_dir_vis(i + 1);
-                         d_sfc_flux_dif_nir(icol) = sfc_flux_dif_nir(i + 1);
-                         d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i + 1);
-                         d_sfc_flux_sw_net(icol)  = sw_flux_dn(i + 1, kbot) - sw_flux_up(i + 1, kbot);
-                         d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i + 1, kbot);
-                         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay + 1), [&](const int &k) {
-                           d_sw_flux_up(icol, k)               = sw_flux_up(i + 1, k + 1);
-                           d_sw_flux_dn(icol, k)               = sw_flux_dn(i + 1, k + 1);
-                           d_sw_flux_dn_dir(icol, k)           = sw_flux_dn_dir(i + 1, k + 1);
-                           d_lw_flux_up(icol, k)               = lw_flux_up(i + 1, k + 1);
-                           d_lw_flux_dn(icol, k)               = lw_flux_dn(i + 1, k + 1);
-                           d_sw_clnclrsky_flux_up(icol, k)     = sw_clnclrsky_flux_up(i + 1, k + 1);
-                           d_sw_clnclrsky_flux_dn(icol, k)     = sw_clnclrsky_flux_dn(i + 1, k + 1);
-                           d_sw_clnclrsky_flux_dn_dir(icol, k) = sw_clnclrsky_flux_dn_dir(i + 1, k + 1);
-                           d_sw_clrsky_flux_up(icol, k)        = sw_clrsky_flux_up(i + 1, k + 1);
-                           d_sw_clrsky_flux_dn(icol, k)        = sw_clrsky_flux_dn(i + 1, k + 1);
-                           d_sw_clrsky_flux_dn_dir(icol, k)    = sw_clrsky_flux_dn_dir(i + 1, k + 1);
-                           d_sw_clnsky_flux_up(icol, k)        = sw_clnsky_flux_up(i + 1, k + 1);
-                           d_sw_clnsky_flux_dn(icol, k)        = sw_clnsky_flux_dn(i + 1, k + 1);
-                           d_sw_clnsky_flux_dn_dir(icol, k)    = sw_clnsky_flux_dn_dir(i + 1, k + 1);
-                           d_lw_clnclrsky_flux_up(icol, k)     = lw_clnclrsky_flux_up(i + 1, k + 1);
-                           d_lw_clnclrsky_flux_dn(icol, k)     = lw_clnclrsky_flux_dn(i + 1, k + 1);
-                           d_lw_clrsky_flux_up(icol, k)        = lw_clrsky_flux_up(i + 1, k + 1);
-                           d_lw_clrsky_flux_dn(icol, k)        = lw_clrsky_flux_dn(i + 1, k + 1);
-                           d_lw_clnsky_flux_up(icol, k)        = lw_clnsky_flux_up(i + 1, k + 1);
-                           d_lw_clnsky_flux_dn(icol, k)        = lw_clnsky_flux_dn(i + 1, k + 1);
-                         });
-                         // Extract optical properties for COSP
-                         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
-                           d_dtau067(icol, k) = cld_tau_sw_bnd(i + 1, k + 1, idx_067);
-                           d_dtau105(icol, k) = cld_tau_lw_bnd(i + 1, k + 1, idx_105);
-                         });
-                         if (d_sw_clrsky_flux_dn(icol, 0) > 0) {
-                           d_sunlit(icol) = 1.0;
-                         } else {
-                           d_sunlit(icol) = 0.0;
-                         }
-                       }););
+      TIMED_KERNEL(
+          Kokkos::parallel_for(
+              policy, KOKKOS_LAMBDA(const MemberType &team) {
+                const int i              = team.league_rank();
+                const int icol           = i + beg;
+                d_sfc_flux_dir_nir(icol) = sfc_flux_dir_nir(i + 1);
+                d_sfc_flux_dir_vis(icol) = sfc_flux_dir_vis(i + 1);
+                d_sfc_flux_dif_nir(icol) = sfc_flux_dif_nir(i + 1);
+                d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i + 1);
+                d_sfc_flux_sw_net(icol)  = sw_flux_dn(i + 1, kbot) - sw_flux_up(i + 1, kbot);
+                d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i + 1, kbot);
+                Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay + 1), [&](const int &k) {
+                  d_sw_flux_up(icol, k)               = sw_flux_up(i + 1, k + 1);
+                  d_sw_flux_dn(icol, k)               = sw_flux_dn(i + 1, k + 1);
+                  d_sw_flux_dn_dir(icol, k)           = sw_flux_dn_dir(i + 1, k + 1);
+                  d_lw_flux_up(icol, k)               = lw_flux_up(i + 1, k + 1);
+                  d_lw_flux_dn(icol, k)               = lw_flux_dn(i + 1, k + 1);
+                  d_sw_clnclrsky_flux_up(icol, k)     = sw_clnclrsky_flux_up(i + 1, k + 1);
+                  d_sw_clnclrsky_flux_dn(icol, k)     = sw_clnclrsky_flux_dn(i + 1, k + 1);
+                  d_sw_clnclrsky_flux_dn_dir(icol, k) = sw_clnclrsky_flux_dn_dir(i + 1, k + 1);
+                  d_sw_clrsky_flux_up(icol, k)        = sw_clrsky_flux_up(i + 1, k + 1);
+                  d_sw_clrsky_flux_dn(icol, k)        = sw_clrsky_flux_dn(i + 1, k + 1);
+                  d_sw_clrsky_flux_dn_dir(icol, k)    = sw_clrsky_flux_dn_dir(i + 1, k + 1);
+                  d_sw_clnsky_flux_up(icol, k)        = sw_clnsky_flux_up(i + 1, k + 1);
+                  d_sw_clnsky_flux_dn(icol, k)        = sw_clnsky_flux_dn(i + 1, k + 1);
+                  d_sw_clnsky_flux_dn_dir(icol, k)    = sw_clnsky_flux_dn_dir(i + 1, k + 1);
+                  d_lw_clnclrsky_flux_up(icol, k)     = lw_clnclrsky_flux_up(i + 1, k + 1);
+                  d_lw_clnclrsky_flux_dn(icol, k)     = lw_clnclrsky_flux_dn(i + 1, k + 1);
+                  d_lw_clrsky_flux_up(icol, k)        = lw_clrsky_flux_up(i + 1, k + 1);
+                  d_lw_clrsky_flux_dn(icol, k)        = lw_clrsky_flux_dn(i + 1, k + 1);
+                  d_lw_clnsky_flux_up(icol, k)        = lw_clnsky_flux_up(i + 1, k + 1);
+                  d_lw_clnsky_flux_dn(icol, k)        = lw_clnsky_flux_dn(i + 1, k + 1);
+                });
+                // Extract optical properties for COSP
+                Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
+                  d_dtau067(icol, k) = cld_tau_sw_bnd(i + 1, k + 1, idx_067);
+                  d_dtau105(icol, k) = cld_tau_lw_bnd(i + 1, k + 1, idx_105);
+                });
+                if (d_sw_clrsky_flux_dn(icol, 0) > 0) {
+                  d_sunlit(icol) = 1.0;
+                } else {
+                  d_sunlit(icol) = 0.0;
+                }
+              }););
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
-      TIMED_KERNEL(Kokkos::parallel_for(
-                       policy, KOKKOS_LAMBDA(const MemberType &team) {
-                         const int i             = team.league_rank();
-                         const int icol          = i + beg;
-                         d_sfc_flux_sw_net(icol) = sw_flux_dn_k(i, kbot_k) - sw_flux_up_k(i, kbot_k);
-                         d_sfc_flux_lw_dn(icol)  = lw_flux_dn_k(i, kbot_k);
+      TIMED_KERNEL(
+          Kokkos::parallel_for(
+              policy, KOKKOS_LAMBDA(const MemberType &team) {
+                const int i             = team.league_rank();
+                const int icol          = i + beg;
+                d_sfc_flux_sw_net(icol) = sw_flux_dn_k(i, kbot_k) - sw_flux_up_k(i, kbot_k);
+                d_sfc_flux_lw_dn(icol)  = lw_flux_dn_k(i, kbot_k);
 #ifdef RRTMGP_LAYOUT_LEFT
-                         // Copy from layout left buffer views back to layout right fields
-                         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay + 1), [&](const int &k) {
-                           d_sw_flux_up(icol, k)               = sw_flux_up_k(i, k);
-                           d_sw_flux_dn(icol, k)               = sw_flux_dn_k(i, k);
-                           d_sw_flux_dn_dir(icol, k)           = sw_flux_dn_dir_k(i, k);
-                           d_lw_flux_up(icol, k)               = lw_flux_up_k(i, k);
-                           d_lw_flux_dn(icol, k)               = lw_flux_dn_k(i, k);
-                           d_sw_clnclrsky_flux_up(icol, k)     = sw_clnclrsky_flux_up_k(i, k);
-                           d_sw_clnclrsky_flux_dn(icol, k)     = sw_clnclrsky_flux_dn_k(i, k);
-                           d_sw_clnclrsky_flux_dn_dir(icol, k) = sw_clnclrsky_flux_dn_dir_k(i, k);
-                           d_sw_clrsky_flux_up(icol, k)        = sw_clrsky_flux_up_k(i, k);
-                           d_sw_clrsky_flux_dn(icol, k)        = sw_clrsky_flux_dn_k(i, k);
-                           d_sw_clrsky_flux_dn_dir(icol, k)    = sw_clrsky_flux_dn_dir_k(i, k);
-                           d_sw_clnsky_flux_up(icol, k)        = sw_clnsky_flux_up_k(i, k);
-                           d_sw_clnsky_flux_dn(icol, k)        = sw_clnsky_flux_dn_k(i, k);
-                           d_sw_clnsky_flux_dn_dir(icol, k)    = sw_clnsky_flux_dn_dir_k(i, k);
-                           d_lw_clnclrsky_flux_up(icol, k)     = lw_clnclrsky_flux_up_k(i, k);
-                           d_lw_clnclrsky_flux_dn(icol, k)     = lw_clnclrsky_flux_dn_k(i, k);
-                           d_lw_clrsky_flux_up(icol, k)        = lw_clrsky_flux_up_k(i, k);
-                           d_lw_clrsky_flux_dn(icol, k)        = lw_clrsky_flux_dn_k(i, k);
-                           d_lw_clnsky_flux_up(icol, k)        = lw_clnsky_flux_up_k(i, k);
-                           d_lw_clnsky_flux_dn(icol, k)        = lw_clnsky_flux_dn_k(i, k);
-                         });
+                // Copy from layout left buffer views back to layout right fields
+                Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay + 1), [&](const int &k) {
+                  d_sw_flux_up(icol, k)               = sw_flux_up_k(i, k);
+                  d_sw_flux_dn(icol, k)               = sw_flux_dn_k(i, k);
+                  d_sw_flux_dn_dir(icol, k)           = sw_flux_dn_dir_k(i, k);
+                  d_lw_flux_up(icol, k)               = lw_flux_up_k(i, k);
+                  d_lw_flux_dn(icol, k)               = lw_flux_dn_k(i, k);
+                  d_sw_clnclrsky_flux_up(icol, k)     = sw_clnclrsky_flux_up_k(i, k);
+                  d_sw_clnclrsky_flux_dn(icol, k)     = sw_clnclrsky_flux_dn_k(i, k);
+                  d_sw_clnclrsky_flux_dn_dir(icol, k) = sw_clnclrsky_flux_dn_dir_k(i, k);
+                  d_sw_clrsky_flux_up(icol, k)        = sw_clrsky_flux_up_k(i, k);
+                  d_sw_clrsky_flux_dn(icol, k)        = sw_clrsky_flux_dn_k(i, k);
+                  d_sw_clrsky_flux_dn_dir(icol, k)    = sw_clrsky_flux_dn_dir_k(i, k);
+                  d_sw_clnsky_flux_up(icol, k)        = sw_clnsky_flux_up_k(i, k);
+                  d_sw_clnsky_flux_dn(icol, k)        = sw_clnsky_flux_dn_k(i, k);
+                  d_sw_clnsky_flux_dn_dir(icol, k)    = sw_clnsky_flux_dn_dir_k(i, k);
+                  d_lw_clnclrsky_flux_up(icol, k)     = lw_clnclrsky_flux_up_k(i, k);
+                  d_lw_clnclrsky_flux_dn(icol, k)     = lw_clnclrsky_flux_dn_k(i, k);
+                  d_lw_clrsky_flux_up(icol, k)        = lw_clrsky_flux_up_k(i, k);
+                  d_lw_clrsky_flux_dn(icol, k)        = lw_clrsky_flux_dn_k(i, k);
+                  d_lw_clnsky_flux_up(icol, k)        = lw_clnsky_flux_up_k(i, k);
+                  d_lw_clnsky_flux_dn(icol, k)        = lw_clnsky_flux_dn_k(i, k);
+                });
 #endif
-                         // Extract optical properties for COSP
-                         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
-                           d_dtau067(icol, k) = cld_tau_sw_bnd_k(i, k, idx_067_k);
-                           d_dtau105(icol, k) = cld_tau_lw_bnd_k(i, k, idx_105_k);
-                         });
-                         if (d_sw_clrsky_flux_dn(icol, 0) > 0) {
-                           d_sunlit(icol) = 1.0;
-                         } else {
-                           d_sunlit(icol) = 0.0;
-                         }
-                       }););
+                // Extract optical properties for COSP
+                Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&](const int &k) {
+                  d_dtau067(icol, k) = cld_tau_sw_bnd_k(i, k, idx_067_k);
+                  d_dtau105(icol, k) = cld_tau_lw_bnd_k(i, k, idx_105_k);
+                });
+                if (d_sw_clrsky_flux_dn(icol, 0) > 0) {
+                  d_sunlit(icol) = 1.0;
+                } else {
+                  d_sunlit(icol) = 0.0;
+                }
+              }););
 #ifdef RRTMGP_ENABLE_YAKL
       // Sync back to gas_concs_k
       real3dk temp(gas_concs_k, std::make_pair(0, ncol), Kokkos::ALL, Kokkos::ALL);
@@ -1739,10 +1868,10 @@ void RRTMGPRadiation::run_impl(const double dt) {
 #endif
   } // update_rad
 
-  // Apply temperature tendency; if we updated radiation this timestep, then d_rad_heating_pdel should
-  // contain actual heating rate, not pdel scaled heating rate. Otherwise, if we have NOT updated the
-  // radiative heating, then we need to back out the heating from the rad_heating*pdel term that we carry
-  // across timesteps to conserve energy.
+  // Apply temperature tendency; if we updated radiation this timestep, then d_rad_heating_pdel
+  // should contain actual heating rate, not pdel scaled heating rate. Otherwise, if we have NOT
+  // updated the radiative heating, then we need to back out the heating from the rad_heating*pdel
+  // term that we carry across timesteps to conserve energy.
   const int ncols   = m_ncol;
   const int nlays   = m_nlay;
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);

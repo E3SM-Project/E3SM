@@ -24,13 +24,13 @@ class MassAndEnergyColumnConservationCheck : public PropertyCheck {
 
 public:
   // Constructor
-  MassAndEnergyColumnConservationCheck(const std::shared_ptr<const AbstractGrid> &grid, const Real mass_error_tolerance,
-                                       const Real energy_error_tolerance, const Field &pseudo_density_ptr,
-                                       const Field &ps_ptr, const Field &phis_ptr, const Field &horiz_winds_ptr,
-                                       const Field &T_mid_ptr, const Field &qv_ptr, const Field &qc_ptr,
-                                       const Field &qr_ptr, const Field &qi_ptr, const Field &vapor_flux_ptr,
-                                       const Field &water_flux_ptr, const Field &ice_flux_ptr,
-                                       const Field &heat_flux_ptr);
+  MassAndEnergyColumnConservationCheck(
+      const std::shared_ptr<const AbstractGrid> &grid, const Real mass_error_tolerance,
+      const Real energy_error_tolerance, const Field &pseudo_density_ptr, const Field &ps_ptr,
+      const Field &phis_ptr, const Field &horiz_winds_ptr, const Field &T_mid_ptr,
+      const Field &qv_ptr, const Field &qc_ptr, const Field &qr_ptr, const Field &qi_ptr,
+      const Field &vapor_flux_ptr, const Field &water_flux_ptr, const Field &ice_flux_ptr,
+      const Field &heat_flux_ptr);
 
   // The name of the property check
   std::string name() const override { return "Mass and energy column conservation check"; }
@@ -66,23 +66,25 @@ protected:
 
   KOKKOS_INLINE_FUNCTION
   static Real compute_total_mass_on_column(const KT::MemberType &team, const int nlevs,
-                                           const uview_1d<const Real> &pseudo_density, const uview_1d<const Real> &qv,
-                                           const uview_1d<const Real> &qc, const uview_1d<const Real> &qi,
+                                           const uview_1d<const Real> &pseudo_density,
+                                           const uview_1d<const Real> &qv,
+                                           const uview_1d<const Real> &qc,
+                                           const uview_1d<const Real> &qi,
                                            const uview_1d<const Real> &qr);
 
   KOKKOS_INLINE_FUNCTION
   static Real compute_mass_boundary_flux_on_column(const Real vapor_flux, const Real water_flux);
 
   KOKKOS_INLINE_FUNCTION
-  static Real compute_total_energy_on_column(const KT::MemberType &team, const int nlevs,
-                                             const uview_1d<const Real> &pseudo_density,
-                                             const uview_1d<const Real> &T_mid, const uview_2d<const Real> &horiz_winds,
-                                             const uview_1d<const Real> &qv, const uview_1d<const Real> &qc,
-                                             const uview_1d<const Real> &qr, const Real ps, const Real phis);
+  static Real compute_total_energy_on_column(
+      const KT::MemberType &team, const int nlevs, const uview_1d<const Real> &pseudo_density,
+      const uview_1d<const Real> &T_mid, const uview_2d<const Real> &horiz_winds,
+      const uview_1d<const Real> &qv, const uview_1d<const Real> &qc,
+      const uview_1d<const Real> &qr, const Real ps, const Real phis);
 
   KOKKOS_INLINE_FUNCTION
-  static Real compute_energy_boundary_flux_on_column(const Real vapor_flux, const Real water_flux, const Real ice_flux,
-                                                     const Real heat_flux);
+  static Real compute_energy_boundary_flux_on_column(const Real vapor_flux, const Real water_flux,
+                                                     const Real ice_flux, const Real heat_flux);
 
 protected:
   std::shared_ptr<const AbstractGrid> m_grid;

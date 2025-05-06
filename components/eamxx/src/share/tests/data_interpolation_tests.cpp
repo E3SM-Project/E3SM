@@ -44,8 +44,9 @@ void root_print(const ekat::Comm &comm, const std::string &msg) {
 }
 
 // Run the data interpolation to the input grid, and check against expected values
-void run_tests(const std::shared_ptr<const AbstractGrid> &grid, const strvec_t &input_files, util::TimeStamp t_beg,
-               const util::TimeLine timeline, const DataInterpolation::VRemapType vr_type = DataInterpolation::None) {
+void run_tests(const std::shared_ptr<const AbstractGrid> &grid, const strvec_t &input_files,
+               util::TimeStamp t_beg, const util::TimeLine timeline,
+               const DataInterpolation::VRemapType vr_type = DataInterpolation::None) {
   auto t_end = t_beg + t_beg.days_in_curr_month() * spd;
   auto t0    = t_beg + (t_end - t_beg) / 2;
 
@@ -229,7 +230,8 @@ TEST_CASE("exceptions") {
   auto interp = create_interp(grid, fields);
 
   strvec_t files = {"/etc/shadow"};
-  REQUIRE_THROWS(interp->setup_time_database(files, util::TimeLine::Linear)); // Input file not readable
+  REQUIRE_THROWS(
+      interp->setup_time_database(files, util::TimeLine::Linear)); // Input file not readable
 
   interp->setup_time_database({"./data_interpolation_0.nc"}, util::TimeLine::Linear);
   util::TimeStamp t0({2000, 1, 1}, {0, 0, 0});

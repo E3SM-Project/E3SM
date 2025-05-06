@@ -37,7 +37,8 @@ public:
 
   bool is_valid_tgt_layout(const FieldLayout &layout) const override {
     // We don't want fields with TimeLevel in it. Just subview the fields instead
-    return AbstractRemapper::is_valid_tgt_layout(layout) and not ekat::contains(layout.tags(), FieldTag::TimeLevel);
+    return AbstractRemapper::is_valid_tgt_layout(layout) and
+           not ekat::contains(layout.tags(), FieldTag::TimeLevel);
   }
 
 protected:
@@ -136,8 +137,8 @@ protected:
 
   bool subfields_info_has_changed(const std::map<int, SubviewInfo> &subfield_info,
                                   const std::vector<Field> &fields) const;
-  void update_subfields_views(const std::map<int, SubviewInfo> &subfield_info, const ViewsRepo &repo,
-                              const std::vector<Field> &fields) const;
+  void update_subfields_views(const std::map<int, SubviewInfo> &subfield_info,
+                              const ViewsRepo &repo, const std::vector<Field> &fields) const;
 
   // Remap methods
   void remap_fwd_impl() override;
@@ -146,22 +147,27 @@ protected:
   // phys->dyn requires a halo-exchange. Since not all entries in dyn
   // are overwritten before the exchange, to avoid leftover garbage,
   // we need to set all entries of dyn to zero.
-  template <typename ScalarT, typename MT> KOKKOS_FUNCTION void set_dyn_to_zero(const MT &team) const;
+  template <typename ScalarT, typename MT>
+  KOKKOS_FUNCTION void set_dyn_to_zero(const MT &team) const;
 
   template <typename MT> KOKKOS_FUNCTION void local_remap_fwd_2d(const MT &team) const;
 
-  template <typename ScalarT, typename MT> KOKKOS_FUNCTION void local_remap_fwd_3d(const MT &team) const;
+  template <typename ScalarT, typename MT>
+  KOKKOS_FUNCTION void local_remap_fwd_3d(const MT &team) const;
 
   template <typename MT> KOKKOS_FUNCTION void local_remap_bwd_2d(const MT &team) const;
 
-  template <typename ScalarT, typename MT> KOKKOS_FUNCTION void local_remap_bwd_3d(const MT &team) const;
+  template <typename ScalarT, typename MT>
+  KOKKOS_FUNCTION void local_remap_bwd_3d(const MT &team) const;
 
 public:
   struct RemapFwdTag {};
   struct RemapBwdTag {};
 
-  template <typename MT> KOKKOS_INLINE_FUNCTION void operator()(const RemapFwdTag &, const MT &team) const;
-  template <typename MT> KOKKOS_INLINE_FUNCTION void operator()(const RemapBwdTag &, const MT &team) const;
+  template <typename MT>
+  KOKKOS_INLINE_FUNCTION void operator()(const RemapFwdTag &, const MT &team) const;
+  template <typename MT>
+  KOKKOS_INLINE_FUNCTION void operator()(const RemapBwdTag &, const MT &team) const;
 };
 
 } // namespace scream

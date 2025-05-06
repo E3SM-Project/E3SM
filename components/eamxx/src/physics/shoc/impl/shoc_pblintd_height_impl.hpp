@@ -15,11 +15,12 @@ namespace shoc {
 // the first level and the current level exceeds the "critical" value.
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::pblintd_height(const MemberType &team, const Int &nlev, const Int &npbl,
-                                                     const uview_1d<const Spack> &z, const uview_1d<const Spack> &u,
-                                                     const uview_1d<const Spack> &v, const Scalar &ustar,
-                                                     const uview_1d<const Spack> &thv, const Scalar &thv_ref,
-                                                     Scalar &pblh, const uview_1d<Spack> &rino, bool &check) {
+KOKKOS_FUNCTION void
+Functions<S, D>::pblintd_height(const MemberType &team, const Int &nlev, const Int &npbl,
+                                const uview_1d<const Spack> &z, const uview_1d<const Spack> &u,
+                                const uview_1d<const Spack> &v, const Scalar &ustar,
+                                const uview_1d<const Spack> &thv, const Scalar &thv_ref,
+                                Scalar &pblh, const uview_1d<Spack> &rino, bool &check) {
   if (!check)
     return;
 
@@ -54,11 +55,13 @@ KOKKOS_FUNCTION void Functions<S, D>::pblintd_height(const MemberType &team, con
         const auto in_range = (indices_pack < nlev - 1 && indices_pack >= nlev - npbl);
 
         Spack vvk(0);
-        vvk.set(in_range, ekat::max(tiny, ekat::square(u(k) - s_u(nlev - 1)) + ekat::square(v(k) - s_v(nlev - 1)) +
-                                              fac * (ustar * ustar)));
+        vvk.set(in_range,
+                ekat::max(tiny, ekat::square(u(k) - s_u(nlev - 1)) +
+                                    ekat::square(v(k) - s_v(nlev - 1)) + fac * (ustar * ustar)));
 
         if (in_range.any()) {
-          rino(k).set(in_range, ggr * (thv(k) - thv_ref) * (z(k) - s_z(nlev - 1)) / (s_thv(nlev - 1) * vvk));
+          rino(k).set(in_range,
+                      ggr * (thv(k) - thv_ref) * (z(k) - s_z(nlev - 1)) / (s_thv(nlev - 1) * vvk));
         }
 
         // Set indices_pack entry to -1 if rino(k)<ricr or
@@ -74,7 +77,8 @@ KOKKOS_FUNCTION void Functions<S, D>::pblintd_height(const MemberType &team, con
   // Set check=false and compute pblh only if
   // there was an index s.t. rino(k)>=ricr.
   if (max_indx != Kokkos::reduction_identity<Int>::max()) {
-    pblh = s_z(max_indx + 1) + (ricr - s_rino(max_indx + 1)) / (s_rino(max_indx) - s_rino(max_indx + 1)) *
+    pblh = s_z(max_indx + 1) + (ricr - s_rino(max_indx + 1)) /
+                                   (s_rino(max_indx) - s_rino(max_indx + 1)) *
                                    (s_z(max_indx) - s_z(max_indx + 1));
     check = false;
   }

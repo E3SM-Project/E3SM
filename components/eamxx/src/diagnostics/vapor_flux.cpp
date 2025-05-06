@@ -7,8 +7,9 @@ namespace scream {
 
 VaporFluxDiagnostic::VaporFluxDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("wind_component"),
-                   "Error! VaporFluxDiagnostic requires 'wind_component' in its input parameters.\n");
+  EKAT_REQUIRE_MSG(
+      params.isParameter("wind_component"),
+      "Error! VaporFluxDiagnostic requires 'wind_component' in its input parameters.\n");
 
   const auto &comp = m_params.get<std::string>("wind_component");
   if (comp == "Zonal") {
@@ -59,7 +60,8 @@ void VaporFluxDiagnostic::compute_diagnostic_impl() {
   const auto diag = m_diagnostic_output.get_view<Real *>();
   const auto qv   = get_field_in("qv").get_view<const Real **>();
   const auto rho  = get_field_in("pseudo_density").get_view<const Real **>();
-  const auto wind = get_field_in("horiz_winds").get_component(m_component).get_view<const Real **>();
+  const auto wind =
+      get_field_in("horiz_winds").get_component(m_component).get_view<const Real **>();
 
   const auto num_levs = m_num_levs;
   const auto policy   = ESU::get_default_team_policy(m_num_cols, m_num_levs);
@@ -73,7 +75,9 @@ void VaporFluxDiagnostic::compute_diagnostic_impl() {
 
         Kokkos::parallel_reduce(
             Kokkos::TeamVectorRange(team, num_levs),
-            [&](const int &ilev, Real &lsum) { lsum += wind_icol(ilev) * qv_icol(ilev) * rho_icol(ilev) / g; },
+            [&](const int &ilev, Real &lsum) {
+              lsum += wind_icol(ilev) * qv_icol(ilev) * rho_icol(ilev) / g;
+            },
             diag(icol));
         team.team_barrier();
       });

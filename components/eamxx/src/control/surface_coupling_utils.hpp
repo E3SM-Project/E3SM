@@ -34,14 +34,15 @@ struct SurfaceCouplingColumnInfo {
   int col_offset;
 
   // Constant multple applied to import data.
-  // An example where this is useful is for fluxes, where cpl and SCREAM have different interpretations
-  // of the positive direction. In this case, the constant multiple should be set to -1.
+  // An example where this is useful is for fluxes, where cpl and SCREAM have different
+  // interpretations of the positive direction. In this case, the constant multiple should be set to
+  // -1.
   Real constant_multiple;
 
-  // Boolean that dictates if the field can be imported/exported if do_import/export() is called during
-  // initialization. An example of when this useful inside SCREAM is that some exported fields require computation
-  // done in run_impl() of various processes, and therefore do not have valid entries during the do_export() call
-  // in initialization.
+  // Boolean that dictates if the field can be imported/exported if do_import/export() is called
+  // during initialization. An example of when this useful inside SCREAM is that some exported
+  // fields require computation done in run_impl() of various processes, and therefore do not have
+  // valid entries during the do_export() call in initialization.
   bool transfer_during_initialization;
 
   // Pointer to the scream field device memory
@@ -67,8 +68,8 @@ struct SurfaceCouplingColumnInfo {
 //
 // Field with parents are allowed if the parent has layout 3D vector (ncols, num_comp, nlevs),
 // and the field was sliced along num_comp. See comments below for details.
-void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &fh, int vecComp, int &col_offset,
-                                     int &col_stride);
+void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &fh, int vecComp,
+                                     int &col_offset, int &col_stride);
 
 } // namespace scream
 

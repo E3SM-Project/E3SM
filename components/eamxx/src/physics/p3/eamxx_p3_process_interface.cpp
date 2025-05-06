@@ -84,7 +84,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_tracer<Updated>("ni", m_grid, 1 / kg, ps);
   add_tracer<Updated>("bm", m_grid, 1 / kg, ps);
 
-  // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
+  // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just
+  // inputs)
   add_field<Required>("nc_nuceat_tend", scalar3d_layout_mid, 1 / (kg * s), grid_name, ps);
   if (infrastructure.prescribedCCN) {
     add_field<Required>("nccn", scalar3d_layout_mid, 1 / kg, grid_name, ps);
@@ -103,13 +104,16 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
     // units of number mixing ratios of tracers
     constexpr auto frz_unit = 1 / (cm * cm * cm * s);
     //  heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
-    add_field<Required>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid, frz_unit, grid_name, ps);
+    add_field<Required>("hetfrz_immersion_nucleation_tend", scalar3d_layout_mid, frz_unit,
+                        grid_name, ps);
 
     // heterogeneous freezing by contact nucleation [cm^-3 s^-1]
-    add_field<Required>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid, frz_unit, grid_name, ps);
+    add_field<Required>("hetfrz_contact_nucleation_tend", scalar3d_layout_mid, frz_unit, grid_name,
+                        ps);
 
     // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
-    add_field<Required>("hetfrz_deposition_nucleation_tend", scalar3d_layout_mid, frz_unit, grid_name, ps);
+    add_field<Required>("hetfrz_deposition_nucleation_tend", scalar3d_layout_mid, frz_unit,
+                        grid_name, ps);
   }
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
@@ -173,7 +177,8 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const {
       m_num_cols * 3 * sizeof(Real);
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
-  const auto policy        = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const auto policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   const size_t wsm_request = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy);
 
   return interface_request + wsm_request;
@@ -187,7 +192,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager) {
   Real *mem = reinterpret_cast<Real *>(buffer_manager.get_memory());
 
   // 1d scalar views
-  using scalar_1d_view_t                                        = decltype(m_buffer.precip_liq_surf_flux);
+  using scalar_1d_view_t = decltype(m_buffer.precip_liq_surf_flux);
   scalar_1d_view_t *_1d_scalar_view_ptrs[Buffer::num_1d_scalar] = {&m_buffer.precip_liq_surf_flux,
                                                                    &m_buffer.precip_ice_surf_flux};
   for (int i = 0; i < Buffer::num_1d_scalar; ++i) {
@@ -290,7 +295,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager) {
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const auto policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy) / sizeof(Spack);
   s_mem += wsm_size;
 
@@ -303,7 +309,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager) {
 void P3Microphysics::initialize_impl(const RunType /* run_type */) {
 
   // Set property checks for fields in this process
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"), m_grid, 100.0, 500.0, false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"), m_grid, 100.0, 500.0,
+                                                false);
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"), m_grid, 1e-13, 0.2, true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"), m_grid, 0.0, 0.1, false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"), m_grid, 0.0, 0.1, false);
@@ -316,11 +323,16 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
   // The following checks on precip have been changed to lower bound checks, from an interval check.
   // TODO: Change back to interval check when it is possible to pass dt_atm for the check.  Because
   //       precip is now an accumulated mass, the upper bound is dependent on the timestep.
-  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_liq_surf_mass"), m_grid, 0.0, false);
-  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"), m_grid, 0.0, false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"), m_grid, 0.0, 1.0e2, false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"), m_grid, 0.0, 5.0e3, false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"), m_grid, 0.0, 5.0e3, false);
+  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_liq_surf_mass"), m_grid, 0.0,
+                                                false);
+  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"), m_grid, 0.0,
+                                                false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"), m_grid, 0.0,
+                                                    1.0e2, false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"), m_grid, 0.0,
+                                                    5.0e3, false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"), m_grid, 0.0,
+                                                    5.0e3, false);
 
   // Initialize p3
   lookup_tables = P3F::p3_init(/* write_tables = */ false, this->get_comm().am_i_root());
@@ -367,9 +379,10 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
   auto dz         = m_buffer.dz;
 
   // -- Set values for the pre-amble structure
-  p3_preproc.set_variables(m_num_cols, m_num_levs, pmid, pmid_dry, pseudo_density, pseudo_density_dry, T_atm,
-                           cld_frac_t_in, cld_frac_l_in, cld_frac_i_in, qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
-                           inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
+  p3_preproc.set_variables(m_num_cols, m_num_levs, pmid, pmid_dry, pseudo_density,
+                           pseudo_density_dry, T_atm, cld_frac_t_in, cld_frac_l_in, cld_frac_i_in,
+                           qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev, inv_exner, th_atm,
+                           cld_frac_l, cld_frac_i, cld_frac_r, dz, runtime_options);
   // --Prognostic State Variables:
   prog_state.qc = p3_preproc.qc;
   prog_state.nc = p3_preproc.nc;
@@ -386,8 +399,8 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
   if (infrastructure.prescribedCCN) {
     diag_inputs.nccn = get_field_in("nccn").get_view<const Pack **>();
   } else {
-    diag_inputs.nccn = m_buffer.unused; // TODO set value of unused to something like 0.0 or nan as a layer of
-                                        // protection that it isn't being used.
+    diag_inputs.nccn = m_buffer.unused; // TODO set value of unused to something like 0.0 or nan as
+                                        // a layer of protection that it isn't being used.
   }
   diag_inputs.ni_activated  = get_field_in("ni_activated").get_view<const Pack **>();
   diag_inputs.inv_qc_relvar = get_field_in("inv_qc_relvar").get_view<const Pack **>();
@@ -420,12 +433,13 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
   }
 
   // --Diagnostic Outputs
-  diag_outputs.diag_eff_radius_qc      = get_field_out("eff_radius_qc").get_view<Pack **>();
-  diag_outputs.diag_eff_radius_qi      = get_field_out("eff_radius_qi").get_view<Pack **>();
-  diag_outputs.diag_eff_radius_qr      = get_field_out("eff_radius_qr").get_view<Pack **>();
-  diag_outputs.precip_total_tend       = get_field_out("precip_total_tend").get_view<Pack **>();
-  diag_outputs.nevapr                  = get_field_out("nevapr").get_view<Pack **>();
-  diag_outputs.diag_equiv_reflectivity = get_field_out("diag_equiv_reflectivity").get_view<Pack **>();
+  diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack **>();
+  diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack **>();
+  diag_outputs.diag_eff_radius_qr = get_field_out("eff_radius_qr").get_view<Pack **>();
+  diag_outputs.precip_total_tend  = get_field_out("precip_total_tend").get_view<Pack **>();
+  diag_outputs.nevapr             = get_field_out("nevapr").get_view<Pack **>();
+  diag_outputs.diag_equiv_reflectivity =
+      get_field_out("diag_equiv_reflectivity").get_view<Pack **>();
 
   diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
   diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
@@ -434,8 +448,8 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
   diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
   diag_outputs.precip_ice_flux  = m_buffer.precip_ice_flux;
   // -- Infrastructure, what is left to assign
-  infrastructure.col_location =
-      m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
+  infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3
+                                                       // has access to lat/lon for each column.
   // --History Only
   history_only.liq_ice_exchange = get_field_out("micro_liq_ice_exchange").get_view<Pack **>();
   history_only.vap_liq_exchange = get_field_out("micro_vap_liq_exchange").get_view<Pack **>();
@@ -535,12 +549,13 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
 #endif
 
   // -- Set values for the post-amble structure
-  p3_postproc.set_variables(m_num_cols, nk_pack, prog_state.th, pmid, pmid_dry, T_atm, t_prev, pseudo_density,
-                            pseudo_density_dry, prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,
-                            prog_state.nr, prog_state.qi, prog_state.qm, prog_state.ni, prog_state.bm, qv_prev,
-                            diag_outputs.diag_eff_radius_qc, diag_outputs.diag_eff_radius_qi,
-                            diag_outputs.diag_eff_radius_qr, diag_outputs.precip_liq_surf, diag_outputs.precip_ice_surf,
-                            precip_liq_surf_mass, precip_ice_surf_mass);
+  p3_postproc.set_variables(
+      m_num_cols, nk_pack, prog_state.th, pmid, pmid_dry, T_atm, t_prev, pseudo_density,
+      pseudo_density_dry, prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr, prog_state.nr,
+      prog_state.qi, prog_state.qm, prog_state.ni, prog_state.bm, qv_prev,
+      diag_outputs.diag_eff_radius_qc, diag_outputs.diag_eff_radius_qi,
+      diag_outputs.diag_eff_radius_qr, diag_outputs.precip_liq_surf, diag_outputs.precip_ice_surf,
+      precip_liq_surf_mass, precip_ice_surf_mass);
 
   if (has_column_conservation_check()) {
     const auto &vapor_flux = get_field_out("vapor_flux").get_view<Real *>();
@@ -551,7 +566,8 @@ void P3Microphysics::initialize_impl(const RunType /* run_type */) {
   }
 
   // Setup WSM for internal local variables
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const auto policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   workspace_mgr.setup(m_buffer.wsm_data, nk_pack_p1, 52, policy);
 }
 

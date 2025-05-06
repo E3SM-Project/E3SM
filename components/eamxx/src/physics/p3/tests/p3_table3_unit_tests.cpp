@@ -42,7 +42,8 @@ namespace unit_test {
 // tool is measuring the maximum slope magnitude as a function of mesh
 // refinement, where the mesh is a 1D mesh transecting the table domain.
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
 
   KOKKOS_FUNCTION static Scalar calc_lamr(const Scalar &mu_r, const Scalar &alpha) {
     // Parameters for lower and upper bounds, derived above, multiplied by
@@ -55,7 +56,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap
   KOKKOS_FUNCTION static Scalar calc_mu_r(const Scalar &alpha) { return alpha * 10; }
 
   // Perform the table lookup and interpolation operations for (mu_r, lamr).
-  KOKKOS_FUNCTION static Spack interp(const view_2d_table &table, const Scalar &mu_r, const Scalar &lamr) {
+  KOKKOS_FUNCTION static Spack interp(const view_2d_table &table, const Scalar &mu_r,
+                                      const Scalar &lamr) {
     // Init the pack to all the same value, and compute in every pack slot.
     Spack mu_r_p(mu_r), lamr_p(lamr);
     Table3 t3;
@@ -71,7 +73,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap
     view_1d_table mu_r_table_vals;
     view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
     view_dnu_table dnu;
-    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals,
+                                 dnu);
 
     // Estimate two maximum slope magnitudes for two meshes, the second 10x
     // refined w.r.t. the first.
@@ -117,8 +120,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap
     const auto check_growth = [&](const std::string &label, const Scalar &growth) {
       bool bad_growth = growth > 1.1;
       if (bad_growth) {
-        std::cout << "Table3 FAIL: Slopes in the " << label << " direction are " << slopes[0] << " and " << slopes[1]
-                  << ", which grows by factor " << growth << ". Near 1 is good; near 10 is bad.\n";
+        std::cout << "Table3 FAIL: Slopes in the " << label << " direction are " << slopes[0]
+                  << " and " << slopes[1] << ", which grows by factor " << growth
+                  << ". Near 1 is good; near 10 is bad.\n";
       }
       REQUIRE(!bad_growth);
     };

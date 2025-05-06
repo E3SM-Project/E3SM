@@ -9,7 +9,8 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::shoc_pblintd_cldcheck(const Scalar &zi, const Scalar &cldn, Scalar &pblh) {
+KOKKOS_FUNCTION void Functions<S, D>::shoc_pblintd_cldcheck(const Scalar &zi, const Scalar &cldn,
+                                                            Scalar &pblh) {
   //
   // Final requirement on PBL heightis that it must be greater than the depth
   // of the lowest model level if there is any cloud diagnosed in

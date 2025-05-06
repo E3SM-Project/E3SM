@@ -40,7 +40,8 @@ public:
   template <typename T, int N> using data_nd_t = typename ekat::DataND<T, N>::type;
 
   // Types of device and host views given data type and memory traits
-  template <typename DT, typename MT = Kokkos::MemoryManaged> using view_dev_t = typename kt_dev::template view<DT, MT>;
+  template <typename DT, typename MT = Kokkos::MemoryManaged>
+  using view_dev_t = typename kt_dev::template view<DT, MT>;
   template <typename DT, typename MT = Kokkos::MemoryManaged>
   using view_host_t = typename kt_host::template view<DT, MT>;
 
@@ -57,8 +58,12 @@ private:
     view_dev_t<DT, MT> d_view;
     view_host_t<DT, MT> h_view;
 
-    template <HostOrDevice HD> const if_t<HD == Device, view_dev_t<DT, MT>> &get_view() const { return d_view; }
-    template <HostOrDevice HD> const if_t<HD == Host, view_host_t<DT, MT>> &get_view() const { return h_view; }
+    template <HostOrDevice HD> const if_t<HD == Device, view_dev_t<DT, MT>> &get_view() const {
+      return d_view;
+    }
+    template <HostOrDevice HD> const if_t<HD == Host, view_host_t<DT, MT>> &get_view() const {
+      return h_view;
+    }
   };
 
 public:
@@ -67,7 +72,8 @@ public:
   using get_view_type = cond_t<HD == Device, view_dev_t<DT, MT>, view_host_t<DT, MT>>;
 
   template <typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
-  using get_strided_view_type = cond_t<HD == Device, strided_view_dev_t<DT, MT>, strided_view_host_t<DT, MT>>;
+  using get_strided_view_type =
+      cond_t<HD == Device, strided_view_dev_t<DT, MT>, strided_view_host_t<DT, MT>>;
 
   // Field stack classes types
   using header_type     = FieldHeader;
@@ -113,7 +119,8 @@ public:
   // This is safer to use for fields that could be a subfield of another one, since a
   // rank-1 view that is the subview of a 2d one along the 2nd index cannot have
   // LayoutRight, and must have LayoutStride instead.
-  template <typename DT, HostOrDevice HD = Device> get_strided_view_type<DT, HD> get_strided_view() const;
+  template <typename DT, HostOrDevice HD = Device>
+  get_strided_view_type<DT, HD> get_strided_view() const;
 
   // These two getters are convenience function for commonly accessed metadata.
   // The same info can be extracted from the metadata stored in the FieldHeader
@@ -139,21 +146,23 @@ public:
   template <typename ST, HostOrDevice HD = Device> ST *get_internal_view_data() const {
     // Check that the scalar type is correct
     using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG((field_valid_data_types().at<nonconst_ST>() == m_header->get_identifier().data_type() or
-                      std::is_same<nonconst_ST, char>::value),
-                     "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
-                     " - field name: " +
-                         name() +
-                         "\n"
-                         " - field data type: " +
-                         e2str(data_type()) +
-                         "\n"
-                         " - requested type : " +
-                         e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
-    EKAT_REQUIRE_MSG(not m_is_read_only || std::is_const<ST>::value,
-                     "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
-                     " - field name: " +
-                         name() + "\n");
+    EKAT_REQUIRE_MSG(
+        (field_valid_data_types().at<nonconst_ST>() == m_header->get_identifier().data_type() or
+         std::is_same<nonconst_ST, char>::value),
+        "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
+        " - field name: " +
+            name() +
+            "\n"
+            " - field data type: " +
+            e2str(data_type()) +
+            "\n"
+            " - requested type : " +
+            e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
+    EKAT_REQUIRE_MSG(
+        not m_is_read_only || std::is_const<ST>::value,
+        "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
+        " - field name: " +
+            name() + "\n");
 
     return reinterpret_cast<ST *>(get_view_impl<HD>().data());
   }
@@ -168,7 +177,8 @@ public:
   template <typename ST, HostOrDevice HD = Device> ST *get_internal_view_data_unsafe() const {
     // Check that the scalar type is correct
     using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG((std::is_same<nonconst_ST, char>::value or std::is_same<nonconst_ST, void>::value or
+    EKAT_REQUIRE_MSG((std::is_same<nonconst_ST, char>::value or
+                      std::is_same<nonconst_ST, void>::value or
                       (field_valid_data_types().has_t<nonconst_ST>() and
                        get_data_type<nonconst_ST>() == m_header->get_identifier().data_type())),
                      "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
@@ -203,10 +213,13 @@ public:
   // Like the above one, but only sets the value where the mask is active
   // NOTE: mask field must have data type IntType, and hold the extra data
   // "true_value", to specify where the mask is active
-  template <HostOrDevice HD = Device, typename ST = void> void deep_copy(const ST value, const Field &mask);
+  template <HostOrDevice HD = Device, typename ST = void>
+  void deep_copy(const ST value, const Field &mask);
 
   // Copy the data from one field to this field (recycle update method)
-  template <HostOrDevice HD = Device> void deep_copy(const Field &src) { update<CombineMode::Replace, HD>(src, 1, 0); }
+  template <HostOrDevice HD = Device> void deep_copy(const Field &src) {
+    update<CombineMode::Replace, HD>(src, 1, 0);
+  }
 
   // Updates this field y as y=combine(x,y,alpha,beta)
   // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
@@ -224,10 +237,14 @@ public:
   }
 
   // Scale a field y as y=y*x where x is also a field
-  template <HostOrDevice HD = Device> void scale(const Field &x) { update<CombineMode::Multiply, HD>(x, 1, 1); }
+  template <HostOrDevice HD = Device> void scale(const Field &x) {
+    update<CombineMode::Multiply, HD>(x, 1, 1);
+  }
 
   // Scale a field y as y=y/x where x is also a field
-  template <HostOrDevice HD = Device> void scale_inv(const Field &x) { update<CombineMode::Divide, HD>(x, 1, 1); }
+  template <HostOrDevice HD = Device> void scale_inv(const Field &x) {
+    update<CombineMode::Divide, HD>(x, 1, 1);
+  }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -245,17 +262,19 @@ public:
   //     specializes view's traits for LayoutRight of rank 1, not allowing
   //     to store a stride for the slowest dimension.
   //   - If dynamic = true, it is possible to "reset" the slice index (k) at runtime.
-  Field subfield(const std::string &sf_name, const ekat::units::Units &sf_units, const int idim, const int index,
+  Field subfield(const std::string &sf_name, const ekat::units::Units &sf_units, const int idim,
+                 const int index, const bool dynamic = false) const;
+  Field subfield(const std::string &sf_name, const int idim, const int index,
                  const bool dynamic = false) const;
-  Field subfield(const std::string &sf_name, const int idim, const int index, const bool dynamic = false) const;
   Field subfield(const int idim, const int k, const bool dynamic = false) const;
   Field subfield(const FieldTag tag, const int k, const bool dynamic = false) const;
   // extracts a subfield composed of multiple slices in a continuous range of indices
   // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
   // but NOT subf = f.subfield(:, [1, 3, 4], :)
-  Field subfield(const std::string &sf_name, const ekat::units::Units &sf_units, const int idim, const int index_beg,
+  Field subfield(const std::string &sf_name, const ekat::units::Units &sf_units, const int idim,
+                 const int index_beg, const int index_end) const;
+  Field subfield(const std::string &sf_name, const int idim, const int index_beg,
                  const int index_end) const;
-  Field subfield(const std::string &sf_name, const int idim, const int index_beg, const int index_end) const;
   Field subfield(const int idim, const int index_beg, const int index_end) const;
   // If this field is a vector field, get a subfield for the ith component.
   // If dynamic = true, it is possible to "reset" the component index at runtime.
@@ -312,7 +331,8 @@ protected:
 #endif
   template <typename ST, HostOrDevice From, HostOrDevice To> void sync_views_impl() const;
 
-  template <HostOrDevice HD, bool use_mask, typename ST> void deep_copy_impl(const ST value, const Field &mask);
+  template <HostOrDevice HD, bool use_mask, typename ST>
+  void deep_copy_impl(const ST value, const Field &mask);
 
   // The update method calls this, with ST matching this field data type.
   // Note: use_fill is used to determine *at compile time* whether to use
@@ -329,14 +349,14 @@ protected:
   // These SFINAE impl of get_subview are needed since subview_1 does not
   // exist for rank2 (or less) views.
   template <HostOrDevice HD, typename T, int N>
-  if_t<(N > 2), get_view_type<data_nd_t<T, N - 1>, HD>> get_subview_1(const get_view_type<data_nd_t<T, N>, HD> &v,
-                                                                      const int k) const {
+  if_t<(N > 2), get_view_type<data_nd_t<T, N - 1>, HD>>
+  get_subview_1(const get_view_type<data_nd_t<T, N>, HD> &v, const int k) const {
     return ekat::subview_1(v, k);
   }
 
   template <HostOrDevice HD, typename T, int N>
-  if_t<(N <= 2), get_view_type<data_nd_t<T, N - 1>, HD>> get_subview_1(const get_view_type<data_nd_t<T, N>, HD> &,
-                                                                       const int) const {
+  if_t<(N <= 2), get_view_type<data_nd_t<T, N - 1>, HD>>
+  get_subview_1(const get_view_type<data_nd_t<T, N>, HD> &, const int) const {
     EKAT_ERROR_MSG("Error! Cannot subview a rank2 view along the second "
                    "dimension without losing LayoutRight.\n");
     return get_view_type<data_nd_t<T, N - 1>, HD>();
@@ -377,42 +397,54 @@ inline bool operator==(const Field &lhs, const Field &rhs) {
 
 // Inform the compiler that we will instantiate some template methods in some translation unit (TU).
 // This prevents the decl in field_impl.hpp from being compiled for every TU.
-// NOTE: field_impl.hpp is still included, so you can call other specializations (e.g., update for CM=Max)
+// NOTE: field_impl.hpp is still included, so you can call other specializations (e.g., update for
+// CM=Max)
 //       and the compiler will implicitly instantiate. However, these are the most common use cases,
 //       so it helps to do ETI for those.
 // NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
-#define EAMXX_FIELD_ETI_DECL_UPDATE(S, T)                                                           \
-  extern template void Field::update<CombineMode::Update, S, T>(const Field &, const T, const T);   \
-  extern template void Field::update<CombineMode::Multiply, S, T>(const Field &, const T, const T); \
+#define EAMXX_FIELD_ETI_DECL_UPDATE(S, T)                                                         \
+  extern template void Field::update<CombineMode::Update, S, T>(const Field &, const T, const T); \
+  extern template void Field::update<CombineMode::Multiply, S, T>(const Field &, const T,         \
+                                                                  const T);                       \
   extern template void Field::update<CombineMode::Divide, S, T>(const Field &, const T, const T)
 
-#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(S, T1, T2)                                                                    \
-  extern template void Field::update_impl<CombineMode::Update, S, true, T1, T2>(const Field &, const T1, const T1);    \
-  extern template void Field::update_impl<CombineMode::Multiply, S, true, T1, T2>(const Field &, const T1, const T1);  \
-  extern template void Field::update_impl<CombineMode::Divide, S, true, T1, T2>(const Field &, const T1, const T1);    \
-  extern template void Field::update_impl<CombineMode::Update, S, false, T1, T2>(const Field &, const T1, const T1);   \
-  extern template void Field::update_impl<CombineMode::Multiply, S, false, T1, T2>(const Field &, const T1, const T1); \
-  extern template void Field::update_impl<CombineMode::Divide, S, false, T1, T2>(const Field &, const T1, const T1)
+#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(S, T1, T2)                                 \
+  extern template void Field::update_impl<CombineMode::Update, S, true, T1, T2>(    \
+      const Field &, const T1, const T1);                                           \
+  extern template void Field::update_impl<CombineMode::Multiply, S, true, T1, T2>(  \
+      const Field &, const T1, const T1);                                           \
+  extern template void Field::update_impl<CombineMode::Divide, S, true, T1, T2>(    \
+      const Field &, const T1, const T1);                                           \
+  extern template void Field::update_impl<CombineMode::Update, S, false, T1, T2>(   \
+      const Field &, const T1, const T1);                                           \
+  extern template void Field::update_impl<CombineMode::Multiply, S, false, T1, T2>( \
+      const Field &, const T1, const T1);                                           \
+  extern template void Field::update_impl<CombineMode::Divide, S, false, T1, T2>(   \
+      const Field &, const T1, const T1)
 
 #define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S, T)                                      \
   extern template void Field::deep_copy_impl<S, true, T>(const T, const Field &); \
   extern template void Field::deep_copy_impl<S, false, T>(const T, const Field &)
 
-#define EAMXX_FIELD_ETI_DECL_GET_VIEW(S, T)                                                             \
-  extern template Field::get_view_type<T, S> Field::get_view<T, S>() const;                             \
-  extern template Field::get_view_type<T *, S> Field::get_view<T *, S>() const;                         \
-  extern template Field::get_view_type<T **, S> Field::get_view<T **, S>() const;                       \
-  extern template Field::get_view_type<T ***, S> Field::get_view<T ***, S>() const;                     \
-  extern template Field::get_view_type<T ****, S> Field::get_view<T ****, S>() const;                   \
-  extern template Field::get_view_type<T *****, S> Field::get_view<T *****, S>() const;                 \
-  extern template Field::get_view_type<T ******, S> Field::get_view<T ******, S>() const;               \
-  extern template Field::get_strided_view_type<T, S> Field::get_strided_view<T, S>() const;             \
-  extern template Field::get_strided_view_type<T *, S> Field::get_strided_view<T *, S>() const;         \
-  extern template Field::get_strided_view_type<T **, S> Field::get_strided_view<T **, S>() const;       \
-  extern template Field::get_strided_view_type<T ***, S> Field::get_strided_view<T ***, S>() const;     \
-  extern template Field::get_strided_view_type<T ****, S> Field::get_strided_view<T ****, S>() const;   \
-  extern template Field::get_strided_view_type<T *****, S> Field::get_strided_view<T *****, S>() const; \
-  extern template Field::get_strided_view_type<T ******, S> Field::get_strided_view<T ******, S>() const
+#define EAMXX_FIELD_ETI_DECL_GET_VIEW(S, T)                                                        \
+  extern template Field::get_view_type<T, S> Field::get_view<T, S>() const;                        \
+  extern template Field::get_view_type<T *, S> Field::get_view<T *, S>() const;                    \
+  extern template Field::get_view_type<T **, S> Field::get_view<T **, S>() const;                  \
+  extern template Field::get_view_type<T ***, S> Field::get_view<T ***, S>() const;                \
+  extern template Field::get_view_type<T ****, S> Field::get_view<T ****, S>() const;              \
+  extern template Field::get_view_type<T *****, S> Field::get_view<T *****, S>() const;            \
+  extern template Field::get_view_type<T ******, S> Field::get_view<T ******, S>() const;          \
+  extern template Field::get_strided_view_type<T, S> Field::get_strided_view<T, S>() const;        \
+  extern template Field::get_strided_view_type<T *, S> Field::get_strided_view<T *, S>() const;    \
+  extern template Field::get_strided_view_type<T **, S> Field::get_strided_view<T **, S>() const;  \
+  extern template Field::get_strided_view_type<T ***, S> Field::get_strided_view<T ***, S>()       \
+      const;                                                                                       \
+  extern template Field::get_strided_view_type<T ****, S> Field::get_strided_view<T ****, S>()     \
+      const;                                                                                       \
+  extern template Field::get_strided_view_type<T *****, S> Field::get_strided_view<T *****, S>()   \
+      const;                                                                                       \
+  extern template Field::get_strided_view_type<T ******, S> Field::get_strided_view<T ******, S>() \
+      const
 
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T)      \
   EAMXX_FIELD_ETI_DECL_UPDATE(Device, T);         \

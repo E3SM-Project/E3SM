@@ -39,7 +39,8 @@ void ExnerDiagnostic::compute_diagnostic_impl() {
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for(
-      "ExnerDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs), KOKKOS_LAMBDA(const int &idx) {
+      "ExnerDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs),
+      KOKKOS_LAMBDA(const int &idx) {
         const int icol    = idx / nlevs;
         const int ilev    = idx % nlevs;
         exner(icol, ilev) = PF::exner_function(p_mid(icol, ilev));

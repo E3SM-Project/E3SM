@@ -38,7 +38,8 @@ TEST_CASE("write_and_read") {
   // Write phase
   {
     register_file(filename, Write);
-    REQUIRE_THROWS(register_file(filename, Read)); // ERROR: cannot open in both read and write modes
+    REQUIRE_THROWS(
+        register_file(filename, Read)); // ERROR: cannot open in both read and write modes
     REQUIRE(is_file_open(filename));
     REQUIRE(is_file_open(filename, Write));
     REQUIRE(not is_file_open(filename, Read));
@@ -53,16 +54,21 @@ TEST_CASE("write_and_read") {
 
     set_dim_decomp(filename, "dim3", my_offsets);
 
-    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "double", true));   // ERROR: no time dimension (yet)
-    REQUIRE_THROWS(define_var(filename, "var1", {"dim0"}, "double", false));  // ERROR: dim0 not found
-    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "complex", false)); // ERROR: unsupported dtype
+    REQUIRE_THROWS(
+        define_var(filename, "var1", {"dim1"}, "double", true)); // ERROR: no time dimension (yet)
+    REQUIRE_THROWS(
+        define_var(filename, "var1", {"dim0"}, "double", false)); // ERROR: dim0 not found
+    REQUIRE_THROWS(
+        define_var(filename, "var1", {"dim1"}, "complex", false)); // ERROR: unsupported dtype
     define_var(filename, "var1", {"dim1"}, "double", false);
-    define_var(filename, "var1", {"dim1"}, "double", false);                 // OK, same specs
-    REQUIRE_THROWS(define_var(filename, "var1", {"dim2"}, "double", false)); // ERROR: changing var dimensions
-    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "int", false));    // ERROR: changing dtype
+    define_var(filename, "var1", {"dim1"}, "double", false); // OK, same specs
+    REQUIRE_THROWS(
+        define_var(filename, "var1", {"dim2"}, "double", false)); // ERROR: changing var dimensions
+    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "int", false)); // ERROR: changing dtype
 
     define_time(filename, "some_units", "the_time");
-    REQUIRE_THROWS(define_time(filename, "", "another_name")); // ERROR: time already defined with another name
+    REQUIRE_THROWS(
+        define_time(filename, "", "another_name")); // ERROR: time already defined with another name
 
     define_var(filename, "var2", {"dim1", "dim2"}, "float", true);
     define_var(filename, "var3", {}, "int", true);
@@ -89,7 +95,8 @@ TEST_CASE("write_and_read") {
     write_var(filename, "var4", var45.data());
     write_var(filename, "var5", var45.data());
 
-    REQUIRE_THROWS(write_var(filename, "var3", static_cast<int *>(nullptr))); // ERROR: invalid pointer
+    REQUIRE_THROWS(
+        write_var(filename, "var3", static_cast<int *>(nullptr))); // ERROR: invalid pointer
 
     // Write second time slice
     update_time(filename, 0.5);
@@ -174,8 +181,9 @@ TEST_CASE("write_and_read") {
     REQUIRE(tgt_var1 == var1);
 
     // Read first time slice
-    REQUIRE_THROWS(read_var(filename, "var3", var3.data(), 3));              // ERROR: time_idx out of bounds
-    REQUIRE_THROWS(read_var(filename, "var3", static_cast<int *>(nullptr))); // ERROR: invalid pointer
+    REQUIRE_THROWS(read_var(filename, "var3", var3.data(), 3)); // ERROR: time_idx out of bounds
+    REQUIRE_THROWS(
+        read_var(filename, "var3", static_cast<int *>(nullptr))); // ERROR: invalid pointer
 
     read_var(filename, "var2", var2.data(), 0);
     REQUIRE(tgt_var2 == var2);

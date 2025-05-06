@@ -32,12 +32,13 @@ public:
     std::string extrap_top = "P0";
     std::string extrap_bot = "P0";
     Real mask_value        = std::numeric_limits<Real>::quiet_NaN(); // Unused for P0 extrapolation
-    std::string pname;                                               // What we need to load from nc file
+    std::string pname; // What we need to load from nc file
     Field pmid, pint;
   };
 
   // Constructor(s) & Destructor
-  DataInterpolation(const std::shared_ptr<const AbstractGrid> &model_grid, const std::vector<Field> &fields);
+  DataInterpolation(const std::shared_ptr<const AbstractGrid> &model_grid,
+                    const std::vector<Field> &fields);
 
   ~DataInterpolation() = default;
 
@@ -87,7 +88,8 @@ protected:
   std::shared_ptr<AtmosphereInput> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
-  std::shared_ptr<AbstractGrid> m_grid_after_hremap; // nonconst b/c we may need to set some geo data
+  std::shared_ptr<AbstractGrid>
+      m_grid_after_hremap; // nonconst b/c we may need to set some geo data
 
   std::vector<Field> m_fields;
 

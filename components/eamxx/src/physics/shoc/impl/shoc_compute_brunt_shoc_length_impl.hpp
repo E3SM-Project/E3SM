@@ -7,10 +7,12 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::compute_brunt_shoc_length(const MemberType &team, const Int &nlev, const Int &nlevi,
-                                           const uview_1d<const Spack> &dz_zt, const uview_1d<const Spack> &thv,
-                                           const uview_1d<const Spack> &thv_zi, const uview_1d<Spack> &brunt) {
+KOKKOS_FUNCTION void Functions<S, D>::compute_brunt_shoc_length(const MemberType &team,
+                                                                const Int &nlev, const Int &nlevi,
+                                                                const uview_1d<const Spack> &dz_zt,
+                                                                const uview_1d<const Spack> &thv,
+                                                                const uview_1d<const Spack> &thv_zi,
+                                                                const uview_1d<Spack> &brunt) {
   const auto ggr      = C::gravit;
   const auto s_thv_zi = scalarize(thv_zi);
 

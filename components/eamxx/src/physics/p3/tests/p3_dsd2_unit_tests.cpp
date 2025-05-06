@@ -30,7 +30,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
     view_2d_table revap_table_vals;
     view_1d_table mu_r_table_vals;
     view_dnu_table dnu;
-    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals,
+                                 dnu);
 
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {
@@ -113,17 +114,18 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
   void run_rain_bfb() {
     using KTH = KokkosTypes<HostDevice>;
 
-    GetRainDsd2Data grdd[max_pack_size] = {{0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
-                                           {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01},
+    GetRainDsd2Data grdd[max_pack_size] = {
+        {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
+        {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01},
 
-                                           {0.100000E-01, 0.100000E+01}, {0.0, 0.100000E+01},
-                                           {0.156316E-03, 0.100000E+01}, {0.0, 0.100000E+01},
+        {0.100000E-01, 0.100000E+01}, {0.0, 0.100000E+01},
+        {0.156316E-03, 0.100000E+01}, {0.0, 0.100000E+01},
 
-                                           {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
-                                           {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01},
+        {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
+        {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01},
 
-                                           {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
-                                           {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01}};
+        {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
+        {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01}};
 
     // Sync to device
     KTH::view_1d<GetRainDsd2Data> grdd_host("grdd_host", max_pack_size);
@@ -151,7 +153,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
           }
 
           Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-          Functions::get_rain_dsd2(qr, nr, mu_r, lamr, p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::get_rain_dsd2(qr, nr, mu_r, lamr,
+                                   p3::Functions<Real, DefaultDevice>::P3Runtime());
           Functions::get_cdistr_logn0r(qr, nr, mu_r, lamr, cdistr, logn0r);
 
           // Copy results back into views

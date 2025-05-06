@@ -10,7 +10,8 @@
 
 namespace scream {
 
-AtmosphereProcessGroup::AtmosphereProcessGroup(const ekat::Comm &comm, const ekat::ParameterList &params)
+AtmosphereProcessGroup::AtmosphereProcessGroup(const ekat::Comm &comm,
+                                               const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
   // Get the list of procs in the group
   auto group_list = m_params.get<std::vector<std::string>>("atm_procs_list");
@@ -79,17 +80,19 @@ AtmosphereProcessGroup::AtmosphereProcessGroup(const ekat::Comm &comm, const eka
     m_atm_processes.push_back(ap);
 
     // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly.
-    //       Namely, the creation process must have set up enable_shared_from_this's status correctly.
-    //       This is done by the library-provided templated function 'create_atm_process<T>.
-    //       However, if the user has decided to roll his/her own creator function to be registered
-    //       in the AtmosphereProcessFactory, he/she may have forgot to set the self pointer in the process.
-    //       To make sure this is not the case, we check that the weak_ptr in the newly created
-    //       atmosphere process (which comes through inheritance from enable_shared_from_this) is valid.
+    //       Namely, the creation process must have set up enable_shared_from_this's status
+    //       correctly. This is done by the library-provided templated function
+    //       'create_atm_process<T>. However, if the user has decided to roll his/her own creator
+    //       function to be registered in the AtmosphereProcessFactory, he/she may have forgot to
+    //       set the self pointer in the process. To make sure this is not the case, we check that
+    //       the weak_ptr in the newly created atmosphere process (which comes through inheritance
+    //       from enable_shared_from_this) is valid.
     EKAT_REQUIRE_MSG(
         !ap->weak_from_this().expired(),
         "Error! The newly created std::shared_ptr<AtmosphereProcess> did not correctly setup\n"
         "       the 'enable_shared_from_this' interface.\n"
-        "       Did you by chance register your own creator function in the AtmosphereProccessFactory class?\n"
+        "       Did you by chance register your own creator function in the "
+        "AtmosphereProccessFactory class?\n"
         "       If so, don't. Instead, use the instantiation of create_atmosphere_process<T>,\n"
         "       with T = YourAtmProcessClassName.\n");
 
@@ -119,8 +122,8 @@ AtmosphereProcessGroup::AtmosphereProcessGroup(const ekat::Comm &comm, const eka
 
 std::shared_ptr<AtmosphereProcessGroup::atm_proc_type>
 AtmosphereProcessGroup::get_process_nonconst(const std::string &name) const {
-  EKAT_REQUIRE_MSG(has_process(name), "Error! Process " + name + " requested from group " + this->name() +
-                                          " but is not constained in this group.\n");
+  EKAT_REQUIRE_MSG(has_process(name), "Error! Process " + name + " requested from group " +
+                                          this->name() + " but is not constained in this group.\n");
 
   std::shared_ptr<atm_proc_type> return_process;
   for (auto &process : m_atm_processes) {
@@ -211,15 +214,16 @@ void AtmosphereProcessGroup::gather_internal_fields() {
     const auto &ifs = atm_proc->get_internal_fields();
     for (const auto &f : ifs) {
       const auto &name = f.get_header().get_identifier().name();
-      EKAT_REQUIRE_MSG(f2proc.find(name) == f2proc.end(), "Error! Two atm procs created the same internal field.\n"
-                                                          "  - field name: " +
-                                                              name +
-                                                              "\n"
-                                                              "  - first atm proc: " +
-                                                              f2proc.at(name) +
-                                                              "\n"
-                                                              "  - second atm proc: " +
-                                                              atm_proc->name() + "\n");
+      EKAT_REQUIRE_MSG(f2proc.find(name) == f2proc.end(),
+                       "Error! Two atm procs created the same internal field.\n"
+                       "  - field name: " +
+                           name +
+                           "\n"
+                           "  - first atm proc: " +
+                           f2proc.at(name) +
+                           "\n"
+                           "  - second atm proc: " +
+                           atm_proc->name() + "\n");
       add_internal_field(f);
       f2proc[name] = atm_proc->name();
     }
@@ -266,11 +270,12 @@ void AtmosphereProcessGroup::setup_column_conservation_checks(
       // Individual processes are the only ones that can define
       // this check as there is currenty no concept of boundary
       // fluxes over multiple processes implemented in the model.
-      EKAT_REQUIRE_MSG(not atm_proc_group->has_column_conservation_check(),
-                       "Error! The ATM process group \"" + atm_proc_group->name() +
-                           "\" attempted to enable "
-                           "conservation checks. Should have enable_column_conservation_checks=false for all "
-                           "process groups.\n");
+      EKAT_REQUIRE_MSG(
+          not atm_proc_group->has_column_conservation_check(),
+          "Error! The ATM process group \"" + atm_proc_group->name() +
+              "\" attempted to enable "
+              "conservation checks. Should have enable_column_conservation_checks=false for all "
+              "process groups.\n");
 
       atm_proc_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
       continue;
@@ -292,37 +297,41 @@ void AtmosphereProcessGroup::setup_column_conservation_checks(
                          "This check is column local and therefore can only be run "
                          "on physics processes.\n");
 
-    // Query the computed fields for this atm process and see if either the mass or energy computation
-    // might be changed after the process has run. If no field used in the mass or energy calculate
-    // is updated by this process, there is no need to run the check.
+    // Query the computed fields for this atm process and see if either the mass or energy
+    // computation might be changed after the process has run. If no field used in the mass or
+    // energy calculate is updated by this process, there is no need to run the check.
     const std::string phys_grid_name  = conservation_check->get_grid()->name();
     const bool updates_static_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
     const bool updates_kinetic_energy = atm_proc->has_computed_field("horiz_winds", phys_grid_name);
     const bool updates_water_vapor    = atm_proc->has_computed_field("qv", phys_grid_name);
-    const bool updates_water_liquid =
-        atm_proc->has_computed_field("qc", phys_grid_name) || atm_proc->has_computed_field("qr", phys_grid_name);
+    const bool updates_water_liquid   = atm_proc->has_computed_field("qc", phys_grid_name) ||
+                                      atm_proc->has_computed_field("qr", phys_grid_name);
     const bool updates_water_ice         = atm_proc->has_computed_field("qi", phys_grid_name);
-    const bool mass_or_energy_is_updated = updates_static_energy || updates_kinetic_energy || updates_water_vapor ||
-                                           updates_water_liquid || updates_water_ice;
-    EKAT_REQUIRE_MSG(mass_or_energy_is_updated, "Error! enable_column_conservation_checks=true for "
-                                                "process \"" +
-                                                    atm_proc->name() +
-                                                    "\" but mass or energy is "
-                                                    "not updated by the process. Set to false to avoid "
-                                                    "unnecessary computation.\n");
+    const bool mass_or_energy_is_updated = updates_static_energy || updates_kinetic_energy ||
+                                           updates_water_vapor || updates_water_liquid ||
+                                           updates_water_ice;
+    EKAT_REQUIRE_MSG(mass_or_energy_is_updated,
+                     "Error! enable_column_conservation_checks=true for "
+                     "process \"" +
+                         atm_proc->name() +
+                         "\" but mass or energy is "
+                         "not updated by the process. Set to false to avoid "
+                         "unnecessary computation.\n");
 
     // Require that, if a process adds the conservation check, it also defines all
     // the boundary fluxes needed to compute the mass and energy tendencies.
-    const bool has_all_boundary_fluxes = atm_proc->has_computed_field("vapor_flux", phys_grid_name) &&
-                                         atm_proc->has_computed_field("water_flux", phys_grid_name) &&
-                                         atm_proc->has_computed_field("ice_flux", phys_grid_name) &&
-                                         atm_proc->has_computed_field("heat_flux", phys_grid_name);
-    EKAT_REQUIRE_MSG(has_all_boundary_fluxes, "Error! Process \"" + atm_proc->name() +
-                                                  "\" enables the mass "
-                                                  "and energy conservation check, but does not define all "
-                                                  "the boundary fluxes required: vapor_flux, water_flux "
-                                                  "ice_flux, heat_flux. If a flux does not have a natural definition "
-                                                  "within the process, set to 0.\n");
+    const bool has_all_boundary_fluxes =
+        atm_proc->has_computed_field("vapor_flux", phys_grid_name) &&
+        atm_proc->has_computed_field("water_flux", phys_grid_name) &&
+        atm_proc->has_computed_field("ice_flux", phys_grid_name) &&
+        atm_proc->has_computed_field("heat_flux", phys_grid_name);
+    EKAT_REQUIRE_MSG(has_all_boundary_fluxes,
+                     "Error! Process \"" + atm_proc->name() +
+                         "\" enables the mass "
+                         "and energy conservation check, but does not define all "
+                         "the boundary fluxes required: vapor_flux, water_flux "
+                         "ice_flux, heat_flux. If a flux does not have a natural definition "
+                         "within the process, set to 0.\n");
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
@@ -337,7 +346,7 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks() const {
     } else {
       for (const auto &f : proc->get_fields_out()) {
         const auto &grid_name = f.get_header().get_identifier().get_grid_name();
-        auto nan_check        = std::make_shared<FieldNaNCheck>(f, m_grids_mgr->get_grid(grid_name));
+        auto nan_check = std::make_shared<FieldNaNCheck>(f, m_grids_mgr->get_grid(grid_name));
         proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
       }
 
@@ -352,7 +361,8 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks() const {
   }
 }
 
-void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks(const Field &data_field) {
+void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks(
+    const Field &data_field) {
   for (auto proc : m_atm_processes) {
     auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
     if (group) {
@@ -407,7 +417,8 @@ void AtmosphereProcessGroup::pre_process_tracer_requests() {
 
     if (turb_advect_req and non_turb_advect_req) {
       std::ostringstream ss;
-      ss << "Error! Incompatible tracer request. Turbulence advection requests not consistent among processes.\n"
+      ss << "Error! Incompatible tracer request. Turbulence advection requests not consistent "
+            "among processes.\n"
             "  - Tracer name: " +
                 fr.first +
                 "\n"
@@ -416,7 +427,8 @@ void AtmosphereProcessGroup::pre_process_tracer_requests() {
         const auto turb_advect     = ekat::contains(req.groups, "turbulence_advected_tracers");
         const auto non_turb_advect = ekat::contains(req.groups, "non_turbulence_advected_tracers");
         std::string turb_advect_info =
-            (turb_advect ? "DynamicsAndTurbulence" : (non_turb_advect ? "DynamicsOnly" : "NoPreference"));
+            (turb_advect ? "DynamicsAndTurbulence"
+                         : (non_turb_advect ? "DynamicsOnly" : "NoPreference"));
         const auto grid_name = req.fid.get_grid_name();
         ss << "    - (" + req.calling_process + ", " + grid_name + ", " + turb_advect_info + ")\n";
       }
@@ -453,8 +465,8 @@ void AtmosphereProcessGroup::initialize_impl(const RunType run_type) {
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage, &max_mem_usage, 1, MPI_MAX);
-    m_atm_logger->debug("[EAMxx::initialize::" + atm_proc->name() + "] memory usage: " + std::to_string(max_mem_usage) +
-                        "MB");
+    m_atm_logger->debug("[EAMxx::initialize::" + atm_proc->name() +
+                        "] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
 }
@@ -497,8 +509,8 @@ void AtmosphereProcessGroup::finalize_impl(/* what inputs? */) {
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage, &max_mem_usage, 1, MPI_MAX);
-    m_atm_logger->debug("[EAMxx::finalize::" + atm_proc->name() + "] memory usage: " + std::to_string(max_mem_usage) +
-                        "MB");
+    m_atm_logger->debug("[EAMxx::finalize::" + atm_proc->name() +
+                        "] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
 }

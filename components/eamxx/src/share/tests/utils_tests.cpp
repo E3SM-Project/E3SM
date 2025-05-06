@@ -129,7 +129,8 @@ TEST_CASE("time_stamp") {
     REQUIRE(ts2.get_seconds() == (ts1.get_seconds() + 1));
     REQUIRE(ts2.get_minutes() == (ts1.get_minutes() + 1));
     REQUIRE(ts2.get_hours() == (ts1.get_hours() + 1));
-    REQUIRE(ts2.get_day() == (ts1.get_day() + 1 + 20 - 31)); // Add 20 days, subtract Oct 31 days (carry)
+    REQUIRE(ts2.get_day() ==
+            (ts1.get_day() + 1 + 20 - 31)); // Add 20 days, subtract Oct 31 days (carry)
     REQUIRE(ts2.get_month() == (ts1.get_month() + 1));
     REQUIRE(ts2.get_year() == ts1.get_year());
 
@@ -137,7 +138,8 @@ TEST_CASE("time_stamp") {
     REQUIRE(ts2.get_seconds() == ts1.get_seconds() + 1);
     REQUIRE(ts2.get_minutes() == (ts1.get_minutes() + 1));
     REQUIRE(ts2.get_hours() == (ts1.get_hours() + 1));
-    REQUIRE(ts2.get_day() == (ts1.get_day() + 1 + 20 - 31)); // Add 20 days, subtract Oct 31 days (carry)
+    REQUIRE(ts2.get_day() ==
+            (ts1.get_day() + 1 + 20 - 31)); // Add 20 days, subtract Oct 31 days (carry)
     REQUIRE(ts2.get_month() == (ts1.get_month() + 1));
     REQUIRE(ts2.get_year() == (ts1.get_year() + 1));
 

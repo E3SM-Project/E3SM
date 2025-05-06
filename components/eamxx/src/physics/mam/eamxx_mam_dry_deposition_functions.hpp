@@ -14,7 +14,8 @@ void compute_tendencies(
     const int ncol, const int nlev, const double dt, const MAMDryDep::const_view_1d obklen,
     const MAMDryDep::const_view_1d surfric, const MAMDryDep::const_view_1d landfrac,
     const MAMDryDep::const_view_1d icefrac, const MAMDryDep::const_view_1d ocnfrac,
-    const MAMDryDep::const_view_1d friction_velocity, const MAMDryDep::const_view_1d aerodynamical_resistance,
+    const MAMDryDep::const_view_1d friction_velocity,
+    const MAMDryDep::const_view_1d aerodynamical_resistance,
     const MAMDryDep::const_view_2d fraction_landuse_, const MAMDryDep::const_view_3d dgncur_awet_,
     const MAMDryDep::const_view_3d wet_dens_, const mam_coupling::DryAtmosphere dry_atm,
     const mam_coupling::AerosolState dry_aero,
@@ -26,10 +27,11 @@ void compute_tendencies(
     MAMDryDep::view_3d ptend_q, MAMDryDep::view_2d aerdepdrycw, MAMDryDep::view_2d aerdepdryis,
 
     // work arrays
-    MAMDryDep::view_2d rho_, MAMDryDep::view_4d vlc_dry_, MAMDryDep::view_3d vlc_trb_, MAMDryDep::view_4d vlc_grv_,
-    MAMDryDep::view_3d dqdt_tmp_, MAMDryDep::view_3d qtracers) {
+    MAMDryDep::view_2d rho_, MAMDryDep::view_4d vlc_dry_, MAMDryDep::view_3d vlc_trb_,
+    MAMDryDep::view_4d vlc_grv_, MAMDryDep::view_3d dqdt_tmp_, MAMDryDep::view_3d qtracers) {
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
-  const auto policy = ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
+  const auto policy =
+      ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(
@@ -107,33 +109,39 @@ void compute_tendencies(
         bool ptend_lq[pcnst]; // currently unused
         mam4::aero_model_drydep(
             // inputs
-            team, fraction_landuse, atm.temperature, atm.pressure, atm.interface_pressure, atm.hydrostatic_dp,
-            ekat::subview(qtracers, icol), dgncur_awet, wet_dens, obklen[icol], surfric[icol], landfrac[icol],
-            icefrac[icol], ocnfrac[icol], friction_velocity[icol], aerodynamical_resistance[icol], dt,
+            team, fraction_landuse, atm.temperature, atm.pressure, atm.interface_pressure,
+            atm.hydrostatic_dp, ekat::subview(qtracers, icol), dgncur_awet, wet_dens, obklen[icol],
+            surfric[icol], landfrac[icol], icefrac[icol], ocnfrac[icol], friction_velocity[icol],
+            aerodynamical_resistance[icol], dt,
             // input-outputs
             qqcw,
             // outputs
-            ekat::subview(ptend_q, icol), ptend_lq, ekat::subview(aerdepdrycw, icol), ekat::subview(aerdepdryis, icol),
+            ekat::subview(ptend_q, icol), ptend_lq, ekat::subview(aerdepdrycw, icol),
+            ekat::subview(aerdepdryis, icol),
             // work arrays
             rho, vlc_dry, vlc_trb, vlc_grv, dqdt_tmp);
       }); // parallel_for for ncols
 } // Compute_tendencies ends
 
 // Update interstitial aerosols using ptend_q tendencies
-void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt, const int ncol, const int nlev,
+void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt, const int ncol,
+                              const int nlev,
                               // output
                               const mam_coupling::AerosolState dry_aero) {
-  const auto policy           = ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
+  const auto policy =
+      ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(ncol, nlev);
   static constexpr int nmodes = mam4::AeroConfig::num_modes();
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         const int icol = team.league_rank();
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
           for (int m = 0; m < nmodes; ++m) {
-            dry_aero.int_aero_nmr[m](icol, kk) += ptend_q(icol, kk, mam4::ConvProc::numptrcw_amode(m)) * dt;
+            dry_aero.int_aero_nmr[m](icol, kk) +=
+                ptend_q(icol, kk, mam4::ConvProc::numptrcw_amode(m)) * dt;
             for (int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
               if (-1 < mam4::ConvProc::lmassptrcw_amode(a, m))
-                dry_aero.int_aero_mmr[m][a](icol, kk) += ptend_q(icol, kk, mam4::ConvProc::lmassptrcw_amode(a, m)) * dt;
+                dry_aero.int_aero_mmr[m][a](icol, kk) +=
+                    ptend_q(icol, kk, mam4::ConvProc::lmassptrcw_amode(a, m)) * dt;
           }
         }); // parallel_for nlevs
       });   // parallel_for icol
@@ -144,10 +152,12 @@ void update_cloudborne_mmrs(const MAMDryDep::view_3d qqcw, const double dt, cons
                             // output
                             const mam_coupling::AerosolState dry_aero) {
   for (int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], ekat::subview(qqcw, mam4::ConvProc::numptrcw_amode(m)));
+    Kokkos::deep_copy(dry_aero.cld_aero_nmr[m],
+                      ekat::subview(qqcw, mam4::ConvProc::numptrcw_amode(m)));
     for (int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
-        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], ekat::subview(qqcw, mam4::ConvProc::lmassptrcw_amode(a, m)));
+        Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a],
+                          ekat::subview(qqcw, mam4::ConvProc::lmassptrcw_amode(a, m)));
       }
     }
   }

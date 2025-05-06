@@ -13,7 +13,8 @@ namespace scream {
 namespace tms {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     // Should property tests be created?
@@ -23,8 +24,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestComputeTMS : public Unit
     auto engine = Base::get_engine();
 
     ComputeTMSData baseline_data[] = {//             ncols, nlevs
-                                      ComputeTMSData(12, 72), ComputeTMSData(8, 12), ComputeTMSData(7, 16),
-                                      ComputeTMSData(2, 7)};
+                                      ComputeTMSData(12, 72), ComputeTMSData(8, 12),
+                                      ComputeTMSData(7, 16), ComputeTMSData(2, 7)};
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeTMSData);
 
@@ -36,7 +37,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestComputeTMS : public Unit
     // Create copies of data for use by cxx. Needs to happen before read calls so that
     // inout data is in original state
     ComputeTMSData cxx_data[] = {ComputeTMSData(baseline_data[0]), ComputeTMSData(baseline_data[1]),
-                                 ComputeTMSData(baseline_data[2]), ComputeTMSData(baseline_data[3])};
+                                 ComputeTMSData(baseline_data[2]),
+                                 ComputeTMSData(baseline_data[3])};
 
     // Assume all data is in C layout
 
@@ -82,7 +84,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestComputeTMS : public Unit
 namespace {
 
 TEST_CASE("compute_tms_bfb", "tms") {
-  using TestStruct = scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;
+  using TestStruct =
+      scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;
 
   TestStruct t;
   t.run_bfb();

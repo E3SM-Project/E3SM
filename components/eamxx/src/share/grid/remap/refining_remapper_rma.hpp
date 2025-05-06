@@ -62,8 +62,9 @@ protected:
   // Wrap a pointer in an MPI_Win
   template <typename T> MPI_Win get_mpi_window(T *v, int n) const {
     MPI_Win win;
-    check_mpi_call(MPI_Win_create(v, n * sizeof(T), sizeof(T), MPI_INFO_NULL, m_comm.mpi_comm(), &win),
-                   "MPI_Win_create");
+    check_mpi_call(
+        MPI_Win_create(v, n * sizeof(T), sizeof(T), MPI_INFO_NULL, m_comm.mpi_comm(), &win),
+        "MPI_Win_create");
     return win;
   }
 

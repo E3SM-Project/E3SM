@@ -6,7 +6,8 @@
 namespace {
 // Find first position in array pointed by [beg,end) that is below z
 // If all z's in array are >=z, return end
-template <typename T> KOKKOS_INLINE_FUNCTION const T *find_first_smaller_z(const T *beg, const T *end, const T &z) {
+template <typename T>
+KOKKOS_INLINE_FUNCTION const T *find_first_smaller_z(const T *beg, const T *end, const T &z) {
   // It's easier to find the last entry that is not smaller than z,
   // and then we'll return the ptr after that
   int count = end - beg;
@@ -71,36 +72,40 @@ void FieldAtHeight::initialize_impl(const RunType /*run_type*/) {
   // Sanity checks
   using namespace ShortFieldTagsNames;
   const auto &layout = fid.get_layout();
-  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType, "Error! FieldAtHeight only supports Real data type field.\n"
-                                                        " - field name: " +
-                                                            fid.name() +
-                                                            "\n"
-                                                            " - field data type: " +
-                                                            e2str(f.data_type()) + "\n");
-  EKAT_REQUIRE_MSG(layout.rank() >= 2 && layout.rank() <= 3,
-                   "Error! Field rank not supported by FieldAtHeight.\n"
+  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType,
+                   "Error! FieldAtHeight only supports Real data type field.\n"
                    " - field name: " +
                        fid.name() +
                        "\n"
-                       " - field layout: " +
-                       layout.to_string() +
-                       "\n"
-                       "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
-                       "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
+                       " - field data type: " +
+                       e2str(f.data_type()) + "\n");
+  EKAT_REQUIRE_MSG(
+      layout.rank() >= 2 && layout.rank() <= 3,
+      "Error! Field rank not supported by FieldAtHeight.\n"
+      " - field name: " +
+          fid.name() +
+          "\n"
+          " - field layout: " +
+          layout.to_string() +
+          "\n"
+          "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
+          "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
   const auto tag = layout.tags().back();
-  EKAT_REQUIRE_MSG(tag == LEV || tag == ILEV,
-                   "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
-                   " - field name  : " +
-                       fid.name() +
-                       "\n"
-                       " - field layout: " +
-                       layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(
+      tag == LEV || tag == ILEV,
+      "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
+      " - field name  : " +
+          fid.name() +
+          "\n"
+          " - field layout: " +
+          layout.to_string() + "\n");
 
   // Figure out the z value
   m_z_suffix = tag == LEV ? "_mid" : "_int";
 
   // All good, create the diag output
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(tag), fid.get_units(), fid.get_grid_name());
+  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(tag), fid.get_units(),
+                        fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
@@ -109,7 +114,8 @@ void FieldAtHeight::initialize_impl(const RunType /*run_type*/) {
   // Propagate any io string attribute from input field to diag field
   const auto &src      = get_fields_in().front();
   const auto &src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
-  auto &dst_atts       = m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto &dst_atts =
+      m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
   for (const auto &[name, val] : src_atts) {
     dst_atts[name] = val;
   }

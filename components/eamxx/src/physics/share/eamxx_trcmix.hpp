@@ -10,9 +10,11 @@
 namespace scream {
 namespace physics {
 
-template <typename Scalar> using trcmix_view1d = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Scalar>;
+template <typename Scalar>
+using trcmix_view1d = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Scalar>;
 
-template <typename Scalar> using trcmix_view2d = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Scalar>;
+template <typename Scalar>
+using trcmix_view2d = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Scalar>;
 
 // NOTE: nlevs be smaller than pmid/q extent, in case one/both of them are padded
 void trcmix(const std::string &name,               // constituent name

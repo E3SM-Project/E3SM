@@ -46,7 +46,8 @@ struct GroupRequest {
   //  - grid: the grid where the group is requested
   //  - ps: the pack size that the allocation of the fields in the group
   //        (and the monolithic field, if any) should accommodate (see field_alloc_prop.hpp)
-  //  - monolithic_alloc: whether the group should be allocated as a monolithic group (see field_group.hpp)
+  //  - monolithic_alloc: whether the group should be allocated as a monolithic group (see
+  //  field_group.hpp)
   GroupRequest(const std::string &name_, const std::string &grid_, const int ps,
                const MonolithicAlloc monolithic_alloc_ = MonolithicAlloc::NotRequired)
       : name(name_), grid(grid_), pack_size(ps), monolithic_alloc(monolithic_alloc_) {
@@ -61,10 +62,11 @@ struct GroupRequest {
   GroupRequest(const GroupRequest &) = default;
 
   // Main parts of a group request
-  std::string name;                 // Group name
-  std::string grid;                 // Grid name
-  int pack_size;                    // Request an allocation that can accomodate Pack<Real,pack_size>
-  MonolithicAlloc monolithic_alloc; // Whether the group should be allocated as a single n+1 dimensional field
+  std::string name; // Group name
+  std::string grid; // Grid name
+  int pack_size;    // Request an allocation that can accomodate Pack<Real,pack_size>
+  MonolithicAlloc
+      monolithic_alloc; // Whether the group should be allocated as a single n+1 dimensional field
 };
 
 // In order to use GroupRequest in std sorted containers (like std::set),
@@ -109,35 +111,40 @@ struct FieldRequest {
   // Main constructor. Here is what the args are:
   //  - fid: the FieldIdentifier for the requested field (see field_identifier.hpp)
   //  - groups_: a list of groups that this field should be added to (see field_group.hpp)
-  //  - ps: the pack size that the allocation of the field should accommodate (see field_alloc_prop.hpp)
+  //  - ps: the pack size that the allocation of the field should accommodate (see
+  //  field_alloc_prop.hpp)
   FieldRequest(const FID &fid_, const std::list<std::string> &groups_, const int ps)
       : fid(fid_), pack_size(ps), groups(groups_) {
     // Sanity checks
     EKAT_REQUIRE_MSG(ps >= 1, "Error! Pack sizes must be >= 1.\n");
     // This seems funky, but write down a pow of 2 in binary format, and you'll see why it works
-    EKAT_REQUIRE_MSG((ps & (ps - 1)) == 0, "Error! We only support pack sizes that are (positive) powers of 2.\n");
+    EKAT_REQUIRE_MSG((ps & (ps - 1)) == 0,
+                     "Error! We only support pack sizes that are (positive) powers of 2.\n");
   }
 
   // Convenience constructors.
-  // They first three allow defaulting ps/groups_ and/or allow simpler sintax for single-group requests.
-  // The last three do the same, but also allow to build a FieldIdentifier on the fly.
+  // They first three allow defaulting ps/groups_ and/or allow simpler sintax for single-group
+  // requests. The last three do the same, but also allow to build a FieldIdentifier on the fly.
   FieldRequest(const FID &fid, const int ps = 1)
       : FieldRequest(fid, std::list<std::string>{}, ps) { /* Nothing to do here */ }
   FieldRequest(const FID &fid, const std::list<std::string> &groups_)
       : FieldRequest(fid, groups_, 1) { /* Nothing to do here */ }
   FieldRequest(const FID &fid, const std::string &group, const int ps = 1)
       : FieldRequest(fid, std::list<std::string>{group}, ps) { /* Nothing to do here */ }
-  FieldRequest(const std::string &name, const FieldLayout &layout, const Units &u, const std::string &grid,
-               const std::list<std::string> &groups_, const int ps = 1)
+  FieldRequest(const std::string &name, const FieldLayout &layout, const Units &u,
+               const std::string &grid, const std::list<std::string> &groups_, const int ps = 1)
       : FieldRequest(FID(name, layout, u, grid), groups_, ps) { /* Nothing to do here */ }
-  FieldRequest(const std::string &name, const FieldLayout &layout, const Units &u, const std::string &grid,
-               const int ps = 1)
-      : FieldRequest(FID(name, layout, u, grid), std::list<std::string>{}, ps) { /* Nothing to do here */ }
-  FieldRequest(const std::string &name, const FieldLayout &layout, const Units &u, const std::string &grid,
-               const std::string &group, const int ps = 1)
-      : FieldRequest(FID(name, layout, u, grid), std::list<std::string>{group}, ps) { /* Nothing to do here */ }
+  FieldRequest(const std::string &name, const FieldLayout &layout, const Units &u,
+               const std::string &grid, const int ps = 1)
+      : FieldRequest(FID(name, layout, u, grid), std::list<std::string>{},
+                     ps) { /* Nothing to do here */ }
+  FieldRequest(const std::string &name, const FieldLayout &layout, const Units &u,
+               const std::string &grid, const std::string &group, const int ps = 1)
+      : FieldRequest(FID(name, layout, u, grid), std::list<std::string>{group},
+                     ps) { /* Nothing to do here */ }
 
-  FieldRequest(const FID &fid, const FieldRequest &parent, int idim, int k, bool dynamic) : FieldRequest(fid) {
+  FieldRequest(const FID &fid, const FieldRequest &parent, int idim, int k, bool dynamic)
+      : FieldRequest(fid) {
     subview_info.dim_idx    = idim;
     subview_info.slice_idx  = k;
     subview_info.dim_extent = parent.fid.get_layout().dim(idim);
@@ -146,14 +153,16 @@ struct FieldRequest {
     parent_name = parent.fid.name();
   }
 
-  FieldRequest(const std::string &field_name, const std::string &grid_name, const std::list<std::string> &groups = {},
-               const int ps = 1)
+  FieldRequest(const std::string &field_name, const std::string &grid_name,
+               const std::list<std::string> &groups = {}, const int ps = 1)
       : FieldRequest(incomplete_fid(field_name, grid_name), groups, ps) {
     incomplete = true;
   }
 
-  static FieldIdentifier incomplete_fid(const std::string &field_name, const std::string &grid_name) {
-    return FieldIdentifier(field_name, FieldLayout::invalid(), Units::invalid(), grid_name, DataType::Invalid);
+  static FieldIdentifier incomplete_fid(const std::string &field_name,
+                                        const std::string &grid_name) {
+    return FieldIdentifier(field_name, FieldLayout::invalid(), Units::invalid(), grid_name,
+                           DataType::Invalid);
   }
 
   // Data

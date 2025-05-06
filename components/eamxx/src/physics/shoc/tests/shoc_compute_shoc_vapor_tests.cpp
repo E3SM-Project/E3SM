@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -146,13 +147,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestComputeShocVapor : publi
 namespace {
 
 TEST_CASE("compute_shoc_vapor_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("compute_shoc_vapor_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
 
   TestStruct().run_bfb();
 }

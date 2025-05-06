@@ -16,7 +16,8 @@ void trcmix(const std::string &name, const int nlevs,
             trcmix_view1d<const Real> const &clat, // latitude for columns in degrees
             trcmix_view2d<const Real> const &pmid, // model pressures
             trcmix_view2d<Real> &q,                // constituent mass mixing ratio (output)
-            const Real co2vmr, const Real n2ovmr, const Real ch4vmr, const Real f11vmr, const Real f12vmr) {
+            const Real co2vmr, const Real n2ovmr, const Real ch4vmr, const Real f11vmr,
+            const Real f12vmr) {
   using C          = Constants<Real>;
   using KT         = KokkosTypes<DefaultDevice>;
   using ExeSpace   = KT::ExeSpace;
@@ -40,10 +41,11 @@ void trcmix(const std::string &name, const int nlevs,
   const auto rmwco2 = mwco2 / C::MWdry;
 
   // Constants map: gas_name -> [trop_mmr, scale1_base, scale1_fact, scale2_base, scale2_fact]
-  std::map<std::string, std::vector<Real>> const_map = {{"ch4", {rmwch4 * ch4vmr, 0.2353, 0., 0.2353, 0.0225489}},
-                                                        {"n2o", {rmwn2o * n2ovmr, 0.3478, 0.00116, 0.4000, 0.013333}},
-                                                        {"cfc11", {rmwf11 * f11vmr, 0.7273, 0.00606, 1., 0.013333}},
-                                                        {"cfc12", {rmwf12 * f12vmr, 0.4000, 0.00222, 0.5, 0.024444}}};
+  std::map<std::string, std::vector<Real>> const_map = {
+      {"ch4", {rmwch4 * ch4vmr, 0.2353, 0., 0.2353, 0.0225489}},
+      {"n2o", {rmwn2o * n2ovmr, 0.3478, 0.00116, 0.4000, 0.013333}},
+      {"cfc11", {rmwf11 * f11vmr, 0.7273, 0.00606, 1., 0.013333}},
+      {"cfc12", {rmwf12 * f12vmr, 0.4000, 0.00222, 0.5, 0.024444}}};
 
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlevs);
 
@@ -52,7 +54,8 @@ void trcmix(const std::string &name, const int nlevs,
     Kokkos::parallel_for(
         policy, KOKKOS_LAMBDA(const MemberType &team) {
           const Int i = team.league_rank();
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&](const Int &k) { q(i, k) = val; });
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs),
+                               [&](const Int &k) { q(i, k) = val; });
         });
   } else {
     const auto it = const_map.find(name);
@@ -72,8 +75,8 @@ void trcmix(const std::string &name, const int nlevs,
             // clat to radians
             const auto clat_r = clat(i) * C::Pi / 180.0;
             const auto dlat   = std::abs(57.2958 * clat_r);
-            const auto scale =
-                dlat <= 45.0 ? scale1_base + scale1_fact * dlat : scale2_base + scale2_fact * (dlat - 45);
+            const auto scale  = dlat <= 45.0 ? scale1_base + scale1_fact * dlat
+                                             : scale2_base + scale2_fact * (dlat - 45);
 
             // pressure of tropopause
             const auto ptrop = 250.0e2 - 150.0e2 * std::pow(std::cos(clat_r), 2);

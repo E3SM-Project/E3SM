@@ -20,8 +20,10 @@ RefiningRemapperRMA::~RefiningRemapperRMA() { clean_up(); }
 void RefiningRemapperRMA::remap_fwd_impl() {
   // Start RMA epoch on each field
   for (int i = 0; i < m_num_fields; ++i) {
-    check_mpi_call(MPI_Win_post(m_mpi_group, 0, m_mpi_win[i]), "MPI_Win_post for field: " + m_src_fields[i].name());
-    check_mpi_call(MPI_Win_start(m_mpi_group, 0, m_mpi_win[i]), "MPI_Win_start for field: " + m_src_fields[i].name());
+    check_mpi_call(MPI_Win_post(m_mpi_group, 0, m_mpi_win[i]),
+                   "MPI_Win_post for field: " + m_src_fields[i].name());
+    check_mpi_call(MPI_Win_start(m_mpi_group, 0, m_mpi_win[i]),
+                   "MPI_Win_start for field: " + m_src_fields[i].name());
   }
 
   // Loop over fields, and grab data
@@ -36,15 +38,16 @@ void RefiningRemapperRMA::remap_fwd_impl() {
     for (int icol = 0; icol < m_ov_coarse_grid->get_num_local_dofs(); ++icol) {
       const int pid = m_remote_pids[icol];
       const int lid = m_remote_lids[icol];
-      check_mpi_call(
-          MPI_Get(ov_data + icol * col_size, col_size, dt, pid, lid * col_stride + col_offset, col_size, dt, win),
-          "MPI_Get for field: " + m_ov_fields[i].name());
+      check_mpi_call(MPI_Get(ov_data + icol * col_size, col_size, dt, pid,
+                             lid * col_stride + col_offset, col_size, dt, win),
+                     "MPI_Get for field: " + m_ov_fields[i].name());
     }
   }
 
   // Close access RMA epoch on each field (exposure is still open)
   for (int i = 0; i < m_num_fields; ++i) {
-    check_mpi_call(MPI_Win_complete(m_mpi_win[i]), "MPI_Win_complete for field: " + m_ov_fields[i].name());
+    check_mpi_call(MPI_Win_complete(m_mpi_win[i]),
+                   "MPI_Win_complete for field: " + m_ov_fields[i].name());
   }
 
   // Helpef function, to establish if a field can be handled with packs
@@ -124,11 +127,13 @@ void RefiningRemapperRMA::setup_mpi_data_structures() {
     }
 
     auto data = f.get_internal_view_data<Real, Host>();
-    check_mpi_call(MPI_Win_create(data, win_size, sizeof(Real), MPI_INFO_NULL, mpi_comm, &m_mpi_win[i]),
-                   "[RefiningRemapperRMA::setup_mpi_data_structures] MPI_Win_create");
+    check_mpi_call(
+        MPI_Win_create(data, win_size, sizeof(Real), MPI_INFO_NULL, mpi_comm, &m_mpi_win[i]),
+        "[RefiningRemapperRMA::setup_mpi_data_structures] MPI_Win_create");
 #ifndef EKAT_MPI_ERRORS_ARE_FATAL
     check_mpi_call(MPI_Win_set_errhandler(m_mpi_win[i], MPI_ERRORS_RETURN),
-                   "[RefiningRemapperRMA::setup_mpi_data_structure] setting MPI_ERRORS_RETURN handler on MPI_Win");
+                   "[RefiningRemapperRMA::setup_mpi_data_structure] setting MPI_ERRORS_RETURN "
+                   "handler on MPI_Win");
 #endif
   }
 }

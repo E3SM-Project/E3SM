@@ -13,7 +13,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
@@ -142,13 +143,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : publi
 namespace {
 
 TEST_CASE("pblintd_check_pblh_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCheckPblh;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCheckPblh;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_check_pblh_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCheckPblh;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCheckPblh;
 
   TestStruct().run_bfb();
 }

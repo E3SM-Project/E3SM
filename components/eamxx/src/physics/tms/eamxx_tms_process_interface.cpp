@@ -10,7 +10,8 @@
 namespace scream {
 
 // =========================================================================================
-TurbulentMountainStress::TurbulentMountainStress(const ekat::Comm &comm, const ekat::ParameterList &params)
+TurbulentMountainStress::TurbulentMountainStress(const ekat::Comm &comm,
+                                                 const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
   // Do nothing
 }
@@ -29,9 +30,10 @@ void TurbulentMountainStress::set_grids(const std::shared_ptr<const GridsManager
   // Initialize grid from grids manager
   m_grid                = grids_manager->get_grid("physics");
   const auto &grid_name = m_grid->name();
-  EKAT_REQUIRE_MSG(grid_name == "physics_pg2", "Error! TMS process can only be used with \"physics_pg2\" physics grid. "
-                                               "Current physics grid is " +
-                                                   grid_name + ".\n");
+  EKAT_REQUIRE_MSG(grid_name == "physics_pg2",
+                   "Error! TMS process can only be used with \"physics_pg2\" physics grid. "
+                   "Current physics grid is " +
+                       grid_name + ".\n");
 
   m_ncols = m_grid->get_num_local_dofs();      // Number of columns on this rank
   m_nlevs = m_grid->get_num_vertical_levels(); // Number of levels per column
@@ -87,7 +89,8 @@ void TurbulentMountainStress::run_impl(const double /* dt */) {
   const int nlev_packs = ekat::npack<Spack>(nlevs);
   // calculate_z_int contains a team-level parallel_scan, which requires a special policy
   const auto scan_policy =
-      ekat::ExeSpaceUtils<TMSFunctions::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
+      ekat::ExeSpaceUtils<TMSFunctions::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(
+          ncols, nlev_packs);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const TMSFunctions::KT::MemberType &team) {
         const int i = team.league_rank();
@@ -114,9 +117,9 @@ void TurbulentMountainStress::run_impl(const double /* dt */) {
       });
 
   // Compute TMS
-  TMSFunctions::compute_tms(ncols, nlevs, ekat::scalarize(horiz_winds), ekat::scalarize(T_mid), ekat::scalarize(p_mid),
-                            ekat::scalarize(exner), ekat::scalarize(z_mid), sgh30, landfrac, surf_drag_coeff_tms,
-                            wind_stress_tms);
+  TMSFunctions::compute_tms(ncols, nlevs, ekat::scalarize(horiz_winds), ekat::scalarize(T_mid),
+                            ekat::scalarize(p_mid), ekat::scalarize(exner), ekat::scalarize(z_mid),
+                            sgh30, landfrac, surf_drag_coeff_tms, wind_stress_tms);
 }
 
 // =========================================================================================
@@ -139,7 +142,8 @@ void TurbulentMountainStress::init_buffers(const ATMBufferManager &buffer_manage
   const int nlev_packs  = ekat::npack<Spack>(m_nlevs);
   const int nlevi_packs = ekat::npack<Spack>(m_nlevs + 1);
 
-  uview_2d *buffer_mid_view_ptrs[Buffer::num_2d_midpoint_views] = {&m_buffer.exner, &m_buffer.dz, &m_buffer.z_mid};
+  uview_2d *buffer_mid_view_ptrs[Buffer::num_2d_midpoint_views] = {&m_buffer.exner, &m_buffer.dz,
+                                                                   &m_buffer.z_mid};
 
   for (int i = 0; i < Buffer::num_2d_midpoint_views; ++i) {
     *buffer_mid_view_ptrs[i] = uview_2d(mem, m_ncols, nlev_packs);

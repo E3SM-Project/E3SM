@@ -9,14 +9,17 @@ namespace scream {
 
 namespace details {
 
-template <CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST> struct CombineViewsHelper {
+template <CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
+struct CombineViewsHelper {
 
   using exec_space = typename LhsView::traits::execution_space;
 
   static constexpr int N = LhsView::rank();
 
   template <int M>
-  using MDRange = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<M, Kokkos::Iterate::Right, Kokkos::Iterate::Right>>;
+  using MDRange =
+      Kokkos::MDRangePolicy<exec_space,
+                            Kokkos::Rank<M, Kokkos::Iterate::Right, Kokkos::Iterate::Right>>;
 
   void run(const std::vector<int> &dims) const {
     if constexpr (N == 0) {
@@ -125,7 +128,9 @@ template <typename LhsView, typename MaskView, bool use_mask> struct SetValueMas
   static constexpr int N = LhsView::rank();
 
   template <int M>
-  using MDRange = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<M, Kokkos::Iterate::Right, Kokkos::Iterate::Right>>;
+  using MDRange =
+      Kokkos::MDRangePolicy<exec_space,
+                            Kokkos::Rank<M, Kokkos::Iterate::Right, Kokkos::Iterate::Right>>;
 
   void run(const std::vector<int> &dims) const {
     if constexpr (N == 0) {
@@ -208,8 +213,9 @@ void svm(LhsView lhs, typename LhsView::traits::value_type value, const std::vec
   helper.mask  = mask;
   helper.value = value;
 
-  EKAT_REQUIRE_MSG(not use_mask or mask.data() != nullptr,
-                   "Error! Calling scream::details::svm with use_mask=true, but input mask view is invalid.\n");
+  EKAT_REQUIRE_MSG(
+      not use_mask or mask.data() != nullptr,
+      "Error! Calling scream::details::svm with use_mask=true, but input mask view is invalid.\n");
 
   helper.run(dims);
 }

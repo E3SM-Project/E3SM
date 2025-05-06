@@ -17,7 +17,8 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -61,7 +62,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing 
     // Sync to device
     view_1d<CldliqImmersionFreezingData> device_data("cldliq_imm_freezing", max_pack_size);
     const auto host_data = Kokkos::create_mirror_view(device_data);
-    std::copy(&cldliq_imm_freezing_data[0], &cldliq_imm_freezing_data[0] + max_pack_size, host_data.data());
+    std::copy(&cldliq_imm_freezing_data[0], &cldliq_imm_freezing_data[0] + max_pack_size,
+              host_data.data());
     Kokkos::deep_copy(device_data, host_data);
 
     // Read baseline data
@@ -107,8 +109,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing 
     // Validate results.
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        REQUIRE(cldliq_imm_freezing_data[s].qc2qi_hetero_freeze_tend == host_data[s].qc2qi_hetero_freeze_tend);
-        REQUIRE(cldliq_imm_freezing_data[s].nc2ni_immers_freeze_tend == host_data[s].nc2ni_immers_freeze_tend);
+        REQUIRE(cldliq_imm_freezing_data[s].qc2qi_hetero_freeze_tend ==
+                host_data[s].qc2qi_hetero_freeze_tend);
+        REQUIRE(cldliq_imm_freezing_data[s].nc2ni_immers_freeze_tend ==
+                host_data[s].nc2ni_immers_freeze_tend);
       }
     } else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
@@ -125,7 +129,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing 
 namespace {
 
 TEST_CASE("p3_cldliq_immersion_freezing", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCldliqImmersionFreezing;
+  using T =
+      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCldliqImmersionFreezing;
 
   T t;
   t.run_phys();

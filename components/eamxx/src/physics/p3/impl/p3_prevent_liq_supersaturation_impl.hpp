@@ -14,11 +14,12 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void
-Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_atm, const Spack &qv, const Scalar &dt,
-                                             const Spack &qv2qi_vapdep_tend, const Spack &qinuc,
-                                             Spack &qi2qv_sublim_tend, Spack &qr2qv_evap_tend, const Smask &context)
-// Note: context masks cells which are just padding for packs or which don't have any condensate worth
-// performing calculations on.
+Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_atm, const Spack &qv,
+                                             const Scalar &dt, const Spack &qv2qi_vapdep_tend,
+                                             const Spack &qinuc, Spack &qi2qv_sublim_tend,
+                                             Spack &qr2qv_evap_tend, const Smask &context)
+// Note: context masks cells which are just padding for packs or which don't have any condensate
+// worth performing calculations on.
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -31,7 +32,8 @@ Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_a
   Spack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
 
   qv_sources.set(context, qi2qv_sublim_tend + qr2qv_evap_tend);
-  const auto has_sources = (qv_sources >= qsmall && context); // if nothing to rescale, no point in calculations.
+  const auto has_sources =
+      (qv_sources >= qsmall && context); // if nothing to rescale, no point in calculations.
 
   if (not has_sources.any()) {
     return;
@@ -41,13 +43,14 @@ Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_a
 
   // Actual qv and T after microphys step
   qv_endstep.set(has_sources, qv - qv_sinks * dt + qv_sources * dt);
-  T_endstep.set(
-      has_sources,
-      t_atm + ((qv_sinks - qi2qv_sublim_tend) * (latvap + latice) * inv_cp - qr2qv_evap_tend * latvap * inv_cp) * dt);
+  T_endstep.set(has_sources, t_atm + ((qv_sinks - qi2qv_sublim_tend) * (latvap + latice) * inv_cp -
+                                      qr2qv_evap_tend * latvap * inv_cp) *
+                                         dt);
 
   // qv we would have at end of step if we were saturated with respect to liquid
-  const auto qsl = physics::qv_sat_dry(T_endstep, pres, false, has_sources, physics::MurphyKoop,
-                                       "p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to ice
+  const auto qsl = physics::qv_sat_dry(
+      T_endstep, pres, false, has_sources, physics::MurphyKoop,
+      "p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to ice
 
   // The balance we seek is:
   //  qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to conservation)

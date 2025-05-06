@@ -215,17 +215,20 @@ TEST_CASE("utils") {
     // Test higher-order cases
     result = field_z.clone();
     horiz_contraction<Real>(result, field10, field00);
-    REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({CMP}));
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
 
     result = field_y.clone();
     horiz_contraction<Real>(result, field11, field00);
-    REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({LEV}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim2);
 
     result = field_w.clone();
     horiz_contraction<Real>(result, field20, field00);
-    REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({CMP, LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP, LEV}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
     REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim2);
 
@@ -348,7 +351,8 @@ TEST_CASE("utils") {
       // Test higher-order cases
       result = field_x.clone();
       vert_contraction<Real>(result, field10, field00);
-      REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({COL}));
+      REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+              std::vector<FieldTag>({COL}));
       REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim0);
 
       // Check a 2D case with 1D weight
@@ -369,12 +373,14 @@ TEST_CASE("utils") {
 
       result = field_y.clone();
       vert_contraction<Real>(result, field11, field00);
-      REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({CMP}));
+      REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+              std::vector<FieldTag>({CMP}));
       REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
 
       result = field_z.clone();
       vert_contraction<Real>(result, field20, field00);
-      REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({COL, CMP}));
+      REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+              std::vector<FieldTag>({COL, CMP}));
       REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim0);
       REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim1);
 
@@ -399,7 +405,8 @@ TEST_CASE("utils") {
       // Check a 3D case with 2D weight
       result = field_z.clone();
       vert_contraction<Real>(result, field20, field10);
-      REQUIRE(result.get_header().get_identifier().get_layout().tags() == std::vector<FieldTag>({COL, CMP}));
+      REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+              std::vector<FieldTag>({COL, CMP}));
       REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim0);
       REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim1);
 
@@ -441,8 +448,8 @@ TEST_CASE("utils") {
     // (a+1)^2+(a+2)^2+...
     // which ultimately gives
     // N*a^2 + 2a*(1+2+...+N)
-    Real lsum =
-        offset * offset * lsize + 2 * offset * lsize * (lsize + 1) / 2 + lsize * (lsize + 1) * (2 * lsize + 1) / 6.0;
+    Real lsum = offset * offset * lsize + 2 * offset * lsize * (lsize + 1) / 2 +
+                lsize * (lsize + 1) * (2 * lsize + 1) / 6.0;
     Real gsum = gsize * (gsize + 1) * (2 * gsize + 1) / 6.0;
 
     REQUIRE(frobenius_norm<Real>(f1) == std::sqrt(lsum));
@@ -506,16 +513,20 @@ TEST_CASE("utils") {
 
     // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
     FieldIdentifier fid1("f_1d", FieldLayout({LEV}, {nlevs}), Units::nondimensional(), "");
-    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV}, {ncmps, nlevs}), Units::nondimensional(), "");
-    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV}, {ncols, nlevs}), Units::nondimensional(), "");
-    FieldIdentifier fid3("f_3d", FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), Units::nondimensional(), "");
+    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV}, {ncmps, nlevs}),
+                          Units::nondimensional(), "");
+    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV}, {ncols, nlevs}),
+                          Units::nondimensional(), "");
+    FieldIdentifier fid3("f_3d", FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}),
+                         Units::nondimensional(), "");
     Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
     f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
     f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
 
     // We need GIDs for fields with COL component. This test is not over
     // multiple ranks, so just set as [0, ncols-1].
-    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "", DataType::IntType));
+    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "",
+                               DataType::IntType));
     gids.allocate_view();
     auto gids_data = gids.get_internal_view_data<int, Host>();
     std::iota(gids_data, gids_data + ncols, 0);
@@ -605,7 +616,8 @@ TEST_CASE("utils") {
   }
 
   SECTION("wrong_st") {
-    using wrong_real = typename std::conditional<std::is_same<Real, double>::value, float, double>::type;
+    using wrong_real =
+        typename std::conditional<std::is_same<Real, double>::value, float, double>::type;
     REQUIRE_THROWS(field_min<int>(f1));
     REQUIRE_THROWS(field_max<int>(f1));
     REQUIRE_THROWS(field_sum<wrong_real>(f1));

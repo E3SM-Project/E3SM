@@ -9,10 +9,12 @@ namespace shoc {
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::compute_diag_third_shoc_moment(
     const MemberType &team, const Int &nlev, const Int &nlevi, const Scalar &c_diag_3rd_mom,
-    const uview_1d<const Spack> &w_sec, const uview_1d<const Spack> &thl_sec, const uview_1d<const Spack> &wthl_sec,
-    const uview_1d<const Spack> &tke, const uview_1d<const Spack> &dz_zt, const uview_1d<const Spack> &dz_zi,
+    const uview_1d<const Spack> &w_sec, const uview_1d<const Spack> &thl_sec,
+    const uview_1d<const Spack> &wthl_sec, const uview_1d<const Spack> &tke,
+    const uview_1d<const Spack> &dz_zt, const uview_1d<const Spack> &dz_zi,
     const uview_1d<const Spack> &isotropy_zi, const uview_1d<const Spack> &brunt_zi,
-    const uview_1d<const Spack> &w_sec_zi, const uview_1d<const Spack> &thetal_zi, const uview_1d<Spack> &w3) {
+    const uview_1d<const Spack> &w_sec_zi, const uview_1d<const Spack> &thetal_zi,
+    const uview_1d<Spack> &w3) {
   const auto ggr = C::gravit;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
@@ -40,8 +42,8 @@ KOKKOS_FUNCTION void Functions<S, D>::compute_diag_third_shoc_moment(
     const Scalar a5 = sp(0.6) / (c_diag_3rd_mom * (3 + 5 * c_diag_3rd_mom));
 
     // Calculate shifts
-    Spack dz_zt_k, dz_zt_km1, wthl_sec_k, wthl_sec_km1, wthl_sec_kp1, thl_sec_k, thl_sec_km1, thl_sec_kp1, w_sec_k,
-        w_sec_km1, tke_k, tke_km1;
+    Spack dz_zt_k, dz_zt_km1, wthl_sec_k, wthl_sec_km1, wthl_sec_kp1, thl_sec_k, thl_sec_km1,
+        thl_sec_kp1, w_sec_k, w_sec_km1, tke_k, tke_km1;
 
     auto range_pack    = ekat::range<IntSmallPack>(k * Spack::n);
     auto range_pack_m1 = range_pack;
@@ -76,13 +78,14 @@ KOKKOS_FUNCTION void Functions<S, D>::compute_diag_third_shoc_moment(
       const Spack wsec_diff     = w_sec_km1 - w_sec(k);
       const Spack tke_diff      = tke_km1 - tke(k);
 
-      const auto f0 = thedz2 * ekat::cube(bet2) * ((iso * iso) * (iso * iso)) * wthl_sec_k * thl_sec_diff;
+      const auto f0 =
+          thedz2 * ekat::cube(bet2) * ((iso * iso) * (iso * iso)) * wthl_sec_k * thl_sec_diff;
       const auto f1 = thedz2 * ekat::square(bet2) * ekat::cube(iso) *
                       (wthl_sec_k * wthl_sec_diff + sp(0.5) * w_sec_zi(k) * thl_sec_diff);
-      const auto f2 =
-          thedz * bet2 * isosqrd * wthl_sec_k * wsec_diff + 2 * thedz2 * bet2 * isosqrd * w_sec_zi(k) * wthl_sec_diff;
-      const auto f3 =
-          thedz2 * bet2 * isosqrd * w_sec_zi(k) * wthl_sec_diff + thedz * bet2 * isosqrd * (wthl_sec_k * tke_diff);
+      const auto f2 = thedz * bet2 * isosqrd * wthl_sec_k * wsec_diff +
+                      2 * thedz2 * bet2 * isosqrd * w_sec_zi(k) * wthl_sec_diff;
+      const auto f3 = thedz2 * bet2 * isosqrd * w_sec_zi(k) * wthl_sec_diff +
+                      thedz * bet2 * isosqrd * (wthl_sec_k * tke_diff);
       const auto f4 = thedz * iso * w_sec_zi(k) * (wsec_diff + tke_diff);
       const auto f5 = thedz * iso * w_sec_zi(k) * wsec_diff;
 
@@ -92,17 +95,21 @@ KOKKOS_FUNCTION void Functions<S, D>::compute_diag_third_shoc_moment(
       const auto omega2 = omega1 * f3 + sp(5.0 / 4.0) * omega0 * f4;
 
       // Compute the x0, y0, x1, y1 terms
-      const auto x0 = (a2 * buoy_sgs2 * (Spack(1) - a3 * buoy_sgs2)) / (Spack(1) - (a1 + a3) * buoy_sgs2);
+      const auto x0 =
+          (a2 * buoy_sgs2 * (Spack(1) - a3 * buoy_sgs2)) / (Spack(1) - (a1 + a3) * buoy_sgs2);
       const auto y0 = (2 * a2 * buoy_sgs2 * x0) / (Spack(1) - a3 * buoy_sgs2);
-      const auto x1 = (a0 * f0 + a1 * f1 + a2 * (Spack(1) - a3 * buoy_sgs2) * f2) / (Spack(1) - (a1 + a3) * buoy_sgs2);
-      const auto y1 = (2 * a2 * (buoy_sgs2 * x1 + (a0 / a1) * f0 + f1)) / (Spack(1) - a3 * buoy_sgs2);
+      const auto x1 = (a0 * f0 + a1 * f1 + a2 * (Spack(1) - a3 * buoy_sgs2) * f2) /
+                      (Spack(1) - (a1 + a3) * buoy_sgs2);
+      const auto y1 =
+          (2 * a2 * (buoy_sgs2 * x1 + (a0 / a1) * f0 + f1)) / (Spack(1) - a3 * buoy_sgs2);
 
       // Compute the aa0, aa1 terms
       const auto aa0 = omega0 * x0 + omega1 * y0;
       const auto aa1 = omega0 * x1 + omega1 * y1 + omega2;
 
       // Finally, compute the third moment of w
-      w3(k).set(active_range, (aa1 - sp(1.2) * x1 - sp(1.5) * f5) / (Spack(c_diag_3rd_mom) - sp(1.2) * x0 + aa0));
+      w3(k).set(active_range,
+                (aa1 - sp(1.2) * x1 - sp(1.5) * f5) / (Spack(c_diag_3rd_mom) - sp(1.2) * x0 + aa0));
     }
   });
 

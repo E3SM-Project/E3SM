@@ -51,7 +51,8 @@ public:
   Field get_target_pressure(bool midpoints) const { return midpoints ? m_tgt_pmid : m_tgt_pint; }
 
   // This method simply creates the tgt grid from a map file
-  static std::shared_ptr<AbstractGrid> create_tgt_grid(const grid_ptr_type &src_grid, const std::string &map_file);
+  static std::shared_ptr<AbstractGrid> create_tgt_grid(const grid_ptr_type &src_grid,
+                                                       const std::string &map_file);
 
   bool compatible_layouts(const FieldLayout &src, const FieldLayout &tgt) const override;
 
@@ -71,14 +72,16 @@ protected:
 public:
 #endif
   template <int N>
-  void apply_vertical_interpolation(const ekat::LinInterp<Real, N> &lin_interp, const Field &f_src, const Field &f_tgt,
-                                    const Field &p_src, const Field &p_tgt) const;
+  void apply_vertical_interpolation(const ekat::LinInterp<Real, N> &lin_interp, const Field &f_src,
+                                    const Field &f_tgt, const Field &p_src,
+                                    const Field &p_tgt) const;
 
   void extrapolate(const Field &f_src, const Field &f_tgt, const Field &p_src, const Field &p_tgt,
                    const Real mask_val) const;
 
   template <int N>
-  void setup_lin_interp(const ekat::LinInterp<Real, N> &lin_interp, const Field &p_src, const Field &p_tgt) const;
+  void setup_lin_interp(const ekat::LinInterp<Real, N> &lin_interp, const Field &p_src,
+                        const Field &p_tgt) const;
 
 protected:
   void create_lin_interp();

@@ -74,7 +74,8 @@ void WaterPathDiagnostic::compute_diagnostic_impl() {
         auto rho_icol  = ekat::subview(rho, icol);
         Kokkos::parallel_reduce(
             Kokkos::TeamVectorRange(team, num_levs),
-            [&](const int &ilev, Real &lsum) { lsum += q_icol(ilev) * rho_icol(ilev) / g; }, wp(icol));
+            [&](const int &ilev, Real &lsum) { lsum += q_icol(ilev) * rho_icol(ilev) / g; },
+            wp(icol));
         team.team_barrier();
       });
 }

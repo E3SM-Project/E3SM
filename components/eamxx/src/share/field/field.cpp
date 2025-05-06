@@ -23,7 +23,9 @@ Field Field::alias(const std::string &name) const {
   return f;
 }
 
-Field Field::clone(const std::string &name) const { return clone(name, get_header().get_identifier().get_grid_name()); }
+Field Field::clone(const std::string &name) const {
+  return clone(name, get_header().get_identifier().get_grid_name());
+}
 
 Field Field::clone(const std::string &name, const std::string &grid_name) const {
   // Create new field
@@ -50,18 +52,21 @@ Field Field::clone(const std::string &name, const std::string &grid_name) const 
   return f;
 }
 
-Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_units, const int idim, const int index,
-                      const bool dynamic) const {
+Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_units,
+                      const int idim, const int index, const bool dynamic) const {
 
   const auto &id = m_header->get_identifier();
   const auto &lt = id.get_layout();
 
   // Sanity checks
-  EKAT_REQUIRE_MSG(is_allocated(), "Error! Input field must be allocated in order to subview it.\n");
-  EKAT_REQUIRE_MSG(idim == 0 || idim == 1, "Error! Subview dimension index must be either 0 or 1.\n");
+  EKAT_REQUIRE_MSG(is_allocated(),
+                   "Error! Input field must be allocated in order to subview it.\n");
+  EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
+                   "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  FieldIdentifier sf_id(sf_name, lt.clone().strip_dim(idim), sf_units, id.get_grid_name(), id.data_type());
+  FieldIdentifier sf_id(sf_name, lt.clone().strip_dim(idim), sf_units, id.get_grid_name(),
+                        id.data_type());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -70,7 +75,8 @@ Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_u
   sf.m_data         = m_data;
   sf.m_is_read_only = m_is_read_only;
 
-  if (not sf.m_header->get_alloc_properties().contiguous() and not sf.host_and_device_share_memory_space()) {
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
     // If subfield is not contiguous and Host and Device do not
     // share a memory space, we must initialize the helper field
     // for sync_to functions.
@@ -80,7 +86,8 @@ Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_u
   return sf;
 }
 
-Field Field::subfield(const std::string &sf_name, const int idim, const int index, const bool dynamic) const {
+Field Field::subfield(const std::string &sf_name, const int idim, const int index,
+                      const bool dynamic) const {
   const auto &id = m_header->get_identifier();
   return subfield(sf_name, id.get_units(), idim, index, dynamic);
 }
@@ -97,14 +104,15 @@ Field Field::subfield(const FieldTag tag, const int index, const bool dynamic) c
 // slice at index idim, extracting the N = (index_end - index_beg) entries
 // written in math notation: [index_beg, index_end)
 // or equivalently, subF = F(index_beg, ... , index_beg + N)
-Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_units, const int idim,
-                      const int index_beg, const int index_end) const {
+Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_units,
+                      const int idim, const int index_beg, const int index_end) const {
 
   const auto &id = m_header->get_identifier();
   const auto &lt = id.get_layout();
 
   // Sanity checks
-  EKAT_REQUIRE_MSG(is_allocated(), "Error! Input field must be allocated in order to subview it.\n");
+  EKAT_REQUIRE_MSG(is_allocated(),
+                   "Error! Input field must be allocated in order to subview it.\n");
 
   auto sf_layout = lt.clone();
   sf_layout.reset_dim(idim, index_end - index_beg);
@@ -118,7 +126,8 @@ Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_u
   sf.m_header = create_subfield_header(sf_id, m_header, idim, index_beg, index_end);
   sf.m_data   = m_data;
 
-  if (not sf.m_header->get_alloc_properties().contiguous() and not sf.host_and_device_share_memory_space()) {
+  if (not sf.m_header->get_alloc_properties().contiguous() and
+      not sf.host_and_device_share_memory_space()) {
     // If subfield is not contiguous and Host and Device do not
     // share a memory space, we must initialize the helper field
     // for sync_to functions.
@@ -128,7 +137,8 @@ Field Field::subfield(const std::string &sf_name, const ekat::units::Units &sf_u
   return sf;
 }
 
-Field Field::subfield(const std::string &sf_name, const int idim, const int index_beg, const int index_end) const {
+Field Field::subfield(const std::string &sf_name, const int idim, const int index_beg,
+                      const int index_end) const {
   const auto &id = m_header->get_identifier();
   return subfield(sf_name, id.get_units(), idim, index_beg, index_end);
 }
@@ -140,13 +150,14 @@ Field Field::subfield(const int idim, const int index_beg, const int index_end) 
 Field Field::get_component(const int i, const bool dynamic) {
   const auto &layout = get_header().get_identifier().get_layout();
   const auto &fname  = get_header().get_identifier().name();
-  EKAT_REQUIRE_MSG(layout.is_vector_layout(), "Error! 'get_component' available only for vector fields.\n"
-                                              "       Layout of '" +
-                                                  fname + "': " + e2str(layout.type()) + "\n");
+  EKAT_REQUIRE_MSG(layout.is_vector_layout(),
+                   "Error! 'get_component' available only for vector fields.\n"
+                   "       Layout of '" +
+                       fname + "': " + e2str(layout.type()) + "\n");
 
   const int idim = layout.get_vector_component_idx();
-  EKAT_REQUIRE_MSG(i >= 0 && i < layout.dim(idim),
-                   "Error! Component index out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
+  EKAT_REQUIRE_MSG(i >= 0 && i < layout.dim(idim), "Error! Component index out of bounds [0," +
+                                                       std::to_string(layout.dim(idim)) + ").\n");
 
   // Add _$i to the field name, to avoid issues if the subfield is stored
   // in some structure that requires unique names (e.g., a remapper)
@@ -156,13 +167,15 @@ Field Field::get_component(const int i, const bool dynamic) {
 Field Field::get_components(const int beg, const int end) {
   const auto &layout = get_header().get_identifier().get_layout();
   const auto &fname  = get_header().get_identifier().name();
-  EKAT_REQUIRE_MSG(layout.is_vector_layout(), "Error! 'get_component' available only for vector fields.\n"
-                                              "       Layout of '" +
-                                                  fname + "': " + e2str(layout.type()) + "\n");
+  EKAT_REQUIRE_MSG(layout.is_vector_layout(),
+                   "Error! 'get_component' available only for vector fields.\n"
+                   "       Layout of '" +
+                       fname + "': " + e2str(layout.type()) + "\n");
 
   const int idim = layout.get_vector_component_idx();
   EKAT_REQUIRE_MSG(beg >= 0 && end < layout.dim(idim),
-                   "Error! Component index range out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
+                   "Error! Component index range out of bounds [0," +
+                       std::to_string(layout.dim(idim)) + ").\n");
   EKAT_REQUIRE_MSG(beg < end, "Error! Invalid component indices (beg >= end).\n");
 
   // Add _$beg-$end to the field name, to avoid issues if the subfield is stored

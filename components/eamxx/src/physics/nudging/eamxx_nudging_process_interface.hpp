@@ -18,9 +18,11 @@ class Nudging : public AtmosphereProcess {
 public:
   // enum to track how the source pressure levels are defined
   enum SourcePresType {
-    // DEFAULT - source data should include time/spatially varying p_mid with dimensions (time, col, lev)
+    // DEFAULT - source data should include time/spatially varying p_mid with dimensions (time, col,
+    // lev)
     TIME_DEPENDENT_3D_PROFILE,
-    // source data includes p_levs which is a static set of levels in both space and time, with dimensions (lev),
+    // source data includes p_levs which is a static set of levels in both space and time, with
+    // dimensions (lev),
     STATIC_1D_VERTICAL_PROFILE
   };
 
@@ -55,8 +57,8 @@ protected:
   void finalize_impl() override;
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  Field create_helper_field(const std::string &name, const FieldLayout &layout, const std::string &grid_name,
-                            const int ps = 1);
+  Field create_helper_field(const std::string &name, const FieldLayout &layout,
+                            const std::string &grid_name, const int ps = 1);
 
   // Retrieve a helper field
   Field get_helper_field(const std::string &name) const { return m_helper_fields.at(name); }

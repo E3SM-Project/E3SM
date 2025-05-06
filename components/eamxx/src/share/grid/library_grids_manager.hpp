@@ -30,7 +30,8 @@ public:
   }
 
 protected:
-  remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid, const grid_ptr_type to_grid) const {
+  remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid,
+                                       const grid_ptr_type to_grid) const {
     EKAT_ERROR_MSG("Error! LibraryGridsManager is not capable of creating remappers.\n"
                    " - from_grid: " +
                    from_grid->name() +

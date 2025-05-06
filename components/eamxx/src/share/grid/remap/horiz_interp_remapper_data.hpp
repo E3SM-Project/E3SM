@@ -20,8 +20,8 @@ struct HorizRemapperData {
   using KT                            = KokkosTypes<DefaultDevice>;
   template <typename T> using view_1d = typename KT::template view_1d<T>;
 
-  void build(const std::string &map_file, const std::shared_ptr<const AbstractGrid> &fine_grid, const ekat::Comm &comm,
-             const InterpType type);
+  void build(const std::string &map_file, const std::shared_ptr<const AbstractGrid> &fine_grid,
+             const ekat::Comm &comm, const InterpType type);
 
   // The coarse grid data
   std::shared_ptr<AbstractGrid> coarse_grid;

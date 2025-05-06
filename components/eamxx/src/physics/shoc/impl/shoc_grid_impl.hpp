@@ -18,11 +18,10 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::shoc_grid(const MemberType &team, const Int &nlev, const Int &nlevi,
-                                                const uview_1d<const Spack> &zt_grid,
-                                                const uview_1d<const Spack> &zi_grid, const uview_1d<const Spack> &pdel,
-                                                const uview_1d<Spack> &dz_zt, const uview_1d<Spack> &dz_zi,
-                                                const uview_1d<Spack> &rho_zt) {
+KOKKOS_FUNCTION void Functions<S, D>::shoc_grid(
+    const MemberType &team, const Int &nlev, const Int &nlevi, const uview_1d<const Spack> &zt_grid,
+    const uview_1d<const Spack> &zi_grid, const uview_1d<const Spack> &pdel,
+    const uview_1d<Spack> &dz_zt, const uview_1d<Spack> &dz_zi, const uview_1d<Spack> &rho_zt) {
   const auto ggr = C::gravit;
 
   const auto s_zi_grid = ekat::scalarize(zi_grid);

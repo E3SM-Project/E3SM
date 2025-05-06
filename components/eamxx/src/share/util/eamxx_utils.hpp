@@ -31,9 +31,9 @@ long long get_mem_usage(const MemoryUnits u);
 // Micro-utility, that given an enum returns the underlying int.
 // The only use of this is if you need to sort scoped enums.
 template <typename EnumT>
-KOKKOS_FUNCTION constexpr
-    typename std::enable_if<std::is_enum<EnumT>::value, typename std::underlying_type<EnumT>::type>::type
-    etoi(const EnumT e) {
+KOKKOS_FUNCTION constexpr typename std::enable_if<std::is_enum<EnumT>::value,
+                                                  typename std::underlying_type<EnumT>::type>::type
+etoi(const EnumT e) {
   return static_cast<typename std::underlying_type<EnumT>::type>(e);
 }
 
@@ -183,7 +183,8 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
 
     // If we have a non-empty reminder, then all the caps must be
     // either at the front or the back of the lol, that is, either the first intersection
-    // is at pos=0, or the last at pos=lol.size()-1, or both (otherwise this group would be fragmented).
+    // is at pos=0, or the last at pos=lol.size()-1, or both (otherwise this group would be
+    // fragmented).
     if (remainder.size() > 0 && !(caps_pos.front() == 0 || caps_pos.back() == (lol.size() - 1))) {
       return std::list<T>();
     }
@@ -281,7 +282,8 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
  * This is used by the run_and_cmp tests.
  */
 template <typename Scalar, typename Toltype>
-Int compare(const std::string &label, const Scalar *a, const Scalar *b, const Int &n, const Toltype &tol) {
+Int compare(const std::string &label, const Scalar *a, const Scalar *b, const Int &n,
+            const Toltype &tol) {
 
   Int nerr1  = 0;
   Int nerr2  = 0;
@@ -378,7 +380,8 @@ struct DefaultMetadata {
     }
   }
 
-  void read_csv_file_to_maps(const std::string &filename, std::map<std::string, std::string> &name_2_standardname,
+  void read_csv_file_to_maps(const std::string &filename,
+                             std::map<std::string, std::string> &name_2_standardname,
                              std::map<std::string, std::string> &name_2_longname) {
     std::ifstream file(filename);
     EKAT_REQUIRE_MSG(file.is_open(), "Could not open the file: " + filename);
@@ -399,9 +402,12 @@ struct DefaultMetadata {
 
       if (isFirstLine) {
         // Sanity check: the first line contains the required headers
-        EKAT_REQUIRE_MSG(column1 == "variable" && column2 == "standard_name" && column3 == "long_name",
-                         "CSV file does not contain the required headers: variable, standard_name, long_name. Found: " +
-                             column1 + ", " + column2 + ", and " + column3 + " respectively in file " + filename);
+        EKAT_REQUIRE_MSG(column1 == "variable" && column2 == "standard_name" &&
+                             column3 == "long_name",
+                         "CSV file does not contain the required headers: variable, standard_name, "
+                         "long_name. Found: " +
+                             column1 + ", " + column2 + ", and " + column3 +
+                             " respectively in file " + filename);
         isFirstLine = false;
         continue;
       }

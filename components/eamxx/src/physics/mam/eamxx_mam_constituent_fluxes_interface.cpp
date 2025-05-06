@@ -7,7 +7,8 @@ namespace scream {
 // ================================================================
 //  Constructor
 // ================================================================
-MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm, const ekat::ParameterList &params)
+MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
+                                           const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params) {
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
@@ -166,7 +167,8 @@ void MAMConstituentFluxes::run_impl(const double dt) {
                                icol);         // in
   };
   // policy
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
   Kokkos::fence();

@@ -33,7 +33,9 @@ template <typename ExecSpace = Kokkos::HostSpace> struct HashReducer {
   typedef Kokkos::View<value_type *, ExecSpace, Kokkos::MemoryUnmanaged> result_view_type;
 
   KOKKOS_INLINE_FUNCTION HashReducer(value_type &value_) : value(value_) {}
-  KOKKOS_INLINE_FUNCTION void join(value_type &dest, const value_type &src) const { hash(src, dest); }
+  KOKKOS_INLINE_FUNCTION void join(value_type &dest, const value_type &src) const {
+    hash(src, dest);
+  }
   KOKKOS_INLINE_FUNCTION void init(value_type &val) const { val = 0; }
   KOKKOS_INLINE_FUNCTION value_type &reference() const { return value; }
   KOKKOS_INLINE_FUNCTION bool references_scalar() const { return true; }

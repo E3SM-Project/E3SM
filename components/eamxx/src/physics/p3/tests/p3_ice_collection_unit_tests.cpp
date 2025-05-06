@@ -21,7 +21,8 @@ namespace unit_test {
 /*
  * Unit-tests for p3 ice collection functions.
  */
-template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::Base {
 
   void run_ice_cldliq_bfb() {
     // Read in tables
@@ -30,11 +31,12 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public U
     view_2d_table revap_table_vals;
     view_1d_table mu_r_table_vals;
     view_dnu_table dnu;
-    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals,
+                                 dnu);
 
     // Load some lookup inputs, need at least one per pack value
     IceCldliqCollectionData cldliq[max_pack_size] = {
-        //  rho      temp      rhofaci     table_val_qc2qi_collect     qi      qc           ni      nc
+        //  rho      temp      rhofaci     table_val_qc2qi_collect     qi      qc           ni nc
         {4.056E-03, 4.02E+01, 8.852E-01, 0.174E+00, 1.221E-14, 5.100E-03, 9.558E+04, 9.952E+05},
         {6.852E-02, 5.01E+01, 8.852E-01, 0.374E+00, 1.221E-15, 4.100E-15, 9.558E+04, 9.952E+05},
         {8.852E-02, 6.00E+01, 8.900E-01, 0.123E+00, 1.221E-12, 3.100E-03, 9.558E+04, 9.952E+05},
@@ -91,8 +93,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public U
           Spack qc2qr_ice_shed_tend{0.0};
           Spack ncshdc{0.0};
 
-          Functions::ice_cldliq_collection(rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld, qc_incld, ni_incld,
-                                           nc_incld, qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc,
+          Functions::ice_cldliq_collection(rho, temp, rhofaci, table_val_qc2qi_collect, qi_incld,
+                                           qc_incld, ni_incld, nc_incld, qc2qi_collect_tend,
+                                           nc_collect_tend, qc2qr_ice_shed_tend, ncshdc,
                                            p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
@@ -130,27 +133,44 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public U
     using KTH = KokkosTypes<HostDevice>;
 
     IceRainCollectionData rain[max_pack_size] = {
-        //  rho      temp      rhofaci     logn0r     table_val_nr_collect    table_val_qr2qi_collect        qi      ni
+        //  rho      temp      rhofaci     logn0r     table_val_nr_collect table_val_qr2qi_collect
+        //  qi      ni
         //  qr (required)
-        {4.056E-03, 4.02E+01, 8.852E-01, 0.174E+00, 1.221E-14, 5.100E-03, 9.558E-04, 9.952E+02, 5.100E-03},
-        {6.852E-02, 5.01E+01, 8.852E-01, 0.374E+00, 1.221E-13, 4.100E-03, 9.558E-15, 9.952E+02, 5.100E-15},
-        {8.852E-02, 6.00E+01, 8.900E-01, 0.123E+00, 1.221E-12, 3.100E-03, 9.558E-04, 9.952E+02, 5.100E-03},
-        {1.902E-01, 1.00E+02, 8.900E-01, 0.123E+00, 1.221E-11, 2.100E-03, 9.558E-04, 9.952E+02, 5.100E-15},
+        {4.056E-03, 4.02E+01, 8.852E-01, 0.174E+00, 1.221E-14, 5.100E-03, 9.558E-04, 9.952E+02,
+         5.100E-03},
+        {6.852E-02, 5.01E+01, 8.852E-01, 0.374E+00, 1.221E-13, 4.100E-03, 9.558E-15, 9.952E+02,
+         5.100E-15},
+        {8.852E-02, 6.00E+01, 8.900E-01, 0.123E+00, 1.221E-12, 3.100E-03, 9.558E-04, 9.952E+02,
+         5.100E-03},
+        {1.902E-01, 1.00E+02, 8.900E-01, 0.123E+00, 1.221E-11, 2.100E-03, 9.558E-04, 9.952E+02,
+         5.100E-15},
 
-        {2.201E-01, 2.00E+02, 0.100E+01, 0.174E+00, 1.221E-10, 1.100E-03, 2.558E-05, 9.952E+02, 5.100E-15},
-        {3.502E-01, 3.00E+02, 0.100E+01, 0.374E+00, 1.221E-09, 8.100E-04, 2.558E-15, 9.952E+02, 5.100E-15},
-        {4.852E-01, 5.00E+02, 0.100E+01, 0.123E+00, 1.221E-08, 4.100E-04, 2.558E-05, 9.952E+02, 5.100E-03},
-        {5.852E-01, 8.00E+02, 0.100E+01, 0.123E+00, 1.221E-07, 2.100E-04, 2.558E-05, 9.952E+02, 5.100E-03},
+        {2.201E-01, 2.00E+02, 0.100E+01, 0.174E+00, 1.221E-10, 1.100E-03, 2.558E-05, 9.952E+02,
+         5.100E-15},
+        {3.502E-01, 3.00E+02, 0.100E+01, 0.374E+00, 1.221E-09, 8.100E-04, 2.558E-15, 9.952E+02,
+         5.100E-15},
+        {4.852E-01, 5.00E+02, 0.100E+01, 0.123E+00, 1.221E-08, 4.100E-04, 2.558E-05, 9.952E+02,
+         5.100E-03},
+        {5.852E-01, 8.00E+02, 0.100E+01, 0.123E+00, 1.221E-07, 2.100E-04, 2.558E-05, 9.952E+02,
+         5.100E-03},
 
-        {6.852E-01, 1.00E+03, 0.950E+00, 0.150E+00, 1.221E-06, 9.952E-05, 4.596E-05, 1.734E+03, 5.100E-15},
-        {7.852E-01, 2.00E+03, 0.950E+00, 0.374E+00, 1.221E-05, 4.952E-05, 4.596E-15, 1.734E+03, 5.100E-15},
-        {8.852E-01, 4.00E+03, 0.950E+00, 0.123E+00, 1.221E-04, 1.952E-05, 4.596E-05, 1.734E+03, 5.100E-03},
-        {9.852E-01, 6.00E+03, 0.950E+00, 0.123E+00, 1.221E-03, 9.952E-06, 4.596E-05, 1.734E+03, 5.100E-03},
+        {6.852E-01, 1.00E+03, 0.950E+00, 0.150E+00, 1.221E-06, 9.952E-05, 4.596E-05, 1.734E+03,
+         5.100E-15},
+        {7.852E-01, 2.00E+03, 0.950E+00, 0.374E+00, 1.221E-05, 4.952E-05, 4.596E-15, 1.734E+03,
+         5.100E-15},
+        {8.852E-01, 4.00E+03, 0.950E+00, 0.123E+00, 1.221E-04, 1.952E-05, 4.596E-05, 1.734E+03,
+         5.100E-03},
+        {9.852E-01, 6.00E+03, 0.950E+00, 0.123E+00, 1.221E-03, 9.952E-06, 4.596E-05, 1.734E+03,
+         5.100E-03},
 
-        {1.002E+01, 1.00E+04, 1.069E+00, 0.174E+00, 1.221E-02, 6.952E-06, 6.596E-05, 1.734E+03, 5.100E-15},
-        {1.152E+01, 2.00E+04, 1.069E+00, 0.374E+00, 1.221E-02, 3.952E-06, 6.596E-15, 1.734E+03, 5.100E-03},
-        {1.252E+01, 4.00E+04, 1.069E+00, 0.123E+00, 1.221E-02, 1.952E-06, 6.596E-05, 1.734E+03, 5.100E-15},
-        {1.352E+01, 8.00E+04, 1.069E+00, 0.123E+00, 1.221E-02, 9.952E-07, 6.596E-05, 1.734E+03, 5.100E-03}};
+        {1.002E+01, 1.00E+04, 1.069E+00, 0.174E+00, 1.221E-02, 6.952E-06, 6.596E-05, 1.734E+03,
+         5.100E-15},
+        {1.152E+01, 2.00E+04, 1.069E+00, 0.374E+00, 1.221E-02, 3.952E-06, 6.596E-15, 1.734E+03,
+         5.100E-03},
+        {1.252E+01, 4.00E+04, 1.069E+00, 0.123E+00, 1.221E-02, 1.952E-06, 6.596E-05, 1.734E+03,
+         5.100E-15},
+        {1.352E+01, 8.00E+04, 1.069E+00, 0.123E+00, 1.221E-02, 9.952E-07, 6.596E-05, 1.734E+03,
+         5.100E-03}};
 
     // Sync to device
     KTH::view_1d<IceRainCollectionData> rain_host("rain_host", max_pack_size);
@@ -171,7 +191,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public U
           const Int offset = i * Spack::n;
 
           // Init pack inputs
-          Spack rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld;
+          Spack rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect, qi_incld,
+              ni_incld, qr_incld;
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             rho[s]                     = rain_device(vs).rho;
             temp[s]                    = rain_device(vs).temp;
@@ -185,8 +206,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public U
           }
 
           Spack qr2qi_collect_tend(0.0), nr_collect_tend(0.0);
-          Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, table_val_nr_collect, table_val_qr2qi_collect,
-                                         qi_incld, ni_incld, qr_incld, qr2qi_collect_tend, nr_collect_tend,
+          Functions::ice_rain_collection(rho, temp, rhofaci, logn0r, table_val_nr_collect,
+                                         table_val_qr2qi_collect, qi_incld, ni_incld, qr_incld,
+                                         qr2qi_collect_tend, nr_collect_tend,
                                          p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
@@ -272,8 +294,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestIceCollection : public U
           }
 
           Spack ni_selfcollect_tend{0.0};
-          Functions::ice_self_collection(rho, rhofaci, table_val_ni_self_collect, eii, qm_incld, qi_incld, ni_incld,
-                                         ni_selfcollect_tend);
+          Functions::ice_self_collection(rho, rhofaci, table_val_ni_self_collect, eii, qm_incld,
+                                         qi_incld, ni_incld, ni_selfcollect_tend);
 
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             self_device(vs).ni_selfcollect_tend = ni_selfcollect_tend[s];

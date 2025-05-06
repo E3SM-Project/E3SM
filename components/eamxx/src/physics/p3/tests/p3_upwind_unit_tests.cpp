@@ -33,7 +33,8 @@ namespace unit_test {
 // profile should be nontrivial. Also, it is initialized so the first and last
 // cells in the domain are 0. This lets us check the restricted-domain usage of
 // the upwind routine in the first time step.
-template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     using ekat::repack;
@@ -50,7 +51,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
       const Real dt = min_dz / max_speed;
 
       view_1d<Pack> rho("rho", npack), inv_rho("inv_rho", npack), inv_dz("inv_dz", npack);
-      const auto lrho = repack<SPS>(rho), linv_rho = repack<SPS>(inv_rho), linv_dz = repack<SPS>(inv_dz);
+      const auto lrho = repack<SPS>(rho), linv_rho = repack<SPS>(inv_rho),
+                 linv_dz = repack<SPS>(inv_dz);
 
       Kokkos::Array<view_1d<Pack>, nfield> flux, V, r;
       Kokkos::Array<uview_1d<Spack>, nfield> lflux, lV, lr;
@@ -93,7 +95,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), set_fields);
           team.team_barrier();
         };
-        Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack), init_fields);
+        Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+                             init_fields);
 
         const auto sflux = scalarize(flux[1]);
         for (Int time_step = 0; time_step < 2 * nk; ++time_step) {
@@ -105,7 +108,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
             // Gather diagnostics: total mass and extremal mixing ratio values.
             const auto gather_diagnostics = [&](Scalar &mass, Scalar &r_min, Scalar &r_max) {
               mass                = 0;
-              const auto sum_mass = [&](const Int &k, Scalar &mass) { mass += srho(k) * sr(k) / sinv_dz(k); };
+              const auto sum_mass = [&](const Int &k, Scalar &mass) {
+                mass += srho(k) * sr(k) / sinv_dz(k);
+              };
               Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), sum_mass, mass);
 
               const auto find_max_r = [&](const Int &k, Scalar &r_max) {
@@ -129,13 +134,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
                 const auto mixing_ratio_true = sr(k) / sr0(k);
                 r_max                        = ekat::impl::max(mixing_ratio_true, r_max);
               };
-              Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), find_max_r, Kokkos::Max<Scalar>(r_max));
+              Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), find_max_r,
+                                      Kokkos::Max<Scalar>(r_max));
 
               const auto find_min_r = [&](const Int &k, Scalar &r_min) {
                 const auto mixing_ratio_true = sr(k) / sr0(k);
                 r_min                        = ekat::impl::min(mixing_ratio_true, r_min);
               };
-              Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), find_min_r, Kokkos::Min<Scalar>(r_min));
+              Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), find_min_r,
+                                      Kokkos::Min<Scalar>(r_min));
             };
 
             // Gather diagnostics before the step.
@@ -150,19 +157,19 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
               // restricting the interval. But the IC for r[0] does not permit
               // it. Thus, make two calls to the upwind routine:
               //   1. Full domain for r[0].
-              Functions::calc_first_order_upwind_step(lrho, linv_rho, linv_dz, team, nk, k_bot, k_top, kdir, dt,
-                                                      lflux[0], lV[0], lr[0]);
+              Functions::calc_first_order_upwind_step(lrho, linv_rho, linv_dz, team, nk, k_bot,
+                                                      k_top, kdir, dt, lflux[0], lV[0], lr[0]);
               k_bot_lcl += kdir;
               k_top_lcl -= kdir;
               //   2. Restricted domain for r[1] in first time step only. Note
               // that the restriction is unnecesary but just here to test the
               // restriction code.
-              Functions::calc_first_order_upwind_step(lrho, linv_rho, linv_dz, team, nk, k_bot_lcl, k_top_lcl, kdir, dt,
-                                                      lflux[1], lV[1], lr[1]);
+              Functions::calc_first_order_upwind_step(lrho, linv_rho, linv_dz, team, nk, k_bot_lcl,
+                                                      k_top_lcl, kdir, dt, lflux[1], lV[1], lr[1]);
             } else {
-              Functions::template calc_first_order_upwind_step<nfield>(lrho, linv_rho, linv_dz, team, nk, k_bot_lcl,
-                                                                       k_top_lcl, kdir, dt, {&lflux[0], &lflux[1]},
-                                                                       {&lV[0], &lV[1]}, {&lr[0], &lr[1]});
+              Functions::template calc_first_order_upwind_step<nfield>(
+                  lrho, linv_rho, linv_dz, team, nk, k_bot_lcl, k_top_lcl, kdir, dt,
+                  {&lflux[0], &lflux[1]}, {&lV[0], &lV[1]}, {&lr[0], &lr[1]});
             }
             team.team_barrier();
 
@@ -185,7 +192,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
               ++nerr;
           };
           Int lnerr;
-          Kokkos::parallel_reduce(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack), step, lnerr);
+          Kokkos::parallel_reduce(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+                                  step, lnerr);
           nerr += lnerr;
           Kokkos::fence();
           REQUIRE(nerr == 0);
@@ -200,9 +208,12 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
 
     CalcUpwindData cuds_baseline[] = {
         // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,
-        CalcUpwindData(1, 72, -1, 72, 36, 2, 1.833E+03), CalcUpwindData(1, 72, 1, 36, 72, 2, 1.833E+03),
-        CalcUpwindData(1, 72, -1, 72, 36, 4, 1.833E+03), CalcUpwindData(1, 72, -1, 72, 72, 2, 1.833E+03),
-        CalcUpwindData(1, 32, -1, 24, 8, 2, 1.833E+03),  CalcUpwindData(1, 32, 1, 7, 21, 1, 1.833E+03),
+        CalcUpwindData(1, 72, -1, 72, 36, 2, 1.833E+03),
+        CalcUpwindData(1, 72, 1, 36, 72, 2, 1.833E+03),
+        CalcUpwindData(1, 72, -1, 72, 36, 4, 1.833E+03),
+        CalcUpwindData(1, 72, -1, 72, 72, 2, 1.833E+03),
+        CalcUpwindData(1, 32, -1, 24, 8, 2, 1.833E+03),
+        CalcUpwindData(1, 32, 1, 7, 21, 1, 1.833E+03),
         CalcUpwindData(1, 32, -1, 21, 7, 1, 1.833E+03),
     };
 
@@ -216,8 +227,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     CalcUpwindData cuds_cxx[num_runs] = {
-        CalcUpwindData(cuds_baseline[0]), CalcUpwindData(cuds_baseline[1]), CalcUpwindData(cuds_baseline[2]),
-        CalcUpwindData(cuds_baseline[3]), CalcUpwindData(cuds_baseline[4]), CalcUpwindData(cuds_baseline[5]),
+        CalcUpwindData(cuds_baseline[0]), CalcUpwindData(cuds_baseline[1]),
+        CalcUpwindData(cuds_baseline[2]), CalcUpwindData(cuds_baseline[3]),
+        CalcUpwindData(cuds_baseline[4]), CalcUpwindData(cuds_baseline[5]),
         CalcUpwindData(cuds_baseline[6]),
     };
 
@@ -233,8 +245,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
     for (auto &d : cuds_cxx) {
       Real **fluxes, **vs, **qnx;
       d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
-      calc_first_order_upwind_step_host(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dz,
-                                        d.num_arrays, fluxes, vs, qnx);
+      calc_first_order_upwind_step_host(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho,
+                                        d.inv_rho, d.inv_dz, d.num_arrays, fluxes, vs, qnx);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
@@ -262,7 +274,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap
   }
 };
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestGenSed : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestGenSed : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -273,7 +286,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestGenSed : public UnitWrap
     auto engine = Base::get_engine();
 
     GenSedData gsds_baseline[] = {
-        //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
+        //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum,
+        //       num_arrays
         GenSedData(1, 72, -1, 36, 72, 72, 9.196E-02, 1.818E+01, 4.959E-05, 2),
         GenSedData(1, 72, -1, 36, 57, 72, 4.196E-01, 1.418E+02, 4.959E-06, 1),
         GenSedData(1, 72, 1, 57, 37, 36, 4.196E-01, 1.418E+02, 4.959E-06, 1),
@@ -308,15 +322,17 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestGenSed : public UnitWrap
     for (auto &d : gsds_cxx) {
       Real **fluxes, **vs, **qnx;
       d.convert_to_ptr_arr(tmp1, fluxes, vs, qnx);
-      generalized_sedimentation_host(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max, &d.dt_left,
-                                     &d.prt_accum, d.inv_dz, d.inv_rho, d.rho, d.num_arrays, fluxes, vs, qnx);
+      generalized_sedimentation_host(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max,
+                                     &d.dt_left, &d.prt_accum, d.inv_dz, d.inv_rho, d.rho,
+                                     d.num_arrays, fluxes, vs, qnx);
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
         // Due to pack issues, we must restrict checks to the active k space
-        Int start = std::min(gsds_baseline[i].k_qxbot, gsds_baseline[i].k_qxtop) - 1; // 0-based indx
-        Int end   = std::max(gsds_baseline[i].k_qxbot, gsds_baseline[i].k_qxtop);     // 0-based indx
+        Int start =
+            std::min(gsds_baseline[i].k_qxbot, gsds_baseline[i].k_qxtop) - 1;   // 0-based indx
+        Int end = std::max(gsds_baseline[i].k_qxbot, gsds_baseline[i].k_qxtop); // 0-based indx
 
         Real **fluxesf90, **vsf90, **qnxf90, **fluxescxx, **vscxx, **qnxcxx;
         gsds_baseline[i].convert_to_ptr_arr(tmp1, fluxesf90, vsf90, qnxf90);

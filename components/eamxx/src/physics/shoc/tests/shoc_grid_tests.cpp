@@ -22,7 +22,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
@@ -195,13 +196,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWr
 namespace {
 
 TEST_CASE("shoc_grid_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_grid_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
 
   TestStruct().run_bfb();
 }

@@ -36,9 +36,11 @@ directly
 */
 
 namespace scream {
-MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params) : MAMGenericInterface(comm, params) {
+MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : MAMGenericInterface(comm, params) {
   // Asserts for the runtime or namelist options
-  EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"), "ERROR: wsubmin is missing from mam_aci parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("wsubmin"),
+                   "ERROR: wsubmin is missing from mam_aci parameter list.");
   EKAT_REQUIRE_MSG(m_params.isParameter("enable_aero_vertical_mix"),
                    "ERROR: enable_aero_vertical_mix is missing from mam_aci "
                    "parameter list.");
@@ -268,8 +270,9 @@ void MAMAci::init_temporary_views() {
   const int workspace_used     = work_ptr - buffer_.temporary_views.data();
   const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
-                   "Error: workspace_used (" + std::to_string(workspace_used) + ") and workspace_provided (" +
-                       std::to_string(workspace_provided) + ") should be equal. \n");
+                   "Error: workspace_used (" + std::to_string(workspace_used) +
+                       ") and workspace_provided (" + std::to_string(workspace_provided) +
+                       ") should be equal. \n");
 }
 // ================================================================
 //  INITIALIZE_IMPL
@@ -350,9 +353,12 @@ void MAMAci::initialize_impl(const RunType run_type) {
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
   // hetrozenous freezing outputs
-  hetfrz_immersion_nucleation_tend_  = get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
-  hetfrz_contact_nucleation_tend_    = get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
-  hetfrz_deposition_nucleation_tend_ = get_field_out("hetfrz_deposition_nucleation_tend").get_view<Real **>();
+  hetfrz_immersion_nucleation_tend_ =
+      get_field_out("hetfrz_immersion_nucleation_tend").get_view<Real **>();
+  hetfrz_contact_nucleation_tend_ =
+      get_field_out("hetfrz_contact_nucleation_tend").get_view<Real **>();
+  hetfrz_deposition_nucleation_tend_ =
+      get_field_out("hetfrz_deposition_nucleation_tend").get_view<Real **>();
 
   //---------------------------------------------------------------------------------
   // Allocate memory for the class members
@@ -477,7 +483,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
@@ -505,14 +512,16 @@ void MAMAci::run_impl(const double dt) {
                                    wsub_, wsubice_, wsig_);
 
   // We need dry diameter for only aitken mode
-  Kokkos::deep_copy(aitken_dry_dia_, ekat::subview_1(dgnum_, static_cast<int>(mam4::ModeIndex::Aitken)));
+  Kokkos::deep_copy(aitken_dry_dia_,
+                    ekat::subview_1(dgnum_, static_cast<int>(mam4::ModeIndex::Aitken)));
 
   Kokkos::fence(); // wait for aitken_dry_dia_ to be copied.
 
   //  Compute Ice nucleation
   //  NOTE: The Fortran version uses "ast" for cloud fraction which is
   //  equivalent to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
-  compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_, aitken_dry_dia_, nlev_, dt,
+  compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
+                                  aitken_dry_dia_, nlev_, dt,
                                   // output
                                   nihf_, niim_, nidep_, nimey_, naai_hom_,
                                   // ## output to be used by the other processes ##
@@ -532,14 +541,15 @@ void MAMAci::run_impl(const double dt) {
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
-  call_function_dropmixnuc(team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_, cloud_frac_prev_,
-                           dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
-                           // output
-                           coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
-                           // ## output to be used by the other processes ##
-                           qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
-                           // work arrays
-                           raercol_cw_, raercol_, state_q_work_, nact_, mact_, dropmixnuc_scratch_mem_);
+  call_function_dropmixnuc(
+      team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_, cloud_frac_prev_,
+      dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
+      // output
+      coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
+      // ## output to be used by the other processes ##
+      qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
+      // work arrays
+      raercol_cw_, raercol_, state_q_work_, nact_, mact_, dropmixnuc_scratch_mem_);
   Kokkos::fence(); // wait for ptend_q_ to be computed.
 
   Kokkos::deep_copy(ccn_0p02_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 0));

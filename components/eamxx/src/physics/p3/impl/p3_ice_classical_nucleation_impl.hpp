@@ -10,11 +10,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::ice_classical_nucleation(const Spack &frzimm, const Spack &frzcnt, const Spack &frzdep,
-                                          const Spack &rho, const Spack &qc_incld, const Spack &nc_incld,
-                                          const int Iflag, Spack &ncheti_cnt, Spack &qcheti_cnt, Spack &nicnt,
-                                          Spack &qicnt, Spack &ninuc_cnt, Spack &qinuc_cnt) {
+KOKKOS_FUNCTION void Functions<S, D>::ice_classical_nucleation(
+    const Spack &frzimm, const Spack &frzcnt, const Spack &frzdep, const Spack &rho,
+    const Spack &qc_incld, const Spack &nc_incld, const int Iflag, Spack &ncheti_cnt,
+    Spack &qcheti_cnt, Spack &nicnt, Spack &qicnt, Spack &ninuc_cnt, Spack &qinuc_cnt) {
   constexpr Scalar pi      = C::Pi;
   constexpr Scalar rho_h2o = C::RHO_H2O;
 
@@ -46,7 +45,8 @@ Functions<S, D>::ice_classical_nucleation(const Spack &frzimm, const Spack &frzc
     qinuc_cnt.set(mask, ninuc_cnt * mi0, Zero);
     break;
   default:
-    EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement for Iflag in p3_CNT_couple_impl.hpp .\n");
+    EKAT_KERNEL_ERROR_MSG(
+        "Error! Unhandled case in switch statement for Iflag in p3_CNT_couple_impl.hpp .\n");
     break;
   }
 }

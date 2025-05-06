@@ -45,7 +45,8 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
     limits_aerosol_gas_tracers_[gas_mmr_field_name] = mam_coupling::physical_min_max(mmr_label);
   } // end for loop num gases
 }
-void MAMGenericInterface::set_ranges_process(const std::map<std::string, std::pair<Real, Real>> &max_min_process) {
+void MAMGenericInterface::set_ranges_process(
+    const std::map<std::string, std::pair<Real, Real>> &max_min_process) {
   // NOTE: We are using the same range (mmr) for all aerosols and gases.
   // And aerosol numbers (nmr).
   // set ranges for aerosol and gases
@@ -57,7 +58,8 @@ void MAMGenericInterface::set_ranges_process(const std::map<std::string, std::pa
   set_ranges_ = true;
 }
 const std::pair<Real, Real> MAMGenericInterface::get_ranges(const std::string &field_name) {
-  EKAT_ASSERT_MSG(set_ranges_, "Error: min_max ranges are not set. Please invoke set_ranges_process.");
+  EKAT_ASSERT_MSG(set_ranges_,
+                  "Error: min_max ranges are not set. Please invoke set_ranges_process.");
 
   std::pair<Real, Real> min_max;
   // We obtain the minimum and maximum values for aerosol and gas species.
@@ -192,7 +194,8 @@ void MAMGenericInterface::populate_cloudborne_dry_aero(mam_coupling::AerosolStat
   }
 }
 // ================================================================
-void MAMGenericInterface::set_field_w_scratch_buffer(mam_coupling::view_2d &var, mam_coupling::Buffer &buffer,
+void MAMGenericInterface::set_field_w_scratch_buffer(mam_coupling::view_2d &var,
+                                                     mam_coupling::Buffer &buffer,
                                                      const bool set_to_zero) {
   var = buffer.scratch[i_scratch_vars_];
   i_scratch_vars_++;
@@ -208,7 +211,8 @@ void MAMGenericInterface::set_field_w_scratch_buffer(mam_coupling::view_2d &var,
   }
 }
 // ================================================================
-void MAMGenericInterface::populate_gases_dry_aero(mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
+void MAMGenericInterface::populate_gases_dry_aero(mam_coupling::AerosolState &dry_aero,
+                                                  mam_coupling::Buffer &buffer) {
   for (int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
@@ -274,7 +278,8 @@ void MAMGenericInterface::populate_wet_atm(mam_coupling::WetAtmosphere &wet_atm)
   wet_atm.qi = get_field_in("qi").get_view<const Real **>();
   wet_atm.ni = get_field_in("ni").get_view<const Real **>();
 }
-void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm, mam_coupling::Buffer &buffer) {
+void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
+                                           mam_coupling::Buffer &buffer) {
   // store rest fo the atm fields in dry_atm_in
   dry_atm.z_surf = 0;
   dry_atm.T_mid  = get_field_in("T_mid").get_view<const Real **>();
@@ -392,14 +397,18 @@ void MAMGenericInterface::add_interval_checks() {
       // physical_limits.hpp. Some variables from get_fields_out may not be part
       // of physical_min_max.
       if (min_value != -1 && max_value != -1)
-        add_postcondition_check<FieldWithinIntervalCheck>(field, grid_, min_value, max_value, false);
+        add_postcondition_check<FieldWithinIntervalCheck>(field, grid_, min_value, max_value,
+                                                          false);
     }
   }
 }
 
-void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero, mam_coupling::AerosolState &dry_aero,
-                                      mam_coupling::WetAtmosphere &wet_atm, mam_coupling::DryAtmosphere &dry_atm) {
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
+                                      mam_coupling::AerosolState &dry_aero,
+                                      mam_coupling::WetAtmosphere &wet_atm,
+                                      mam_coupling::DryAtmosphere &dry_atm) {
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int i = team.league_rank(); // column index
@@ -416,9 +425,11 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero, mam_
       });
 }
 
-void MAMGenericInterface::post_process(mam_coupling::AerosolState &wet_aero, mam_coupling::AerosolState &dry_aero,
+void MAMGenericInterface::post_process(mam_coupling::AerosolState &wet_aero,
+                                       mam_coupling::AerosolState &dry_aero,
                                        mam_coupling::DryAtmosphere &dry_atm) {
-  const auto scan_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int i = team.league_rank(); // column index

@@ -22,7 +22,8 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
@@ -82,7 +83,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi && SDS.dtime == dtime && SDS.nadv == nadv));
+    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi && SDS.dtime == dtime &&
+             SDS.nadv == nadv));
     // Want exactly three columns for this case
     REQUIRE(shcol == 3);
     REQUIRE(nlevi == nlev + 1);
@@ -318,13 +320,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public
 namespace {
 
 TEST_CASE("shoc_energy_fixer_property", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_energy_fixer_bfb", "shoc") {
-  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+  using TestStruct =
+      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
 
   TestStruct().run_bfb();
 }

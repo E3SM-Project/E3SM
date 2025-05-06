@@ -87,7 +87,8 @@ public:
   FieldLayout();
   FieldLayout(const FieldLayout &) = default;
   FieldLayout(const std::vector<FieldTag> &tags, const std::vector<int> &dims);
-  FieldLayout(const std::vector<FieldTag> &tags, const std::vector<int> &dims, const std::vector<std::string> &names);
+  FieldLayout(const std::vector<FieldTag> &tags, const std::vector<int> &dims,
+              const std::vector<std::string> &names);
 
   // Assignment (defaulted)
   FieldLayout &operator=(const FieldLayout &) = default;
@@ -151,13 +152,16 @@ public:
   FieldLayout &append_dim(const FieldTag t, const int extent);
   FieldLayout &append_dim(const FieldTag t, const int extent, const std::string &name);
   FieldLayout &rename_dim(const int idim, const std::string &n);
-  FieldLayout &rename_dim(const FieldTag tag, const std::string &n, const bool throw_if_not_found = true);
+  FieldLayout &rename_dim(const FieldTag tag, const std::string &n,
+                          const bool throw_if_not_found = true);
   FieldLayout &reset_dim(const int idim, const int extent);
   FieldLayout &reset_dim(const FieldTag t, const int extent, const bool throw_if_not_found = true);
 
-  // These overload allow to remove/rename dims *if found*. They won't throw if layout does not have them
-  FieldLayout &strip_dims(const std::vector<FieldTag> &tags);                 // Does not throw if not found
-  FieldLayout &rename_dims(const std::map<FieldTag, std::string> &new_names); // Does not throw if not found
+  // These overload allow to remove/rename dims *if found*. They won't throw if layout does not have
+  // them
+  FieldLayout &strip_dims(const std::vector<FieldTag> &tags); // Does not throw if not found
+  FieldLayout &
+  rename_dims(const std::map<FieldTag, std::string> &new_names); // Does not throw if not found
 
   FieldLayout clone() const;
 
@@ -188,12 +192,13 @@ bool operator==(const FieldLayout &fl1, const FieldLayout &fl2);
 
 inline int FieldLayout::dim_idx(const FieldTag t) const {
   // Check exactly one tag (no ambiguity)
-  EKAT_REQUIRE_MSG(ekat::count(m_tags, t) == 1, "Error! FieldTag::dim_idx requires that the tag appears exactly once.\n"
-                                                "  - field tag: " +
-                                                    e2str(t) +
-                                                    "\n"
-                                                    "  - tag count: " +
-                                                    std::to_string(ekat::count(m_tags, t)) + "\n");
+  EKAT_REQUIRE_MSG(ekat::count(m_tags, t) == 1,
+                   "Error! FieldTag::dim_idx requires that the tag appears exactly once.\n"
+                   "  - field tag: " +
+                       e2str(t) +
+                       "\n"
+                       "  - tag count: " +
+                       std::to_string(ekat::count(m_tags, t)) + "\n");
 
   return std::distance(m_tags.begin(), ekat::find(m_tags, t));
 }

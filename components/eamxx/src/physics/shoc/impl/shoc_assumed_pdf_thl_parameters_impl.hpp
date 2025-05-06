@@ -17,10 +17,10 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_thl_parameters(
-    const Spack &wthlsec, const Spack &sqrtw2, const Spack &sqrtthl, const Spack &thlsec, const Spack &thl_first,
-    const Spack &w1_1, const Spack &w1_2, const Spack &Skew_w, const Spack &a, const Scalar thl_tol,
-    const Scalar w_thresh, Spack &thl1_1, Spack &thl1_2, Spack &thl2_1, Spack &thl2_2, Spack &sqrtthl2_1,
-    Spack &sqrtthl2_2) {
+    const Spack &wthlsec, const Spack &sqrtw2, const Spack &sqrtthl, const Spack &thlsec,
+    const Spack &thl_first, const Spack &w1_1, const Spack &w1_2, const Spack &Skew_w,
+    const Spack &a, const Scalar thl_tol, const Scalar w_thresh, Spack &thl1_1, Spack &thl1_2,
+    Spack &thl2_1, Spack &thl2_2, Spack &sqrtthl2_1, Spack &sqrtthl2_2) {
   thl1_1     = thl_first;
   thl1_2     = thl_first;
   thl2_1     = 0;
@@ -37,22 +37,27 @@ KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_thl_parameters(
   if (SC::dothetal_skew == true) {
     const auto tsign = ekat::abs(tmp_val_1 - tmp_val_2);
     Skew_thl.set(tsign > sp(0.4), sp(1.2) * Skew_w);
-    Skew_thl.set(tsign > sp(0.2) && tsign <= sp(0.4), (((sp(1.2) * Skew_w) / sp(0.2)) * (tsign - sp(0.2))));
+    Skew_thl.set(tsign > sp(0.2) && tsign <= sp(0.4),
+                 (((sp(1.2) * Skew_w) / sp(0.2)) * (tsign - sp(0.2))));
   }
 
   if (condition.any()) {
-    thl2_1.set(condition,
-               ekat::min(100, ekat::max(0, (3 * tmp_val_1 *
-                                                (1 - a * ekat::square(tmp_val_2) - (1 - a) * ekat::square(tmp_val_1)) -
-                                            (Skew_thl - a * ekat::cube(tmp_val_2) - (1 - a) * ekat::cube(tmp_val_1))) /
-                                               (3 * a * (tmp_val_1 - tmp_val_2)))) *
-                   thlsec);
-    thl2_2.set(condition,
-               ekat::min(100, ekat::max(0, (-3 * tmp_val_2 *
-                                                (1 - a * ekat::square(tmp_val_2) - (1 - a) * ekat::square(tmp_val_1)) +
-                                            (Skew_thl - a * ekat::cube(tmp_val_2) - (1 - a) * ekat::cube(tmp_val_1))) /
-                                               (3 * (1 - a) * (tmp_val_1 - tmp_val_2)))) *
-                   thlsec);
+    thl2_1.set(condition, ekat::min(100, ekat::max(0, (3 * tmp_val_1 *
+                                                           (1 - a * ekat::square(tmp_val_2) -
+                                                            (1 - a) * ekat::square(tmp_val_1)) -
+                                                       (Skew_thl - a * ekat::cube(tmp_val_2) -
+                                                        (1 - a) * ekat::cube(tmp_val_1))) /
+                                                          (3 * a * (tmp_val_1 - tmp_val_2)))) *
+                              thlsec);
+    thl2_2.set(
+        condition,
+        ekat::min(
+            100, ekat::max(
+                     0, (-3 * tmp_val_2 *
+                             (1 - a * ekat::square(tmp_val_2) - (1 - a) * ekat::square(tmp_val_1)) +
+                         (Skew_thl - a * ekat::cube(tmp_val_2) - (1 - a) * ekat::cube(tmp_val_1))) /
+                            (3 * (1 - a) * (tmp_val_1 - tmp_val_2)))) *
+            thlsec);
 
     thl1_1.set(condition, tmp_val_2 * sqrtthl + thl_first);
     thl1_2.set(condition, tmp_val_1 * sqrtthl + thl_first);

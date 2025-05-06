@@ -21,7 +21,8 @@ namespace unit_test {
 /*
  * Unit-tests for p3 ice collection functions.
  */
-template <typename D> struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest<D>::Base {
 
   void run_rain_self_collection_bfb_tests() {
 
@@ -67,7 +68,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainSelfCollection : pub
             nr_selfcollect_tend_local[s] = dc_device(vs).nr_selfcollect_tend;
           }
 
-          Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local, nr_selfcollect_tend_local,
+          Functions::rain_self_collection(rho_local, qr_incld_local, nr_incld_local,
+                                          nr_selfcollect_tend_local,
                                           p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
@@ -108,7 +110,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestRainSelfCollection : pub
 namespace {
 
 TEST_CASE("p3_rain_self_collection_test", "[p3_rain_self_collection_test") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection;
+  using T =
+      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection;
 
   T t;
   t.run_bfb();

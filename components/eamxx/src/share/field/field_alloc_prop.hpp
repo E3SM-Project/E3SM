@@ -86,7 +86,8 @@ inline bool operator==(const SubviewInfo &lhs, const SubviewInfo &rhs) {
   return lhs.dim_idx == rhs.dim_idx && lhs.slice_idx == rhs.slice_idx &&
          //  slice_idx_end == -1 for single slice, and the ending index when
          // it's a multi-slice
-         lhs.slice_idx_end == rhs.slice_idx_end && lhs.dim_extent == rhs.dim_extent && lhs.dynamic == rhs.dynamic;
+         lhs.slice_idx_end == rhs.slice_idx_end && lhs.dim_extent == rhs.dim_extent &&
+         lhs.dynamic == rhs.dynamic;
 }
 
 class FieldAllocProp {

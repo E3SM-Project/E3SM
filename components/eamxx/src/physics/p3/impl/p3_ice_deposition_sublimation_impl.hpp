@@ -9,9 +9,10 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::ice_deposition_sublimation(
-    const Spack &qi_incld, const Spack &ni_incld, const Spack &T_atm, const Spack &qv_sat_l, const Spack &qv_sat_i,
-    const Spack &epsi, const Spack &abi, const Spack &qv, const Scalar &inv_dt, Spack &qv2qi_vapdep_tend,
-    Spack &qi2qv_sublim_tend, Spack &ni_sublim_tend, Spack &qc2qi_berg_tend, const Smask &context) {
+    const Spack &qi_incld, const Spack &ni_incld, const Spack &T_atm, const Spack &qv_sat_l,
+    const Spack &qv_sat_i, const Spack &epsi, const Spack &abi, const Spack &qv,
+    const Scalar &inv_dt, Spack &qv2qi_vapdep_tend, Spack &qi2qv_sublim_tend, Spack &ni_sublim_tend,
+    Spack &qc2qi_berg_tend, const Smask &context) {
   constexpr Scalar QSMALL     = C::QSMALL;
   constexpr Scalar T_zerodegc = C::T_zerodegc;
 
@@ -37,7 +38,8 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_deposition_sublimation(
     // SUBLIMATE WHERE qi_tend<0. MAKE POSITIVE TO MATCH CONVENTION
     const auto neg_qi_tend = (qi_tend < 0);
     qi2qv_sublim_tend.set(qi_incld_not_small && neg_qi_tend, -qi_tend);
-    ni_sublim_tend.set(qi_incld_not_small && neg_qi_tend, qi2qv_sublim_tend * (ni_incld / qi_incld));
+    ni_sublim_tend.set(qi_incld_not_small && neg_qi_tend,
+                       qi2qv_sublim_tend * (ni_incld / qi_incld));
 
     // DEPOSITION (FROM VAPOR OR LIQ) ONLY OCCURS BELOW FREEZING:
     const auto T_lt_frz = (T_atm < T_zerodegc);
@@ -45,9 +47,9 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_deposition_sublimation(
     // BERGERON OCCURS WHERE LIQUID IS PRESENT AND DEPOSITION FROM VAPOR OCCURS WHERE IT ISN'T.
     // IF ALL LIQUID IS CONSUMED PARTWAY THROUGH A STEP, BERGERON SHOULD BE ACTIVE FOR THE
     // FRACTION OF THE STEP WHEN LIQUID IS PRESENT AND DEPOSITION FROM VAPOR SHOULD BE ACTIVE FOR
-    // THE REST OF THE STEP. THE FRACTION OF THE STEP WITH LIQUID ISN'T KNOWN UNTIL THE 'CONSERVATION
-    // CHECKS' AT THE END OF THE STEP, SO WE COMPUTE BERGERON AND VAPOR DEPOSITION HERE ASSUMING
-    // LIQUID IS OR ISN'T PRESENT FOR THE WHOLE STEP (RESPECTIVELY).
+    // THE REST OF THE STEP. THE FRACTION OF THE STEP WITH LIQUID ISN'T KNOWN UNTIL THE
+    // 'CONSERVATION CHECKS' AT THE END OF THE STEP, SO WE COMPUTE BERGERON AND VAPOR DEPOSITION
+    // HERE ASSUMING LIQUID IS OR ISN'T PRESENT FOR THE WHOLE STEP (RESPECTIVELY).
 
     // VAPOR DEPOSITION
     qv2qi_vapdep_tend.set(qi_incld_not_small && T_lt_frz && !neg_qi_tend, qi_tend);

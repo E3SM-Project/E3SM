@@ -23,7 +23,8 @@ inline int get_random_test_seed(const ekat::Comm *comm = nullptr) {
     // Print seed to screen to trace tests that fail.
     std::cout << " For test " << test_name << ", random number generator seed: " << seed << "\n";
     if (catchRngSeed == 0) {
-      std::cout << "    Note: catch rng seed was 0 (default). We interpret that as a request to pick a random seed.\n"
+      std::cout << "    Note: catch rng seed was 0 (default). We interpret that as a request to "
+                   "pick a random seed.\n"
                    "    To reproduce a previous run, use --rng-seed N to provide the rng seed.\n\n";
     }
   }
@@ -47,7 +48,9 @@ Engine setup_random_test(const ekat::Comm *comm = nullptr, int *return_seed = nu
   return Engine(seed);
 }
 
-template <typename Engine = std::mt19937_64> Engine setup_random_test(const int seed) { return Engine(seed); }
+template <typename Engine = std::mt19937_64> Engine setup_random_test(const int seed) {
+  return Engine(seed);
+}
 
 } // namespace scream
 

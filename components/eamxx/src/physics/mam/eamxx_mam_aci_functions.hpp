@@ -9,8 +9,9 @@ namespace scream {
 
 namespace {
 
-void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy, const mam_coupling::DryAtmosphere &dry_atmosphere,
-                        const int top_lev, const int nlev,
+void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
+                        const mam_coupling::DryAtmosphere &dry_atmosphere, const int top_lev,
+                        const int nlev,
                         // output
                         MAMAci::view_2d w0, MAMAci::view_2d rho) {
   MAMAci::const_view_2d omega = dry_atmosphere.omega;
@@ -35,8 +36,9 @@ void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy, const mam_coupling:
       });
 }
 
-void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy, const MAMAci::const_view_2d var_mid,
-                               const MAMAci::view_2d dz, const int nlev_, MAMAci::view_2d w_sec_int,
+void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy,
+                               const MAMAci::const_view_2d var_mid, const MAMAci::view_2d dz,
+                               const int nlev_, MAMAci::view_2d w_sec_int,
                                // output
                                MAMAci::view_2d tke) {
   using CO = scream::ColumnOps<DefaultDevice, Real>;
@@ -52,17 +54,20 @@ void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy, const MAMAci
         const Real bc_top = var_mid_col(0);
         const Real bc_bot = var_mid_col(nlev_ - 1);
 
-        CO::compute_interface_values_linear(team, nlev_, var_mid_col, dz_col, bc_top, bc_bot, w_sec_int_col);
+        CO::compute_interface_values_linear(team, nlev_, var_mid_col, dz_col, bc_top, bc_bot,
+                                            w_sec_int_col);
         team.team_barrier();
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_ + 1),
                              [&](int kk) { tke(icol, kk) = (3.0 / 2.0) * w_sec_int(icol, kk); });
       });
 }
 
-void compute_subgrid_scale_velocities(haero::ThreadTeamPolicy team_policy, const MAMAci::const_view_2d tke,
-                                      const Real wsubmin, const int top_lev, const int nlev,
+void compute_subgrid_scale_velocities(haero::ThreadTeamPolicy team_policy,
+                                      const MAMAci::const_view_2d tke, const Real wsubmin,
+                                      const int top_lev, const int nlev,
                                       // output
-                                      MAMAci::view_2d wsub, MAMAci::view_2d wsubice, MAMAci::view_2d wsig) {
+                                      MAMAci::view_2d wsub, MAMAci::view_2d wsubice,
+                                      MAMAci::view_2d wsig) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -83,15 +88,16 @@ void compute_subgrid_scale_velocities(haero::ThreadTeamPolicy team_policy, const
       });
 }
 
-void compute_nucleate_ice_tendencies(const mam4::NucleateIce &nucleate_ice, haero::ThreadTeamPolicy team_policy,
-                                     const mam_coupling::DryAtmosphere &dry_atmosphere,
-                                     const mam_coupling::AerosolState &dry_aero, const MAMAci::view_2d wsubice,
-                                     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
-                                     // output
-                                     MAMAci::view_2d nihf, MAMAci::view_2d niim, MAMAci::view_2d nidep,
-                                     MAMAci::view_2d nimey, MAMAci::view_2d naai_hom,
-                                     // ## output used by other processes ##
-                                     MAMAci::view_2d naai) {
+void compute_nucleate_ice_tendencies(
+    const mam4::NucleateIce &nucleate_ice, haero::ThreadTeamPolicy team_policy,
+    const mam_coupling::DryAtmosphere &dry_atmosphere, const mam_coupling::AerosolState &dry_aero,
+    const MAMAci::view_2d wsubice, const MAMAci::view_2d aitken_dry_dia, const int nlev,
+    const double dt,
+    // output
+    MAMAci::view_2d nihf, MAMAci::view_2d niim, MAMAci::view_2d nidep, MAMAci::view_2d nimey,
+    MAMAci::view_2d naai_hom,
+    // ## output used by other processes ##
+    MAMAci::view_2d naai) {
   //-------------------------------------------------------------
   // Get number of activated aerosol for ice nucleation (naai)
   // from ice nucleation
@@ -144,12 +150,15 @@ void compute_nucleate_ice_tendencies(const mam4::NucleateIce &nucleate_ice, haer
         const mam4::Tendencies tends(nlev); // not used
         const mam4::AeroConfig aero_config;
         const Real t = 0; // not used
-        nucleate_ice.compute_tendencies(aero_config, team, t, dt, haero_atm, surf, progs, diags, tends);
+        nucleate_ice.compute_tendencies(aero_config, team, t, dt, haero_atm, surf, progs, diags,
+                                        tends);
       });
 }
-void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy, const mam_coupling::DryAtmosphere &dry_atmosphere,
-                                 const MAMAci::const_view_2d liqcldf, const MAMAci::const_view_2d liqcldf_prev,
-                                 const int top_lev, const int nlev,
+void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy,
+                                 const mam_coupling::DryAtmosphere &dry_atmosphere,
+                                 const MAMAci::const_view_2d liqcldf,
+                                 const MAMAci::const_view_2d liqcldf_prev, const int top_lev,
+                                 const int nlev,
                                  // output
                                  MAMAci::view_2d cloud_frac, MAMAci::view_2d cloud_frac_prev) {
   MAMAci::const_view_2d qc = dry_atmosphere.qc;
@@ -178,12 +187,14 @@ void store_liquid_cloud_fraction(haero::ThreadTeamPolicy team_policy, const mam_
 void call_function_dropmixnuc(
     haero::ThreadTeamPolicy team_policy, const Real dt, mam_coupling::DryAtmosphere &dry_atmosphere,
     const MAMAci::view_2d rpdel, const MAMAci::const_view_2d kvh_mid, const MAMAci::view_2d kvh_int,
-    const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac, const MAMAci::view_2d cloud_frac_prev,
-    const mam_coupling::AerosolState &dry_aero, const int nlev, const int top_lev, const bool &enable_aero_vertical_mix,
+    const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
+    const MAMAci::view_2d cloud_frac_prev, const mam_coupling::AerosolState &dry_aero,
+    const int nlev, const int top_lev, const bool &enable_aero_vertical_mix,
 
     // Following outputs are all diagnostics
-    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot], MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot],
-    MAMAci::view_2d qcld, MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
+    MAMAci::view_2d coltend[mam4::ndrop::ncnst_tot],
+    MAMAci::view_2d coltend_cw[mam4::ndrop::ncnst_tot], MAMAci::view_2d qcld,
+    MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn,
 
     // ## outputs to be used by other processes ##
@@ -280,12 +291,13 @@ void call_function_dropmixnuc(
 
   Real specdens_amode[maxd_aspectype] = {};
   Real spechygro[maxd_aspectype]      = {};
-  Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {}, num2vol_ratio_min_nmodes[ntot_amode] = {},
-       num2vol_ratio_max_nmodes[ntot_amode] = {};
-  Real aten                                 = 0;
-  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode, numptr_amode, specdens_amode,
-                                   spechygro, mam_idx, mam_cnst_idx);
-  mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten, num2vol_ratio_min_nmodes, num2vol_ratio_max_nmodes);
+  Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
+       num2vol_ratio_min_nmodes[ntot_amode] = {}, num2vol_ratio_max_nmodes[ntot_amode] = {};
+  Real aten = 0;
+  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode, numptr_amode,
+                                   specdens_amode, spechygro, mam_idx, mam_cnst_idx);
+  mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten, num2vol_ratio_min_nmodes,
+                          num2vol_ratio_max_nmodes);
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
@@ -309,7 +321,8 @@ void call_function_dropmixnuc(
         for (int i = 0; i < mam4::aero_model::pcnst; ++i) {
           ptend_q_view[i] = ekat::subview(loc_ptend_q[i], icol);
         }
-        mam4::ColumnView coltend_view[mam4::ndrop::ncnst_tot], coltend_cw_view[mam4::ndrop::ncnst_tot];
+        mam4::ColumnView coltend_view[mam4::ndrop::ncnst_tot],
+            coltend_cw_view[mam4::ndrop::ncnst_tot];
         for (int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
           coltend_view[i]    = ekat::subview(loc_coltend[i], icol);
           coltend_cw_view[i] = ekat::subview(loc_coltend_cw[i], icol);
@@ -332,7 +345,8 @@ void call_function_dropmixnuc(
         const Real bc_top = kvh_mid_col(0);
         const Real bc_bot = kvh_mid_col(nlev - 1);
 
-        CO::compute_interface_values_linear(team, nlev, kvh_mid_col, dz_col, bc_top, bc_bot, kvh_int_col);
+        CO::compute_interface_values_linear(team, nlev, kvh_mid_col, dz_col, bc_top, bc_bot,
+                                            kvh_int_col);
 
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
         constexpr auto pver = mam4::ndrop::pver;
@@ -342,7 +356,8 @@ void call_function_dropmixnuc(
           // get state_q at a grid cell (col,lev)
           // NOTE: The order of species in state_q_at_lev_col
           // is the same as in E3SM state%q array
-          mam4::utils::extract_stateq_from_prognostics(progs_at_col, haero_atm, state_q_at_lev_col, klev);
+          mam4::utils::extract_stateq_from_prognostics(progs_at_col, haero_atm, state_q_at_lev_col,
+                                                       klev);
 
           // get the start index for aerosols species in the state_q array
           int istart = mam4::utils::aero_start_ind();
@@ -369,32 +384,36 @@ void call_function_dropmixnuc(
         });
         team.team_barrier();
         mam4::ndrop::dropmixnuc(
-            team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol), ekat::subview(p_int, icol),
-            ekat::subview(pdel, icol), ekat::subview(rpdel, icol),
+            team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
+            ekat::subview(p_int, icol), ekat::subview(pdel, icol), ekat::subview(rpdel, icol),
             // in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
             ekat::subview(zm, icol), ekat::subview(state_q_work_loc, icol), ekat::subview(nc, icol),
             ekat::subview(kvh_int, icol), // kvh[kk+1]
-            ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode, spechygro, lmassptr_amode,
-            num2vol_ratio_min_nmodes, num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig, alogsig, aten,
-            mam_idx, mam_cnst_idx, local_enable_aero_vertical_mix, ekat::subview(qcld, icol), // out
-            ekat::subview(wsub, icol),                                                        // in
-            ekat::subview(cloud_frac_prev, icol),                                             // in
-            qqcw_view,                                                                        // inout
-            ptend_q_view, ekat::subview(tendnd, icol), ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
-            ekat::subview(ndropmix, icol), ekat::subview(nsource, icol), ekat::subview(wtke, icol),
-            ekat::subview(ccn, icol), coltend_view, coltend_cw_view, top_lev,
+            ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode, spechygro,
+            lmassptr_amode, num2vol_ratio_min_nmodes, num2vol_ratio_max_nmodes, numptr_amode,
+            nspec_amode, exp45logsig, alogsig, aten, mam_idx, mam_cnst_idx,
+            local_enable_aero_vertical_mix, ekat::subview(qcld, icol), // out
+            ekat::subview(wsub, icol),                                 // in
+            ekat::subview(cloud_frac_prev, icol),                      // in
+            qqcw_view,                                                 // inout
+            ptend_q_view, ekat::subview(tendnd, icol), ekat::subview(factnum, icol),
+            ekat::subview(ndropcol, icol), ekat::subview(ndropmix, icol),
+            ekat::subview(nsource, icol), ekat::subview(wtke, icol), ekat::subview(ccn, icol),
+            coltend_view, coltend_cw_view, top_lev,
             // work arrays
             raercol_cw_view, raercol_view, ekat::subview(nact, icol), ekat::subview(mact, icol),
             ekat::subview(eddy_diff, icol), ekat::subview(zn, icol), ekat::subview(csbot, icol),
             ekat::subview(zs, icol), ekat::subview(overlapp, icol), ekat::subview(overlapm, icol),
-            ekat::subview(eddy_diff_kp, icol), ekat::subview(eddy_diff_km, icol), ekat::subview(qncld, icol),
-            ekat::subview(srcn, icol), ekat::subview(source, icol), ekat::subview(dz, icol),
-            ekat::subview(csbot_cscen, icol), ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
+            ekat::subview(eddy_diff_kp, icol), ekat::subview(eddy_diff_km, icol),
+            ekat::subview(qncld, icol), ekat::subview(srcn, icol), ekat::subview(source, icol),
+            ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
+            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
       });
 }
 
 // Update cloud borne aerosols
-void update_cloud_borne_aerosols(const MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot], const int nlev,
+void update_cloud_borne_aerosols(const MAMAci::view_2d qqcw_fld_work[mam4::ndrop::ncnst_tot],
+                                 const int nlev,
                                  // output
                                  mam_coupling::AerosolState &dry_aero) {
   int ind_qqcw = 0;
@@ -412,7 +431,8 @@ void update_cloud_borne_aerosols(const MAMAci::view_2d qqcw_fld_work[mam4::ndrop
 
 // Update interstitial aerosols using tendencies- cols and levs
 void update_interstitial_aerosols(haero::ThreadTeamPolicy team_policy,
-                                  const MAMAci::view_2d ptend_q[mam4::aero_model::pcnst], const int nlev, const Real dt,
+                                  const MAMAci::view_2d ptend_q[mam4::aero_model::pcnst],
+                                  const int nlev, const Real dt,
                                   // output
                                   mam_coupling::AerosolState &dry_aero) {
   // starting index of ptend_q array (for MAM4, pcnst=40, ncnst_tot=25 )
@@ -430,8 +450,9 @@ void update_interstitial_aerosols(haero::ThreadTeamPolicy team_policy,
             team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
               const int icol = team.league_rank();
               // update values for all levs at this column
-              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev),
-                                   [&](int kk) { aero_mmr(icol, kk) += ptend_view(icol, kk) * dt; });
+              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+                aero_mmr(icol, kk) += ptend_view(icol, kk) * dt;
+              });
             });
         // update index for the next species (only if aero_mmr.data() is True)
         ++s_idx;
@@ -451,8 +472,9 @@ void update_interstitial_aerosols(haero::ThreadTeamPolicy team_policy,
 }
 
 void call_hetfrz_compute_tendencies(haero::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
-                                    mam_coupling::DryAtmosphere &dry_atm_, mam_coupling::AerosolState &dry_aero_,
-                                    MAMAci::view_3d factnum, const double dt, const int nlev,
+                                    mam_coupling::DryAtmosphere &dry_atm_,
+                                    mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
+                                    const double dt, const int nlev,
                                     // output
                                     MAMAci::view_2d hetfrz_immersion_nucleation_tend,
                                     MAMAci::view_2d hetfrz_contact_nucleation_tend,
@@ -488,9 +510,11 @@ void call_hetfrz_compute_tendencies(haero::ThreadTeamPolicy team_policy, mam4::H
 
         // These are the output tendencies from heterogeneous freezing that need
         // to be added correctly to the cloud-micorphysics scheme.
-        diags.hetfrz_immersion_nucleation_tend = ekat::subview(hetfrz_immersion_nucleation_tend, icol);
-        diags.hetfrz_contact_nucleation_tend   = ekat::subview(hetfrz_contact_nucleation_tend, icol);
-        diags.hetfrz_depostion_nucleation_tend = ekat::subview(hetfrz_depostion_nucleation_tend, icol);
+        diags.hetfrz_immersion_nucleation_tend =
+            ekat::subview(hetfrz_immersion_nucleation_tend, icol);
+        diags.hetfrz_contact_nucleation_tend = ekat::subview(hetfrz_contact_nucleation_tend, icol);
+        diags.hetfrz_depostion_nucleation_tend =
+            ekat::subview(hetfrz_depostion_nucleation_tend, icol);
 
         diags.bc_num                    = ekat::subview(diagnostic_scratch[0], icol);
         diags.dst1_num                  = ekat::subview(diagnostic_scratch[1], icol);
@@ -538,8 +562,9 @@ void call_hetfrz_compute_tendencies(haero::ThreadTeamPolicy team_policy, mam4::H
 
         // assign cloud fraction
         constexpr auto pver = mam4::ndrop::pver;
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
-                             [&](int klev) { diags.stratiform_cloud_fraction(klev) = haero_atm.cloud_fraction(klev); });
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver), [&](int klev) {
+          diags.stratiform_cloud_fraction(klev) = haero_atm.cloud_fraction(klev);
+        });
         //-------------------------------------------------------------
         // Heterogeneous freezing
         // frzimm, frzcnt, frzdep are the outputs of

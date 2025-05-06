@@ -6,7 +6,8 @@ namespace scream {
 namespace shoc {
 
 template <>
-void Functions<Real, DefaultDevice>::check_tke_disp(const Int &shcol, const Int &nlev, const view_2d<Spack> &tke) {
+void Functions<Real, DefaultDevice>::check_tke_disp(const Int &shcol, const Int &nlev,
+                                                    const view_2d<Spack> &tke) {
   using ExeSpace = typename KT::ExeSpace;
 
   const auto nlev_packs = ekat::npack<Spack>(nlev);

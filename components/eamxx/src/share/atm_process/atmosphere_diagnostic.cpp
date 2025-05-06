@@ -2,16 +2,19 @@
 
 namespace scream {
 
-AtmosphereDiagnostic::AtmosphereDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+AtmosphereDiagnostic::AtmosphereDiagnostic(const ekat::Comm &comm,
+                                           const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
   // Nothing to do here
 }
 
 // Function to retrieve the diagnostic output which is stored in m_diagnostic_output
 Field AtmosphereDiagnostic::get_diagnostic() const {
-  EKAT_REQUIRE_MSG(m_diagnostic_output.is_allocated(),
-                   "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
-                   "       We chose to throw an error, but if this is a legit use, please, contact developers.\n");
+  EKAT_REQUIRE_MSG(
+      m_diagnostic_output.is_allocated(),
+      "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
+      "       We chose to throw an error, but if this is a legit use, please, contact "
+      "developers.\n");
   return m_diagnostic_output;
 }
 
@@ -82,7 +85,8 @@ void AtmosphereDiagnostic::set_computed_field_impl(const Field & /* f */) {
 }
 
 void AtmosphereDiagnostic::set_computed_group_impl(const FieldGroup & /* group */) {
-  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute field groups. See " + name() + ".\n");
+  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute field groups. See " + name() +
+                 ".\n");
 }
 
 } // namespace scream

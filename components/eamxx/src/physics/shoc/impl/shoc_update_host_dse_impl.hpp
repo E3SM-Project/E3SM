@@ -7,11 +7,10 @@ namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::update_host_dse(const MemberType &team, const Int &nlev, const uview_1d<const Spack> &thlm,
-                                 const uview_1d<const Spack> &shoc_ql, const uview_1d<const Spack> &inv_exner,
-                                 const uview_1d<const Spack> &zt_grid, const Scalar &phis,
-                                 const uview_1d<Spack> &host_dse) {
+KOKKOS_FUNCTION void Functions<S, D>::update_host_dse(
+    const MemberType &team, const Int &nlev, const uview_1d<const Spack> &thlm,
+    const uview_1d<const Spack> &shoc_ql, const uview_1d<const Spack> &inv_exner,
+    const uview_1d<const Spack> &zt_grid, const Scalar &phis, const uview_1d<Spack> &host_dse) {
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
   // Constants used
