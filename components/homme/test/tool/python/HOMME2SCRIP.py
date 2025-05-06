@@ -23,8 +23,10 @@ python HOMME2SCRIP.py -i <src_file>
                       --np <np>
 
 Purpose:
-  read a HOMME grid template file and convert to SCRIP format
+  This script reads a HOMME grid template file and writes out a SCRIP format grid description file of the np4/GLL grid.
   
+  HOMME np4 grid template files are produced by a two step procedure, which first requires running homme_tool, and then this script to convert the output into SCRIP format. This procedure is only needed for np4 files due to their use of vertex data. For cell centered pg2 files, one should instead use TempestRemap to create a grid description file. This is particularly useful when remapping topography data with cube_to_target, which can be much faster than remapping with tools like NCO due to the large size of the input topography data.
+
 Environment
   
   This requires libraries such as xarray, which included in the E3SM unified environment:
