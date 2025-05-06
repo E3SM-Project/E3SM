@@ -13,7 +13,7 @@
 !> \date   May 2025
 !> \details
 !>  Computes a precipitation factor to multiply the fresh water flux
-!>  due to precipitation uniformly to insure a balance of fresh water
+!>  due to precipitation uniformly to ensure a balance of fresh water
 !>  at the ocean surface.
 !>  Designed following precip_adjustment subroutine located at:
 !>    https://github.com/ESCOMP/POP2-CESM/blob/master/source/forcing_sfwf.F90
