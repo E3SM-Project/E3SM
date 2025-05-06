@@ -128,7 +128,8 @@ std::string TimeStamp::get_time_string () const {
 }
 
 double TimeStamp::frac_of_year_in_days () const {
-  double doy = (m_date[2]-1) + sec_of_day() / 86400.0; // WARNING: avoid integer division
+  double doy = m_date[2]-1;
+  doy += (sec_of_day() + m_sec_fraction) / 86400.0;
   for (int m=1; m<m_date[1]; ++m) {
     doy += days_in_month(m_date[0],m);
   }
@@ -152,17 +153,25 @@ TimeStamp TimeStamp::curr_month_beg () const
   return TimeStamp (date,{0,0,0});
 }
 
-TimeStamp& TimeStamp::operator+=(const double seconds) {
+TimeStamp& TimeStamp::operator+=(double seconds) {
   // Sanity checks
-  // Note: (x-int(x)) only works for x small enough that can be stored in an int,
-  //       but that should be the case here, for use cases in EAMxx.
   EKAT_REQUIRE_MSG (seconds>=0, "Error! Cannot rewind time.\n");
-  EKAT_REQUIRE_MSG ((seconds-round(seconds))<std::numeric_limits<double>::epsilon()*10,
-      "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds << "\n");
-
   EKAT_REQUIRE_MSG(is_valid(),
       "Error! The time stamp contains uninitialized values.\n"
       "       To use this object, use operator= with a valid rhs first.\n");
+
+  // Allow updating with fractional seconds (useful in case of subcycling)
+  // The time stamp will never print fractions, but will allow them, keeping
+  // a runningy tally. To avoid carrying rounding for too long, whenever we get
+  // within 1ms of a round second, we reset the tally to 0 and round the seconds
+  m_sec_fraction += seconds;
+  m_sec_fraction = std::modf(m_sec_fraction,&seconds);
+  if (m_sec_fraction<1e-3) {
+    m_sec_fraction = 0;
+  } else if (m_sec_fraction>0.999) {
+    m_sec_fraction = 0;
+    seconds += 1;
+  }
 
   auto& sec  = m_time[2];
   auto& min  = m_time[1];
@@ -238,7 +247,7 @@ bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
   return false;
 }
 
-TimeStamp operator+ (const TimeStamp& ts, const int dt) {
+TimeStamp operator+ (const TimeStamp& ts, const double dt) {
   TimeStamp sum = ts;
   sum += dt;
   return sum;
