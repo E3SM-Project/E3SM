@@ -92,9 +92,6 @@ TEST_CASE("dyn_grid_io")
   // The FM we will manually remap onto
   auto fm_ctrl= std::make_shared<FieldManager> (phys_grid);
 
-  fm->registration_begins();
-  fm_ctrl->registration_begins();
-
   const int ps = HOMMEXX_PACK_SIZE;
   util::TimeStamp t0({2000,1,1},{0,0,0});
 
@@ -120,7 +117,6 @@ TEST_CASE("dyn_grid_io")
   std::uniform_real_distribution<Real> pdf(0.01,100.0);
   auto engine = setup_random_test(&comm);
   auto dyn2ctrl = gm->create_remapper(dyn_grid,phys_grid);
-  dyn2ctrl->registration_begins();
   for (const auto& fn : fnames) {
     auto fd = fm->get_field(fn,dyn_grid->name());
     auto fc = fm_ctrl->get_field(fn,phys_grid->name());

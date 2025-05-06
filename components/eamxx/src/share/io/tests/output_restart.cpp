@@ -182,7 +182,6 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   FieldIdentifier fid5("field_5",rad_vector_3d,m*m, gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR{fid1,SL{"output"}});
   fm->register_field(FR{fid2,SL{"output"}});
   fm->register_field(FR{fid3,SL{"output"}});
@@ -203,9 +202,7 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
 
 std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
-  auto copy = std::make_shared<FieldManager>(src->get_grid());
-  copy->registration_begins();
-  copy->registration_ends();
+  auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
     copy->add_field(it.second->clone());
   }

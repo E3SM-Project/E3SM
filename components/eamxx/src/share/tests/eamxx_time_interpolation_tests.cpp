@@ -344,9 +344,7 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
     FL({COL,CMP,ILEV}, {nlcols,2,nlevs+1})
   };
 
-  auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
+  auto fm = std::make_shared<FieldManager>(grid,RepoState::Closed);
 
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {

@@ -68,9 +68,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   const auto dofs_gids = grid->get_dofs_gids().get_view<const int*,Host>();
   std::vector<std::string> fnames = {"lwdn"};
   FieldLayout layout({COL},{nlcols});
-  auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
+  auto fm = std::make_shared<FieldManager>(grid,RepoState::Closed);
   auto nondim = Units::nondimensional();
   for (auto name : fnames) {
     FieldIdentifier fid(name,layout,nondim,grid->name());

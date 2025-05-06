@@ -463,11 +463,6 @@ TEST_CASE("field_mgr", "") {
   auto gm = std::make_shared<LibraryGridsManager>(g1, g2);
   FieldManager field_mgr(gm);
 
-  // Should not be able to register fields yet
-  REQUIRE_THROWS(field_mgr.register_field(FR(fid1_1)));
-
-  field_mgr.registration_begins();
-
   // === Valid registration calls === //
   field_mgr.register_field(FR(fid1_1,Pack1::n));
   field_mgr.register_field(FR{fid1_2,Pack2::n});
@@ -587,8 +582,6 @@ TEST_CASE("tracers_group", "") {
   auto g2 = create_point_grid(gn2,ncols2*comm.size(),nlevs,comm);
   auto gm = std::make_shared<LibraryGridsManager>(g1, g2);
   FieldManager field_mgr(gm);
-
-  field_mgr.registration_begins();
 
   using los = std::list<std::string>;
   field_mgr.register_field(FR{qv_id,"tracers"});

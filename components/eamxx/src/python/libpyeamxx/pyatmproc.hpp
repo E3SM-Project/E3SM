@@ -172,9 +172,7 @@ struct PyAtmProc {
     auto gm = PySession::get().gm;
     std::map<std::string,std::shared_ptr<FieldManager>> fms;
     for (auto it : gm->get_repo()) {
-      fms[it.first] = std::make_shared<FieldManager>(it.second);
-      fms[it.first]->registration_begins();
-      fms[it.first]->registration_ends();
+      fms[it.first] = std::make_shared<FieldManager>(it.second,RepoState::Closed);
     }
     for (auto it : fields) {
       const auto& gn = it.second.f.get_header().get_identifier().get_grid_name();

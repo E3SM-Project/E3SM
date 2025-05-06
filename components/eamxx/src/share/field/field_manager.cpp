@@ -4,15 +4,18 @@ namespace scream
 {
 
 FieldManager::
-FieldManager (const std::shared_ptr<const AbstractGrid>& grid)
- : FieldManager (std::make_shared<LibraryGridsManager>(grid))
+FieldManager (const std::shared_ptr<const AbstractGrid>& grid,
+              const RepoState state)
+ : FieldManager (std::make_shared<LibraryGridsManager>(grid),state)
 {
   // Nothing else to do
 }
 
 FieldManager::
-FieldManager (const std::shared_ptr<const GridsManager>& gm)
- : m_grids_mgr (gm)
+FieldManager (const std::shared_ptr<const GridsManager>& gm,
+              const RepoState state)
+ : m_repo_state (state)
+ , m_grids_mgr  (gm)
 {
   EKAT_REQUIRE_MSG (m_grids_mgr!=nullptr,
       "Error! Input grids manager pointer is not valid.");
@@ -24,19 +27,21 @@ FieldManager (const std::shared_ptr<const GridsManager>& gm)
     m_group_requests[gname] = std::map<std::string, std::set<GroupRequest>>();
   }
 
-  m_repo_state = RepoState::Clean;
+  if (m_repo_state==RepoState::Closed) {
+    registration_ends();
+  }
 }
 
 void FieldManager::register_field (const FieldRequest& req)
 {
+  // Sanity checks
+  EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Closed,
+      "Error! Repo state is not 'Open' anymore. Did you already called 'registration_ends()'?\n");
+
+  m_repo_state = RepoState::Open;
+
   const auto& id = req.fid;
   const auto& grid_name = id.get_grid_name();
-
-  // Sanity checks
-  EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Clean,
-      "Error! Repo state is not 'Open' yet. You must call registration_begins() first.\n");
-  EKAT_REQUIRE_MSG (m_repo_state!=RepoState::Closed,
-      "Error! Repo state is not 'Open' anymore. You already called registration_ends().\n");
 
   // Make sure this FM contains a grid corresponding to the input grid name
   EKAT_REQUIRE_MSG(m_grids_mgr->has_grid(grid_name),
@@ -345,12 +350,6 @@ init_fields_time_stamp (const util::TimeStamp& t0)
       field_it.second->get_header().get_tracking().update_time_stamp(t0);
     }
   }
-}
-
-void FieldManager::registration_begins ()
-{
-  // Update the state of the repo
-  m_repo_state = RepoState::Open;
 }
 
 void FieldManager::registration_ends ()

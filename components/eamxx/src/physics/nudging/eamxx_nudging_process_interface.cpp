@@ -236,7 +236,6 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
   const auto layout_tmp = grid_tmp->get_3d_scalar_layout(true);
   const auto layout_atm = m_grid->get_3d_scalar_layout(true);
-  m_horiz_remapper->registration_begins();
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     std::string name_tmp = name + "_tmp";

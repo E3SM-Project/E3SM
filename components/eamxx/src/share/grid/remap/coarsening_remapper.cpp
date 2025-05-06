@@ -27,7 +27,6 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     // Replicate the src grid geo data in the tgt grid. We use this remapper to do
     // the remapping (if needed), and clean it up afterwards.
     const auto& src_geo_data_names = src_grid->get_geometry_data_names();
-    registration_begins();
     for (const auto& name : src_geo_data_names) {
       // Since different remappers may share the same data (if the map file is the same)
       // the coarse grid may already have the geo data.

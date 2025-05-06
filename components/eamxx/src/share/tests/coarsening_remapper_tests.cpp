@@ -337,7 +337,6 @@ TEST_CASE("coarsening_remap")
   //     Register fields in the remapper    //
   // -------------------------------------- //
 
-  remap->registration_begins();
   for (size_t i=0; i<tgt_f.size(); ++i) {
     remap->register_field(src_f[i],tgt_f[i]);
   }

@@ -515,14 +515,11 @@ setup_vert_remapper (const RemapData& data)
 void DataInterpolation::register_fields_in_remappers ()
 {
   // Register fields in the remappers. Vertical first, since we only have model-grid fields
-  m_vert_remapper->registration_begins();
   for (int i=0; i<m_nfields; ++i) {
     m_vert_remapper->register_field_from_tgt(m_fields[i]);
   }
   m_vert_remapper->registration_ends();
 
-  m_horiz_remapper_beg->registration_begins();
-  m_horiz_remapper_end->registration_begins();
   for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
     m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));

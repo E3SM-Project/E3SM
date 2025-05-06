@@ -12,12 +12,8 @@ TimeInterpolation::TimeInterpolation(
 )
 {
   // Given the grid initialize field managers to store interpolation data
-  m_fm_time0 = std::make_shared<FieldManager>(grid);
-  m_fm_time1 = std::make_shared<FieldManager>(grid);
-  m_fm_time0->registration_begins();
-  m_fm_time0->registration_ends();
-  m_fm_time1->registration_begins();
-  m_fm_time1->registration_ends();
+  m_fm_time0 = std::make_shared<FieldManager>(grid,RepoState::Closed);
+  m_fm_time1 = std::make_shared<FieldManager>(grid,RepoState::Closed);
 }
 /*-----------------------------------------------------------------------------------------------*/
 TimeInterpolation::TimeInterpolation(
