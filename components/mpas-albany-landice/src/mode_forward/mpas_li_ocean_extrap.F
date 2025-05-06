@@ -95,7 +95,7 @@ contains
       logical, pointer :: config_ocean_data_extrapolation
       real(kind=RKIND), pointer :: invalid_value_TF
       logical, pointer :: config_recalculate_thermal_forcing
-      character (len=StrKIND), pointer :: config_TF_param_type
+      logical, pointer :: config_extrap_sill_blocking
       real(kind=RKIND), pointer :: config_sea_level
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: scratchPool, geometryPool, meshPool, extrapOceanDataPool
@@ -134,7 +134,7 @@ contains
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
          call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
-         call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
+         call mpas_pool_get_config(liConfigs, 'config_extrap_sill_blocking', config_extrap_sill_blocking)
          call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -350,8 +350,7 @@ contains
                   if ( (bedTopography(iCell) < layerCenter) .or. ((iLayer == 1) .and. (bedTopography(iCell) < 0.0_RKIND)) )then
                      availOceanMask(iLayer,iCell) = 1
                      
-                  elseif ((config_recalculate_thermal_forcing) .and. &
-                            ( (config_TF_param_type == 'ISMIP6retreat') .or. (config_TF_param_type == 'AMretreat'))) then
+                  elseif ((config_recalculate_thermal_forcing) .and. (.not. config_extrap_sill_blocking)) then
                         
                         ! If recalculating thermal forcing with ISMIP6retreat or AMretreat methods, then ignore
                         ! topography and allow for translation of water properties directly to glacier face.
@@ -783,9 +782,9 @@ contains
 !> \date   September 2024
 !> \details
 !> Use extrapolated temperature and salt to recalculate thermal forcing 
-!> throughout the extrapolated region. User specifies which thermal forcing 
-!> parameterization from Hager et al. (2023) to use with
-!> config_TF_param_type. Output thermal forcing fields are 2D.
+!> throughout the extrapolated region. If config_TF_iceberg_melt is true,
+!> then ocean temperature in the upper water column will first be 
+!> artificially cooled to immitate iceberg melt-driven cooling.
 !-----------------------------------------------------------------------
 
    subroutine recalculate_thermal_forcing(domain, err)
@@ -809,7 +808,7 @@ contains
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, extrapOceanDataPool
-      character (len=StrKIND), pointer :: config_TF_param_type
+      character (len=StrKIND), pointer :: config_TF_iceberg_melt
       real (kind=RKIND), pointer :: config_TF_iceberg_depth
       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
       real (kind=RKIND), dimension(:,:), pointer :: MPAS_3dOceanTemperature
@@ -829,7 +828,7 @@ contains
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
-      call mpas_pool_get_config(liConfigs, 'config_TF_param_type', config_TF_param_type)
+      call mpas_pool_get_config(liConfigs, 'config_TF_iceberg_melt', config_TF_iceberg_melt)
       call mpas_pool_get_config(liConfigs, 'config_TF_iceberg_depth', config_TF_iceberg_depth)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
       call mpas_pool_get_array(extrapOceanDataPool, 'MPAS_3dOceanTemperature', MPAS_3dOceanTemperature)
@@ -846,16 +845,14 @@ contains
       do iCell = 1, nCells
         !Main difference between these parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
         !Difference between '...melt' and '...retreat' parameterizations happens in main body of mpas_li_ocean_extrap.F
-        if ( (config_TF_param_type == 'AMretreat') .or. (config_TF_param_type == 'ISMIP6retreat') &
-                .or. (config_TF_param_type == 'AMmelt') .or. (config_TF_param_type == 'ISMIP6melt') &
-                .or. ((config_TF_param_type == 'AMfit') .and. (icebergFjordMask(iCell)) == 0) ) then
+        if (config_TF_iceberg_melt == 'off') then
 
             ! From Jenkins 2011 and Slater 2020
             do iLayer = 1, nISMIP6OceanLayers
                 ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = MPAS_3dOceanTemperature(iLayer,iCell) - (gamma1 * MPAS_3dOceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
             enddo
 
-        elseif ( (config_TF_param_type == 'AMberg') .or. ( (config_TF_param_type == 'AMfit') .and. (icebergFjordMask(iCell) == 1)) ) then
+        elseif ( (config_TF_iceberg_melt == 'on') .or. ( (config_TF_iceberg_melt == 'mask') .and. (icebergFjordMask(iCell) == 1)) ) then
             ! Alter 3d profile following the iceberg Parameterization from Hager 2023 for fjord where icebergs are prevalent
             ! find cell just above config_TF_iceberg_depth
             icebergCellVertID = 0

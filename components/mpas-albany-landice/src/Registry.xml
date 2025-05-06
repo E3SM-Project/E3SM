@@ -461,10 +461,18 @@
              description="If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options in config_thermal_forcing_param_type. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true."
              possible_values=".true. or .false."
       />
-		<nml_option name="config_TF_param_type" type="character" default_value="ISMIP6melt" units="unitless"
-				  description="Name of ocean thermal forcing parameterization method, as outlined in Hager et al. (2024). 'ISMIP6retreat' and 'AMretreat' ignore bathymetry and icebergs during extrapolation. 'ISMIP6melt' and 'AMmelt' account for bathymetry in extrapolation. 'AMberg' accounts for bathymetry and iceberg meltwater in extrapolation. 'AM' indicates a depth averaged thermal forcing, while 'ISMIP6retreat uses an average thermal forcing between 200-500m depth, and thermal forcing in 'ISMIP6melt' is taken at the grounding line. A final option, 'AMfit' uses input field icebergFjordMask to assign 'AMberg' to iceberg-laden fjords, and 'AMmelt' otherwise."
-				  possible_values="'ISMIP6retreat','AMretreat','ISMIP6melt','AMmelt','AMberg','AMfit'"
+		<nml_option name="config_extrap_sill_blocking" type="logical" default_value=".true." units="unitless"
+				  description="Option to account for sill blocking of external water when extrapolated ocean properties to glacier termini. config_ocean_data_extrapolation and config_recalculate_thermal_forcing must both be true for this option to be valid. If only config_ocean_data_extrapolation is true while config_recalculate_thermal_forcing is false, then sill blocking will automatically be activated during extrapolation."
+				  possible_values=".true. or .false."
 	   />
+		<nml_option name="config_TF_vertical_calc" type="character" default_value="seafloor" units="unitless"
+				  description="Method for calculating 2D thermal forcing from the 3d field. 'seafloor' uses the thermal forcing value immediately above the ocean floor (at grounding line depth); 'average' averages the full water column; '200-500' averages only between 200 - 500 m depth"
+		        possible_values="'seafloor', 'average', '200-500'"		  
+		/>
+	   <nml_option name="config_TF_iceberg_melt" type="character" default_value="none" units="unitless"
+				  description="Option to modify ocean temperature in the upper portion of the water column (above depth specified by config_TF_iceberg_depth) to resemble iceberg melt-driven cooling. Done before calculating the 3d thermal forcing field if both config_ocean_data_extrapolation and config_recalculate_thermal_forcing are also true. 'on' applies modification unilaterally, while 'mask' uses binary mask 'icebergFjordMask' to apply the correction. "
+				  possible_values="'off', 'on', 'mask'"		  
+		/>
 		<nml_option name="config_TF_iceberg_depth" type="real" default_value="-175.0" units="m"
 				  description="Depth above which to iceberg meltwater is important. If config_TF_param_type is set to 'AMberg' or 'AMfit', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024)."
 				  possible_values="Any negative real value"
