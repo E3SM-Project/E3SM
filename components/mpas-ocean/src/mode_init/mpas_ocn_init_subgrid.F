@@ -288,14 +288,7 @@ contains
          cycle
       endif
 
-      if ( abs(bathymetryMin - bathymetryMax) > 100.0*eps ) then
-          subgridSshCellTableRange(1,iCell) = -maxval(subgridBathymetryValues(1:nSubgridCell)) + subgrid_thin_layer
-          subgridSshCellTableRange(2,iCell) = -minval(subgridBathymetryValues(1:nSubgridCell))
-      else
-          ! flat bathy !
-          subgridSshCellTableRange(1,iCell) =  -bathymetryMin + subgrid_thin_layer
-          subgridSshCellTableRange(2,iCell) =  -bathymetryMin + 2.0*config_drying_min_cell_height  
-      endif 
+      call ocn_init_set_table_range(nSubgridCell, subgridBathymetryValues, subgridSshCellTableRange(:,iCell))
 
       ! Evaluate subgrid bathymetry
       !---------------------------------------------------------------
@@ -406,8 +399,7 @@ contains
       if ( .NOT. subgrid_edge_bathymetry_max_pixel) then
          ! Evaluate bounds of look-up table range
          !---------------------------------------------------------------
-         subgridSshEdgeTableRange(1,iEdge) = -maxval(subgridBathymetryValues(1:nSubgridEdge)) + subgrid_thin_layer
-         subgridSshEdgeTableRange(2,iEdge) = -minval(subgridBathymetryValues(1:nSubgridEdge))
+         call ocn_init_set_table_range(nSubgridEdge, subgridBathymetryValues, subgridSshEdgeTableRange(:,iEdge))
 
          ! Evaluate subgrid bathymetry
          !---------------------------------------------------------------
@@ -437,8 +429,7 @@ contains
 
          ! Evaluate bounds of look-up table range
          !---------------------------------------------------------------
-         subgridSshEdgeTableRange(1,iEdge) = -maxval(CellEdgeBathymetryValues(3,1:nSubgridCellEdge)) + subgrid_thin_layer
-         subgridSshEdgeTableRange(2,iEdge) = -minval(CellEdgeBathymetryValues(3,1:nSubgridCellEdge))
+         call ocn_init_set_table_range(nSubgridCellEdge, cellEdgeBathymetryValues(3,:), subgridSshEdgeTableRange(:,iEdge))
 
          ! Evaluate bounds of look-up table range
          !---------------------------------------------------------------
@@ -524,8 +515,7 @@ vertex: do iVertex = 1,nVerticesSolve
 
       ! Evaluate bounds of look-up table range
       !---------------------------------------------------------------
-      subgridSshVertexTableRange(1,iVertex) = -maxval(subgridBathymetryValues(1:nSubgridVertex)) + subgrid_thin_layer
-      subgridSshVertexTableRange(2,iVertex) = -minval(subgridBathymetryValues(1:nSubgridVertex))
+      call ocn_init_set_table_range(nSubgridVertex, subgridBathymetryValues, subgridSshVertexTableRange(:,iVertex))
 
       ! Evaluate subgrid bathymetry
       !---------------------------------------------------------------
@@ -553,6 +543,54 @@ vertex: do iVertex = 1,nVerticesSolve
 
     return ;  
   end subroutine ocn_init_subgrid_calculations!}}}
+
+!***********************************************************************
+!
+!  routine ocn_init_set_table_range
+!
+!> \brief   Set range for subgrid table
+!> \author  Steven Brus 
+!> \date    March 2025
+!> \details Set the upper and lower limits of the subgrid lookup table
+!>          range. Default to fully dry/fully wet limits, but restrict
+!>          to expected range if default range is too large 
+!>  
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_set_table_range(nSubgridCell, subgridBathymetryValues, subgridSshCellTableRange)!{{{
+
+      implicit none
+
+      integer, intent(in) :: nSubgridCell
+      real (kind=RKIND), dimension(:), intent(in) :: subgridBathymetryValues
+      real (kind=RKIND), dimension(:), intent(out) :: subgridSshCellTableRange
+
+      real (kind=RKIND) :: bathymetryMin, bathymetryMax
+
+   !--------------------------------------------------------------------
+
+      bathymetryMin = maxval( subgridBathymetryValues(1:nSubgridCell) ) 
+      bathymetryMax = minval( subgridBathymetryValues(1:nSubgridCell) )
+
+      if ( abs(bathymetryMin - bathymetryMax) > 100.0_RKIND*eps ) then
+          subgridSshCellTableRange(1) = -bathymetryMin + subgrid_thin_layer
+          subgridSshCellTableRange(2) = -bathymetryMax
+      else
+          ! flat bathy !
+          subgridSshCellTableRange(1) =  -bathymetryMin + subgrid_thin_layer
+          subgridSshCellTableRange(2) =  -bathymetryMin + 2.0_RKIND*config_drying_min_cell_height  
+      endif 
+
+      if (subgridSshCellTableRange(1) < -8.0_RKIND) then
+          subgridSshCellTableRange(1) = -8.0_RKIND
+      endif
+
+      if (subgridSshCellTableRange(2) > 8.0_RKIND) then
+          subgridSshCellTableRange(2) = 8.0_RKIND
+      endif
+
+   end subroutine ocn_init_set_table_range!}}}
 
 !***********************************************************************
 !
