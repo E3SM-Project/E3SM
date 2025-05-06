@@ -7,7 +7,7 @@ Most legacy functionality is reproduced
 Created May, 2025 by Walter Hannah (LLNL) 
 '''
 #---------------------------------------------------------------------------------------------------
-import datetime, os, numpy as np, xarray as xr, numba, itertools
+import datetime, os, numpy as np, xarray as xr
 user, host = os.getenv('USER'), os.getenv('HOST')
 source_code_meta = 'HOMME2SCRIP.py'
 output_netcdf_type = 'NETCDF3_64BIT_DATA'
