@@ -588,6 +588,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_EAM.*_ELM.*MPASO">8</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
