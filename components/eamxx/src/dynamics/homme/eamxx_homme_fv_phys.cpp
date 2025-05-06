@@ -278,7 +278,6 @@ void HommeDynamics::fv_phys_rrtmgp_active_gases_remap (const RunType run_type) {
       for (const auto& e : trace_gases_workaround.get_active_gases())
         create_helper_field(e, {EL,GP,GP,LEV}, {nelem,NGP,NGP,nlev}, dgn);
       auto r = trace_gases_workaround.get_remapper();
-      r->registration_begins();
       for (const auto& e : trace_gases_workaround.get_active_gases())
         r->register_field(get_field_in(e, rgn), m_helper_fields.at(e));
       r->registration_ends();

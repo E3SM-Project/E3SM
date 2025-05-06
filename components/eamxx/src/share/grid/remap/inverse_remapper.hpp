@@ -53,7 +53,6 @@ protected:
   }
 
   void registration_ends_impl () override {
-    m_remapper->registration_begins();
     for (int i=0; i<m_num_fields; ++i) {
       m_remapper->register_field(m_tgt_fields[i],m_src_fields[i]);
     }

@@ -198,7 +198,6 @@ TEST_CASE("remap", "") {
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-  remapper->registration_begins();
   remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);
@@ -739,7 +738,6 @@ TEST_CASE("combo_remap", "") {
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-  remapper->registration_begins();
   remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);

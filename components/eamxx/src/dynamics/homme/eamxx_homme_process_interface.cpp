@@ -388,8 +388,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     fv_phys_initialize_impl();
   } else {
     // Setup the p2d and d2p remappers
-    m_p2d_remapper->registration_begins();
-    m_d2p_remapper->registration_begins();
 
     // ftype==FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
@@ -996,7 +994,6 @@ void HommeDynamics::restart_homme_state () {
     return;
   }
 
-  m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(m_helper_fields.at("FT_phys"),get_internal_field("vtheta_dp_dyn"));
   m_ic_remapper->register_field(m_helper_fields.at("FM_phys"),get_internal_field("v_dyn"));
   m_ic_remapper->register_field(get_field_out("pseudo_density",pgn),get_internal_field("dp3d_dyn"));
@@ -1100,7 +1097,6 @@ void HommeDynamics::initialize_homme_state () {
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
-  m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),get_internal_field("v_dyn"));
   m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),get_internal_field("dp3d_dyn"));
   m_ic_remapper->register_field(get_field_in("ps",rgn),get_internal_field("ps_dyn"));
