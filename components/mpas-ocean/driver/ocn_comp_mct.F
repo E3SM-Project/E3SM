@@ -70,7 +70,7 @@ module ocn_comp_mct
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
    use ocn_scaled_dismf
-!  use ocn_forcing_sfwf 
+   use ocn_scaled_sfwf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -242,6 +242,7 @@ contains
     logical, pointer :: config_sfwf_balance
     integer, pointer :: config_sfwf_balance_type
     real (kind=RKIND), pointer :: config_precip_factor
+    real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
@@ -841,6 +842,10 @@ contains
 
        ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
+
+       ! initialize scaled data freshwater fluxes based on water balance relationship 
+       call ocn_init_scaled_sfwf(domain)
+
     end if
 
 !-----------------------------------------------------------------------
@@ -889,6 +894,10 @@ contains
 
       ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
+
+      ! initialize scaled data freshwater fluxes based on water balance relationship 
+       call ocn_init_scaled_sfwf(domain)
+
     end if
 
     call t_stopf ('mpaso_mct_init')
@@ -924,18 +933,18 @@ contains
     ierr = ior(ierr, ierr_local)
 
     !configuration for freshwater conservation
-    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', &
-                              config_sfwf_balance)
-    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', &
-                              config_sfwf_balance_type)
-    call mpas_pool_get_config(domain % configs, 'config_precip_factor', &
-                              config_precip_factor)
-
+    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
     if (config_sfwf_balance) then 
-       if (config_sfwf_balance_type == 0 ) then 
-          precFactor = config_precip_factor
-       else 
-          precFactor = 1.0
+       call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
+       call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
+       if (config_sfwf_balance_type > 0) then 
+         ! independent of space so should be no need to loop over blocks
+         block_ptr => domain % blocklist
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call MPAS_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+         ! initialize the scaling factor  as config_precip_factor
+         SFWFScalingFactor = config_precip_factor 
+         call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
        end if 
     end if 
 
@@ -1061,6 +1070,11 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
       real (kind=RKIND), pointer :: &
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
+
+      ! freshwater balance adjustment 
+      logical, pointer :: config_sfwf_balance
+      integer, pointer :: config_sfwf_balance_type
+      real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
 
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
@@ -1272,6 +1286,9 @@ contains
         ! update scaled data ice-shelf melt fluxes based on remove ice runoff
         call ocn_update_scaled_dismf(domain)
 
+        ! update scalling factors for freshwater fluxes 
+        call ocn_update_scaling_factor(domain)
+
          if (debugOn) call mpas_log_write('   Computing analysis members')
          call ocn_analysis_compute(domain_ptr, ierr)
          if (iam==0.and.debugOn) then
@@ -1378,6 +1395,19 @@ contains
          call MPAS_pool_get_array(forcingPool, "runningMeanRemovedIceRunoff", &
                                   runningMeanRemovedIceRunoff)
          call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
+      end if
+
+      !configuration for freshwater conservation
+      call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
+      if (config_sfwf_balance) then
+         call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
+         if (config_sfwf_balance_type > 0) then
+           ! independent of space so should be no need to loop over blocks
+           block_ptr => domain % blocklist
+           call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+           call MPAS_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+           call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
+         end if
       end if
 
       ! Reset I/O logs
@@ -2005,7 +2035,11 @@ contains
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling,      &
-                                     CFCAuxiliary
+                                     CFCAuxiliary, &
+                                     conservationCheckEnergyAMPool, &
+                                     conservationCheckMassAMPool, &
+                                     conservationCheckSaltAMPool, &
+                                     conservationCheckCarbonAMPool
 
    integer, pointer :: nCellsSolve
 
@@ -2117,6 +2151,12 @@ contains
 
    real (kind=RKIND) :: riverFactor
 
+   ! freshwater balance adjustment 
+   logical, pointer :: config_sfwf_balance
+   integer, pointer :: config_sfwf_balance_type
+   real (kind=RKIND), pointer :: config_precip_factor
+   real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+
 !-----------------------------------------------------------------------
 !
 !  zero out padded cells
@@ -2148,6 +2188,23 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
    call mpas_pool_get_config(domain % configs, 'config_eddy_killing_correction_enable', config_eddy_killing_correction_enable)
+
+   !configuration for freshwater balance constrains 
+   call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
+   if (config_sfwf_balance) then
+      call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
+      if (config_sfwf_balance_type == 0 ) then
+        call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
+        precFactor = config_precip_factor
+      else 
+        ! independent of space so should be no need to loop over blocks
+        block_ptr => domain % blocklist
+        call MPAS_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+        precFactor = SFWFScalingFactor
+      end if
+   else
+      precFactor = 1.0_RKIND 
+   end if
 
    n = 0
    removedRiverRunoffFluxThisProc = 0.0_RKIND
