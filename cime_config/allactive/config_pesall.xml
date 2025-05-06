@@ -2533,7 +2533,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis20km_w%null_z%null_m%IcoswISC30E3r5">
-    <mach name="chrysalis|pm-cpu|muller-cpu|alvarez-cpu">
+    <mach name="chrysalis">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -2567,6 +2567,25 @@
           <rootpe_glc>0</rootpe_glc>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis.+km_w%null_z%null_m%IcoswISC30E3r5">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
+      <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
+        <!-- SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.pm-cpu_gnu.allactive-gis20km -->
+        <!-- 1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV_SIAC_SESP -->
+        <comment>pm-cpu: GIS 20 or 40km (low-res) testing config, 2 nodes, 128x1</comment>
+        <ntasks>
+          <ntasks_atm>256</ntasks_atm>
+          <ntasks_lnd>256</ntasks_lnd>
+          <ntasks_rof>256</ntasks_rof>
+          <ntasks_ice>256</ntasks_ice>
+          <ntasks_ocn>256</ntasks_ocn>
+          <ntasks_glc>256</ntasks_glc>
+          <ntasks_wav>256</ntasks_wav>
+          <ntasks_cpl>256</ntasks_cpl>
+        </ntasks>
       </pes>
     </mach>
   </grid>
