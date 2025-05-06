@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_main_wrap.hpp"
 #include "shoc_ic_cases.hpp"
+#include "shoc_main_wrap.hpp"
 
 #include "ekat/util/ekat_test_utils.hpp"
 
@@ -17,7 +17,7 @@ TEST_CASE("FortranDataIterator", "shoc") {
   const auto d = Factory::create(Factory::standard);
   scream::shoc::FortranDataIterator fdi(d);
   REQUIRE(fdi.nfield() == 44);
-  const auto& f = fdi.getfield(0);
+  const auto &f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
   REQUIRE(f.extent[0] == d->shcol);
   REQUIRE(f.extent[1] == 1);
@@ -32,4 +32,3 @@ TEST_CASE("shoc_ic_c", "shoc") {
 }
 
 } // anonymous namespace
-

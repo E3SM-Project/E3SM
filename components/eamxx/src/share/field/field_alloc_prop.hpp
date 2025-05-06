@@ -1,17 +1,16 @@
 #ifndef SCREAM_FIELD_ALLOC_PROP_HPP
 #define SCREAM_FIELD_ALLOC_PROP_HPP
 
-#include "share/field/field_layout.hpp"
 #include "share/eamxx_types.hpp"
+#include "share/field/field_layout.hpp"
 
-#include "ekat/ekat_scalar_traits.hpp"
 #include "ekat/ekat_assert.hpp"
+#include "ekat/ekat_scalar_traits.hpp"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
-namespace scream
-{
+namespace scream {
 
 /*
  *  Small structure holding a few properties of the field allocation
@@ -62,17 +61,13 @@ namespace scream
 // Helper struct to store info related to the subviewing process
 struct SubviewInfo {
   SubviewInfo() = default;
-  SubviewInfo(const int dim, const int slice, const int extent,
-              const bool is_dynamic)
-      : dim_idx(dim), slice_idx(slice), dim_extent(extent),
-        dynamic(is_dynamic) {}
+  SubviewInfo(const int dim, const int slice, const int extent, const bool is_dynamic)
+      : dim_idx(dim), slice_idx(slice), dim_extent(extent), dynamic(is_dynamic) {}
   // multi-slice subview across contiguous indices
-  SubviewInfo(const int dim, const int slice_beg, const int slice_end,
-              const int extent)
-      : dim_idx(dim), slice_idx(slice_beg), slice_idx_end(slice_end),
-        dim_extent(extent) {}
-  SubviewInfo(const SubviewInfo&) = default;
-  SubviewInfo& operator=(const SubviewInfo&) = default;
+  SubviewInfo(const int dim, const int slice_beg, const int slice_end, const int extent)
+      : dim_idx(dim), slice_idx(slice_beg), slice_idx_end(slice_end), dim_extent(extent) {}
+  SubviewInfo(const SubviewInfo &)            = default;
+  SubviewInfo &operator=(const SubviewInfo &) = default;
 
   // Dimension along which slicing happened
   int dim_idx = -1;
@@ -87,126 +82,120 @@ struct SubviewInfo {
   bool dynamic = false;
 };
 
-inline bool operator== (const SubviewInfo& lhs, const SubviewInfo& rhs) {
-  return lhs.dim_idx==rhs.dim_idx &&
-         lhs.slice_idx==rhs.slice_idx &&
+inline bool operator==(const SubviewInfo &lhs, const SubviewInfo &rhs) {
+  return lhs.dim_idx == rhs.dim_idx && lhs.slice_idx == rhs.slice_idx &&
          //  slice_idx_end == -1 for single slice, and the ending index when
          // it's a multi-slice
-         lhs.slice_idx_end==rhs.slice_idx_end &&
-         lhs.dim_extent==rhs.dim_extent &&
-         lhs.dynamic==rhs.dynamic;
+         lhs.slice_idx_end == rhs.slice_idx_end && lhs.dim_extent == rhs.dim_extent && lhs.dynamic == rhs.dynamic;
 }
 
 class FieldAllocProp {
 public:
-  using layout_type      = FieldLayout;
-  using layout_ptr_type  = std::shared_ptr<const layout_type>;
+  using layout_type     = FieldLayout;
+  using layout_ptr_type = std::shared_ptr<const layout_type>;
 
-  FieldAllocProp (const int scalar_size);
-  FieldAllocProp (const FieldAllocProp&) = default;
+  FieldAllocProp(const int scalar_size);
+  FieldAllocProp(const FieldAllocProp &) = default;
 
-  FieldAllocProp& operator= (const FieldAllocProp&);
+  FieldAllocProp &operator=(const FieldAllocProp &);
 
   // Return allocation props of an unmanaged subview of this field
   // at entry k along dimension idim. If dynamic = true, then it will be
   // possible to change the entry index (k) at runtime.
-  FieldAllocProp subview (const int idim, const int k, const bool dynamic) const;
+  FieldAllocProp subview(const int idim, const int k, const bool dynamic) const;
 
   // multi-slice subview over contiguous indices
-  FieldAllocProp subview (const int idim, const int k_beg, const int k_end) const;
+  FieldAllocProp subview(const int idim, const int k_beg, const int k_end) const;
 
   // Request allocation able to accommodate a pack of ScalarType of the given pack size
-  void request_allocation (const int pack_size = 1);
+  void request_allocation(const int pack_size = 1);
 
   // Request allocation able to accommodate all the alloc props in src.
   // Note: src does not need to be committed yet.
-  void request_allocation (const FieldAllocProp& src);
+  void request_allocation(const FieldAllocProp &src);
 
   // Locks the allocation properties, preventing furter value types requests
-  void commit (const layout_type& layout);
+  void commit(const layout_type &layout);
 
   // For dynamic subfield, reset the slice index
-  void reset_subview_idx (const int idx);
+  void reset_subview_idx(const int idx);
 
   // ---- Getters ---- //
 
   // Whether commit has been called
-  bool is_committed () const { return m_committed; }
+  bool is_committed() const { return m_committed; }
 
   // Whether this field is a subfield of another
-  bool is_subfield () const { return m_subview_info.dim_idx>=0; }
+  bool is_subfield() const { return m_subview_info.dim_idx >= 0; }
 
   // Whether this field is a dynamic subfield of another
-  bool is_dynamic_subfield () const { return m_subview_info.dynamic; }
+  bool is_dynamic_subfield() const { return m_subview_info.dynamic; }
 
   // Get the overall allocation size (in Bytes)
-  long long get_alloc_size () const;
+  long long get_alloc_size() const;
 
   // Get number of m_scalar_type_size-sized scalars in the allocation.
-  long long get_num_scalars () const { return get_alloc_size () / m_scalar_type_size; }
+  long long get_num_scalars() const { return get_alloc_size() / m_scalar_type_size; }
 
   // Get the largest pack size that this allocation was requested to accommodate
-  int get_largest_pack_size () const;
+  int get_largest_pack_size() const;
 
   // Wether this allocation is contiguous
-  bool contiguous () const { return m_contiguous; }
+  bool contiguous() const { return m_contiguous; }
 
   // Size of the last extent in the alloction (i.e., number of scalars in it)
-  int  get_last_extent () const;
-  int  get_padding () const;
+  int get_last_extent() const;
+  int get_padding() const;
 
   // Return the slice information of this subview allocation.
-  const SubviewInfo& get_subview_info () const { return m_subview_info; }
+  const SubviewInfo &get_subview_info() const { return m_subview_info; }
 
   // Whether the allocation properties are compatible with ValueType
-  template<typename ValueType>
-  bool is_compatible () const;
+  template <typename ValueType> bool is_compatible() const;
 
 protected:
-
   // The FieldLayout associated to this allocation
-  layout_type     m_layout;
+  layout_type m_layout;
 
   // The list of requested value types for this allocation
-  std::vector<int>    m_value_type_sizes;
+  std::vector<int> m_value_type_sizes;
 
   // The size of the scalar type
-  int   m_scalar_type_size;
+  int m_scalar_type_size;
 
   // The largest pack size that was requested
-  int   m_pack_size_max;
+  int m_pack_size_max;
 
   // The extent along the last dimension for this allocation
-  int   m_last_extent;
+  int m_last_extent;
 
   // The total size of this allocation.
-  long long   m_alloc_size;
+  long long m_alloc_size;
 
   // If this allocation is a subview of another, store info about the subview
   // process (see SubviewInfo documentation for details)
-  SubviewInfo         m_subview_info;
+  SubviewInfo m_subview_info;
 
   // Whether the allocation is contiguous
-  bool  m_contiguous;
+  bool m_contiguous;
 
   // Whether commit was called (i.e., no more value type requests allowed)
-  bool  m_committed;
+  bool m_committed;
 };
 
 // ================================= IMPLEMENTATION ================================== //
 
-template<typename ValueType>
-bool FieldAllocProp::is_compatible () const {
+template <typename ValueType> bool FieldAllocProp::is_compatible() const {
   using ekat::ScalarTraits;
 
-  constexpr int sts = sizeof(typename ScalarTraits<ValueType>::scalar_type);
-  constexpr int vts = sizeof(ValueType);
+  constexpr int sts  = sizeof(typename ScalarTraits<ValueType>::scalar_type);
+  constexpr int vts  = sizeof(ValueType);
   constexpr int vlen = vts / sts;
 
   // Allocation is compatible with ValueType if
   //   - the scalar type of ValueType has the same size as m_scalar_type_size
   //   - the size of ValueType must divide the last dim stride
-  return sts==m_scalar_type_size && (m_last_extent%vlen==0);
+  return sts == m_scalar_type_size && (m_last_extent % vlen == 0);
 }
 
 } // namespace scream

@@ -12,21 +12,17 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION
-void Functions<S,D>::
-get_cloud_dsd2(
-  const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-  const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, 
-  const Smask& context)
-{
-  lamc.set(context   , 0);
-  cdist.set(context  , 0);
-  cdist1.set(context , 0);
-  nu.set(context     , 0);
-  mu_c.set(context   , 0);
+KOKKOS_FUNCTION void Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const Spack &rho,
+                                                     Spack &nu, const view_dnu_table &dnu, Spack &lamc, Spack &cdist,
+                                                     Spack &cdist1, const Smask &context) {
+  lamc.set(context, 0);
+  cdist.set(context, 0);
+  cdist1.set(context, 0);
+  nu.set(context, 0);
+  mu_c.set(context, 0);
 
   constexpr Scalar qsmall = C::QSMALL;
-  const auto qc_gt_small = qc >= qsmall && context;
+  const auto qc_gt_small  = qc >= qsmall && context;
 
   if (qc_gt_small.any()) {
     constexpr Scalar nsmall = C::NSMALL;
@@ -35,8 +31,8 @@ get_cloud_dsd2(
     {
       Spack mu_c_local;
       nc.set(qc_gt_small, max(nc, nsmall));
-      mu_c_local = sp(0.0005714)*(nc * sp(1.e-6) * rho) + sp(0.2714);
-      mu_c_local = 1/(mu_c_local * mu_c_local) - 1;
+      mu_c_local = sp(0.0005714) * (nc * sp(1.e-6) * rho) + sp(0.2714);
+      mu_c_local = 1 / (mu_c_local * mu_c_local) - 1;
       mu_c_local = max(mu_c_local, 2);
       mu_c_local = min(mu_c_local, 15);
 
@@ -55,36 +51,30 @@ get_cloud_dsd2(
     lamc.set(qc_gt_small, cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
 
     // apply lambda limiters
-    Spack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
-    Spack lammax = (mu_c + 1)*sp(1.e+6);   // max:  1 micron mean diameter
+    Spack lammin = (mu_c + 1) * sp(2.5e+4); // min: 40 micron mean diameter
+    Spack lammax = (mu_c + 1) * sp(1.e+6);  // max:  1 micron mean diameter
 
     Smask lamc_lt_min = lamc < lammin && qc_gt_small;
     Smask lamc_gt_max = lamc > lammax && qc_gt_small;
-    Smask min_or_max = lamc_lt_min || lamc_gt_max;
+    Smask min_or_max  = lamc_lt_min || lamc_gt_max;
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
     nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
-    cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
+    cdist.set(qc_gt_small, nc * (mu_c + 1) / lamc);
     cdist1.set(qc_gt_small, nc / tgamma(mu_c + 1));
   }
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION
-void Functions<S,D>::
-get_rain_dsd2 (
-  const Spack& qr, Spack& nr, Spack& mu_r,
-  Spack& lamr,
-  const P3Runtime& runtime_options,
-  const Smask& context)
-{
+KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, Spack &mu_r, Spack &lamr,
+                                                    const P3Runtime &runtime_options, const Smask &context) {
   constexpr auto nsmall = C::NSMALL;
   constexpr auto qsmall = C::QSMALL;
   constexpr auto cons1  = C::CONS1;
 
-  lamr.set(context  , 0);
+  lamr.set(context, 0);
 
   const auto qr_gt_small = qr >= qsmall && context;
 
@@ -105,34 +95,28 @@ get_rain_dsd2 (
     lamr.set(qr_gt_small, cbrt(mass_to_d3_factor * nr_lim / qr));
 
     // check for slope
-    const auto lammax = (mu_r+1.)*sp(1.e+5);
-    //Below, 500 is inverse of max allowable number-weighted mean raindrop size=2mm
-    //Since breakup is explicitly included, mean raindrop size can be relatively small
-    const auto lammin = (mu_r+1.)*500; 
+    const auto lammax = (mu_r + 1.) * sp(1.e+5);
+    // Below, 500 is inverse of max allowable number-weighted mean raindrop size=2mm
+    // Since breakup is explicitly included, mean raindrop size can be relatively small
+    const auto lammin = (mu_r + 1.) * 500;
 
     // apply lambda limiters for rain
-    const auto lt = qr_gt_small && (lamr < lammin);
-    const auto gt = qr_gt_small && (lamr > lammax);
+    const auto lt     = qr_gt_small && (lamr < lammin);
+    const auto gt     = qr_gt_small && (lamr > lammax);
     const auto either = lt || gt;
     nr.set(qr_gt_small, nr_lim);
     if (either.any()) {
       lamr.set(lt, lammin);
       lamr.set(gt, lammax);
-      ekat_masked_loop(either, s) {
-        nr[s] = lamr[s]*lamr[s]*lamr[s] * qr[s] / mass_to_d3_factor[s];
-      }
+      ekat_masked_loop(either, s) { nr[s] = lamr[s] * lamr[s] * lamr[s] * qr[s] / mass_to_d3_factor[s]; }
     }
   }
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION
-void Functions<S,D>::
-get_cdistr_logn0r (
-  const Spack& qr, const Spack& nr, const Spack& mu_r,
-  const Spack& lamr, Spack& cdistr, Spack& logn0r,
-  const Smask& context)
-{
+KOKKOS_FUNCTION void Functions<S, D>::get_cdistr_logn0r(const Spack &qr, const Spack &nr, const Spack &mu_r,
+                                                        const Spack &lamr, Spack &cdistr, Spack &logn0r,
+                                                        const Smask &context) {
   constexpr auto qsmall = C::QSMALL;
 
   cdistr.set(context, 0);
@@ -141,7 +125,7 @@ get_cdistr_logn0r (
   const auto qr_gt_small = qr >= qsmall && context;
 
   if (qr_gt_small.any()) {
-    cdistr.set(qr_gt_small, nr/tgamma(mu_r + 1));
+    cdistr.set(qr_gt_small, nr / tgamma(mu_r + 1));
     // note: logn0r is calculated as log10(n0r)
     logn0r.set(qr_gt_small, log10(cdistr) + (mu_r + 1) * log10(lamr));
   }

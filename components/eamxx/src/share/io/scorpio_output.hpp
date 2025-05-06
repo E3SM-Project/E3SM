@@ -1,14 +1,14 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/io/eamxx_scorpio_interface.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
+#include "share/io/eamxx_io_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_utils.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -101,11 +101,9 @@
  *  (2021-11-10) Luca Bertagna (SNL)
  */
 
-namespace scream
-{
+namespace scream {
 
-class AtmosphereOutput
-{
+class AtmosphereOutput {
 public:
   using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
@@ -113,109 +111,96 @@ public:
   using remapper_type = AbstractRemapper;
   using atm_diag_type = AtmosphereDiagnostic;
 
-  using KT = KokkosTypes<DefaultDevice>;
-  template<int N>
-  using view_Nd_dev  = typename KT::template view_ND<Real,N>;
-  template<int N>
-  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
+  using KT                            = KokkosTypes<DefaultDevice>;
+  template <int N> using view_Nd_dev  = typename KT::template view_ND<Real, N>;
+  template <int N> using view_Nd_host = typename KT::template view_ND<Real, N>::HostMirror;
 
   using view_1d_dev  = view_Nd_dev<1>;
   using view_1d_host = view_Nd_host<1>;
 
-  virtual ~AtmosphereOutput () = default;
+  virtual ~AtmosphereOutput() = default;
 
   // Constructor
-  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params,
-                   const std::shared_ptr<const fm_type>& field_mgr,
-                   const std::string& grid_name);
+  AtmosphereOutput(const ekat::Comm &comm, const ekat::ParameterList &params,
+                   const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name);
 
   // Short version for outputing a list of fields (no remapping supported)
-  AtmosphereOutput(const ekat::Comm& comm,
-                   const std::vector<Field>& fields,
-                   const std::shared_ptr<const grid_type>& grid);
+  AtmosphereOutput(const ekat::Comm &comm, const std::vector<Field> &fields,
+                   const std::shared_ptr<const grid_type> &grid);
 
   // Main Functions
-  void restart (const std::string& filename);
+  void restart(const std::string &filename);
   void init();
   void reset_dev_views();
-  void update_avg_cnt_view(const Field&, view_1d_dev& dev_view);
-  void setup_output_file (const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
+  void update_avg_cnt_view(const Field &, view_1d_dev &dev_view);
+  void setup_output_file(const std::string &filename, const std::string &fp_precision, const scorpio::FileMode mode);
 
-  void init_timestep (const util::TimeStamp& start_of_step);
-  void run (const std::string& filename,
-            const bool output_step, const bool checkpoint_step,
-            const int nsteps_since_last_output,
-            const bool allow_invalid_fields = false);
+  void init_timestep(const util::TimeStamp &start_of_step);
+  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+           const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
-  long long res_dep_memory_footprint () const;
+  long long res_dep_memory_footprint() const;
 
-  std::shared_ptr<const AbstractGrid> get_io_grid () const {
-    return m_io_grid;
-  }
+  std::shared_ptr<const AbstractGrid> get_io_grid() const { return m_io_grid; }
 
   // Option to add a logger
-  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
-      m_atm_logger = atm_logger;
-  }
+  void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) { m_atm_logger = atm_logger; }
 
 protected:
   // Internal functions
-  void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
-                          const std::string& grid_name,
-                          const std::string& mode);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
-                          const std::string& grid_name,
-                          const std::vector<std::string>& modes);
+  void set_grid(const std::shared_ptr<const AbstractGrid> &grid);
+  void set_field_manager(const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
+                         const std::string &mode);
+  void set_field_manager(const std::shared_ptr<const fm_type> &field_mgr, const std::string &grid_name,
+                         const std::vector<std::string> &modes);
 
-  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
+  std::shared_ptr<const fm_type> get_field_manager(const std::string &mode) const;
 
-  void register_dimensions(const std::string& name);
-  void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
-  void set_decompositions(const std::string& filename);
-  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
+  void register_dimensions(const std::string &name);
+  void register_variables(const std::string &filename, const std::string &fp_precision, const scorpio::FileMode mode);
+  void set_decompositions(const std::string &filename);
+  std::vector<scorpio::offset_t> get_var_dof_offsets(const FieldLayout &layout);
   void register_views();
-  Field get_field(const std::string& name, const std::string& mode) const;
-  void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
+  Field get_field(const std::string &name, const std::string &mode) const;
+  void compute_diagnostic(const std::string &name, const bool allow_invalid_fields = false);
   void set_diagnostics();
-  std::shared_ptr<AtmosphereDiagnostic>
-  create_diagnostic (const std::string& diag_name);
+  std::shared_ptr<AtmosphereDiagnostic> create_diagnostic(const std::string &diag_name);
 
   // Tracking the averaging of any filled values:
-  void set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout);
+  void set_avg_cnt_tracking(const std::string &name, const FieldLayout &layout);
 
   // --- Internal variables --- //
-  ekat::Comm                          m_comm;
+  ekat::Comm m_comm;
 
   // We store two shared pointers for field managers:
   // io_field_manager stores the fields in the layout for output
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
-  std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+  std::map<std::string, std::shared_ptr<const fm_type>> m_field_mgrs;
 
   // Field managers can have multiple grids associated with it,
   // for each FM store which grid we intend to use
-  std::map<std::string,std::string> m_fm_grid_name;
+  std::map<std::string, std::string> m_fm_grid_name;
 
-  std::shared_ptr<const grid_type>            m_io_grid;
-  std::shared_ptr<remapper_type>              m_horiz_remapper;
-  std::shared_ptr<remapper_type>              m_vert_remapper;
+  std::shared_ptr<const grid_type> m_io_grid;
+  std::shared_ptr<remapper_type> m_horiz_remapper;
+  std::shared_ptr<remapper_type> m_vert_remapper;
 
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
-  OutputAvgType     m_avg_type;
-  Real              m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
+  OutputAvgType m_avg_type;
+  Real m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>                              m_fields_names;
-  std::vector<std::string>                              m_avg_cnt_names;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_map;
-  std::map<std::string,std::string>                     m_field_to_avg_cnt_suffix;
-  std::map<std::string,FieldLayout>                     m_layouts;
-  std::map<std::string,int>                             m_dims;
-  std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
-  std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
-  std::map<std::string,bool>                            m_diag_computed;
-  DefaultMetadata                                       m_default_metadata;
+  std::vector<std::string> m_fields_names;
+  std::vector<std::string> m_avg_cnt_names;
+  std::map<std::string, std::string> m_field_to_avg_cnt_map;
+  std::map<std::string, std::string> m_field_to_avg_cnt_suffix;
+  std::map<std::string, FieldLayout> m_layouts;
+  std::map<std::string, int> m_dims;
+  std::map<std::string, std::shared_ptr<atm_diag_type>> m_diagnostics;
+  std::map<std::string, std::vector<std::string>> m_diag_depends_on_diags;
+  std::map<std::string, bool> m_diag_computed;
+  DefaultMetadata m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.
   // Otherwise, you would get an error from Netcdf, like
@@ -225,8 +210,8 @@ protected:
   float m_fill_value = constants::DefaultFillValue<float>().value;
 
   // Local views of each field to be used for "averaging" output and writing to file.
-  std::map<std::string,view_1d_host>    m_host_views_1d;
-  std::map<std::string,view_1d_dev>     m_dev_views_1d;
+  std::map<std::string, view_1d_host> m_host_views_1d;
+  std::map<std::string, view_1d_dev> m_dev_views_1d;
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
@@ -235,6 +220,6 @@ protected:
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 };
 
-} //namespace scream
+} // namespace scream
 
 #endif // SCREAM_SCORPIO_OUTPUT_HPP

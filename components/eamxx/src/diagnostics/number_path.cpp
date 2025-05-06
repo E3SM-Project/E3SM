@@ -6,43 +6,39 @@
 
 namespace scream {
 
-NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
-                                           const ekat::ParameterList &params)
+NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("number_kind"),
-                   "Error! NumberPathDiagnostic requires 'number_kind' in its "
-                   "input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("number_kind"), "Error! NumberPathDiagnostic requires 'number_kind' in its "
+                                                      "input parameters.\n");
 
   m_kind = m_params.get<std::string>("number_kind");
-  if(m_kind == "Liq") {
+  if (m_kind == "Liq") {
     m_qname = "qc";
     m_nname = "nc";
-  } else if(m_kind == "Ice") {
+  } else if (m_kind == "Ice") {
     m_qname = "qi";
     m_nname = "ni";
-  } else if(m_kind == "Rain") {
+  } else if (m_kind == "Rain") {
     m_qname = "qr";
     m_nname = "nr";
   } else {
-    EKAT_ERROR_MSG(
-        "Error! Invalid choice for 'NumberKind' in NumberPathDiagnostic.\n"
-        "  - input value: " +
-        m_kind +
-        "\n"
-        "  - valid values: Liq, Ice, Rain\n");
+    EKAT_ERROR_MSG("Error! Invalid choice for 'NumberKind' in NumberPathDiagnostic.\n"
+                   "  - input value: " +
+                   m_kind +
+                   "\n"
+                   "  - valid values: Liq, Ice, Rain\n");
   }
 }
 
-void NumberPathDiagnostic::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void NumberPathDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  auto m2 = pow(m,2);
+  auto m2 = pow(m, 2);
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols = grid->get_num_local_dofs();  // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
+  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
   auto scalar3d = grid->get_3d_scalar_layout(true);
@@ -53,7 +49,7 @@ void NumberPathDiagnostic::set_grids(
   add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(m_kind + name(), scalar2d, kg/(kg*m2), grid_name);
+  FieldIdentifier fid(m_kind + name(), scalar2d, kg / (kg * m2), grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -81,12 +77,9 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
         auto rho_icol  = ekat::subview(rho, icol);
         Kokkos::parallel_reduce(
             Kokkos::TeamVectorRange(team, num_levs),
-            [&](const int &ilev, Real &lsum) {
-              lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g;
-            },
-            np(icol));
+            [&](const int &ilev, Real &lsum) { lsum += q_icol(ilev) * n_icol(ilev) * rho_icol(ilev) / g; }, np(icol));
         team.team_barrier();
       });
 }
 
-}  // namespace scream
+} // namespace scream

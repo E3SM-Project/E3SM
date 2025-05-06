@@ -11,20 +11,18 @@ namespace shoc {
  * #include this file, but include shoc_functions.hpp instead.
  */
 
-template<typename S, typename D>
-KOKKOS_FUNCTION
-void Functions<S,D>::diag_second_moments(
-  const MemberType& team, const Int& nlev, const Int& nlevi,
-  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
-  const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
-  const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
-  const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
-  const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
-  const uview_1d<Spack>& isotropy_zi, const uview_1d<Spack>& tkh_zi, const uview_1d<Spack>& tk_zi,
-  const uview_1d<Spack>& thl_sec, const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec,
-  const uview_1d<Spack>& qwthl_sec, const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec,
-  const uview_1d<Spack>& w_sec)
-{
+template <typename S, typename D>
+KOKKOS_FUNCTION void Functions<S, D>::diag_second_moments(
+    const MemberType &team, const Int &nlev, const Int &nlevi, const Real &thl2tune, const Real &qw2tune,
+    const Real &qwthl2tune, const Real &w2tune, const uview_1d<const Spack> &thetal, const uview_1d<const Spack> &qw,
+    const uview_1d<const Spack> &u_wind, const uview_1d<const Spack> &v_wind, const uview_1d<const Spack> &tke,
+    const uview_1d<const Spack> &isotropy, const uview_1d<const Spack> &tkh, const uview_1d<const Spack> &tk,
+    const uview_1d<const Spack> &dz_zi, const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid,
+    const uview_1d<const Spack> &shoc_mix, const uview_1d<Spack> &isotropy_zi, const uview_1d<Spack> &tkh_zi,
+    const uview_1d<Spack> &tk_zi, const uview_1d<Spack> &thl_sec, const uview_1d<Spack> &qw_sec,
+    const uview_1d<Spack> &wthl_sec, const uview_1d<Spack> &wqw_sec, const uview_1d<Spack> &qwthl_sec,
+    const uview_1d<Spack> &uw_sec, const uview_1d<Spack> &vw_sec, const uview_1d<Spack> &wtke_sec,
+    const uview_1d<Spack> &w_sec) {
   // Purpose of this subroutine is to diagnose the second
   //  order moments needed for the SHOC parameterization.
   //  Namely these are variances of thetal, qw, and vertical
@@ -34,21 +32,20 @@ void Functions<S,D>::diag_second_moments(
 
   // Interpolate some variables from the midpoint grid to the interface grid
   linear_interp(team, zt_grid, zi_grid, isotropy, isotropy_zi, nlev, nlevi, 0);
-  linear_interp(team, zt_grid, zi_grid, tkh,      tkh_zi,      nlev, nlevi, 0);
-  linear_interp(team, zt_grid, zi_grid, tk,       tk_zi,       nlev, nlevi, 0);
+  linear_interp(team, zt_grid, zi_grid, tkh, tkh_zi, nlev, nlevi, 0);
+  linear_interp(team, zt_grid, zi_grid, tk, tk_zi, nlev, nlevi, 0);
   team.team_barrier();
 
   // Vertical velocity variance is assumed to be propotional to the TKE
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    w_sec(k) = w2tune*(sp(2.)/sp(3.))*tke(k);
-  });
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack),
+                       [&](const Int &k) { w_sec(k) = w2tune * (sp(2.) / sp(3.)) * tke(k); });
 
   // Calculate the temperature variance
   calc_shoc_varorcovar(team, nlev, thl2tune, isotropy_zi, tkh_zi, dz_zi, thetal, thetal, thl_sec);
 
   // Calculate the moisture variance
-  calc_shoc_varorcovar(team, nlev ,qw2tune, isotropy_zi, tkh_zi, dz_zi, qw, qw, qw_sec);
+  calc_shoc_varorcovar(team, nlev, qw2tune, isotropy_zi, tkh_zi, dz_zi, qw, qw, qw_sec);
 
   // Calculate the temperature and moisture covariance
   calc_shoc_varorcovar(team, nlev, qwthl2tune, isotropy_zi, tkh_zi, dz_zi, thetal, qw, qwthl_sec);

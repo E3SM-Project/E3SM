@@ -7,17 +7,16 @@
 
 #include <string>
 
-namespace scream
-{
+namespace scream {
 
 // Mini struct to hold IO frequency info
 struct IOControl {
 
   // If frequency_units is not "none" or "never", frequency *must* be set to a positive number
-  int frequency = -1;
+  int frequency               = -1;
   std::string frequency_units = "none";
 
-  int nsamples_since_last_write = 0;  // Needed when updating output data, such as with the OAT::Average flag
+  int nsamples_since_last_write = 0; // Needed when updating output data, such as with the OAT::Average flag
 
   util::TimeStamp next_write_ts;
   util::TimeStamp last_write_ts;
@@ -28,33 +27,32 @@ struct IOControl {
   //       An error will be thrown if dt changes, so developers can fix this if we ever support variable dt
   double dt = 0;
 
-  bool output_enabled () const {
-    return frequency_units!="none" && frequency_units!="never";
+  bool output_enabled() const { return frequency_units != "none" && frequency_units != "never"; }
+
+  bool is_write_step(const util::TimeStamp &ts) const {
+    if (not output_enabled())
+      return false;
+    return frequency_units == "nsteps"
+               ? ts.get_num_steps() == next_write_ts.get_num_steps()
+               : (ts.get_date() == next_write_ts.get_date() and ts.get_time() == next_write_ts.get_time());
   }
 
-  bool is_write_step (const util::TimeStamp& ts) const {
-    if (not output_enabled()) return false;
-    return frequency_units=="nsteps" ? ts.get_num_steps()==next_write_ts.get_num_steps()
-                                     : (ts.get_date()==next_write_ts.get_date() and
-                                        ts.get_time()==next_write_ts.get_time());
-  }
-
-  void set_frequency_units (const std::string& freq_unit) {
-    if (freq_unit=="none" or freq_unit=="never") {
+  void set_frequency_units(const std::string &freq_unit) {
+    if (freq_unit == "none" or freq_unit == "never") {
       frequency_units = freq_unit;
-    } else if (freq_unit=="nstep" or freq_unit=="nsteps") {
+    } else if (freq_unit == "nstep" or freq_unit == "nsteps") {
       frequency_units = "nsteps";
-    } else if (freq_unit=="nsecond" or freq_unit=="nseconds" or freq_unit=="nsecs") {
+    } else if (freq_unit == "nsecond" or freq_unit == "nseconds" or freq_unit == "nsecs") {
       frequency_units = "nsecs";
-    } else if (freq_unit=="nminute" or freq_unit=="nminutes" or freq_unit=="nmins") {
+    } else if (freq_unit == "nminute" or freq_unit == "nminutes" or freq_unit == "nmins") {
       frequency_units = "nmins";
-    } else if (freq_unit=="nhour" or freq_unit=="nhours") {
+    } else if (freq_unit == "nhour" or freq_unit == "nhours") {
       frequency_units = "nhours";
-    } else if (freq_unit=="nday" or freq_unit=="ndays") {
+    } else if (freq_unit == "nday" or freq_unit == "ndays") {
       frequency_units = "ndays";
-    } else if (freq_unit=="nmonth" or freq_unit=="nmonths") {
+    } else if (freq_unit == "nmonth" or freq_unit == "nmonths") {
       frequency_units = "nmonths";
-    } else if (freq_unit=="nyear" or freq_unit=="nyears") {
+    } else if (freq_unit == "nyear" or freq_unit == "nyears") {
       frequency_units = "nyears";
     } else {
       // TODO - add support for "end" as an option
@@ -62,35 +60,34 @@ struct IOControl {
     }
   }
 
-  void set_dt (const double dt_in) {
-    EKAT_REQUIRE_MSG (dt==0 or dt==dt_in,
-        "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
+  void set_dt(const double dt_in) {
+    EKAT_REQUIRE_MSG(dt == 0 or dt == dt_in, "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
 
     dt = dt_in;
   }
 
   // Computes next_write_ts from frequency and last_write_ts
-  void compute_next_write_ts () {
-    EKAT_REQUIRE_MSG (last_write_ts.is_valid(),
-        "Error! Cannot compute next_write_ts, since last_write_ts was never set.\n");
+  void compute_next_write_ts() {
+    EKAT_REQUIRE_MSG(last_write_ts.is_valid(),
+                     "Error! Cannot compute next_write_ts, since last_write_ts was never set.\n");
     next_write_ts = last_write_ts;
-    if (frequency_units=="nsteps") {
+    if (frequency_units == "nsteps") {
       // This avoids having an invalid/wrong date/time in StorageSpecs::snapshot_fits
       // if storage type is NumSnaps
-      next_write_ts += dt*frequency;
-      next_write_ts.set_num_steps(last_write_ts.get_num_steps()+frequency);
-    } else if (frequency_units=="nsecs") {
+      next_write_ts += dt * frequency;
+      next_write_ts.set_num_steps(last_write_ts.get_num_steps() + frequency);
+    } else if (frequency_units == "nsecs") {
       next_write_ts += frequency;
-    } else if (frequency_units=="nmins") {
-      next_write_ts += frequency*60;
-    } else if (frequency_units=="nhours") {
-      next_write_ts += frequency*3600;
-    } else if (frequency_units=="ndays") {
-      next_write_ts += frequency*86400;
-    } else if (frequency_units=="nmonths") {
+    } else if (frequency_units == "nmins") {
+      next_write_ts += frequency * 60;
+    } else if (frequency_units == "nhours") {
+      next_write_ts += frequency * 3600;
+    } else if (frequency_units == "ndays") {
+      next_write_ts += frequency * 86400;
+    } else if (frequency_units == "nmonths") {
       auto date = last_write_ts.get_date();
-      int temp = date[1] + frequency - 1;
-      date[1]  = temp % 12 + 1;
+      int temp  = date[1] + frequency - 1;
+      date[1]   = temp % 12 + 1;
       date[0] += temp / 12;
 
       // NOTE: we MAY have moved to an invalid date. E.g., if last_write
@@ -98,17 +95,17 @@ struct IOControl {
       // We fix this by adjusting the date to the last day of the month.
       // HOWEVER, this means we will *always* write on the 30th of each month after then,
       // since we have no memory of the fact that we were writing on the 31st before.
-      auto month_beg = util::TimeStamp({date[0],date[1],1},{0,0,0});
-      auto last_day = month_beg.days_in_curr_month();
-      date[2] = std::min(date[2],last_day);
+      auto month_beg = util::TimeStamp({date[0], date[1], 1}, {0, 0, 0});
+      auto last_day  = month_beg.days_in_curr_month();
+      date[2]        = std::min(date[2], last_day);
 
-      next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
-    } else if (frequency_units=="nyears") {
+      next_write_ts = util::TimeStamp(date, last_write_ts.get_time());
+    } else if (frequency_units == "nyears") {
       auto date = last_write_ts.get_date();
       date[0] += frequency;
-      next_write_ts = util::TimeStamp(date,last_write_ts.get_time());
+      next_write_ts = util::TimeStamp(date, last_write_ts.get_time());
     } else {
-      EKAT_ERROR_MSG ("Error! Unrecognized/unsupported frequency unit '" + frequency_units + "'\n");
+      EKAT_ERROR_MSG("Error! Unrecognized/unsupported frequency unit '" + frequency_units + "'\n");
     }
   }
 };

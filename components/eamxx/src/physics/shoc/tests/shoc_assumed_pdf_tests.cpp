@@ -1,15 +1,15 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -20,14 +20,12 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
-    static constexpr Int shcol    = 2;
-    static constexpr Int nlev     = 5;
-    static constexpr auto nlevi   = nlev + 1;
+  void run_property() {
+    static constexpr Int shcol  = 2;
+    static constexpr Int nlev   = 5;
+    static constexpr auto nlevi = nlev + 1;
 
     // Tests for the top level subroutine
     //   shoc_assumed_pdf
@@ -61,49 +59,49 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     // All variances will be given zero or minimum threshold inputs
 
     // Define some reasonable bounds for output
-    static constexpr Real wqls_bound = 0.1;
+    static constexpr Real wqls_bound     = 0.1;
     static constexpr Real wthv_sec_bound = 10;
     static constexpr Real shoc_ql2_bound = 0.1;
-    static constexpr Real shoc_ql_bound = 0.1;
+    static constexpr Real shoc_ql_bound  = 0.1;
 
     Real zt_grid[nlev];
     // Compute heights on midpoint grid
-    for(Int n = 0; n < nlev; ++n) {
-      zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+    for (Int n = 0; n < nlev; ++n) {
+      zt_grid[n] = 0.5 * (zi_grid[n] + zi_grid[n + 1]);
     }
 
     // Initialize data structure for bridging to F90
     ShocAssumedPdfData SDS(shcol, nlev, nlevi);
 
     // Load input data
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.thetal[offset] = thetal[n];
-        SDS.qw[offset] = qw[n];
-        SDS.pres[offset] = pres[n];
+        SDS.thetal[offset]  = thetal[n];
+        SDS.qw[offset]      = qw[n];
+        SDS.pres[offset]    = pres[n];
         SDS.zt_grid[offset] = zt_grid[n];
         SDS.w_field[offset] = 0;
-        SDS.w_sec[offset] = 0.004;
+        SDS.w_sec[offset]   = 0.004;
       }
 
-      for(Int n = 0; n < nlevi; ++n) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-        SDS.thl_sec[offset] = 0;
-        SDS.qw_sec[offset] = 0;
-        SDS.wthl_sec[offset] = 0;
-        SDS.wqw_sec[offset] = 0;
+        SDS.thl_sec[offset]   = 0;
+        SDS.qw_sec[offset]    = 0;
+        SDS.wthl_sec[offset]  = 0;
+        SDS.wqw_sec[offset]   = 0;
         SDS.qwthl_sec[offset] = 0;
-        SDS.w3[offset] = 0;
-        SDS.zi_grid[offset] = zi_grid[n];
+        SDS.w3[offset]        = 0;
+        SDS.zi_grid[offset]   = zi_grid[n];
       }
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         REQUIRE(SDS.qw[offset] > 0);
@@ -112,7 +110,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
         REQUIRE(SDS.zt_grid[offset] > 0);
       }
 
-      for(Int n = 0; n < nlevi; ++n) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlev;
 
         REQUIRE(SDS.zi_grid[offset] >= 0);
@@ -120,19 +118,18 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     }
 
     // Check that zt increase updward and pres decrease upward
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev - 1; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev - 1; ++n) {
         const auto offset = n + s * nlev;
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
         REQUIRE(SDS.pres[offset + 1] - SDS.pres[offset] > 0);
       }
 
       // Check that zi increase upward
-      for(Int n = 0; n < nlevi - 1; ++n) {
+      for (Int n = 0; n < nlevi - 1; ++n) {
         const auto offset = n + s * nlevi;
         REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
       }
-
     }
 
     // Test that the inputs are reasonable.
@@ -147,14 +144,15 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     // Make sure cloud fraction is either 1 or 0 and all
     //  SGS terms are zero.
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        REQUIRE( (SDS.shoc_cldfrac[offset] == 0  || SDS.shoc_cldfrac[offset] == 1) );
+        REQUIRE((SDS.shoc_cldfrac[offset] == 0 || SDS.shoc_cldfrac[offset] == 1));
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] == 0);
-        REQUIRE(std::abs(SDS.shoc_ql2[offset]) < std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
+        REQUIRE(std::abs(SDS.shoc_ql2[offset]) <
+                std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
         REQUIRE(SDS.shoc_ql[offset] >= 0);
       }
     }
@@ -170,12 +168,12 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     // Flux of total water [m/s kg/kg]
     static constexpr Real wqw_sec = 0.0002;
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlevi; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
         SDS.wthl_sec[offset] = wthl_sec;
-        SDS.wqw_sec[offset] = wqw_sec;
+        SDS.wqw_sec[offset]  = wqw_sec;
       }
     }
 
@@ -186,15 +184,16 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     // Make sure cloud fraction is either 1 or 0 and all
     //  SGS terms are zero, EXCEPT wthv_sec.
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        REQUIRE( (SDS.shoc_cldfrac[offset] == 0  || SDS.shoc_cldfrac[offset] == 1) );
+        REQUIRE((SDS.shoc_cldfrac[offset] == 0 || SDS.shoc_cldfrac[offset] == 1));
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] != 0);
         REQUIRE(std::abs(SDS.wthv_sec[offset] < wthv_sec_bound));
-        REQUIRE(std::abs(SDS.shoc_ql2[offset]) < std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
+        REQUIRE(std::abs(SDS.shoc_ql2[offset]) <
+                std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
         REQUIRE(SDS.shoc_ql[offset] >= 0);
         REQUIRE(SDS.shoc_ql[offset] < shoc_ql_bound);
       }
@@ -220,20 +219,20 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     static constexpr Real w_sec = 0.2;
 
     // Load input data
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         SDS.w_sec[offset] = w_sec;
       }
 
-      for(Int n = 0; n < nlevi; ++n) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-        SDS.thl_sec[offset] = thl_sec;
-        SDS.qw_sec[offset] = qw_sec;
+        SDS.thl_sec[offset]   = thl_sec;
+        SDS.qw_sec[offset]    = qw_sec;
         SDS.qwthl_sec[offset] = qwthl_sec;
-        SDS.w3[offset] = s*1.0;
+        SDS.w3[offset]        = s * 1.0;
       }
     }
 
@@ -249,11 +248,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
 
     // Then verify vertical velocity skewness info
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlevi; ++n) {
-        const auto offset = n + s * nlevi;
-        const auto offsets = n + (s+1) * nlevi;
-        if (s < shcol-1){
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlevi; ++n) {
+        const auto offset  = n + s * nlevi;
+        const auto offsets = n + (s + 1) * nlevi;
+        if (s < shcol - 1) {
           // Verify input w3 is greater in subsequent columns
           REQUIRE(SDS.w3[offsets] > SDS.w3[offset]);
         }
@@ -263,11 +262,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
       //  vertical velocity skewness test and with the give inputs there
       //  should be cloud everywhere and all flux terms should be positive.
 
-      for(Int n = 0; n < nlev; ++n) {
-        const auto offset = n + s * nlev;
-        const auto offsets = n + (s+1) * nlev;
+      for (Int n = 0; n < nlev; ++n) {
+        const auto offset  = n + s * nlev;
+        const auto offsets = n + (s + 1) * nlev;
 
-        REQUIRE( (SDS.shoc_cldfrac[offset] > 0  || SDS.shoc_cldfrac[offset] < 1) );
+        REQUIRE((SDS.shoc_cldfrac[offset] > 0 || SDS.shoc_cldfrac[offset] < 1));
         REQUIRE(SDS.wqls[offset] > 0);
         REQUIRE(SDS.wthv_sec[offset] > 0);
         REQUIRE(SDS.shoc_ql2[offset] > 0);
@@ -281,12 +280,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
         // Now verify that the relationships in a strongly positive vertical
         //  velocity flux regime hold true, relative to a symmetric vertical
         //  velocity regime.
-        if (s < shcol-1){
+        if (s < shcol - 1) {
 
-          if (SDS.shoc_cldfrac[offset] < 0.5){
+          if (SDS.shoc_cldfrac[offset] < 0.5) {
             REQUIRE(SDS.shoc_cldfrac[offsets] < SDS.shoc_cldfrac[offset]);
-          }
-          else if (SDS.shoc_cldfrac[offset] > 0.5){
+          } else if (SDS.shoc_cldfrac[offset] > 0.5) {
             REQUIRE(SDS.shoc_cldfrac[offsets] > SDS.shoc_cldfrac[offset]);
           }
 
@@ -313,11 +311,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     //  result is physical.
 
     // Load input data
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlevi; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
-        SDS.w3[offset] = s*-1.0;
+        SDS.w3[offset] = s * -1.0;
       }
     }
 
@@ -330,11 +328,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
 
     // Then verify vertical velocity skewness info
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlevi; ++n) {
-        const auto offset = n + s * nlevi;
-        const auto offsets = n + (s+1) * nlevi;
-        if (s < shcol-1){
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlevi; ++n) {
+        const auto offset  = n + s * nlevi;
+        const auto offsets = n + (s + 1) * nlevi;
+        if (s < shcol - 1) {
           // Verify input w3 is greater in subsequent columns
           REQUIRE(SDS.w3[offsets] < SDS.w3[offset]);
         }
@@ -344,15 +342,15 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
       //   For this negative vertical velocity test some variables
       //   will be expected to be less than zero.
 
-      for(Int n = 0; n < nlev; ++n) {
-        const auto offset = n + s * nlev;
-        const auto offsets = n + (s+1) * nlev;
+      for (Int n = 0; n < nlev; ++n) {
+        const auto offset  = n + s * nlev;
+        const auto offsets = n + (s + 1) * nlev;
 
-        REQUIRE( (SDS.shoc_cldfrac[offset] >= 0  || SDS.shoc_cldfrac[offset] < 1) );
+        REQUIRE((SDS.shoc_cldfrac[offset] >= 0 || SDS.shoc_cldfrac[offset] < 1));
         REQUIRE(SDS.shoc_ql2[offset] > 0);
         REQUIRE(SDS.shoc_ql[offset] >= 0);
 
-        REQUIRE(std::abs(SDS.wqls[offset] ) < wqls_bound);
+        REQUIRE(std::abs(SDS.wqls[offset]) < wqls_bound);
         REQUIRE(std::abs(SDS.wthv_sec[offset]) < wthv_sec_bound);
         REQUIRE(SDS.shoc_ql2[offset] < shoc_ql2_bound);
         REQUIRE(SDS.shoc_ql[offset] < shoc_ql_bound);
@@ -360,12 +358,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
         // Now verify that the relationships in a strongly negative vertical
         //  velocity flux regime hold true, relative to a symmetric vertical
         //  velocity regime.
-        if (s < shcol-1){
+        if (s < shcol - 1) {
 
-          if (SDS.shoc_cldfrac[offset] < 0.5){
+          if (SDS.shoc_cldfrac[offset] < 0.5) {
             REQUIRE(SDS.shoc_cldfrac[offsets] < SDS.shoc_cldfrac[offset]);
-          }
-          else if (SDS.shoc_cldfrac[offset] > 0.5){
+          } else if (SDS.shoc_cldfrac[offset] > 0.5) {
             REQUIRE(SDS.shoc_cldfrac[offsets] > SDS.shoc_cldfrac[offset]);
           }
 
@@ -375,7 +372,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
           // Grid mean liquid water decreased
           REQUIRE(SDS.shoc_ql[offsets] < SDS.shoc_ql[offset]);
           // if cloud present, verify liquid water and buoyancy flux is negative
-          if (SDS.shoc_ql[offsets] > 0){
+          if (SDS.shoc_ql[offsets] > 0) {
             REQUIRE(SDS.wqls[offsets] < SDS.wqls[offset]);
             REQUIRE(SDS.wqls[offsets] < 0);
 
@@ -388,36 +385,34 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
         }
       }
     }
-
   }
 
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
     ShocAssumedPdfData SDS_baseline[] = {
-      //              shcol, nlev, nlevi
-      ShocAssumedPdfData(10, 71, 72),
-      ShocAssumedPdfData(10, 12, 13),
-      ShocAssumedPdfData(7,  16, 17),
-      ShocAssumedPdfData(2, 7, 8),
+        //              shcol, nlev, nlevi
+        ShocAssumedPdfData(10, 71, 72),
+        ShocAssumedPdfData(10, 12, 13),
+        ShocAssumedPdfData(7, 16, 17),
+        ShocAssumedPdfData(2, 7, 8),
     };
 
     // Generate random input data
-    for (auto& d : SDS_baseline) {
+    for (auto &d : SDS_baseline) {
       d.randomize(engine, {
-          {d.thetal, {500, 700}},
-          {d.zi_grid, {0, 100}},
-            });
+                              {d.thetal, {500, 700}},
+                              {d.zi_grid, {0, 100}},
+                          });
     }
 
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocAssumedPdfData SDS_cxx[] = {
-      ShocAssumedPdfData(SDS_baseline[0]),
-      ShocAssumedPdfData(SDS_baseline[1]),
-      ShocAssumedPdfData(SDS_baseline[2]),
-      ShocAssumedPdfData(SDS_baseline[3]),
+        ShocAssumedPdfData(SDS_baseline[0]),
+        ShocAssumedPdfData(SDS_baseline[1]),
+        ShocAssumedPdfData(SDS_baseline[2]),
+        ShocAssumedPdfData(SDS_baseline[3]),
     };
 
     static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocAssumedPdfData);
@@ -426,21 +421,21 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
-      for (auto& d : SDS_baseline) {
+      for (auto &d : SDS_baseline) {
         d.read(Base::m_fid);
       }
     }
 
     // Get data from cxx
-    for (auto& d : SDS_cxx) {
+    for (auto &d : SDS_cxx) {
       shoc_assumed_pdf(d);
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ShocAssumedPdfData& d_baseline = SDS_baseline[i];
-        ShocAssumedPdfData& d_cxx = SDS_cxx[i];
+        ShocAssumedPdfData &d_baseline = SDS_baseline[i];
+        ShocAssumedPdfData &d_cxx      = SDS_cxx[i];
         for (Int k = 0; k < d_baseline.total(d_baseline.wqls); ++k) {
           REQUIRE(d_baseline.shoc_cldfrac[k] == d_cxx.shoc_cldfrac[k]);
           REQUIRE(d_baseline.shoc_ql[k] == d_cxx.shoc_ql[k]);
@@ -458,21 +453,19 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_assumed_pdf_property", "shoc")
-{
+TEST_CASE("shoc_assumed_pdf_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
 
   TestStruct().run_property();
 }
 
-TEST_CASE("shoc_assumed_pdf_bfb", "shoc")
-{
+TEST_CASE("shoc_assumed_pdf_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
 
   TestStruct().run_bfb();

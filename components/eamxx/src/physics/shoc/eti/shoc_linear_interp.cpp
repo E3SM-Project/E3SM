@@ -8,7 +8,7 @@ namespace shoc {
  * default device.
  */
 
-template struct Functions<Real,DefaultDevice>;
+template struct Functions<Real, DefaultDevice>;
 
 } // namespace shoc
 } // namespace scream

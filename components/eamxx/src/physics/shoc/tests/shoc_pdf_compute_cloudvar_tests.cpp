@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_cloud_liquid_variance
 
@@ -66,13 +64,13 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
     ShocAssumedPdfComputeCloudLiquidVarianceData SDS;
 
     // load the data for the first part of the test
-    SDS.a = a;
-    SDS.s1 = s1;
-    SDS.ql1 = ql1;
-    SDS.c1 = C1;
-    SDS.s2 = s2;
-    SDS.ql2 = ql2;
-    SDS.c2 = C2;
+    SDS.a       = a;
+    SDS.s1      = s1;
+    SDS.ql1     = ql1;
+    SDS.c1      = C1;
+    SDS.s2      = s2;
+    SDS.ql2     = ql2;
+    SDS.c2      = C2;
     SDS.shoc_ql = shoc_ql;
 
     SDS.std_s1 = std_s1_small;
@@ -143,27 +141,24 @@ struct UnitWrap::UnitTest<D>::TestShocPdfCompCldVar {
     REQUIRE(SDS.shoc_ql2 < shoc_ql2_small);
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_compute_cldvar_property", "shoc")
-{
+TEST_CASE("shoc_pdf_compute_cldvar_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompCldVar;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_compute_cldvar_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_compute_cldvar_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompCldVar;
 
   TestStruct::run_bfb();

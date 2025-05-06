@@ -3,8 +3,7 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-namespace scream
-{
+namespace scream {
 
 /*
  * This diagnostic will produce data related to the vertical layer based on
@@ -17,28 +16,26 @@ namespace scream
  *   - diag_name = "z_mid"/"geopotential_mid": Same as z_int/geopotential_int but at midpoint levels.
  */
 
-class VerticalLayerDiagnostic : public AtmosphereDiagnostic
-{
+class VerticalLayerDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  VerticalLayerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VerticalLayerDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name () const { return "VerticalLayer"; }
+  std::string name() const { return "VerticalLayer"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
 protected:
-  void compute_diagnostic_impl ();
-  void initialize_impl (const RunType /* run_type */);
+  void compute_diagnostic_impl();
+  void initialize_impl(const RunType /* run_type */);
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  template<int PackSize>
-  void do_compute_diagnostic_impl ();
-protected:
+  template <int PackSize> void do_compute_diagnostic_impl();
 
+protected:
   // Keep track of field dimensions
   Int m_num_cols;
   Int m_num_levs;
@@ -60,6 +57,6 @@ protected:
   bool m_geopotential;
 };
 
-} //namespace scream
+} // namespace scream
 
 #endif // EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP

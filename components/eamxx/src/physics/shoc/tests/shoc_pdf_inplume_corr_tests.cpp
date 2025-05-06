@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_inplume_correlations
 
@@ -60,18 +58,18 @@ struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
     ShocAssumedPdfInplumeCorrelationsData SDS;
 
     // Fill in test data
-    SDS.sqrtqw2_1 = sqrtqw2_1_zero;
-    SDS.sqrtqw2_2 = sqrtqw2_2_zero;
+    SDS.sqrtqw2_1  = sqrtqw2_1_zero;
+    SDS.sqrtqw2_2  = sqrtqw2_2_zero;
     SDS.sqrtthl2_1 = sqrtthl2_1_zero;
     SDS.sqrtthl2_2 = sqrtthl2_2_zero;
-    SDS.qwthlsec = qwthlsec_zero;
-    SDS.qw_first = qw_first_zero;
-    SDS.qw1_1 = qw1_1_zero;
-    SDS.qw1_2 = qw1_2_zero;
-    SDS.thl_first = thl_first_zero;
-    SDS.thl1_1 = thl1_1_zero;
-    SDS.thl1_2 = thl1_2_zero;
-    SDS.a = a_zero;
+    SDS.qwthlsec   = qwthlsec_zero;
+    SDS.qw_first   = qw_first_zero;
+    SDS.qw1_1      = qw1_1_zero;
+    SDS.qw1_2      = qw1_2_zero;
+    SDS.thl_first  = thl_first_zero;
+    SDS.thl1_1     = thl1_1_zero;
+    SDS.thl1_2     = thl1_2_zero;
+    SDS.a          = a_zero;
 
     // Call Fortran implementation
     shoc_assumed_pdf_inplume_correlations(SDS);
@@ -96,11 +94,11 @@ struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
     static constexpr Real qwthlsec_pos = 1.e-5;
 
     // Fill in test data
-    SDS.sqrtqw2_1 = sqrtqw2_1_pos;
-    SDS.sqrtqw2_2 = sqrtqw2_2_pos;
+    SDS.sqrtqw2_1  = sqrtqw2_1_pos;
+    SDS.sqrtqw2_2  = sqrtqw2_2_pos;
     SDS.sqrtthl2_1 = sqrtthl2_1_pos;
     SDS.sqrtthl2_2 = sqrtthl2_2_pos;
-    SDS.qwthlsec = qwthlsec_pos;
+    SDS.qwthlsec   = qwthlsec_pos;
 
     // Call Fortran implementation
     shoc_assumed_pdf_inplume_correlations(SDS);
@@ -128,27 +126,24 @@ struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
     REQUIRE(SDS.r_qwthl_1 >= -1);
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_inplume_corr_property", "shoc")
-{
+TEST_CASE("shoc_pdf_inplume_corr_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocInPlumeCorr;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_inplume_corr_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_inplume_corr_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocInPlumeCorr;
 
   TestStruct::run_bfb();

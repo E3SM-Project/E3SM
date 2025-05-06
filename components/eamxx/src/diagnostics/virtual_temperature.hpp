@@ -3,39 +3,36 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-namespace scream
-{
+namespace scream {
 
 /*
  * This diagnostic will produce the virtual temperature.
  */
 
-class VirtualTemperatureDiagnostic : public AtmosphereDiagnostic
-{
+class VirtualTemperatureDiagnostic : public AtmosphereDiagnostic {
 public:
-
   // Constructors
-  VirtualTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VirtualTemperatureDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name () const { return "VirtualTemperature"; }
+  std::string name() const { return "VirtualTemperature"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
-protected:
+  void compute_diagnostic_impl();
 
+protected:
   // Keep track of field dimensions
   Int m_num_cols;
   Int m_num_levs;
 
 }; // class VirtualTemperatureDiagnostic
 
-} //namespace scream
+} // namespace scream
 
 #endif // EAMXX_VIRTUAL_TEMP_DIAGNOSTIC_HPP

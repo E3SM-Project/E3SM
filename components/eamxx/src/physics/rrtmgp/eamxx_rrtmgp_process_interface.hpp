@@ -2,10 +2,10 @@
 #define SCREAM_RRTMGP_RADIATION_HPP
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
-#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
-#include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "physics/rrtmgp/eamxx_rrtmgp_interface.hpp"
+#include "share/atm_process/atmosphere_process.hpp"
 #include <string>
 
 namespace scream {
@@ -22,52 +22,52 @@ namespace scream {
 
 class RRTMGPRadiation : public AtmosphereProcess {
 public:
-  using KT         = ekat::KokkosTypes<DefaultDevice>;
+  using KT = ekat::KokkosTypes<DefaultDevice>;
 #ifdef RRTMGP_LAYOUT_LEFT
-  using layout_t   = Kokkos::LayoutLeft;
+  using layout_t = Kokkos::LayoutLeft;
 #else
-  using layout_t   = typename ekat::KokkosTypes<DefaultDevice>::Layout;
+  using layout_t = typename ekat::KokkosTypes<DefaultDevice>::Layout;
 #endif
-  using real1dk    = Kokkos::View<Real*, DefaultDevice>;
-  using real2dk    = Kokkos::View<Real**, layout_t, DefaultDevice>;
-  using real3dk    = Kokkos::View<Real***, layout_t, DefaultDevice>;
-  using creal1dk   = Kokkos::View<const Real*, DefaultDevice>;
-  using creal2dk   = Kokkos::View<const Real**, layout_t, DefaultDevice>;
-  using creal3dk   = Kokkos::View<const Real***, layout_t, DefaultDevice>;
+  using real1dk   = Kokkos::View<Real *, DefaultDevice>;
+  using real2dk   = Kokkos::View<Real **, layout_t, DefaultDevice>;
+  using real3dk   = Kokkos::View<Real ***, layout_t, DefaultDevice>;
+  using creal1dk  = Kokkos::View<const Real *, DefaultDevice>;
+  using creal2dk  = Kokkos::View<const Real **, layout_t, DefaultDevice>;
+  using creal3dk  = Kokkos::View<const Real ***, layout_t, DefaultDevice>;
   using ureal1dk  = Unmanaged<real1dk>;
   using ureal2dk  = Unmanaged<real2dk>;
   using ureal3dk  = Unmanaged<real3dk>;
-  using cureal1dk  = Unmanaged<creal1dk>;
-  using cureal2dk  = Unmanaged<creal2dk>;
-  using cureal3dk  = Unmanaged<creal3dk>;
+  using cureal1dk = Unmanaged<creal1dk>;
+  using cureal2dk = Unmanaged<creal2dk>;
+  using cureal3dk = Unmanaged<creal3dk>;
 
   using ci_string = ekat::CaseInsensitiveString;
 
-  using lrreal2dk   = typename KT::template view_2d<Real>;
-  using ulrreal2dk  = Unmanaged<lrreal2dk>;
+  using lrreal2dk  = typename KT::template view_2d<Real>;
+  using ulrreal2dk = Unmanaged<lrreal2dk>;
 
 #ifdef RRTMGP_ENABLE_KOKKOS
   using interface_t = rrtmgp::rrtmgp_interface<Real, layout_t, DefaultDevice>;
 #endif
 
   // Constructors
-  RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
+  RRTMGPRadiation(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of the subcomponent
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "rrtmgp"; }
+  std::string name() const { return "rrtmgp"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grid_manager);
 
-// NOTE: cannot use lambda functions for CUDA devices if these are protected!
+  // NOTE: cannot use lambda functions for CUDA devices if these are protected!
 public:
   // The three main interfaces for the subcomponent
-  void initialize_impl (const RunType run_type);
-  void run_impl        (const double dt);
-  void finalize_impl   ();
+  void initialize_impl(const RunType run_type);
+  void run_impl(const double dt);
+  void finalize_impl();
 
   // Keep track of number of columns and levels
   int m_ncol;
@@ -91,9 +91,9 @@ public:
   // Orbital parameters, used for zenith angle calculations.
   // If >= 0, bypass computation based on orbital year and use fixed parameters
   // If <  0, compute based on orbital year, specified above
-  Real m_orbital_eccen;  // Eccentricity
-  Real m_orbital_obliq;  // Obliquity
-  Real m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
+  Real m_orbital_eccen; // Eccentricity
+  Real m_orbital_obliq; // Obliquity
+  Real m_orbital_mvelp; // Vernal Equinox Mean Longitude of Perihelion
 
   // Value for prescribing an invariant solar constant (i.e. total solar irradiance
   // at TOA).  Used for idealized experiments such as RCE. This is only used when a
@@ -113,10 +113,10 @@ public:
 
   // These are the gases that we keep track of
   int m_ngas;
-  std::vector<ci_string>   m_gas_names;
-  real1dk                  m_gas_mol_weights;
+  std::vector<ci_string> m_gas_names;
+  real1dk m_gas_mol_weights;
 #ifdef RRTMGP_ENABLE_YAKL
-  GasConcs                 m_gas_concs;
+  GasConcs m_gas_concs;
 #endif
 #ifdef RRTMGP_ENABLE_KOKKOS
   GasConcsK<Real, layout_t, DefaultDevice> m_gas_concs_k;
@@ -139,16 +139,16 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_ncol        = 10;
-    static constexpr int num_2d_nlay        = 16;
-    static constexpr int num_2d_nlay_p1     = 23;
-    static constexpr int num_2d_nswbands    = 2;
+    static constexpr int num_1d_ncol          = 10;
+    static constexpr int num_2d_nlay          = 16;
+    static constexpr int num_2d_nlay_p1       = 23;
+    static constexpr int num_2d_nswbands      = 2;
     static constexpr int num_3d_nlev_nswbands = 4;
     static constexpr int num_3d_nlev_nlwbands = 2;
     static constexpr int num_3d_nlay_nswbands = 4;
     static constexpr int num_3d_nlay_nlwbands = 2;
-    static constexpr int num_3d_nlay_nswgpts = 1;
-    static constexpr int num_3d_nlay_nlwgpts = 1;
+    static constexpr int num_3d_nlay_nswgpts  = 1;
+    static constexpr int num_3d_nlay_nlwgpts  = 1;
 
     // 1d size (ncol)
     ureal1dk cosine_zenith;
@@ -330,11 +330,9 @@ public:
     ureal3dk cld_tau_sw_gpt_k;
     ureal3dk cld_tau_lw_gpt_k;
 #endif
-
   };
 
 protected:
-
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;
 
@@ -342,12 +340,12 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
-  std::shared_ptr<const AbstractGrid>   m_grid;
+  std::shared_ptr<const AbstractGrid> m_grid;
 
   // Struct which contains local variables
   Buffer m_buffer;
-};  // class RRTMGPRadiation
+}; // class RRTMGPRadiation
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // SCREAM_RRTMGP_RADIATION_HPP
+#endif // SCREAM_RRTMGP_RADIATION_HPP

@@ -1,15 +1,14 @@
 #ifndef SCREAM_FAMILY_TRACKING_CLASS
 #define SCREAM_FAMILY_TRACKING_CLASS
 
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "ekat/ekat_assert.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 
 #include <list>
 #include <memory>
 #include <type_traits>
 
-namespace scream
-{
+namespace scream {
 
 /*
  * Class that handles tracking of parent/children instances of the same class type
@@ -37,47 +36,41 @@ namespace scream
  * a shared_ptr via lock() anymore).
  */
 
-template<typename DerivedType>
-class FamilyTracking : public ekat::enable_shared_from_this<DerivedType>
-{
+template <typename DerivedType> class FamilyTracking : public ekat::enable_shared_from_this<DerivedType> {
 public:
   using derived_type  = DerivedType;
   using tracking_type = FamilyTracking<derived_type>;
 
-  FamilyTracking ();
-  FamilyTracking (const tracking_type&) = default;
-  FamilyTracking& operator= (const tracking_type&) = default;
-  ~FamilyTracking ();
+  FamilyTracking();
+  FamilyTracking(const tracking_type &)            = default;
+  FamilyTracking &operator=(const tracking_type &) = default;
+  ~FamilyTracking();
 
-  void create_parent_child_link (const std::shared_ptr<derived_type>& parent);
+  void create_parent_child_link(const std::shared_ptr<derived_type> &parent);
 
-  std::shared_ptr<derived_type> get_parent () const { return m_parent; }
+  std::shared_ptr<derived_type> get_parent() const { return m_parent; }
 
-  const std::list<std::weak_ptr<derived_type>>& get_children () const { return m_children; }
+  const std::list<std::weak_ptr<derived_type>> &get_children() const { return m_children; }
+
 protected:
-
   // Check if a weak_ptr points to the same object as this class
-  bool is_same (const std::weak_ptr<derived_type>& src) const;
+  bool is_same(const std::weak_ptr<derived_type> &src) const;
 
-  std::shared_ptr<derived_type>            m_parent;
-  std::list<std::weak_ptr<derived_type>>   m_children;
+  std::shared_ptr<derived_type> m_parent;
+  std::list<std::weak_ptr<derived_type>> m_children;
 };
 
 // =================== IMPLEMENTATION ====================== //
 
-template<typename DerivedType>
-FamilyTracking<DerivedType>::FamilyTracking ()
-{
+template <typename DerivedType> FamilyTracking<DerivedType>::FamilyTracking() {
   // Note: we cannot put the static assert in the class decl, cause DerivedType
   //       is still incomplete at that point.
-  static_assert (std::is_base_of<tracking_type,derived_type>::value,
-      "Error! Do not instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
-      "       This class exploits the Curiously Recurring Template Pattern (CRTP).\n");
+  static_assert(std::is_base_of<tracking_type, derived_type>::value,
+                "Error! Do not instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
+                "       This class exploits the Curiously Recurring Template Pattern (CRTP).\n");
 }
 
-template<typename DerivedType>
-FamilyTracking<DerivedType>::~FamilyTracking ()
-{
+template <typename DerivedType> FamilyTracking<DerivedType>::~FamilyTracking() {
   // If we are the child/parent of another instance, we need to
   // remove ourself as their parent/child respectively.
 
@@ -91,10 +84,10 @@ FamilyTracking<DerivedType>::~FamilyTracking ()
     //       and can be compared with ohter weak_ptr's, by using
     //       a symmetric version of owner_before. In particular,
     //       a==b if !a.owner_before(b) and !b.owner_before(a).
-    auto me = this->weak_from_this();
-    auto& siblings = m_parent->m_children;
-    bool found = false;
-    for (auto it=siblings.begin(); it!=siblings.end(); ++it) {
+    auto me        = this->weak_from_this();
+    auto &siblings = m_parent->m_children;
+    bool found     = false;
+    for (auto it = siblings.begin(); it != siblings.end(); ++it) {
       if (is_same(*it)) {
         found = true;
         siblings.erase(it);
@@ -104,9 +97,9 @@ FamilyTracking<DerivedType>::~FamilyTracking ()
 
     // Note: Cannot throw in a destructor, so just print and call std::abort
     if (not found) {
-        printf("Error! Could not find this object in the list of the parent's children.\n"
-               "       Aborting...\n");
-        std::abort();
+      printf("Error! Could not find this object in the list of the parent's children.\n"
+             "       Aborting...\n");
+      std::abort();
     }
   }
 
@@ -125,36 +118,29 @@ FamilyTracking<DerivedType>::~FamilyTracking ()
   }
 }
 
-template<typename DerivedType>
-void FamilyTracking<DerivedType>::
-create_parent_child_link (const std::shared_ptr<derived_type>& parent)
-{
+template <typename DerivedType>
+void FamilyTracking<DerivedType>::create_parent_child_link(const std::shared_ptr<derived_type> &parent) {
   // Sanity checks
-  EKAT_REQUIRE_MSG (this->shared_from_this(),
-      "Error! Failure to get a shared object from *this.\n");
-  EKAT_REQUIRE_MSG (m_parent==nullptr,
-      "Error! This object already stores a parent.\n");
+  EKAT_REQUIRE_MSG(this->shared_from_this(), "Error! Failure to get a shared object from *this.\n");
+  EKAT_REQUIRE_MSG(m_parent == nullptr, "Error! This object already stores a parent.\n");
 
-  auto me = this->weak_from_this ();
-  EKAT_REQUIRE_MSG (me.lock(),"Error! Unable to aquire a shared_ptr to this object.\n");
+  auto me = this->weak_from_this();
+  EKAT_REQUIRE_MSG(me.lock(), "Error! Unable to aquire a shared_ptr to this object.\n");
 
   // Set parent
   m_parent = parent;
 
   // Safety check. This should never happen, but just in case
   for (auto it : parent->get_children()) {
-    EKAT_REQUIRE_MSG (not is_same(it),
-        "Error! This object is already in the list of children of the input parent.\n");
+    EKAT_REQUIRE_MSG(not is_same(it), "Error! This object is already in the list of children of the input parent.\n");
   }
 
   // Add myself as child in my parent's list
   parent->m_children.push_back(me);
 }
 
-template<typename DerivedType>
-bool FamilyTracking<DerivedType>::
-is_same (const std::weak_ptr<derived_type>& src) const
-{
+template <typename DerivedType>
+bool FamilyTracking<DerivedType>::is_same(const std::weak_ptr<derived_type> &src) const {
   auto me = this->weak_from_this();
   return not src.owner_before(me) and not me.owner_before(src);
 }

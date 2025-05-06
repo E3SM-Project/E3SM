@@ -3,32 +3,30 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-namespace scream
-{
+namespace scream {
 
 /*
  * This diagnostic will produce the potential temperature.
  */
 
-class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic
-{
+class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  PotentialTemperatureDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
-  std::string name () const override { return "PotentialTemperature"; }
+  std::string name() const override { return "PotentialTemperature"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
-protected:
+  void compute_diagnostic_impl();
 
+protected:
   // Keep track of field dimensions
   Int m_num_cols;
   Int m_num_levs;
@@ -38,6 +36,6 @@ protected:
 
 }; // class PotentialTemperatureDiagnostic
 
-} //namespace scream
+} // namespace scream
 
 #endif // EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP

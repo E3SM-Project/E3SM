@@ -15,7 +15,7 @@
 namespace scream {
 
 class MAMAci final : public MAMGenericInterface {
- public:
+public:
   // declare some constant scratch space lengths
   static constexpr int hetro_scratch_   = 43;
   static constexpr int dropmix_scratch_ = 15;
@@ -26,7 +26,7 @@ class MAMAci final : public MAMGenericInterface {
   using view_3d       = scream::mam_coupling::view_3d;
   using const_view_3d = scream::mam_coupling::const_view_3d;
 
- private:
+private:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   mam4::NucleateIce nucleate_ice_;
@@ -40,9 +40,9 @@ class MAMAci final : public MAMGenericInterface {
   // ACI runtime ( or namelist) options
   //------------------------------------------------------------------------
 
-  Real wsubmin_;                   // Minimum subgrid vertical velocity
-  bool enable_aero_vertical_mix_;  // To enable vertical mixing of aerosols
-  int top_lev_;                    // Top level for MAM4xx
+  Real wsubmin_;                  // Minimum subgrid vertical velocity
+  bool enable_aero_vertical_mix_; // To enable vertical mixing of aerosols
+  int top_lev_;                   // Top level for MAM4xx
 
   //------------------------------------------------------------------------
   // END: ACI runtime ( or namelist) options
@@ -74,10 +74,10 @@ class MAMAci final : public MAMGenericInterface {
   view_2d naai_;
 
   // droplet activation inputs and outputs
-  view_2d kvh_int_;  // Eddy diffusivity of heat at the interfaces
+  view_2d kvh_int_; // Eddy diffusivity of heat at the interfaces
   const_view_2d liqcldf_;
   const_view_2d liqcldf_prev_;
-  const_view_2d kvh_mid_;  // Eddy diffusivity of heat at the midpoints
+  const_view_2d kvh_mid_; // Eddy diffusivity of heat at the midpoints
 
   view_2d cloud_frac_;
   view_2d cloud_frac_prev_;
@@ -89,13 +89,13 @@ class MAMAci final : public MAMGenericInterface {
   view_2d ndropcol_;
   view_2d ndropmix_;
   view_2d nsource_;
-  view_2d nc_inp_to_aci_;  // FIXME: TEMPORARY output
-  view_2d ccn_0p02_;       // FIXME: TEMPORARY output
-  view_2d ccn_0p05_;       // FIXME: TEMPORARY output
-  view_2d ccn_0p1_;        // FIXME: TEMPORARY output
-  view_2d ccn_0p2_;        // FIXME: TEMPORARY output
-  view_2d ccn_0p5_;        // FIXME: TEMPORARY output
-  view_2d ccn_1p0_;        // FIXME: TEMPORARY output
+  view_2d nc_inp_to_aci_; // FIXME: TEMPORARY output
+  view_2d ccn_0p02_;      // FIXME: TEMPORARY output
+  view_2d ccn_0p05_;      // FIXME: TEMPORARY output
+  view_2d ccn_0p1_;       // FIXME: TEMPORARY output
+  view_2d ccn_0p2_;       // FIXME: TEMPORARY output
+  view_2d ccn_0p5_;       // FIXME: TEMPORARY output
+  view_2d ccn_1p0_;       // FIXME: TEMPORARY output
   view_2d wtke_;
   view_3d ccn_;
   view_2d coltend_[mam4::ndrop::ncnst_tot];
@@ -122,13 +122,13 @@ class MAMAci final : public MAMGenericInterface {
   view_2d diagnostic_scratch_[hetro_scratch_];
 
   // Subgrid scale velocities
-  view_2d wsub_, wsubice_, wsig_;  //, w2_;
+  view_2d wsub_, wsubice_, wsig_; //, w2_;
 
   // local atmospheric state column variables
-  const_view_2d pdel_;       // pressure thickess of layer [Pa]
-  view_2d rpdel_;            // Inverse of pdel_
-  const_view_2d w_sec_mid_;  // Vertical velocity variance at midpoints
-  view_2d w_sec_int_;        // Vertical velocity variance at interfaces
+  const_view_2d pdel_;      // pressure thickess of layer [Pa]
+  view_2d rpdel_;           // Inverse of pdel_
+  const_view_2d w_sec_mid_; // Vertical velocity variance at midpoints
+  view_2d w_sec_int_;       // Vertical velocity variance at interfaces
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
   view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
@@ -136,7 +136,7 @@ class MAMAci final : public MAMGenericInterface {
   // A view to carry interstitial aerosol mmrs/nmrs
   view_3d state_q_work_;
 
- public:
+public:
   // Constructor
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -144,13 +144,11 @@ class MAMAci final : public MAMGenericInterface {
   std::string name() const override { return "mam4_aci"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
-                                     len_temporary_views_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporary_views_);
   }
 
   void init_buffers(const ATMBufferManager &buffer_manager) override;
@@ -159,7 +157,7 @@ class MAMAci final : public MAMGenericInterface {
   // process behavior
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;
-  void finalize_impl() override{/*DO NOTHING*/};
+  void finalize_impl() override { /*DO NOTHING*/ };
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
@@ -168,10 +166,8 @@ class MAMAci final : public MAMGenericInterface {
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
-                    const mam_coupling::WetAtmosphere &wet_atm,
-                    const mam_coupling::AerosolState &wet_aero,
-                    const mam_coupling::DryAtmosphere &dry_atm,
+    void initialize(const int ncol, const int nlev, const mam_coupling::WetAtmosphere &wet_atm,
+                    const mam_coupling::AerosolState &wet_aero, const mam_coupling::DryAtmosphere &dry_atm,
                     const mam_coupling::AerosolState &dry_aero) {
       ncol_pre_     = ncol;
       nlev_pre_     = nlev;
@@ -182,13 +178,11 @@ class MAMAci final : public MAMGenericInterface {
     }
 
     KOKKOS_INLINE_FUNCTION
-    void operator()(
-        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int i = team.league_rank();  // column index
+    void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+      const int i = team.league_rank(); // column index
 
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
-      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
-                                dry_aero_pre_, i);
+      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_, dry_aero_pre_, i);
       team.team_barrier();
       // vertical heights has to be computed after computing dry mixing ratios
       // for atmosphere
@@ -196,8 +190,8 @@ class MAMAci final : public MAMGenericInterface {
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
       // FIXME: we only set_min_background_mmr in aci.
       set_min_background_mmr(team, dry_aero_pre_,
-                             i);  // dry_atm_pre_ is the output
-    }                             // operator()
+                             i); // dry_atm_pre_ is the output
+    } // operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
@@ -207,9 +201,9 @@ class MAMAci final : public MAMGenericInterface {
     mam_coupling::WetAtmosphere wet_atm_pre_;
     mam_coupling::DryAtmosphere dry_atm_pre_;
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
-  };  // MAMAci::Preprocess
+  }; // MAMAci::Preprocess
 
- private:
+private:
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
 
@@ -225,8 +219,8 @@ class MAMAci final : public MAMGenericInterface {
   int num_2d_scratch_ = 94;
   int len_temporary_views_{0};
 
-};  // MAMAci
+}; // MAMAci
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_ACI_HPP
+#endif // EAMXX_MAM_ACI_HPP

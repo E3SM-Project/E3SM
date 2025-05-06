@@ -7,7 +7,7 @@ namespace tms {
  * Explicit instantiation using the default device.
  */
 
-template struct Functions<Real,DefaultDevice>;
+template struct Functions<Real, DefaultDevice>;
 
 } // namespace tms
 } // namespace scream

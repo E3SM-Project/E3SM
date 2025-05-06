@@ -13,7 +13,7 @@ namespace scream {
  */
 
 class VertContractDiag : public AtmosphereDiagnostic {
- public:
+public:
   // Constructors
   VertContractDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -23,15 +23,14 @@ class VertContractDiag : public AtmosphereDiagnostic {
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
- protected:
+protected:
 #ifdef KOKKOS_ENABLE_CUDA
- public:
+public:
 #endif
   void compute_diagnostic_impl();
   void initialize_impl(const RunType /*run_type*/);
   // Additional function to scale the weights
   void scale_wts(Field &wts, const Field &wts_sum);
-
 
   // Name of each field (because the diagnostic impl is generic)
   std::string m_diag_name;
@@ -48,6 +47,6 @@ class VertContractDiag : public AtmosphereDiagnostic {
   Field m_weighting_sum;
 };
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_VERT_CONTRACT_HPP
+#endif // EAMXX_VERT_CONTRACT_HPP

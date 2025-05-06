@@ -10,10 +10,9 @@ namespace scream {
  */
 
 class NumberPathDiagnostic : public AtmosphereDiagnostic {
- public:
+public:
   // Constructors
-  NumberPathDiagnostic(const ekat::Comm &comm,
-                       const ekat::ParameterList &params);
+  NumberPathDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "NumberPath"; }
@@ -21,13 +20,13 @@ class NumberPathDiagnostic : public AtmosphereDiagnostic {
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
- protected:
+protected:
 #ifdef KOKKOS_ENABLE_CUDA
- public:
+public:
 #endif
   void compute_diagnostic_impl();
 
- protected:
+protected:
   // Keep track of field dimensions
   int m_num_cols;
   int m_num_levs;
@@ -35,8 +34,8 @@ class NumberPathDiagnostic : public AtmosphereDiagnostic {
   std::string m_qname;
   std::string m_nname;
   std::string m_kind;
-};  // class NumberPathDiagnostic
+}; // class NumberPathDiagnostic
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_NUMBER_PATH_DIAGNOSTIC_HPP
+#endif // EAMXX_NUMBER_PATH_DIAGNOSTIC_HPP

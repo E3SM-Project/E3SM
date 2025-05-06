@@ -1,15 +1,14 @@
 #ifndef SCREAM_TMS_PROCESS_HPP
 #define SCREAM_TMS_PROCESS_HPP
 
+#include "ekat/ekat_parameter_list.hpp"
 #include "physics/tms/tms_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
-#include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
 
-namespace scream
-{
+namespace scream {
 
 /*
  * The class responsible for computing/applying the surface drag coefficient
@@ -17,33 +16,31 @@ namespace scream
  *
  * The AD should store exactly ONE instance of this class stored
  * in its list of subcomponents (the AD should make sure of this).
-*/
+ */
 
-class TurbulentMountainStress : public AtmosphereProcess
-{
+class TurbulentMountainStress : public AtmosphereProcess {
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using TMSFunctions = tms::Functions<Real, DefaultDevice>;
-  using Spack        = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using Spack        = ekat::Pack<Real, SCREAM_PACK_SIZE>;
   using view_2d      = TMSFunctions::view_2d<Spack>;
   using uview_2d     = ekat::Unmanaged<view_2d>;
 
 public:
-
   // Constructors
-  TurbulentMountainStress (const ekat::Comm& comm, const ekat::ParameterList& params);
+  TurbulentMountainStress(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "tms"; }
+  std::string name() const { return "tms"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_2d_midpoint_views = 3;
+    static constexpr int num_2d_midpoint_views  = 3;
     static constexpr int num_2d_interface_views = 1;
 
     uview_2d exner, dz, z_mid, z_int;
@@ -54,12 +51,11 @@ public:
 protected:
 #endif
 
-  void run_impl        (const double dt);
+  void run_impl(const double dt);
 
 protected:
-
-  void initialize_impl (const RunType run_type);
-  void finalize_impl   ();
+  void initialize_impl(const RunType run_type);
+  void finalize_impl();
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;

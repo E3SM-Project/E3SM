@@ -9,7 +9,7 @@ namespace cld_fraction {
  * default device.
  */
 
-template struct CldFractionFunctions<Real,DefaultDevice>;
+template struct CldFractionFunctions<Real, DefaultDevice>;
 
 } // namespace cld_fraction
 } // namespace scream

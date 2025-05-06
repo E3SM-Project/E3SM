@@ -14,13 +14,11 @@
 
 namespace scream::mam_coupling {
 
-inline const std::pair<Real, Real> &physical_min_max(
-    const std::string &field_name) {
-  static const std::map<std::string, std::pair<Real, Real>> limits = {
-      {"nmr", {0, 1e13}}, {"mmr", {-1e-10, 1e-2}}};
+inline const std::pair<Real, Real> &physical_min_max(const std::string &field_name) {
+  static const std::map<std::string, std::pair<Real, Real>> limits = {{"nmr", {0, 1e13}}, {"mmr", {-1e-10, 1e-2}}};
 
   auto it = limits.find(field_name);
-  if(it == limits.end()) {
+  if (it == limits.end()) {
     // NOTE: If we do not find a variable name in physical_min_max,
     // we return a pair (-1, -1) that will bypass the interval check.
     static const std::pair<Real, Real> do_not_check = std::make_pair(-1, -1);
@@ -29,13 +27,9 @@ inline const std::pair<Real, Real> &physical_min_max(
     return it->second;
   }
 }
-inline Real physical_min(const std::string &field_name) {
-  return physical_min_max(field_name).first;
-}
-inline Real physical_max(const std::string &field_name) {
-  return physical_min_max(field_name).second;
-}
+inline Real physical_min(const std::string &field_name) { return physical_min_max(field_name).first; }
+inline Real physical_max(const std::string &field_name) { return physical_min_max(field_name).second; }
 
-}  // namespace scream::mam_coupling
+} // namespace scream::mam_coupling
 
 #endif

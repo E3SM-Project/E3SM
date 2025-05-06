@@ -1,15 +1,15 @@
 #ifndef SCREAM_TMS_FUNCTIONS_F90_HPP
 #define SCREAM_TMS_FUNCTIONS_F90_HPP
 
-#include "share/eamxx_types.hpp"
 #include "physics/share/physics_test_data.hpp"
+#include "share/eamxx_types.hpp"
 
-#include "tms_functions.hpp"
 #include "physics_constants.hpp"
+#include "tms_functions.hpp"
 
-#include <vector>
 #include <array>
 #include <utility>
+#include <vector>
 
 //
 // Bridge functions to call fortran version of tms functions from C++
@@ -18,8 +18,7 @@
 namespace scream {
 namespace tms {
 
-struct ComputeTMSData : public PhysicsTestData
-{
+struct ComputeTMSData : public PhysicsTestData {
   // Input
   int ncols, nlevs;
   Real *u_wind, *v_wind, *t_mid, *p_mid, *exner, *z_mid, *sgh, *landfrac;
@@ -28,19 +27,17 @@ struct ComputeTMSData : public PhysicsTestData
   Real *ksrf, *taux, *tauy;
 
   ComputeTMSData(int ncols_, int nlevs_)
-   : PhysicsTestData({ {ncols_}, {ncols_, nlevs_} },
-                     { {&sgh, &landfrac, &ksrf, &taux, &tauy},
-                       {&u_wind, &v_wind, &t_mid, &p_mid, &exner, &z_mid} }),
-    ncols(ncols_), nlevs(nlevs_)
-  {}
+      : PhysicsTestData({{ncols_}, {ncols_, nlevs_}},
+                        {{&sgh, &landfrac, &ksrf, &taux, &tauy}, {&u_wind, &v_wind, &t_mid, &p_mid, &exner, &z_mid}}),
+        ncols(ncols_), nlevs(nlevs_) {}
 
   PTD_STD_DEF(ComputeTMSData, 2, ncols, nlevs);
 };
 
 // Glue functions to call fortran from from C++ with the Data struct
-void compute_tms(ComputeTMSData& d);
+void compute_tms(ComputeTMSData &d);
 
-}  // namespace tms
-}  // namespace scream
+} // namespace tms
+} // namespace scream
 
 #endif // SCREAM_TMS_FUNCTIONS_F90_HPP

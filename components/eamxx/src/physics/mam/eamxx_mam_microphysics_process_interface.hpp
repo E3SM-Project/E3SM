@@ -32,7 +32,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
- public:
+public:
   // Constructor
   MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -44,8 +44,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::string name() const { return "mam_aero_microphysics"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -58,9 +57,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() { /*Do nothing*/ };
 
- private:
+private:
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
@@ -70,17 +69,17 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // If >= 0, bypass computation based on orbital year and use fixed parameters
   // If <  0, compute based on orbital year, specified above
   // These variables are required to be double.
-  double m_orbital_eccen;  // Eccentricity
-  double m_orbital_obliq;  // Obliquity
-  double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
+  double m_orbital_eccen; // Eccentricity
+  double m_orbital_obliq; // Obliquity
+  double m_orbital_mvelp; // Vernal Equinox Mean Longitude of Perihelion
 
   struct Config {
     // stratospheric chemistry parameters
     struct {
-      int o3_lbl;   // number of layers with ozone decay from the surface
-      Real o3_sfc;  // set from namelist input linoz_sfc
-      Real o3_tau;  // set from namelist input linoz_tau
-      Real psc_T;   // set from namelist input linoz_psc_T
+      int o3_lbl;  // number of layers with ozone decay from the surface
+      Real o3_sfc; // set from namelist input linoz_sfc
+      Real o3_tau; // set from namelist input linoz_tau
+      Real psc_T;  // set from namelist input linoz_psc_T
     } linoz;
 
     // aqueous chemistry parameters
@@ -132,8 +131,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::vector<mam_coupling::TracerData> elevated_emis_data_;
   std::map<std::string, std::string> elevated_emis_file_name_;
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
-  view_2d
-      elevated_emis_output_[mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS];
+  view_2d elevated_emis_output_[mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS];
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
 
@@ -162,8 +160,8 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
-};  // MAMMicrophysics
+}; // MAMMicrophysics
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_MICROPHYSICS_HPP
+#endif // EAMXX_MAM_MICROPHYSICS_HPP

@@ -12,7 +12,7 @@ namespace scream {
  */
 
 class HorizAvgDiag : public AtmosphereDiagnostic {
- public:
+public:
   // Constructors
   HorizAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -22,13 +22,13 @@ class HorizAvgDiag : public AtmosphereDiagnostic {
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
- protected:
+protected:
 #ifdef KOKKOS_ENABLE_CUDA
- public:
+public:
 #endif
   void compute_diagnostic_impl();
 
- protected:
+protected:
   void initialize_impl(const RunType /*run_type*/);
 
   // Name of each field (because the diagnostic impl is generic)
@@ -38,6 +38,6 @@ class HorizAvgDiag : public AtmosphereDiagnostic {
   Field m_scaled_area;
 };
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_HORIZ_AVERAGE_HPP
+#endif // EAMXX_HORIZ_AVERAGE_HPP

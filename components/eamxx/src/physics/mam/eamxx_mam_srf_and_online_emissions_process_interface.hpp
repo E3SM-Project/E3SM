@@ -47,18 +47,17 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   view_1d fluxes_in_mks_units_;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
-  static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
+  static constexpr Real amufac = 1.65979e-23; // 1.e4* kg / amu
 
   // For reading soil erodibility file
   std::shared_ptr<AbstractRemapper> serod_horizInterp_;
   std::shared_ptr<AtmosphereInput> serod_dataReader_;
   const_view_1d soil_erodibility_;
 
- public:
+public:
   // For reading surface emissions and marine organics file
-  using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-  using marineOrganicsFunc =
-      marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
+  using srfEmissFunc       = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
+  using marineOrganicsFunc = marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
 
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
@@ -70,8 +69,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   std::string name() const { return "mam_srf_online_emissions"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -84,15 +82,14 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl(){/*Do nothing*/};
+  void finalize_impl() { /*Do nothing*/ };
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const int &ncol, const int &nlev,
-                    const mam_coupling::WetAtmosphere &wet_atm,
+    void initialize(const int &ncol, const int &nlev, const mam_coupling::WetAtmosphere &wet_atm,
                     const mam_coupling::DryAtmosphere &dry_atm) {
       ncol_pre_    = ncol;
       nlev_pre_    = nlev;
@@ -100,9 +97,8 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
       dry_atm_pre_ = dry_atm;
     }
     KOKKOS_INLINE_FUNCTION
-    void operator()(
-        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int icol = team.league_rank();  // column index
+    void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+      const int icol = team.league_rank(); // column index
 
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, icol);
       team.team_barrier();
@@ -110,7 +106,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, icol);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, icol);
-    }  // Preprocess operator()
+    } // Preprocess operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
@@ -119,8 +115,8 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
     // local atmospheric and aerosol state data
     mam_coupling::WetAtmosphere wet_atm_pre_;
     mam_coupling::DryAtmosphere dry_atm_pre_;
-  };  // MAMSrfOnlineEmiss::Preprocess
- private:
+  }; // MAMSrfOnlineEmiss::Preprocess
+private:
   // preprocessing scratch pad
   Preprocess preprocess_;
 
@@ -128,11 +124,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // FIXME: Remove the hardwired indices and use a function
   // to find them from an array.
   const std::map<std::string, int> spcIndex_in_pcnst_ = {
-      {"so2", 12},    {"dms", 13},    {"so4_a1", 15}, {"dst_a1", 19},
-      {"ncl_a1", 20}, {"mom_a1", 21}, {"num_a1", 22}, {"so4_a2", 23},
-      {"ncl_a2", 25}, {"mom_a2", 26}, {"num_a2", 27}, {"dst_a3", 28},
-      {"ncl_a3", 29}, {"num_a3", 35}, {"pom_a4", 36}, {"bc_a4", 37},
-      {"mom_a4", 38}, {"num_a4", 39}};
+      {"so2", 12},    {"dms", 13},    {"so4_a1", 15}, {"dst_a1", 19}, {"ncl_a1", 20}, {"mom_a1", 21},
+      {"num_a1", 22}, {"so4_a2", 23}, {"ncl_a2", 25}, {"mom_a2", 26}, {"num_a2", 27}, {"dst_a3", 28},
+      {"ncl_a3", 29}, {"num_a3", 35}, {"pom_a4", 36}, {"bc_a4", 37},  {"mom_a4", 38}, {"num_a4", 39}};
 
   // A struct carrying all the fields needed to read
   // surface emissions of a species
@@ -171,8 +165,8 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
 
-};  // MAMSrfOnlineEmiss
+}; // MAMSrfOnlineEmiss
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_SRF_ONLINE_EMISS_HPP
+#endif // EAMXX_MAM_SRF_ONLINE_EMISS_HPP

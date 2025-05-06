@@ -10,7 +10,7 @@ namespace scream {
  */
 
 class AeroComCld : public AtmosphereDiagnostic {
- public:
+public:
   // Constructors
   AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -18,12 +18,11 @@ class AeroComCld : public AtmosphereDiagnostic {
   std::string name() const override { return "AeroComCld"; }
 
   // Set the grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
- protected:
+protected:
 #ifdef KOKKOS_ENABLE_CUDA
- public:
+public:
 #endif
   void compute_diagnostic_impl() override;
 
@@ -45,6 +44,6 @@ class AeroComCld : public AtmosphereDiagnostic {
   Field m_dz;
 };
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_AEROCOMCLD_DIAG
+#endif // EAMXX_AEROCOMCLD_DIAG

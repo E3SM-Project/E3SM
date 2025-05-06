@@ -3,9 +3,9 @@
 
 namespace scream {
 
-int get_default_fpes ();
+int get_default_fpes();
 void initialize_eamxx_session(bool print_config = true);
-void initialize_eamxx_session (int argc, char **argv, bool print_config = true);
+void initialize_eamxx_session(int argc, char **argv, bool print_config = true);
 
 // A version callable from Fortran, which can help
 // in case of errors to correctly shut down Kokkos

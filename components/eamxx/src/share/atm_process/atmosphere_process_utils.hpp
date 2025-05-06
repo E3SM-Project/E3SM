@@ -7,10 +7,7 @@
 
 namespace scream {
 
-enum class CheckFailHandling {
-  Fatal,
-  Warning
-};
+enum class CheckFailHandling { Fatal, Warning };
 
 enum class AtmosphereProcessType {
   Dynamics,                // Process responsible of handling the dynamics
@@ -21,16 +18,22 @@ enum class AtmosphereProcessType {
   Diagnostic               // Process that handles a diagnostic output
 };
 
-inline std::string e2str (const AtmosphereProcessType ap_type) {
+inline std::string e2str(const AtmosphereProcessType ap_type) {
   switch (ap_type) {
-    case AtmosphereProcessType::Dynamics:                return "Atmosphere Dynamics";
-    case AtmosphereProcessType::Physics:                 return "Atmosphere Physics Parametrization";
-    case AtmosphereProcessType::SurfaceCouplingImporter: return "Surface Coupling Importer";
-    case AtmosphereProcessType::SurfaceCouplingExporter: return "Surface Coupling Exporter";
-    case AtmosphereProcessType::Group:                   return "Atmosphere Process Group";
-    case AtmosphereProcessType::Diagnostic:              return "Atmosphere Diagnostic";
-    default:
-      ekat::error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
+  case AtmosphereProcessType::Dynamics:
+    return "Atmosphere Dynamics";
+  case AtmosphereProcessType::Physics:
+    return "Atmosphere Physics Parametrization";
+  case AtmosphereProcessType::SurfaceCouplingImporter:
+    return "Surface Coupling Importer";
+  case AtmosphereProcessType::SurfaceCouplingExporter:
+    return "Surface Coupling Exporter";
+  case AtmosphereProcessType::Group:
+    return "Atmosphere Process Group";
+  case AtmosphereProcessType::Diagnostic:
+    return "Atmosphere Diagnostic";
+  default:
+    ekat::error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
   }
   return "INVALID";
 }
@@ -38,17 +41,11 @@ inline std::string e2str (const AtmosphereProcessType ap_type) {
 // This enum is mostly used by AtmosphereProcessGroup to establish whether
 // its atm procs are to be run concurrently or sequentially.
 // We put the enum here so other files can easily access it.
-enum class ScheduleType {
-  Sequential,
-  Parallel
-};
+enum class ScheduleType { Sequential, Parallel };
 
 // Enum used for disinguishing between pre/postcondition
 // property checks for output.
-enum PropertyCheckCategory {
-  Precondition,
-  Postcondition
-};
+enum PropertyCheckCategory { Precondition, Postcondition };
 
 } // namespace scream
 

@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_tilde_to_real
 
@@ -43,8 +41,8 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
 
     // Fill the test data
     SDS.w_first = w_first;
-    SDS.sqrtw2 = sqrtw2;
-    SDS.w1 = w1;
+    SDS.sqrtw2  = sqrtw2;
+    SDS.w1      = w1;
 
     // Call the fortran implementation
     shoc_assumed_pdf_tilde_to_real(SDS);
@@ -74,7 +72,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
     // Initialize to a large neg value
     Real w1_previous = -999;
 
-    for (Int s = 0; s < num_tests; ++s){
+    for (Int s = 0; s < num_tests; ++s) {
       // must initialize w1 at every test,
       //  since it is input/output
       SDS.w1 = w1;
@@ -92,31 +90,27 @@ struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
 
       // Save the result of this sample
       w1_previous = SDS.w1;
-
     }
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_tildetoreal_property", "shoc")
-{
+TEST_CASE("shoc_pdf_tildetoreal_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildetoReal;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_tildetoreal_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_tildetoreal_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildetoReal;
 
   TestStruct::run_bfb();

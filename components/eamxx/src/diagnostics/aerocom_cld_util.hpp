@@ -6,7 +6,7 @@
 namespace scream {
 
 class AeroComCldDiagUtil {
- public:
+public:
   std::map<std::string, int> index_map;
   std::map<std::string, std::string> units_map;
   unsigned int size;
@@ -63,6 +63,6 @@ constexpr double cldfrac_tot_thresh_set() {
   return 0.001;
 }
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_AEROCOMCLD_DIAG_UTIL
+#endif // EAMXX_AEROCOMCLD_DIAG_UTIL

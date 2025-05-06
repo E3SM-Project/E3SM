@@ -2,20 +2,19 @@
 
 #include "p3_unit_tests_common.hpp"
 
+#include "p3_data.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "p3_data.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
 
-#include <thread>
-#include <array>
 #include <algorithm>
+#include <array>
 #include <random>
+#include <thread>
 
 namespace scream {
 namespace p3 {
@@ -43,24 +42,20 @@ namespace unit_test {
 // tool is measuring the maximum slope magnitude as a function of mesh
 // refinement, where the mesh is a 1D mesh transecting the table domain.
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
 
-  KOKKOS_FUNCTION static Scalar calc_lamr (const Scalar& mu_r, const Scalar& alpha) {
+  KOKKOS_FUNCTION static Scalar calc_lamr(const Scalar &mu_r, const Scalar &alpha) {
     // Parameters for lower and upper bounds, derived above, multiplied by
     // factors so we go outside of the bounds a bit. Using these, we map alpha
     // in [0,1] -> meaningful lamr.
-    const Scalar lamr_lo = 0.1*116.3, lamr_hi = 1.5*0.2e6;
-    return (lamr_lo + alpha*(lamr_hi - lamr_lo))*(1 + mu_r);
+    const Scalar lamr_lo = 0.1 * 116.3, lamr_hi = 1.5 * 0.2e6;
+    return (lamr_lo + alpha * (lamr_hi - lamr_lo)) * (1 + mu_r);
   }
 
-  KOKKOS_FUNCTION static Scalar calc_mu_r (const Scalar& alpha) {
-    return alpha*10;
-  }
+  KOKKOS_FUNCTION static Scalar calc_mu_r(const Scalar &alpha) { return alpha * 10; }
 
   // Perform the table lookup and interpolation operations for (mu_r, lamr).
-  KOKKOS_FUNCTION static Spack interp (const view_2d_table& table, const Scalar& mu_r,
-                                       const Scalar& lamr) {
+  KOKKOS_FUNCTION static Spack interp(const view_2d_table &table, const Scalar &mu_r, const Scalar &lamr) {
     // Init the pack to all the same value, and compute in every pack slot.
     Spack mu_r_p(mu_r), lamr_p(lamr);
     Table3 t3;
@@ -68,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
     return Functions::apply_table(table, t3);
   }
 
-  void run () {
+  void run() {
     // This test doesn't use mu_r_table_vals, as that is not a table3 type. It
     // doesn't matter whether we use vm_table_vals or vn_table_vals, as the table values
     // don't matter in what we are testing; we are testing interpolation
@@ -81,7 +76,7 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
     // Estimate two maximum slope magnitudes for two meshes, the second 10x
     // refined w.r.t. the first.
     Real slopes[2];
-    const Int nslopes = sizeof(slopes)/sizeof(*slopes);
+    const Int nslopes = sizeof(slopes) / sizeof(*slopes);
     Int N;
 
     // Study the mu_r direction.
@@ -91,25 +86,24 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
       // Number of cells in the mesh.
       N *= 10;
       // Cell size relative to a parameter domain of 1.
-      const Scalar delta = 1.0/N;
+      const Scalar delta = 1.0 / N;
 
       // Compute the slope magnitude at a specific (mu_r, lamr) in the mu_r
       // direction.
-      const Scalar lamr = calc_lamr(4.5, 0.5);
-      const auto get_max_slope = KOKKOS_LAMBDA (const Int& i, Scalar& slope) {
+      const Scalar lamr        = calc_lamr(4.5, 0.5);
+      const auto get_max_slope = KOKKOS_LAMBDA(const Int &i, Scalar &slope) {
         // Interpolate at a specific (mu_r, lamr).
-        const auto eval = [&] (const Int& i) {
-          const auto alpha = double(i)/N;
-          const auto mu_r = calc_mu_r(alpha);
-          const auto val = interp(vm_table_vals, mu_r, lamr);
+        const auto eval = [&](const Int &i) {
+          const auto alpha = double(i) / N;
+          const auto mu_r  = calc_mu_r(alpha);
+          const auto val   = interp(vm_table_vals, mu_r, lamr);
           return std::log(val[0]);
         };
-        slope = ekat::impl::max(slope, std::abs((eval(i+1) - eval(i))/delta));
+        slope = ekat::impl::max(slope, std::abs((eval(i + 1) - eval(i)) / delta));
       };
 
       Scalar max_slope;
-      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope,
-                              Kokkos::Max<Scalar>(max_slope));
+      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope, Kokkos::Max<Scalar>(max_slope));
       Kokkos::fence();
       slopes[refine] = max_slope;
     }
@@ -120,56 +114,52 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
     // a discontinuity, which is a bug.
     //   In detail, for a 10x mesh refinement, a good slope growth rate is right
     // around 1, and a bad one is is roughly 10. We set the threshold at 1.1.
-    const auto check_growth = [&] (const std::string& label, const Scalar& growth) {
+    const auto check_growth = [&](const std::string &label, const Scalar &growth) {
       bool bad_growth = growth > 1.1;
       if (bad_growth) {
-        std::cout << "Table3 FAIL: Slopes in the " << label << " direction are "
-        << slopes[0] << " and " << slopes[1]
-        << ", which grows by factor " << growth
-        << ". Near 1 is good; near 10 is bad.\n";
+        std::cout << "Table3 FAIL: Slopes in the " << label << " direction are " << slopes[0] << " and " << slopes[1]
+                  << ", which grows by factor " << growth << ". Near 1 is good; near 10 is bad.\n";
       }
       REQUIRE(!bad_growth);
     };
-    check_growth("mu_r", slopes[1]/slopes[0]);
+    check_growth("mu_r", slopes[1] / slopes[0]);
 
     // Study the lamr direction.
     N = 4000;
     for (Int refine = 0; refine < nslopes; ++refine) {
       N *= 2;
-      const Scalar delta = 1.0/N;
+      const Scalar delta = 1.0 / N;
 
       // Compute the slope magnitude at a specific (mu_r, lamr) in the lamr
       // direction.
-      const Scalar mu_r = 3.5;
-      const auto get_max_slope = KOKKOS_LAMBDA (const Int& i, Scalar& slope) {
+      const Scalar mu_r        = 3.5;
+      const auto get_max_slope = KOKKOS_LAMBDA(const Int &i, Scalar &slope) {
         // Interpolate at a specific (mu_r, lamr).
-        const auto eval = [&] (const Int& i) {
-          const auto alpha = double(i)/N;
-          const auto lamr = calc_lamr(mu_r, alpha);
-          const auto val = interp(vm_table_vals, mu_r, lamr);
+        const auto eval = [&](const Int &i) {
+          const auto alpha = double(i) / N;
+          const auto lamr  = calc_lamr(mu_r, alpha);
+          const auto val   = interp(vm_table_vals, mu_r, lamr);
           return std::log(val[0]);
         };
-        slope = ekat::impl::max(slope, std::abs((eval(i+1) - eval(i))/delta));
+        slope = ekat::impl::max(slope, std::abs((eval(i + 1) - eval(i)) / delta));
       };
 
       Scalar max_slope;
-      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope,
-                              Kokkos::Max<Scalar>(max_slope));
+      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope, Kokkos::Max<Scalar>(max_slope));
       Kokkos::fence();
       slopes[refine] = max_slope;
     }
-    check_growth("lamr", slopes[1]/slopes[0]);
+    check_growth("lamr", slopes[1] / slopes[0]);
   }
 };
 
-}
-}
-}
+} // namespace unit_test
+} // namespace p3
+} // namespace scream
 
 namespace {
 
-TEST_CASE("p3_tables", "[p3_functions]")
-{
+TEST_CASE("p3_tables", "[p3_functions]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3;
 
   T t;

@@ -5,10 +5,8 @@
 
 namespace scream {
 
-void AtmProcDAG::
-create_dag(const group_type& atm_procs)
-{
-  cleanup ();
+void AtmProcDAG::create_dag(const group_type &atm_procs) {
+  cleanup();
 
   // Create the nodes
   add_nodes(atm_procs);
@@ -17,33 +15,33 @@ create_dag(const group_type& atm_procs)
   // nodes of the graph, they come handy when representing inputs
   // coming from previous time step, or output that will be fed to
   // the next time step
-  m_nodes.reserve(m_nodes.size()+2);
+  m_nodes.reserve(m_nodes.size() + 2);
 
   m_nodes.push_back(Node());
-  Node& begin_ts = m_nodes.back();
-  begin_ts.name = "Begin of atm time step";
-  begin_ts.id = m_nodes.size()-1;
+  Node &begin_ts = m_nodes.back();
+  begin_ts.name  = "Begin of atm time step";
+  begin_ts.id    = m_nodes.size() - 1;
   m_unmet_deps[begin_ts.id].clear();
 
   m_nodes.push_back(Node());
-  Node& end_ts = m_nodes.back();
-  end_ts.name = "End of atm time step";
-  end_ts.id = m_nodes.size()-1;
+  Node &end_ts = m_nodes.back();
+  end_ts.name  = "End of atm time step";
+  end_ts.id    = m_nodes.size() - 1;
   m_unmet_deps[end_ts.id].clear();
 
   // Now all nodes are created, we need to create edges, by checking
   // which is the first node (if any) that computes any of the input
   // fields of each node
-  add_edges ();
+  add_edges();
 
   // Next, check if some unmet deps are simply coming from previous time step.
-  for (auto& it : m_unmet_deps) {
-    int id = it.first;
-    auto& unmet = it.second;
+  for (auto &it : m_unmet_deps) {
+    int id      = it.first;
+    auto &unmet = it.second;
     std::set<int> to_be_erased;
     for (auto fid : unmet) {
       auto check = m_fid_to_last_provider.find(fid);
-      if (check!=m_fid_to_last_provider.end()) {
+      if (check != m_fid_to_last_provider.end()) {
         // We found this 'unmet' dependency. So a process, which appears
         // later in the time-step dag, will compute it. It's not a 'real'
         // unmet dependency, but rather a dependency on the prev. time step.
@@ -59,37 +57,35 @@ create_dag(const group_type& atm_procs)
     }
 
     for (auto fid : to_be_erased) {
-      ekat::erase(unmet,fid);
+      ekat::erase(unmet, fid);
     }
   }
 
-  update_unmet_deps ();
+  update_unmet_deps();
 }
 
-void AtmProcDAG::add_surface_coupling (const std::set<FieldIdentifier>& imports,
-                                       const std::set<FieldIdentifier>& exports)
-{
-  EKAT_REQUIRE_MSG (m_nodes.size()>0,
-    "Error! You need to create the dag before adding surface coupling.\n");
+void AtmProcDAG::add_surface_coupling(const std::set<FieldIdentifier> &imports,
+                                      const std::set<FieldIdentifier> &exports) {
+  EKAT_REQUIRE_MSG(m_nodes.size() > 0, "Error! You need to create the dag before adding surface coupling.\n");
 
   // Process all imports
   m_nodes.push_back(Node());
-  auto& atm_imp = m_nodes.back();
-  atm_imp.id = m_nodes.size()-1;
-  atm_imp.name = "Atm Import";
+  auto &atm_imp = m_nodes.back();
+  atm_imp.id    = m_nodes.size() - 1;
+  atm_imp.name  = "Atm Import";
   m_unmet_deps[atm_imp.id].clear();
-  for (const auto& f : imports) {
+  for (const auto &f : imports) {
     auto fid = add_fid(f);
 
     // Add the fid to the list of 'computed' fields
     atm_imp.computed.insert(fid);
 
     // Now, remove the unmet dependency (if any)
-    for (auto& it : m_unmet_deps) {
+    for (auto &it : m_unmet_deps) {
       // Erase the unmet dependency (if any)
       int erased = it.second.erase(fid);
 
-      if (erased==1) {
+      if (erased == 1) {
         // Establish parent-child relationship
         atm_imp.children.push_back(it.first);
       }
@@ -98,11 +94,11 @@ void AtmProcDAG::add_surface_coupling (const std::set<FieldIdentifier>& imports,
 
   // Process all exports
   m_nodes.push_back(Node());
-  auto& atm_exp = m_nodes.back();
-  atm_exp.id = m_nodes.size()-1;
-  atm_exp.name = "Atm Export";
+  auto &atm_exp = m_nodes.back();
+  atm_exp.id    = m_nodes.size() - 1;
+  atm_exp.name  = "Atm Export";
   m_unmet_deps[atm_exp.id].clear();
-  for (const auto& f : exports) {
+  for (const auto &f : exports) {
     auto fid = add_fid(f);
 
     // Add the fid to the list of 'computed' fields
@@ -113,21 +109,21 @@ void AtmProcDAG::add_surface_coupling (const std::set<FieldIdentifier>& imports,
   update_unmet_deps();
 }
 
-void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const {
+void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const {
 
-  if (verbosity<=0) {
+  if (verbosity <= 0) {
     return;
   }
 
   // Handy lambda to print a fid with different degrees of verbosity
-  auto print_fid = [] (const FieldIdentifier& fid, const int verbosity) -> std::string {
+  auto print_fid = [](const FieldIdentifier &fid, const int verbosity) -> std::string {
     // Print will always print the name
     std::string s = fid.name();
 
     // If verbosity is >= 1, add layout info
-    if (verbosity>0) {
+    if (verbosity > 0) {
       // If verbosity is >= 2, add grid name
-      if (verbosity>1) {
+      if (verbosity > 1) {
         s += " [" + fid.get_grid_name() + "]";
       }
       s += " <";
@@ -145,75 +141,72 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       // Remove last ',' and add ')'.
       s.back() = ')';
 
-      if (verbosity>2) {
+      if (verbosity > 2) {
         s += " [" + fid.get_units().to_string() + "]";
       }
     }
     return s;
   };
 
-  auto html_fix = [] (const std::string& s) -> std::string {
+  auto html_fix = [](const std::string &s) -> std::string {
     std::string out(s);
     auto pos = out.find('<');
-    while (pos!=std::string::npos) {
-      out.replace(pos,1,"&lt;");
+    while (pos != std::string::npos) {
+      out.replace(pos, 1, "&lt;");
       pos = out.find('<');
     }
     pos = out.find('>');
-    while (pos!=std::string::npos) {
-      out.replace(pos,1,"&gt;");
+    while (pos != std::string::npos) {
+      out.replace(pos, 1, "&gt;");
       pos = out.find('>');
     }
     return out;
   };
 
   std::ofstream ofile;
-  ofile.open (fname.c_str());
+  ofile.open(fname.c_str());
 
   ofile << "strict digraph G {\n"
         << "rankdir=\"LR\"\n";
 
   bool has_IC_field = false;
-  for (const auto& n : m_nodes) {
-    const auto& unmet = m_unmet_deps.at(n.id);
+  for (const auto &n : m_nodes) {
+    const auto &unmet = m_unmet_deps.at(n.id);
 
     std::string box_fmt;
-    int id_IC = -1;
+    int id_IC    = -1;
     int id_begin = -1;
-    int id_end = -1;
+    int id_end   = -1;
     if (n.name == "Begin of atm time step") {
       id_begin = n.id;
-      box_fmt = "  color=\"#00667E\"\n  fontcolor=\"#00667E\"\n  style=filled\n"
-                "  fillcolor=\"#b9d4dc\"\n";
+      box_fmt  = "  color=\"#00667E\"\n  fontcolor=\"#00667E\"\n  style=filled\n"
+                 "  fillcolor=\"#b9d4dc\"\n";
     } else if (n.name == "Initial Conditions") {
-      id_IC = n.id;
+      id_IC   = n.id;
       box_fmt = "  color=\"#006219\"\n  fontcolor=\"#006219\"\n  style=filled\n"
                 "  fillcolor=\"#b9dcc2\"\n";
     } else if (n.name == "End of atm time step") {
-      id_end = n.id;
+      id_end  = n.id;
       box_fmt = "  color=\"#88621e\"\n  fontcolor=\"#88621e\"\n  style=filled\n"
                 "  fillcolor=\"#dccfb9\"\n";
     }
 
     // Write node, with computed/required fields
-    ofile << n.id
-          << " [\n"
+    ofile << n.id << " [\n"
           << "  shape=box\n"
-          << box_fmt
-          << "  penwidth=4\n"
+          << box_fmt << "  penwidth=4\n"
           << "  fontsize=30\n"
           << "  label=<\n"
           << "    <table border=\"0\">\n"
-          << "      <tr><td><b><font point-size=\"40\">" << html_fix(n.name)
-          << "</font></b></td></tr>\n";
+          << "      <tr><td><b><font point-size=\"40\">" << html_fix(n.name) << "</font></b></td></tr>\n";
 
-    int sz_comp = n.computed.size(), sz_req = n.required.size(),
-        sz_grcomp = n.gr_computed.size(), sz_grreq = n.gr_required.size();
-    int nfield = sz_comp + sz_req + sz_grcomp + sz_grreq;
+    int sz_comp = n.computed.size(), sz_req = n.required.size(), sz_grcomp = n.gr_computed.size(),
+        sz_grreq = n.gr_required.size();
+    int nfield   = sz_comp + sz_req + sz_grcomp + sz_grreq;
     if (verbosity > 1 && nfield > 0) {
       // FieldIntentifier prints bare min with verb 0.
       // DAG starts printing fids with verb 2, so fid verb is verb-2;
-      int fid_verb = verbosity-2;
+      int fid_verb = verbosity - 2;
       ofile << "      <hr/>\n";
 
       if (sz_comp > 0) {
@@ -229,13 +222,12 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
                 << "Computed Fields:</font></b></td></tr>\n";
         }
 
-        for (const auto& fid : n.computed) {
+        for (const auto &fid : n.computed) {
           std::string fc = "<font color=\"";
-          int fid_out = std::abs(fid);
+          int fid_out    = std::abs(fid);
           fc += "black";
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc
-                << html_fix(print_fid(m_fids[fid_out], fid_verb))
+          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid_out], fid_verb))
                 << "</font></td></tr>\n";
         }
       }
@@ -249,17 +241,17 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">"
                 << "Required Fields:</font></b></td></tr>\n";
         }
-        for (const auto& fid : n.required) {
+        for (const auto &fid : n.required) {
           std::string fc = "<font color=\"";
           if (ekat::contains(unmet, fid)) {
             fc += "red";
           } else if (ekat::contains(unmet, -fid)) {
-            fc +=  "#006219";
+            fc += "#006219";
           } else {
             fc += "black";
           }
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid],fid_verb));
+          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[fid], fid_verb));
           if (ekat::contains(unmet, fid)) {
             ofile << "<b>  *** MISSING ***</b>";
           } else if (ekat::contains(unmet, -fid)) {
@@ -274,36 +266,36 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
       if (sz_grcomp > 0) {
         if (n.id == id_begin) {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Input groups:</font></b></td></tr>\n";
-        } else if (n.id != id_end){
+        } else if (n.id != id_end) {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#88621e\">Computed Groups:</font></b></td></tr>\n";
         }
-        for (const auto& gr_fid : n.gr_computed) {
+        for (const auto &gr_fid : n.gr_computed) {
           std::string fc = "<font color=\"";
           fc += "black";
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid],fid_verb));
+          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid], fid_verb));
           ofile << "</font></td></tr>\n";
-          if (verbosity>2) {
+          if (verbosity > 2) {
             ofile << "      <tr><td align=\"left\">  Members:";
-            const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
-            const auto& members = group.m_individual_fields;
-            const auto& members_names = group.m_info->m_fields_names;
-            const size_t max_len = 40;
-            size_t len = 0;
-            size_t i = 0;
-            for (const auto& fn : members_names) {
-              const auto f = members.at(fn);
+            const auto &group         = m_gr_fid_to_group.at(m_fids[gr_fid]);
+            const auto &members       = group.m_individual_fields;
+            const auto &members_names = group.m_info->m_fields_names;
+            const size_t max_len      = 40;
+            size_t len                = 0;
+            size_t i                  = 0;
+            for (const auto &fn : members_names) {
+              const auto f    = members.at(fn);
               std::string mfc = "<font color=\"";
               mfc += "black";
               mfc += "\">";
-              if (len>0) {
+              if (len > 0) {
                 ofile << ",";
                 ++len;
               }
               ofile << " " << mfc << fn << "</font>";
-              len += fn.size()+1;
-              if (len>max_len) {
-                if (i<members.size()-1) {
+              len += fn.size() + 1;
+              if (len > max_len) {
+                if (i < members.size() - 1) {
                   ofile << ",";
                 }
                 ofile << "</td></tr>";
@@ -312,50 +304,50 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
               }
               ++i;
             }
-            ofile <<  "</td></tr>";
+            ofile << "</td></tr>";
           }
         }
       }
 
       // Required groups
       if (sz_grreq > 0) {
-        if (n.name=="End of atm time step") {
+        if (n.name == "End of atm time step") {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Output Groups:</font></b></td></tr>\n";
-        } else if (n.name!="Begin of atm time step") {
+        } else if (n.name != "Begin of atm time step") {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Required Groups:</font></b></td></tr>\n";
         }
-        for (const auto& gr_fid : n.gr_required) {
+        for (const auto &gr_fid : n.gr_required) {
           std::string fc = "<font color=\"";
-          fc += (ekat::contains(unmet,gr_fid) ? "red" : "black");
+          fc += (ekat::contains(unmet, gr_fid) ? "red" : "black");
           fc += "\">  ";
-          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid],fid_verb));
+          ofile << "      <tr><td align=\"left\">" << fc << html_fix(print_fid(m_fids[gr_fid], fid_verb));
           if (ekat::contains(unmet, gr_fid)) {
             ofile << "<b>  *** MISSING ***</b>";
           }
           ofile << "</font></td></tr>\n";
-          if (verbosity>2) {
+          if (verbosity > 2) {
             ofile << "      <tr><td align=\"left\">  Members:";
-            const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
-            const auto& members = group.m_individual_fields;
-            const auto& members_names = group.m_info->m_fields_names;
-            const size_t max_len = 40;
-            size_t len = 0;
-            size_t i = 0;
-            for (const auto& fn : members_names) {
-              const auto f = members.at(fn);
-              const auto& mfid = f->get_header().get_identifier();
+            const auto &group         = m_gr_fid_to_group.at(m_fids[gr_fid]);
+            const auto &members       = group.m_individual_fields;
+            const auto &members_names = group.m_info->m_fields_names;
+            const size_t max_len      = 40;
+            size_t len                = 0;
+            size_t i                  = 0;
+            for (const auto &fn : members_names) {
+              const auto f       = members.at(fn);
+              const auto &mfid   = f->get_header().get_identifier();
               const auto mfid_id = get_fid_index(mfid);
-              std::string mfc = "<font color=\"";
-              mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
+              std::string mfc    = "<font color=\"";
+              mfc += (ekat::contains(unmet, mfid_id) ? "red" : "black");
               mfc += "\">";
-              if (len>0) {
+              if (len > 0) {
                 ofile << ",";
                 ++len;
               }
               ofile << " " << mfc << fn << "</font>";
-              len += fn.size()+1;
-              if (len>max_len) {
-                if (i<members.size()-1) {
+              len += fn.size() + 1;
+              if (len > max_len) {
+                if (i < members.size() - 1) {
                   ofile << ",";
                 }
                 ofile << "</td></tr>";
@@ -364,7 +356,7 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
               }
               ++i;
             }
-            ofile <<  "</td></tr>";
+            ofile << "</td></tr>";
           }
         }
       }
@@ -420,29 +412,27 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
   ofile.close();
 }
 
-void AtmProcDAG::cleanup () {
+void AtmProcDAG::cleanup() {
   m_nodes.clear();
   m_fid_to_last_provider.clear();
   m_unmet_deps.clear();
   m_has_unmet_deps = false;
-  m_IC_processed = false;
+  m_IC_processed   = false;
 }
 
-void AtmProcDAG::
-add_nodes (const group_type& atm_procs)
-{
-  const int num_procs = atm_procs.get_num_processes();
-  const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);
+void AtmProcDAG::add_nodes(const group_type &atm_procs) {
+  const int num_procs   = atm_procs.get_num_processes();
+  const bool sequential = (atm_procs.get_schedule_type() == ScheduleType::Sequential);
 
-  EKAT_REQUIRE_MSG (sequential, "Error! Parallel splitting dag not yet supported.\n");
+  EKAT_REQUIRE_MSG(sequential, "Error! Parallel splitting dag not yet supported.\n");
 
-  for (int i=0; i<num_procs; ++i) {
-    const auto proc = atm_procs.get_process(i);
-    const bool is_group = (proc->type()==AtmosphereProcessType::Group);
+  for (int i = 0; i < num_procs; ++i) {
+    const auto proc     = atm_procs.get_process(i);
+    const bool is_group = (proc->type() == AtmosphereProcessType::Group);
     if (is_group) {
       auto group = std::dynamic_pointer_cast<const group_type>(proc);
       EKAT_REQUIRE_MSG(group, "Error! Unexpected failure in dynamic_pointer_cast.\n"
-                                "       Please, contact developers.\n");
+                              "       Please, contact developers.\n");
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
       //       the sub-group will have its remappers taken care of
@@ -451,68 +441,68 @@ add_nodes (const group_type& atm_procs)
       // Create a node for the process
       int id = m_nodes.size();
       m_nodes.push_back(Node());
-      Node& node = m_nodes.back();
-      node.id = id;
-      node.name = proc->name();
+      Node &node = m_nodes.back();
+      node.id    = id;
+      node.name  = proc->name();
       m_unmet_deps[id].clear(); // Ensures an entry for this id is in the map
 
       // Input fields
-      for (const auto& f : proc->get_fields_in()) {
-        const auto& fid = f.get_header().get_identifier();
+      for (const auto &f : proc->get_fields_in()) {
+        const auto &fid  = f.get_header().get_identifier();
         const int fid_id = add_fid(fid);
         node.required.insert(fid_id);
       }
 
       // Output fields
-      for (const auto& f : proc->get_fields_out()) {
-        const auto& fid = f.get_header().get_identifier();
+      for (const auto &f : proc->get_fields_out()) {
+        const auto &fid  = f.get_header().get_identifier();
         const int fid_id = add_fid(fid);
         node.computed.insert(fid_id);
         m_fid_to_last_provider[fid_id] = id;
       }
 
       // Input groups
-      for (const auto& group : proc->get_groups_in()) {
+      for (const auto &group : proc->get_groups_in()) {
         if (!group.m_info->m_monolithic_allocation) {
           // Group does not allocate a monolithic field: process fields individually
-          for (const auto& it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
+          for (const auto &it_f : group.m_individual_fields) {
+            const auto &fid  = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
           // Group allocates a monolithic field: process the monolithic field
-          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
+          const auto &gr_fid  = group.m_monolithic_field->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_required.insert(gr_fid_id);
-          m_gr_fid_to_group.emplace(gr_fid,group);
+          m_gr_fid_to_group.emplace(gr_fid, group);
         }
       }
 
       // Output groups
-      for (const auto& group : proc->get_groups_out()) {
+      for (const auto &group : proc->get_groups_out()) {
         if (!group.m_info->m_monolithic_allocation) {
           // Group does not allocate a monolithic field: process fields in the group individually
-          for (const auto& it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
+          for (const auto &it_f : group.m_individual_fields) {
+            const auto &fid  = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
           // Group allocates a monolithic field: process the monolithic field
-          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
+          const auto &gr_fid  = group.m_monolithic_field->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_computed.insert(gr_fid_id);
           m_fid_to_last_provider[gr_fid_id] = id;
-          m_gr_fid_to_group.emplace(gr_fid,group);
+          m_gr_fid_to_group.emplace(gr_fid, group);
 
           // Additionally, each field in the group is implicitly 'computed'
           // by this node, so update their last provider
           for (auto it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
-            const int fid_id = add_fid(fid);
+            const auto &fid                = it_f.second->get_header().get_identifier();
+            const int fid_id               = add_fid(fid);
             m_fid_to_last_provider[fid_id] = id;
           }
         }
@@ -521,15 +511,15 @@ add_nodes (const group_type& atm_procs)
   }
 }
 
-void AtmProcDAG::add_edges () {
-  for (auto& node : m_nodes) {
+void AtmProcDAG::add_edges() {
+  for (auto &node : m_nodes) {
     // First individual input fields. Add this node as a children
     // of any *previous* node that computes them. If none provides
     // them, add to the unmet deps list
     for (auto id : node.required) {
       auto it = m_fid_to_last_provider.find(id);
       // Note: check that last provider id is SMALLER than this node id
-      if (it!=m_fid_to_last_provider.end() and it->second<node.id) {
+      if (it != m_fid_to_last_provider.end() and it->second < node.id) {
         auto parent_id = it->second;
         m_nodes[parent_id].children.push_back(node.id);
       } else {
@@ -542,37 +532,37 @@ void AtmProcDAG::add_edges () {
     //       So get the id of the last node that updates each field and the group,
     //       and use the most recent one
     for (auto id : node.gr_required) {
-      const auto& gr_fid = m_fids[id];
-      const auto& group = m_gr_fid_to_group.at(gr_fid);
-      const int   size  = group.m_info->size();
+      const auto &gr_fid = m_fids[id];
+      const auto &group  = m_gr_fid_to_group.at(gr_fid);
+      const int size     = group.m_info->size();
 
       int last_group_update_id = -1;
-      std::vector<int> last_members_update_id(size,-1);
+      std::vector<int> last_members_update_id(size, -1);
 
       // First check when the group as a whole was last updated
       auto it = m_fid_to_last_provider.find(id);
       // Note: check that last provider id is SMALLER than this node id
-      if (it!=m_fid_to_last_provider.end() and it->second<node.id) {
+      if (it != m_fid_to_last_provider.end() and it->second < node.id) {
         last_group_update_id = it->second;
       }
       // Then check when each group member was last updated
-      int i=0;
+      int i = 0;
       for (auto f_it : group.m_individual_fields) {
-        const auto& fid = f_it.second->get_header().get_identifier();
-        auto fid_id = std::find(m_fids.begin(),m_fids.end(),fid) - m_fids.begin();
-        it = m_fid_to_last_provider.find(fid_id);
+        const auto &fid = f_it.second->get_header().get_identifier();
+        auto fid_id     = std::find(m_fids.begin(), m_fids.end(), fid) - m_fids.begin();
+        it              = m_fid_to_last_provider.find(fid_id);
         // Note: check that last provider id is SMALLER than this node id
-        if (it!=m_fid_to_last_provider.end() and it->second<node.id) {
+        if (it != m_fid_to_last_provider.end() and it->second < node.id) {
           last_members_update_id[i] = it->second;
         }
         ++i;
       }
 
-      auto min = *std::min_element(last_members_update_id.begin(),last_members_update_id.end());
-      if (min==-1 && last_group_update_id==-1) {
+      auto min = *std::min_element(last_members_update_id.begin(), last_members_update_id.end());
+      if (min == -1 && last_group_update_id == -1) {
         // Nobody computed the group as a whole and some member was not computed
         m_unmet_deps[node.id].insert(id);
-      } else if (min>last_group_update_id) {
+      } else if (min > last_group_update_id) {
         // All members are updated after the group
         for (auto fid_id : last_members_update_id) {
           m_nodes[fid_id].children.push_back(node.id);
@@ -582,7 +572,7 @@ void AtmProcDAG::add_edges () {
         // field which is updated after the group
         m_nodes[id].children.push_back(node.id);
         for (auto fid_id : last_members_update_id) {
-          if (fid_id>last_group_update_id) {
+          if (fid_id > last_group_update_id) {
             m_nodes[fid_id].children.push_back(node.id);
           }
         }
@@ -599,12 +589,12 @@ void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
   // m_nodes contains [<processes>, 'beg-of-step', 'end-of-step']
   // WARNING: do NOT get a ref to beg-of-step node, since calls to m_nodes.push_back
   //          may resize the vector, invalidating the reference.
-  auto begin_node = m_nodes[m_nodes.size()-2];
-  auto& ic_node = m_nodes.emplace_back(begin_node);
+  auto begin_node = m_nodes[m_nodes.size() - 2];
+  auto &ic_node   = m_nodes.emplace_back(begin_node);
 
   // now set/clear the basic data for the ic_node
-  int id = m_nodes.size();
-  ic_node.id = id;
+  int id       = m_nodes.size();
+  ic_node.id   = id;
   ic_node.name = "Initial Conditions";
   m_unmet_deps[id].clear();
   ic_node.children.clear();
@@ -654,31 +644,31 @@ void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
   m_IC_processed = true;
 }
 
-int AtmProcDAG::add_fid (const FieldIdentifier& fid) {
-  auto it = ekat::find(m_fids,fid);
-  if (it==m_fids.end()) {
+int AtmProcDAG::add_fid(const FieldIdentifier &fid) {
+  auto it = ekat::find(m_fids, fid);
+  if (it == m_fids.end()) {
     m_fids.push_back(fid);
-    return m_fids.size()-1;
+    return m_fids.size() - 1;
   } else {
     return std::distance(m_fids.begin(), it);
   }
 }
 
-int AtmProcDAG::get_fid_index (const FieldIdentifier& fid) const {
-  auto it = ekat::find(m_fids,fid);
-  if (it==m_fids.end()) {
+int AtmProcDAG::get_fid_index(const FieldIdentifier &fid) const {
+  auto it = ekat::find(m_fids, fid);
+  if (it == m_fids.end()) {
     return -1;
   } else {
-    return std::distance(m_fids.cbegin(),it);
+    return std::distance(m_fids.cbegin(), it);
   }
 }
 
-void AtmProcDAG::update_unmet_deps () {
+void AtmProcDAG::update_unmet_deps() {
   m_has_unmet_deps = false;
 
-  for (const auto& it : m_unmet_deps) {
-    const auto& unmet = it.second;
-    m_has_unmet_deps |= (unmet.size()>0);
+  for (const auto &it : m_unmet_deps) {
+    const auto &unmet = it.second;
+    m_has_unmet_deps |= (unmet.size() > 0);
     if (m_has_unmet_deps) {
       break;
     }

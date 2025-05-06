@@ -1,13 +1,13 @@
 #ifndef PYUTILS_HPP
 #define PYUTILS_HPP
 
-#include <nanobind/nanobind.h>
-#include <mpi4py/mpi4py.h>
 #include <mpi.h>
+#include <mpi4py/mpi4py.h>
+#include <nanobind/nanobind.h>
 
 #include <typeinfo>
 
-MPI_Comm get_c_comm (nb::object py_comm) {
+MPI_Comm get_c_comm(nb::object py_comm) {
   if (import_mpi4py() < 0) {
     throw nb::python_error();
   }

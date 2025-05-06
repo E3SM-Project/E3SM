@@ -1,17 +1,17 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
-#include <thread>
-#include <array>
 #include <algorithm>
+#include <array>
 #include <random>
+#include <thread>
 
 namespace scream {
 namespace p3 {
@@ -21,31 +21,27 @@ namespace unit_test {
  * Unit-tests for p3 ice table functions.
  */
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base {
 
-  template <typename View>
-  void init_table_linear_dimension(View& table, int linear_dimension)
-  {
+  template <typename View> void init_table_linear_dimension(View &table, int linear_dimension) {
     // set up views
-    using NonConstView = typename View::non_const_type;
+    using NonConstView     = typename View::non_const_type;
     const auto view_device = NonConstView("non const view");
     const auto view_host   = Kokkos::create_mirror_view(view_device);
 
     std::default_random_engine generator;
-    std::uniform_real_distribution<Real> val_dist(0.0,100.0);
+    std::uniform_real_distribution<Real> val_dist(0.0, 100.0);
 
     // populate lin-dim-0 with random values, make sure values are linear
     // in the linear_dimension
     for (size_t i = 0; i < table.extent(0); ++i) {
-      for(size_t j = 0; j < table.extent(1); ++j) {
+      for (size_t j = 0; j < table.extent(1); ++j) {
         for (size_t k = 0; k < table.extent(2); ++k) {
           for (size_t l = 0; l < table.extent(3); ++l) {
             size_t dims[] = {i, j, k, l};
             if (dims[linear_dimension] == 0) {
               view_host(i, j, k, l) = val_dist(generator);
-            }
-            else {
+            } else {
               dims[linear_dimension] -= 1;
               view_host(i, j, k, l) = view_host(dims[0], dims[1], dims[2], dims[3]) + 1.0;
             }
@@ -59,8 +55,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     table = view_device;
   }
 
-  void run_bfb()
-  {
+  void run_bfb() {
     using KTH = KokkosTypes<HostDevice>;
 
     // Read in ice tables
@@ -72,95 +67,54 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
 
     // Load some lookup inputs, need at least one per pack value
     LookupIceData lid[max_pack_size] = {
-      // qi,   ni,     qm,     rhop
-      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
-      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
-      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
-      {0.136E-08, 0.487E+07, 0.811E-10, 0.500E+02},
+        // qi,   ni,     qm,     rhop
+        {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03}, {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+        {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00}, {0.136E-08, 0.487E+07, 0.811E-10, 0.500E+02},
 
-      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
-      {0.510E-02, 0.454E+01, 0.714E-05, 0.500E+02},
-      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
-      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
+        {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03}, {0.510E-02, 0.454E+01, 0.714E-05, 0.500E+02},
+        {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00}, {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
 
-      {0.971E-07, 0.657E+06, 0.271E-06, 0.900E+03},
-      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
-      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
-      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
+        {0.971E-07, 0.657E+06, 0.271E-06, 0.900E+03}, {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+        {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00}, {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
 
-      {0.971E-07, 0.657E+06, 0.971E-07, 0.200E+04},
-      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
-      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
-      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02}
-    };
+        {0.971E-07, 0.657E+06, 0.971E-07, 0.200E+04}, {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+        {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00}, {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02}};
 
     LookupIceDataB lidb[max_pack_size] = {
-      // qr,      nr
-      {0.263E-05, 0.100E+07},
-      {0.100E-01, 0.100E+07},
-      {0.000E+00, 0.100E-15},
-      {0.263E-05, 0.100E+07},
+        // qr,      nr
+        {0.263E-05, 0.100E+07}, {0.100E-01, 0.100E+07}, {0.000E+00, 0.100E-15}, {0.263E-05, 0.100E+07},
 
-      {0.263E-05, 0.100E+07},
-      {0.100E-01, 0.100E+07},
-      {0.000E+00, 0.0      },
-      {0.263E-05, 0.100E+07},
+        {0.263E-05, 0.100E+07}, {0.100E-01, 0.100E+07}, {0.000E+00, 0.0},       {0.263E-05, 0.100E+07},
 
-      {0.263E-05, 0.100E+07},
-      {0.100E-01, 0.100E+07},
-      {0.000E+00, 0.100E-15},
-      {0.263E-05, 0.100E+07},
+        {0.263E-05, 0.100E+07}, {0.100E-01, 0.100E+07}, {0.000E+00, 0.100E-15}, {0.263E-05, 0.100E+07},
 
-      {0.263E-05, 0.100E+07},
-      {0.100E-01, 0.100E+07},
-      {0.000E+00, 0.100E-15},
-      {0.263E-05, 0.100E+07}
-    };
+        {0.263E-05, 0.100E+07}, {0.100E-01, 0.100E+07}, {0.000E+00, 0.100E-15}, {0.263E-05, 0.100E+07}};
 
-    static constexpr Int access_table_index = 2;
-    AccessLookupTableData altd[max_pack_size] = {
-      {lid[0], access_table_index},
-      {lid[1], access_table_index},
-      {lid[2], access_table_index},
-      {lid[3], access_table_index},
+    static constexpr Int access_table_index   = 2;
+    AccessLookupTableData altd[max_pack_size] = {{lid[0], access_table_index},  {lid[1], access_table_index},
+                                                 {lid[2], access_table_index},  {lid[3], access_table_index},
 
-      {lid[4], access_table_index},
-      {lid[5], access_table_index},
-      {lid[6], access_table_index},
-      {lid[7], access_table_index},
+                                                 {lid[4], access_table_index},  {lid[5], access_table_index},
+                                                 {lid[6], access_table_index},  {lid[7], access_table_index},
 
-      {lid[8], access_table_index},
-      {lid[9], access_table_index},
-      {lid[10], access_table_index},
-      {lid[11], access_table_index},
+                                                 {lid[8], access_table_index},  {lid[9], access_table_index},
+                                                 {lid[10], access_table_index}, {lid[11], access_table_index},
 
-      {lid[12], access_table_index},
-      {lid[13], access_table_index},
-      {lid[14], access_table_index},
-      {lid[15], access_table_index}
-    };
+                                                 {lid[12], access_table_index}, {lid[13], access_table_index},
+                                                 {lid[14], access_table_index}, {lid[15], access_table_index}};
 
     AccessLookupTableCollData altcd[max_pack_size] = {
-      {lid[0], lidb[0], access_table_index},
-      {lid[1], lidb[1], access_table_index},
-      {lid[2], lidb[2], access_table_index},
-      {lid[3], lidb[3], access_table_index},
+        {lid[0], lidb[0], access_table_index},   {lid[1], lidb[1], access_table_index},
+        {lid[2], lidb[2], access_table_index},   {lid[3], lidb[3], access_table_index},
 
-      {lid[4], lidb[4], access_table_index},
-      {lid[5], lidb[5], access_table_index},
-      {lid[6], lidb[6], access_table_index},
-      {lid[7], lidb[7], access_table_index},
+        {lid[4], lidb[4], access_table_index},   {lid[5], lidb[5], access_table_index},
+        {lid[6], lidb[6], access_table_index},   {lid[7], lidb[7], access_table_index},
 
-      {lid[8], lidb[8], access_table_index},
-      {lid[9], lidb[9], access_table_index},
-      {lid[10], lidb[10], access_table_index},
-      {lid[11], lidb[11], access_table_index},
+        {lid[8], lidb[8], access_table_index},   {lid[9], lidb[9], access_table_index},
+        {lid[10], lidb[10], access_table_index}, {lid[11], lidb[11], access_table_index},
 
-      {lid[12], lidb[12], access_table_index},
-      {lid[13], lidb[13], access_table_index},
-      {lid[14], lidb[14], access_table_index},
-      {lid[15], lidb[15], access_table_index}
-    };
+        {lid[12], lidb[12], access_table_index}, {lid[13], lidb[13], access_table_index},
+        {lid[14], lidb[14], access_table_index}, {lid[15], lidb[15], access_table_index}};
 
     // Sync to device
     KTH::view_1d<LookupIceData> lid_host("lid_host", max_pack_size);
@@ -183,50 +137,52 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     }
 
     // Run the lookup from a kernel and copy results back to host
-    view_2d<Int>  int_results("int results", 5, max_pack_size);
+    view_2d<Int> int_results("int results", 5, max_pack_size);
     view_2d<Real> real_results("real results", 7, max_pack_size);
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+    Kokkos::parallel_for(
+        num_test_itrs, KOKKOS_LAMBDA(const Int &i) {
+          const Int offset = i * Spack::n;
 
-      // Init packs
-      TableIce ti;
-      TableRain tr;
-      Spack qi, ni, qm, rhop, qr, nr;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qi[s]    = lid_device(vs).qi;
-        ni[s]    = lid_device(vs).ni;
-        qm[s]    = lid_device(vs).qm;
-        rhop[s]  = lid_device(vs).rhop;
-        qr[s]    = lidb_device(vs).qr;
-        nr[s]    = lidb_device(vs).nr;
-      }
+          // Init packs
+          TableIce ti;
+          TableRain tr;
+          Spack qi, ni, qm, rhop, qr, nr;
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            qi[s]   = lid_device(vs).qi;
+            ni[s]   = lid_device(vs).ni;
+            qm[s]   = lid_device(vs).qm;
+            rhop[s] = lid_device(vs).rhop;
+            qr[s]   = lidb_device(vs).qr;
+            nr[s]   = lidb_device(vs).nr;
+          }
 
-      Smask qiti_gt_small(qi > qsmall);
-      Functions::lookup_ice(qi, ni, qm, rhop, ti, qiti_gt_small);
-      Functions::lookup_rain(qr, nr, tr, qiti_gt_small);
-      Spack ice_result = Functions::apply_table_ice(access_table_index-1, ice_table_vals, ti, qiti_gt_small);
-      Spack rain_result = Functions::apply_table_coll(access_table_index-1, collect_table_vals, ti, tr, qiti_gt_small);
+          Smask qiti_gt_small(qi > qsmall);
+          Functions::lookup_ice(qi, ni, qm, rhop, ti, qiti_gt_small);
+          Functions::lookup_rain(qr, nr, tr, qiti_gt_small);
+          Spack ice_result = Functions::apply_table_ice(access_table_index - 1, ice_table_vals, ti, qiti_gt_small);
+          Spack rain_result =
+              Functions::apply_table_coll(access_table_index - 1, collect_table_vals, ti, tr, qiti_gt_small);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        int_results(0, vs) = ti.dumi[s];
-        int_results(1, vs) = ti.dumjj[s];
-        int_results(2, vs) = ti.dumii[s];
-        int_results(3, vs) = ti.dumzz[s];
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            int_results(0, vs) = ti.dumi[s];
+            int_results(1, vs) = ti.dumjj[s];
+            int_results(2, vs) = ti.dumii[s];
+            int_results(3, vs) = ti.dumzz[s];
 
-        int_results(4, vs) = tr.dumj[s];
+            int_results(4, vs) = tr.dumj[s];
 
-        real_results(0, vs) = ti.dum1[s];
-        real_results(1, vs) = ti.dum4[s];
-        real_results(2, vs) = ti.dum5[s];
-        real_results(3, vs) = ti.dum6[s];
+            real_results(0, vs) = ti.dum1[s];
+            real_results(1, vs) = ti.dum4[s];
+            real_results(2, vs) = ti.dum5[s];
+            real_results(3, vs) = ti.dum6[s];
 
-        real_results(4, vs) = tr.dum3[s];
+            real_results(4, vs) = tr.dum3[s];
 
-        real_results(5, vs) = ice_result[s];
+            real_results(5, vs) = ice_result[s];
 
-        real_results(6, vs) = rain_result[s];
-      }
-    });
+            real_results(6, vs) = rain_result[s];
+          }
+        });
 
     // Sync results back to host
     auto int_results_mirror  = Kokkos::create_mirror_view(int_results);
@@ -236,7 +192,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
 
     // Validate results
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      for(int s = 0; s < max_pack_size; ++s) {
+      for (int s = 0; s < max_pack_size; ++s) {
         REQUIRE(int_results_mirror(0, s) == lid[s].dumi);
         REQUIRE(int_results_mirror(1, s) == lid[s].dumjj);
         REQUIRE(int_results_mirror(2, s) == lid[s].dumii);
@@ -255,10 +211,9 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
 
         REQUIRE(real_results_mirror(6, s) == altcd[s].proc);
       }
-    }
-    else if (this->m_baseline_action == GENERATE) {
+    } else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        lid[s].dumi = int_results_mirror(0, s);
+        lid[s].dumi  = int_results_mirror(0, s);
         lid[s].dumjj = int_results_mirror(1, s);
         lid[s].dumii = int_results_mirror(2, s);
         lid[s].dumzz = int_results_mirror(3, s);
@@ -284,8 +239,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     }
   }
 
-  void run_phys()
-  {
+  void run_phys() {
 #if 0
     view_ice_table ice_table_vals;
     init_table_linear_dimension(ice_table_vals, 0);
@@ -325,14 +279,13 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
   }
 };
 
-}
-}
-}
+} // namespace unit_test
+} // namespace p3
+} // namespace scream
 
 namespace {
 
-TEST_CASE("p3_ice_tables", "[p3_functions]")
-{
+TEST_CASE("p3_ice_tables", "[p3_functions]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
 
   T t;
@@ -340,4 +293,4 @@ TEST_CASE("p3_ice_tables", "[p3_functions]")
   t.run_bfb();
 }
 
-}
+} // namespace

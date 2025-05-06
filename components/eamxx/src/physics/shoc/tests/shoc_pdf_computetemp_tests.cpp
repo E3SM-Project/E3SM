@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_temperature
 
@@ -57,7 +55,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     SDS.thl1 = thl1;
     SDS.pval = pval;
 
-    Int num_tests = SDS.pval/abs(presincr);
+    Int num_tests = SDS.pval / abs(presincr);
 
     REQUIRE(num_tests > 1);
     REQUIRE(presincr < 0);
@@ -65,7 +63,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
     //  basepres just so we test a range
     REQUIRE(SDS.pval > basepres);
 
-    for (Int s = 0; s < num_tests; ++s){
+    for (Int s = 0; s < num_tests; ++s) {
 
       // make sure base pres is greater than zero
       REQUIRE(basepres > 0);
@@ -80,22 +78,21 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
 
       // If pressure is greater than basepressure then
       //  make sure that temperature is greater than thetal
-      if (SDS.pval > basepres){
+      if (SDS.pval > basepres) {
         REQUIRE(SDS.tl1 > SDS.thl1);
       }
       // otherwise temperature should be less than thetal
-      else if(SDS.pval < basepres){
+      else if (SDS.pval < basepres) {
         REQUIRE(SDS.tl1 < SDS.thl1);
       }
       // otherwise if they are equal the temperatures
       //  should be equal
-      else
-      {
+      else {
         REQUIRE(SDS.tl1 == SDS.thl1);
       }
 
       // Make sure temperature are decreasing
-      if (s > 0){
+      if (s > 0) {
         REQUIRE(SDS.tl1 < Tl1_save);
       }
 
@@ -104,32 +101,28 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
       Tl1_save = SDS.tl1;
 
       // Decrease pressure value
-      SDS.pval = SDS.pval+presincr;
-
+      SDS.pval = SDS.pval + presincr;
     }
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_computetemp_property", "shoc")
-{
+TEST_CASE("shoc_pdf_computetemp_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeTemp;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_computetemp_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_computetemp_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeTemp;
 
   TestStruct::run_bfb();

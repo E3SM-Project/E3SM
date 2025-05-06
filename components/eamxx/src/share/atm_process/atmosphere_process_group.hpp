@@ -1,17 +1,16 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
+#include "control/surface_coupling_utils.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
-#include "control/surface_coupling_utils.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 
-#include <string>
 #include <list>
+#include <string>
 
-namespace scream
-{
+namespace scream {
 
 /*
  *  A class representing a group of atmosphere processes as a single process.
@@ -26,88 +25,82 @@ namespace scream
  *  that field is not exposed as a required field of the group.
  */
 
-class AtmosphereProcessGroup : public AtmosphereProcess
-{
+class AtmosphereProcessGroup : public AtmosphereProcess {
 public:
-  using atm_proc_type     = AtmosphereProcess;
+  using atm_proc_type = AtmosphereProcess;
 
   // Constructor(s)
-  AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereProcessGroup(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  virtual ~AtmosphereProcessGroup () = default;
+  virtual ~AtmosphereProcessGroup() = default;
 
   // The type of the block (e.g., dynamics or physics)
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Group; }
+  AtmosphereProcessType type() const { return AtmosphereProcessType::Group; }
 
   // The name of the block
-  std::string name () const { return m_group_name; }
+  std::string name() const { return m_group_name; }
 
   // Grab the proper grid from the grids manager
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
   // Setup the tendencies requests for this group, as well as for all procs in the group
-  void setup_tendencies_requests ();
+  void setup_tendencies_requests();
 
   // --- Methods specific to AtmosphereProcessGroup --- //
-  int get_num_processes () const { return m_atm_processes.size(); }
+  int get_num_processes() const { return m_atm_processes.size(); }
 
-  std::shared_ptr<const atm_proc_type> get_process (const int i) const {
-    return m_atm_processes.at(i);
-  }
+  std::shared_ptr<const atm_proc_type> get_process(const int i) const { return m_atm_processes.at(i); }
 
-  std::shared_ptr<atm_proc_type> get_process_nonconst (const int i) const {
-    return m_atm_processes.at(i);
-  }
+  std::shared_ptr<atm_proc_type> get_process_nonconst(const int i) const { return m_atm_processes.at(i); }
 
   // Returns atmosphere process if contained in this group, error out if not
-  std::shared_ptr<atm_proc_type> get_process_nonconst (const std::string& name) const;
+  std::shared_ptr<atm_proc_type> get_process_nonconst(const std::string &name) const;
 
   // returns true if this group contains the process (either directly or within
   // a nested group), false if not
-  bool has_process(const std::string& name) const;
+  bool has_process(const std::string &name) const;
 
-  ScheduleType get_schedule_type () const { return m_group_schedule_type; }
+  ScheduleType get_schedule_type() const { return m_group_schedule_type; }
 
   // Computes total number of bytes needed for local variables
-  size_t requested_buffer_size_in_bytes () const;
+  size_t requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
   // the ATMBufferManager
-  void init_buffers(const ATMBufferManager& buffer_manager);
+  void init_buffers(const ATMBufferManager &buffer_manager);
 
   // The APG class needs to perform special checks before establishing whether
   // a required group/field is indeed a required group for this APG
-  void set_required_field (const Field& field);
-  void set_required_group (const FieldGroup& group);
+  void set_required_field(const Field &field);
+  void set_required_group(const FieldGroup &group);
 
   // Gather internal fields from all processes in the group
   // NOTE: this method *must* be called before any attempt to query this atm proc group
   //       for its internal fields, otherwise it will appear as if this atm proc group
   //       stores ZERO internal fields. In other words, this method populates the list
   //       of internal fields of the group.
-  void gather_internal_fields ();
+  void gather_internal_fields();
 
   // Returns true if any internal processes enables
   // the mass and energy conservation checks.
-  bool are_column_conservation_checks_enabled () const;
+  bool are_column_conservation_checks_enabled() const;
 
   // Adds the mass and energy conservation
   // checks to appropriate physics processes.
-  void setup_column_conservation_checks (
-      const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
-      const CheckFailHandling                                      fail_handling_type) const;
+  void setup_column_conservation_checks(const std::shared_ptr<MassAndEnergyColumnConservationCheck> &conservation_check,
+                                        const CheckFailHandling fail_handling_type) const;
 
   // Add nan checks after each non-group process, for each computed field.
   // If checks fail, we print all input and output fields of that process
   // (that are on the same grid) at the location of the fail.
-  void add_postcondition_nan_checks () const;
+  void add_postcondition_nan_checks() const;
 
   // Add additional data fields to all property checks in the group
-  void add_additional_data_fields_to_property_checks (const Field& data_field);
+  void add_additional_data_fields_to_property_checks(const Field &data_field);
 
   // Loop through all proceeses in group and set IOP object
-  void set_iop_data_manager(const iop_data_ptr& iop_data_manager) {
-    for (auto& atm_proc : m_atm_processes) {
+  void set_iop_data_manager(const iop_data_ptr &iop_data_manager) {
+    for (auto &atm_proc : m_atm_processes) {
       atm_proc->set_iop_data_manager(iop_data_manager);
     }
   }
@@ -115,41 +108,40 @@ public:
   // Pre-process tracer requests by checking for
   // consistency among processes and correctly
   // determining turbulence advection property
-  void pre_process_tracer_requests ();
+  void pre_process_tracer_requests();
 
 protected:
-
   // Adds fid to the list of required/computed fields of the group (as a whole).
-  void process_required_field (const FieldRequest& req);
-  void process_required_group (const GroupRequest& req);
+  void process_required_field(const FieldRequest &req);
+  void process_required_group(const GroupRequest &req);
 
   // The initialization, run, and finalization methods
   void initialize_impl(const RunType run_type);
-  void initialize_impl ();
-  void run_impl        (const double dt);
-  void finalize_impl   (/* what inputs? */);
+  void initialize_impl();
+  void run_impl(const double dt);
+  void finalize_impl(/* what inputs? */);
 
-  void run_sequential (const double dt);
-  void run_parallel   (const double dt);
+  void run_sequential(const double dt);
+  void run_parallel(const double dt);
 
   // The methods to set the fields/groups in the right processes of the group
-  void set_required_field_impl (const Field& f);
-  void set_computed_field_impl (const Field& f);
-  void set_required_group_impl (const FieldGroup& group);
-  void set_computed_group_impl (const FieldGroup& group);
+  void set_required_field_impl(const Field &f);
+  void set_computed_field_impl(const Field &f);
+  void set_required_group_impl(const FieldGroup &group);
+  void set_computed_group_impl(const FieldGroup &group);
 
   // The name of the group. This is usually a concatenation of the names of the individual processes
-  std::string       m_group_name;
-  int               m_group_size;
+  std::string m_group_name;
+  int m_group_size;
 
   // The list of atm processes in this group
-  std::vector<std::shared_ptr<atm_proc_type>>  m_atm_processes;
+  std::vector<std::shared_ptr<atm_proc_type>> m_atm_processes;
 
   // The schedule type: Parallel vs Sequential
-  ScheduleType   m_group_schedule_type;
+  ScheduleType m_group_schedule_type;
 
   // This is only needed to be able to access grids objects later on
-  std::shared_ptr<const GridsManager>   m_grids_mgr;
+  std::shared_ptr<const GridsManager> m_grids_mgr;
 };
 
 } // namespace scream

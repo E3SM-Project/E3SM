@@ -6,24 +6,21 @@
 
 namespace scream {
 
-// Enum for distiguishing between an import or export 
-enum class SurfaceCouplingTransferType {
-  Import,
-  Export
-};
+// Enum for distiguishing between an import or export
+enum class SurfaceCouplingTransferType { Import, Export };
 
 // A device-friendly helper struct, storing column information about the import/export.
 struct SurfaceCouplingColumnInfo {
   // Set to invalid, for ease of checking
   KOKKOS_INLINE_FUNCTION
-  SurfaceCouplingColumnInfo () : data(nullptr) {}
+  SurfaceCouplingColumnInfo() : data(nullptr) {}
 
   KOKKOS_INLINE_FUNCTION
-  SurfaceCouplingColumnInfo& operator= (const SurfaceCouplingColumnInfo&) = default;
+  SurfaceCouplingColumnInfo &operator=(const SurfaceCouplingColumnInfo &) = default;
 
   // Index of this column in cpl data.
   int cpl_indx;
- 
+
   // Stride between the 1st entry of two consecutive columns to be imported.
   // Note: this is >= that number of scalars in a column. E.g., for a vector field layout like
   //       (ncols,2,nlevs), where we import only the 1st vector component, the stride
@@ -48,7 +45,7 @@ struct SurfaceCouplingColumnInfo {
   bool transfer_during_initialization;
 
   // Pointer to the scream field device memory
-  Real* data;
+  Real *data;
 };
 
 // For a given field and vector component (set vecComp=-1 for scalar fields),
@@ -70,8 +67,8 @@ struct SurfaceCouplingColumnInfo {
 //
 // Field with parents are allowed if the parent has layout 3D vector (ncols, num_comp, nlevs),
 // and the field was sliced along num_comp. See comments below for details.
-void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader>& fh,
-                                     int vecComp, int& col_offset, int& col_stride);
+void get_col_info_for_surface_values(const std::shared_ptr<const FieldHeader> &fh, int vecComp, int &col_offset,
+                                     int &col_stride);
 
 } // namespace scream
 

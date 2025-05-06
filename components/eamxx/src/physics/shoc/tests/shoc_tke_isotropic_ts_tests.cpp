@@ -1,15 +1,15 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -20,14 +20,12 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
+  void run_property() {
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
-    static constexpr Int shcol    = 2;
-    static constexpr Int nlev     = 1;
+    static constexpr Int shcol   = 2;
+    static constexpr Int nlev    = 1;
 
     // Tests for the subroutine isotropic_ts
     //   in the SHOC TKE module.
@@ -55,25 +53,25 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     IsotropicTsData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
+    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev));
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       // Column only input
       SDS.brunt_int[s] = brunt_int_st;
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_st;
+        SDS.tke[offset]    = tke_st;
         SDS.a_diss[offset] = diss_st;
-        SDS.brunt[offset] = brunt_st[s];
+        SDS.brunt[offset]  = brunt_st[s];
       }
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
-      for (Int n = 0; n < nlev; ++n){
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Should be greater than zero
         REQUIRE(SDS.tke[offset] > 0);
@@ -85,8 +83,8 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     isotropic_ts(SDS);
 
     // Check that output falls within reasonable bounds
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         REQUIRE(SDS.isotropy[offset] <= maxiso);
         REQUIRE(SDS.isotropy[offset] >= 0);
@@ -95,15 +93,14 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
 
     // Check to make sure that column with positive
     //  brunt vaisalla frequency is smaller
-    for(Int s = 0; s < shcol-1; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol - 1; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
-        const auto offsets = n + (s+1) * nlev;
-        if(SDS.brunt[offset] < 0 & SDS.brunt[offsets] > 0){
+        const auto offsets = n + (s + 1) * nlev;
+        if (SDS.brunt[offset] < 0 & SDS.brunt[offsets] > 0) {
           REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
-        }
-        else{
+        } else {
           REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
         }
       }
@@ -124,20 +121,20 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     static constexpr Real brunt_diss = 4e-3;
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       SDS.brunt_int[s] = brunt_int_diss;
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_diss;
+        SDS.tke[offset]    = tke_diss;
         SDS.a_diss[offset] = diss_diss[s];
-        SDS.brunt[offset] = brunt_diss;
+        SDS.brunt[offset]  = brunt_diss;
       }
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
-      for (Int n = 0; n < nlev; ++n){
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Should be greater than zero
         REQUIRE(SDS.tke[offset] > 0);
@@ -149,8 +146,8 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     isotropic_ts(SDS);
 
     // Check that output falls within reasonable bounds
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         REQUIRE(SDS.isotropy[offset] <= maxiso);
         REQUIRE(SDS.isotropy[offset] >= 0);
@@ -159,58 +156,52 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
 
     // Check to make sure that column with positive
     //  brunt vaisalla frequency is smaller
-    for(Int s = 0; s < shcol-1; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol - 1; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
-        const auto offsets = n + (s+1) * nlev;
-        if(SDS.a_diss[offset] < SDS.a_diss[offsets]){
+        const auto offsets = n + (s + 1) * nlev;
+        if (SDS.a_diss[offset] < SDS.a_diss[offsets]) {
           REQUIRE(SDS.isotropy[offset] > SDS.isotropy[offsets]);
-        }
-        else{
+        } else {
           REQUIRE(SDS.isotropy[offset] < SDS.isotropy[offsets]);
         }
       }
     }
   }
 
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
-    IsotropicTsData baseline_data[] = {
-      //            shcol, nlev
-      IsotropicTsData(10, 71),
-      IsotropicTsData(10, 12),
-      IsotropicTsData(7,  16),
-      IsotropicTsData(2,   7)
-    };
+    IsotropicTsData baseline_data[] = {//            shcol, nlev
+                                       IsotropicTsData(10, 71), IsotropicTsData(10, 12), IsotropicTsData(7, 16),
+                                       IsotropicTsData(2, 7)};
 
     // Generate random input data
-    for (auto& d : baseline_data) {
+    for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     IsotropicTsData cxx_data[] = {
-      IsotropicTsData(baseline_data[0]),
-      IsotropicTsData(baseline_data[1]),
-      IsotropicTsData(baseline_data[2]),
-      IsotropicTsData(baseline_data[3]),
+        IsotropicTsData(baseline_data[0]),
+        IsotropicTsData(baseline_data[1]),
+        IsotropicTsData(baseline_data[2]),
+        IsotropicTsData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
-      for (auto& d : baseline_data) {
+      for (auto &d : baseline_data) {
         d.read(Base::m_fid);
       }
     }
 
     // Get data from cxx
-    for (auto& d : cxx_data) {
+    for (auto &d : cxx_data) {
       isotropic_ts(d);
     }
 
@@ -218,37 +209,34 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IsotropicTsData);
       for (Int i = 0; i < num_runs; ++i) {
-        IsotropicTsData& d_baseline = baseline_data[i];
-        IsotropicTsData& d_cxx = cxx_data[i];
+        IsotropicTsData &d_baseline = baseline_data[i];
+        IsotropicTsData &d_cxx      = cxx_data[i];
         for (Int k = 0; k < d_baseline.total(d_baseline.isotropy); ++k) {
           REQUIRE(d_baseline.isotropy[k] == d_cxx.isotropy[k]);
         }
       }
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
-      for (auto& d : cxx_data) {
+      for (auto &d : cxx_data) {
         d.write(Base::m_fid);
       }
     }
-  }//run_bfb
-
+  } // run_bfb
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_tke_isotropic_ts_property", "shoc")
-{
+TEST_CASE("shoc_tke_isotropic_ts_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct().run_property();
 }
 
-TEST_CASE("shoc_tke_isotropic_ts_bfb", "shoc")
-{
+TEST_CASE("shoc_tke_isotropic_ts_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct().run_bfb();

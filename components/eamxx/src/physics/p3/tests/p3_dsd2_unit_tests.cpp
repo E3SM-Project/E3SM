@@ -1,17 +1,17 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
-#include <thread>
-#include <array>
 #include <algorithm>
+#include <array>
 #include <random>
+#include <thread>
 
 namespace scream {
 namespace p3 {
@@ -21,38 +21,30 @@ namespace unit_test {
  * Unit-tests for p3 ice table functions.
  */
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
-  void run_cloud_bfb()
-  {
+  void run_cloud_bfb() {
     // Read in tables
-    view_2d_table vn_table_vals; view_2d_table vm_table_vals; view_2d_table revap_table_vals;
-    view_1d_table mu_r_table_vals; view_dnu_table dnu;
+    view_2d_table vn_table_vals;
+    view_2d_table vm_table_vals;
+    view_2d_table revap_table_vals;
+    view_1d_table mu_r_table_vals;
+    view_dnu_table dnu;
     Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {
-      {0.998086E-06, 0.114746E+01, 0.100000E+01},
-      {0.292481E-07, 0.758028E+00, 0.100000E+01},
-      {0.510000E-02, 0.970269E+00, 0.100000E+01},
-      {0.510000E-02, 0.980946E+00, 0.100000E+01},
+        {0.998086E-06, 0.114746E+01, 0.100000E+01}, {0.292481E-07, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.510000E-02, 0.980946E+00, 0.100000E+01},
 
-      {0.998086E-06, 0.114746E+01, 0.100000E+01},
-      {0.0,          0.758028E+00, 0.100000E+01},
-      {0.510000E-02, 0.970269E+00, 0.100000E+01},
-      {0.0,          0.980946E+00, 0.100000E+01},
+        {0.998086E-06, 0.114746E+01, 0.100000E+01}, {0.0, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.0, 0.980946E+00, 0.100000E+01},
 
-      {0.000000E+00, 1.144941E+00, 1.000000E+00},
-      {0.292481E-07, 0.758028E+00, 0.100000E+01},
-      {0.510000E-02, 0.970269E+00, 0.100000E+01},
-      {0.510000E-02, 0.980946E+00, 0.100000E+01},
+        {0.000000E+00, 1.144941E+00, 1.000000E+00}, {0.292481E-07, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.510000E-02, 0.980946E+00, 0.100000E+01},
 
-      {0.998086E-06, 0.114746E+01, 0.100000E+01},
-      {0.292481E-07, 0.758028E+00, 0.100000E+01},
-      {0.510000E-02, 0.970269E+00, 0.100000E+01},
-      {0.510000E-02, 0.980946E+00, 0.100000E+01}
-    };
+        {0.998086E-06, 0.114746E+01, 0.100000E+01}, {0.292481E-07, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.510000E-02, 0.980946E+00, 0.100000E+01}};
 
     // Sync to device
     view_1d<GetCloudDsd2Data> gcdd_device("gcdd", max_pack_size);
@@ -68,30 +60,31 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+    Kokkos::parallel_for(
+        num_test_itrs, KOKKOS_LAMBDA(const Int &i) {
+          const Int offset = i * Spack::n;
 
-      // Init pack inputs
-      Spack qc, rho, nc;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qc[s]    = gcdd_device(vs).qc;
-        rho[s]   = gcdd_device(vs).rho;
-        nc[s]    = gcdd_device(vs).nc_in;
-      }
+          // Init pack inputs
+          Spack qc, rho, nc;
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            qc[s]  = gcdd_device(vs).qc;
+            rho[s] = gcdd_device(vs).rho;
+            nc[s]  = gcdd_device(vs).nc_in;
+          }
 
-      Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
-      Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1);
+          Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
+          Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1);
 
-      // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        gcdd_device(vs).nc_out = nc[s];
-        gcdd_device(vs).mu_c   = mu_c[s];
-        gcdd_device(vs).nu     = nu[s];
-        gcdd_device(vs).lamc   = lamc[s];
-        gcdd_device(vs).cdist  = cdist[s];
-        gcdd_device(vs).cdist1 = cdist1[s];
-      }
-    });
+          // Copy results back into views
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            gcdd_device(vs).nc_out = nc[s];
+            gcdd_device(vs).mu_c   = mu_c[s];
+            gcdd_device(vs).nu     = nu[s];
+            gcdd_device(vs).lamc   = lamc[s];
+            gcdd_device(vs).cdist  = cdist[s];
+            gcdd_device(vs).cdist1 = cdist1[s];
+          }
+        });
 
     // Sync back to host
     Kokkos::deep_copy(gcdd_host, gcdd_device);
@@ -100,50 +93,37 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(gcdd[s].nc_out == gcdd_host(s).nc_out);
-        REQUIRE(gcdd[s].mu_c   == gcdd_host(s).mu_c);
-        REQUIRE(gcdd[s].nu     == gcdd_host(s).nu);
-        REQUIRE(gcdd[s].lamc   == gcdd_host(s).lamc);
-        REQUIRE(gcdd[s].cdist  == gcdd_host(s).cdist);
+        REQUIRE(gcdd[s].mu_c == gcdd_host(s).mu_c);
+        REQUIRE(gcdd[s].nu == gcdd_host(s).nu);
+        REQUIRE(gcdd[s].lamc == gcdd_host(s).lamc);
+        REQUIRE(gcdd[s].cdist == gcdd_host(s).cdist);
         REQUIRE(gcdd[s].cdist1 == gcdd_host(s).cdist1);
       }
-    }
-    else if (this->m_baseline_action == GENERATE) {
+    } else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         gcdd_host(s).write(Base::m_fid);
       }
     }
   }
 
-  void run_cloud_phys()
-  {
+  void run_cloud_phys() {
     // TODO
   }
 
-  void run_rain_bfb()
-  {
+  void run_rain_bfb() {
     using KTH = KokkosTypes<HostDevice>;
 
-    GetRainDsd2Data grdd[max_pack_size] = {
-      {0.100000E-01, 0.100000E+01},
-      {0.100000E-01, 0.100000E+01},
-      {0.156316E-03, 0.100000E+01},
-      {0.148647E-03, 0.100000E+01},
+    GetRainDsd2Data grdd[max_pack_size] = {{0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
+                                           {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01},
 
-      {0.100000E-01, 0.100000E+01},
-      {0.0,          0.100000E+01},
-      {0.156316E-03, 0.100000E+01},
-      {0.0,          0.100000E+01},
+                                           {0.100000E-01, 0.100000E+01}, {0.0, 0.100000E+01},
+                                           {0.156316E-03, 0.100000E+01}, {0.0, 0.100000E+01},
 
-      {0.100000E-01, 0.100000E+01},
-      {0.100000E-01, 0.100000E+01},
-      {0.156316E-03, 0.100000E+01},
-      {0.148647E-03, 0.100000E+01},
+                                           {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
+                                           {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01},
 
-      {0.100000E-01, 0.100000E+01},
-      {0.100000E-01, 0.100000E+01},
-      {0.156316E-03, 0.100000E+01},
-      {0.148647E-03, 0.100000E+01}
-    };
+                                           {0.100000E-01, 0.100000E+01}, {0.100000E-01, 0.100000E+01},
+                                           {0.156316E-03, 0.100000E+01}, {0.148647E-03, 0.100000E+01}};
 
     // Sync to device
     KTH::view_1d<GetRainDsd2Data> grdd_host("grdd_host", max_pack_size);
@@ -159,30 +139,30 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     }
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+    Kokkos::parallel_for(
+        num_test_itrs, KOKKOS_LAMBDA(const Int &i) {
+          const Int offset = i * Spack::n;
 
-      // Init pack inputs
-      Spack qr, cld_frac_r, nr;
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qr[s]    = grdd_device(vs).qr;
-        nr[s]    = grdd_device(vs).nr_in;
-      }
+          // Init pack inputs
+          Spack qr, cld_frac_r, nr;
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            qr[s] = grdd_device(vs).qr;
+            nr[s] = grdd_device(vs).nr_in;
+          }
 
-      Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-      Functions::get_rain_dsd2(qr, nr, mu_r, lamr,
-                               p3::Functions<Real,DefaultDevice>::P3Runtime());
-      Functions::get_cdistr_logn0r(qr, nr, mu_r, lamr, cdistr, logn0r);
+          Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
+          Functions::get_rain_dsd2(qr, nr, mu_r, lamr, p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::get_cdistr_logn0r(qr, nr, mu_r, lamr, cdistr, logn0r);
 
-      // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        grdd_device(vs).nr_out = nr[s];
-        grdd_device(vs).mu_r = mu_r[s];
-        grdd_device(vs).lamr = lamr[s];
-        grdd_device(vs).cdistr = cdistr[s];
-        grdd_device(vs).logn0r = logn0r[s];
-      }
-    });
+          // Copy results back into views
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            grdd_device(vs).nr_out = nr[s];
+            grdd_device(vs).mu_r   = mu_r[s];
+            grdd_device(vs).lamr   = lamr[s];
+            grdd_device(vs).cdistr = cdistr[s];
+            grdd_device(vs).logn0r = logn0r[s];
+          }
+        });
 
     // Sync back to host
     Kokkos::deep_copy(grdd_host, grdd_device);
@@ -191,33 +171,30 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(grdd[s].nr_out == grdd_host(s).nr_out);
-        REQUIRE(grdd[s].mu_r   == grdd_host(s).mu_r);
-        REQUIRE(grdd[s].lamr   == grdd_host(s).lamr);
+        REQUIRE(grdd[s].mu_r == grdd_host(s).mu_r);
+        REQUIRE(grdd[s].lamr == grdd_host(s).lamr);
         REQUIRE(grdd[s].cdistr == grdd_host(s).cdistr);
         REQUIRE(grdd[s].logn0r == grdd_host(s).logn0r);
       }
-    }
-    else if (this->m_baseline_action == GENERATE) {
+    } else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         grdd_host(s).write(Base::m_fid);
       }
     }
   }
 
-  void run_rain_phys()
-  {
+  void run_rain_phys() {
     // TODO
   }
 };
 
-}
-}
-}
+} // namespace unit_test
+} // namespace p3
+} // namespace scream
 
 namespace {
 
-TEST_CASE("p3_cloud_dsd2", "[p3_functions]")
-{
+TEST_CASE("p3_cloud_dsd2", "[p3_functions]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
   T t;
@@ -225,8 +202,7 @@ TEST_CASE("p3_cloud_dsd2", "[p3_functions]")
   t.run_cloud_bfb();
 }
 
-TEST_CASE("p3_rain_dsd2", "[p3_functions]")
-{
+TEST_CASE("p3_rain_dsd2", "[p3_functions]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
 
   T t;
@@ -234,4 +210,4 @@ TEST_CASE("p3_rain_dsd2", "[p3_functions]")
   t.run_rain_bfb();
 }
 
-}
+} // namespace

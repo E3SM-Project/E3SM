@@ -1,18 +1,18 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
+#include "share/eamxx_types.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
-#include <thread>
-#include <array>
 #include <algorithm>
+#include <array>
+#include <iomanip> // std::setprecision
 #include <random>
-#include <iomanip>      // std::setprecision
+#include <thread>
 
 namespace scream {
 namespace p3 {
@@ -21,13 +21,11 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::UnitTest<D>::Base {
 
-  void run_phys()
-  {
+  void run_phys() {
     // TODO
   }
 
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
     // Read in tables
@@ -36,21 +34,21 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
     using KTH = KokkosTypes<HostDevice>;
 
     // Set up input data.
-    constexpr Scalar qsmall = C::QSMALL;
-    constexpr Scalar qr_small = 0.9 * qsmall;
+    constexpr Scalar qsmall       = C::QSMALL;
+    constexpr Scalar qr_small     = 0.9 * qsmall;
     constexpr Scalar qr_not_small = 2.0 * qsmall;
-    constexpr Scalar qc_small = 0.9 * qsmall;
+    constexpr Scalar qc_small     = 0.9 * qsmall;
     constexpr Scalar qc_not_small = 2.0 * qsmall;
     CalcLiqRelaxationData self[max_pack_size];
     for (Int i = 0; i < max_pack_size; ++i) {
       self[i].randomize(engine);
       self[i].qr_incld = (i % 2) ? qr_small : qr_not_small;
-      self[i].qc_incld = ((i/2) % 2) ? qc_small : qc_not_small;
-      self[i].f1r = C::f1r;
-      self[i].f2r = C::f2r;
+      self[i].qc_incld = ((i / 2) % 2) ? qc_small : qc_not_small;
+      self[i].f1r      = C::f1r;
+      self[i].f2r      = C::f2r;
     }
 
-  // Read baseline data
+    // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
         self[i].read(Base::m_fid);
@@ -64,34 +62,35 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
     Kokkos::deep_copy(self_device, self_host);
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(num_test_itrs, KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
+    Kokkos::parallel_for(
+        num_test_itrs, KOKKOS_LAMBDA(const Int &i) {
+          const Int offset = i * Spack::n;
 
-      // Init pack inputs
-      Spack rho, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
+          // Init pack inputs
+          Spack rho, dv, mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld;
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        rho[s]      = self_device(vs).rho;
-        dv[s]       = self_device(vs).dv;
-        mu[s]       = self_device(vs).mu;
-        sc[s]       = self_device(vs).sc;
-        mu_r[s]     = self_device(vs).mu_r;
-        lamr[s]     = self_device(vs).lamr;
-        cdistr[s]   = self_device(vs).cdistr;
-        cdist[s]    = self_device(vs).cdist;
-        qr_incld[s] = self_device(vs).qr_incld;
-        qc_incld[s] = self_device(vs).qc_incld;
-      }
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            rho[s]      = self_device(vs).rho;
+            dv[s]       = self_device(vs).dv;
+            mu[s]       = self_device(vs).mu;
+            sc[s]       = self_device(vs).sc;
+            mu_r[s]     = self_device(vs).mu_r;
+            lamr[s]     = self_device(vs).lamr;
+            cdistr[s]   = self_device(vs).cdistr;
+            cdist[s]    = self_device(vs).cdist;
+            qr_incld[s] = self_device(vs).qr_incld;
+            qc_incld[s] = self_device(vs).qc_incld;
+          }
 
-      Spack epsr{0.0}, epsc{0.0};
-      Functions::calc_liq_relaxation_timescale(revap_table_vals, rho, self_device(0).f1r, self_device(0).f2r, dv,
-        mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+          Spack epsr{0.0}, epsc{0.0};
+          Functions::calc_liq_relaxation_timescale(revap_table_vals, rho, self_device(0).f1r, self_device(0).f2r, dv,
+                                                   mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
 
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        self_device(vs).epsr = epsr[s];
-        self_device(vs).epsc = epsc[s];
-      }
-    });
+          for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
+            self_device(vs).epsr = epsr[s];
+            self_device(vs).epsc = epsc[s];
+          }
+        });
 
     Kokkos::deep_copy(self_host, self_device);
 
@@ -100,24 +99,21 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
         REQUIRE(self[s].epsr == self_host(s).epsr);
         REQUIRE(self[s].epsc == self_host(s).epsc);
       }
-    }
-    else if (this->m_baseline_action == GENERATE) {
+    } else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         self_host(s).write(Base::m_fid);
       }
     }
   }
-
 };
 
-}
-}
-}
+} // namespace unit_test
+} // namespace p3
+} // namespace scream
 
 namespace {
 
-TEST_CASE("p3_calc_liq_relaxation_timescale", "[p3_functions]")
-{
+TEST_CASE("p3_calc_liq_relaxation_timescale", "[p3_functions]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcLiqRelaxationTimescale;
 
   T t;
@@ -125,4 +121,4 @@ TEST_CASE("p3_calc_liq_relaxation_timescale", "[p3_functions]")
   t.run_bfb();
 }
 
-}
+} // namespace

@@ -7,8 +7,7 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -63,7 +62,7 @@ TEST_CASE("atm_backtend") {
 
   ekat::ParameterList params;
   REQUIRE_THROWS(diag_factory.create("AtmBackTendDiag", comm,
-                                     params));  // No 'tendency_name'
+                                     params)); // No 'tendency_name'
 
   Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
@@ -88,17 +87,17 @@ TEST_CASE("atm_backtend") {
   some_field.deep_copy(var_fill_value);
   REQUIRE(views_are_equal(diag_f, some_field));
 
-  const Real a_day = 24.0 * 60.0 * 60.0;  // seconds
+  const Real a_day = 24.0 * 60.0 * 60.0; // seconds
 
   constexpr int ntests = 10;
 
-  for(int itest = 2; itest < ntests; itest++) {
+  for (int itest = 2; itest < ntests; itest++) {
     // Run diag again
     some_field.deep_copy(qc);
 
     diag->init_timestep(t0);
 
-    util::TimeStamp t1({2024, 1, itest}, {0, 0, 0});  // a day later
+    util::TimeStamp t1({2024, 1, itest}, {0, 0, 0}); // a day later
     qc.get_header().get_tracking().update_time_stamp(t1);
     randomize(qc, engine, pdf);
 
@@ -111,4 +110,4 @@ TEST_CASE("atm_backtend") {
   }
 }
 
-}  // namespace scream
+} // namespace scream

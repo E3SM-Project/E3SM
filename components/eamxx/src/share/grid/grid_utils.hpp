@@ -3,8 +3,7 @@
 
 #include <string>
 
-namespace scream
-{
+namespace scream {
 
 /*
  * An enum for the type of grid.
@@ -18,25 +17,25 @@ namespace scream
 
 enum class GridType {
   Undefined,
-  SE,         // Spectral Element
-  Point       // Mesh-free set of points
+  SE,   // Spectral Element
+  Point // Mesh-free set of points
 };
 
-inline std::string e2str (const GridType type) {
+inline std::string e2str(const GridType type) {
   std::string str;
   switch (type) {
-    case GridType::Undefined:
-      str = "Undefined";
-      break;
-    case GridType::SE:
-      str = "SE";
-      break;
-    case GridType::Point:
-      str = "Point";
-      break;
-    default:
-      str = "INVALID";
-      break;
+  case GridType::Undefined:
+    str = "Undefined";
+    break;
+  case GridType::SE:
+    str = "SE";
+    break;
+  case GridType::Point:
+    str = "Point";
+    break;
+  default:
+    str = "INVALID";
+    break;
   }
 
   return str;

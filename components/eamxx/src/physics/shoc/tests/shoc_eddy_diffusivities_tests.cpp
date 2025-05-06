@@ -1,33 +1,30 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
 #include <random>
 #include <thread>
 
-
 namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
-    static constexpr Int shcol    = 2;
-    static constexpr Int nlev     = 1;
+  void run_property() {
+    static constexpr Int shcol = 2;
+    static constexpr Int nlev  = 1;
 
     // Tests for the subroutine eddy_diffusivities
     //   in the SHOC TKE module.
@@ -62,19 +59,19 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     EddyDiffusivitiesData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
+    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev));
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       // Column only input
       SDS.pblh[s] = pblh;
       SDS.tabs[s] = tabs[s];
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_reg;
-        SDS.zt_grid[offset] = zt_grid;
+        SDS.tke[offset]      = tke_reg;
+        SDS.zt_grid[offset]  = zt_grid;
         SDS.shoc_mix[offset] = shoc_mix_reg;
         SDS.sterm_zt[offset] = sterm_zt_reg;
         SDS.isotropy[offset] = isotropy_reg;
@@ -82,11 +79,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.pblh[s] > 0);
       // Make sure point we are testing is within PBL
       REQUIRE(SDS.zt_grid[s] < SDS.pblh[s]);
-      for (Int n = 0; n < nlev; ++n){
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Should be greater than zero
         REQUIRE(SDS.tke[offset] > 0);
@@ -101,11 +98,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     eddy_diffusivities(SDS);
 
     // Check to make sure the answers in the columns are different
-    for(Int s = 0; s < shcol-1; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol - 1; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
-        const auto offsets = n + (s+1) * nlev;
+        const auto offsets = n + (s + 1) * nlev;
         REQUIRE(SDS.tk[offset] != SDS.tk[offsets]);
         REQUIRE(SDS.tkh[offset] != SDS.tkh[offsets]);
       }
@@ -131,19 +128,19 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     // Verify that input mixing length and shear term
     //   are increasing in each column for this
     //   test to be valid
-    for(Int s = 0; s < shcol-1; ++s) {
-      REQUIRE(shoc_mix_stab[s+1] > shoc_mix_stab[s]);
-      REQUIRE(sterm_zt_stab[s+1] > sterm_zt_stab[s]);
+    for (Int s = 0; s < shcol - 1; ++s) {
+      REQUIRE(shoc_mix_stab[s + 1] > shoc_mix_stab[s]);
+      REQUIRE(sterm_zt_stab[s + 1] > sterm_zt_stab[s]);
     }
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       // Column only input
       SDS.tabs[s] = tabs_stab[s];
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_stab;
+        SDS.tke[offset]      = tke_stab;
         SDS.shoc_mix[offset] = shoc_mix_stab[s];
         SDS.sterm_zt[offset] = sterm_zt_stab[s];
         SDS.isotropy[offset] = isotropy_stab;
@@ -151,10 +148,10 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       // Make sure we are testing a runaway stable boundary layer
       REQUIRE(SDS.tabs[s] < 180);
-      for (Int n = 0; n < nlev; ++n){
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Should be greater than zero
         REQUIRE(SDS.tke[offset] > 0);
@@ -169,13 +166,12 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
 
     // Check to make sure the answers in the columns are larger
     //   when the length scale and shear term are larger
-    for(Int s = 0; s < shcol-1; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol - 1; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
-        const auto offsets = n + (s+1) * nlev;
-        if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] &
-            SDS.sterm_zt[offset] < SDS.sterm_zt[offsets]){
+        const auto offsets = n + (s + 1) * nlev;
+        if (SDS.shoc_mix[offset] < SDS.shoc_mix[offsets] & SDS.sterm_zt[offset] < SDS.sterm_zt[offsets]) {
           REQUIRE(SDS.tk[offset] < SDS.tkh[offsets]);
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
         }
@@ -201,19 +197,19 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     // Verify that input isotropy and tke
     //   are increasing in each column for this
     //   test to be valid
-    for(Int s = 0; s < shcol-1; ++s) {
-      REQUIRE(isotropy_ustab[s+1] > isotropy_ustab[s]);
-      REQUIRE(tke_ustab[s+1] > tke_ustab[s]);
+    for (Int s = 0; s < shcol - 1; ++s) {
+      REQUIRE(isotropy_ustab[s + 1] > isotropy_ustab[s]);
+      REQUIRE(tke_ustab[s + 1] > tke_ustab[s]);
     }
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       // Column only input
       SDS.tabs[s] = tabs_ustab[s];
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.tke[offset] = tke_ustab[s];
+        SDS.tke[offset]      = tke_ustab[s];
         SDS.shoc_mix[offset] = shoc_mix_ustab;
         SDS.sterm_zt[offset] = sterm_zt_ustab;
         SDS.isotropy[offset] = isotropy_ustab[s];
@@ -221,10 +217,10 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       // Make sure we are testing default boundary layer diffusivities
       REQUIRE(SDS.tabs[s] > 220);
-      for (Int n = 0; n < nlev; ++n){
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Should be greater than zero
         REQUIRE(SDS.tke[offset] > 0);
@@ -239,13 +235,12 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
 
     // Check to make sure the diffusivities are smaller
     //  in the columns where isotropy and tke are smaller
-    for(Int s = 0; s < shcol-1; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol - 1; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
-        const auto offsets = n + (s+1) * nlev;
-        if (SDS.tke[offset] < SDS.tke[offsets] &
-            SDS.isotropy[offset] < SDS.isotropy[offsets]){
+        const auto offsets = n + (s + 1) * nlev;
+        if (SDS.tke[offset] < SDS.tke[offsets] & SDS.isotropy[offset] < SDS.isotropy[offsets]) {
           REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
         }
@@ -253,44 +248,42 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     }
   }
 
-
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
     EddyDiffusivitiesData baseline_data[] = {
-      EddyDiffusivitiesData(10, 71),
-      EddyDiffusivitiesData(10, 12),
-      EddyDiffusivitiesData(7,  16),
-      EddyDiffusivitiesData(2, 7),
+        EddyDiffusivitiesData(10, 71),
+        EddyDiffusivitiesData(10, 12),
+        EddyDiffusivitiesData(7, 16),
+        EddyDiffusivitiesData(2, 7),
     };
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
-    for (auto& d : baseline_data) {
+    for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     EddyDiffusivitiesData cxx_data[] = {
-      EddyDiffusivitiesData(baseline_data[0]),
-      EddyDiffusivitiesData(baseline_data[1]),
-      EddyDiffusivitiesData(baseline_data[2]),
-      EddyDiffusivitiesData(baseline_data[3]),
+        EddyDiffusivitiesData(baseline_data[0]),
+        EddyDiffusivitiesData(baseline_data[1]),
+        EddyDiffusivitiesData(baseline_data[2]),
+        EddyDiffusivitiesData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
-      for (auto& d : baseline_data) {
+      for (auto &d : baseline_data) {
         d.read(Base::m_fid);
       }
     }
 
     // Get data from cxx
-    for (auto& d : cxx_data) {
+    for (auto &d : cxx_data) {
       eddy_diffusivities(d);
     }
 
@@ -298,8 +291,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       static constexpr Int num_runs = sizeof(baseline_data) / sizeof(EddyDiffusivitiesData);
       for (Int i = 0; i < num_runs; ++i) {
-        EddyDiffusivitiesData& d_baseline = baseline_data[i];
-        EddyDiffusivitiesData& d_cxx = cxx_data[i];
+        EddyDiffusivitiesData &d_baseline = baseline_data[i];
+        EddyDiffusivitiesData &d_cxx      = cxx_data[i];
         for (Int k = 0; k < d_baseline.total(d_baseline.tkh); ++k) {
           REQUIRE(d_baseline.tkh[k] == d_cxx.tkh[k]);
           REQUIRE(d_baseline.tk[k] == d_cxx.tk[k]);
@@ -307,28 +300,26 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
       }
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
-      for (auto& d : cxx_data) {
+      for (auto &d : cxx_data) {
         d.write(Base::m_fid);
       }
     }
   } // run_bfb
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_tke_eddy_diffusivities_property", "shoc")
-{
+TEST_CASE("shoc_tke_eddy_diffusivities_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct().run_property();
 }
 
-TEST_CASE("shoc_tke_eddy_diffusivities_bfb", "shoc")
-{
+TEST_CASE("shoc_tke_eddy_diffusivities_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct().run_bfb();

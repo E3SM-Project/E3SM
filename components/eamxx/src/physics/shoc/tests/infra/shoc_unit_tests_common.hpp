@@ -1,13 +1,13 @@
 #ifndef SHOC_UNIT_TESTS_COMMON_HPP
 #define SHOC_UNIT_TESTS_COMMON_HPP
 
-#include "shoc_functions.hpp"
-#include "share/eamxx_types.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 #include "physics/share/physics_test_data.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
 
 namespace scream {
 namespace shoc {
@@ -25,8 +25,7 @@ namespace unit_test {
 
 struct UnitWrap {
 
-  template <typename D=DefaultDevice>
-  struct UnitTest : public KokkosTypes<D> {
+  template <typename D = DefaultDevice> struct UnitTest : public KokkosTypes<D> {
 
     using Device      = D;
     using MemberType  = typename KokkosTypes<Device>::MemberType;
@@ -34,30 +33,24 @@ struct UnitWrap {
     using RangePolicy = typename KokkosTypes<Device>::RangePolicy;
     using ExeSpace    = typename KokkosTypes<Device>::ExeSpace;
 
-    template <typename S>
-    using view_1d = typename KokkosTypes<Device>::template view_1d<S>;
-    template <typename S>
-    using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
-    template <typename S>
-    using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
+    template <typename S> using view_1d = typename KokkosTypes<Device>::template view_1d<S>;
+    template <typename S> using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
+    template <typename S> using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
-    template <typename S>
-    using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
+    template <typename S> using uview_1d = typename ekat::template Unmanaged<view_1d<S>>;
 
-    using Functions          = scream::shoc::Functions<Real, Device>;
-    using Scalar             = typename Functions::Scalar;
-    using Spack              = typename Functions::Spack;
-    using Pack               = typename Functions::Pack;
-    using IntSmallPack       = typename Functions::IntSmallPack;
-    using Smask              = typename Functions::Smask;
-    using C                  = typename Functions::C;
+    using Functions    = scream::shoc::Functions<Real, Device>;
+    using Scalar       = typename Functions::Scalar;
+    using Spack        = typename Functions::Spack;
+    using Pack         = typename Functions::Pack;
+    using IntSmallPack = typename Functions::IntSmallPack;
+    using Smask        = typename Functions::Smask;
+    using C            = typename Functions::C;
 
     struct Base : public UnitBase {
 
-      Base() :
-        UnitBase()
-      {
-        //Functions::shoc_init(); // just in case there is ever global shoc data
+      Base() : UnitBase() {
+        // Functions::shoc_init(); // just in case there is ever global shoc data
       }
 
       ~Base() = default;
@@ -133,9 +126,7 @@ struct UnitWrap {
     struct TestPblintd;
     struct TestComputeShocTemp;
   };
-
 };
-
 
 } // namespace unit_test
 } // namespace shoc

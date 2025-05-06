@@ -5,11 +5,10 @@
 
 #include <ekat/ekat_assert.hpp>
 
-#include <string>
 #include <list>
+#include <string>
 
-namespace scream
-{
+namespace scream {
 
 /*
  * Abstract interface for property checks
@@ -37,59 +36,49 @@ namespace scream
 // A 'Fail' result means the property cannot be fixed,
 // while 'Repairable' means the property is "not too far off",
 // and can be fixed.
-enum class CheckResult {
-  Pass,
-  Fail,
-  Repairable
-};
+enum class CheckResult { Pass, Fail, Repairable };
 
 enum class PropertyType {
-  PointWise,    // The property is computed pointwise at each entry of the field(s)
-  ColumnWise,   // The property is computed over each column of the field(s)
-  Global        // The property is computed globally
+  PointWise,  // The property is computed pointwise at each entry of the field(s)
+  ColumnWise, // The property is computed over each column of the field(s)
+  Global      // The property is computed globally
 };
 
 class PropertyCheck {
 public:
-
-  virtual ~PropertyCheck()  = default;
+  virtual ~PropertyCheck() = default;
 
   // Name of the property being checked
-  virtual std::string name () const = 0;
+  virtual std::string name() const = 0;
 
   struct ResultAndMsg {
-    CheckResult       result;
-    std::string       msg;
+    CheckResult result;
+    std::string msg;
 
     // For pointwise/columnwise checks, if failing, can return tags/indices
     // for the location where the test failed.
-    std::vector<int>        fail_loc_indices;
-    std::vector<FieldTag>   fail_loc_tags;
+    std::vector<int> fail_loc_indices;
+    std::vector<FieldTag> fail_loc_tags;
   };
 
-  virtual PropertyType type () const = 0;
+  virtual PropertyType type() const = 0;
 
   // Check if the property is satisfied, and return true if it is
-  virtual ResultAndMsg check () const = 0;
+  virtual ResultAndMsg check() const = 0;
 
   // Set fields, and whether they can be repaired.
-  void set_fields (const std::list<Field>& fields,
-                   const std::list<bool>& repairable);
+  void set_fields(const std::list<Field> &fields, const std::list<bool> &repairable);
 
   // Additional column data fields can be added to output
-  // stream of any property check. 
-  void set_additional_data_field (const Field& data_field);
+  // stream of any property check.
+  void set_additional_data_field(const Field &data_field);
 
   // Whether this PC is capable of fixing things if the check fails.
   // Defaults to false.
-  bool can_repair() const {
-    return m_repairable_fields.size()>0;
-  }
+  bool can_repair() const { return m_repairable_fields.size() > 0; }
 
   // Return the list of fields involved in this property check
-  const std::list<Field>& fields () const {
-    return m_fields;
-  }
+  const std::list<Field> &fields() const { return m_fields; }
 
   // If can_repair()=true, return a list of the fields that would be
   // repaired. Note that this may be a subset of the list of fields
@@ -97,35 +86,32 @@ public:
   // C fixed, the repair might be to set f2=C-f1. So this method
   // would return only f2. If repair is not allowed, this method
   // returns an empty list.
-  const std::list<Field*>& repairable_fields () const {
-    return m_repairable_fields;
-  }
+  const std::list<Field *> &repairable_fields() const { return m_repairable_fields; }
 
   // Return additional data fields used in this property check
-  const std::list<Field>& additional_data_fields () const {
-    return m_additional_data_fields;
-  }
+  const std::list<Field> &additional_data_fields() const { return m_additional_data_fields; }
 
   // If a check fails, attempt to repair things. Default is to throw.
-  void repair () const;
+  void repair() const;
 
   // Check the property, and if not satisfied, proceed to repair.
   // The default impl is to run check() and repair() in sequence. If you can
   // perform both in a single call, for performance reason, you should
   // override this method.
-  virtual void check_and_repair () const;
+  virtual void check_and_repair() const;
 
   // Whether the input check is the same as this class
-  virtual bool same_as (const PropertyCheck& pc) const;
+  virtual bool same_as(const PropertyCheck &pc) const;
 
 protected:
-  virtual void repair_impl () const {
-    EKAT_ERROR_MSG ("Error! The method 'repair_impl' has not been overridden.\n"
-        "  PropertyCheck name: " + name() + "\n");
+  virtual void repair_impl() const {
+    EKAT_ERROR_MSG("Error! The method 'repair_impl' has not been overridden.\n"
+                   "  PropertyCheck name: " +
+                   name() + "\n");
   }
 
-  std::list<Field>    m_fields;
-  std::list<Field*>   m_repairable_fields;
+  std::list<Field> m_fields;
+  std::list<Field *> m_repairable_fields;
 
   std::list<Field> m_additional_data_fields;
 };

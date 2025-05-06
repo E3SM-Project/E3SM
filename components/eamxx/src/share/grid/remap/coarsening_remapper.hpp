@@ -1,13 +1,12 @@
 #ifndef SCREAM_COARSENING_REMAPPER_HPP
 #define SCREAM_COARSENING_REMAPPER_HPP
 
-#include "share/grid/remap/horiz_interp_remapper_base.hpp"
 #include "eamxx_config.h"
+#include "share/grid/remap/horiz_interp_remapper_base.hpp"
 
 #include <mpi.h>
 
-namespace scream
-{
+namespace scream {
 
 /*
  * A remapper to interpolate fields on a coarser grid
@@ -38,81 +37,67 @@ namespace scream
  * where it is then unpacked and accumulated into the result.
  */
 
-class CoarseningRemapper : public HorizInterpRemapperBase
-{
+class CoarseningRemapper : public HorizInterpRemapperBase {
 public:
+  CoarseningRemapper(const grid_ptr_type &src_grid, const std::string &map_file, const bool track_mask = false,
+                     const bool populate_tgt_grid_geo_data = true);
 
-  CoarseningRemapper (const grid_ptr_type& src_grid,
-                      const std::string& map_file,
-                      const bool track_mask = false,
-                      const bool populate_tgt_grid_geo_data = true);
-
-  ~CoarseningRemapper ();
+  ~CoarseningRemapper();
 
 protected:
+  void registration_ends_impl() override;
 
-  void registration_ends_impl () override;
+  void remap_fwd_impl() override;
 
-  void remap_fwd_impl () override;
+  template <typename T> using view_2d = typename KT::template view_2d<T>;
 
-  template<typename T>
-  using view_2d = typename KT::template view_2d<T>;
+  void setup_mpi_data_structures() override;
 
-  void setup_mpi_data_structures () override;
+  std::vector<int> get_pids_for_recv(const std::vector<int> &send_to_pids) const;
 
-  std::vector<int> get_pids_for_recv (const std::vector<int>& send_to_pids) const;
-
-  std::map<int,std::vector<int>>
-  recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const;
+  std::map<int, std::vector<int>> recv_gids_from_pids(const std::map<int, std::vector<int>> &pid2gids_send) const;
 
   // This class uses itself to remap src grid geo data to the tgt grid. But in order
   // to not pollute the remapper for later use, we must be able to clean it up after
   // remapping all the geo data.
-  void clean_up ();
+  void clean_up();
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  template<int N>
-  void local_mat_vec (const Field& f_src, const Field& f_tgt, const Field& mask) const;
-  template<int N>
-  void rescale_masked_fields (const Field& f_tgt, const Field& f_mask) const;
-  void pack_and_send ();
-  void recv_and_unpack ();
+  template <int N> void local_mat_vec(const Field &f_src, const Field &f_tgt, const Field &mask) const;
+  template <int N> void rescale_masked_fields(const Field &f_tgt, const Field &f_mask) const;
+  void pack_and_send();
+  void recv_and_unpack();
   // Overload, not hide
   using HorizInterpRemapperBase::local_mat_vec;
 
 protected:
-
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 
   // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
-  template<typename T>
-  using mpi_view_1d = typename std::conditional<
-                        MpiOnDev,
-                        view_1d<T>,
-                        typename view_1d<T>::HostMirror
-                      >::type;
+  template <typename T>
+  using mpi_view_1d = typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
 
   // Mask fields, if needed
-  bool                  m_track_mask;
+  bool m_track_mask;
 
   // ------- MPI data structures -------- //
 
   // The send/recv buf for pack/unpack
-  view_1d<Real>         m_send_buffer;
-  view_1d<Real>         m_recv_buffer;
+  view_1d<Real> m_send_buffer;
+  view_1d<Real> m_recv_buffer;
 
   // The send/recv buf to feed to MPI.
   // If MpiOnDev=true, they simply alias the ones above
-  mpi_view_1d<Real>     m_mpi_send_buffer;
-  mpi_view_1d<Real>     m_mpi_recv_buffer;
+  mpi_view_1d<Real> m_mpi_send_buffer;
+  mpi_view_1d<Real> m_mpi_recv_buffer;
 
   // Offset of each field on each PID in send/recv buffers.
   // E.g., offset(3,2)=10 means the offset of data from field 3
   //       to be sent to PID 2 is 10.
-  view_2d<int>          m_send_f_pid_offsets;
-  view_2d<int>          m_recv_f_pid_offsets;
+  view_2d<int> m_send_f_pid_offsets;
+  view_2d<int> m_recv_f_pid_offsets;
 
   // Reorder the lids so that all lids to send to PID n
   // come before those for PID N+1. The meaning is
@@ -120,10 +105,10 @@ protected:
   // Note: send lids are the lids of gids in the ov_tgt_grid.
   //       But here, dofs are ordered differently, so that all dofs to
   //       send to the same PID are contiguous.
-  view_2d<int>          m_send_lids_pids;
+  view_2d<int> m_send_lids_pids;
 
   // Store the start of lids to send to each PID in the view above
-  view_1d<int>          m_send_pid_lids_start;
+  view_1d<int> m_send_pid_lids_start;
 
   // Unlike the packing for sends, unpacking after the recv can cause
   // race conditions. Hence, we ||ize of tgt lids, and process separate
@@ -138,13 +123,13 @@ protected:
   // pidpos(11,0)=3, and pidpos(11,1)=19, then the 2nd contribution for lid=2
   // comes from pid 3, and pid 3 packed that dof as the 19th in the list of
   // dofs it sent to us.
-  view_2d<int>          m_recv_lids_pidpos;
-  view_1d<int>          m_recv_lids_beg;
-  view_1d<int>          m_recv_lids_end;
+  view_2d<int> m_recv_lids_pidpos;
+  view_1d<int> m_recv_lids_beg;
+  view_1d<int> m_recv_lids_end;
 
   // Send/recv requests
-  std::vector<MPI_Request>  m_recv_req;
-  std::vector<MPI_Request>  m_send_req;
+  std::vector<MPI_Request> m_recv_req;
+  std::vector<MPI_Request> m_send_req;
 };
 
 } // namespace scream

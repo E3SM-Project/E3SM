@@ -2,15 +2,15 @@
 
 #include "shoc_unit_tests_common.hpp"
 
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -21,15 +21,13 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
+  void run_property() {
     // Property test for the SHOC subroutine:
     //  diag_second_moments_srf
 
-    static constexpr Int shcol    = 5;
+    static constexpr Int shcol = 5;
 
     // Given several columns worth of data with varying conditions,
     //  verify that the output is as expected.
@@ -45,24 +43,23 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::B
     DiagSecondMomentsSrfData SDS(shcol);
 
     // Load up the data
-    for (Int s = 0; s < shcol; ++s){
+    for (Int s = 0; s < shcol; ++s) {
       SDS.wthl_sfc[s] = wthl_sfc[s];
-      SDS.uw_sfc[s] = uw_sfc[s];
-      SDS.vw_sfc[s] = vw_sfc[s];
+      SDS.uw_sfc[s]   = uw_sfc[s];
+      SDS.vw_sfc[s]   = vw_sfc[s];
     }
 
     // Call the C++ implementation
     diag_second_moments_srf(SDS);
 
     // Verify the output
-    for (Int s = 0; s < shcol; ++s){
+    for (Int s = 0; s < shcol; ++s) {
       // if surface heat flux is less than or equal to zero then
       //  wstar should be zero, otherwise, it should be greater
       //  than zero.
-      if (SDS.wthl_sfc[s] <= 0){
+      if (SDS.wthl_sfc[s] <= 0) {
         REQUIRE(SDS.wstar[s] == 0);
-      }
-      else {
+      } else {
         REQUIRE(SDS.wstar[s] > 0);
         // Check result is within reasonable bounds
         REQUIRE(SDS.wstar[s] < 1);
@@ -70,21 +67,18 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::B
 
       // if both input surface wind fluxes are zero then
       //   ustar2 should be zero, else it should always be positive
-      if (SDS.uw_sfc[s] == 0 && SDS.vw_sfc[s] == 0){
+      if (SDS.uw_sfc[s] == 0 && SDS.vw_sfc[s] == 0) {
         REQUIRE(SDS.ustar2[s] == 0);
-      }
-      else{
+      } else {
         REQUIRE(SDS.ustar2[s] > 0);
         // Check result is within reasonable bounds
         REQUIRE(SDS.ustar2[s] < 10);
       }
     }
-
   }
 
-  void run_bfb()
-  {
-  #if 0
+  void run_bfb() {
+#if 0
     auto engine = Base::get_engine();
 
     SHOCSecondMomentSrfData mom_srf_data_baseline[] = {
@@ -132,7 +126,6 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::B
     }
 #endif
   }
-
 };
 
 } // namespace unit_test

@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "shoc_functions.hpp"
 #include "shoc_test_data.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
 
 #include "shoc_unit_tests_common.hpp"
 
@@ -13,26 +13,24 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
+  void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
-    static constexpr Real Cpair = scream::physics::Constants<Real>::Cpair;
+    static constexpr Real Cpair  = scream::physics::Constants<Real>::Cpair;
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
     static constexpr Real LatVap = scream::physics::Constants<Real>::LatVap;
-    static constexpr Real Rair = scream::physics::Constants<Real>::Rair;
-    static constexpr Real p0 = scream::physics::Constants<Real>::P0;
+    static constexpr Real Rair   = scream::physics::Constants<Real>::Rair;
+    static constexpr Real p0     = scream::physics::Constants<Real>::P0;
 
-    static constexpr Int shcol    = 5;
-    static constexpr Int nlev     = 5;
-    static constexpr auto nlevi   = nlev + 1;
+    static constexpr Int shcol        = 5;
+    static constexpr Int nlev         = 5;
+    static constexpr auto nlevi       = nlev + 1;
     static constexpr Int num_qtracers = 3;
-    static constexpr Int nadv = 5;
+    static constexpr Int nadv         = 5;
 
     // Tests for the subroutine shoc_main
     //  This is the top level function of SHOC.  Note that all
@@ -89,15 +87,15 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     static constexpr Real phis[shcol] = {100, 200, 0, 150, 500};
 
     // establish reasonable bounds for checking input/output
-    static constexpr Real thl_lbound = 200; // [K]
-    static constexpr Real thl_ubound = 350; // [K]
-    static constexpr Real qw_lbound = 1e-4; // [kg/kg]
-    static constexpr Real qw_ubound = 5e-2; // [kg/kg]
-    static constexpr Real tke_lbound = 0; // [m2/s2]
-    static constexpr Real tke_ubound = 5; // [m2/s2]
-    static constexpr Real wind_bounds = 10; // [m/s]
-    static constexpr Real dse_upper = 5e5; // [J/kg]
-    static constexpr Real dse_lower = 1e5; // [J/kg]
+    static constexpr Real thl_lbound  = 200;  // [K]
+    static constexpr Real thl_ubound  = 350;  // [K]
+    static constexpr Real qw_lbound   = 1e-4; // [kg/kg]
+    static constexpr Real qw_ubound   = 5e-2; // [kg/kg]
+    static constexpr Real tke_lbound  = 0;    // [m2/s2]
+    static constexpr Real tke_ubound  = 5;    // [m2/s2]
+    static constexpr Real wind_bounds = 10;   // [m/s]
+    static constexpr Real dse_upper   = 5e5;  // [J/kg]
+    static constexpr Real dse_lower   = 1e5;  // [J/kg]
 
     // Compute some inputs based on the above
 
@@ -106,51 +104,51 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
 
     // First compute variables related to height
     Real pres[nlev], zt_grid[nlev], pdel[nlev];
-    for(Int n = 0; n < nlev; ++n) {
+    for (Int n = 0; n < nlev; ++n) {
       // height on the midpoint grid
-      zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
+      zt_grid[n] = 0.5 * (zi_grid[n] + zi_grid[n + 1]);
       // pressure on the midpoint grid
-      pres[n] = 0.5*(presi[n]+presi[n+1]);
+      pres[n] = 0.5 * (presi[n] + presi[n + 1]);
       // pressure thickness
-      pdel[n] = presi[n+1] - presi[n];
+      pdel[n] = presi[n + 1] - presi[n];
     }
 
     // Compute variables related to temperature
     Real host_dse[shcol][nlev];
     Real thetal[nlev], thv[nlev], inv_exner[nlev];
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         // Compute the dry static energy
-        host_dse[s][n] = Cpair*temp[n]+gravit*zt_grid[n]+phis[s];
+        host_dse[s][n] = Cpair * temp[n] + gravit * zt_grid[n] + phis[s];
       }
     }
 
     Real pot_temp, qv;
-    for(Int n = 0; n < nlev; ++n) {
+    for (Int n = 0; n < nlev; ++n) {
       // Compute potential temperature and water vapor
-      pot_temp = temp[n]*std::pow(p0/pres[n],Rair/Cpair);
-      qv = qw[n] - shoc_ql[n];
+      pot_temp = temp[n] * std::pow(p0 / pres[n], Rair / Cpair);
+      qv       = qw[n] - shoc_ql[n];
       // Liquid water potential temperature
-      thetal[n] = pot_temp - (LatVap/Cpair)*shoc_ql[n];
+      thetal[n] = pot_temp - (LatVap / Cpair) * shoc_ql[n];
       // Virtual potential temperature
-      thv[n] = pot_temp * (1 + 0.61*qv - shoc_ql[n]);
+      thv[n] = pot_temp * (1 + 0.61 * qv - shoc_ql[n]);
       // Compute the inverse of the exner function
-      const Real exner = std::pow(pres[n]/p0,Rair/Cpair);
+      const Real exner = std::pow(pres[n] / p0, Rair / Cpair);
       REQUIRE(exner > 0);
-      inv_exner[n] = 1/exner;
+      inv_exner[n] = 1 / exner;
     }
 
     // Load up tracer input array with random data
     //  ranging from values of 0 to 1e-1 (unitless)
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
-        for (Int t = 0; t < num_qtracers; ++t){
-          tracer_in[s][n][t] = (rand()%100 + 1)/1000.;
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
+        for (Int t = 0; t < num_qtracers; ++t) {
+          tracer_in[s][n][t] = (rand() % 100 + 1) / 1000.;
         }
       }
     }
     // Initialize data structure for bridging to F90
-    ShocMainData SDS(shcol,nlev,nlevi,num_qtracers,dtime,nadv,0,0);
+    ShocMainData SDS(shcol, nlev, nlevi, num_qtracers, dtime, nadv, 0, 0);
 
     // Test the inputs are good
     REQUIRE(SDS.shcol == shcol);
@@ -161,72 +159,70 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     REQUIRE(SDS.nadv == nadv);
     REQUIRE(shcol > 0);
     REQUIRE(nlev > 1);
-    REQUIRE(nlevi == nlev+1);
+    REQUIRE(nlevi == nlev + 1);
     REQUIRE(num_qtracers >= 1);
     REQUIRE(dtime > 0);
     REQUIRE(nadv > 0);
 
     // Fill in test data, first for column only input
-    for(Int s = 0; s < shcol; ++s) {
-      SDS.uw_sfc[s] = uw_sfc[s];
-      SDS.vw_sfc[s] = vw_sfc[s];
+    for (Int s = 0; s < shcol; ++s) {
+      SDS.uw_sfc[s]   = uw_sfc[s];
+      SDS.vw_sfc[s]   = vw_sfc[s];
       SDS.wthl_sfc[s] = wthl_sfc[s];
-      SDS.wqw_sfc[s] = wqw_sfc[s];
-      SDS.phis[s] = phis[s];
-      SDS.host_dx[s] = host_dx;
-      SDS.host_dy[s] = host_dy;
+      SDS.wqw_sfc[s]  = wqw_sfc[s];
+      SDS.phis[s]     = phis[s];
+      SDS.host_dx[s]  = host_dx;
+      SDS.host_dy[s]  = host_dy;
 
       // Fill in tracer fluxes with random data from -1e-2 to 1e-2 (unitless)
-      for (Int t = 0; t < num_qtracers; ++t){
-        const auto offset = t + s * num_qtracers;
-          SDS.wtracer_sfc[offset] = (rand()%20 + -10)/1000.;
+      for (Int t = 0; t < num_qtracers; ++t) {
+        const auto offset       = t + s * num_qtracers;
+        SDS.wtracer_sfc[offset] = (rand() % 20 + -10) / 1000.;
       }
 
       // Fill in data on the nlev grid
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        SDS.zt_grid[offset] = zt_grid[n];
-        SDS.pres[offset] = pres[n];
-        SDS.pdel[offset] = pdel[n];
-        SDS.thv[offset] = thv[n];
-        SDS.w_field[offset] = w_field[n];
-        SDS.inv_exner[offset] = inv_exner[n];
-        SDS.shoc_ql[offset] = shoc_ql[n];
+        SDS.zt_grid[offset]      = zt_grid[n];
+        SDS.pres[offset]         = pres[n];
+        SDS.pdel[offset]         = pdel[n];
+        SDS.thv[offset]          = thv[n];
+        SDS.w_field[offset]      = w_field[n];
+        SDS.inv_exner[offset]    = inv_exner[n];
+        SDS.shoc_ql[offset]      = shoc_ql[n];
         SDS.shoc_cldfrac[offset] = shoc_cldfrac[n];
-        SDS.qw[offset] = qw[n];
-        SDS.thetal[offset] = thetal[n];
-        SDS.u_wind[offset] = u_wind[n];
-        SDS.v_wind[offset] = v_wind[n];
-        SDS.tke[offset] = tke[n];
-        SDS.wthv_sec[offset] = wthv_sec[n];
-        SDS.host_dse[offset] = host_dse[s][n];
+        SDS.qw[offset]           = qw[n];
+        SDS.thetal[offset]       = thetal[n];
+        SDS.u_wind[offset]       = u_wind[n];
+        SDS.v_wind[offset]       = v_wind[n];
+        SDS.tke[offset]          = tke[n];
+        SDS.wthv_sec[offset]     = wthv_sec[n];
+        SDS.host_dse[offset]     = host_dse[s][n];
 
         // TKH and TK get the same values on purpose
         SDS.tkh[offset] = tkh[n];
-        SDS.tk[offset] = tkh[n];
+        SDS.tk[offset]  = tkh[n];
 
-        for (Int t = 0; t < num_qtracers; t++){
-          const auto t_offset = t + offset * num_qtracers;
+        for (Int t = 0; t < num_qtracers; t++) {
+          const auto t_offset    = t + offset * num_qtracers;
           SDS.qtracers[t_offset] = tracer_in[s][n][t];
         }
-
       }
 
       // Fill in data on the nlevi grid
-      for(Int n = 0; n < nlevi; ++n) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
         SDS.zi_grid[offset] = zi_grid[n];
-        SDS.presi[offset] = presi[n];
-
+        SDS.presi[offset]   = presi[n];
       }
     }
 
     // Check that inputs make sense
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev - 1; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev - 1; ++n) {
         const auto offset = n + s * nlev;
         // Check that zt increases upward
         REQUIRE(SDS.zt_grid[offset + 1] - SDS.zt_grid[offset] < 0);
@@ -235,19 +231,19 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
       }
 
       // Check that zi increases upward
-      for(Int n = 0; n < nlevi - 1; ++n) {
+      for (Int n = 0; n < nlevi - 1; ++n) {
         const auto offset = n + s * nlevi;
         REQUIRE(SDS.zi_grid[offset + 1] - SDS.zi_grid[offset] < 0);
       }
 
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         // Make sure inputs fall within reasonable bounds
         REQUIRE(SDS.zt_grid[offset] > 0);
-        REQUIRE( (SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound) );
-        REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
-        REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
+        REQUIRE((SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound));
+        REQUIRE((SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound));
+        REQUIRE((SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound));
 
         // While there is nothing unphysical with winds outside of these
         //  bounds, for this particular test we want to make sure the
@@ -255,43 +251,41 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE(std::abs(SDS.u_wind[offset]) < wind_bounds);
         REQUIRE(std::abs(SDS.v_wind[offset]) < wind_bounds);
       }
-
     }
 
     // Call the C++ implementation
     shoc_main(SDS);
 
     // Make sure output falls within reasonable bounds
-    for(Int s = 0; s < shcol; ++s) {
-      REQUIRE( (SDS.pblh[s] > 0 && SDS.pblh[s] <= zi_grid[0]) );
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      REQUIRE((SDS.pblh[s] > 0 && SDS.pblh[s] <= zi_grid[0]));
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-        REQUIRE( (SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound) );
-        REQUIRE( (SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound) );
-        REQUIRE( (SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound) );
+        REQUIRE((SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound));
+        REQUIRE((SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound));
+        REQUIRE((SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound));
         // Increase wind bounds by 2 m/s to allow for surface flux effects
-        REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds+2));
-        REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds+2));
+        REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds + 2));
+        REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds + 2));
 
-        REQUIRE( (SDS.shoc_mix[offset] >= minlen && SDS.shoc_mix[offset] <= maxlen) );
-        REQUIRE( (SDS.isotropy[offset] >= 0 && SDS.isotropy[offset] < maxiso) );
-        REQUIRE( (SDS.shoc_cldfrac[offset] >= 0 && SDS.shoc_cldfrac[offset] <= 1) );
-        REQUIRE( (SDS.shoc_ql[offset] >= 0 && SDS.shoc_ql[offset] <= 1) );
-        REQUIRE( (SDS.tk[offset] >= 0 && SDS.tk[offset] < 100) );
-        REQUIRE( (SDS.tkh[offset] >= 0 && SDS.tkh[offset] < 100) );
+        REQUIRE((SDS.shoc_mix[offset] >= minlen && SDS.shoc_mix[offset] <= maxlen));
+        REQUIRE((SDS.isotropy[offset] >= 0 && SDS.isotropy[offset] < maxiso));
+        REQUIRE((SDS.shoc_cldfrac[offset] >= 0 && SDS.shoc_cldfrac[offset] <= 1));
+        REQUIRE((SDS.shoc_ql[offset] >= 0 && SDS.shoc_ql[offset] <= 1));
+        REQUIRE((SDS.tk[offset] >= 0 && SDS.tk[offset] < 100));
+        REQUIRE((SDS.tkh[offset] >= 0 && SDS.tkh[offset] < 100));
         REQUIRE(std::abs(SDS.wthv_sec[offset]) < 1);
         REQUIRE(std::abs(SDS.brunt[offset] < 1));
 
         // Make sure there are no "empty" clouds
-        if (SDS.shoc_cldfrac[offset] > 0){
+        if (SDS.shoc_cldfrac[offset] > 0) {
           REQUIRE(SDS.shoc_ql[offset] > 0);
-        }
-        else if (SDS.shoc_cldfrac[offset] == 0){
+        } else if (SDS.shoc_cldfrac[offset] == 0) {
           REQUIRE(SDS.shoc_ql[offset] == 0);
         }
 
         // Verify that dse increases with height upward
-        if (n < nlev-1){
+        if (n < nlev - 1) {
           REQUIRE(SDS.host_dse[offset + 1] - SDS.host_dse[offset] < 0);
         }
 
@@ -303,19 +297,18 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE(std::abs(SDS.w_sec[offset] < SDS.tke[offset]));
 
         // Verify tracer output is reasonable
-        for (Int t = 0; t < num_qtracers; ++t){
+        for (Int t = 0; t < num_qtracers; ++t) {
           const auto t_offset = t + offset * num_qtracers;
           REQUIRE(SDS.qtracers[t_offset] < 1);
         }
-
       }
 
-      for(Int n = 0; n < nlevi; ++n) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
         // Make sure turbulence output is appropriate
-        REQUIRE( (SDS.thl_sec[offset] >= 0 && SDS.thl_sec[offset] < 1e2 ) );
-        REQUIRE( (SDS.qw_sec[offset] >= 0 && SDS.qw_sec[offset] < 1e-3) );
+        REQUIRE((SDS.thl_sec[offset] >= 0 && SDS.thl_sec[offset] < 1e2));
+        REQUIRE((SDS.qw_sec[offset] >= 0 && SDS.qw_sec[offset] < 1e-3));
         REQUIRE(std::abs(SDS.wthl_sec[offset] < 1));
         REQUIRE(std::abs(SDS.wqw_sec[offset] < 1e-3));
         REQUIRE(std::abs(SDS.w3[offset] < 10));
@@ -323,66 +316,56 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
         REQUIRE(std::abs(SDS.uw_sec[offset] < 1));
         REQUIRE(std::abs(SDS.vw_sec[offset] < 1));
       }
-
     }
 
   } // run_property
 
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
     ShocMainData baseline_data[] = {
-      //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
-      ShocMainData(12,      72,    73,            5,   300,   15,        72, 0),
-      ShocMainData(8,       12,    13,            3,   300,   10,         8, 3),
-      ShocMainData(7,       16,    17,            3,   300,    1,        12, 0),
-      ShocMainData(2,       7,      8,            2,   300,    5,         7, 4)
-    };
+        //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++ indexing)
+        ShocMainData(12, 72, 73, 5, 300, 15, 72, 0), ShocMainData(8, 12, 13, 3, 300, 10, 8, 3),
+        ShocMainData(7, 16, 17, 3, 300, 1, 12, 0), ShocMainData(2, 7, 8, 2, 300, 5, 7, 4)};
 
     // Generate random input data
-    for (auto& d : baseline_data) {
-      d.randomize(engine,
-                  {
-                    {d.presi, {700e2,1000e2}},
-                    {d.tkh, {3,50}},
-                    {d.tke, {0.1,0.3}},
-                    {d.zi_grid, {0, 3000}},
-                    {d.wthl_sfc, {0,1e-4}},
-                    {d.wqw_sfc, {0,1e-6}},
-                    {d.uw_sfc, {0,1e-2}},
-                    {d.vw_sfc, {0,1e-4}},
-                    {d.host_dx, {3000, 3000}},
-                    {d.host_dy, {3000, 3000}},
-                    {d.phis, {0, 500}}, // 500
-                    {d.wthv_sec, {-0.02, 0.03}},
-                    {d.qw, {1e-4, 5e-2}},
-                    {d.u_wind, {-10, 0}},
-                    {d.v_wind, {-10, 0}},
-                    {d.shoc_ql, {0, 1e-3}},
-                  });
+    for (auto &d : baseline_data) {
+      d.randomize(engine, {
+                              {d.presi, {700e2, 1000e2}},
+                              {d.tkh, {3, 50}},
+                              {d.tke, {0.1, 0.3}},
+                              {d.zi_grid, {0, 3000}},
+                              {d.wthl_sfc, {0, 1e-4}},
+                              {d.wqw_sfc, {0, 1e-6}},
+                              {d.uw_sfc, {0, 1e-2}},
+                              {d.vw_sfc, {0, 1e-4}},
+                              {d.host_dx, {3000, 3000}},
+                              {d.host_dy, {3000, 3000}},
+                              {d.phis, {0, 500}}, // 500
+                              {d.wthv_sec, {-0.02, 0.03}},
+                              {d.qw, {1e-4, 5e-2}},
+                              {d.u_wind, {-10, 0}},
+                              {d.v_wind, {-10, 0}},
+                              {d.shoc_ql, {0, 1e-3}},
+                          });
     }
 
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
-    ShocMainData cxx_data[] = {
-      ShocMainData(baseline_data[0]),
-      ShocMainData(baseline_data[1]),
-      ShocMainData(baseline_data[2]),
-      ShocMainData(baseline_data[3])
-    };
+    ShocMainData cxx_data[] = {ShocMainData(baseline_data[0]), ShocMainData(baseline_data[1]),
+                               ShocMainData(baseline_data[2]), ShocMainData(baseline_data[3])};
 
     // Assume all data is in C layout
 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
-      for (auto& d : baseline_data) {
+      for (auto &d : baseline_data) {
         d.read(Base::m_fid);
       }
     }
 
     // Get data from cxx
-    for (auto& d : cxx_data) {
+    for (auto &d : cxx_data) {
       shoc_main(d);
     }
 
@@ -391,8 +374,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
       static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ShocMainData);
 
       for (Int i = 0; i < num_runs; ++i) {
-        ShocMainData& d_baseline = baseline_data[i];
-        ShocMainData& d_cxx = cxx_data[i];
+        ShocMainData &d_baseline = baseline_data[i];
+        ShocMainData &d_cxx      = cxx_data[i];
         REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.host_dse));
         REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tke));
         REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.thetal));
@@ -462,7 +445,7 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
       }
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
-      for (auto& d : cxx_data) {
+      for (auto &d : cxx_data) {
         d.write(Base::m_fid);
       }
     }
@@ -475,18 +458,16 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
 
 namespace {
 
-TEST_CASE("shoc_main_property", "shoc")
-{
+TEST_CASE("shoc_main_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
   TestStruct().run_property();
 }
 
-TEST_CASE("shoc_main_bfb", "shoc")
-{
+TEST_CASE("shoc_main_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
 
   TestStruct().run_bfb();
 }
 
-} // empty namespace
+} // namespace

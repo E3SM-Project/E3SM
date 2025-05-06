@@ -8,8 +8,7 @@
 #include "share/util/eamxx_universal_constants.hpp"
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -54,10 +53,8 @@ TEST_CASE("aodvis") {
   auto grid = gm->get_grid("physics");
 
   // Input (randomized) tau
-  FieldLayout scalar3d_swband_layout =
-      grid->get_3d_vector_layout(true, nbnds, "swband");
-  FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, nondim,
-                          grid->name());
+  FieldLayout scalar3d_swband_layout = grid->get_3d_vector_layout(true, nbnds, "swband");
+  FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, nondim, grid->name());
   Field tau(tau_fid);
   tau.allocate_view();
   tau.get_header().get_tracking().update_time_stamp(t0);
@@ -79,7 +76,7 @@ TEST_CASE("aodvis") {
   register_diagnostics();
 
   constexpr int ntests = 5;
-  for(int itest = 0; itest < ntests; ++itest) {
+  for (int itest = 0; itest < ntests; ++itest) {
     // Randomize tau
     randomize(tau, engine, pdf);
 
@@ -95,9 +92,9 @@ TEST_CASE("aodvis") {
     diag->initialize(t0, RunType::Initial);
 
     auto sun_h = sunlit.get_view<Real *, Host>();
-    for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
+    for (int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       // zero out all sun_h if below 0.05
-      if(sun_h(icol) < some_limit) {
+      if (sun_h(icol) < some_limit) {
         sun_h(icol) = 0.0;
       }
     }
@@ -118,11 +115,11 @@ TEST_CASE("aodvis") {
     aod_tf.deep_copy<Host>(0);
     auto aod_t = aod_tf.get_view<Real *, Host>();
 
-    for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
-      if(sun_h(icol) < some_limit) {
+    for (int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
+      if (sun_h(icol) < some_limit) {
         aod_t(icol) = var_fill_value;
       } else {
-        for(int ilev = 0; ilev < nlevs; ++ilev) {
+        for (int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);
         }
       }
@@ -131,10 +128,10 @@ TEST_CASE("aodvis") {
     aod_tf.sync_to_dev();
 
     // Workaround for non-bfb behavior of view_reduction() in release builds
-    if(SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING) {
       REQUIRE(views_are_equal(aod_hf, aod_tf));
     }
   }
 }
 
-}  // namespace scream
+} // namespace scream

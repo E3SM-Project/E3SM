@@ -10,17 +10,17 @@
 
 namespace scream {
 
-inline void register_dynamics () {
-  auto& proc_factory = AtmosphereProcessFactory::instance();
-  auto& gm_factory   = GridsManagerFactory::instance();
+inline void register_dynamics() {
+  auto &proc_factory = AtmosphereProcessFactory::instance();
+  auto &gm_factory   = GridsManagerFactory::instance();
 
 #ifdef EAMXX_HAS_HOMME
-  proc_factory.register_product("homme",&create_atmosphere_process<HommeDynamics>);
+  proc_factory.register_product("homme", &create_atmosphere_process<HommeDynamics>);
 
-  gm_factory.register_product("homme",&create_homme_grids_manager);
+  gm_factory.register_product("homme", &create_homme_grids_manager);
 #endif
-  (void) proc_factory;
-  (void) gm_factory;
+  (void)proc_factory;
+  (void)gm_factory;
 }
 
 } // namespace scream

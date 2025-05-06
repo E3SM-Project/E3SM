@@ -6,21 +6,15 @@
 
 namespace scream {
 
-AtmBackTendDiag::
-AtmBackTendDiag(const ekat::Comm &comm,
-                const ekat::ParameterList &params)
- : AtmosphereDiagnostic(comm, params)
-{
-  EKAT_REQUIRE_MSG(params.isParameter("tendency_name"),
-                   "Error! AtmBackTendDiag requires 'tendency_name' in its "
-                   "input parameters.\n");
+AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereDiagnostic(comm, params) {
+  EKAT_REQUIRE_MSG(params.isParameter("tendency_name"), "Error! AtmBackTendDiag requires 'tendency_name' in its "
+                                                        "input parameters.\n");
 
   m_name = m_params.get<std::string>("tendency_name");
 }
 
-void AtmBackTendDiag::
-set_grids(const std::shared_ptr<const GridsManager> grids_manager)
-{
+void AtmBackTendDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &gname = m_params.get<std::string>("grid_name");
   add_field<Required>(m_name, gname);
 }
@@ -32,14 +26,12 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
 
   // Sanity checks
   const auto &layout = fid.get_layout();
-  EKAT_REQUIRE_MSG(
-      f.data_type() == DataType::RealType,
-      "Error! AtmBackTendDiag only supports Real data type field.\n"
-      " - field name: " +
-          fid.name() +
-          "\n"
-          " - field data type: " +
-          e2str(f.data_type()) + "\n");
+  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType, "Error! AtmBackTendDiag only supports Real data type field.\n"
+                                                        " - field name: " +
+                                                            fid.name() +
+                                                            "\n"
+                                                            " - field data type: " +
+                                                            e2str(f.data_type()) + "\n");
 
   using namespace ekat::units;
   // The units are the same except per second
@@ -70,7 +62,7 @@ void AtmBackTendDiag::compute_diagnostic_impl() {
   const auto &curr_ts = f.get_header().get_tracking().get_time_stamp();
   const auto &prev_ts = m_f_prev.get_header().get_tracking().get_time_stamp();
 
-  if(prev_ts.is_valid()) {
+  if (prev_ts.is_valid()) {
     // This diag was called before, so we have a valid value for m_f_prev,
     // and can compute the tendency
     dt = curr_ts - prev_ts;
@@ -83,4 +75,4 @@ void AtmBackTendDiag::compute_diagnostic_impl() {
   }
 }
 
-}  // namespace scream
+} // namespace scream

@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocThlParameters {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_thl_parameters
 
@@ -52,9 +50,9 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     static constexpr Real a_test1 = 0.2;
 
     // Define reasonable bounds checking for output
-    static constexpr Real thl_bound_low = 200; // [K]
-    static constexpr Real thl_bound_high = 400; // [K]
-    static constexpr Real thl2_bound_high = 50; // [K^2]
+    static constexpr Real thl_bound_low   = 200; // [K]
+    static constexpr Real thl_bound_high  = 400; // [K]
+    static constexpr Real thl2_bound_high = 50;  // [K^2]
 
     // Be sure this value is actually larger
     REQUIRE(thlsec_large > thlsec_small);
@@ -63,17 +61,17 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     ShocAssumedPdfThlParametersData SDS;
 
     // Fill the test data
-    SDS.wthlsec = wthlsec_test1;
-    SDS.sqrtw2 = sqrtw2_test1;
-    SDS.thlsec = thlsec_small;
-    SDS.sqrtthl = sqrt(thlsec_small);
+    SDS.wthlsec   = wthlsec_test1;
+    SDS.sqrtw2    = sqrtw2_test1;
+    SDS.thlsec    = thlsec_small;
+    SDS.sqrtthl   = sqrt(thlsec_small);
     SDS.thl_first = thl_first_test1;
-    SDS.w1_1 = w1_1_test1;
-    SDS.w1_2 = w1_2_test1;
-    SDS.skew_w = Skew_w_test1;
-    SDS.a = a_test1;
-    SDS.thl_tol = 0;
-    SDS.w_thresh = 0;
+    SDS.w1_1      = w1_1_test1;
+    SDS.w1_2      = w1_2_test1;
+    SDS.skew_w    = Skew_w_test1;
+    SDS.a         = a_test1;
+    SDS.thl_tol   = 0;
+    SDS.w_thresh  = 0;
 
     // Verify input is physical
     REQUIRE(SDS.sqrtw2 >= 0);
@@ -83,15 +81,13 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     // Make sure vertical velocity data is consistent
     REQUIRE(SDS.w1_1 > 0);
     REQUIRE(SDS.w1_2 < 0);
-    if (SDS.skew_w > 0){
+    if (SDS.skew_w > 0) {
       REQUIRE(abs(SDS.w1_1) > abs(SDS.w1_2));
       REQUIRE(SDS.a < 0.5);
-    }
-    else if (SDS.skew_w < 0){
+    } else if (SDS.skew_w < 0) {
       REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
       REQUIRE(SDS.a > 0.5);
-    }
-    else if (SDS.skew_w == 0){
+    } else if (SDS.skew_w == 0) {
       REQUIRE(abs(SDS.w1_1) == abs(SDS.w1_2));
       REQUIRE(SDS.a == 0);
     }
@@ -105,7 +101,7 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     Real thl2_2_result1 = SDS.thl2_2;
 
     // Now load up input data with a larger temperature standard deviation
-    SDS.thlsec = thlsec_large;
+    SDS.thlsec  = thlsec_large;
     SDS.sqrtthl = sqrt(thlsec_large);
 
     // Call the fortran implementation again
@@ -121,12 +117,12 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     REQUIRE(thl2_2_result2 > thl2_2_result1);
 
     // Make sure output is within reasonable bounds
-    REQUIRE( (SDS.thl1_1 > thl_bound_low && SDS.thl1_2 > thl_bound_low) );
-    REQUIRE( (SDS.thl1_1 < thl_bound_high && SDS.thl1_2 < thl_bound_high) );
-    REQUIRE( (SDS.thl2_1 > 0 && SDS.thl2_2 > 0) );
-    REQUIRE( (SDS.thl2_2 < thl2_bound_high && SDS.thl2_2 < thl2_bound_high) );
-    REQUIRE( (SDS.sqrtthl2_1 > 0 && SDS.sqrtthl2_2 > 0) );
-    REQUIRE( (SDS.sqrtthl2_1 < std::sqrt(thl2_bound_high) && SDS.sqrtthl2_2 < std::sqrt(thl2_bound_high)) );
+    REQUIRE((SDS.thl1_1 > thl_bound_low && SDS.thl1_2 > thl_bound_low));
+    REQUIRE((SDS.thl1_1 < thl_bound_high && SDS.thl1_2 < thl_bound_high));
+    REQUIRE((SDS.thl2_1 > 0 && SDS.thl2_2 > 0));
+    REQUIRE((SDS.thl2_2 < thl2_bound_high && SDS.thl2_2 < thl2_bound_high));
+    REQUIRE((SDS.sqrtthl2_1 > 0 && SDS.sqrtthl2_2 > 0));
+    REQUIRE((SDS.sqrtthl2_1 < std::sqrt(thl2_bound_high) && SDS.sqrtthl2_2 < std::sqrt(thl2_bound_high)));
 
     // TEST TWO
     // For a case with identical input except wthlsec, verify that
@@ -139,8 +135,8 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 
     REQUIRE(wthlsec_large > wthlsec_small);
 
-    //load the value for the small test, all other inputs
-    //  will be recycled from last test
+    // load the value for the small test, all other inputs
+    //   will be recycled from last test
     SDS.wthlsec = wthlsec_small;
 
     // Call Fortran implementation
@@ -162,27 +158,24 @@ struct UnitWrap::UnitTest<D>::TestShocThlParameters {
     REQUIRE(thlgaus_diff_result2 > thlgaus_diff_result1);
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_thl_parameters_property", "shoc")
-{
+TEST_CASE("shoc_pdf_thl_parameters_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_thl_parameters_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_thl_parameters_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
 
   TestStruct::run_bfb();

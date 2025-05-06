@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_qs
 
@@ -44,7 +42,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
     // Fill in input data
     SDS.tl1_1 = Tl1_1_eq;
     SDS.tl1_2 = Tl1_2_eq;
-    SDS.pval = pval_eq;
+    SDS.pval  = pval_eq;
 
     // Check the inputs
     REQUIRE(SDS.tl1_1 == SDS.tl1_2);
@@ -99,38 +97,33 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeQs {
     shoc_assumed_pdf_compute_qs(SDS);
 
     // Check the result
-    if (SDS.tl1_1 < SDS.tl1_2){
+    if (SDS.tl1_1 < SDS.tl1_2) {
       REQUIRE(SDS.qs1 < SDS.qs2);
       REQUIRE(SDS.beta1 > SDS.beta2);
-    }
-    else{
+    } else {
       REQUIRE(SDS.qs1 > SDS.qs2);
       REQUIRE(SDS.beta1 < SDS.beta2);
     }
-
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_compute_qs_property", "shoc")
-{
+TEST_CASE("shoc_pdf_compute_qs_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeQs;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_compute_qs_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_compute_qs_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeQs;
 
   TestStruct::run_bfb();

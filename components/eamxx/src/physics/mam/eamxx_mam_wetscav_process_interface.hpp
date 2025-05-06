@@ -29,7 +29,7 @@ class MAMWetscav : public MAMGenericInterface {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
- public:
+public:
   // Constructor
   MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -37,15 +37,13 @@ class MAMWetscav : public MAMGenericInterface {
   std::string name() const override { return "mam4_wetscav"; }
 
   // Set the grid and input output variables
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
-                                     len_temporary_views_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporary_views_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
@@ -56,9 +54,9 @@ class MAMWetscav : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl() override{/*Do nothing*/};
+  void finalize_impl() override { /*Do nothing*/ };
 
- private:
+private:
   // -----------------------------------------------
   // Local variables
   // ------------------------------------------------
@@ -121,8 +119,8 @@ class MAMWetscav : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
-};  // class MAMWetscav
+}; // class MAMWetscav
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_WETSCAV_HPP
+#endif // EAMXX_MAM_WETSCAV_HPP

@@ -1,15 +1,15 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -20,16 +20,14 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
+  void run_property() {
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
-    static constexpr Int shcol    = 2;
-    static constexpr Int nlev     = 5;
-    static constexpr Int nlevi    = nlev+1;
+    static constexpr Int shcol   = 2;
+    static constexpr Int nlev    = 5;
+    static constexpr Int nlevi   = nlev + 1;
 
     // Tests for the upper level SHOC function:
     //   shoc_length
@@ -53,38 +51,38 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     static constexpr Real tke[nlev] = {0.1, 0.15, 0.2, 0.25, 0.3};
 
     // compute geometric grid mesh
-    const auto grid_mesh = sqrt(host_dx*host_dy);
+    const auto grid_mesh = sqrt(host_dx * host_dy);
 
     // Grid stuff to compute based on zi_grid
     Real zt_grid[nlev];
     Real dz_zt[nlev];
     // Compute heights on midpoint grid
-    for(Int n = 0; n < nlev; ++n) {
-      zt_grid[n] = 0.5*(zi_grid[n]+zi_grid[n+1]);
-      dz_zt[n] = zi_grid[n] - zi_grid[n+1];
+    for (Int n = 0; n < nlev; ++n) {
+      zt_grid[n] = 0.5 * (zi_grid[n] + zi_grid[n + 1]);
+      dz_zt[n]   = zi_grid[n] - zi_grid[n + 1];
     }
 
     // Initialize data structure for bridging to F90
     ShocLengthData SDS(shcol, nlev, nlevi);
 
     // Load up input data
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       SDS.host_dx[s] = host_dx;
       SDS.host_dy[s] = host_dy;
       // Fill in test data on zt_grid.
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         // for subsequent columns, increase TKE
-        SDS.tke[offset] = (s+1)*tke[n];
+        SDS.tke[offset] = (s + 1) * tke[n];
 
         SDS.zt_grid[offset] = zt_grid[n];
-        SDS.thv[offset] = thv[n];
-        SDS.dz_zt[offset] = dz_zt[n];
+        SDS.thv[offset]     = thv[n];
+        SDS.dz_zt[offset]   = dz_zt[n];
       }
 
       // Fill in test data on zi_grid
-      for(Int n = 0; n < nlevi; ++n) {
+      for (Int n = 0; n < nlevi; ++n) {
         const auto offset = n + s * nlevi;
 
         SDS.zi_grid[offset] = zi_grid[n];
@@ -94,10 +92,10 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     // Check input data
     // for this test we need more than one column
     REQUIRE(SDS.shcol > 1);
-    REQUIRE(SDS.nlevi == SDS.nlev+1);
+    REQUIRE(SDS.nlevi == SDS.nlev + 1);
 
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         REQUIRE(SDS.zt_grid[offset] > 0);
@@ -106,14 +104,14 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
         REQUIRE(SDS.dz_zt[offset] > 0);
 
         // Make sure TKE is larger in next column over
-        if (s < shcol-1){
+        if (s < shcol - 1) {
           // get offset for "neighboring" column
-          const auto offsets = n + (s+1) * nlev;
+          const auto offsets = n + (s + 1) * nlev;
           REQUIRE(SDS.tke[offsets] > SDS.tke[offset]);
         }
       }
 
-      for(Int n = 0; n < nlev; ++n) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         REQUIRE(SDS.zi_grid[offset] >= 0);
@@ -124,26 +122,25 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     shoc_length(SDS);
 
     // Verify output
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
         REQUIRE(SDS.shoc_mix[offset] >= minlen);
         REQUIRE(SDS.shoc_mix[offset] <= maxlen);
-        REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh);
+        REQUIRE(SDS.shoc_mix[offset] < 1.0 + grid_mesh);
 
         // Be sure brunt vaisalla frequency is reasonable
         REQUIRE(std::abs(SDS.brunt[offset]) < 1);
 
         // Make sure length scale is larger when TKE is larger
-        if (s < shcol-1){
+        if (s < shcol - 1) {
           // get offset for "neighboring" column
-          const auto offsets = n + (s+1) * nlev;
-          if (SDS.tke[offsets] > SDS.tke[offset]){
+          const auto offsets = n + (s + 1) * nlev;
+          if (SDS.tke[offsets] > SDS.tke[offset]) {
             REQUIRE(SDS.shoc_mix[offsets] > SDS.shoc_mix[offset]);
-          }
-          else{
+          } else {
             REQUIRE(SDS.shoc_mix[offsets] < SDS.shoc_mix[offset]);
           }
         }
@@ -161,10 +158,10 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     static constexpr Real host_dy_small = 5;
 
     // compute geometric grid mesh
-    const auto grid_mesh_small = sqrt(host_dx_small*host_dy_small);
+    const auto grid_mesh_small = sqrt(host_dx_small * host_dy_small);
 
     // Load new input
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       SDS.host_dx[s] = host_dx_small;
       SDS.host_dy[s] = host_dy_small;
     }
@@ -173,43 +170,41 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
     shoc_length(SDS);
 
     // Verify output
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Require mixing length is greater than zero and is
         //  less than geometric grid mesh length + 1 m
         REQUIRE(SDS.shoc_mix[offset] > 0);
         REQUIRE(SDS.shoc_mix[offset] <= maxlen);
-        REQUIRE(SDS.shoc_mix[offset] < 1.0+grid_mesh_small);
+        REQUIRE(SDS.shoc_mix[offset] < 1.0 + grid_mesh_small);
       }
     }
-
   }
 
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
     ShocLengthData SDS_baseline[] = {
-      //        shcol, nlev, nlevi
-      ShocLengthData(12, 71, 72),
-      ShocLengthData(10, 12, 13),
-      ShocLengthData(7,  16, 17),
-      ShocLengthData(2, 7, 8),
+        //        shcol, nlev, nlevi
+        ShocLengthData(12, 71, 72),
+        ShocLengthData(10, 12, 13),
+        ShocLengthData(7, 16, 17),
+        ShocLengthData(2, 7, 8),
     };
 
     // Generate random input data
-    for (auto& d : SDS_baseline) {
+    for (auto &d : SDS_baseline) {
       d.randomize(engine);
     }
 
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     ShocLengthData SDS_cxx[] = {
-      ShocLengthData(SDS_baseline[0]),
-      ShocLengthData(SDS_baseline[1]),
-      ShocLengthData(SDS_baseline[2]),
-      ShocLengthData(SDS_baseline[3]),
+        ShocLengthData(SDS_baseline[0]),
+        ShocLengthData(SDS_baseline[1]),
+        ShocLengthData(SDS_baseline[2]),
+        ShocLengthData(SDS_baseline[3]),
     };
 
     static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocLengthData);
@@ -218,21 +213,21 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
-      for (auto& d : SDS_baseline) {
+      for (auto &d : SDS_baseline) {
         d.read(Base::m_fid);
       }
     }
 
     // Get data from cxx
-    for (auto& d : SDS_cxx) {
+    for (auto &d : SDS_cxx) {
       shoc_length(d);
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        ShocLengthData& d_baseline = SDS_baseline[i];
-        ShocLengthData& d_cxx = SDS_cxx[i];
+        ShocLengthData &d_baseline = SDS_baseline[i];
+        ShocLengthData &d_cxx      = SDS_cxx[i];
         for (Int k = 0; k < d_baseline.total(d_baseline.brunt); ++k) {
           REQUIRE(d_baseline.brunt[k] == d_cxx.brunt[k]);
           REQUIRE(d_baseline.shoc_mix[k] == d_cxx.shoc_mix[k]);
@@ -247,21 +242,19 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_length_property", "shoc")
-{
+TEST_CASE("shoc_length_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLength;
 
   TestStruct().run_property();
 }
 
-TEST_CASE("shoc_length_bfb", "shoc")
-{
+TEST_CASE("shoc_length_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLength;
 
   TestStruct().run_bfb();

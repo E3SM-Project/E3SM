@@ -1,8 +1,7 @@
 #ifndef SCREAM_SHR_INTERFACE_HPP
 #define SCREAM_SHR_INTERFACE_HPP
 
-extern "C"
-{
+extern "C" {
 
 #ifdef SCREAM_CIME_BUILD
 int shr_get_iosysid_c2f(int atm_id);

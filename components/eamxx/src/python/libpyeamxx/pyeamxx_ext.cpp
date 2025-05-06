@@ -1,9 +1,9 @@
-#include <share/eamxx_session.hpp>
+#include "pyatmproc.hpp"
 #include "pyfield.hpp"
 #include "pygrid.hpp"
-#include "pyatmproc.hpp"
 #include "pyparamlist.hpp"
 #include "pyutils.hpp"
+#include <share/eamxx_session.hpp>
 
 #include <ekat/mpi/ekat_comm.hpp>
 
@@ -15,7 +15,7 @@ namespace nb = nanobind;
 
 namespace scream {
 
-void initialize (MPI_Comm mpi_comm) {
+void initialize(MPI_Comm mpi_comm) {
   ekat::Comm comm(mpi_comm);
   initialize_eamxx_session(comm.am_i_root());
   scorpio::init_subsystem(comm);
@@ -25,34 +25,30 @@ void initialize (MPI_Comm mpi_comm) {
   register_dynamics();
   register_diagnostics();
 
-  auto& s = PySession::get();
-  s.comm = comm;
+  auto &s  = PySession::get();
+  s.comm   = comm;
   s.inited = true;
 }
 
-void initialize () {
-  initialize(MPI_COMM_WORLD);
-}
-void initialize (nb::object py_comm) {
-  initialize(get_c_comm(py_comm));
-}
-void finalize () {
-  auto& s = PySession::get();
-  s.gm = nullptr;
+void initialize() { initialize(MPI_COMM_WORLD); }
+void initialize(nb::object py_comm) { initialize(get_c_comm(py_comm)); }
+void finalize() {
+  auto &s  = PySession::get();
+  s.gm     = nullptr;
   s.inited = false;
 
   scorpio::finalize_subsystem();
   finalize_eamxx_session();
 }
 
-NB_MODULE (pyeamxx_ext,m) {
+NB_MODULE(pyeamxx_ext, m) {
 
   m.doc() = "Python interfaces to certain EAMxx infrastructure code";
 
   // Scream Session
-  m.def("init",nb::overload_cast<>(&initialize));
-  m.def("init",nb::overload_cast<nb::object>(&initialize));
-  m.def("finalize",&finalize);
+  m.def("init", nb::overload_cast<>(&initialize));
+  m.def("init", nb::overload_cast<nb::object>(&initialize));
+  m.def("finalize", &finalize);
 
   // Call all other headers' registration routines
   nb_pyparamlist(m);

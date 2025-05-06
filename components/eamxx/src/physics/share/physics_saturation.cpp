@@ -10,7 +10,7 @@ namespace physics {
  * default device.
  */
 
-template struct Functions<Real,DefaultDevice>;
+template struct Functions<Real, DefaultDevice>;
 
 } // namespace physics
 } // namespace scream

@@ -8,7 +8,7 @@ namespace gw {
  * default device.
  */
 
-template struct Functions<Real,DefaultDevice>;
+template struct Functions<Real, DefaultDevice>;
 
 } // namespace gw
 } // namespace scream

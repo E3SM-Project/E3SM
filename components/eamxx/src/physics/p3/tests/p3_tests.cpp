@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "p3_data.hpp"
-#include "p3_main_wrap.hpp"
 #include "p3_ic_cases.hpp"
+#include "p3_main_wrap.hpp"
 
 namespace {
 
@@ -15,7 +15,7 @@ TEST_CASE("P3DataIterator", "p3") {
   const auto d = Factory::create(Factory::mixed);
   scream::p3::P3DataIterator fdi(d);
   REQUIRE(fdi.nfield() == 35);
-  const auto& f = fdi.getfield(0);
+  const auto &f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
   REQUIRE(f.extent[0] == 1);
   REQUIRE(f.extent[1] == 72);
@@ -34,4 +34,4 @@ TEST_CASE("p3_ic_c", "p3") {
   REQUIRE(nerr == 0);
 }
 
-} // empty namespace
+} // namespace

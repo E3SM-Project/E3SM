@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocVVParameters {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_vv_parameters
 
@@ -43,9 +41,9 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
     ShocAssumedPdfVvParametersData SDS;
 
     // Fill the test data
-    SDS.w_first = w_first_sym;
-    SDS.w_sec = w_sec_sym;
-    SDS.w3var = w3var_sym;
+    SDS.w_first   = w_first_sym;
+    SDS.w_sec     = w_sec_sym;
+    SDS.w3var     = w3var_sym;
     SDS.w_tol_sqd = 0;
 
     // Verify input is physical
@@ -60,7 +58,7 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
     REQUIRE(SDS.a == 0.5);
     // Verify that guassian vertical velocities are
     //   identical but opposite sign
-    REQUIRE(SDS.w1_1 == -1.0*SDS.w1_2);
+    REQUIRE(SDS.w1_1 == -1.0 * SDS.w1_2);
 
     // TEST TWO
     // Given highly positive skewed distribution, verify that the gaussian
@@ -75,8 +73,8 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
     // Fill the test data
     SDS.w_first = w_first_skew;
-    SDS.w_sec = w_sec_skew;
-    SDS.w3var = w3var_skew;
+    SDS.w_sec   = w_sec_skew;
+    SDS.w3var   = w3var_skew;
 
     // Verify input is physicsl
     REQUIRE(SDS.w_sec >= 0);
@@ -108,8 +106,8 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
 
     // Fill the test data
     SDS.w_first = w_first_neg;
-    SDS.w_sec = w_sec_neg;
-    SDS.w3var = w3var_neg;
+    SDS.w_sec   = w_sec_neg;
+    SDS.w3var   = w3var_neg;
 
     // Verify input is physicsl
     REQUIRE(SDS.w_sec >= 0);
@@ -129,27 +127,24 @@ struct UnitWrap::UnitTest<D>::TestShocVVParameters {
     REQUIRE(abs(SDS.w1_1) < abs(SDS.w1_2));
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_vv_parameters_property", "shoc")
-{
+TEST_CASE("shoc_pdf_vv_parameters_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVVParameters;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_vv_parameters_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_vv_parameters_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVVParameters;
 
   TestStruct::run_bfb();

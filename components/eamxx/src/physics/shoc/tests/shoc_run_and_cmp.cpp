@@ -1,14 +1,14 @@
+#include "shoc_ic_cases.hpp"
 #include "shoc_main_wrap.hpp"
 #include "shoc_test_data.hpp"
-#include "shoc_ic_cases.hpp"
 
-#include "share/eamxx_types.hpp"
 #include "share/eamxx_session.hpp"
+#include "share/eamxx_types.hpp"
 #include "share/util/eamxx_utils.hpp"
 
+#include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_file_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/ekat_assert.hpp"
 
 #include <vector>
 
@@ -28,26 +28,26 @@ using namespace scream::shoc;
  * is really a single 150-step shoc run.
  */
 
- /* When called with the below 3 args, compare loops over all variables
-  * and calls the above version of "compare" to check for and report
-  * large discrepancies.
-  */
- Int compare (const double& tol,
-             const FortranData::Ptr& ref, const FortranData::Ptr& d) {
+/* When called with the below 3 args, compare loops over all variables
+ * and calls the above version of "compare" to check for and report
+ * large discrepancies.
+ */
+Int compare(const double &tol, const FortranData::Ptr &ref, const FortranData::Ptr &d) {
 
   Int nerr = 0;
   FortranDataIterator refi(ref), di(d);
   EKAT_ASSERT(refi.nfield() == di.nfield());
   for (Int i = 0, n = refi.nfield(); i < n; ++i) {
-    const auto& fr = refi.getfield(i);
-    const auto& fd = di.getfield(i);
+    const auto &fr = refi.getfield(i);
+    const auto &fd = di.getfield(i);
     EKAT_ASSERT(fr.size == fd.size);
 
     // tkh is an input/output of shoc_main() in shoc.F90,
     // but is treated as a local variable in the c++
     // version (tkh values are reset before its used in both).
     // So we just skip the comparison.
-    if (fr.name == "tkh") continue;
+    if (fr.name == "tkh")
+      continue;
 
     nerr += scream::compare(fr.name, fr.data, fd.data, fr.size, tol);
   }
@@ -56,14 +56,14 @@ using namespace scream::shoc;
 
 struct Baseline {
 
-  Baseline (const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int num_qtracers, const Int nadv, const Int repeat)
-  {
+  Baseline(const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int num_qtracers, const Int nadv,
+           const Int repeat) {
     params_.push_back({ic::Factory::standard, repeat, nsteps, ncol, nlev, num_qtracers, nadv, dt});
   }
 
-  Int generate_baseline (const std::string& filename) {
+  Int generate_baseline(const std::string &filename) {
     auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
-    EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
+    EKAT_REQUIRE_MSG(fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
 
     // These times are thrown out, I just wanted to be able to use auto
@@ -76,8 +76,8 @@ struct Baseline {
         set_params(ps, *d);
 
         if (ps.repeat > 0 && r == -1) {
-          std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev
-                    << ", dt=" << d->dtime << ", ts=" << ps.nsteps;
+          std::cout << "Running SHOC with ni=" << d->shcol << ", nk=" << d->nlev << ", dt=" << d->dtime
+                    << ", ts=" << ps.nsteps;
 
           std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
           std::cout << std::endl;
@@ -96,7 +96,7 @@ struct Baseline {
         }
       }
       if (ps.repeat > 0) {
-        const double report_time = (1e-6*duration) / ps.repeat;
+        const double report_time = (1e-6 * duration) / ps.repeat;
 
         printf("Time = %1.3e seconds\n", report_time);
       }
@@ -104,25 +104,25 @@ struct Baseline {
     return nerr;
   }
 
-  Int run_and_cmp (const std::string& filename, const double& tol, bool no_baseline) {
+  Int run_and_cmp(const std::string &filename, const double &tol, bool no_baseline) {
     ekat::FILEPtr fid;
     if (!no_baseline) {
       fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
-      EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+      EKAT_REQUIRE_MSG(fid, "generate_baseline can't read " << filename);
     }
-    Int nerr = 0, ne;
+    Int nerr     = 0, ne;
     int case_num = 0;
     for (auto ps : params_) {
       case_num++;
       if (no_baseline) {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d);
-        for (int it=0; it<ps.nsteps; it++) {
-          std::cout << "--- running case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
+        for (int it = 0; it < ps.nsteps; it++) {
+          std::cout << "--- running case # " << case_num << ", timestep # " << it + 1 << " of " << ps.nsteps << " ---\n"
+                    << std::flush;
           shoc_main(*d);
         }
-      }
-      else {
+      } else {
         // Read the reference impl's data from the baseline file.
         const auto d_ref = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
         set_params(ps, *d_ref);
@@ -132,12 +132,13 @@ struct Baseline {
           const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev, ps.num_qtracers);
           set_params(ps, *d);
           for (int it = 0; it < ps.nsteps; it++) {
-            std::cout << "--- checking case # " << case_num << ", timestep # = " << (it+1)*ps.nadv
-                      << " ---\n" << std::flush;
+            std::cout << "--- checking case # " << case_num << ", timestep # = " << (it + 1) * ps.nadv << " ---\n"
+                      << std::flush;
             read(fid, d_ref);
             shoc_main(*d);
             ne = compare(tol, d_ref, d);
-            if (ne) std::cout << "Ref impl failed.\n";
+            if (ne)
+              std::cout << "Ref impl failed.\n";
             nerr += ne;
           }
         }
@@ -153,7 +154,7 @@ private:
     Real dt;
   };
 
-  static void set_params (const ParamSet& ps, FortranData& d) {
+  static void set_params(const ParamSet &ps, FortranData &d) {
     // ncol, nlev, num_qtracers are already set by the Factory.
     d.nadv  = ps.nadv;
     d.dtime = ps.dt;
@@ -161,79 +162,79 @@ private:
 
   std::vector<ParamSet> params_;
 
-  static void write (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
+  static void write(const ekat::FILEPtr &fid, const FortranData::Ptr &d) {
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
-      const auto& f = fdi.getfield(i);
+      const auto &f = fdi.getfield(i);
       ekat::write(&f.dim, 1, fid);
       ekat::write(f.extent, f.dim, fid);
       ekat::write(f.data, f.size, fid);
     }
   }
 
-  static void read (const ekat::FILEPtr& fid, const FortranData::Ptr& d) {
+  static void read(const ekat::FILEPtr &fid, const FortranData::Ptr &d) {
     FortranDataIterator fdi(d);
     for (Int i = 0, n = fdi.nfield(); i < n; ++i) {
-      const auto& f = fdi.getfield(i);
+      const auto &f = fdi.getfield(i);
       int dim, ds[3];
       ekat::read(&dim, 1, fid);
-      EKAT_REQUIRE_MSG(dim == f.dim,
-                      "For field " << f.name << " read expected dim " <<
-                      f.dim << " but got " << dim);
+      EKAT_REQUIRE_MSG(dim == f.dim, "For field " << f.name << " read expected dim " << f.dim << " but got " << dim);
       ekat::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
-        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
-                        "For field " << f.name << " read expected dim "
-                        << i << " to have extent " << f.extent[i] << " but got "
-                        << ds[i]);
+        EKAT_REQUIRE_MSG(ds[i] == f.extent[i], "For field " << f.name << " read expected dim " << i
+                                                            << " to have extent " << f.extent[i] << " but got "
+                                                            << ds[i]);
       ekat::read(f.data, f.size, fid);
     }
   }
 };
 
-void expect_another_arg (int i, int argc) {
-  EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
-}
+void expect_another_arg(int i, int argc) { EKAT_REQUIRE_MSG(i != argc - 1, "Expected another cmd-line arg."); }
 
-} // namespace anon
+} // namespace
 
-int main (int argc, char** argv) {
+int main(int argc, char **argv) {
   int nerr = 0;
 
   if (argc == 1) {
-    std::cout <<
-      argv[0] << " [options] baseline-filename\n"
-      "Options:\n"
-      "  -g                Generate baseline file.\n"
-      "  -c                Compare  baseline file. Default False.\n"
-      "  -n                Run without baseline actions. Default True.\n"
-      "  -b <baseline_path>  Path to directory containing baselines.\n"
-      "  -t <tol>          Tolerance for relative error.\n"
-      "  -s <steps>        Number of timesteps. Default=10.\n"
-      "  -dt <seconds>     Length of timestep. Default=150.\n"
-      "  -i <cols>         Number of columns(ncol). Default=8.\n"
-      "  -k <nlev>         Number of vertical levels. Default=72.\n"
-      "  -q <num_qtracers> Number of q tracers. Default=3.\n"
-      "  -l <nadv>         Number of SHOC loops per timestep. Default=15.\n"
-      "  -r <repeat>       Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
+    std::cout << argv[0]
+              << " [options] baseline-filename\n"
+                 "Options:\n"
+                 "  -g                Generate baseline file.\n"
+                 "  -c                Compare  baseline file. Default False.\n"
+                 "  -n                Run without baseline actions. Default True.\n"
+                 "  -b <baseline_path>  Path to directory containing baselines.\n"
+                 "  -t <tol>          Tolerance for relative error.\n"
+                 "  -s <steps>        Number of timesteps. Default=10.\n"
+                 "  -dt <seconds>     Length of timestep. Default=150.\n"
+                 "  -i <cols>         Number of columns(ncol). Default=8.\n"
+                 "  -k <nlev>         Number of vertical levels. Default=72.\n"
+                 "  -q <num_qtracers> Number of q tracers. Default=3.\n"
+                 "  -l <nadv>         Number of SHOC loops per timestep. Default=15.\n"
+                 "  -r <repeat>       Number of repetitions, implies timing run (generate + no I/O). Default=0.\n";
 
     return 1;
   }
 
   bool generate = false, no_baseline = true;
   scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
-  Int nsteps = 10;
-  Int dt = 150;
-  Int ncol = 8;
-  Int nlev = 72;
+  Int nsteps       = 10;
+  Int dt           = 150;
+  Int ncol         = 8;
+  Int nlev         = 72;
   Int num_qtracers = 3;
-  Int nadv = 15;
-  Int repeat = 0;
+  Int nadv         = 15;
+  Int repeat       = 0;
   std::string baseline_fn;
   std::string device;
   for (int i = 1; i < argc; ++i) {
-    if (ekat::argv_matches(argv[i], "-g", "--generate")) { generate = true; no_baseline = false; }
-    if (ekat::argv_matches(argv[i], "-c", "--compare"))  { no_baseline = false; }
+    if (ekat::argv_matches(argv[i], "-g", "--generate")) {
+      generate    = true;
+      no_baseline = false;
+    }
+    if (ekat::argv_matches(argv[i], "-c", "--compare")) {
+      no_baseline = false;
+    }
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;
@@ -282,9 +283,9 @@ int main (int argc, char** argv) {
         generate = true;
       }
     }
-    if (std::string(argv[i])=="--kokkos-device-id=") {
-      auto tokens = ekat::split(argv[i],"=");
-      device = tokens[1];
+    if (std::string(argv[i]) == "--kokkos-device-id=") {
+      auto tokens = ekat::split(argv[i], "=");
+      device      = tokens[1];
     }
   }
 
@@ -300,8 +301,7 @@ int main (int argc, char** argv) {
     } else if (no_baseline) {
       printf("Running with no baseline actions\n");
       nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
-    }
-    else {
+    } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }

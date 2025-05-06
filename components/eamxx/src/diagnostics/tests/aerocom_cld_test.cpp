@@ -7,8 +7,7 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -60,10 +59,8 @@ TEST_CASE("aerocom_cld") {
   FieldIdentifier qv_fid("qv", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier qc_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier qi_fid("qi", scalar2d_layout, kg / kg, grid->name());
-  FieldIdentifier ec_fid("eff_radius_qc", scalar2d_layout, micron,
-                         grid->name());
-  FieldIdentifier ei_fid("eff_radius_qi", scalar2d_layout, micron,
-                         grid->name());
+  FieldIdentifier ec_fid("eff_radius_qc", scalar2d_layout, micron, grid->name());
+  FieldIdentifier ei_fid("eff_radius_qi", scalar2d_layout, micron, grid->name());
   FieldIdentifier cd_fid("cldfrac_tot", scalar2d_layout, nondim, grid->name());
   FieldIdentifier nc_fid("nc", scalar2d_layout, 1 / kg, grid->name());
   FieldIdentifier ni_fid("ni", scalar2d_layout, 1 / kg, grid->name());
@@ -114,14 +111,13 @@ TEST_CASE("aerocom_cld") {
 
   ekat::ParameterList params;
 
-  REQUIRE_THROWS(
-      diag_factory.create("AeroComCld", comm, params));  // No 'aero_com_cld_kind'
+  REQUIRE_THROWS(diag_factory.create("AeroComCld", comm, params)); // No 'aero_com_cld_kind'
   params.set<std::string>("aero_com_cld_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
-                                     params));  // Invalid 'aero_com_cld_kind'
+                                     params)); // Invalid 'aero_com_cld_kind'
 
   constexpr int ntests = 3;
-  for(int itest = 0; itest < ntests; ++itest) {
+  for (int itest = 0; itest < ntests; ++itest) {
     // Randomize everything to add ensure resiliency
     randomize(tm, engine, pdf);
     randomize(pd, engine, pdf);
@@ -161,7 +157,7 @@ TEST_CASE("aerocom_cld") {
     Field diag_f = diag->get_diagnostic();
     diag_f.sync_to_host();
     auto diag_v = diag_f.get_view<Real **, Host>();
-    for(int idiag = 0; idiag < ndiags; ++idiag) {
+    for (int idiag = 0; idiag < ndiags; ++idiag) {
       REQUIRE(diag_v(0, idiag) == Real(0.0));
     }
 
@@ -182,7 +178,7 @@ TEST_CASE("aerocom_cld") {
     diag->get_diagnostic().sync_to_host();
     diag_f = diag->get_diagnostic();
     diag_v = diag_f.get_view<Real **, Host>();
-    for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
+    for (int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       REQUIRE(diag_v(icol, 0) == Real(300.0));
       REQUIRE(diag_v(icol, 1) == Real(100.0));
       REQUIRE(diag_v(icol, 2) == Real(0.5));
@@ -197,7 +193,7 @@ TEST_CASE("aerocom_cld") {
     cd.deep_copy<Host>(0);
     auto cd_v  = cd.get_view<Real **, Host>();
     cd_v(0, 1) = 0.5;
-    cd_v(0, 2) = 0.7;  // ------> max!
+    cd_v(0, 2) = 0.7; // ------> max!
     cd_v(0, 3) = 0.3;
     cd_v(0, 4) = 0.2;
     cd.sync_to_dev();
@@ -229,14 +225,14 @@ TEST_CASE("aerocom_cld") {
     diag_f = diag->get_diagnostic();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) > Real(0.7));  // must be larger than the max!
+    REQUIRE(diag_v(0, 7) > Real(0.7)); // must be larger than the max!
 
     // Case 5a: test independence of ice and liq fractions
     cd_v(0, 3) = 1.0;
     cd_v(0, 7) = 1.0;
     cd_v(0, 8) = 0.2;
     qc.deep_copy(1.0);
-    qi.deep_copy(0.0);  // zero ice!
+    qi.deep_copy(0.0); // zero ice!
     cd.sync_to_dev();
     diag->compute_diagnostic();
     diag_f = diag->get_diagnostic();
@@ -244,17 +240,17 @@ TEST_CASE("aerocom_cld") {
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
     REQUIRE(diag_v(0, 3) == Real(1.0));
-    REQUIRE(diag_v(0, 2) == Real(0.0));  // zero ice!
+    REQUIRE(diag_v(0, 2) == Real(0.0)); // zero ice!
 
     // Case 5b: test independence of ice and liq fractions
-    qc.deep_copy(0.0);  // zero liq!
+    qc.deep_copy(0.0); // zero liq!
     qi.deep_copy(1.0);
     diag->compute_diagnostic();
     diag_f = diag->get_diagnostic();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
-    REQUIRE(diag_v(0, 3) == Real(0.0));  // zero liq!
+    REQUIRE(diag_v(0, 3) == Real(0.0)); // zero liq!
     REQUIRE(diag_v(0, 2) == Real(1.0));
 
     // Case 6: test independence of ice and liquid fractions
@@ -265,13 +261,13 @@ TEST_CASE("aerocom_cld") {
     auto qc_v = qc.get_view<Real **, Host>();
     auto qi_v = qi.get_view<Real **, Host>();
     cd.deep_copy<Host>(0);
-    cd_v(0, 1) = 0.5;  // ice
-    cd_v(0, 2) = 0.7;  // ice ------> max!
-    cd_v(0, 3) = 0.3;  // ice
+    cd_v(0, 1) = 0.5; // ice
+    cd_v(0, 2) = 0.7; // ice ------> max!
+    cd_v(0, 3) = 0.3; // ice
     // note cd_v(0, 4) is 0.0
-    cd_v(0, 5) = 0.2;  // liq
-    cd_v(0, 6) = 0.5;  // liq ------> not max!
-    cd_v(0, 7) = 0.1;  // liq
+    cd_v(0, 5) = 0.2; // liq
+    cd_v(0, 6) = 0.5; // liq ------> not max!
+    cd_v(0, 7) = 0.1; // liq
     // note cd_v(0, 8) is 0.0
     qi.deep_copy<Host>(0);
     qi_v(0, 1) = 100;
@@ -290,10 +286,10 @@ TEST_CASE("aerocom_cld") {
     diag_f = diag->get_diagnostic();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
-    REQUIRE(diag_v(0, 7) > Real(0.7));   // unaffected (see test case 4)
-    REQUIRE(diag_v(0, 3) < Real(0.5));   // not max!
-    REQUIRE(diag_v(0, 2) == Real(0.7));  // max!
+    REQUIRE(diag_v(0, 7) > Real(0.7));  // unaffected (see test case 4)
+    REQUIRE(diag_v(0, 3) < Real(0.5));  // not max!
+    REQUIRE(diag_v(0, 2) == Real(0.7)); // max!
   }
 }
 
-}  // namespace scream
+} // namespace scream

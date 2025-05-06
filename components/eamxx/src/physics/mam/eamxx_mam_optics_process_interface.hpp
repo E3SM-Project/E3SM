@@ -13,10 +13,10 @@
 
 #ifndef KOKKOS_ENABLE_CUDA
 #define protected_except_cuda public
-#define private_except_cuda public
+#define private_except_cuda   public
 #else
 #define protected_except_cuda protected
-#define private_except_cuda private
+#define private_except_cuda   private
 #endif
 
 namespace scream {
@@ -33,7 +33,7 @@ class MAMOptics final : public MAMGenericInterface {
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
- public:
+public:
   // Constructor
   MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -47,8 +47,7 @@ class MAMOptics final : public MAMGenericInterface {
       name() const override;
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -89,14 +88,14 @@ class MAMOptics final : public MAMGenericInterface {
   // parameters for calcsize
   mam4::modal_aer_opt::CalcsizeData calsize_data_;
 
-  int num_2d_scratch_= 8;
+  int num_2d_scratch_ = 8;
 
   int get_len_temporary_views();
   void init_temporary_views();
   int len_temporary_views_{0};
 
-};  // MAMOptics
+}; // MAMOptics
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_OPTICS_HPP
+#endif // EAMXX_MAM_OPTICS_HPP

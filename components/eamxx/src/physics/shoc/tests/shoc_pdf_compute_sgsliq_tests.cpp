@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -19,11 +19,9 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
 
-  static void run_property()
-  {
+  static void run_property() {
     // Property tests for the SHOC function
     //  shoc_assumed_pdf_compute_sgs_liquid
 
@@ -44,7 +42,7 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
     ShocAssumedPdfComputeSgsLiquidData SDS;
 
     // Fill in the data
-    SDS.a = a;
+    SDS.a   = a;
     SDS.ql1 = ql1;
     SDS.ql2 = ql2;
 
@@ -68,10 +66,10 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
     // Define the liquid water mixing ratio, gaussian 1 [kg/kg]
     static constexpr Real ql1_neg = -0.02;
     // Define the liquid water mixing ratio, gaussian 2 [kg/kg]
-    static constexpr Real ql2_neg =-0.01;
+    static constexpr Real ql2_neg = -0.01;
 
     // Fill in the data
-    SDS.a = a_neg;
+    SDS.a   = a_neg;
     SDS.ql1 = ql1_neg;
     SDS.ql2 = ql2_neg;
 
@@ -97,17 +95,17 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
     // Define the liquid water mixing ratio, gaussian 1 [kg/kg]
     static constexpr Real ql1_skew = 0.02;
     // Define the liquid water mixing ratio, gaussian 2 [kg/kg]
-    static constexpr Real ql2_skew =0;
+    static constexpr Real ql2_skew = 0;
 
     // Fill in the data
-    SDS.a = a_neg;
+    SDS.a   = a_neg;
     SDS.ql1 = ql1_skew;
     SDS.ql2 = ql2_skew;
 
     // Check the data
-    REQUIRE (SDS.a < 0.5);
-    REQUIRE (SDS.ql1 > 0);
-    REQUIRE (SDS.ql2 == 0);
+    REQUIRE(SDS.a < 0.5);
+    REQUIRE(SDS.ql1 > 0);
+    REQUIRE(SDS.ql2 == 0);
 
     // Call the fortran implementation
     shoc_assumed_pdf_compute_sgs_liquid(SDS);
@@ -118,27 +116,24 @@ struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
     REQUIRE(SDS.shoc_ql < SDS.ql1);
   }
 
-  static void run_bfb()
-  {
+  static void run_bfb() {
     // TODO
   }
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_pdf_compute_sgsliq_property", "shoc")
-{
+TEST_CASE("shoc_pdf_compute_sgsliq_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
 
   TestStruct::run_property();
 }
 
-TEST_CASE("shoc_pdf_compute_sgsliq_bfb", "shoc")
-{
+TEST_CASE("shoc_pdf_compute_sgsliq_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
 
   TestStruct::run_bfb();

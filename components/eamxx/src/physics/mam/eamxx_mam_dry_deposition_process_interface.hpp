@@ -18,11 +18,10 @@ namespace scream {
 // The process responsible for handling MAM4 dry deposition. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public MAMGenericInterface {
- public:
-  static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
-  static constexpr int aerosol_categories_ =
-      mam4::DryDeposition::aerosol_categories;
-  static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
+public:
+  static constexpr int num_aero_modes      = mam_coupling::num_aero_modes();
+  static constexpr int aerosol_categories_ = mam4::DryDeposition::aerosol_categories;
+  static constexpr int n_land_type         = mam4::DryDeposition::n_land_type;
 
   using view_1d       = Field::view_dev_t<Real *>;
   using view_2d       = Field::view_dev_t<Real **>;
@@ -32,7 +31,7 @@ class MAMDryDep final : public MAMGenericInterface {
   using const_view_2d = Field::view_dev_t<const Real **>;
   using const_view_3d = Field::view_dev_t<const Real ***>;
 
- private:
+private:
   /* Note on mam4::DryDeposition::aerosol_categories = 4
      used in deposition velocity dimension defined below. These
      correspond to the two attachment states and two moments:
@@ -108,7 +107,7 @@ class MAMDryDep final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
- public:
+public:
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // Constructor
@@ -122,8 +121,7 @@ class MAMDryDep final : public MAMGenericInterface {
   std::string name() const override { return "mam_dry_deposition"; }
 
   // grid
-  void set_grids(
-      const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -136,12 +134,12 @@ class MAMDryDep final : public MAMGenericInterface {
   void run_impl(const double dt) override;
 
   // Finalize
-  void finalize_impl() override{/*Do nothing*/};
+  void finalize_impl() override { /*Do nothing*/ };
 
- private:
+private:
   // pre- and postprocessing scratch pads
-};  // MAMDryDep
+}; // MAMDryDep
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_MAM_DRYDEP_HPP
+#endif // EAMXX_MAM_DRYDEP_HPP

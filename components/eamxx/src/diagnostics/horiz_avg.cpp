@@ -4,15 +4,13 @@
 
 namespace scream {
 
-HorizAvgDiag::HorizAvgDiag(const ekat::Comm &comm,
-                           const ekat::ParameterList &params)
+HorizAvgDiag::HorizAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   const auto &fname = m_params.get<std::string>("field_name");
   m_diag_name       = fname + "_horiz_avg";
 }
 
-void HorizAvgDiag::set_grids(
-    const std::shared_ptr<const GridsManager> grids_manager) {
+void HorizAvgDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &fn = m_params.get<std::string>("field_name");
   const auto &gn = m_params.get<std::string>("grid_name");
   const auto g   = grids_manager->get_grid("physics");
@@ -29,24 +27,21 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
 
-  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3,
-                   "Error! Field rank not supported by HorizAvgDiag.\n"
-                   " - field name: " +
-                       fid.name() +
-                       "\n"
-                       " - field layout: " +
-                       layout.to_string() + "\n");
-  EKAT_REQUIRE_MSG(layout.tags()[0] == COL,
-                   "Error! HorizAvgDiag diagnostic expects a layout starting "
-                   "with the 'COL' tag.\n"
-                   " - field name  : " +
-                       fid.name() +
-                       "\n"
-                       " - field layout: " +
-                       layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3, "Error! Field rank not supported by HorizAvgDiag.\n"
+                                                             " - field name: " +
+                                                                 fid.name() +
+                                                                 "\n"
+                                                                 " - field layout: " +
+                                                                 layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(layout.tags()[0] == COL, "Error! HorizAvgDiag diagnostic expects a layout starting "
+                                            "with the 'COL' tag.\n"
+                                            " - field name  : " +
+                                                fid.name() +
+                                                "\n"
+                                                " - field layout: " +
+                                                layout.to_string() + "\n");
 
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL),
-                        fid.get_units(), fid.get_grid_name());
+  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL), fid.get_units(), fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
@@ -62,4 +57,4 @@ void HorizAvgDiag::compute_diagnostic_impl() {
   horiz_contraction<Real>(d, f, m_scaled_area, &m_comm);
 }
 
-}  // namespace scream
+} // namespace scream

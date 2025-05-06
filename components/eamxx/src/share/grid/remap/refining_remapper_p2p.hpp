@@ -1,16 +1,15 @@
 #ifndef SCREAM_REFINING_REMAPPER_P2P_HPP
 #define SCREAM_REFINING_REMAPPER_P2P_HPP
 
+#include "eamxx_config.h"
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/horiz_interp_remapper_base.hpp"
-#include "eamxx_config.h"
 
 #include "ekat/ekat_pack.hpp"
 
 #include <mpi.h>
 
-namespace scream
-{
+namespace scream {
 
 class GridImportExport;
 
@@ -46,42 +45,33 @@ class GridImportExport;
  * into the result.
  */
 
-class RefiningRemapperP2P : public HorizInterpRemapperBase
-{
+class RefiningRemapperP2P : public HorizInterpRemapperBase {
 public:
+  RefiningRemapperP2P(const grid_ptr_type &tgt_grid, const std::string &map_file);
 
-  RefiningRemapperP2P (const grid_ptr_type& tgt_grid,
-                       const std::string& map_file);
-
-  ~RefiningRemapperP2P ();
+  ~RefiningRemapperP2P();
 
 protected:
+  void remap_fwd_impl() override;
 
-  void remap_fwd_impl () override;
-
-  void setup_mpi_data_structures () override;
+  void setup_mpi_data_structures() override;
 
   // This class uses itself to remap src grid geo data to the tgt grid. But in order
   // to not pollute the remapper for later use, we must be able to clean it up after
   // remapping all the geo data.
-  void clean_up ();
+  void clean_up();
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void pack_and_send ();
-  void recv_and_unpack ();
+  void pack_and_send();
+  void recv_and_unpack();
 
 protected:
-
   // If MpiOnDev=true, we pass device pointers to MPI. Otherwise, we use host mirrors.
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
-  template<typename T>
-  using mpi_view_1d = typename std::conditional<
-                        MpiOnDev,
-                        view_1d<T>,
-                        typename view_1d<T>::HostMirror
-                      >::type;
+  template <typename T>
+  using mpi_view_1d = typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
 
   // ----- Data structures for pack/unpack and MPI ----- //
 
@@ -89,7 +79,7 @@ protected:
   std::vector<int> m_fields_col_sizes_scan_sum;
 
   // ImportData/export info
-  std::shared_ptr<GridImportExport>  m_imp_exp;
+  std::shared_ptr<GridImportExport> m_imp_exp;
 
   // The send/recv buffers for pack/unpack operations
   view_1d<Real> m_send_buffer;
@@ -97,21 +87,21 @@ protected:
 
   // The send/recv buf to feed to MPI.
   // If MpiOnDev=true, they simply alias the ones above
-  mpi_view_1d<Real>     m_mpi_send_buffer;
-  mpi_view_1d<Real>     m_mpi_recv_buffer;
+  mpi_view_1d<Real> m_mpi_send_buffer;
+  mpi_view_1d<Real> m_mpi_recv_buffer;
 
   // Offset of each pid in send/recv buffers
-  view_1d<int>  m_pids_send_offsets;
-  view_1d<int>  m_pids_recv_offsets;
+  view_1d<int> m_pids_send_offsets;
+  view_1d<int> m_pids_recv_offsets;
 
   // For each col, its position within the set of cols
   // sent/recv to/from the corresponding remote
-  view_1d<int>  m_send_col_pos;
-  view_1d<int>  m_recv_col_pos;
+  view_1d<int> m_send_col_pos;
+  view_1d<int> m_recv_col_pos;
 
   // Send/recv persistent requests
-  std::vector<MPI_Request>  m_send_req;
-  std::vector<MPI_Request>  m_recv_req;
+  std::vector<MPI_Request> m_send_req;
+  std::vector<MPI_Request> m_recv_req;
 };
 
 } // namespace scream

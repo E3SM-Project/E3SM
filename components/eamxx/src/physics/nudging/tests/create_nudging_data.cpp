@@ -23,30 +23,30 @@ TEST_CASE("create_nudging_data") {
   scorpio::init_subsystem(comm);
 
   // Create a grids manager
-  const auto gm = create_gm(comm,ngcols,nlevs);
+  const auto gm   = create_gm(comm, ngcols, nlevs);
   const auto grid = gm->get_grid("point_grid");
 
   // Create a field manager, and init fields (since OM's need t0 values)
   const auto fm1 = create_fm(grid);
   const auto fm2 = create_fm(grid);
   const auto fm3 = create_fm(grid);
-  compute_fields(fm1,t0,comm,0);
-  compute_fields(fm2,t0,comm,nlevs_filled);
-  compute_fields(fm3,t0,comm,0);
+  compute_fields(fm1, t0, comm, 0);
+  compute_fields(fm2, t0, comm, nlevs_filled);
+  compute_fields(fm3, t0, comm, 0);
 
   // Create output manager
-  const auto om1 = create_om("nudging_data",fm1,gm,t0,comm);
-  const auto om2 = create_om("nudging_data_filled",fm2,gm,t0,comm);
-  const auto om3 = create_om("nudging_data_nonconst_p",fm3,gm,t0,comm);
+  const auto om1 = create_om("nudging_data", fm1, gm, t0, comm);
+  const auto om2 = create_om("nudging_data_filled", fm2, gm, t0, comm);
+  const auto om3 = create_om("nudging_data_nonconst_p", fm3, gm, t0, comm);
 
   auto time = t0;
-  for (int istep=1; istep<=nsteps; ++istep) {
+  for (int istep = 1; istep <= nsteps; ++istep) {
     time += dt;
 
     // Compute fields, but keep p_mid constnat in fm1 and fm2, to avoid vinterp
-    compute_fields(fm1,time,comm,0,false);
-    compute_fields(fm2,time,comm,nlevs_filled,false);
-    compute_fields(fm3,time,comm,0);
+    compute_fields(fm1, time, comm, 0, false);
+    compute_fields(fm2, time, comm, nlevs_filled, false);
+    compute_fields(fm3, time, comm, 0);
 
     om1->run(time);
     om2->run(time);

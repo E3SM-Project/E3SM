@@ -1,33 +1,32 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_HPP
 
-#include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
-#include "share/atm_process/SCDataManager.hpp"
 #include "share/atm_process/IOPDataManager.hpp"
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_manager.hpp"
-#include "share/property_checks/property_check.hpp"
-#include "share/field/field_request.hpp"
+#include "share/atm_process/SCDataManager.hpp"
+#include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
+#include "share/field/field_identifier.hpp"
+#include "share/field/field_manager.hpp"
+#include "share/field/field_request.hpp"
 #include "share/grid/grids_manager.hpp"
+#include "share/property_checks/property_check.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
+#include "ekat/logging/ekat_logger.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/std_meta/ekat_std_any.hpp"
+#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/std_meta/ekat_std_any.hpp"
-#include "ekat/logging/ekat_logger.hpp"
 
-#include <memory>
-#include <string>
-#include <set>
 #include <list>
+#include <memory>
+#include <set>
+#include <string>
 
-namespace scream
-{
+namespace scream {
 /*
  *  The abstract interface of a process of the atmosphere (AP)
  *
@@ -70,36 +69,34 @@ namespace scream
  *     to override the get_internal_fields method.
  */
 
-class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
-{
+class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess> {
 public:
   using TimeStamp = util::TimeStamp;
   using ci_string = ekat::CaseInsensitiveString;
   using logger_t  = ekat::logger::LoggerBase;
   using LogLevel  = ekat::logger::LogLevel;
 
-  template<typename T>
-  using strmap_t = std::map<std::string,T>;
+  template <typename T> using strmap_t = std::map<std::string, T>;
 
   using prop_check_ptr = std::shared_ptr<PropertyCheck>;
 
   using iop_data_ptr = std::shared_ptr<control::IOPDataManager>;
 
   // Base constructor to set MPI communicator and params
-  AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereProcess(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  virtual ~AtmosphereProcess () = default;
+  virtual ~AtmosphereProcess() = default;
 
   // The type of the process (e.g., dynamics or physics)
-  virtual AtmosphereProcessType type () const = 0;
+  virtual AtmosphereProcessType type() const = 0;
 
   // The name of the process
-  virtual std::string name () const = 0;
+  virtual std::string name() const = 0;
 
   // Give the grids manager to the process, so it can grab its grid
   // Upon return, the atm proc should have a valid and complete list
   // of in/out/inout FieldRequest and GroupRequest.
-  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  virtual void set_grids(const std::shared_ptr<const GridsManager> grids_manager) = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs in order to run,
@@ -109,24 +106,24 @@ public:
   // TODO: should we check that initialize/finalize are called once per simulation?
   //       Whether it's a needed check depends on what resources we init/free, and how.
   // TODO: should we check that initialize has been called, when calling run/finalize?
-  void initialize (const TimeStamp& t0, const RunType run_type);
-  void run (const double dt);
-  void finalize   (/* what inputs? */);
+  void initialize(const TimeStamp &t0, const RunType run_type);
+  void run(const double dt);
+  void finalize(/* what inputs? */);
 
   // Return the MPI communicator
-  const ekat::Comm& get_comm () const { return m_comm; }
+  const ekat::Comm &get_comm() const { return m_comm; }
 
   // Return the parameter list
-  ekat::ParameterList& get_params () { return m_params; }
+  ekat::ParameterList &get_params() { return m_params; }
 
   // This method prepares the atm proc for computing the tendency of
   // output fields, as prescribed via parameter list
-  virtual void setup_tendencies_requests ();
+  virtual void setup_tendencies_requests();
 
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
   //       or that of the output fields.
-  void set_update_time_stamps (const bool do_update);
+  void set_update_time_stamps(const bool do_update);
 
   // These methods set fields/groups in the atm process. The fields/groups are stored
   // in a list (with some helpers maps that can be used to quickly retrieve them).
@@ -138,10 +135,10 @@ public:
   //       overriding the corresponding _impl method should be enough. The class
   //       AtmosphereProcessGroup is the big exception to this, since it needs
   //       to perform some extra action *before* setting the field/group.
-  virtual void set_required_field (const Field& f);
-  virtual void set_computed_field (const Field& f);
-  virtual void set_required_group (const FieldGroup& group);
-  virtual void set_computed_group (const FieldGroup& group);
+  virtual void set_required_field(const Field &f);
+  virtual void set_computed_field(const Field &f);
+  virtual void set_required_group(const FieldGroup &group);
+  virtual void set_computed_group(const FieldGroup &group);
 
   // These methods check that some properties are satisfied before/after
   // the run_impl method is called.
@@ -151,114 +148,100 @@ public:
   // an attempt can be made to repair the fields involved. If any of
   // the repairable fields is read only, or not in the list of fields computed
   // by this atm process, an error will be thrown.
-  void run_precondition_checks () const;
-  void run_postcondition_checks () const;
-  void run_column_conservation_check () const;
+  void run_precondition_checks() const;
+  void run_postcondition_checks() const;
+  void run_column_conservation_check() const;
 
   // Returns pre/postcondition checks
-  std::list<std::pair<CheckFailHandling,prop_check_ptr>>
-  get_precondition_checks () {
-    return m_precondition_checks;
-  }
-  std::list<std::pair<CheckFailHandling,prop_check_ptr>>
-  get_postcondition_checks() {
-    return m_postcondition_checks;
-  }
-  std::pair<CheckFailHandling,prop_check_ptr>
-  get_column_conservation_check() {
-    return m_column_conservation_check;
-  }
+  std::list<std::pair<CheckFailHandling, prop_check_ptr>> get_precondition_checks() { return m_precondition_checks; }
+  std::list<std::pair<CheckFailHandling, prop_check_ptr>> get_postcondition_checks() { return m_postcondition_checks; }
+  std::pair<CheckFailHandling, prop_check_ptr> get_column_conservation_check() { return m_column_conservation_check; }
 
-
-  void init_step_tendencies ();
-  void compute_step_tendencies (const double dt);
+  void init_step_tendencies();
+  void compute_step_tendencies(const double dt);
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
-  const std::list<FieldRequest>& get_required_field_requests () const { return m_required_field_requests; }
-  const std::list<FieldRequest>& get_computed_field_requests () const { return m_computed_field_requests; }
-  const std::list<GroupRequest>& get_required_group_requests () const { return m_required_group_requests; }
-  const std::list<GroupRequest>& get_computed_group_requests () const { return m_computed_group_requests; }
+  const std::list<FieldRequest> &get_required_field_requests() const { return m_required_field_requests; }
+  const std::list<FieldRequest> &get_computed_field_requests() const { return m_computed_field_requests; }
+  const std::list<GroupRequest> &get_required_group_requests() const { return m_required_group_requests; }
+  const std::list<GroupRequest> &get_computed_group_requests() const { return m_computed_group_requests; }
 
   // These sets allow to get all the actual in/out fields stored by the atm proc
   // Note: if an atm proc requires a group, then all the fields in the group, as well as
   //       the monolithic field (if present) will be added as required fields for this atm proc.
   //       See field_group.hpp for more info about groups of fields.
-  const std::list<Field>& get_fields_in  () const { return m_fields_in;  }
-  const std::list<Field>& get_fields_out () const { return m_fields_out; }
-  const std::list<FieldGroup>& get_groups_in  () const { return m_groups_in;  }
-  const std::list<FieldGroup>& get_groups_out () const { return m_groups_out; }
+  const std::list<Field> &get_fields_in() const { return m_fields_in; }
+  const std::list<Field> &get_fields_out() const { return m_fields_out; }
+  const std::list<FieldGroup> &get_groups_in() const { return m_groups_in; }
+  const std::list<FieldGroup> &get_groups_out() const { return m_groups_out; }
 
   // The base class does not store internal fields.
-  virtual const std::list<Field>& get_internal_fields  () const { return m_internal_fields; }
+  virtual const std::list<Field> &get_internal_fields() const { return m_internal_fields; }
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
-  bool has_required_field (const FieldIdentifier& id) const;
-  bool has_required_field (const std::string& name, const std::string& grid_name) const;
-  bool has_computed_field (const FieldIdentifier& id) const;
-  bool has_computed_field (const std::string& name, const std::string& grid_name) const;
-  bool has_required_group (const std::string& name, const std::string& grid) const;
-  bool has_computed_group (const std::string& name, const std::string& grid) const;
+  bool has_required_field(const FieldIdentifier &id) const;
+  bool has_required_field(const std::string &name, const std::string &grid_name) const;
+  bool has_computed_field(const FieldIdentifier &id) const;
+  bool has_computed_field(const std::string &name, const std::string &grid_name) const;
+  bool has_required_group(const std::string &name, const std::string &grid) const;
+  bool has_computed_group(const std::string &name, const std::string &grid) const;
 
   // Computes total number of bytes needed for local variables
-  virtual size_t requested_buffer_size_in_bytes () const { return 0; }
+  virtual size_t requested_buffer_size_in_bytes() const { return 0; }
 
   // Set local variables using memory provided by
   // the ATMBufferManager
-  virtual void init_buffers(const ATMBufferManager& /* buffer_manager */) {
-    EKAT_REQUIRE_MSG (requested_buffer_size_in_bytes()==0,
-        "Error! This Atm Process requested a non-zero buffer size,\n"
-        "       but does not override 'init_buffers'. Please, fix this.\n"
-        "   - Atm proc name: " + this->name() + "\n");
+  virtual void init_buffers(const ATMBufferManager & /* buffer_manager */) {
+    EKAT_REQUIRE_MSG(requested_buffer_size_in_bytes() == 0,
+                     "Error! This Atm Process requested a non-zero buffer size,\n"
+                     "       but does not override 'init_buffers'. Please, fix this.\n"
+                     "   - Atm proc name: " +
+                         this->name() + "\n");
   }
 
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.
   // Note: the version without grid name only works if there is only one copy of the field/group.
   //       In that case, the single copy is returned, regardless of the associated grid name.
-  const Field& get_field_in(const std::string& field_name, const std::string& grid_name) const;
-        Field& get_field_in(const std::string& field_name, const std::string& grid_name);
-  const Field& get_field_in(const std::string& field_name) const;
-        Field& get_field_in(const std::string& field_name);
+  const Field &get_field_in(const std::string &field_name, const std::string &grid_name) const;
+  Field &get_field_in(const std::string &field_name, const std::string &grid_name);
+  const Field &get_field_in(const std::string &field_name) const;
+  Field &get_field_in(const std::string &field_name);
 
-  const Field& get_field_out(const std::string& field_name, const std::string& grid_name) const;
-        Field& get_field_out(const std::string& field_name, const std::string& grid_name);
-  const Field& get_field_out(const std::string& field_name) const;
-        Field& get_field_out(const std::string& field_name);
+  const Field &get_field_out(const std::string &field_name, const std::string &grid_name) const;
+  Field &get_field_out(const std::string &field_name, const std::string &grid_name);
+  const Field &get_field_out(const std::string &field_name) const;
+  Field &get_field_out(const std::string &field_name);
 
-  const FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name) const;
-        FieldGroup& get_group_in(const std::string& group_name, const std::string& grid_name);
-  const FieldGroup& get_group_in(const std::string& group_name) const;
-        FieldGroup& get_group_in(const std::string& group_name);
+  const FieldGroup &get_group_in(const std::string &group_name, const std::string &grid_name) const;
+  FieldGroup &get_group_in(const std::string &group_name, const std::string &grid_name);
+  const FieldGroup &get_group_in(const std::string &group_name) const;
+  FieldGroup &get_group_in(const std::string &group_name);
 
-  const FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name) const;
-        FieldGroup& get_group_out(const std::string& group_name, const std::string& grid_name);
-  const FieldGroup& get_group_out(const std::string& group_name) const;
-        FieldGroup& get_group_out(const std::string& group_name);
+  const FieldGroup &get_group_out(const std::string &group_name, const std::string &grid_name) const;
+  FieldGroup &get_group_out(const std::string &group_name, const std::string &grid_name);
+  const FieldGroup &get_group_out(const std::string &group_name) const;
+  FieldGroup &get_group_out(const std::string &group_name);
 
-  const Field& get_internal_field(const std::string& field_name, const std::string& grid_name) const;
-        Field& get_internal_field(const std::string& field_name, const std::string& grid_name);
-  const Field& get_internal_field(const std::string& field_name) const;
-        Field& get_internal_field(const std::string& field_name);
+  const Field &get_internal_field(const std::string &field_name, const std::string &grid_name) const;
+  Field &get_internal_field(const std::string &field_name, const std::string &grid_name);
+  const Field &get_internal_field(const std::string &field_name) const;
+  Field &get_internal_field(const std::string &field_name);
 
   // Add a pre-built property check (PC) for precondition, postcondition,
   // invariant (i.e., pre+post), or column conservation check.
-  void add_precondition_check        (const prop_check_ptr& prop_check,
-                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
-  void add_postcondition_check       (const prop_check_ptr& prop_check,
-                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
-  void add_invariant_check           (const prop_check_ptr& prop_check,
-                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
-  void add_column_conservation_check (const prop_check_ptr& prop_check,
-                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_precondition_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_postcondition_check(const prop_check_ptr &prop_check,
+                               const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_invariant_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_column_conservation_check(const prop_check_ptr &prop_check,
+                                     const CheckFailHandling cfh = CheckFailHandling::Fatal);
 
   // Build a property check on the fly, then call the methods above
-  template<typename FPC, typename... Args>
-  void add_precondition_check (const Args... args);
-  template<typename FPC, typename... Args>
-  void add_postcondition_check (const Args... args);
-  template<typename FPC, typename... Args>
-  void add_invariant_check (const Args... args);
+  template <typename FPC, typename... Args> void add_precondition_check(const Args... args);
+  template <typename FPC, typename... Args> void add_postcondition_check(const Args... args);
+  template <typename FPC, typename... Args> void add_invariant_check(const Args... args);
 
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
@@ -266,45 +249,39 @@ public:
   //  - these maps are: data_name -> ekat::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<ekat::any>& get_restart_extra_data () const { return m_restart_extra_data; }
-        strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
+  const strmap_t<ekat::any> &get_restart_extra_data() const { return m_restart_extra_data; }
+  strmap_t<ekat::any> &get_restart_extra_data() { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
-  bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
+  bool has_column_conservation_check() { return m_column_conservation_check_data.has_check; }
 
   // Print a global hash of internal fields (useful for debugging non-bfbness)
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
   // the array will be hashed and reported as an additional entry
-  void print_global_state_hash(const std::string& label, const TimeStamp& t,
-                               const bool in = true, const bool out = true, const bool internal = true,
-                               const Real* mem = nullptr, const int nmem = 0) const;
+  void print_global_state_hash(const std::string &label, const TimeStamp &t, const bool in = true,
+                               const bool out = true, const bool internal = true, const Real *mem = nullptr,
+                               const int nmem = 0) const;
 
   // For BFB tracking in production simulations.
-  void print_fast_global_state_hash(const std::string& label, const TimeStamp& t) const;
+  void print_fast_global_state_hash(const std::string &label, const TimeStamp &t) const;
 
   // Set IOP object
-  virtual void set_iop_data_manager(const iop_data_ptr& iop_data_manager) {
-    m_iop_data_manager = iop_data_manager;
-  }
+  virtual void set_iop_data_manager(const iop_data_ptr &iop_data_manager) { m_iop_data_manager = iop_data_manager; }
 
-  std::shared_ptr<logger_t> get_logger () const {
-    return m_atm_logger;
-  }
+  std::shared_ptr<logger_t> get_logger() const { return m_atm_logger; }
 
 protected:
   // Sends a message to the atm log
-  void log (const LogLevel lev, const std::string& msg) const;
+  void log(const LogLevel lev, const std::string &msg) const;
 
   // Like the above, but ALWAYS sends the message (regardless of logger log level)
-  void log (const std::string& msg) const {
-    log(m_atm_logger->log_level(),msg);
-  }
+  void log(const std::string &msg) const { log(m_atm_logger->log_level(), msg); }
 
-  int get_num_subcycles () const { return m_num_subcycles; }
-  int get_subcycle_iter () const { return m_subcycle_iter; }
-  bool do_update_time_stamp () const { return m_update_time_stamps; }
+  int get_num_subcycles() const { return m_num_subcycles; }
+  int get_subcycle_iter() const { return m_subcycle_iter; }
+  bool do_update_time_stamp() const { return m_update_time_stamps; }
 
-  int get_internal_diagnostics_level () const { return m_internal_diagnostics_level; }
+  int get_internal_diagnostics_level() const { return m_internal_diagnostics_level; }
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
@@ -314,60 +291,59 @@ protected:
   // no pack size vs single group and pack size.
 
   // Field requests
-  template<RequestType RT>
-  void add_field (const std::string& name, const std::string& grid_name,
-                  const std::list<std::string>& groups, const int ps = 1)
-  { add_field<RT>(FieldRequest(name,grid_name,groups,ps)); }
-  template<RequestType RT>
-  void add_field (const std::string& name, const std::string& grid_name, const int ps = 1)
-  { add_field<RT>(name,grid_name,{},ps);}
+  template <RequestType RT>
+  void add_field(const std::string &name, const std::string &grid_name, const std::list<std::string> &groups,
+                 const int ps = 1) {
+    add_field<RT>(FieldRequest(name, grid_name, groups, ps));
+  }
+  template <RequestType RT> void add_field(const std::string &name, const std::string &grid_name, const int ps = 1) {
+    add_field<RT>(name, grid_name, {}, ps);
+  }
 
-  template<RequestType RT>
-  void add_field (const std::string& name, const FieldLayout& layout,
-                  const ekat::units::Units& u, const std::string& grid_name,
-                  const int ps = 1)
-  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),ps); }
+  template <RequestType RT>
+  void add_field(const std::string &name, const FieldLayout &layout, const ekat::units::Units &u,
+                 const std::string &grid_name, const int ps = 1) {
+    add_field<RT>(FieldIdentifier(name, layout, u, grid_name), ps);
+  }
 
-  template<RequestType RT>
-  void add_field (const std::string& name, const FieldLayout& layout,
-                  const ekat::units::Units& u, const std::string& grid_name,
-                  const std::string& group, const int ps = 1)
-  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),group,ps); }
+  template <RequestType RT>
+  void add_field(const std::string &name, const FieldLayout &layout, const ekat::units::Units &u,
+                 const std::string &grid_name, const std::string &group, const int ps = 1) {
+    add_field<RT>(FieldIdentifier(name, layout, u, grid_name), group, ps);
+  }
 
-  template<RequestType RT>
-  void add_field (const std::string& name, const FieldLayout& layout,
-                  const ekat::units::Units& u, const std::string& grid_name,
-                  const std::list<std::string>& groups, const int ps = 1)
-  { add_field<RT>(FieldIdentifier(name,layout,u,grid_name),groups,ps); }
+  template <RequestType RT>
+  void add_field(const std::string &name, const FieldLayout &layout, const ekat::units::Units &u,
+                 const std::string &grid_name, const std::list<std::string> &groups, const int ps = 1) {
+    add_field<RT>(FieldIdentifier(name, layout, u, grid_name), groups, ps);
+  }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const std::string& group, const int ps = 1)
-  { add_field<RT>(FieldRequest(fid,group,ps)); }
+  template <RequestType RT> void add_field(const FieldIdentifier &fid, const std::string &group, const int ps = 1) {
+    add_field<RT>(FieldRequest(fid, group, ps));
+  }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups)
-  { add_field<RT>(FieldRequest(fid,groups)); }
+  template <RequestType RT> void add_field(const FieldIdentifier &fid, const std::list<std::string> &groups) {
+    add_field<RT>(FieldRequest(fid, groups));
+  }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const int ps = 1)
-  { add_field<RT>(FieldRequest(fid,ps)); }
+  template <RequestType RT> void add_field(const FieldIdentifier &fid, const int ps = 1) {
+    add_field<RT>(FieldRequest(fid, ps));
+  }
 
-  template<RequestType RT>
-  void add_field (const FieldIdentifier& fid, const std::list<std::string>& groups, const int ps)
-  { add_field<RT>(FieldRequest(fid,groups,ps)); }
+  template <RequestType RT>
+  void add_field(const FieldIdentifier &fid, const std::list<std::string> &groups, const int ps) {
+    add_field<RT>(FieldRequest(fid, groups, ps));
+  }
 
   // Specialization for add_field to tracer group
-  template<RequestType RT>
-  void add_tracer (const std::string& name, std::shared_ptr<const AbstractGrid> grid,
-                   const ekat::units::Units& u,
-                   const int ps = 1,
-                   const TracerAdvection tracer_advection = TracerAdvection::NoPreference)
-  {
+  template <RequestType RT>
+  void add_tracer(const std::string &name, std::shared_ptr<const AbstractGrid> grid, const ekat::units::Units &u,
+                  const int ps = 1, const TracerAdvection tracer_advection = TracerAdvection::NoPreference) {
     std::list<std::string> tracer_groups;
     tracer_groups.push_back("tracers");
-    if (tracer_advection==TracerAdvection::DynamicsAndTurbulence) {
+    if (tracer_advection == TracerAdvection::DynamicsAndTurbulence) {
       tracer_groups.push_back("turbulence_advected_tracers");
-    } else if (tracer_advection==TracerAdvection::DynamicsOnly) {
+    } else if (tracer_advection == TracerAdvection::DynamicsOnly) {
       tracer_groups.push_back("non_turbulence_advected_tracers");
     }
 
@@ -379,54 +355,52 @@ protected:
   }
 
   // Group requests
-  template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid_name,
-                  const MonolithicAlloc b = MonolithicAlloc::NotRequired)
-  { add_group<RT> (GroupRequest(name,grid_name,b)); }
+  template <RequestType RT>
+  void add_group(const std::string &name, const std::string &grid_name,
+                 const MonolithicAlloc b = MonolithicAlloc::NotRequired) {
+    add_group<RT>(GroupRequest(name, grid_name, b));
+  }
 
-  template<RequestType RT>
-  void add_group (const std::string& name, const std::string& grid_name,
-                  const int pack_size, const MonolithicAlloc b = MonolithicAlloc::NotRequired)
-  { add_group<RT> (GroupRequest(name,grid_name,pack_size,b)); }
+  template <RequestType RT>
+  void add_group(const std::string &name, const std::string &grid_name, const int pack_size,
+                 const MonolithicAlloc b = MonolithicAlloc::NotRequired) {
+    add_group<RT>(GroupRequest(name, grid_name, pack_size, b));
+  }
 
-  template<RequestType RT>
-  void add_field (const FieldRequest& req)
-  {
+  template <RequestType RT> void add_field(const FieldRequest &req) {
     // Since we use C-style enum, let's avoid invalid integers casts
-    static_assert(RT==Required || RT==Computed || RT==Updated,
+    static_assert(RT == Required || RT == Computed || RT == Updated,
                   "Error! Invalid request type in call to add_field.\n");
 
     switch (RT) {
-      case Required:
-        m_required_field_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_field_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_field_requests.push_back(req);
-        m_computed_field_requests.push_back(req);
-        break;
+    case Required:
+      m_required_field_requests.push_back(req);
+      break;
+    case Computed:
+      m_computed_field_requests.push_back(req);
+      break;
+    case Updated:
+      m_required_field_requests.push_back(req);
+      m_computed_field_requests.push_back(req);
+      break;
     }
   }
 
-  template<RequestType RT>
-  void add_group (const GroupRequest& req)
-  {
+  template <RequestType RT> void add_group(const GroupRequest &req) {
     // Since we use C-style enum, let's avoid invalid integers casts
-    static_assert(RT==Required || RT==Updated || RT==Computed,
-        "Error! Invalid request type in call to add_group.\n");
+    static_assert(RT == Required || RT == Updated || RT == Computed,
+                  "Error! Invalid request type in call to add_group.\n");
     switch (RT) {
-      case Required:
-        m_required_group_requests.push_back(req);
-        break;
-      case Computed:
-        m_computed_group_requests.push_back(req);
-        break;
-      case Updated:
-        m_required_group_requests.push_back(req);
-        m_computed_group_requests.push_back(req);
-        break;
+    case Required:
+      m_required_group_requests.push_back(req);
+      break;
+    case Computed:
+      m_computed_group_requests.push_back(req);
+      break;
+    case Updated:
+      m_required_group_requests.push_back(req);
+      m_computed_group_requests.push_back(req);
+      break;
     }
   }
 
@@ -443,13 +417,13 @@ protected:
   // This provides access to this process's timestamp.
   // NOTE: start_of_step_ts/end_of_step_ts are the TimeStamp at the start/end
   //       of the current subcycle (at run time).
-  const TimeStamp& start_of_step_ts() const { return m_start_of_step_ts; }
-  const TimeStamp& end_of_step_ts() const { return m_end_of_step_ts; }
+  const TimeStamp &start_of_step_ts() const { return m_start_of_step_ts; }
+  const TimeStamp &end_of_step_ts() const { return m_end_of_step_ts; }
 
   // These three methods modify the FieldTracking of the input field (see field_tracking.hpp)
-  void update_time_stamps ();
-  void add_me_as_provider (const Field& f);
-  void add_me_as_customer (const Field& f);
+  void update_time_stamps();
+  void add_me_as_provider(const Field &f);
+  void add_me_as_customer(const Field &f);
 
   // The base class already registers the required/computed/updated fields/groups in
   // the set_required/computed_field and set_required/computed_group routines.
@@ -457,31 +431,23 @@ protected:
   // actions, such as extra fields bookkeeping, extra checks, or create copies.
   // Since most derived classes do not need to perform additional actions,
   // we provide empty implementations.
-  virtual void set_required_field_impl (const Field& /* f */) {}
-  virtual void set_computed_field_impl (const Field& /* f */) {}
-  virtual void set_required_group_impl (const FieldGroup& /* group */) {}
-  virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
+  virtual void set_required_field_impl(const Field & /* f */) {}
+  virtual void set_computed_field_impl(const Field & /* f */) {}
+  virtual void set_required_group_impl(const FieldGroup & /* group */) {}
+  virtual void set_computed_group_impl(const FieldGroup & /* group */) {}
 
   // Adds a field to the list of internal fields
-  void add_internal_field (const Field& f);
+  void add_internal_field(const Field &f);
 
   // These methods set up an extra pointer in the m_[fields|groups]_[in|out]_pointers,
   // for convenience of use (e.g., use a short name for a field/group).
   // Note: these methods do *not* create a copy of the field/group. Also, notice that
   //       these methods need to be called *after* set_fields_and_groups_pointers().
-  void alias_field_in (const std::string& field_name,
-                       const std::string& grid_name,
-                       const std::string& alias_name);
-  void alias_field_out (const std::string& field_name,
-                        const std::string& grid_name,
-                        const std::string& alias_name);
+  void alias_field_in(const std::string &field_name, const std::string &grid_name, const std::string &alias_name);
+  void alias_field_out(const std::string &field_name, const std::string &grid_name, const std::string &alias_name);
 
-  void alias_group_in (const std::string& group_name,
-                       const std::string& grid_name,
-                       const std::string& alias_name);
-  void alias_group_out (const std::string& group_name,
-                        const std::string& grid_name,
-                        const std::string& alias_name);
+  void alias_group_in(const std::string &group_name, const std::string &grid_name, const std::string &alias_name);
+  void alias_group_out(const std::string &group_name, const std::string &grid_name, const std::string &alias_name);
 
   // MPI communicator
   ekat::Comm m_comm;
@@ -503,44 +469,43 @@ protected:
   //       so we need to pass a logger reference to them. Also, logging
   //       is a non-const op on the logger, so since we need a non-const
   //       logger, we might as well expose the member to all derived classes.
-  std::shared_ptr<logger_t>  m_atm_logger;
+  std::shared_ptr<logger_t> m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<ekat::any>  m_restart_extra_data;
+  strmap_t<ekat::any> m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize
   // other fields.
-  void remove_field(const std::string& field_name, const std::string& grid_name);
+  void remove_field(const std::string &field_name, const std::string &grid_name);
   // Calls remove_field on each field in the group.
-  void remove_group(const std::string& group_name, const std::string& grid_name);
+  void remove_group(const std::string &group_name, const std::string &grid_name);
 
 private:
   // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers
   // maps, which are used inside the get_[field|group]_[in|out] methods.
-  void set_fields_and_groups_pointers ();
+  void set_fields_and_groups_pointers();
 
   // Getters that can be called on both const and non-const objects
-  Field& get_field_in_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field& get_field_in_impl(const std::string& field_name) const;
-  Field& get_field_out_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field& get_field_out_impl(const std::string& field_name) const;
-  Field& get_internal_field_impl(const std::string& field_name, const std::string& grid_name) const;
-  Field& get_internal_field_impl(const std::string& field_name) const;
+  Field &get_field_in_impl(const std::string &field_name, const std::string &grid_name) const;
+  Field &get_field_in_impl(const std::string &field_name) const;
+  Field &get_field_out_impl(const std::string &field_name, const std::string &grid_name) const;
+  Field &get_field_out_impl(const std::string &field_name) const;
+  Field &get_internal_field_impl(const std::string &field_name, const std::string &grid_name) const;
+  Field &get_internal_field_impl(const std::string &field_name) const;
 
-  FieldGroup& get_group_in_impl(const std::string& group_name, const std::string& grid_name) const;
-  FieldGroup& get_group_in_impl(const std::string& group_name) const;
-  FieldGroup& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
-  FieldGroup& get_group_out_impl(const std::string& group_name) const;
+  FieldGroup &get_group_in_impl(const std::string &group_name, const std::string &grid_name) const;
+  FieldGroup &get_group_in_impl(const std::string &group_name) const;
+  FieldGroup &get_group_out_impl(const std::string &group_name, const std::string &grid_name) const;
+  FieldGroup &get_group_out_impl(const std::string &group_name) const;
 
   // Compute/store data needed for this processes mass and energy conservation
   // check: dt, tolerance, current mass and energy value per column.
-  void compute_column_conservation_checks_data (const int dt);
+  void compute_column_conservation_checks_data(const int dt);
 
   // Run an individual property check. The input property_check_category_name
-  void run_property_check (const prop_check_ptr&       property_check,
-                           const CheckFailHandling     check_fail_handling,
-                           const PropertyCheckCategory property_check_category) const;
+  void run_property_check(const prop_check_ptr &property_check, const CheckFailHandling check_fail_handling,
+                          const PropertyCheckCategory property_check_category) const;
 
   // NOTE: all these members are private, so that derived classes cannot
   //       bypass checks from the base class by accessing the members directly.
@@ -548,32 +513,32 @@ private:
   //       sanity checks and any setup/cleanup logic.
 
   // Store input/output/internal fields and groups.
-  std::list<FieldGroup>   m_groups_in;
-  std::list<FieldGroup>   m_groups_out;
-  std::list<Field>        m_fields_in;
-  std::list<Field>        m_fields_out;
-  std::list<Field>        m_internal_fields;
+  std::list<FieldGroup> m_groups_in;
+  std::list<FieldGroup> m_groups_out;
+  std::list<Field> m_fields_in;
+  std::list<Field> m_fields_out;
+  std::list<Field> m_internal_fields;
 
   // Data structures necessary to compute tendencies of updated fields
-  strmap_t<std::string>    m_tend_to_field;
-  strmap_t<Field>          m_proc_tendencies;
-  strmap_t<Field>          m_start_of_step_fields;
+  strmap_t<std::string> m_tend_to_field;
+  strmap_t<Field> m_proc_tendencies;
+  strmap_t<Field> m_start_of_step_fields;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
   // then *ptr is a field in m_fields_in, with name $field_name, on grid $grid_name.
-  strmap_t<strmap_t<FieldGroup*>> m_groups_in_pointers;
-  strmap_t<strmap_t<FieldGroup*>> m_groups_out_pointers;
-  strmap_t<strmap_t<Field*>> m_fields_in_pointers;
-  strmap_t<strmap_t<Field*>> m_fields_out_pointers;
-  strmap_t<strmap_t<Field*>> m_internal_fields_pointers;
+  strmap_t<strmap_t<FieldGroup *>> m_groups_in_pointers;
+  strmap_t<strmap_t<FieldGroup *>> m_groups_out_pointers;
+  strmap_t<strmap_t<Field *>> m_fields_in_pointers;
+  strmap_t<strmap_t<Field *>> m_fields_out_pointers;
+  strmap_t<strmap_t<Field *>> m_internal_fields_pointers;
 
   // List of property checks for fields
-  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
-  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
+  std::list<std::pair<CheckFailHandling, prop_check_ptr>> m_precondition_checks;
+  std::list<std::pair<CheckFailHandling, prop_check_ptr>> m_postcondition_checks;
 
   // Column local mass and energy conservation check
-  std::pair<CheckFailHandling,prop_check_ptr> m_column_conservation_check;
+  std::pair<CheckFailHandling, prop_check_ptr> m_column_conservation_check;
 
   // Store data related to this processes conservation check.
   struct ColumnConservationCheckData {
@@ -603,40 +568,33 @@ private:
   bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
-  ekat::logger::LogLevel  m_repair_log_level;
+  ekat::logger::LogLevel m_repair_log_level;
 
   // Controls global hashing output for debugging non-BFBness.
   int m_internal_diagnostics_level;
 
 protected:
-
   // IOP object
   iop_data_ptr m_iop_data_manager;
 
   // The list of in/out field/group requests.
-  std::list<FieldRequest>   m_required_field_requests;
-  std::list<FieldRequest>   m_computed_field_requests;
-  std::list<GroupRequest>   m_required_group_requests;
-  std::list<GroupRequest>   m_computed_group_requests;
+  std::list<FieldRequest> m_required_field_requests;
+  std::list<FieldRequest> m_computed_field_requests;
+  std::list<GroupRequest> m_required_group_requests;
+  std::list<GroupRequest> m_computed_group_requests;
 };
 
 // ================= IMPLEMENTATION ================== //
 
-template<typename FPC, typename... Args>
-void AtmosphereProcess::
-add_precondition_check (const Args... args) {
+template <typename FPC, typename... Args> void AtmosphereProcess::add_precondition_check(const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_precondition_check(fpc);
 }
-template<typename FPC, typename... Args>
-void AtmosphereProcess::
-add_postcondition_check (const Args... args) {
+template <typename FPC, typename... Args> void AtmosphereProcess::add_postcondition_check(const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_postcondition_check(fpc);
 }
-template<typename FPC, typename... Args>
-void AtmosphereProcess::
-add_invariant_check (const Args... args) {
+template <typename FPC, typename... Args> void AtmosphereProcess::add_invariant_check(const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
   add_invariant_check(fpc);
 }
@@ -649,16 +607,14 @@ add_invariant_check (const Args... args) {
 //          This is *necessary* until we can safely switch to std::enable_shared_from_this.
 //          For more details, see the comments at the top of ekat_std_enable_shared_from_this.hpp.
 using AtmosphereProcessFactory =
-    ekat::Factory<AtmosphereProcess,
-                  ekat::CaseInsensitiveString,
-                  std::shared_ptr<AtmosphereProcess>,
-                  const ekat::Comm&,const ekat::ParameterList&>;
+    ekat::Factory<AtmosphereProcess, ekat::CaseInsensitiveString, std::shared_ptr<AtmosphereProcess>,
+                  const ekat::Comm &, const ekat::ParameterList &>;
 
 // Create an atmosphere process, and correctly set up the (weak) pointer to self.
 template <typename AtmProcType>
-inline std::shared_ptr<AtmosphereProcess>
-create_atmosphere_process (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmProcType>(comm,p);
+inline std::shared_ptr<AtmosphereProcess> create_atmosphere_process(const ekat::Comm &comm,
+                                                                    const ekat::ParameterList &p) {
+  auto ptr = std::make_shared<AtmProcType>(comm, p);
   ptr->setSelfPointer(ptr);
   return ptr;
 }

@@ -11,16 +11,13 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_arch.hpp"
 
-#include <thread>
-#include <array>
 #include <algorithm>
+#include <array>
 #include <random>
+#include <thread>
 
 namespace scream {
 namespace shoc {
-namespace unit_test {
-
-}//namespace unit_test
-}//namespace shoc
-}//namespace scream
-
+namespace unit_test {} // namespace unit_test
+} // namespace shoc
+} // namespace scream

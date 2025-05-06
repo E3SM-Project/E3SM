@@ -8,8 +8,7 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -130,12 +129,12 @@ TEST_CASE("vert_contract") {
   // params.set<std::string>("contract_method", "sum");
   // params.set<std::string>("weighting_method", "dz");
   // auto dz_weighted_sum = diag_factory.create("VertContractDiag", comm, params);
-  
+
   // unweighted_sum
   params.set<std::string>("contract_method", "sum");
   params.set<std::string>("weighting_method", "none");
   auto unweighted_sum = diag_factory.create("VertContractDiag", comm, params);
-  
+
   // unweighted_avg
   params.set<std::string>("contract_method", "avg");
   params.set<std::string>("weighting_method", "none");
@@ -157,7 +156,7 @@ TEST_CASE("vert_contract") {
   diag2_m.allocate_view();
 
   // Fields for scaling
-  FieldIdentifier dps_fid ("dps", scalar2d_layout.clone().strip_dim(LEV), Pa, grid->name());
+  FieldIdentifier dps_fid("dps", scalar2d_layout.clone().strip_dim(LEV), Pa, grid->name());
   // FieldIdentifier dzs_fid ("dzs", scalar2d_layout.clone().strip_dim(LEV), m, grid->name());
   Field dps(dps_fid);
   // Field dzs(dzs_fid);
@@ -169,7 +168,7 @@ TEST_CASE("vert_contract") {
   // auto dz_ones = dz.clone("dz_ones");
   // dz_ones.deep_copy(1);
 
-  auto dp_scaled   = dp.clone("dp_scaled");
+  auto dp_scaled = dp.clone("dp_scaled");
   // auto dz_scaled   = dz.clone("dz_scaled");
 
   dp_scaled.scale(sp(1.0) / scream::physics::Constants<Real>::gravit);
@@ -180,12 +179,12 @@ TEST_CASE("vert_contract") {
   SECTION("dp_weighted_avg") {
     // scale dp_scaled by 1/dps (because we are averaging)
     dps.sync_to_host();
-    auto dps_v = dps.get_view<const Real*, Host>();
+    auto dps_v = dps.get_view<const Real *, Host>();
     dp_scaled.sync_to_host();
-    auto dp_scaled_v = dp_scaled.get_view<Real**, Host>();
+    auto dp_scaled_v = dp_scaled.get_view<Real **, Host>();
     for (std::size_t i = 0; i < dp_scaled_v.extent(0); ++i) {
       for (std::size_t j = 0; j < dp_scaled_v.extent(1); ++j) {
-        if(dps_v(i) == 0) {
+        if (dps_v(i) == 0) {
           dp_scaled_v(i, j) = 0; // Handle division by zero by setting to 0
         } else {
           dp_scaled_v(i, j) /= dps_v(i);
@@ -280,10 +279,10 @@ TEST_CASE("vert_contract") {
     // since we are averaging, we need to scale by the sum
     auto dp_ones_scaled = dp_ones.clone("dz_ones_scaled");
     dp_ones_scaled.sync_to_host();
-    auto dp_ones_scaled_v = dp_ones_scaled.get_view<Real**, Host>();
+    auto dp_ones_scaled_v = dp_ones_scaled.get_view<Real **, Host>();
     for (std::size_t i = 0; i < dp_ones_scaled_v.extent(0); ++i) {
       for (std::size_t j = 0; j < dp_ones_scaled_v.extent(1); ++j) {
-        const int nlevs = dp_ones_scaled_v.extent(1);  
+        const int nlevs = dp_ones_scaled_v.extent(1);
         dp_ones_scaled_v(i, j) /= nlevs;
       }
     }
@@ -295,9 +294,9 @@ TEST_CASE("vert_contract") {
     unweighted_avg->initialize(t0, RunType::Initial);
     unweighted_avg->compute_diagnostic();
     auto unweighted_avg_f = unweighted_avg->get_diagnostic();
-    
+
     REQUIRE(views_are_equal(unweighted_avg_f, diag2_m));
   }
 }
 
-}  // namespace scream
+} // namespace scream

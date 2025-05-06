@@ -38,8 +38,8 @@ struct FortranData {
   // Out
   Array2 shoc_cldfrac, shoc_ql;
   Array1 pblh;
-  Array2 shoc_mix, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec,
-    wtke_sec, uw_sec, vw_sec, w3, wqls_sec, isotropy, brunt, shoc_ql2;
+  Array2 shoc_mix, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec, wtke_sec, uw_sec, vw_sec, w3, wqls_sec,
+      isotropy, brunt, shoc_ql2;
 
   FortranData() = delete;
   FortranData(Int shcol, Int nlev, Int nlevi, Int num_qtracers);
@@ -51,31 +51,31 @@ struct FortranDataIterator {
     std::string name;
     Int dim;
     Int extent[3];
-    FortranData::Scalar* data;
+    FortranData::Scalar *data;
     FortranData::Array1::size_type size;
   };
 
-  explicit FortranDataIterator(const FortranData::Ptr& d);
+  explicit FortranDataIterator(const FortranData::Ptr &d);
 
-  Int nfield () const { return fields_.size(); }
-  const RawArray& getfield(Int i) const;
+  Int nfield() const { return fields_.size(); }
+  const RawArray &getfield(Int i) const;
 
 private:
   FortranData::Ptr d_;
   std::vector<RawArray> fields_;
 
-  void init(const FortranData::Ptr& d);
+  void init(const FortranData::Ptr &d);
 };
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in SHOC. For now, these checks are
 // here to establish that the initial regression-testing code gives results that
 // match the python f2py tester, without needing a data file.
-Int check_against_python(const FortranData& d);
+Int check_against_python(const FortranData &d);
 
 int test_FortranData();
 
-}  // namespace shoc
-}  // namespace scream
+} // namespace shoc
+} // namespace scream
 
 #endif

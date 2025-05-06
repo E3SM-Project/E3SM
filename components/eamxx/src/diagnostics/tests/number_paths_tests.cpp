@@ -13,8 +13,7 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -33,11 +32,10 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 }
 
 //-----------------------------------------------------------------------------------------------//
-template <typename DeviceT>
-void run(std::mt19937_64 &engine) {
-  using PC         = scream::physics::Constants<Real>;
-  using KT         = ekat::KokkosTypes<DeviceT>;
-  using view_1d    = typename KT::template view_1d<Real>;
+template <typename DeviceT> void run(std::mt19937_64 &engine) {
+  using PC      = scream::physics::Constants<Real>;
+  using KT      = ekat::KokkosTypes<DeviceT>;
+  using view_1d = typename KT::template view_1d<Real>;
 
   constexpr int num_levs = 33;
   constexpr Real g       = PC::gravit;
@@ -51,9 +49,8 @@ void run(std::mt19937_64 &engine) {
   auto gm         = create_gm(comm, ncols, num_levs);
 
   // Input (randomized) views
-  view_1d pseudo_density("pseudo_density", num_levs), qc("qc", num_levs),
-      nc("nc", num_levs), qr("qr", num_levs), nr("nr", num_levs),
-      qi("qi", num_levs), ni("ni", num_levs);
+  view_1d pseudo_density("pseudo_density", num_levs), qc("qc", num_levs), nc("nc", num_levs), qr("qr", num_levs),
+      nr("nr", num_levs), qi("qi", num_levs), ni("ni", num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -68,11 +65,10 @@ void run(std::mt19937_64 &engine) {
   register_diagnostics();
   ekat::ParameterList params;
 
-  REQUIRE_THROWS(
-      diag_factory.create("NumberPath", comm, params));  // No 'number_kind'
+  REQUIRE_THROWS(diag_factory.create("NumberPath", comm, params)); // No 'number_kind'
   params.set<std::string>("number_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("NumberPath", comm,
-                                     params));  // Invalid 'number_kind'
+                                     params)); // Invalid 'number_kind'
 
   // Liquid
   params.set<std::string>("number_kind", "Liq");
@@ -92,10 +88,10 @@ void run(std::mt19937_64 &engine) {
 
   // Set the required fields for the diagnostic.
   std::map<std::string, Field> input_fields;
-  for(const auto &dd : diags) {
+  for (const auto &dd : diags) {
     const auto &diag = dd.second;
-    for(const auto &req : diag->get_required_field_requests()) {
-      if(input_fields.find(req.fid.name()) == input_fields.end()) {
+    for (const auto &req : diag->get_required_field_requests()) {
+      if (input_fields.find(req.fid.name()) == input_fields.end()) {
         Field f(req.fid);
         f.allocate_view();
         f.get_header().get_tracking().update_time_stamp(t0);
@@ -134,7 +130,7 @@ void run(std::mt19937_64 &engine) {
     const auto &pd_f = input_fields.at("pseudo_density");
     const auto &pd_v = pd_f.get_view<Real **>();
     const auto &pd_h = pd_f.get_view<Real **, Host>();
-    for(int icol = 0; icol < ncols; icol++) {
+    for (int icol = 0; icol < ncols; icol++) {
       const auto &qc_sub = ekat::subview(qc_v, icol);
       const auto &nc_sub = ekat::subview(nc_v, icol);
       const auto &qi_sub = ekat::subview(qi_v, icol);
@@ -166,7 +162,7 @@ void run(std::mt19937_64 &engine) {
     nr_f.sync_to_host();
     pd_f.sync_to_host();
     // Compute
-    for(const auto &dd : diags) {
+    for (const auto &dd : diags) {
       dd.second->compute_diagnostic();
     }
     // Sync to host
@@ -175,23 +171,20 @@ void run(std::mt19937_64 &engine) {
     rnp.sync_to_host();
     // Test manual calculation vs one provided by diags
     {
-      for(int icol = 0; icol < ncols; icol++) {
+      for (int icol = 0; icol < ncols; icol++) {
         Real qndc_prod = 0.0;
-        for(int ilev = 0; ilev < num_levs; ++ilev) {
-          qndc_prod +=
-              nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / g;
+        for (int ilev = 0; ilev < num_levs; ++ilev) {
+          qndc_prod += nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(lnp_h(icol) - qndc_prod) < macheps);
         Real qndi_prod = 0.0;
-        for(int ilev = 0; ilev < num_levs; ++ilev) {
-          qndi_prod +=
-              ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / g;
+        for (int ilev = 0; ilev < num_levs; ++ilev) {
+          qndi_prod += ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(inp_h(icol) - qndi_prod) < macheps);
         Real qndr_prod = 0.0;
-        for(int ilev = 0; ilev < num_levs; ++ilev) {
-          qndr_prod +=
-              nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / g;
+        for (int ilev = 0; ilev < num_levs; ++ilev) {
+          qndr_prod += nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(rnp_h(icol) - qndr_prod) < macheps);
       }
@@ -199,12 +192,12 @@ void run(std::mt19937_64 &engine) {
   }
 
   // Finalize the diagnostic
-  for(const auto &dd : diags) {
+  for (const auto &dd : diags) {
     const auto &diag = dd.second;
     diag->finalize();
   }
 
-}  // run()
+} // run()
 
 TEST_CASE("number_path_test", "number_path_test]") {
   using Device = scream::DefaultDevice;
@@ -215,9 +208,9 @@ TEST_CASE("number_path_test", "number_path_test]") {
 
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
-  for(int irun = 0; irun < num_runs; ++irun) {
+  for (int irun = 0; irun < num_runs; ++irun) {
     run<Device>(engine);
   }
 }
 
-}  // namespace scream
+} // namespace scream

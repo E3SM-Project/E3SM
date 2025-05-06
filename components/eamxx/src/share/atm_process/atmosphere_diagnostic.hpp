@@ -3,17 +3,16 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-namespace scream
-{
+namespace scream {
 
 /*
  * A class representing an atmosphere diagnostic.
  * Diagnostics are similar to atmosphere processes in that
  * they take field(s) as input and produce some output.
- * 
+ *
  * This subclass definition makes a few distinctions that are
  * unique to diagnostics.
- * 
+ *
  * 1) Fields from the field manager can only be accessed as "Required".
  *    Meaning that an atmosphere diagnostic can not compute or update
  *    a field in the field manager.
@@ -28,47 +27,45 @@ namespace scream
 // TODO: inheriting from AtmosphereProcess is conceptually wrong. It was done
 //       out of convenience, but we should revisit that choice.
 
-class AtmosphereDiagnostic : public AtmosphereProcess
-{
+class AtmosphereDiagnostic : public AtmosphereProcess {
 public:
-
   // Constructor(s)
-  AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  virtual ~AtmosphereDiagnostic () = default;
+  virtual ~AtmosphereDiagnostic() = default;
 
   // The type of subcomponent
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
+  AtmosphereProcessType type() const { return AtmosphereProcessType::Diagnostic; }
 
   // Most (all?) diagnostics will be defined on the physics grid, so we use that
   // by default. Derived classes can, of course, override this.
-  std::set<std::string> get_required_grids () const {
+  std::set<std::string> get_required_grids() const {
     static std::set<std::string> s;
     s.insert("physics");
     return s;
   }
 
   // Getting the diagnostic output
-  Field get_diagnostic () const;
+  Field get_diagnostic() const;
 
   // Allows the diagnostic to save some start-of-step quantity (e.g., in case
   // we need to compute tendencies, or accumulated stuff)
-  virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
+  virtual void init_timestep(const util::TimeStamp & /* start_of_step */) {}
 
-  void compute_diagnostic (const double dt = 0);
+  void compute_diagnostic(const double dt = 0);
+
 protected:
+  void set_required_field_impl(const Field &f) final;
+  void set_computed_field_impl(const Field &f) final;
+  void set_computed_group_impl(const FieldGroup &group) final;
 
-  void set_required_field_impl (const Field& f) final;
-  void set_computed_field_impl (const Field& f) final;
-  void set_computed_group_impl (const FieldGroup& group) final;
-
-  virtual void compute_diagnostic_impl () = 0;
+  virtual void compute_diagnostic_impl() = 0;
 
   // By default, diagnostic don't do any initialization/finalization stuff.
   // Derived classes can override, of course
-  void initialize_impl (const RunType /*run_type*/) { /* Nothing to do */ }
-  void run_impl (const double dt);
-  void finalize_impl   () { /* Nothing to do */ }
+  void initialize_impl(const RunType /*run_type*/) { /* Nothing to do */ }
+  void run_impl(const double dt);
+  void finalize_impl() { /* Nothing to do */ }
 
   // Some diagnostics will need the timestep, store here.
   double m_dt;
@@ -85,19 +82,17 @@ protected:
 //          This is *necessary* until we can safely switch to std::enable_shared_from_this.
 //          For more details, see the comments at the top of ekat_std_enable_shared_from_this.hpp.
 using AtmosphereDiagnosticFactory =
-    ekat::Factory<AtmosphereDiagnostic,
-                  ekat::CaseInsensitiveString,
-                  std::shared_ptr<AtmosphereDiagnostic>,
-                  const ekat::Comm&,const ekat::ParameterList&>;
+    ekat::Factory<AtmosphereDiagnostic, ekat::CaseInsensitiveString, std::shared_ptr<AtmosphereDiagnostic>,
+                  const ekat::Comm &, const ekat::ParameterList &>;
 
 // Create an atmosphere process, and correctly set up the (weak) pointer to self.
 template <typename AtmDiagType>
-inline std::shared_ptr<AtmosphereDiagnostic>
-create_atmosphere_diagnostic (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmDiagType>(comm,p);
+inline std::shared_ptr<AtmosphereDiagnostic> create_atmosphere_diagnostic(const ekat::Comm &comm,
+                                                                          const ekat::ParameterList &p) {
+  auto ptr = std::make_shared<AtmDiagType>(comm, p);
   ptr->setSelfPointer(ptr);
   return ptr;
 }
-} //namespace scream
+} // namespace scream
 
 #endif // SCREAM_ATMOSPHERE_DIAGNOSTIC_HPP

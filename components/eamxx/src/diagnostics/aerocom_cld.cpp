@@ -8,22 +8,17 @@
 
 namespace scream {
 
-AeroComCld::AeroComCld(const ekat::Comm &comm,
-                       const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"),
-                   "Error! AeroComCld requires 'aero_com_cld_kind' in its "
-                   "input parameters.\n");
+AeroComCld::AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params) : AtmosphereDiagnostic(comm, params) {
+  EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"), "Error! AeroComCld requires 'aero_com_cld_kind' in its "
+                                                            "input parameters.\n");
 
   m_topbot = m_params.get<std::string>("aero_com_cld_kind");
   // check if m_topbot is "Bot" or "Top", else error out
-  EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
-                   "Error! AeroComCld requires 'aero_com_cld_kind' "
-                   "to be 'Bot' or 'Top' in its input parameters.\n");
+  EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top", "Error! AeroComCld requires 'aero_com_cld_kind' "
+                                                           "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
-void AeroComCld::
-set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void AeroComCld::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto grid             = grids_manager->get_grid("physics");
@@ -39,9 +34,8 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   m_ndiag     = aercom_util.size;
 
   // Ensure m_index_map and m_units_map match
-  EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(),
-                   "Error! Some inconsistency in AeroComCld: index and units "
-                   "maps do not match!\n");
+  EKAT_REQUIRE_MSG(m_index_map.size() == m_units_map.size(), "Error! Some inconsistency in AeroComCld: index and units "
+                                                             "maps do not match!\n");
   // Ensure m_index_map and m_ndiag match
   EKAT_REQUIRE_MSG(static_cast<int>(m_index_map.size()) == m_ndiag,
                    "Error! Some inconsistency in AeroComCld: index and units "
@@ -55,17 +49,17 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   auto vector2d = grid->get_2d_vector_layout(m_ndiag);
 
   // The fields required for this diagnostic to be computed
-  add_field<Required>("T_mid",          scalar3d, K,       grid_name);
-  add_field<Required>("pseudo_density", scalar3d, Pa,      grid_name);
-  add_field<Required>("p_mid",          scalar3d, Pa,      grid_name);
-  add_field<Required>("qv",             scalar3d, kg / kg, grid_name);
-  add_field<Required>("qc",             scalar3d, kg / kg, grid_name);
-  add_field<Required>("qi",             scalar3d, kg / kg, grid_name);
-  add_field<Required>("eff_radius_qc",  scalar3d, micron,  grid_name);
-  add_field<Required>("eff_radius_qi",  scalar3d, micron,  grid_name);
-  add_field<Required>("cldfrac_tot",    scalar3d, nondim,  grid_name);
-  add_field<Required>("nc",             scalar3d, 1 / kg,  grid_name);
-  add_field<Required>("ni",             scalar3d, 1 / kg,  grid_name);
+  add_field<Required>("T_mid", scalar3d, K, grid_name);
+  add_field<Required>("pseudo_density", scalar3d, Pa, grid_name);
+  add_field<Required>("p_mid", scalar3d, Pa, grid_name);
+  add_field<Required>("qv", scalar3d, kg / kg, grid_name);
+  add_field<Required>("qc", scalar3d, kg / kg, grid_name);
+  add_field<Required>("qi", scalar3d, kg / kg, grid_name);
+  add_field<Required>("eff_radius_qc", scalar3d, micron, grid_name);
+  add_field<Required>("eff_radius_qi", scalar3d, micron, grid_name);
+  add_field<Required>("cldfrac_tot", scalar3d, nondim, grid_name);
+  add_field<Required>("nc", scalar3d, 1 / kg, grid_name);
+  add_field<Required>("ni", scalar3d, 1 / kg, grid_name);
 
   // A field to store dz
   FieldIdentifier m_dz_fid("dz", scalar3d, m, grid_name);
@@ -80,11 +74,9 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
   auto d         = get_diagnostic();
-  auto &metadata =
-      d.get_header().get_extra_data<stratt_t>("io: string attributes");
-  for(const auto &it : m_index_map) {
-    metadata[it.first] =
-        std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
+  auto &metadata = d.get_header().get_extra_data<stratt_t>("io: string attributes");
+  for (const auto &it : m_index_map) {
+    metadata[it.first] = std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
   }
 }
 
@@ -164,8 +156,7 @@ void AeroComCld::compute_diagnostic_impl() {
 
         // We need dz too
         auto dz_icol = ekat::subview(dz, icol);
-        PF::calculate_dz(team, pden_icol, pmid_icol, tmid_icol, qv_icol,
-                         dz_icol);
+        PF::calculate_dz(team, pden_icol, pmid_icol, tmid_icol, qv_icol, dz_icol);
 
         // Initialize the 1D "clear fraction" as 1 (totally clear)
         auto clr_icol = 1.0;
@@ -177,17 +168,13 @@ void AeroComCld::compute_diagnostic_impl() {
 
         auto topbot_calcs = [&](int ilay) {
           // Only do the calculation if certain conditions are met
-          if((qc_icol(ilay) + qi_icol(ilay)) > q_threshold &&
-             (cld_icol(ilay) > cldfrac_tot_threshold)) {
+          if ((qc_icol(ilay) + qi_icol(ilay)) > q_threshold && (cld_icol(ilay) > cldfrac_tot_threshold)) {
             /* PART I: Probabilistically determining cloud top/bot */
             // Populate clr_tmp as the clear-sky fraction
             // probability of this level, where clr_icol is that of
             // the previous level
-            auto clr_tmp =
-                clr_icol *
-                (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
-                (1.0 - ekat::impl::min(cld_icol(ilay - 1),
-                                       Real(1.0 - cldfrac_tot_threshold)));
+            auto clr_tmp = clr_icol * (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
+                           (1.0 - ekat::impl::min(cld_icol(ilay - 1), Real(1.0 - cldfrac_tot_threshold)));
             // Temporary variable for probability "weights"
             auto wts = clr_icol - clr_tmp;
             // Temporary variable for liquid "phase"
@@ -204,8 +191,7 @@ void AeroComCld::compute_diagnostic_impl() {
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
-            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
-                        physconst::gravit / cld_icol(ilay);
+            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) / physconst::gravit / cld_icol(ilay);
             o_cdnc(icol) += cdnc * phi * wts;
             o_nc(icol) += nc_icol(ilay) * phi * wts;
             o_ni(icol) += ni_icol(ilay) * (1.0 - phi) * wts;
@@ -216,12 +202,12 @@ void AeroComCld::compute_diagnostic_impl() {
           }
         };
 
-        if(is_top) {
-          for(int ilay = 1; ilay < nlevs; ++ilay) {
+        if (is_top) {
+          for (int ilay = 1; ilay < nlevs; ++ilay) {
             topbot_calcs(ilay);
           }
         } else {
-          for(int ilay = nlevs - 1; ilay > 0; --ilay) {
+          for (int ilay = nlevs - 1; ilay > 0; --ilay) {
             topbot_calcs(ilay);
           }
         }
@@ -234,4 +220,4 @@ void AeroComCld::compute_diagnostic_impl() {
       });
 }
 
-}  // namespace scream
+} // namespace scream

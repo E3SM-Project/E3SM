@@ -5,9 +5,7 @@
 
 namespace scream {
 
-template <typename DeviceT>
-struct PhysicsFunctions
-{
+template <typename DeviceT> struct PhysicsFunctions {
   // ---------------------------------------------------------------- //
   //                     Single-scalar Functions                      //
   // ---------------------------------------------------------------- //
@@ -34,9 +32,8 @@ struct PhysicsFunctions
   // NOTE - Here we assume that the column area is a SQUARE so dx=dy.  We will need a different
   //        routine for a rectangular (or other shape) area.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_dx_from_area(const ScalarT& area, const ScalarT& lat);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_dx_from_area(const ScalarT &area, const ScalarT &lat);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the density given the definition of pseudo_density passed by the dycore
@@ -47,9 +44,8 @@ struct PhysicsFunctions
   //   dz             is the geopotential thickness of the layer, [m]
   //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_density(const ScalarT& pseudo_density, const ScalarT& dz);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_density(const ScalarT &pseudo_density, const ScalarT &dz);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical wind velocity given the vertical pressure velocity
@@ -60,8 +56,7 @@ struct PhysicsFunctions
   //   g              is the gravitational constant, [m/s2] - defined in physics_constants.hpp
   //-----------------------------------------------------------------------------------------------//
   template <typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_vertical_velocity(const ScalarT& omega, const ScalarT& density);
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_vertical_velocity(const ScalarT &omega, const ScalarT &density);
 
   //-----------------------------------------------------------------------------------------------//
   // Applies Exners Function which follows:
@@ -78,9 +73,7 @@ struct PhysicsFunctions
   //   T  is the temperature, [K]
   //   th is the potential temperature, [K]
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT exner_function(const ScalarT& pressure);
+  template <typename ScalarT> KOKKOS_INLINE_FUNCTION static ScalarT exner_function(const ScalarT &pressure);
 
   //-----------------------------------------------------------------------------------------------//
   // Converts temperature to potential temperature using Exners function:
@@ -90,9 +83,8 @@ struct PhysicsFunctions
   //   temperature  is the temperature, [K]
   //   pressure  is the pressure, [Pa].  Used for exners formula, see definition above, unitless
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_theta_from_T(const ScalarT &temperature, const ScalarT &pressure);
 
   //-----------------------------------------------------------------------------------------------//
   // Converts potential temperature to liquid potental temperature:
@@ -101,11 +93,11 @@ struct PhysicsFunctions
   //   theta  is the potential temperature, [K]
   //   temperature  is the temperature, [K]
   //   qc is the cloud liquid mixing ratio, [kg/kg]
-  //   and the others are constants 
+  //   and the others are constants
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_thetal_from_theta(const ScalarT& theta, const ScalarT& temperature, const ScalarT& qc);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_thetal_from_theta(const ScalarT &theta, const ScalarT &temperature,
+                                                                    const ScalarT &qc);
 
   //-----------------------------------------------------------------------------------------------//
   // Converts potential temperature to temperature using Exners function:
@@ -115,9 +107,8 @@ struct PhysicsFunctions
   //   temperature  is the temperature, [K]
   //   pressure  is the pressure, [Pa].  Used for exners formula, see definition above, unitless
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_T_from_theta(const ScalarT& theta, const ScalarT& pressure);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_T_from_theta(const ScalarT &theta, const ScalarT &pressure);
 
   //-----------------------------------------------------------------------------------------------//
   // Compute temperature from virtual temperature
@@ -128,9 +119,9 @@ struct PhysicsFunctions
   //   qv          is the water vapor mass mixing ratio.  Units in [kg/kg]
   //   temperature is the atmospheric temperature.  Units in [K].
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_temperature_from_virtual_temperature(const ScalarT& T_virtual, const ScalarT& qv);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_temperature_from_virtual_temperature(const ScalarT &T_virtual,
+                                                                                       const ScalarT &qv);
 
   //-----------------------------------------------------------------------------------------------//
   // Compute virtual temperature
@@ -141,9 +132,8 @@ struct PhysicsFunctions
   //   qv          is the water vapor mass mixing ratio.  Units in [kg/kg]
   //   T_virtual   is the virtual temperature.  Units in [K].
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_virtual_temperature(const ScalarT& temperature, const ScalarT& qv);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_virtual_temperature(const ScalarT &temperature, const ScalarT &qv);
 
   //-----------------------------------------------------------------------------------------------//
   // Compute dry static energy (DSE).
@@ -156,9 +146,9 @@ struct PhysicsFunctions
   //   surf_geopotential is the surface geopotential height. Units in [m].
   //   DSE               is the dry static energy.  Units in [J/kg]
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_dse(const ScalarT& temperature, const ScalarT& z, const Real surf_geopotential);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_dse(const ScalarT &temperature, const ScalarT &z,
+                                                      const Real surf_geopotential);
 
   //-----------------------------------------------------------------------------------------------//
   // Compute temperature from dry static energy (DSE).
@@ -171,9 +161,9 @@ struct PhysicsFunctions
   //   surf_geopotential is the surface geopotential height. Units in [m].
   //   temperature       is the atmospheric temperature. Units in [K].
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_temperature_from_dse(const ScalarT& dse, const ScalarT& z, const Real surf_geopotential);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_temperature_from_dse(const ScalarT &dse, const ScalarT &z,
+                                                                       const Real surf_geopotential);
 
   //-----------------------------------------------------------------------------------------------//
   // Computes drymmr (mass of a constituent divided by mass of dry air; commonly known as mixing ratio)
@@ -186,9 +176,8 @@ struct PhysicsFunctions
   //   wetmmr         is the wet mass mixing ratio of a species
   //   qv_wet         is water vapor wet mass mixing ratio
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv_wet);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_drymmr_from_wetmmr(const ScalarT &wetmmr, const ScalarT &qv_wet);
 
   //-----------------------------------------------------------------------------------------------//
   // Computes wetmmr (mass of a constituent divided by mass of dry air plus water vapor)
@@ -201,9 +190,8 @@ struct PhysicsFunctions
   //   drymmr         is the dry mass mixing ratio of a species
   //   qv_dry         is specific humidity of water vapor
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_wetmmr_from_drymmr(const ScalarT &drymmr, const ScalarT &qv_dry);
 
   //-----------------------------------------------------------------------------------------------//
   // Computes drymmr (mass of a constituent divided by mass of dry air)
@@ -216,10 +204,10 @@ struct PhysicsFunctions
   //   pseudo_density_dry is dry pseudodensity (pdeldry)
   //-----------------------------------------------------------------------------------------------//
 
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr,
-                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT &wetmmr,
+                                                                              const ScalarT &pseudo_density,
+                                                                              const ScalarT &pseudo_density_dry);
 
   //-----------------------------------------------------------------------------------------------//
   // Computes wetmmr (mass of a constituent divided by mass of wet air)
@@ -231,10 +219,10 @@ struct PhysicsFunctions
   //   pseudo_density     is wet pseudodensity (pdel)
   //   pseudo_density_dry is dry pseudodensity (pdeldry)
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
-                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_wetmmr_from_drymmr_dp_based(const ScalarT &drymmr,
+                                                                              const ScalarT &pseudo_density,
+                                                                              const ScalarT &pseudo_density_dry);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
@@ -252,10 +240,9 @@ struct PhysicsFunctions
   // Note: the extra negative sign is due to the fact that the pseudo_density
   // in the model is measured in the positive direction.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_dz (const ScalarT& pseudo_density, const ScalarT& p_mid,
-                               const ScalarT& T_mid, const ScalarT& qv);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_dz(const ScalarT &pseudo_density, const ScalarT &p_mid,
+                                                     const ScalarT &T_mid, const ScalarT &qv);
 
   //-----------------------------------------------------------------------------------------------//
   // Calculate the volume mixing ratio given the wet mass mixing ratio:
@@ -267,9 +254,9 @@ struct PhysicsFunctions
   //   mol_weight_air is the molecular weight of dry air
   //   mol_weight_X   is the molecular weight of X
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_vmr_from_mmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& mmr);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_vmr_from_mmr(const Real &gas_mol_weight, const ScalarT &qv,
+                                                               const ScalarT &mmr);
 
   //-----------------------------------------------------------------------------------------------//
   // Calculate wet mass mixing ratio the given the volume mixing ratio:
@@ -280,11 +267,12 @@ struct PhysicsFunctions
   //   qv             is the water vapor mass mixing ratio
   //   mol_weight_air is the molecular weight of dry air
   //   mol_weight_X   is the molecular weight of X
-  //   a = mol_weight_X/mol_weight_air is the ratio of the molecular weight of the gas to the molecular weight of dry air
+  //   a = mol_weight_X/mol_weight_air is the ratio of the molecular weight of the gas to the molecular weight of dry
+  //   air
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_mmr_from_vmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& vmr);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static ScalarT calculate_mmr_from_vmr(const Real &gas_mol_weight, const ScalarT &qv,
+                                                               const ScalarT &vmr);
 
   //-----------------------------------------------------------------------------------------------
   // Calculate T at the bottom of the grid cell closest to the surface for use in PSL computation.
@@ -298,7 +286,7 @@ struct PhysicsFunctions
   // T at the bottom of the cell nearest the surface (K)
   //-----------------------------------------------------------------------------------------------
   KOKKOS_INLINE_FUNCTION
-  static Real calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot);
+  static Real calculate_surface_air_T(const Real &T_mid_bot, const Real &z_mid_bot);
 
   //-----------------------------------------------------------------------------------------------//
   // Compute the lapse rate and effective ground temperature for use in calculating psl. This function should only
@@ -311,8 +299,7 @@ struct PhysicsFunctions
   // T_ground_tmp is the effective ground temperature (K)
   //-----------------------------------------------------------------------------------------------//
   KOKKOS_INLINE_FUNCTION
-  static void lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
-                              Real& lapse, Real& T_ground_tmp );
+  static void lapse_T_for_psl(const Real &T_ground, const Real &phi_ground, Real &lapse, Real &T_ground_tmp);
 
   //-----------------------------------------------------------------------------------------------//
   // Calculate sea level pressure assuming dry air between ground and sea level and using a lapse
@@ -325,7 +312,7 @@ struct PhysicsFunctions
   // psl is the sea level pressure (Pa)
   //-----------------------------------------------------------------------------------------------//
   KOKKOS_INLINE_FUNCTION
-  static Real calculate_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground);
+  static Real calculate_psl(const Real &T_ground, const Real &p_ground, const Real &phi_ground);
 
   //-----------------------------------------------------------------------------------------------//
   // Apply rayleigh friction. Given the decay rate profile, we compute the tendencies in u
@@ -340,10 +327,9 @@ struct PhysicsFunctions
   // v_wind is v component of the horizontal wind (m/s)
   // T_mid is the atmospheric temperature at the midpoints [K]
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT>
-  KOKKOS_INLINE_FUNCTION
-  static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
-                                      ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION static void apply_rayleigh_friction(const Real dt, const ScalarT &otau, ScalarT &u_wind,
+                                                             ScalarT &v_wind, ScalarT &T_mid);
 
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
@@ -371,151 +357,104 @@ struct PhysicsFunctions
   // single-scalar version of compute_z_int/mid).                     //
   // ---------------------------------------------------------------- //
 
-  using Device = DeviceT;
-  using KT = KokkosTypes<Device>;
+  using Device     = DeviceT;
+  using KT         = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
-  template<typename ScalarT, typename MT = Kokkos::MemoryManaged>
+  template <typename ScalarT, typename MT = Kokkos::MemoryManaged>
   using view_1d = typename KT::template view_1d<ScalarT, MT>;
 
-  template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_density (const MemberType& team,
-                                 const InputProviderP& pseudo_density,
-                                 const InputProviderZ& dz,
-                                 const view_1d<ScalarT>& density);
+  template <typename ScalarT, typename InputProviderP, typename InputProviderZ>
+  KOKKOS_INLINE_FUNCTION static void calculate_density(const MemberType &team, const InputProviderP &pseudo_density,
+                                                       const InputProviderZ &dz, const view_1d<ScalarT> &density);
 
-  template<typename ScalarT, typename InputProviderOmega, typename InputProviderRho>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_vertical_velocity (const MemberType& team,
-                                           const InputProviderOmega& omega,
-                                           const InputProviderRho& rho,
-                                           const view_1d<ScalarT>& w);
+  template <typename ScalarT, typename InputProviderOmega, typename InputProviderRho>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_vertical_velocity(const MemberType &team, const InputProviderOmega &omega, const InputProviderRho &rho,
+                              const view_1d<ScalarT> &w);
 
-  template<typename ScalarT, typename InputProviderP>
-  KOKKOS_INLINE_FUNCTION
-  static void exner_function (const MemberType& team,
-                              const InputProviderP& pressure,
-                              const view_1d<ScalarT>& exner);
+  template <typename ScalarT, typename InputProviderP>
+  KOKKOS_INLINE_FUNCTION static void exner_function(const MemberType &team, const InputProviderP &pressure,
+                                                    const view_1d<ScalarT> &exner);
 
-  template<typename ScalarT, typename InputProviderT, typename InputProviderP>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_theta_from_T (const MemberType& team,
-                                      const InputProviderT& temperature,
-                                      const InputProviderP& pressure,
-                                      const view_1d<ScalarT>& theta);
+  template <typename ScalarT, typename InputProviderT, typename InputProviderP>
+  KOKKOS_INLINE_FUNCTION static void calculate_theta_from_T(const MemberType &team, const InputProviderT &temperature,
+                                                            const InputProviderP &pressure,
+                                                            const view_1d<ScalarT> &theta);
 
-  template<typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_thetal_from_theta(const MemberType& team,
-                                      const InputProviderTheta& theta,
-                                      const InputProviderT& temperature,
-                                      const InputProviderQ& qc,
-                                      const view_1d<ScalarT>& thetal);  
-  template<typename ScalarT, typename InputProviderT, typename InputProviderP>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_T_from_theta (const MemberType& team,
-                                      const InputProviderT& theta,
-                                      const InputProviderP& pressure,
-                                      const view_1d<ScalarT>& temperature);
+  template <typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_thetal_from_theta(const MemberType &team, const InputProviderTheta &theta,
+                              const InputProviderT &temperature, const InputProviderQ &qc,
+                              const view_1d<ScalarT> &thetal);
+  template <typename ScalarT, typename InputProviderT, typename InputProviderP>
+  KOKKOS_INLINE_FUNCTION static void calculate_T_from_theta(const MemberType &team, const InputProviderT &theta,
+                                                            const InputProviderP &pressure,
+                                                            const view_1d<ScalarT> &temperature);
 
-  template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_temperature_from_virtual_temperature (const MemberType& team,
-                                                              const InputProviderT& T_virtual,
-                                                              const InputProviderQ& qv,
-                                                              const view_1d<ScalarT>& temperature);
+  template <typename ScalarT, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_temperature_from_virtual_temperature(const MemberType &team, const InputProviderT &T_virtual,
+                                                 const InputProviderQ &qv, const view_1d<ScalarT> &temperature);
 
-  template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_virtual_temperature(const MemberType& team,
-                                            const InputProviderT& temperature,
-                                            const InputProviderQ& qv,
-                                            const view_1d<ScalarT>& T_virtual);
+  template <typename ScalarT, typename InputProviderT, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_virtual_temperature(const MemberType &team, const InputProviderT &temperature, const InputProviderQ &qv,
+                                const view_1d<ScalarT> &T_virtual);
 
+  template <typename ScalarT, typename InputProviderT, typename InputProviderZ>
+  KOKKOS_INLINE_FUNCTION static void calculate_dse(const MemberType &team, const InputProviderT &temperature,
+                                                   const InputProviderZ &z, const Real surf_geopotential,
+                                                   const view_1d<ScalarT> &dse);
 
-  template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_dse (const MemberType& team,
-                             const InputProviderT& temperature,
-                             const InputProviderZ& z,
-                             const Real surf_geopotential,
-                             const view_1d<ScalarT>& dse);
+  template <typename ScalarT, typename InputProviderT, typename InputProviderZ>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_temperature_from_dse(const MemberType &team, const InputProviderT &dse, const InputProviderZ &z,
+                                 const Real surf_geopotential, const view_1d<ScalarT> &temperature);
 
-  template<typename ScalarT, typename InputProviderT, typename InputProviderZ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_temperature_from_dse (const MemberType& team,
-                                              const InputProviderT& dse,
-                                              const InputProviderZ& z,
-                                              const Real surf_geopotential,
-                                              const view_1d<ScalarT>& temperature);
+  template <typename ScalarT, typename InputProviderX, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION static void calculate_wetmmr_from_drymmr(const MemberType &team, const InputProviderX &drymmr,
+                                                                  const InputProviderQ &qv,
+                                                                  const view_1d<ScalarT> &wetmmr);
 
-  template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_wetmmr_from_drymmr (const MemberType& team,
-                             const InputProviderX& drymmr,
-                             const InputProviderQ& qv,
-                             const view_1d<ScalarT>& wetmmr);
+  template <typename ScalarT, typename InputProviderX, typename InputProviderQ>
+  KOKKOS_INLINE_FUNCTION static void calculate_drymmr_from_wetmmr(const MemberType &team, const InputProviderX &wetmmr,
+                                                                  const InputProviderQ &qv_wet,
+                                                                  const view_1d<ScalarT> &drymmr);
 
-  template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_drymmr_from_wetmmr (const MemberType& team,
-                             const InputProviderX& wetmmr,
-                             const InputProviderQ& qv_wet,
-                             const view_1d<ScalarT>& drymmr);
+  template <typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_wetmmr_from_drymmr_dp_based(const MemberType &team, const InputProviderX &drymmr,
+                                        const InputProviderPD &pseudo_density,
+                                        const InputProviderPD &pseudo_density_dry, const view_1d<ScalarT> &wetmmr);
 
-  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_wetmmr_from_drymmr_dp_based (const MemberType& team,
-                             const InputProviderX& drymmr,
-                             const InputProviderPD& pseudo_density,
-                             const InputProviderPD& pseudo_density_dry,
-                             const view_1d<ScalarT>& wetmmr);
+  template <typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION static void
+  calculate_drymmr_from_wetmmr_dp_based(const MemberType &team, const InputProviderX &wetmmr,
+                                        const InputProviderPD &pseudo_density,
+                                        const InputProviderPD &pseudo_density_dry, const view_1d<ScalarT> &drymmr);
 
-  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_drymmr_from_wetmmr_dp_based (const MemberType& team,
-                             const InputProviderX& wetmmr,
-                             const InputProviderPD& pseudo_density,
-                             const InputProviderPD& pseudo_density_dry,
-                             const view_1d<ScalarT>& drymmr);
+  template <typename ScalarT, typename InputProviderPD, typename InputProviderP, typename InputProviderT,
+            typename InputProviderQ, typename MT = Kokkos::MemoryManaged>
+  KOKKOS_INLINE_FUNCTION static void calculate_dz(const MemberType &team, const InputProviderPD &pseudo_density,
+                                                  const InputProviderP &p_mid, const InputProviderT &T_mid,
+                                                  const InputProviderQ &qv, const view_1d<ScalarT, MT> &dz);
 
-  template<typename ScalarT,
-           typename InputProviderPD, typename InputProviderP,
-           typename InputProviderT,  typename InputProviderQ,
-           typename MT = Kokkos::MemoryManaged>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_dz (const MemberType& team,
-                            const InputProviderPD& pseudo_density,
-                            const InputProviderP& p_mid,
-                            const InputProviderT& T_mid,
-                            const InputProviderQ& qv,
-                            const view_1d<ScalarT, MT>& dz);
+  template <typename ScalarT, typename InputProviderQ, typename InputProviderX>
+  KOKKOS_INLINE_FUNCTION static void calculate_vmr_from_mmr(const MemberType &team, const Real gas_mol_weight,
+                                                            const InputProviderQ &qv, const InputProviderX &mmr,
+                                                            const view_1d<ScalarT> &vmr);
 
-  template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_vmr_from_mmr(const MemberType& team,
-                                     const Real gas_mol_weight,
-                                     const InputProviderQ& qv,
-                                     const InputProviderX& mmr,
-                                     const view_1d<ScalarT>& vmr);
+  template <typename ScalarT, typename InputProviderQ, typename InputProviderX>
+  KOKKOS_INLINE_FUNCTION static void calculate_mmr_from_vmr(const MemberType &team, const Real gas_mol_weight,
+                                                            const InputProviderQ &qv, const InputProviderX &vmr,
+                                                            const view_1d<ScalarT> &mmr);
 
-  template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_mmr_from_vmr(const MemberType& team,
-                                     const Real gas_mol_weight,
-                                     const InputProviderQ& qv,
-                                     const InputProviderX& vmr,
-                                     const view_1d<ScalarT>& mmr);
-
-  template<typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryManaged>
-  KOKKOS_INLINE_FUNCTION
-  static void apply_rayleigh_friction (const MemberType& team,
-                                       const Real dt,
-                                       const InputProviderOtau& otau,
-                                       const view_1d<ScalarT, MT>& u_wind,
-                                       const view_1d<ScalarT, MT>& v_wind,
-                                       const view_1d<ScalarT, MT>& T_mid);
+  template <typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryManaged>
+  KOKKOS_INLINE_FUNCTION static void
+  apply_rayleigh_friction(const MemberType &team, const Real dt, const InputProviderOtau &otau,
+                          const view_1d<ScalarT, MT> &u_wind, const view_1d<ScalarT, MT> &v_wind,
+                          const view_1d<ScalarT, MT> &T_mid);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer interface height from the vertical layer thicknesses:
@@ -525,13 +464,10 @@ struct PhysicsFunctions
   // Note: because this function does an integral it cannot be run just on a single level.  It requires
   // the full column wise integration.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_z_int (const MemberType& team,
-                               const int num_levs,
-                               const InputProviderZ& dz,
-                               const Real z_surf,
-                               const view_1d<ScalarT, MT>& z_int);
+  template <typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
+  KOKKOS_INLINE_FUNCTION static void calculate_z_int(const MemberType &team, const int num_levs,
+                                                     const InputProviderZ &dz, const Real z_surf,
+                                                     const view_1d<ScalarT, MT> &z_int);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer height on mid points from the vertical layer interface height:
@@ -539,12 +475,9 @@ struct PhysicsFunctions
   // where
   //   z_int is the vertical layer interface height, [m]
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
-  KOKKOS_INLINE_FUNCTION
-  static void calculate_z_mid (const MemberType& team,
-                               const int num_levs,
-                               const InputProviderZ& z_int,
-                               const view_1d<ScalarT, MT>& z_mid);
+  template <typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
+  KOKKOS_INLINE_FUNCTION static void calculate_z_mid(const MemberType &team, const int num_levs,
+                                                     const InputProviderZ &z_int, const view_1d<ScalarT, MT> &z_mid);
 
 }; // struct PhysicsFunctions
 
@@ -556,4 +489,4 @@ struct PhysicsFunctions
 // E.g., we don't know InputProvider, or ScalarT (although we could
 // ETI the "common" cases, where the provider is a view_1d, and
 // Scalar=Real or Scalar=Pack<Real,SCREAM_PACK_SIZE>).
-# include "eamxx_common_physics_functions_impl.hpp"
+#include "eamxx_common_physics_functions_impl.hpp"

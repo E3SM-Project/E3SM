@@ -1,8 +1,8 @@
 #ifndef SCREAM_FIELD_GROUP_HPP
 #define SCREAM_FIELD_GROUP_HPP
 
-#include "share/field/field_group_info.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_group_info.hpp"
 
 namespace scream {
 
@@ -45,40 +45,38 @@ namespace scream {
 struct FieldGroup {
   using ci_string = FieldGroupInfo::ci_string;
 
-  FieldGroup (const std::string& name);
-  FieldGroup (const FieldGroupInfo& info);
+  FieldGroup(const std::string &name);
+  FieldGroup(const FieldGroupInfo &info);
 
-  FieldGroup (const FieldGroup&) = default;
+  FieldGroup(const FieldGroup &) = default;
 
-  FieldGroup get_const () const;
+  FieldGroup get_const() const;
 
-  FieldGroup& operator= (const FieldGroup& src) = default;
+  FieldGroup &operator=(const FieldGroup &src) = default;
 
-  const std::string& grid_name () const;
+  const std::string &grid_name() const;
 
   // The fields in this group
-  std::map<ci_string,std::shared_ptr<Field>> m_individual_fields;
+  std::map<ci_string, std::shared_ptr<Field>> m_individual_fields;
 
   // If m_info->m_monolithic_alloc is true, this is the field
   // that all fields in m_individual_fields are a subview of.
   std::shared_ptr<Field> m_monolithic_field;
 
   // The info of this group.
-  std::shared_ptr<FieldGroupInfo>  m_info;
+  std::shared_ptr<FieldGroupInfo> m_info;
 
 private:
-
   // Only used inside this class;
-  FieldGroup () = default;
+  FieldGroup() = default;
 
-  void copy_fields (const FieldGroup& src);
+  void copy_fields(const FieldGroup &src);
 };
 
 // We use this to find a FieldGroup in a std container.
 // We do NOT allow two entries with same group name and grid name in such containers.
-inline bool operator== (const FieldGroup& lhs, const FieldGroup& rhs) {
-  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
-         lhs.grid_name() == rhs.grid_name();
+inline bool operator==(const FieldGroup &lhs, const FieldGroup &rhs) {
+  return lhs.m_info->m_group_name == rhs.m_info->m_group_name && lhs.grid_name() == rhs.grid_name();
 }
 
 } // namespace scream

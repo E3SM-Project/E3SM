@@ -11,7 +11,7 @@ namespace scream {
  */
 
 class AtmBackTendDiag : public AtmosphereDiagnostic {
- public:
+public:
   // Constructors
   AtmBackTendDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
@@ -21,9 +21,9 @@ class AtmBackTendDiag : public AtmosphereDiagnostic {
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
- protected:
+protected:
 #ifdef KOKKOS_ENABLE_CUDA
- public:
+public:
 #endif
   void compute_diagnostic_impl();
 
@@ -43,8 +43,8 @@ class AtmBackTendDiag : public AtmosphereDiagnostic {
   // Store the previous field
   Field m_f_prev;
 
-};  // class AtmBackTendDiag
+}; // class AtmBackTendDiag
 
-}  // namespace scream
+} // namespace scream
 
-#endif  // EAMXX_ATM_BACKTEND_DIAG_HPP
+#endif // EAMXX_ATM_BACKTEND_DIAG_HPP

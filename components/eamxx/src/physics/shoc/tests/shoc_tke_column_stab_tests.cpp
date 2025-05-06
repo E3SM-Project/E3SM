@@ -1,15 +1,15 @@
 #include "catch2/catch.hpp"
 
-#include "shoc_unit_tests_common.hpp"
-#include "shoc_functions.hpp"
-#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_test_data.hpp"
+#include "shoc_unit_tests_common.hpp"
 
 #include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include "ekat/util/ekat_arch.hpp"
 
 #include <algorithm>
 #include <array>
@@ -20,13 +20,11 @@ namespace scream {
 namespace shoc {
 namespace unit_test {
 
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>::Base {
+template <typename D> struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>::Base {
 
-  void run_property()
-  {
-    static constexpr Int shcol    = 2;
-    static constexpr Int nlev     = 5;
+  void run_property() {
+    static constexpr Int shcol = 2;
+    static constexpr Int nlev  = 5;
 
     // Tests for the subroutine integ_column_stability
     //   in the SHOC TKE module.
@@ -49,23 +47,23 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
     IntegColumnStabilityData SDS(shcol, nlev);
 
     // Test that the inputs are reasonable.
-    REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
+    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev));
     REQUIRE(shcol > 0);
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
         SDS.dz_zt[offset] = dz_zt[n];
-        SDS.pres[offset] = pres[n];
+        SDS.pres[offset]  = pres[n];
         SDS.brunt[offset] = brunt_sym[n];
       }
     }
 
     // Check that the inputs make sense
-    for(Int s = 0; s < shcol; ++s) {
-      for (Int n = 0; n < nlev; ++n){
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Should be greater than zero
         REQUIRE(SDS.dz_zt[offset] > 0);
@@ -80,7 +78,7 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
 
     // Check test
     //  Verify that output is zero
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.brunt_int[s] == 0);
     }
 
@@ -92,15 +90,15 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
     static constexpr Real brunt_neg[nlev] = {-0.3, -0.4, -0.1, -10.0, -0.5};
 
     // Fill in test data on zt_grid.
-    for(Int s = 0; s < shcol; ++s) {
-      for(Int n = 0; n < nlev; ++n) {
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         SDS.brunt[offset] = brunt_neg[n];
       }
     }
 
-    for(Int s = 0; s < shcol; ++s) {
-      for (Int n = 0; n < nlev; ++n){
+    for (Int s = 0; s < shcol; ++s) {
+      for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // All points should be less than zero
         REQUIRE(SDS.brunt[offset] < 0);
@@ -112,24 +110,23 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
 
     // Check test
     //  Verify that output is negative
-    for(Int s = 0; s < shcol; ++s) {
+    for (Int s = 0; s < shcol; ++s) {
       REQUIRE(SDS.brunt_int[s] < 0);
     }
   }
 
-  void run_bfb()
-  {
+  void run_bfb() {
     auto engine = Base::get_engine();
 
-    //declare data for the baseline function call
+    // declare data for the baseline function call
     IntegColumnStabilityData baseline_data[] = {
-      IntegColumnStabilityData(10, 71),
-      IntegColumnStabilityData(10, 12),
-      IntegColumnStabilityData(7,  16),
-      IntegColumnStabilityData(2,  7 ),
+        IntegColumnStabilityData(10, 71),
+        IntegColumnStabilityData(10, 12),
+        IntegColumnStabilityData(7, 16),
+        IntegColumnStabilityData(2, 7),
     };
 
-    //Generate random data
+    // Generate random data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
@@ -137,10 +134,10 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
     // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data (if any) is in original state
     IntegColumnStabilityData cxx_data[] = {
-      IntegColumnStabilityData(baseline_data[0]),
-      IntegColumnStabilityData(baseline_data[1]),
-      IntegColumnStabilityData(baseline_data[2]),
-      IntegColumnStabilityData(baseline_data[3]),
+        IntegColumnStabilityData(baseline_data[0]),
+        IntegColumnStabilityData(baseline_data[1]),
+        IntegColumnStabilityData(baseline_data[2]),
+        IntegColumnStabilityData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
@@ -161,8 +158,8 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IntegColumnStabilityData);
       for (Int i = 0; i < num_runs; ++i) {
-        IntegColumnStabilityData& d_baseline = baseline_data[i];
-        IntegColumnStabilityData& d_cxx = cxx_data[i];
+        IntegColumnStabilityData &d_baseline = baseline_data[i];
+        IntegColumnStabilityData &d_cxx      = cxx_data[i];
         for (Int c = 0; c < d_baseline.shcol; ++c) {
           REQUIRE(d_baseline.brunt_int[c] == d_cxx.brunt_int[c]);
         }
@@ -173,24 +170,22 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
         d.write(Base::m_fid);
       }
     }
-  } //run_bfb
+  } // run_bfb
 };
 
-}  // namespace unit_test
-}  // namespace shoc
-}  // namespace scream
+} // namespace unit_test
+} // namespace shoc
+} // namespace scream
 
 namespace {
 
-TEST_CASE("shoc_tke_column_stab_property", "shoc")
-{
+TEST_CASE("shoc_tke_column_stab_property", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct().run_property();
 }
 
-TEST_CASE("shoc_tke_column_stab_bfb", "shoc")
-{
+TEST_CASE("shoc_tke_column_stab_bfb", "shoc") {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct().run_bfb();

@@ -3,20 +3,18 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "share/util/eamxx_time_interpolation.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
+#include "share/util/eamxx_time_interpolation.hpp"
 
 #include <ekat/ekat_parameter_list.hpp>
 #include <string>
 
-namespace scream
-{
+namespace scream {
 
 /*
  * The class responsible to handle the nudging of variables
-*/
-class Nudging : public AtmosphereProcess
-{
+ */
+class Nudging : public AtmosphereProcess {
 public:
   // enum to track how the source pressure levels are defined
   enum SourcePresType {
@@ -27,46 +25,43 @@ public:
   };
 
   // Constructors
-  Nudging (const ekat::Comm& comm, const ekat::ParameterList& params);
+  Nudging(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type () const override { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const override { return "Nudging"; }
+  std::string name() const override { return "Nudging"; }
 
   // Set the grid
-  void set_grids (const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
 
-  void run_impl (const double dt) override;
+  void run_impl(const double dt) override;
 
   // Internal function to apply nudging at specific timescale
   // NOTE: this method will handle weighted and cutoff cases as well
-  void apply_tendency (Field &state, const Field &nudge, const Real dt) const;
+  void apply_tendency(Field &state, const Field &nudge, const Real dt) const;
 
 protected:
-
-  Field get_field_out_wrap(const std::string& field_name);
+  Field get_field_out_wrap(const std::string &field_name);
 
   // The two other main overrides for the subcomponent
-  void initialize_impl (const RunType run_type) override;
-  void finalize_impl   () override;
+  void initialize_impl(const RunType run_type) override;
+  void finalize_impl() override;
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  Field create_helper_field (const std::string& name,
-                            const FieldLayout& layout,
-                            const std::string& grid_name,
+  Field create_helper_field(const std::string &name, const FieldLayout &layout, const std::string &grid_name,
                             const int ps = 1);
 
   // Retrieve a helper field
-  Field get_helper_field (const std::string& name) const { return m_helper_fields.at(name); }
+  Field get_helper_field(const std::string &name) const { return m_helper_fields.at(name); }
 
-  std::shared_ptr<const AbstractGrid>   m_grid;
+  std::shared_ptr<const AbstractGrid> m_grid;
   // Keep track of field dimensions and the iteration count
   int m_num_cols;
   int m_num_levs;
@@ -75,13 +70,13 @@ protected:
   bool m_use_weights;
   bool m_skip_vert_interpolation;
   std::vector<std::string> m_datafiles;
-  std::string              m_static_vertical_pressure_file;
+  std::string m_static_vertical_pressure_file;
   // add nudging weights for regional nudging update
-  std::string              m_weights_file;
+  std::string m_weights_file;
 
   SourcePresType m_src_pres_type;
-  
-  std::map<std::string,Field> m_helper_fields;
+
+  std::map<std::string, Field> m_helper_fields;
 
   std::vector<std::string> m_fields_nudge;
 

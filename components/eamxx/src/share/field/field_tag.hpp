@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace scream
-{
+namespace scream {
 
 /*
  *   An enum to tag fields dimensions
@@ -42,51 +41,51 @@ enum class FieldTag {
 //   using enum FieldTag;
 namespace ShortFieldTagsNames {
 
-  constexpr auto INV  = FieldTag::Invalid;
-  constexpr auto EL   = FieldTag::Element;
-  constexpr auto COL  = FieldTag::Column;
-  constexpr auto GP   = FieldTag::GaussPoint;
-  constexpr auto TL   = FieldTag::TimeLevel;
-  constexpr auto LEV  = FieldTag::LevelMidPoint;
-  constexpr auto ILEV = FieldTag::LevelInterface;
-  constexpr auto CMP  = FieldTag::Component;
-}
+constexpr auto INV  = FieldTag::Invalid;
+constexpr auto EL   = FieldTag::Element;
+constexpr auto COL  = FieldTag::Column;
+constexpr auto GP   = FieldTag::GaussPoint;
+constexpr auto TL   = FieldTag::TimeLevel;
+constexpr auto LEV  = FieldTag::LevelMidPoint;
+constexpr auto ILEV = FieldTag::LevelInterface;
+constexpr auto CMP  = FieldTag::Component;
+} // namespace ShortFieldTagsNames
 
-inline std::string e2str (const FieldTag ft) {
+inline std::string e2str(const FieldTag ft) {
   using namespace ShortFieldTagsNames;
   std::string name = "";
-  switch(ft) {
-    case FieldTag::Invalid:
-      name = "Invalid";
-      break;
-    case EL:
-      name = "elem";
-      break;
-    case LEV:
-      name = "lev";
-      break;
-    case ILEV:
-      name = "ilev";
-      break;
-    case FieldTag::TimeLevel:
-      name = "tl";
-      break;
-    case FieldTag::Column:
-      name = "ncol";
-      break;
-    case FieldTag::GaussPoint:
-      name = "gp";
-      break;
-    case FieldTag::Component:
-      name = "dim";
-      break;
-    default:
-      EKAT_ERROR_MSG("Error! Unrecognized field tag.");
+  switch (ft) {
+  case FieldTag::Invalid:
+    name = "Invalid";
+    break;
+  case EL:
+    name = "elem";
+    break;
+  case LEV:
+    name = "lev";
+    break;
+  case ILEV:
+    name = "ilev";
+    break;
+  case FieldTag::TimeLevel:
+    name = "tl";
+    break;
+  case FieldTag::Column:
+    name = "ncol";
+    break;
+  case FieldTag::GaussPoint:
+    name = "gp";
+    break;
+  case FieldTag::Component:
+    name = "dim";
+    break;
+  default:
+    EKAT_ERROR_MSG("Error! Unrecognized field tag.");
   }
   return name;
 }
 
-inline std::vector<std::string> tags2str (const std::vector<FieldTag>& tags) {
+inline std::vector<std::string> tags2str(const std::vector<FieldTag> &tags) {
   std::vector<std::string> names;
   names.reserve(tags.size());
   for (auto t : tags) {
@@ -96,7 +95,7 @@ inline std::vector<std::string> tags2str (const std::vector<FieldTag>& tags) {
 }
 
 // Allow to stream FieldTag values as strings.
-inline std::ostream& operator<< (std::ostream& out, const FieldTag t) {
+inline std::ostream &operator<<(std::ostream &out, const FieldTag t) {
   out << e2str(t);
   return out;
 }
