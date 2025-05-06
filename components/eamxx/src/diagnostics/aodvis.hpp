@@ -22,6 +22,9 @@ class AODVis : public AtmosphereDiagnostic {
   void set_grids(
       const std::shared_ptr<const GridsManager> grids_manager) override;
 
+  void initialize_impl(
+      const RunType /*run_type*/) override;
+
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
  public:
@@ -33,6 +36,8 @@ class AODVis : public AtmosphereDiagnostic {
 
   int m_swbands = eamxx_swbands();
   int m_vis_bnd = eamxx_vis_swband_idx();
+
+  Real m_mask_val;
 };
 
 }  // namespace scream
