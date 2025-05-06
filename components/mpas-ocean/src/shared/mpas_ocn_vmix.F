@@ -1079,19 +1079,20 @@ contains
                                  (zMidEdge/bottom_roughness)))**2))
          enddo
 
-         if (config_use_subgrid_wetting_drying) then
-            sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
-    
-            call ocn_subgrid_wet_fraction_lookup(sshMean, &
-                                                 subgridWetFractionEdgeTable(:,iEdge), &
-                                                 subgridSshEdgeTableRange(:,iEdge), &
-                                                 wetFraction)
-
-              CdTemp(k)= wetFraction*CdTemp(k)
-         endif
 
          ! one active layer
          if (N .eq. Nsurf) then
+           if (config_use_subgrid_wetting_drying) then
+              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+              call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                   subgridWetFractionEdgeTable(:,iEdge), &
+                                                   subgridSshEdgeTableRange(:,iEdge), &
+                                                   wetFraction)
+
+                CdTemp(N)= wetFraction*CdTemp(N)
+           endif
+
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*CdTemp(N) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
