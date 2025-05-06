@@ -1,4 +1,4 @@
-name: "clang format"
+name: "eamxx format"
 
 # if .{cpp,hpp} files are touched in a PR, lint them!
 
@@ -30,7 +30,7 @@ jobs:
     #    error code.
     # 2. prints the diff to screen (action log), comparing to the changes
     #    that *would* be made
-    # 3. the mjschmidt modification to DoozyX/clang-format-lint-action@v0.20
+    # 3. the mjschmidt fork of DoozyX/clang-format-lint-action@v0.20
     #    adds a Step summary to the workflow page, and, on failure, lists the
     #    files that fail the clang-format test
     - uses: mjschmidt271/clang-format-lint-action@v1.0.0
