@@ -938,12 +938,12 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
     if (config_sfwf_balance) then 
        call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
-       call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
-       if (config_sfwf_balance_type > 0) then 
+       if (config_sfwf_balance_type > 0) then
+         call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
          ! independent of space so should be no need to loop over blocks
          block_ptr => domain % blocklist
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-         call MPAS_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+         call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
          ! initialize the scaling factor  as config_precip_factor
          SFWFScalingFactor = config_precip_factor 
          call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
@@ -1399,7 +1399,7 @@ contains
            ! independent of space so should be no need to loop over blocks
            block_ptr => domain % blocklist
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-           call MPAS_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+           call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
            call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
          end if
       end if
@@ -2191,7 +2191,8 @@ contains
       else 
         ! independent of space so should be no need to loop over blocks
         block_ptr => domain % blocklist
-        call MPAS_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+        call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
         precFactor = SFWFScalingFactor
       end if
    else

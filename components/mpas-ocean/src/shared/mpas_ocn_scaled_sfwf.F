@@ -191,6 +191,10 @@ contains
                 sshOld, &
                 sshNew
 
+      
+        real(kind=RKIND), dimension(:,:), pointer :: &
+                layerThickness
+
         real(kind=RKIND), dimension(:,:,:), pointer :: &
                 activeTracersNew, &
                 activeTracersOld
@@ -282,16 +286,16 @@ contains
            !$omp end do
            !$omp end parallel
 
-           allocate(localArraySalinitySum(nCellsSolve))
-           localArraySalinitySum(:) = 0.0_RKIND
+           allocate(localArrayForSalinitySum(nCellsSolve))
+           localArrayForSalinitySum(:) = 0.0_RKIND
            
            !salinity flux
            !convert to 
            !$omp parallel
            !$omp do schedule(runtime) private(k)
-           do iCell = 1,nCells
+           do iCell = 1,nCellsSolve
              do k = minLevelCell(iCell), maxLevelCell(iCell)
-                localArraySalinitySum(iCell) = localArraySalinitySum(iCell) - & 
+                localArrayForSalinitySum(iCell) = localArrayForSalinitySum(iCell) - & 
                      areaCell(iCell) * layerThickness(k,iCell) * & ! cell volume
                      (activeTracersNew(indexSalinity,k,iCell) - activeTracersOld(indexSalinity,k,iCell)) * & ! * ! cell salinity
                      rho_fw * 1.e3_RKIND / ocn_ref_salinity / dt ! F = - rho * h * 1/S * dS/dt 
@@ -305,11 +309,11 @@ contains
 
         precFlux = mpas_global_sum(localArrayForPrecSum, domain % dminfo % comm)
         fwFlux = mpas_global_sum(localArrayForSSHSum, domain % dminfo % comm)
-        salFlux = mpas_global_sum(localArraySalinitySum, domain % dminfo % comm)
+        salFlux = mpas_global_sum(localArrayForSalinitySum, domain % dminfo % comm)
 
         deallocate (localArrayForPrecSum)
         deallocate (localArrayForSSHSum)
-        deallocate (localArraySalinitySum)
+        deallocate (localArrayForSalinitySum)
 
         avgprecFlux = (avgprecFlux * nAccumulated + precFlux) / ( nAccumulated + 1 )
         avgfwFlux = (avgfwFlux * nAccumulated + fwFlux) / ( nAccumulated + 1 )
