@@ -52,7 +52,6 @@ module glc_comp_mct
   use li_core
   use li_core_interface
 
-
   implicit none
   save
   private   ! By default make data private
@@ -785,6 +784,7 @@ contains
     ! MALI modules
     use li_time_integration
     use li_statistics
+    use li_time_average_coupled
 
     implicit none
 !
@@ -810,7 +810,7 @@ contains
 
 ! Variable related to MALI
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, timeAveragingPool
       integer, pointer :: config_stats_interval   !< interval (number oftimesteps) for writing stats
       logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_restart_timestamp_name
@@ -853,13 +853,13 @@ contains
       err = ior(err,err_tmp)
 
       ! Initialize time average fields
-!      block_ptr => domain % blocklist
-!      do while(associated(block_ptr))
-!        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-!        call ocn_time_average_coupled_init(forcingPool)
-!        block_ptr => block_ptr % next
-!      end do
-
+      block => domain % blocklist
+      do while(associated(block))
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+        call li_time_average_coupled_init(meshPool,timeAveragingPool)
+        block => block % next
+      end do
 
       ! During integration, time level 1 stores the model state to be solved.
       ! For a variables with a second time level, it is the previous value.
@@ -1463,12 +1463,15 @@ contains
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
    type (mpas_pool_type), pointer :: thermalPool
+   type (mpas_pool_type), pointer :: timeAveragingPool
 
    integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface
    real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
    real (kind=RKIND), dimension(:), pointer :: thickness
+   real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied
+   real (kind=RKIND), dimension(:), pointer :: avgCalvingFlux
    real (kind=RKIND), dimension(:,:), pointer :: temperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
@@ -1487,26 +1490,23 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied) 
+         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux) 
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          do i = 1, nCellsSolve
             n = n + 1
 
-            ! Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), 
-            ! and attach to ice calving flux once present...
-            !call route_ice_runoff(0.0_RKIND, & 
-            !                      rofi_to_ocn=Fogg_rofi, &
-            !                      rofi_to_ice=Figg_rofi)
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0!...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n)= avgCalvingFlux(i) 
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblationApplied(i) 
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
             g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
