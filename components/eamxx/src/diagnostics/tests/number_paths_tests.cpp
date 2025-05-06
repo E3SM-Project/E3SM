@@ -13,7 +13,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -49,8 +50,9 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   auto gm         = create_gm(comm, ncols, num_levs);
 
   // Input (randomized) views
-  view_1d pseudo_density("pseudo_density", num_levs), qc("qc", num_levs), nc("nc", num_levs),
-      qr("qr", num_levs), nr("nr", num_levs), qi("qi", num_levs), ni("ni", num_levs);
+  view_1d pseudo_density("pseudo_density", num_levs), qc("qc", num_levs),
+      nc("nc", num_levs), qr("qr", num_levs), nr("nr", num_levs),
+      qi("qi", num_levs), ni("ni", num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -65,7 +67,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   register_diagnostics();
   ekat::ParameterList params;
 
-  REQUIRE_THROWS(diag_factory.create("NumberPath", comm, params)); // No 'number_kind'
+  REQUIRE_THROWS(
+      diag_factory.create("NumberPath", comm, params)); // No 'number_kind'
   params.set<std::string>("number_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("NumberPath", comm,
                                      params)); // Invalid 'number_kind'
@@ -174,17 +177,20 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
       for (int icol = 0; icol < ncols; icol++) {
         Real qndc_prod = 0.0;
         for (int ilev = 0; ilev < num_levs; ++ilev) {
-          qndc_prod += nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / g;
+          qndc_prod +=
+              nc_h(icol, ilev) * qc_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(lnp_h(icol) - qndc_prod) < macheps);
         Real qndi_prod = 0.0;
         for (int ilev = 0; ilev < num_levs; ++ilev) {
-          qndi_prod += ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / g;
+          qndi_prod +=
+              ni_h(icol, ilev) * qi_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(inp_h(icol) - qndi_prod) < macheps);
         Real qndr_prod = 0.0;
         for (int ilev = 0; ilev < num_levs; ++ilev) {
-          qndr_prod += nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / g;
+          qndr_prod +=
+              nr_h(icol, ilev) * qr_h(icol, ilev) * pd_h(icol, ilev) / g;
         }
         REQUIRE(std::abs(rnp_h(icol) - qndr_prod) < macheps);
       }

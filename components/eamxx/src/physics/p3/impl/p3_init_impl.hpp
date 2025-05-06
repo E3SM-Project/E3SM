@@ -14,19 +14,22 @@ namespace {
 
 template <typename S, typename IceT, typename CollT>
 void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base,
-                            const char *p3_version, IceT &ice_table_vals, CollT &collect_table_vals,
-                            int densize, int rimsize, int isize, int rcollsize) {
+                            const char *p3_version, IceT &ice_table_vals,
+                            CollT &collect_table_vals, int densize, int rimsize,
+                            int isize, int rcollsize) {
   using DeviceIcetable = typename IceT::non_const_type;
   using DeviceColtable = typename CollT::non_const_type;
 
   const auto ice_table_vals_d     = DeviceIcetable("ice_table_vals");
   const auto collect_table_vals_d = DeviceColtable("collect_table_vals");
 
-  const auto ice_table_vals_h     = Kokkos::create_mirror_view(ice_table_vals_d);
-  const auto collect_table_vals_h = Kokkos::create_mirror_view(collect_table_vals_d);
+  const auto ice_table_vals_h = Kokkos::create_mirror_view(ice_table_vals_d);
+  const auto collect_table_vals_h =
+      Kokkos::create_mirror_view(collect_table_vals_d);
 
   //
-  // read in ice microphysics table into host views. We always read these as doubles.
+  // read in ice microphysics table into host views. We always read these as
+  // doubles.
   //
 
   std::string filename = std::string(p3_lookup_base) + std::string(p3_version);
@@ -40,9 +43,11 @@ void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base,
   // read header
   std::string version, version_val;
   in >> version >> version_val;
-  EKAT_REQUIRE_MSG(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
-  EKAT_REQUIRE_MSG(version_val == p3_version, "Bad " << filename << ", expected version "
-                                                     << p3_version << ", but got " << version_val);
+  EKAT_REQUIRE_MSG(version == "VERSION",
+                   "Bad " << filename << ", expected VERSION X.Y.Z header");
+  EKAT_REQUIRE_MSG(version_val == p3_version,
+                   "Bad " << filename << ", expected version " << p3_version
+                          << ", but got " << version_val);
 
   // read tables
   double dum_s;
@@ -82,9 +87,11 @@ void read_ice_lookup_tables(const bool masterproc, const char *p3_lookup_base,
   collect_table_vals = collect_table_vals_d;
 }
 
-template <typename S, typename C, typename MuRT, typename VNT, typename VMT, typename RevapT>
-void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_vals,
-                    VMT &vm_table_vals, RevapT &revap_table_vals) {
+template <typename S, typename C, typename MuRT, typename VNT, typename VMT,
+          typename RevapT>
+void compute_tables(const bool masterproc, MuRT &mu_r_table_vals,
+                    VNT &vn_table_vals, VMT &vm_table_vals,
+                    RevapT &revap_table_vals) {
   using c = scream::physics::Constants<S>;
 
   int ii, jj, kk;
@@ -121,17 +128,17 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
 
   // AaronDonahue: Switching to table ver 4 means switching to a constand mu_r,
   // so this section is commented out.
-  Kokkos::deep_copy(
-      mu_r_table_vals_h,
-      1); // mu_r_constant =1. In other places, this is runtime_options.constant_mu_rain
+  Kokkos::deep_copy(mu_r_table_vals_h,
+                    1); // mu_r_constant =1. In other places, this is
+                        // runtime_options.constant_mu_rain
 
   static constexpr S thrd  = 1. / 3;
   static constexpr S small = 1.e-30;
 
   //.......................................................................
   // Generate lookup table for rain fallspeed and ventilation parameters
-  // the lookup table is two dimensional as a function of number-weighted mean size
-  // proportional to qr/Nr and shape parameter mu_r
+  // the lookup table is two dimensional as a function of number-weighted mean
+  // size proportional to qr/Nr and shape parameter mu_r
   for (ii = 1; ii <= 10; ++ii) {
     mu_r = 1; // mu_r_constant = 1
 
@@ -154,7 +161,8 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
       dum5 = 0; // term for ventilation factor in evap
       dd   = 2;
 
-      // loop over PSD to numerically integrate number and mass-weighted mean fallspeeds
+      // loop over PSD to numerically integrate number and mass-weighted mean
+      // fallspeeds
       for (kk = 1; kk <= 10000; ++kk) {
 
         dia = (kk * dd - dd * 0.5) * 1.e-6;      // size bin [m]
@@ -174,15 +182,16 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
 
         // note: factor of 4.*mu_r is non-answer changing and only needed to
         //       prevent underflow/overflow errors, same with 3.*mu_r for dum5
-        dum1 += vt * std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd *
-                1.e-6;
-        dum2 +=
-            std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd * 1.e-6;
-        dum3 += vt * std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) *
-                dd * 1.e-6;
-        dum4 += std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) * std::exp(-lamr * dia) * dd *
-                1.e-6;
-        dum5 += std::pow(vt * dia, 0.5) * std::pow(10, (mu_r + 1) * std::log10(dia) + 3 * mu_r) *
+        dum1 += vt * std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) *
+                std::exp(-lamr * dia) * dd * 1.e-6;
+        dum2 += std::pow(10, mu_r * std::log10(dia) + 4 * mu_r) *
+                std::exp(-lamr * dia) * dd * 1.e-6;
+        dum3 += vt * std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) *
+                std::exp(-lamr * dia) * dd * 1.e-6;
+        dum4 += std::pow(10, (mu_r + 3) * std::log10(dia) + 4 * mu_r) *
+                std::exp(-lamr * dia) * dd * 1.e-6;
+        dum5 += std::pow(vt * dia, 0.5) *
+                std::pow(10, (mu_r + 1) * std::log10(dia) + 3 * mu_r) *
                 std::exp(-lamr * dia) * dd * 1.e-6;
       }
 
@@ -190,10 +199,10 @@ void compute_tables(const bool masterproc, MuRT &mu_r_table_vals, VNT &vn_table_
       dum4 = std::max(dum4, small); // to prevent divide-by-zero below
       dum5 = std::max(dum5, small); // to prevent log10-of-zero below
 
-      vn_table_vals_h(jj - 1, ii - 1) = dum1 / dum2;
-      vm_table_vals_h(jj - 1, ii - 1) = dum3 / dum4;
-      revap_table_vals_h(jj - 1, ii - 1) =
-          std::pow(10, std::log10(dum5) + (mu_r + 1) * std::log10(lamr) - (3 * mu_r));
+      vn_table_vals_h(jj - 1, ii - 1)    = dum1 / dum2;
+      vm_table_vals_h(jj - 1, ii - 1)    = dum3 / dum4;
+      revap_table_vals_h(jj - 1, ii - 1) = std::pow(
+          10, std::log10(dum5) + (mu_r + 1) * std::log10(lamr) - (3 * mu_r));
     }
   }
 
@@ -217,12 +226,13 @@ static void action(const ekat::FILEPtr &fid, S *data, const size_t size) {
   }
 }
 
-template <bool IsRead, typename MuRT, typename VNT, typename VMT, typename RevapT>
-void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT &vn_table_vals,
-             VMT &vm_table_vals, RevapT &revap_table_vals) {
+template <bool IsRead, typename MuRT, typename VNT, typename VMT,
+          typename RevapT>
+void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals,
+             VNT &vn_table_vals, VMT &vm_table_vals, RevapT &revap_table_vals) {
   if (masterproc) {
-    std::cout << (IsRead ? "Reading" : "Writing") << " lookup (non-ice) tables in dir " << dir
-              << std::endl;
+    std::cout << (IsRead ? "Reading" : "Writing")
+              << " lookup (non-ice) tables in dir " << dir << std::endl;
   }
 
   std::string extension =
@@ -241,12 +251,16 @@ void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT 
   auto vn_table_vals_h    = Kokkos::create_mirror_view(vn_table_vals);
   auto vm_table_vals_h    = Kokkos::create_mirror_view(vm_table_vals);
 
-  // Add v2 because these tables are not identical to v1 due to roundoff differences
-  // caused by doing the math in C++ instead of f90.
-  std::string mu_r_filename  = std::string(dir) + "/mu_r_table_vals_v2.dat" + extension;
-  std::string revap_filename = std::string(dir) + "/revap_table_vals_v2.dat" + extension;
-  std::string vn_filename    = std::string(dir) + "/vn_table_vals_v2.dat" + extension;
-  std::string vm_filename    = std::string(dir) + "/vm_table_vals_v2.dat" + extension;
+  // Add v2 because these tables are not identical to v1 due to roundoff
+  // differences caused by doing the math in C++ instead of f90.
+  std::string mu_r_filename =
+      std::string(dir) + "/mu_r_table_vals_v2.dat" + extension;
+  std::string revap_filename =
+      std::string(dir) + "/revap_table_vals_v2.dat" + extension;
+  std::string vn_filename =
+      std::string(dir) + "/vn_table_vals_v2.dat" + extension;
+  std::string vm_filename =
+      std::string(dir) + "/vm_table_vals_v2.dat" + extension;
 
   ekat::FILEPtr mu_r_file(fopen(mu_r_filename.c_str(), rw_flag));
   ekat::FILEPtr revap_file(fopen(revap_filename.c_str(), rw_flag));
@@ -255,7 +269,8 @@ void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT 
 
   // Read files
   action<IsRead>(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
-  action<IsRead>(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
+  action<IsRead>(revap_file, revap_table_vals_h.data(),
+                 revap_table_vals.size());
   action<IsRead>(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
   action<IsRead>(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
 
@@ -269,8 +284,9 @@ void io_impl(const bool masterproc, const char *dir, MuRT &mu_r_table_vals, VNT 
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
-void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_table_vals,
-                          VNT &vn_table_vals, VMT &vm_table_vals, RevapT &revap_table_vals) {
+void read_computed_tables(const bool masterproc, const char *dir,
+                          MuRT &mu_r_table_vals, VNT &vn_table_vals,
+                          VMT &vm_table_vals, RevapT &revap_table_vals) {
   using MuRT_NC   = typename MuRT::non_const_type;
   using VNT_NC    = typename VNT::non_const_type;
   using VMT_NC    = typename VMT::non_const_type;
@@ -281,8 +297,8 @@ void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_tab
   VMT_NC vm_table_vals_nc("vm_table_vals");
   RevapT_NC revap_table_vals_nc("revap_table_vals");
 
-  io_impl<true>(masterproc, dir, mu_r_table_vals_nc, vn_table_vals_nc, vm_table_vals_nc,
-                revap_table_vals_nc);
+  io_impl<true>(masterproc, dir, mu_r_table_vals_nc, vn_table_vals_nc,
+                vm_table_vals_nc, revap_table_vals_nc);
 
   mu_r_table_vals  = mu_r_table_vals_nc;
   vn_table_vals    = vn_table_vals_nc;
@@ -291,10 +307,12 @@ void read_computed_tables(const bool masterproc, const char *dir, MuRT &mu_r_tab
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
-void write_computed_tables(const bool masterproc, const char *dir, const MuRT &mu_r_table_vals,
+void write_computed_tables(const bool masterproc, const char *dir,
+                           const MuRT &mu_r_table_vals,
                            const VNT &vn_table_vals, const VMT &vm_table_vals,
                            const RevapT &revap_table_vals) {
-  io_impl<false>(masterproc, dir, mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals);
+  io_impl<false>(masterproc, dir, mu_r_table_vals, vn_table_vals, vm_table_vals,
+                 revap_table_vals);
 }
 
 template <typename S, typename DnuT> void compute_dnu(DnuT &dnu_table_vals) {
@@ -327,26 +345,30 @@ template <typename S, typename DnuT> void compute_dnu(DnuT &dnu_table_vals) {
  * this file, #include p3_functions.hpp instead.
  */
 template <typename S, typename D>
-typename Functions<S, D>::P3LookupTables Functions<S, D>::p3_init(const bool write_tables,
-                                                                  const bool masterproc) {
+typename Functions<S, D>::P3LookupTables
+Functions<S, D>::p3_init(const bool write_tables, const bool masterproc) {
   P3LookupTables lookup_tables; // This struct could be our global singleton
   auto version           = P3C::p3_version;
   auto p3_lookup_base    = P3C::p3_lookup_base;
   static const char *dir = SCREAM_DATA_DIR "/tables";
   // p3_init_a (reads ice_table, collect_table)
-  read_ice_lookup_tables<S>(masterproc, p3_lookup_base, version, lookup_tables.ice_table_vals,
-                            lookup_tables.collect_table_vals, P3C::densize, P3C::rimsize,
-                            P3C::isize, P3C::rcollsize);
+  read_ice_lookup_tables<S>(masterproc, p3_lookup_base, version,
+                            lookup_tables.ice_table_vals,
+                            lookup_tables.collect_table_vals, P3C::densize,
+                            P3C::rimsize, P3C::isize, P3C::rcollsize);
   if (write_tables) {
     // p3_init_b (computes tables mu_r_table, revap_table, vn_table, vm_table)
-    compute_tables<S, P3C>(masterproc, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals,
-                           lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    compute_tables<S, P3C>(
+        masterproc, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals,
+        lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
     write_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals,
-                          lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
+                          lookup_tables.vn_table_vals,
+                          lookup_tables.vm_table_vals,
                           lookup_tables.revap_table_vals);
   } else {
     read_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals,
-                         lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
+                         lookup_tables.vn_table_vals,
+                         lookup_tables.vm_table_vals,
                          lookup_tables.revap_table_vals);
   }
   // dnu is always computed/hardcoded

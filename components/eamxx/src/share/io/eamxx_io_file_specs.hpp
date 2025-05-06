@@ -46,8 +46,10 @@ struct StorageSpecs {
   int curr_idx = -1;
 
   // A snapshot fits if
-  //  - type=NumSnaps: the number of stored snaps is less than the max allowed per file.
-  //  - otherwise: the snapshot year/month/day index match the one currently stored in the file
+  //  - type=NumSnaps: the number of stored snaps is less than the max allowed
+  //  per file.
+  //  - otherwise: the snapshot year/month/day index match the one currently
+  //  stored in the file
   //               or the file has no snapshot stored yet
   bool snapshot_fits(const util::TimeStamp &t) const {
     switch (type) {

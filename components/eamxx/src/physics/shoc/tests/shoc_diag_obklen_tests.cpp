@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocDiagObklen
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 5;
@@ -116,7 +117,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>:
     //  INCREASES that the Obukhov length scale DECREASES
 
     // Surface sensible heat flux (K m/s)
-    static constexpr Real wthl_sfc_test2[shcol] = {-3e-2, -2e-2, 1e-2, 5e-2, 7e-2};
+    static constexpr Real wthl_sfc_test2[shcol] = {-3e-2, -2e-2, 1e-2, 5e-2,
+                                                   7e-2};
     // Surface momentum flux (u-direction) [m2/s2]
     static constexpr Real uw_sfc_test2 = 0.03;
     // Surface momentum flux (v-direction) [m2/s2]
@@ -142,7 +144,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>:
 
     // Verify that sum of surface fluxes increases with columns
     for (Int s = 0; s < shcol - 1; ++s) {
-      REQUIRE(SDS.wthl_sfc[s + 1] + SDS.wqw_sfc[s + 1] > SDS.wthl_sfc[s] + SDS.wqw_sfc[s]);
+      REQUIRE(SDS.wthl_sfc[s + 1] + SDS.wqw_sfc[s + 1] >
+              SDS.wthl_sfc[s] + SDS.wqw_sfc[s]);
     }
 
     // Call the C++ implementation
@@ -161,22 +164,25 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>:
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    ShocDiagObklenData SDS_baseline[] = {//             shcol
-                                         ShocDiagObklenData(12), ShocDiagObklenData(10),
-                                         ShocDiagObklenData(7), ShocDiagObklenData(2)};
+    ShocDiagObklenData SDS_baseline[] = {
+        //             shcol
+        ShocDiagObklenData(12), ShocDiagObklenData(10), ShocDiagObklenData(7),
+        ShocDiagObklenData(2)};
 
     // Generate random input data
     for (auto &d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
-    ShocDiagObklenData SDS_cxx[] = {
-        ShocDiagObklenData(SDS_baseline[0]), ShocDiagObklenData(SDS_baseline[1]),
-        ShocDiagObklenData(SDS_baseline[2]), ShocDiagObklenData(SDS_baseline[3])};
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
+    ShocDiagObklenData SDS_cxx[] = {ShocDiagObklenData(SDS_baseline[0]),
+                                    ShocDiagObklenData(SDS_baseline[1]),
+                                    ShocDiagObklenData(SDS_baseline[2]),
+                                    ShocDiagObklenData(SDS_baseline[3])};
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocDiagObklenData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ShocDiagObklenData);
 
     // Assume all data is in C layout
 
@@ -219,15 +225,15 @@ struct UnitWrap::UnitTest<D>::TestShocDiagObklen : public UnitWrap::UnitTest<D>:
 namespace {
 
 TEST_CASE("shoc_diag_obklen_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocDiagObklen;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_diag_obklen_length_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagObklen;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocDiagObklen;
 
   TestStruct().run_bfb();
 }

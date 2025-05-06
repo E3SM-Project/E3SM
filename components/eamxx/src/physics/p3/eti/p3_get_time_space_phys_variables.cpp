@@ -4,8 +4,8 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instantiation for doing get_time_space_phys_variables function on Reals using the
- * default device.
+ * Explicit instantiation for doing get_time_space_phys_variables function on
+ * Reals using the default device.
  */
 
 template struct Functions<Real, DefaultDevice>;

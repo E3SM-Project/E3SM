@@ -56,7 +56,8 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm) {
   const int num_local_cols  = 13;
   const int num_global_cols = num_local_cols * comm.size();
 
-  auto gm = create_mesh_free_grids_manager(comm, num_local_elems, np, nlevs, num_global_cols);
+  auto gm = create_mesh_free_grids_manager(comm, num_local_elems, np, nlevs,
+                                           num_global_cols);
   gm->build_grids();
 
   return gm;
@@ -79,8 +80,8 @@ public:
 protected:
   void compute_diagnostic_impl() {}
 
-  // The initialization method should prepare all stuff needed to import/export from/to
-  // f90 structures.
+  // The initialization method should prepare all stuff needed to import/export
+  // from/to f90 structures.
   void initialize_impl(const RunType /* run_type */) {}
 
   // Clean up
@@ -92,7 +93,8 @@ protected:
 
 class DiagFail : public DummyDiag {
 public:
-  DiagFail(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyDiag(comm, params) {
+  DiagFail(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyDiag(comm, params) {
     // Nothing to do here
   }
 
@@ -155,7 +157,8 @@ protected:
 
 class DiagSum : public DummyDiag {
 public:
-  DiagSum(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyDiag(comm, params) {
+  DiagSum(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyDiag(comm, params) {
     // Nothing to do here
   }
 
@@ -202,12 +205,12 @@ public:
   std::string name() const { return m_name; }
 
 protected:
-  // The initialization method should prepare all stuff needed to import/export from/to
-  // f90 structures.
+  // The initialization method should prepare all stuff needed to import/export
+  // from/to f90 structures.
   void initialize_impl(const RunType /* run_type */) {}
 
-  // The run method is responsible for exporting atm states to the e3sm coupler, and
-  // import surface states from the e3sm coupler.
+  // The run method is responsible for exporting atm states to the e3sm coupler,
+  // and import surface states from the e3sm coupler.
   void run_impl(const double /* dt */) {}
 
   // Clean up
@@ -219,7 +222,8 @@ protected:
 
 class Foo : public DummyProcess {
 public:
-  Foo(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyProcess(comm, params) {
+  Foo(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyProcess(comm, params) {
     // Nothing to do here
   }
 
@@ -239,7 +243,8 @@ public:
 
 class Bar : public DummyProcess {
 public:
-  Bar(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyProcess(comm, params) {
+  Bar(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyProcess(comm, params) {
     // Nothing to do here
   }
 
@@ -259,7 +264,8 @@ public:
 
 class Baz : public DummyProcess {
 public:
-  Baz(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyProcess(comm, params) {
+  Baz(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyProcess(comm, params) {
     // Nothing to do here
   }
 
@@ -273,7 +279,8 @@ public:
     const auto phys_lt = grid->get_3d_scalar_layout(true);
 
     add_field<Required>("Temperature", phys_lt, K, m_grid_name);
-    add_field<Required>("Concentration A", phys_lt, kg / pow(m, 3), m_grid_name);
+    add_field<Required>("Concentration A", phys_lt, kg / pow(m, 3),
+                        m_grid_name);
 
     add_field<Computed>("Temperature tendency", phys_lt, K / s, m_grid_name);
   }
@@ -281,7 +288,8 @@ public:
 
 class AddOne : public DummyProcess {
 public:
-  AddOne(const ekat::Comm &comm, const ekat::ParameterList &params) : DummyProcess(comm, params) {
+  AddOne(const ekat::Comm &comm, const ekat::ParameterList &params)
+      : DummyProcess(comm, params) {
     // Nothing to do here
   }
 
@@ -320,8 +328,10 @@ TEST_CASE("process_factory", "") {
   factory.register_product("Foo", &create_atmosphere_process<Foo>);
   factory.register_product("Bar", &create_atmosphere_process<Bar>);
   factory.register_product("Baz", &create_atmosphere_process<Baz>);
-  factory.register_product("grouP", &create_atmosphere_process<AtmosphereProcessGroup>);
-  factory.register_product("DiagIdentity", &create_atmosphere_process<DiagIdentity>);
+  factory.register_product("grouP",
+                           &create_atmosphere_process<AtmosphereProcessGroup>);
+  factory.register_product("DiagIdentity",
+                           &create_atmosphere_process<DiagIdentity>);
 
   // Load ad parameter list
   std::string fname = "atm_process_tests_named_procs.yaml";
@@ -329,7 +339,8 @@ TEST_CASE("process_factory", "") {
   parse_yaml_file(fname, params);
 
   // Create the processes
-  std::shared_ptr<AtmosphereProcess> atm_process(factory.create("group", comm, params));
+  std::shared_ptr<AtmosphereProcess> atm_process(
+      factory.create("group", comm, params));
 
   // CHECKS
   auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
@@ -343,7 +354,8 @@ TEST_CASE("process_factory", "") {
   REQUIRE(group->get_process(1)->type() == AtmosphereProcessType::Group);
 
   // 3) The group must store two physics
-  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
+  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(
+      group->get_process(1));
   REQUIRE(static_cast<bool>(group_2));
   REQUIRE(group_2->get_num_processes() == 2);
   REQUIRE(group_2->get_process(0)->type() == AtmosphereProcessType::Physics);
@@ -361,12 +373,14 @@ TEST_CASE("atm_proc_dag", "") {
   factory.register_product("Foo", &create_atmosphere_process<Foo>);
   factory.register_product("Bar", &create_atmosphere_process<Bar>);
   factory.register_product("Baz", &create_atmosphere_process<Baz>);
-  factory.register_product("grouP", &create_atmosphere_process<AtmosphereProcessGroup>);
+  factory.register_product("grouP",
+                           &create_atmosphere_process<AtmosphereProcessGroup>);
 
   // Create a grids manager
   auto gm = create_gm(comm);
 
-  auto create_fields = [](const AtmosphereProcess &ap) -> std::map<std::string, Field> {
+  auto create_fields =
+      [](const AtmosphereProcess &ap) -> std::map<std::string, Field> {
     std::map<std::string, Field> fields;
     for (auto r : ap.get_required_field_requests()) {
       fields[r.fid.name()] = Field(r.fid);
@@ -394,7 +408,8 @@ TEST_CASE("atm_proc_dag", "") {
     auto params = create_test_params();
 
     // Create the processes
-    std::shared_ptr<AtmosphereProcess> atm_process(factory.create("group", comm, params));
+    std::shared_ptr<AtmosphereProcess> atm_process(
+        factory.create("group", comm, params));
 
     // Set the grids, so the remappers in the group are not empty
     atm_process->set_grids(gm);
@@ -403,7 +418,8 @@ TEST_CASE("atm_proc_dag", "") {
 
     // Create the dag
     AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process));
+    dag.create_dag(
+        *std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process));
     dag.write_dag("working_atm_proc_dag.dot", 4);
 
     REQUIRE(not dag.has_unmet_dependencies());
@@ -417,14 +433,16 @@ TEST_CASE("atm_proc_dag", "") {
 
     // Make sure there's a missing piece (whatever Baz computes);
     p1.set<strvec_t>("atm_procs_list", {"Bar"});
-    std::shared_ptr<AtmosphereProcess> broken_atm_group(factory.create("group", comm, params));
+    std::shared_ptr<AtmosphereProcess> broken_atm_group(
+        factory.create("group", comm, params));
     broken_atm_group->set_grids(gm);
 
     create_and_set_fields(*broken_atm_group);
 
     // Create the dag
     AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group));
+    dag.create_dag(
+        *std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group));
     dag.write_dag("broken_atm_proc_dag.dot", 4);
 
     REQUIRE(dag.has_unmet_dependencies());
@@ -456,8 +474,10 @@ TEST_CASE("field_checks", "") {
   util::TimeStamp t0(1, 1, 1, 1, 1, 1);
 
   constexpr auto Warning = CheckFailHandling::Warning;
-  auto pos_check_pre     = std::make_shared<FieldLowerBoundCheck>(T_tend, grid, 0, false);
-  auto pos_check_post    = std::make_shared<FieldLowerBoundCheck>(T, grid, 0, false);
+  auto pos_check_pre =
+      std::make_shared<FieldLowerBoundCheck>(T_tend, grid, 0, false);
+  auto pos_check_post =
+      std::make_shared<FieldLowerBoundCheck>(T, grid, 0, false);
   for (bool allow_failure : {true, false}) {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {
@@ -554,7 +574,8 @@ TEST_CASE("subcycling") {
 
 TEST_CASE("diagnostics") {
 
-  // TODO: This test needs a field manager so that changes in Field A are seen everywhere.
+  // TODO: This test needs a field manager so that changes in Field A are seen
+  // everywhere.
   using namespace scream;
 
   // A world comm

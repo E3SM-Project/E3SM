@@ -14,13 +14,15 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestPblintdHeight
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
-    static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
-    static const auto approx_zero   = Approx(0.0).margin(1e-16);
-    static constexpr Int shcol      = 4;
-    static constexpr Int nlev       = 9;
+    static constexpr auto ustar_min =
+        scream::shoc::Constants<Scalar>::ustar_min;
+    static const auto approx_zero = Approx(0.0).margin(1e-16);
+    static constexpr Int shcol    = 4;
+    static constexpr Int nlev     = 9;
 
     // Tests for the subroutine pblintd_height
     // Perform a series of tests to ensure that subroutine returns values
@@ -31,13 +33,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
     //  the PBL depth also increases.  Input temperature should be stable
 
     // Define the midpoint heights [m]
-    static constexpr Real z[nlev] = {5000, 4000, 3000, 2000, 1000, 750, 500, 250, 100};
+    static constexpr Real z[nlev] = {5000, 4000, 3000, 2000, 1000,
+                                     750,  500,  250,  100};
     // Define the u wind [m/s]
     static constexpr Real u[nlev] = {10, 10, 10, 9, 9, 8, 7, 6, 5};
     // Define the v wind [m/s]
     static constexpr Real v[nlev] = {-10, -10, -10, -9, -9, -8, -7, -6, -5};
     // Define the virtual potential temperature [K]
-    static constexpr Real thv[nlev] = {320, 315, 314, 312, 311, 310, 302, 302, 300};
+    static constexpr Real thv[nlev] = {320, 315, 314, 312, 311,
+                                       310, 302, 302, 300};
     // Define the surface friction velocity [m4/s3]
     Real ustar = ustar_min;
 
@@ -183,12 +187,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     PblintdHeightData cxx_data[] = {
-        PblintdHeightData(baseline_data[0]), PblintdHeightData(baseline_data[1]),
-        PblintdHeightData(baseline_data[2]), PblintdHeightData(baseline_data[3]),
-        PblintdHeightData(baseline_data[4]), PblintdHeightData(baseline_data[5]),
+        PblintdHeightData(baseline_data[0]),
+        PblintdHeightData(baseline_data[1]),
+        PblintdHeightData(baseline_data[2]),
+        PblintdHeightData(baseline_data[3]),
+        PblintdHeightData(baseline_data[4]),
+        PblintdHeightData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
@@ -207,14 +214,16 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(PblintdHeightData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(PblintdHeightData);
       for (Int i = 0; i < num_runs; ++i) {
         PblintdHeightData &d_baseline = baseline_data[i];
         PblintdHeightData &d_cxx      = cxx_data[i];
         for (Int k = 0; k < d_baseline.total(d_baseline.pblh); ++k) {
           REQUIRE(d_baseline.total(d_baseline.pblh) == d_cxx.total(d_cxx.pblh));
           REQUIRE(d_baseline.pblh[k] == d_cxx.pblh[k]);
-          REQUIRE(d_baseline.total(d_baseline.pblh) == d_cxx.total(d_cxx.check));
+          REQUIRE(d_baseline.total(d_baseline.pblh) ==
+                  d_cxx.total(d_cxx.check));
           REQUIRE(d_baseline.check[k] == d_cxx.check[k]);
         }
       }
@@ -234,15 +243,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdHeight : public UnitWrap::UnitTest<D>::
 namespace {
 
 TEST_CASE("pblintd_height_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdHeight;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_height_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdHeight;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdHeight;
 
   TestStruct().run_bfb();
 }

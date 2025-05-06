@@ -66,26 +66,31 @@ protected:
 
   // Compute effects of large scale subsidence on T, q, u, and v.
   KOKKOS_FUNCTION
-  static void advance_iop_subsidence(const KT::MemberType &team, const int nlevs, const Real dt,
-                                     const Real ps, const view_1d<const Pack> &pmid,
-                                     const view_1d<const Pack> &pint,
-                                     const view_1d<const Pack> &pdel,
-                                     const view_1d<const Pack> &omega, const Workspace &workspace,
-                                     const view_1d<Pack> &u, const view_1d<Pack> &v,
-                                     const view_1d<Pack> &T, const view_2d<Pack> &Q);
+  static void advance_iop_subsidence(
+      const KT::MemberType &team, const int nlevs, const Real dt, const Real ps,
+      const view_1d<const Pack> &pmid, const view_1d<const Pack> &pint,
+      const view_1d<const Pack> &pdel, const view_1d<const Pack> &omega,
+      const Workspace &workspace, const view_1d<Pack> &u,
+      const view_1d<Pack> &v, const view_1d<Pack> &T, const view_2d<Pack> &Q);
 
-  // Apply large scale forcing for temperature and water vapor as provided by the IOP file
+  // Apply large scale forcing for temperature and water vapor as provided by
+  // the IOP file
   KOKKOS_FUNCTION
-  static void advance_iop_forcing(const KT::MemberType &team, const int nlevs, const Real dt,
-                                  const view_1d<const Pack> &divT, const view_1d<const Pack> &divq,
-                                  const view_1d<Pack> &T, const view_1d<Pack> &qv);
+  static void advance_iop_forcing(const KT::MemberType &team, const int nlevs,
+                                  const Real dt,
+                                  const view_1d<const Pack> &divT,
+                                  const view_1d<const Pack> &divq,
+                                  const view_1d<Pack> &T,
+                                  const view_1d<Pack> &qv);
 
-  // Provide coriolis forcing to u and v winds, using large scale winds specified in IOP forcing
-  // file.
+  // Provide coriolis forcing to u and v winds, using large scale winds
+  // specified in IOP forcing file.
   KOKKOS_FUNCTION
-  static void iop_apply_coriolis(const KT::MemberType &team, const int nlevs, const Real dt,
-                                 const Real lat, const view_1d<const Pack> &u_ls,
-                                 const view_1d<const Pack> &v_ls, const view_1d<Pack> &u,
+  static void iop_apply_coriolis(const KT::MemberType &team, const int nlevs,
+                                 const Real dt, const Real lat,
+                                 const view_1d<const Pack> &u_ls,
+                                 const view_1d<const Pack> &v_ls,
+                                 const view_1d<Pack> &u,
                                  const view_1d<Pack> &v);
 
   void run_impl(const double dt);

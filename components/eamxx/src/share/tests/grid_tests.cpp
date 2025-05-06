@@ -33,7 +33,8 @@ TEST_CASE("point_grid", "") {
   REQUIRE(grid->get_num_global_dofs() == num_global_cols);
   REQUIRE(grid->is_unique());
 
-  // Point grids should have (global) gids spanning the interval [min_gid, min_gid+num_global_dofs)
+  // Point grids should have (global) gids spanning the interval [min_gid,
+  // min_gid+num_global_dofs)
   const auto max_gid = grid->get_global_max_dof_gid();
   const auto min_gid = grid->get_global_min_dof_gid();
   REQUIRE((max_gid - min_gid + 1) == grid->get_num_global_dofs());
@@ -53,9 +54,11 @@ TEST_CASE("point_grid", "") {
 
   using gid_type = AbstractGrid::gid_type;
 
-  auto grid_gids  = grid->get_dofs_gids().get_view<const gid_type *, Host>();
-  auto scopy_gids = shallow_copy->get_dofs_gids().get_view<const gid_type *, Host>();
-  auto dcopy_gids = deep_copy->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto grid_gids = grid->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto scopy_gids =
+      shallow_copy->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto dcopy_gids =
+      deep_copy->get_dofs_gids().get_view<const gid_type *, Host>();
   REQUIRE(scopy_gids.data() == grid_gids.data());
   REQUIRE(dcopy_gids.data() != grid_gids.data());
   for (int i = 0; i < grid->get_num_local_dofs(); ++i) {
@@ -73,7 +76,8 @@ TEST_CASE("se_grid", "") {
   const int num_gp          = 4;
   const int num_levels      = 72;
 
-  auto gm = create_mesh_free_grids_manager(comm, num_local_elems, num_gp, num_levels, 0);
+  auto gm = create_mesh_free_grids_manager(comm, num_local_elems, num_gp,
+                                           num_levels, 0);
   gm->build_grids();
 
   // SE grid
@@ -101,9 +105,11 @@ TEST_CASE("se_grid", "") {
 
   using gid_type = AbstractGrid::gid_type;
 
-  auto grid_gids  = se_grid->get_dofs_gids().get_view<const gid_type *, Host>();
-  auto scopy_gids = shallow_copy->get_dofs_gids().get_view<const gid_type *, Host>();
-  auto dcopy_gids = deep_copy->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto grid_gids = se_grid->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto scopy_gids =
+      shallow_copy->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto dcopy_gids =
+      deep_copy->get_dofs_gids().get_view<const gid_type *, Host>();
   REQUIRE(scopy_gids.data() == grid_gids.data());
   REQUIRE(dcopy_gids.data() != grid_gids.data());
   for (int i = 0; i < se_grid->get_num_local_dofs(); ++i) {
@@ -120,7 +126,7 @@ TEST_CASE("get_owners") {
   const int num_global_dofs = num_local_dofs * comm.size();
   ;
   const int offset = num_local_dofs * comm.rank();
-  auto grid        = std::make_shared<PointGrid>("grid", num_local_dofs, 2, comm);
+  auto grid = std::make_shared<PointGrid>("grid", num_local_dofs, 2, comm);
 
   // Create dofs, shuffled them around across ranks.
   using gid_type = AbstractGrid::gid_type;
@@ -134,7 +140,8 @@ TEST_CASE("get_owners") {
 
   auto dofs   = grid->get_dofs_gids();
   auto dofs_h = dofs.get_view<gid_type *, Host>();
-  std::memcpy(dofs_h.data(), all_dofs.data() + offset, num_local_dofs * sizeof(gid_type));
+  std::memcpy(dofs_h.data(), all_dofs.data() + offset,
+              num_local_dofs * sizeof(gid_type));
   dofs.sync_to_dev();
 
   // Now, ask each rank to retrieve owners, and verify
@@ -168,10 +175,11 @@ TEST_CASE("gid2lid_map") {
 
   // Create a grid, grabbing my portion of the all_dofs array
   const int offset = num_local_dofs * comm.rank();
-  auto grid        = std::make_shared<PointGrid>("grid", num_local_dofs, 0, comm);
-  auto dofs        = grid->get_dofs_gids();
-  auto dofs_h      = dofs.get_view<gid_type *, Host>();
-  std::memcpy(dofs_h.data(), all_dofs.data() + offset, num_local_dofs * sizeof(gid_type));
+  auto grid   = std::make_shared<PointGrid>("grid", num_local_dofs, 0, comm);
+  auto dofs   = grid->get_dofs_gids();
+  auto dofs_h = dofs.get_view<gid_type *, Host>();
+  std::memcpy(dofs_h.data(), all_dofs.data() + offset,
+              num_local_dofs * sizeof(gid_type));
   dofs.sync_to_dev();
 
   auto gid2lid = grid->get_gid2lid_map();
@@ -200,10 +208,11 @@ TEST_CASE("get_remote_pids_and_lids") {
 
   // Create a grid, grabbing my portion of the all_dofs array
   const int offset = num_local_dofs * comm.rank();
-  auto grid        = std::make_shared<PointGrid>("grid", num_local_dofs, 0, comm);
-  auto dofs        = grid->get_dofs_gids();
-  auto dofs_h      = dofs.get_view<gid_type *, Host>();
-  std::memcpy(dofs_h.data(), all_dofs.data() + offset, num_local_dofs * sizeof(gid_type));
+  auto grid   = std::make_shared<PointGrid>("grid", num_local_dofs, 0, comm);
+  auto dofs   = grid->get_dofs_gids();
+  auto dofs_h = dofs.get_view<gid_type *, Host>();
+  std::memcpy(dofs_h.data(), all_dofs.data() + offset,
+              num_local_dofs * sizeof(gid_type));
   dofs.sync_to_dev();
 
   // Now, ask each rank to retrieve owners and local ids, and verify

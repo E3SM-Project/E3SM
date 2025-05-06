@@ -42,8 +42,8 @@ public:
 
     const auto grid       = gm->get_grid("point_grid");
     const auto &grid_name = grid->name();
-    m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-    m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+    m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+    m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
     std::vector<FieldTag> tag_2d = {COL, LEV};
     std::vector<Int> dims_2d     = {m_num_cols, m_num_levs};
@@ -62,7 +62,9 @@ public:
     m_one.deep_copy(1.0);
   }
 
-  void init_timestep(const util::TimeStamp &start_of_step) override { m_t_beg = start_of_step; }
+  void init_timestep(const util::TimeStamp &start_of_step) override {
+    m_t_beg = start_of_step;
+  }
 
 protected:
   void compute_diagnostic_impl() override {
@@ -76,7 +78,8 @@ protected:
   }
 
   void initialize_impl(const RunType /* run_type */) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(
+        start_of_step_ts());
   }
 
   // Clean up
@@ -104,9 +107,10 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
-                                     const util::TimeStamp &t0, const int seed,
-                                     const bool add_diag_field = false) {
+std::shared_ptr<FieldManager>
+get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+       const util::TimeStamp &t0, const int seed,
+       const bool add_diag_field = false) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -231,8 +235,8 @@ void read(const int seed, const ekat::Comm &comm) {
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_diags";
-  auto filename = casename + ".INSTANT.nsteps_x1" + ".np" + std::to_string(comm.size()) + "." +
-                  t0.to_string() + ".nc";
+  auto filename        = casename + ".INSTANT.nsteps_x1" + ".np" +
+                  std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);
@@ -264,7 +268,8 @@ TEST_CASE("io_diags") {
 
   // Make MyDiag available via diag factory
   auto &diag_factory = AtmosphereDiagnosticFactory::instance();
-  diag_factory.register_product("MyDiag", &create_atmosphere_diagnostic<MyDiag>);
+  diag_factory.register_product("MyDiag",
+                                &create_atmosphere_diagnostic<MyDiag>);
 
   auto seed = get_random_test_seed(&comm);
 

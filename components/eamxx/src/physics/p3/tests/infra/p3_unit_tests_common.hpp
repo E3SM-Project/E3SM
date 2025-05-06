@@ -19,13 +19,14 @@ namespace unit_test {
  * p3 entities can friend scream::p3::unit_test::UnitWrap to give unit tests
  * access to private members.
  *
- * All unit test impls should be within an inner struct of UnitWrap::UnitTest for
- * easy access to useful types.
+ * All unit test impls should be within an inner struct of UnitWrap::UnitTest
+ * for easy access to useful types.
  */
 
 struct UnitWrap {
 
-  template <typename D = DefaultDevice> struct UnitTest : public KokkosTypes<D> {
+  template <typename D = DefaultDevice>
+  struct UnitTest : public KokkosTypes<D> {
 
     using Device      = D;
     using MemberType  = typename KokkosTypes<Device>::MemberType;
@@ -33,11 +34,15 @@ struct UnitWrap {
     using RangePolicy = typename KokkosTypes<Device>::RangePolicy;
     using ExeSpace    = typename KokkosTypes<Device>::ExeSpace;
 
-    template <typename S> using view_1d = typename KokkosTypes<Device>::template view_1d<S>;
-    template <typename S> using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
-    template <typename S> using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
+    template <typename S>
+    using view_1d = typename KokkosTypes<Device>::template view_1d<S>;
+    template <typename S>
+    using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
+    template <typename S>
+    using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
-    template <typename S> using uview_1d = typename ekat::template Unmanaged<view_1d<S>>;
+    template <typename S>
+    using uview_1d = typename ekat::template Unmanaged<view_1d<S>>;
 
     using Functions          = scream::p3::Functions<Real, Device>;
     using view_ice_table     = typename Functions::view_ice_table;

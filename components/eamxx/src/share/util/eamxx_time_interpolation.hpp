@@ -51,8 +51,8 @@ public:
   }
 
 protected:
-  // Internal structure to store data source triplets (when using data from file)
-  // For each timesnap of data we have access to this triplet stores the
+  // Internal structure to store data source triplets (when using data from
+  // file) For each timesnap of data we have access to this triplet stores the
   //  - filename
   //  - timestamp
   //  - time index in the file.

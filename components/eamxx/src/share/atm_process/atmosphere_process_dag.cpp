@@ -64,10 +64,12 @@ void AtmProcDAG::create_dag(const group_type &atm_procs) {
   update_unmet_deps();
 }
 
-void AtmProcDAG::add_surface_coupling(const std::set<FieldIdentifier> &imports,
-                                      const std::set<FieldIdentifier> &exports) {
-  EKAT_REQUIRE_MSG(m_nodes.size() > 0,
-                   "Error! You need to create the dag before adding surface coupling.\n");
+void AtmProcDAG::add_surface_coupling(
+    const std::set<FieldIdentifier> &imports,
+    const std::set<FieldIdentifier> &exports) {
+  EKAT_REQUIRE_MSG(
+      m_nodes.size() > 0,
+      "Error! You need to create the dag before adding surface coupling.\n");
 
   // Process all imports
   m_nodes.push_back(Node());
@@ -110,14 +112,16 @@ void AtmProcDAG::add_surface_coupling(const std::set<FieldIdentifier> &imports,
   update_unmet_deps();
 }
 
-void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const {
+void AtmProcDAG::write_dag(const std::string &fname,
+                           const int verbosity) const {
 
   if (verbosity <= 0) {
     return;
   }
 
   // Handy lambda to print a fid with different degrees of verbosity
-  auto print_fid = [](const FieldIdentifier &fid, const int verbosity) -> std::string {
+  auto print_fid = [](const FieldIdentifier &fid,
+                      const int verbosity) -> std::string {
     // Print will always print the name
     std::string s = fid.name();
 
@@ -180,8 +184,8 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
     int id_end   = -1;
     if (n.name == "Begin of atm time step") {
       id_begin = n.id;
-      box_fmt  = "  color=\"#00667E\"\n  fontcolor=\"#00667E\"\n  style=filled\n"
-                 "  fillcolor=\"#b9d4dc\"\n";
+      box_fmt = "  color=\"#00667E\"\n  fontcolor=\"#00667E\"\n  style=filled\n"
+                "  fillcolor=\"#b9d4dc\"\n";
     } else if (n.name == "Initial Conditions") {
       id_IC   = n.id;
       box_fmt = "  color=\"#006219\"\n  fontcolor=\"#006219\"\n  style=filled\n"
@@ -202,9 +206,9 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
           << "      <tr><td><b><font point-size=\"40\">" << html_fix(n.name)
           << "</font></b></td></tr>\n";
 
-    int sz_comp = n.computed.size(), sz_req = n.required.size(), sz_grcomp = n.gr_computed.size(),
-        sz_grreq = n.gr_required.size();
-    int nfield   = sz_comp + sz_req + sz_grcomp + sz_grreq;
+    int sz_comp = n.computed.size(), sz_req = n.required.size(),
+        sz_grcomp = n.gr_computed.size(), sz_grreq = n.gr_required.size();
+    int nfield = sz_comp + sz_req + sz_grcomp + sz_grreq;
     if (verbosity > 1 && nfield > 0) {
       // FieldIntentifier prints bare min with verb 0.
       // DAG starts printing fids with verb 2, so fid verb is verb-2;
@@ -215,7 +219,8 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
         // Computed fields
         if (n.id == id_begin) {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">"
-                << "Atm input fields from previous time step:</font></b></td></tr>\n";
+                << "Atm input fields from previous time "
+                   "step:</font></b></td></tr>\n";
         } else if (n.id == id_IC) {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">"
                 << "Initial Fields:</font></b></td></tr>\n";
@@ -230,15 +235,17 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
           fc += "black";
           fc += "\">  ";
           ofile << "      <tr><td align=\"left\">" << fc
-                << html_fix(print_fid(m_fids[fid_out], fid_verb)) << "</font></td></tr>\n";
+                << html_fix(print_fid(m_fids[fid_out], fid_verb))
+                << "</font></td></tr>\n";
         }
       }
 
       if (sz_req > 0) {
         // Required fields
         if (n.id == id_end) {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#88621e\">"
-                << "Atm output fields for next time step:</font></b></td></tr>\n";
+          ofile
+              << "      <tr><td align=\"left\"><b><font color=\"#88621e\">"
+              << "Atm output fields for next time step:</font></b></td></tr>\n";
         } else if (n.id != id_begin && n.id != id_IC) {
           ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">"
                 << "Required Fields:</font></b></td></tr>\n";
@@ -268,10 +275,12 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
       // Computed groups
       if (sz_grcomp > 0) {
         if (n.id == id_begin) {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Input "
+          ofile << "      <tr><td align=\"left\"><b><font "
+                   "color=\"#00667E\">Atm Input "
                    "groups:</font></b></td></tr>\n";
         } else if (n.id != id_end) {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#88621e\">Computed "
+          ofile << "      <tr><td align=\"left\"><b><font "
+                   "color=\"#88621e\">Computed "
                    "Groups:</font></b></td></tr>\n";
         }
         for (const auto &gr_fid : n.gr_computed) {
@@ -318,10 +327,12 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
       // Required groups
       if (sz_grreq > 0) {
         if (n.name == "End of atm time step") {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Atm Output "
+          ofile << "      <tr><td align=\"left\"><b><font "
+                   "color=\"#00667E\">Atm Output "
                    "Groups:</font></b></td></tr>\n";
         } else if (n.name != "Begin of atm time step") {
-          ofile << "      <tr><td align=\"left\"><b><font color=\"#00667E\">Required "
+          ofile << "      <tr><td align=\"left\"><b><font "
+                   "color=\"#00667E\">Required "
                    "Groups:</font></b></td></tr>\n";
         }
         for (const auto &gr_fid : n.gr_required) {
@@ -394,7 +405,8 @@ void AtmProcDAG::write_dag(const std::string &fname, const int verbosity) const 
           << "  align=\"center\"\n"
           << "  label=<<b><font color=\"#774006\">NOTE:</font> "
              "Fields marked missing may be<br align=\"center\"/>provided by "
-             "the as-yet-unprocessed<br align=\"center\"/>initial condition</b>>\n"
+             "the as-yet-unprocessed<br align=\"center\"/>initial "
+             "condition</b>>\n"
           << "];\n";
   }
 
@@ -430,18 +442,21 @@ void AtmProcDAG::cleanup() {
 }
 
 void AtmProcDAG::add_nodes(const group_type &atm_procs) {
-  const int num_procs   = atm_procs.get_num_processes();
-  const bool sequential = (atm_procs.get_schedule_type() == ScheduleType::Sequential);
+  const int num_procs = atm_procs.get_num_processes();
+  const bool sequential =
+      (atm_procs.get_schedule_type() == ScheduleType::Sequential);
 
-  EKAT_REQUIRE_MSG(sequential, "Error! Parallel splitting dag not yet supported.\n");
+  EKAT_REQUIRE_MSG(sequential,
+                   "Error! Parallel splitting dag not yet supported.\n");
 
   for (int i = 0; i < num_procs; ++i) {
     const auto proc     = atm_procs.get_process(i);
     const bool is_group = (proc->type() == AtmosphereProcessType::Group);
     if (is_group) {
       auto group = std::dynamic_pointer_cast<const group_type>(proc);
-      EKAT_REQUIRE_MSG(group, "Error! Unexpected failure in dynamic_pointer_cast.\n"
-                              "       Please, contact developers.\n");
+      EKAT_REQUIRE_MSG(group,
+                       "Error! Unexpected failure in dynamic_pointer_cast.\n"
+                       "       Please, contact developers.\n");
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
       //       the sub-group will have its remappers taken care of
@@ -473,7 +488,8 @@ void AtmProcDAG::add_nodes(const group_type &atm_procs) {
       // Input groups
       for (const auto &group : proc->get_groups_in()) {
         if (!group.m_info->m_monolithic_allocation) {
-          // Group does not allocate a monolithic field: process fields individually
+          // Group does not allocate a monolithic field: process fields
+          // individually
           for (const auto &it_f : group.m_individual_fields) {
             const auto &fid  = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
@@ -482,7 +498,8 @@ void AtmProcDAG::add_nodes(const group_type &atm_procs) {
           }
         } else {
           // Group allocates a monolithic field: process the monolithic field
-          const auto &gr_fid  = group.m_monolithic_field->get_header().get_identifier();
+          const auto &gr_fid =
+              group.m_monolithic_field->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_required.insert(gr_fid_id);
           m_gr_fid_to_group.emplace(gr_fid, group);
@@ -492,7 +509,8 @@ void AtmProcDAG::add_nodes(const group_type &atm_procs) {
       // Output groups
       for (const auto &group : proc->get_groups_out()) {
         if (!group.m_info->m_monolithic_allocation) {
-          // Group does not allocate a monolithic field: process fields in the group individually
+          // Group does not allocate a monolithic field: process fields in the
+          // group individually
           for (const auto &it_f : group.m_individual_fields) {
             const auto &fid  = it_f.second->get_header().get_identifier();
             const int fid_id = add_fid(fid);
@@ -501,7 +519,8 @@ void AtmProcDAG::add_nodes(const group_type &atm_procs) {
           }
         } else {
           // Group allocates a monolithic field: process the monolithic field
-          const auto &gr_fid  = group.m_monolithic_field->get_header().get_identifier();
+          const auto &gr_fid =
+              group.m_monolithic_field->get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_computed.insert(gr_fid_id);
           m_fid_to_last_provider[gr_fid_id] = id;
@@ -510,8 +529,8 @@ void AtmProcDAG::add_nodes(const group_type &atm_procs) {
           // Additionally, each field in the group is implicitly 'computed'
           // by this node, so update their last provider
           for (auto it_f : group.m_individual_fields) {
-            const auto &fid                = it_f.second->get_header().get_identifier();
-            const int fid_id               = add_fid(fid);
+            const auto &fid  = it_f.second->get_header().get_identifier();
+            const int fid_id = add_fid(fid);
             m_fid_to_last_provider[fid_id] = id;
           }
         }
@@ -535,11 +554,12 @@ void AtmProcDAG::add_edges() {
         m_unmet_deps[node.id].insert(id);
       }
     }
-    // Then process groups, looking at both the monolithic field and individual fields.
-    // NOTE: we don't know if the group as a whole is the last to be updated
+    // Then process groups, looking at both the monolithic field and individual
+    // fields. NOTE: we don't know if the group as a whole is the last to be
+    // updated
     //       OR if each group member is updated after the last "group-update".
-    //       So get the id of the last node that updates each field and the group,
-    //       and use the most recent one
+    //       So get the id of the last node that updates each field and the
+    //       group, and use the most recent one
     for (auto id : node.gr_required) {
       const auto &gr_fid = m_fids[id];
       const auto &group  = m_gr_fid_to_group.at(gr_fid);
@@ -558,8 +578,9 @@ void AtmProcDAG::add_edges() {
       int i = 0;
       for (auto f_it : group.m_individual_fields) {
         const auto &fid = f_it.second->get_header().get_identifier();
-        auto fid_id     = std::find(m_fids.begin(), m_fids.end(), fid) - m_fids.begin();
-        it              = m_fid_to_last_provider.find(fid_id);
+        auto fid_id =
+            std::find(m_fids.begin(), m_fids.end(), fid) - m_fids.begin();
+        it = m_fid_to_last_provider.find(fid_id);
         // Note: check that last provider id is SMALLER than this node id
         if (it != m_fid_to_last_provider.end() and it->second < node.id) {
           last_members_update_id[i] = it->second;
@@ -567,7 +588,8 @@ void AtmProcDAG::add_edges() {
         ++i;
       }
 
-      auto min = *std::min_element(last_members_update_id.begin(), last_members_update_id.end());
+      auto min = *std::min_element(last_members_update_id.begin(),
+                                   last_members_update_id.end());
       if (min == -1 && last_group_update_id == -1) {
         // Nobody computed the group as a whole and some member was not computed
         m_unmet_deps[node.id].insert(id);
@@ -596,7 +618,8 @@ void AtmProcDAG::process_initial_conditions(const grid_field_map &ic_inited) {
 
   // Create a node for the ICs by copying the begin_node. Recall that so far
   // m_nodes contains [<processes>, 'beg-of-step', 'end-of-step']
-  // WARNING: do NOT get a ref to beg-of-step node, since calls to m_nodes.push_back
+  // WARNING: do NOT get a ref to beg-of-step node, since calls to
+  // m_nodes.push_back
   //          may resize the vector, invalidating the reference.
   auto begin_node = m_nodes[m_nodes.size() - 2];
   auto &ic_node   = m_nodes.emplace_back(begin_node);

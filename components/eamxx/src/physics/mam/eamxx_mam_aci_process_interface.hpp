@@ -144,11 +144,13 @@ public:
   std::string name() const override { return "mam4_aci"; }
 
   // grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporary_views_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                     len_temporary_views_);
   }
 
   void init_buffers(const ATMBufferManager &buffer_manager) override;
@@ -166,7 +168,8 @@ public:
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev, const mam_coupling::WetAtmosphere &wet_atm,
+    void initialize(const int ncol, const int nlev,
+                    const mam_coupling::WetAtmosphere &wet_atm,
                     const mam_coupling::AerosolState &wet_aero,
                     const mam_coupling::DryAtmosphere &dry_atm,
                     const mam_coupling::AerosolState &dry_aero) {
@@ -179,11 +182,13 @@ public:
     }
 
     KOKKOS_INLINE_FUNCTION
-    void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
+    void operator()(
+        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
       const int i = team.league_rank(); // column index
 
       compute_dry_mixing_ratios(team, wet_atm_pre_, dry_atm_pre_, i);
-      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_, dry_aero_pre_, i);
+      compute_dry_mixing_ratios(team, wet_atm_pre_, wet_aero_pre_,
+                                dry_aero_pre_, i);
       team.team_barrier();
       // vertical heights has to be computed after computing dry mixing ratios
       // for atmosphere

@@ -24,7 +24,8 @@ public:
   using grid_ptr_type = std::shared_ptr<const AbstractGrid>;
 
   AbstractRemapper() = default;
-  AbstractRemapper(const grid_ptr_type &src_grid, const grid_ptr_type &tgt_grid);
+  AbstractRemapper(const grid_ptr_type &src_grid,
+                   const grid_ptr_type &tgt_grid);
 
   virtual ~AbstractRemapper() = default;
 
@@ -65,11 +66,13 @@ public:
   FieldIdentifier create_src_fid(const FieldIdentifier &tgt_fid) const;
   FieldIdentifier create_tgt_fid(const FieldIdentifier &src_fid) const;
 
-  // These are public, so that InverseRemapper can call them on the stored remapper
-  // We provide reasonable default implementations, but derived classes can specialize
+  // These are public, so that InverseRemapper can call them on the stored
+  // remapper We provide reasonable default implementations, but derived classes
+  // can specialize
   virtual FieldLayout create_src_layout(const FieldLayout &tgt_layout) const;
   virtual FieldLayout create_tgt_layout(const FieldLayout &src_layout) const;
-  virtual bool compatible_layouts(const FieldLayout &src, const FieldLayout &tgt) const;
+  virtual bool compatible_layouts(const FieldLayout &src,
+                                  const FieldLayout &tgt) const;
   virtual bool is_valid_src_layout(const FieldLayout &layout) const {
     return m_src_grid->is_valid_layout(layout);
   }
@@ -90,13 +93,15 @@ protected:
   // Override this method to implement the forward remapping process using
   // the protected data members of this class.
   virtual void remap_fwd_impl() {
-    EKAT_ERROR_MSG("Error! Missing override of remap_fwd_impl for this remapper.\n");
+    EKAT_ERROR_MSG(
+        "Error! Missing override of remap_fwd_impl for this remapper.\n");
   }
 
   // Override this method to implement the backward/inverse remapping process
   // using the protected data members of this class.
   virtual void remap_bwd_impl() {
-    EKAT_ERROR_MSG("Error! Missing override of remap_bwd_impl for this remapper.\n");
+    EKAT_ERROR_MSG(
+        "Error! Missing override of remap_bwd_impl for this remapper.\n");
   }
 
   // By default, assume both are allowed.
@@ -125,7 +130,8 @@ private:
 
 // A short name for an AbstractRemapper factory
 using RemapperFactory =
-    ekat::Factory<AbstractRemapper, ekat::CaseInsensitiveString, std::shared_ptr<AbstractRemapper>,
+    ekat::Factory<AbstractRemapper, ekat::CaseInsensitiveString,
+                  std::shared_ptr<AbstractRemapper>,
                   const ekat::ParameterList &>;
 
 } // namespace scream

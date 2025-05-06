@@ -19,7 +19,8 @@ void init_fluxes(const int &ncol,
   const int gas_start_ind = mam4::utils::gasses_start_ind();
 
   const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, pcnst - gas_start_ind);
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(
+          ncol, pcnst - gas_start_ind);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(
@@ -28,21 +29,22 @@ void init_fluxes(const int &ncol,
         view_1d flux_col = ekat::subview(constituent_fluxes, icol);
 
         // Zero out constituent fluxes only for gasses and aerosols
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, gas_start_ind, pcnst),
-                             [&](int icnst) { flux_col(icnst) = 0; });
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, gas_start_ind, pcnst),
+            [&](int icnst) { flux_col(icnst) = 0; });
       });
 } // init_fluxes ends
 
 //-------- compute online emissions for dust, sea salt and marine organics -----
-void compute_online_dust_nacl_emiss(const int &ncol, const int &nlev, const const_view_1d &ocnfrac,
-                                    const const_view_1d &sst, const const_view_2d &u_wind,
-                                    const const_view_2d &v_wind, const const_view_2d &dstflx,
-                                    const const_view_1d &mpoly, const const_view_1d &mprot,
-                                    const const_view_1d &mlip,
-                                    const const_view_1d &soil_erodibility,
-                                    const const_view_2d &z_mid,
-                                    // output
-                                    view_2d &constituent_fluxes) {
+void compute_online_dust_nacl_emiss(
+    const int &ncol, const int &nlev, const const_view_1d &ocnfrac,
+    const const_view_1d &sst, const const_view_2d &u_wind,
+    const const_view_2d &v_wind, const const_view_2d &dstflx,
+    const const_view_1d &mpoly, const const_view_1d &mprot,
+    const const_view_1d &mlip, const const_view_1d &soil_erodibility,
+    const const_view_2d &z_mid,
+    // output
+    view_2d &constituent_fluxes) {
   const int surf_lev = nlev - 1; // surface level
 
   Kokkos::parallel_for(
@@ -57,9 +59,9 @@ void compute_online_dust_nacl_emiss(const int &ncol, const int &nlev, const cons
         // NOTE: mam4::aero_model_emissions calculates mass and number emission
         // fluxes in units of [kg/m2/s or #/m2/s] (MKS), so no need to convert
         mam4::aero_model_emissions::aero_model_emissions(
-            sst(icol), ocnfrac(icol), u_wind(icol, surf_lev), v_wind(icol, surf_lev),
-            z_mid(icol, surf_lev), dstflx_icol, soil_erodibility(icol), mpoly(icol), mprot(icol),
-            mlip(icol),
+            sst(icol), ocnfrac(icol), u_wind(icol, surf_lev),
+            v_wind(icol, surf_lev), z_mid(icol, surf_lev), dstflx_icol,
+            soil_erodibility(icol), mpoly(icol), mprot(icol), mlip(icol),
             // out
             fluxes_col);
       });

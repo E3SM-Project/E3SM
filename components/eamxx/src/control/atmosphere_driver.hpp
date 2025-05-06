@@ -30,13 +30,14 @@ namespace control {
  *  The driver for the atmosphere component.
  *
  *  This class (AD) is responsible to keep track of the different atmosphere
- *  subcomponents (ASC) (parametrizations and dynamics). The AD is responsible for ensuring
- *  that all the ASCs required by the current test case are correctly initialized,
- *  that they are called in the correct order, and that they do not leak memory at the end.
+ *  subcomponents (ASC) (parametrizations and dynamics). The AD is responsible
+ * for ensuring that all the ASCs required by the current test case are
+ * correctly initialized, that they are called in the correct order, and that
+ * they do not leak memory at the end.
  *
- *  The AD is also responsible for handling the FieldManager(s) of the Atmosphere.
- *  It must keep track of the different fields, and of the ASCs that require
- *  each field, ensuring all dependencies are met (in a DAG fashion).
+ *  The AD is also responsible for handling the FieldManager(s) of the
+ * Atmosphere. It must keep track of the different fields, and of the ASCs that
+ * require each field, ensuring all dependencies are met (in a DAG fashion).
  */
 
 class AtmosphereDriver {
@@ -45,7 +46,8 @@ public:
   using field_mgr_ptr  = std::shared_ptr<field_mgr_type>;
 
   AtmosphereDriver() = default;
-  AtmosphereDriver(const ekat::Comm &atm_comm, const ekat::ParameterList &params);
+  AtmosphereDriver(const ekat::Comm &atm_comm,
+                   const ekat::ParameterList &params);
 
   // Must call finalize, so that, if AD is destroyed as part of uncaught
   // exception stack unwinding, we will still perform some cleanup ops,
@@ -65,8 +67,8 @@ public:
 
   // Init time stamps
   // run_type: -1: deduce from run/case t0, 0: initial, 1: restart
-  void init_time_stamps(const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
-                        int run_type = -1);
+  void init_time_stamps(const util::TimeStamp &run_t0,
+                        const util::TimeStamp &case_t0, int run_type = -1);
 
   // Set AD params
   void init_scorpio(const int atm_id = 0);
@@ -84,15 +86,14 @@ public:
   void create_fields();
 
   // Adds cpl import/export information to SCDataManager.
-  void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
-                                           const int num_cpl_fields, const int num_scream_fields,
-                                           const int field_size, Real *data_ptr,
+  void setup_surface_coupling_data_manager(
+      SurfaceCouplingTransferType transfer_type, const int num_cpl_fields,
+      const int num_scream_fields, const int field_size, Real *data_ptr,
 #ifdef HAVE_MOAB
-                                           Real *data_ptr_moab,
+      Real *data_ptr_moab,
 #endif
-                                           char *names_ptr, int *cpl_indices_ptr,
-                                           int *vec_comps_ptr, Real *constant_multiple_ptr,
-                                           bool *do_transfer_during_init_ptr);
+      char *names_ptr, int *cpl_indices_ptr, int *vec_comps_ptr,
+      Real *constant_multiple_ptr, bool *do_transfer_during_init_ptr);
 
   // Find surface coupling processes and have
   // them setup internal SurfaceCoupling data.
@@ -113,7 +114,8 @@ public:
   // for use in output.
   void add_additional_column_data_to_property_checks();
 
-  void set_provenance_data(std::string caseid = "", std::string rest_caseid = "",
+  void set_provenance_data(std::string caseid      = "",
+                           std::string rest_caseid = "",
                            std::string hostname = "", std::string username = "",
                            std::string versionid = "");
 
@@ -136,9 +138,11 @@ public:
   //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
   //  - params: parameter list with all atm options (organized in sublists)
   //  - run_t0 : the time stamp where the run starts
-  //  - case_t0: the time stamp where the original simulation started (for restarts)
+  //  - case_t0: the time stamp where the original simulation started (for
+  //  restarts)
   void initialize(const ekat::Comm &atm_comm, const ekat::ParameterList &params,
-                  const util::TimeStamp &run_t0, const util::TimeStamp &case_t0);
+                  const util::TimeStamp &run_t0,
+                  const util::TimeStamp &case_t0);
 
   // Shortcut for tests not doing restart
   void initialize(const ekat::Comm &atm_comm, const ekat::ParameterList &params,
@@ -146,9 +150,10 @@ public:
     initialize(atm_comm, params, t0, t0);
   }
 
-  // The run method is responsible for advancing the atmosphere component by one atm time step
-  // Inside here you should find calls to the run method of each subcomponent, including
-  // parameterizations and dynamics (HOMME). Note: dt is assumed to be in seconds
+  // The run method is responsible for advancing the atmosphere component by one
+  // atm time step Inside here you should find calls to the run method of each
+  // subcomponent, including parameterizations and dynamics (HOMME). Note: dt is
+  // assumed to be in seconds
   void run(const int dt);
 
   // Clean up the driver (finalizes and cleans up all internals)
@@ -160,9 +165,13 @@ public:
   // Get atmosphere time stamp
   const util::TimeStamp &get_atm_time_stamp() const { return m_current_ts; }
 
-  const std::shared_ptr<GridsManager> &get_grids_manager() const { return m_grids_manager; }
+  const std::shared_ptr<GridsManager> &get_grids_manager() const {
+    return m_grids_manager;
+  }
 
-  const std::shared_ptr<ATMBufferManager> &get_memory_buffer() const { return m_memory_buffer; }
+  const std::shared_ptr<ATMBufferManager> &get_memory_buffer() const {
+    return m_memory_buffer;
+  }
 
   const std::shared_ptr<AtmosphereProcessGroup> &get_atm_processes() const {
     return m_atm_process_group;
@@ -172,7 +181,8 @@ public:
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  void initialize_constant_field(const FieldIdentifier &fid, const ekat::ParameterList &ic_pl);
+  void initialize_constant_field(const FieldIdentifier &fid,
+                                 const ekat::ParameterList &ic_pl);
 
 protected:
   void report_res_dep_memory_footprint() const;
@@ -215,13 +225,15 @@ protected:
   RunType m_run_type;
   bool m_branch_run = false;
 
-  // This is the comm containing all (and only) the processes assigned to the atmosphere
+  // This is the comm containing all (and only) the processes assigned to the
+  // atmosphere
   ekat::Comm m_atm_comm;
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 
-  // Some status flags, used to make sure we call the init functions in the right order
+  // Some status flags, used to make sure we call the init functions in the
+  // right order
   static constexpr int s_comm_set       = 1;
   static constexpr int s_params_set     = 2;
   static constexpr int s_scorpio_inited = 4;

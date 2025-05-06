@@ -2,10 +2,14 @@
 
 namespace scream {
 
-template Field::get_strided_view_type<int, Host> Field::get_strided_view<int, Host>() const;
-template Field::get_strided_view_type<int *, Host> Field::get_strided_view<int *, Host>() const;
-template Field::get_strided_view_type<int **, Host> Field::get_strided_view<int **, Host>() const;
-template Field::get_strided_view_type<int ***, Host> Field::get_strided_view<int ***, Host>() const;
+template Field::get_strided_view_type<int, Host>
+Field::get_strided_view<int, Host>() const;
+template Field::get_strided_view_type<int *, Host>
+Field::get_strided_view<int *, Host>() const;
+template Field::get_strided_view_type<int **, Host>
+Field::get_strided_view<int **, Host>() const;
+template Field::get_strided_view_type<int ***, Host>
+Field::get_strided_view<int ***, Host>() const;
 template Field::get_strided_view_type<int ****, Host>
 Field::get_strided_view<int ****, Host>() const;
 template Field::get_strided_view_type<int *****, Host>

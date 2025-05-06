@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestImpDpInverse
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -98,7 +99,8 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::B
     auto engine = Base::get_engine();
 
     DpInverseData baseline_data[] = {//            shcol, nlev
-                                     DpInverseData(10, 71), DpInverseData(10, 12),
+                                     DpInverseData(10, 71),
+                                     DpInverseData(10, 12),
                                      DpInverseData(7, 16), DpInverseData(2, 7)};
 
     // Generate random input data
@@ -106,8 +108,8 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::B
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     DpInverseData cxx_data[] = {
         DpInverseData(baseline_data[0]),
         DpInverseData(baseline_data[1]),
@@ -115,7 +117,8 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::B
         DpInverseData(baseline_data[3]),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(DpInverseData);
+    static constexpr Int num_runs =
+        sizeof(baseline_data) / sizeof(DpInverseData);
 
     // Assume all data is in C layout
 
@@ -156,15 +159,15 @@ struct UnitWrap::UnitTest<D>::TestImpDpInverse : public UnitWrap::UnitTest<D>::B
 namespace {
 
 TEST_CASE("shoc_imp_dp_inverse_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpDpInverse;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestImpDpInverse;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_imp_dp_inverse_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpDpInverse;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestImpDpInverse;
 
   TestStruct().run_bfb();
 }

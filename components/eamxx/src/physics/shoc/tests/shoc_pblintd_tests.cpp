@@ -17,17 +17,19 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestPblintd : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
-    static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
-    static constexpr Int shcol      = 5;
-    static constexpr Int nlev       = 5;
-    static constexpr Int nlevi      = nlev + 1;
+    static constexpr auto ustar_min =
+        scream::shoc::Constants<Scalar>::ustar_min;
+    static constexpr Int shcol = 5;
+    static constexpr Int nlev  = 5;
+    static constexpr Int nlevi = nlev + 1;
 
     // Tests for the subroutine pblintd
 
     // TEST
-    // This is the top level routine to diagnose PBL height.  The individual routines
-    //  have been throughly tests.  Thus, give subroutine realsitic inputs and be sure
-    //  that the output PBL height is physical and expected.
+    // This is the top level routine to diagnose PBL height.  The individual
+    // routines
+    //  have been throughly tests.  Thus, give subroutine realsitic inputs and
+    //  be sure that the output PBL height is physical and expected.
 
     // Define the heights on the zi grid [m]
     static constexpr Real zi_grid[nlevi] = {3000, 2000, 1500, 1000, 500, 0};
@@ -139,21 +141,24 @@ struct UnitWrap::UnitTest<D>::TestPblintd : public UnitWrap::UnitTest<D>::Base {
     Int npbl_rand = rand() % 71 + 1;
 
     PblintdData baseline_data[] = {
-        PblintdData(10, 71, 72, 71), PblintdData(10, 71, 72, 1), PblintdData(10, 71, 72, npbl_rand),
-        PblintdData(10, 12, 13, 1),  PblintdData(7, 16, 17, 1),  PblintdData(2, 7, 8, 1),
+        PblintdData(10, 71, 72, 71),        PblintdData(10, 71, 72, 1),
+        PblintdData(10, 71, 72, npbl_rand), PblintdData(10, 12, 13, 1),
+        PblintdData(7, 16, 17, 1),          PblintdData(2, 7, 8, 1),
     };
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     PblintdData cxx_data[] = {
-        PblintdData(baseline_data[0]), PblintdData(baseline_data[1]), PblintdData(baseline_data[2]),
-        PblintdData(baseline_data[3]), PblintdData(baseline_data[4]), PblintdData(baseline_data[5]),
+        PblintdData(baseline_data[0]), PblintdData(baseline_data[1]),
+        PblintdData(baseline_data[2]), PblintdData(baseline_data[3]),
+        PblintdData(baseline_data[4]), PblintdData(baseline_data[5]),
     };
 
     // Assume all data is in C layout
@@ -172,7 +177,8 @@ struct UnitWrap::UnitTest<D>::TestPblintd : public UnitWrap::UnitTest<D>::Base {
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(PblintdData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(PblintdData);
       for (Int i = 0; i < num_runs; ++i) {
         PblintdData &d_baseline = baseline_data[i];
         PblintdData &d_cxx      = cxx_data[i];
@@ -196,15 +202,15 @@ struct UnitWrap::UnitTest<D>::TestPblintd : public UnitWrap::UnitTest<D>::Base {
 namespace {
 
 TEST_CASE("pblintd_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintd;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintd;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintd;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintd;
 
   TestStruct().run_bfb();
 }

@@ -4,11 +4,12 @@
 namespace scream {
 
 // =========================================================================================
-PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic(const ekat::Comm &comm,
-                                                               const ekat::ParameterList &params)
+PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic(
+    const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   EKAT_REQUIRE_MSG(params.isParameter("temperature_kind"),
-                   "Error! PotentialTemperatureDiagnostic requires 'temperature_kind' in its input "
+                   "Error! PotentialTemperatureDiagnostic requires "
+                   "'temperature_kind' in its input "
                    "parameters.\n");
 
   auto pt_type = params.get<std::string>("temperature_kind");
@@ -18,12 +19,12 @@ PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic(const ekat::Comm 
   } else if (pt_type == "Liq") {
     m_ptype = "LiqPotentialTemperature";
   } else {
-    EKAT_ERROR_MSG(
-        "Error! Invalid choice for 'TemperatureKind' in PotentialTemperatureDiagnostic.\n"
-        "  - input value: " +
-        pt_type +
-        "\n"
-        "  - valid values: Tot, Liq\n");
+    EKAT_ERROR_MSG("Error! Invalid choice for 'TemperatureKind' in "
+                   "PotentialTemperatureDiagnostic.\n"
+                   "  - input value: " +
+                   pt_type +
+                   "\n"
+                   "  - valid values: Tot, Liq\n");
   }
 }
 
@@ -35,8 +36,8 @@ void PotentialTemperatureDiagnostic::set_grids(
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   FieldLayout scalar3d_layout_mid{{COL, LEV}, {m_num_cols, m_num_levs}};
 
@@ -67,15 +68,18 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl() {
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for(
-      "PotentialTemperatureDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * m_num_levs),
+      "PotentialTemperatureDiagnostic",
+      Kokkos::RangePolicy<>(0, m_num_cols * m_num_levs),
       KOKKOS_LAMBDA(const int &idx) {
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
-        auto temp      = PF::calculate_theta_from_T(T_mid(icol, ilev), p_mid(icol, ilev));
+        auto temp =
+            PF::calculate_theta_from_T(T_mid(icol, ilev), p_mid(icol, ilev));
         if (is_liq) {
-          // Liquid potential temperature (consistent with how it is calculated in SHOC)
-          theta(icol, ilev) =
-              PF::calculate_thetal_from_theta(temp, T_mid(icol, ilev), q_mid(icol, ilev));
+          // Liquid potential temperature (consistent with how it is calculated
+          // in SHOC)
+          theta(icol, ilev) = PF::calculate_thetal_from_theta(
+              temp, T_mid(icol, ilev), q_mid(icol, ilev));
         } else {
           // The total potential temperature
           theta(icol, ilev) = temp;

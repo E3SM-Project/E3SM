@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocCompDiagThird
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -50,13 +51,16 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<
     // Define potential temperature second moment [K2]
     static constexpr Real thl_sec[nlevi] = {0.5, 0.9, 1.2, 0.8, 0.4, 0.3};
     // Define vertical flux of temperature [K m/s]
-    static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04, -0.01, 0.01, 0.03};
+    static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04,
+                                             -0.01, 0.01,  0.03};
     // Define the heights on the zi grid [m]
     static constexpr Real zi_grid[nlevi] = {9000, 5000, 1500, 900, 500, 0};
     // Define the return to isotropy timescale [s]
-    static constexpr Real isotropy_zi[nlevi] = {2000, 3000, 5000, 2000, 1000, 500};
+    static constexpr Real isotropy_zi[nlevi] = {2000, 3000, 5000,
+                                                2000, 1000, 500};
     // Define the brunt vaisalla frequency
-    static constexpr Real brunt_zi[nlevi] = {4e-5, 3e-5, 3e-5, 2e-5, 2e-5, -1e-5};
+    static constexpr Real brunt_zi[nlevi] = {4e-5, 3e-5, 3e-5,
+                                             2e-5, 2e-5, -1e-5};
     // Define the potential temperature on zi grid [K]
     static constexpr Real thetal_zi[nlevi] = {330, 325, 320, 310, 300, 301};
 
@@ -186,16 +190,18 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<
 
     ComputeDiagThirdShocMomentData SDS_baseline[] = {
         //               shcol, nlev, nlevi
-        ComputeDiagThirdShocMomentData(10, 71, 72), ComputeDiagThirdShocMomentData(10, 12, 13),
-        ComputeDiagThirdShocMomentData(7, 16, 17), ComputeDiagThirdShocMomentData(2, 7, 8)};
+        ComputeDiagThirdShocMomentData(10, 71, 72),
+        ComputeDiagThirdShocMomentData(10, 12, 13),
+        ComputeDiagThirdShocMomentData(7, 16, 17),
+        ComputeDiagThirdShocMomentData(2, 7, 8)};
 
     // Generate random input data
     for (auto &d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ComputeDiagThirdShocMomentData SDS_cxx[] = {
         ComputeDiagThirdShocMomentData(SDS_baseline[0]),
         ComputeDiagThirdShocMomentData(SDS_baseline[1]),
@@ -203,7 +209,8 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<
         ComputeDiagThirdShocMomentData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ComputeDiagThirdShocMomentData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ComputeDiagThirdShocMomentData);
 
     // Assume all data is in C layout
 
@@ -244,15 +251,15 @@ struct UnitWrap::UnitTest<D>::TestShocCompDiagThird : public UnitWrap::UnitTest<
 namespace {
 
 TEST_CASE("shoc_comp_diag_third_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCompDiagThird;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocCompDiagThird;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_comp_diag_third_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCompDiagThird;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocCompDiagThird;
 
   TestStruct().run_bfb();
 }

@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocEddyDiff
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -36,10 +37,12 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     //  be loaded up with a different test.
 
     // FIRST TEST
-    // Boundary layer regime test.  Input surface temperature with a value that is clearly
-    //  "running away" (i.e. a very low value).  This test verifies that the diffusivities
-    //  returned are different given that all other conditions are the same.  This is to very
-    //  that SHOC can repair a runaway surface temperature.
+    // Boundary layer regime test.  Input surface temperature with a value that
+    // is clearly
+    //  "running away" (i.e. a very low value).  This test verifies that the
+    //  diffusivities returned are different given that all other conditions are
+    //  the same.  This is to very that SHOC can repair a runaway surface
+    //  temperature.
 
     // Surface temperature [K]
     static constexpr Real tabs[shcol] = {100, 250};
@@ -242,7 +245,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
         const auto offset = n + s * nlev;
         // Get value corresponding to next column
         const auto offsets = n + (s + 1) * nlev;
-        if (SDS.tke[offset] < SDS.tke[offsets] & SDS.isotropy[offset] < SDS.isotropy[offsets]) {
+        if (SDS.tke[offset] < SDS.tke[offsets] &
+            SDS.isotropy[offset] < SDS.isotropy[offsets]) {
           REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
         }
@@ -261,13 +265,14 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
     };
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     EddyDiffusivitiesData cxx_data[] = {
         EddyDiffusivitiesData(baseline_data[0]),
         EddyDiffusivitiesData(baseline_data[1]),
@@ -291,7 +296,8 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(EddyDiffusivitiesData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(EddyDiffusivitiesData);
       for (Int i = 0; i < num_runs; ++i) {
         EddyDiffusivitiesData &d_baseline = baseline_data[i];
         EddyDiffusivitiesData &d_cxx      = cxx_data[i];
@@ -316,15 +322,15 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
 namespace {
 
 TEST_CASE("shoc_tke_eddy_diffusivities_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_eddy_diffusivities_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocEddyDiff;
 
   TestStruct().run_bfb();
 }

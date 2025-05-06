@@ -24,7 +24,8 @@
 
 namespace scream {
 
-HommeGridsManager::HommeGridsManager(const ekat::Comm &comm, const ekat::ParameterList &p)
+HommeGridsManager::HommeGridsManager(const ekat::Comm &comm,
+                                     const ekat::ParameterList &p)
     : m_comm(comm), m_params(p) {
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -37,7 +38,8 @@ HommeGridsManager::HommeGridsManager(const ekat::Comm &comm, const ekat::Paramet
 
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
-    auto nlname = m_params.get<std::string>("dynamics_namelist_file_name").c_str();
+    auto nlname =
+        m_params.get<std::string>("dynamics_namelist_file_name").c_str();
     init_params_f90(nlname);
   }
 
@@ -85,27 +87,31 @@ HommeGridsManager::do_create_remapper(const grid_ptr_type from_grid,
 
 void HommeGridsManager::build_grids() {
   // Get the physics grid specs
-  const ci_string pg_type      = m_params.get<std::string>("physics_grid_type");
-  const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance", "none");
+  const ci_string pg_type = m_params.get<std::string>("physics_grid_type");
+  const ci_string pg_rebalance =
+      m_params.get<std::string>("physics_grid_rebalance", "none");
 
   // Get the physics grid code
   std::vector<int> pg_codes{
-      m_pg_codes["gll"]["none"], // We always need this to read/write dyn grid stuff
+      m_pg_codes["gll"]
+                ["none"], // We always need this to read/write dyn grid stuff
       m_pg_codes[pg_type][pg_rebalance]};
   // In case the two pg codes are the same...
   auto it              = std::unique(pg_codes.begin(), pg_codes.end());
   const int *codes_ptr = pg_codes.data();
   init_grids_f90(codes_ptr, std::distance(pg_codes.begin(), it));
 
-  // Check that the global number of 2d elements is no less than the number of MPI ranks
-  EKAT_REQUIRE_MSG(get_homme_param<int>("nelem") >= m_comm.size(),
-                   "Error! We do not yet support running EAMxx with a number of MPI ranks\n"
-                   "       larger than the number of 2d elements in Homme.\n"
-                   "  - num MPI ranks: " +
-                       std::to_string(m_comm.size()) +
-                       "\n"
-                       "  - num 2d elems : " +
-                       std::to_string(get_homme_param<int>("nelem")) + "\n");
+  // Check that the global number of 2d elements is no less than the number of
+  // MPI ranks
+  EKAT_REQUIRE_MSG(
+      get_homme_param<int>("nelem") >= m_comm.size(),
+      "Error! We do not yet support running EAMxx with a number of MPI ranks\n"
+      "       larger than the number of 2d elements in Homme.\n"
+      "  - num MPI ranks: " +
+          std::to_string(m_comm.size()) +
+          "\n"
+          "  - num 2d elems : " +
+          std::to_string(get_homme_param<int>("nelem")) + "\n");
 
   // We know we need the dyn grid, so build it
   build_dynamics_grid();
@@ -116,7 +122,8 @@ void HommeGridsManager::build_grids() {
   // If (pg type,rebalance) is (gll,none), this will be a no op
   build_physics_grid(pg_type, pg_rebalance);
 
-  // Make "physics" be an alias to whatever the pair (pg_type,rebalance) refers to
+  // Make "physics" be an alias to whatever the pair (pg_type,rebalance) refers
+  // to
   std::string pg_name = "physics_" + pg_type;
   if (pg_rebalance != "none") {
     pg_name += " " + pg_rebalance;
@@ -141,7 +148,8 @@ void HommeGridsManager::build_dynamics_grid() {
   const int nlelem = get_num_local_elems_f90();
   const int nlev   = get_nlev_f90();
 
-  auto dyn_grid = std::make_shared<SEGrid>("dynamics", nlelem, HOMMEXX_NP, nlev, m_comm);
+  auto dyn_grid =
+      std::make_shared<SEGrid>("dynamics", nlelem, HOMMEXX_NP, nlev, m_comm);
   dyn_grid->setSelfPointer(dyn_grid);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
@@ -163,8 +171,8 @@ void HommeGridsManager::build_dynamics_grid() {
   auto lon_h     = lon.get_view<Real ***, Host>();
 
   // Get (ie,igp,jgp,gid) data for each dof
-  get_dyn_grid_data_f90(dg_dofs_h.data(), cg_dofs_h.data(), elgpgp_h.data(), elgids_h.data(),
-                        lat_h.data(), lon_h.data());
+  get_dyn_grid_data_f90(dg_dofs_h.data(), cg_dofs_h.data(), elgpgp_h.data(),
+                        elgids_h.data(), lat_h.data(), lon_h.data());
 
   dg_dofs.sync_to_dev();
   cg_dofs.sync_to_dev();
@@ -177,7 +185,8 @@ void HommeGridsManager::build_dynamics_grid() {
   for (auto f : {lat, lon}) {
     auto nan_check = std::make_shared<FieldNaNCheck>(f, dyn_grid)->check();
     EKAT_REQUIRE_MSG(nan_check.result == CheckResult::Pass,
-                     "ERROR! NaN values detected in " + f.name() + " field.\n" + nan_check.msg);
+                     "ERROR! NaN values detected in " + f.name() + " field.\n" +
+                         nan_check.msg);
   }
 #endif
 
@@ -187,7 +196,8 @@ void HommeGridsManager::build_dynamics_grid() {
   add_nonconst_grid(dyn_grid);
 }
 
-void HommeGridsManager::build_physics_grid(const ci_string &type, const ci_string &rebalance) {
+void HommeGridsManager::build_physics_grid(const ci_string &type,
+                                           const ci_string &rebalance) {
   std::string name = "physics_" + type;
   if (rebalance != "none") {
     name += " " + rebalance;
@@ -231,7 +241,8 @@ void HommeGridsManager::build_physics_grid(const ci_string &type, const ci_strin
   auto area_h = area.get_view<Real *, Host>();
 
   // Get all specs of phys grid cols (gids, coords, area)
-  get_phys_grid_data_f90(pg_code, dofs_h.data(), lat_h.data(), lon_h.data(), area_h.data());
+  get_phys_grid_data_f90(pg_code, dofs_h.data(), lat_h.data(), lon_h.data(),
+                         area_h.data());
 
   dofs.sync_to_dev();
   lat.sync_to_dev();
@@ -242,18 +253,22 @@ void HommeGridsManager::build_physics_grid(const ci_string &type, const ci_strin
   for (auto f : {lat, lon, area}) {
     auto nan_check = std::make_shared<FieldNaNCheck>(f, phys_grid)->check();
     EKAT_REQUIRE_MSG(nan_check.result == CheckResult::Pass,
-                     "ERROR! NaN values detected in " + f.name() + " field.\n" + nan_check.msg);
+                     "ERROR! NaN values detected in " + f.name() + " field.\n" +
+                         nan_check.msg);
   }
 
   // Also check area for non-negativity
-  const auto eps  = std::numeric_limits<Real>::epsilon();
-  auto area_check = std::make_shared<FieldLowerBoundCheck>(area, phys_grid, eps)->check();
+  const auto eps = std::numeric_limits<Real>::epsilon();
+  auto area_check =
+      std::make_shared<FieldLowerBoundCheck>(area, phys_grid, eps)->check();
   EKAT_REQUIRE_MSG(area_check.result == CheckResult::Pass,
-                   "ERROR! NaN values detected in area field.\n" + area_check.msg);
+                   "ERROR! NaN values detected in area field.\n" +
+                       area_check.msg);
 #endif
 
   // If one of the hybrid vcoord arrays is there, they all are
-  // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
+  // NOTE: we may have none in some unit tests that don't need them (e.g. pd
+  // remap)
   if (get_grid("dynamics")->has_geometry_data("hyam")) {
     auto layout_mid = phys_grid->get_vertical_layout(true);
     auto layout_int = phys_grid->get_vertical_layout(false);
@@ -296,7 +311,8 @@ void HommeGridsManager::build_physics_grid(const ci_string &type, const ci_strin
   if (is_planar_geometry_f90()) {
     // If running with IOP, store grid length size
     FieldLayout scalar0d({}, {});
-    auto dx_short_f = phys_grid->create_geometry_data("dx_short", scalar0d, rad);
+    auto dx_short_f =
+        phys_grid->create_geometry_data("dx_short", scalar0d, rad);
     dx_short_f.get_view<Real, Host>()() = get_dx_short_f90(0);
     dx_short_f.sync_to_dev();
   }
@@ -305,7 +321,8 @@ void HommeGridsManager::build_physics_grid(const ci_string &type, const ci_strin
   add_nonconst_grid(phys_grid);
 }
 
-void HommeGridsManager::initialize_vertical_coordinates(const nonconstgrid_ptr_type &dyn_grid) {
+void HommeGridsManager::initialize_vertical_coordinates(
+    const nonconstgrid_ptr_type &dyn_grid) {
   using view_1d_host = AtmosphereInput::view_1d_host;
   using vos_t        = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
@@ -313,7 +330,8 @@ void HommeGridsManager::initialize_vertical_coordinates(const nonconstgrid_ptr_t
   // If we put vcoords in the IC file, we open the ic file, whose name
   // was set by the AD in the param list. This allows users to change
   // nc files only once in the input file.
-  const auto &vcoord_filename = m_params.get<std::string>("vertical_coordinate_filename");
+  const auto &vcoord_filename =
+      m_params.get<std::string>("vertical_coordinate_filename");
   if (vcoord_filename == "NONE") {
     return;
   }
@@ -337,14 +355,18 @@ void HommeGridsManager::initialize_vertical_coordinates(const nonconstgrid_ptr_t
   auto hyam = dyn_grid->create_geometry_data("hyam", layout_mid, nondim);
   auto hybm = dyn_grid->create_geometry_data("hybm", layout_mid, nondim);
 
-  std::map<std::string, view_1d_host> host_views = {{"hyai", hyai.get_view<Real *, Host>()},
-                                                    {"hybi", hybi.get_view<Real *, Host>()},
-                                                    {"hyam", hyam.get_view<Real *, Host>()},
-                                                    {"hybm", hybm.get_view<Real *, Host>()}};
-  std::map<std::string, FieldLayout> layouts     = {
-      {"hyai", layout_int}, {"hybi", layout_int}, {"hyam", layout_mid}, {"hybm", layout_mid}};
+  std::map<std::string, view_1d_host> host_views = {
+      {"hyai", hyai.get_view<Real *, Host>()},
+      {"hybi", hybi.get_view<Real *, Host>()},
+      {"hyam", hyam.get_view<Real *, Host>()},
+      {"hybm", hybm.get_view<Real *, Host>()}};
+  std::map<std::string, FieldLayout> layouts = {{"hyai", layout_int},
+                                                {"hybi", layout_int},
+                                                {"hyam", layout_mid},
+                                                {"hybm", layout_mid}};
 
-  AtmosphereInput vcoord_reader(vcoord_reader_pl, dyn_grid, host_views, layouts);
+  AtmosphereInput vcoord_reader(vcoord_reader_pl, dyn_grid, host_views,
+                                layouts);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 
@@ -358,9 +380,11 @@ void HommeGridsManager::initialize_vertical_coordinates(const nonconstgrid_ptr_t
   const auto ps0 = Homme::PhysicalConstants::p0;
 
   // Set vcoords in f90
-  // NOTE: homme does the check for these arrays, so no need to do any property check here
-  prim_set_hvcoords_f90(ps0, host_views["hyai"].data(), host_views["hybi"].data(),
-                        host_views["hyam"].data(), host_views["hybm"].data());
+  // NOTE: homme does the check for these arrays, so no need to do any property
+  // check here
+  prim_set_hvcoords_f90(ps0, host_views["hyai"].data(),
+                        host_views["hybi"].data(), host_views["hyam"].data(),
+                        host_views["hybm"].data());
 }
 
 void HommeGridsManager::build_pg_codes() {

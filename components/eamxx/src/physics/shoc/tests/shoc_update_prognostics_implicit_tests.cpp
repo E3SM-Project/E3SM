@@ -14,7 +14,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol      = 5;
@@ -193,10 +194,12 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
         // Make sure inputs fall within reasonable bounds
         REQUIRE(SDS.dz_zt[offset] > 0);
         REQUIRE(SDS.zt_grid[offset] > 0);
-        REQUIRE((SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound));
+        REQUIRE((SDS.thetal[offset] > thl_lbound &&
+                 SDS.thetal[offset] < thl_ubound));
         REQUIRE((SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound));
         REQUIRE((SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound));
-        REQUIRE((SDS.rho_zt[offset] > rho_lbound && SDS.rho_zt[offset] < rho_ubound));
+        REQUIRE((SDS.rho_zt[offset] > rho_lbound &&
+                 SDS.rho_zt[offset] < rho_ubound));
 
         // While there is nothing unphysical with winds outside of these
         //  bounds, for this particular test we want to make sure the
@@ -238,9 +241,11 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
       for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
         // Total water input integral
-        qw_int_b[s] = qw_int_b[s] + SDS.qw[offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
+        qw_int_b[s] = qw_int_b[s] +
+                      SDS.qw[offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
         // Potential temperature input integral
-        thl_int_b[s] = thl_int_b[s] + SDS.thetal[offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
+        thl_int_b[s] = thl_int_b[s] + SDS.thetal[offset] * SDS.rho_zt[offset] *
+                                          SDS.dz_zt[offset];
 
         // Tracer input integrals
         for (Int t = 0; t < num_tracer; ++t) {
@@ -248,8 +253,9 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
             trc_int_b[s][t] = 0;
           }
           const auto t_offset = t + offset * num_tracer;
-          trc_int_b[s][t] =
-              trc_int_b[s][t] + SDS.tracer[t_offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
+          trc_int_b[s][t]     = trc_int_b[s][t] + SDS.tracer[t_offset] *
+                                                  SDS.rho_zt[offset] *
+                                                  SDS.dz_zt[offset];
         }
       }
     }
@@ -271,7 +277,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
         const auto offset = n + s * nlev;
 
         // Make sure all output is reasonable
-        REQUIRE((SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound));
+        REQUIRE((SDS.thetal[offset] > thl_lbound &&
+                 SDS.thetal[offset] < thl_ubound));
         REQUIRE((SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound));
         REQUIRE((SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound));
         // Increase wind bounds by 2 m/s to allow for surface flux effects
@@ -280,9 +287,11 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
 
         // Compute integrals of end result
         // Output total water integral
-        qw_int_a[s] = qw_int_a[s] + SDS.rho_zt[offset] * SDS.dz_zt[offset] * SDS.qw[offset];
+        qw_int_a[s] = qw_int_a[s] +
+                      SDS.rho_zt[offset] * SDS.dz_zt[offset] * SDS.qw[offset];
         // Output potential temperature integral
-        thl_int_a[s] = thl_int_a[s] + SDS.rho_zt[offset] * SDS.dz_zt[offset] * SDS.thetal[offset];
+        thl_int_a[s] = thl_int_a[s] + SDS.rho_zt[offset] * SDS.dz_zt[offset] *
+                                          SDS.thetal[offset];
 
         // Output tracer integral
         for (Int t = 0; t < num_tracer; ++t) {
@@ -290,8 +299,9 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
             trc_int_a[s][t] = 0;
           }
           const auto t_offset = t + offset * num_tracer;
-          trc_int_a[s][t] =
-              trc_int_a[s][t] + SDS.tracer[t_offset] * SDS.rho_zt[offset] * SDS.dz_zt[offset];
+          trc_int_a[s][t]     = trc_int_a[s][t] + SDS.tracer[t_offset] *
+                                                  SDS.rho_zt[offset] *
+                                                  SDS.dz_zt[offset];
         }
       }
 
@@ -301,13 +311,15 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
       rho_zi_srf            = SDSL.y2[offset_srf];
 
       // Calculate the spurious source for total water
-      spurious = (qw_int_a[s] - qw_int_b[s]) / dtime - rho_zi_srf * SDS.wqw_sfc[s];
+      spurious =
+          (qw_int_a[s] - qw_int_b[s]) / dtime - rho_zi_srf * SDS.wqw_sfc[s];
 
       // Spurious source should be sufficiently small for water conservation
       REQUIRE(std::abs(spurious) < thresh_check);
 
       // Calculate the spurious source for thetal
-      spurious = (thl_int_a[s] - thl_int_b[s]) / dtime - rho_zi_srf * SDS.wthl_sfc[s];
+      spurious =
+          (thl_int_a[s] - thl_int_b[s]) / dtime - rho_zi_srf * SDS.wthl_sfc[s];
 
       // Spurious source should be sufficiently small for energy conservation
       REQUIRE(std::abs(spurious) < thresh_check);
@@ -316,8 +328,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
       for (Int t = 0; t < num_tracer; ++t) {
         const auto t_offset = t + s * num_tracer;
         // Calculate spurious source
-        spurious =
-            (trc_int_a[s][t] - trc_int_b[s][t]) / dtime - rho_zi_srf * SDS.wtracer_sfc[t_offset];
+        spurious = (trc_int_a[s][t] - trc_int_b[s][t]) / dtime -
+                   rho_zi_srf * SDS.wtracer_sfc[t_offset];
         // Spurious source should be sufficiently small
         REQUIRE(std::abs(spurious) < thresh_check);
       }
@@ -339,8 +351,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     UpdatePrognosticsImplicitData cxx_data[] = {
         UpdatePrognosticsImplicitData(baseline_data[0]),
         UpdatePrognosticsImplicitData(baseline_data[1]),
@@ -364,16 +376,20 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(UpdatePrognosticsImplicitData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(UpdatePrognosticsImplicitData);
       for (Int i = 0; i < num_runs; ++i) {
         UpdatePrognosticsImplicitData &d_baseline = baseline_data[i];
         UpdatePrognosticsImplicitData &d_cxx      = cxx_data[i];
 
-        REQUIRE(d_baseline.total(d_baseline.thetal) == d_cxx.total(d_cxx.thetal));
+        REQUIRE(d_baseline.total(d_baseline.thetal) ==
+                d_cxx.total(d_cxx.thetal));
         REQUIRE(d_baseline.total(d_baseline.qw) == d_cxx.total(d_cxx.qw));
         REQUIRE(d_baseline.total(d_baseline.tke) == d_cxx.total(d_cxx.tke));
-        REQUIRE(d_baseline.total(d_baseline.u_wind) == d_cxx.total(d_cxx.u_wind));
-        REQUIRE(d_baseline.total(d_baseline.v_wind) == d_cxx.total(d_cxx.v_wind));
+        REQUIRE(d_baseline.total(d_baseline.u_wind) ==
+                d_cxx.total(d_cxx.u_wind));
+        REQUIRE(d_baseline.total(d_baseline.v_wind) ==
+                d_cxx.total(d_cxx.v_wind));
         for (Int k = 0; k < d_baseline.total(d_baseline.thetal); ++k) {
           REQUIRE(d_baseline.thetal[k] == d_cxx.thetal[k]);
           REQUIRE(d_baseline.qw[k] == d_cxx.qw[k]);
@@ -382,7 +398,8 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit : public UnitWrap::U
           REQUIRE(d_baseline.v_wind[k] == d_cxx.v_wind[k]);
         }
 
-        REQUIRE(d_baseline.total(d_baseline.tracer) == d_cxx.total(d_cxx.tracer));
+        REQUIRE(d_baseline.total(d_baseline.tracer) ==
+                d_cxx.total(d_cxx.tracer));
         for (Int k = 0; k < d_baseline.total(d_baseline.tracer); ++k) {
           REQUIRE(d_baseline.tracer[k] == d_cxx.tracer[k]);
         }

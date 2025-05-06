@@ -7,7 +7,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -59,8 +60,10 @@ TEST_CASE("aerocom_cld") {
   FieldIdentifier qv_fid("qv", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier qc_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier qi_fid("qi", scalar2d_layout, kg / kg, grid->name());
-  FieldIdentifier ec_fid("eff_radius_qc", scalar2d_layout, micron, grid->name());
-  FieldIdentifier ei_fid("eff_radius_qi", scalar2d_layout, micron, grid->name());
+  FieldIdentifier ec_fid("eff_radius_qc", scalar2d_layout, micron,
+                         grid->name());
+  FieldIdentifier ei_fid("eff_radius_qi", scalar2d_layout, micron,
+                         grid->name());
   FieldIdentifier cd_fid("cldfrac_tot", scalar2d_layout, nondim, grid->name());
   FieldIdentifier nc_fid("nc", scalar2d_layout, 1 / kg, grid->name());
   FieldIdentifier ni_fid("ni", scalar2d_layout, 1 / kg, grid->name());
@@ -111,7 +114,8 @@ TEST_CASE("aerocom_cld") {
 
   ekat::ParameterList params;
 
-  REQUIRE_THROWS(diag_factory.create("AeroComCld", comm, params)); // No 'aero_com_cld_kind'
+  REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
+                                     params)); // No 'aero_com_cld_kind'
   params.set<std::string>("aero_com_cld_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
                                      params)); // Invalid 'aero_com_cld_kind'

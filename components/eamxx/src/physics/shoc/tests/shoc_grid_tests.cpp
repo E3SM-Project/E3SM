@@ -23,7 +23,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocGrid
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
@@ -52,7 +53,7 @@ struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base 
         const auto offset = n + s * nlev;
 
         SDS.zt_grid[offset] = zt_pts[n];
-        SDS.pdel[offset]    = density_zt[n] * gravit * (zi_pts[n] - zi_pts[n + 1]);
+        SDS.pdel[offset] = density_zt[n] * gravit * (zi_pts[n] - zi_pts[n + 1]);
       }
 
       // Fill in test data on zi_grid.
@@ -116,8 +117,10 @@ struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base 
       for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        // check that the density is consistent with the hydrostatic approximation
-        REQUIRE(abs(SDS.rho_zt[offset] - density_zt[n]) <= std::numeric_limits<Real>::epsilon());
+        // check that the density is consistent with the hydrostatic
+        // approximation
+        REQUIRE(abs(SDS.rho_zt[offset] - density_zt[n]) <=
+                std::numeric_limits<Real>::epsilon());
 
         // check that the density has physically realistic values
         REQUIRE(SDS.rho_zt[offset] <= 2);
@@ -136,16 +139,18 @@ struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base 
         ShocGridData(2, 7, 8),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ShocGridData);
+    static constexpr Int num_runs =
+        sizeof(baseline_data) / sizeof(ShocGridData);
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ShocGridData cxx_data[] = {
         ShocGridData(baseline_data[0]),
         ShocGridData(baseline_data[1]),
@@ -196,15 +201,15 @@ struct UnitWrap::UnitTest<D>::TestShocGrid : public UnitWrap::UnitTest<D>::Base 
 namespace {
 
 TEST_CASE("shoc_grid_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocGrid;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_grid_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocGrid;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocGrid;
 
   TestStruct().run_bfb();
 }

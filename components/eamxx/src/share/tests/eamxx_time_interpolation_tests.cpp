@@ -20,24 +20,28 @@
 namespace scream {
 
 // Test Constants
-constexpr Real tol       = std::numeric_limits<Real>::epsilon() * 1e5;
-constexpr int slp_switch = 4; // The frequency that we change the slope of the data written to file.
-constexpr int dt         = 100;
+constexpr Real tol = std::numeric_limits<Real>::epsilon() * 1e5;
+constexpr int slp_switch =
+    4; // The frequency that we change the slope of the data written to file.
+constexpr int dt          = 100;
 constexpr int total_snaps = 10;
 constexpr int snap_freq   = 4;
-constexpr int slope_freq  = snap_freq; // We will change the slope every slope_freq steps to ensure
-                                       // that the data is not all on the same line.
+constexpr int slope_freq =
+    snap_freq; // We will change the slope every slope_freq steps to ensure
+               // that the data is not all on the same line.
 constexpr int snaps_per_file = 3;
 
 // Functions needed to set the test up
-std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int ncols,
-                                           const int nlevs);
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
-                                     const util::TimeStamp &t0, const int seed);
+std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm,
+                                           const int ncols, const int nlevs);
+std::shared_ptr<FieldManager>
+get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+       const util::TimeStamp &t0, const int seed);
 util::TimeStamp init_timestamp();
-std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
-                                                const std::shared_ptr<const GridsManager> &gm,
-                                                const util::TimeStamp &t0, const int seed);
+std::vector<std::string>
+create_test_data_files(const ekat::Comm &comm,
+                       const std::shared_ptr<const GridsManager> &gm,
+                       const util::TimeStamp &t0, const int seed);
 
 // Functions needed to run the test
 void update_field_data(const Real slope, const Real dt, Field &field);
@@ -66,8 +70,8 @@ public:
 
 private:
   void update_file_list() {
-    if (std::find(m_list_of_files.begin(), m_list_of_files.end(), m_output_file_specs.filename) ==
-        m_list_of_files.end()) {
+    if (std::find(m_list_of_files.begin(), m_list_of_files.end(),
+                  m_output_file_specs.filename) == m_list_of_files.end()) {
       m_list_of_files.push_back(m_output_file_specs.filename);
     }
   }
@@ -93,7 +97,8 @@ TEST_CASE("eamxx_time_interpolation_simple") {
   // Construct a time interpolation object and add all of the fields to it.
   printf("Constructing a time interpolation object ...\n");
   util::TimeInterpolation time_interpolator(grid);
-  for (auto ff_pair = fields_man_t0->begin(); ff_pair != fields_man_t0->end(); ff_pair++) {
+  for (auto ff_pair = fields_man_t0->begin(); ff_pair != fields_man_t0->end();
+       ff_pair++) {
     const auto ff = ff_pair->second;
     time_interpolator.add_field(*ff);
     time_interpolator.initialize_data_from_field(*ff);
@@ -101,23 +106,27 @@ TEST_CASE("eamxx_time_interpolation_simple") {
   time_interpolator.initialize_timestamps(t0);
   printf("Constructing a time interpolation object ... DONE\n");
 
-  // Set the field data for a step 10 dt in the future to be used for interpolation.  We
-  // create a new field manager so we can continue to have the intial condition for reference.
-  printf("Setting data for other end of time interpolation, at t = 10 dt ...\n");
+  // Set the field data for a step 10 dt in the future to be used for
+  // interpolation.  We create a new field manager so we can continue to have
+  // the intial condition for reference.
+  printf(
+      "Setting data for other end of time interpolation, at t = 10 dt ...\n");
   auto slope         = my_pdf(engine);
   auto fields_man_tf = get_fm(grid, t0, seed);
   auto t1            = t0 + 10 * dt;
-  for (auto ff_pair = fields_man_tf->begin(); ff_pair != fields_man_tf->end(); ff_pair++) {
+  for (auto ff_pair = fields_man_tf->begin(); ff_pair != fields_man_tf->end();
+       ff_pair++) {
     auto ff = ff_pair->second;
     update_field_data(slope, t1.seconds_from(t0), *ff);
     time_interpolator.update_data_from_field(*ff);
   }
   time_interpolator.update_timestamp(t1);
-  printf("Setting data for other end of time interpolation, at t = 10 dt ...DONE\n");
+  printf("Setting data for other end of time interpolation, at t = 10 dt "
+         "...DONE\n");
 
   // Now check that the interpolator is working as expected.  Should be able to
-  // match the interpolated fields against the results of update_field_data at any
-  // time between 0 and 10 dt.
+  // match the interpolated fields against the results of update_field_data at
+  // any time between 0 and 10 dt.
   printf("Testing all timesteps ... slope = %f\n", slope);
   auto fields_man_test = get_fm(grid, t0, seed);
   t1                   = t0;
@@ -125,11 +134,13 @@ TEST_CASE("eamxx_time_interpolation_simple") {
     t1 += dt;
     printf("                        ... t = %s\n", t1.to_string().c_str());
     time_interpolator.perform_time_interpolation(t1);
-    for (auto ff_pair = fields_man_test->begin(); ff_pair != fields_man_test->end(); ff_pair++) {
+    for (auto ff_pair = fields_man_test->begin();
+         ff_pair != fields_man_test->end(); ff_pair++) {
       const auto name = ff_pair->first;
       auto ff         = ff_pair->second;
       update_field_data(slope, dt, *ff);
-      REQUIRE(views_are_approx_equal(*ff, time_interpolator.get_field(name), tol));
+      REQUIRE(
+          views_are_approx_equal(*ff, time_interpolator.get_field(name), tol));
     }
   }
   printf("                        ... DONE\n");
@@ -157,8 +168,9 @@ TEST_CASE("eamxx_time_interpolation_data_from_file") {
   printf("   - Grids Manager...DONE\n");
   // Now create a fields manager to store initial data for testing.
   printf("   - Fields Manager...\n");
-  auto fields_man_t0   = get_fm(grid, t0, seed);
-  auto fields_man_deep = get_fm(grid, t0, seed); // A field manager for checking deep copies.
+  auto fields_man_t0 = get_fm(grid, t0, seed);
+  auto fields_man_deep =
+      get_fm(grid, t0, seed); // A field manager for checking deep copies.
   std::vector<std::string> fnames;
   for (auto it : *fields_man_t0) {
     fnames.push_back(it.second->name());
@@ -184,8 +196,8 @@ TEST_CASE("eamxx_time_interpolation_data_from_file") {
   printf("Constructing a time interpolation object ... DONE\n");
 
   // Now check that the interpolator is working as expected.  Should be able to
-  // match the interpolated fields against the results of update_field_data at any
-  // time between 0 and 10 dt.
+  // match the interpolated fields against the results of update_field_data at
+  // any time between 0 and 10 dt.
   printf("Testing all timesteps ...\n");
   const int max_steps = snap_freq * total_snaps;
   // The strategy is to update the model state following the same linear updates
@@ -204,24 +216,28 @@ TEST_CASE("eamxx_time_interpolation_data_from_file") {
       for (auto name : fnames) {
         auto field = fields_man_t0->get_field(name);
         update_field_data(slope, dt, field);
-        // We set the deep copy fields to wrong values to stress test that everything still works.
+        // We set the deep copy fields to wrong values to stress test that
+        // everything still works.
         auto field_deep = fields_man_deep->get_field(name);
         field_deep.deep_copy(-9999.0);
       }
     }
     time_interpolator.perform_time_interpolation(ts);
     time_interpolator_deep.perform_time_interpolation(ts);
-    // Now compare the interp_fields to the fields in the field manager which should be updated.
+    // Now compare the interp_fields to the fields in the field manager which
+    // should be updated.
     for (auto name : fnames) {
       auto field      = fields_man_t0->get_field(name);
       auto field_deep = fields_man_deep->get_field(name);
       // Check that the shallow copies match the expected values
-      REQUIRE(views_are_approx_equal(field, time_interpolator.get_field(name), tol));
-      // Check that the deep fields which were not updated directly are the same as the ones stored
-      // in the time interpolator.
-      REQUIRE(views_are_equal(field_deep, time_interpolator_deep.get_field(name)));
-      // Check that the deep and shallow fields match showing that both approaches got the correct
-      // answer.
+      REQUIRE(views_are_approx_equal(field, time_interpolator.get_field(name),
+                                     tol));
+      // Check that the deep fields which were not updated directly are the same
+      // as the ones stored in the time interpolator.
+      REQUIRE(
+          views_are_equal(field_deep, time_interpolator_deep.get_field(name)));
+      // Check that the deep and shallow fields match showing that both
+      // approaches got the correct answer.
       REQUIRE(views_are_equal(field, field_deep));
     }
   }
@@ -242,16 +258,17 @@ TEST_CASE("eamxx_time_interpolation_data_from_file") {
 bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol) {
   const auto &l0 = f0.get_header().get_identifier().get_layout();
   const auto &l1 = f1.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(l0 == l1,
-                   "Error! views_are_approx_equal - the two fields don't have matching layouts.");
-  // Take advantage of field utils update, min and max to assess the max difference between the two
-  // fields simply.
+  EKAT_REQUIRE_MSG(l0 == l1, "Error! views_are_approx_equal - the two fields "
+                             "don't have matching layouts.");
+  // Take advantage of field utils update, min and max to assess the max
+  // difference between the two fields simply.
   auto ft = f0.clone();
   ft.update(f1, 1.0, -1.0);
   auto d_min = field_min<Real>(ft);
   auto d_max = field_max<Real>(ft);
   if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
-    printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min "
+    printf("The two copies of (%16s) are NOT approx equal within a tolerance "
+           "of %e.\n     The min "
            "and max errors are "
            "%e and %e respectively.\n",
            f0.name().c_str(), tol, d_min, d_max);
@@ -294,11 +311,13 @@ void update_field_data(const Real slope, const Real dt, Field &field) {
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
-util::TimeStamp init_timestamp() { return util::TimeStamp({2023, 5, 16}, {0, 0, 0}); }
+util::TimeStamp init_timestamp() {
+  return util::TimeStamp({2023, 5, 16}, {0, 0, 0});
+}
 /*-----------------------------------------------------------------------------------------------*/
 /* Create a grids manager for the test */
-std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int ncols,
-                                           const int nlevs) {
+std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm,
+                                           const int ncols, const int nlevs) {
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
   gm_params.set("grids_names", vos_t{"point_grid"});
@@ -313,8 +332,9 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm, const int nco
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Create a fields manager for the test */
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
-                                     const util::TimeStamp &t0, const int seed) {
+std::shared_ptr<FieldManager>
+get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+       const util::TimeStamp &t0, const int seed) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -331,7 +351,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
 
-  std::vector<FL> layouts = {FL({COL}, {nlcols}), FL({COL, LEV}, {nlcols, nlevs}),
+  std::vector<FL> layouts = {FL({COL}, {nlcols}),
+                             FL({COL, LEV}, {nlcols, nlevs}),
                              FL({COL, CMP, ILEV}, {nlcols, 2, nlevs + 1})};
 
   auto fm = std::make_shared<FieldManager>(grid);
@@ -353,17 +374,19 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
   return fm;
 }
 /*-----------------------------------------------------------------------------------------------*/
-/* Construct data for multiple time snaps and write the data to file, to be used for testing
- * the capability of TimeInterpolation to handle data read from multiple files.
+/* Construct data for multiple time snaps and write the data to file, to be used
+ * for testing the capability of TimeInterpolation to handle data read from
+ * multiple files.
  */
-std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
-                                                const std::shared_ptr<const GridsManager> &gm,
-                                                const util::TimeStamp &t0, const int seed) {
+std::vector<std::string>
+create_test_data_files(const ekat::Comm &comm,
+                       const std::shared_ptr<const GridsManager> &gm,
+                       const util::TimeStamp &t0, const int seed) {
   // We initialize a local field manager to use for output
   auto fm = get_fm(gm->get_grid("point_grid"), t0, seed);
-  // We will write data for 10 snaps for this test.  We set the max snaps per file to 3 to
-  // ensure that a) there is more than 1 file and b) at least one file has fewer snap then
-  // the others.
+  // We will write data for 10 snaps for this test.  We set the max snaps per
+  // file to 3 to ensure that a) there is more than 1 file and b) at least one
+  // file has fewer snap then the others.
   const int max_steps = snap_freq * total_snaps;
   // Gather the set of fields from the field manager
   std::vector<std::string> fnames;
@@ -372,7 +395,8 @@ std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
   }
   // Create the output parameters
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix", std::string("source_data_for_time_interpolation"));
+  om_pl.set("filename_prefix",
+            std::string("source_data_for_time_interpolation"));
   om_pl.set("field_names", fnames);
   om_pl.set("averaging_type", std::string("instant"));
   om_pl.set("max_snapshots_per_file", snaps_per_file);
@@ -380,8 +404,8 @@ std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
   ctrl_pl.set("frequency_units", std::string("nsteps"));
   ctrl_pl.set("frequency", snap_freq);
   ctrl_pl.set("save_grid_data", false);
-  // Create an output manager, note we use a subclass defined in this test so we can extract
-  // the list of files created by the output manager.
+  // Create an output manager, note we use a subclass defined in this test so we
+  // can extract the list of files created by the output manager.
   OutputManager4Test om;
   om.initialize(comm, om_pl, t0, false);
   om.setup(fm, gm);
@@ -401,7 +425,8 @@ std::vector<std::string> create_test_data_files(const ekat::Comm &comm,
     om.runme(tw);
   }
 
-  // Now that all the data is written we finalize everything and return the list of files.
+  // Now that all the data is written we finalize everything and return the list
+  // of files.
   om.finalize();
 
   // Jumble the order of files to also test the sorting algorithm

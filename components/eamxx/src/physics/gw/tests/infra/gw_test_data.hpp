@@ -27,12 +27,14 @@ struct GwInit : public PhysicsTestData {
   Real fcrit2, kwv;
   Real *cref, *alpha;
 
-  GwInit(Int pver_, Int pgwv_, Real dc_, bool orographic_only_, bool do_molec_diff_,
-         bool tau_0_ubc_, Int nbot_molec_, Int ktop_, Int kbotbg_, Real fcrit2_, Real kwv_)
-      : PhysicsTestData({{pgwv_ * 2}, {pver_ + 1}}, {{&cref}, {&alpha}}), pver(pver_), pgwv(pgwv_),
-        dc(dc_), orographic_only(orographic_only_), do_molec_diff(do_molec_diff_),
-        tau_0_ubc(tau_0_ubc_), nbot_molec(nbot_molec_), ktop(ktop_), kbotbg(kbotbg_),
-        fcrit2(fcrit2_), kwv(kwv_) {
+  GwInit(Int pver_, Int pgwv_, Real dc_, bool orographic_only_,
+         bool do_molec_diff_, bool tau_0_ubc_, Int nbot_molec_, Int ktop_,
+         Int kbotbg_, Real fcrit2_, Real kwv_)
+      : PhysicsTestData({{pgwv_ * 2}, {pver_ + 1}}, {{&cref}, {&alpha}}),
+        pver(pver_), pgwv(pgwv_), dc(dc_), orographic_only(orographic_only_),
+        do_molec_diff(do_molec_diff_), tau_0_ubc(tau_0_ubc_),
+        nbot_molec(nbot_molec_), ktop(ktop_), kbotbg(kbotbg_), fcrit2(fcrit2_),
+        kwv(kwv_) {
     // Assert valid init data?
     assert(ktop <= pver);
     assert(kbotbg >= 0);
@@ -42,8 +44,8 @@ struct GwInit : public PhysicsTestData {
     assert(nbot_molec <= ktop);
   }
 
-  PTD_STD_DEF(GwInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec,
-              ktop, kbotbg, fcrit2, kwv);
+  PTD_STD_DEF(GwInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff,
+              tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
 };
 
 struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
@@ -61,26 +63,32 @@ struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
   // Outputs
   Real *gwut, *utgw, *vtgw;
 
-  GwdComputeTendenciesFromStressDivergenceData(Int ncol_, Int ngwv_, bool do_taper_, Real dt_,
+  GwdComputeTendenciesFromStressDivergenceData(Int ncol_, Int ngwv_,
+                                               bool do_taper_, Real dt_,
                                                Real effgw_, GwInit init_)
-      : PhysicsTestData(
-            {{ncol_},
-             {ncol_, init_.pver},
-             {ncol_, 2 * init_.pgwv},
-             {ncol_, 2 * init_.pgwv, init_.pver + 1},
-             {ncol_, init_.pver, 2 * ngwv_},
-             {ncol_}},
-            {{&lat, &xv, &yv}, {&dpm, &rdpm, &ubm, &t, &nm, &utgw, &vtgw}, {&c}, {&tau}, {&gwut}},
-            {{&tend_level}}),
-        ncol(ncol_), ngwv(ngwv_), do_taper(do_taper_), dt(dt_), effgw(effgw_), init(init_) {}
+      : PhysicsTestData({{ncol_},
+                         {ncol_, init_.pver},
+                         {ncol_, 2 * init_.pgwv},
+                         {ncol_, 2 * init_.pgwv, init_.pver + 1},
+                         {ncol_, init_.pver, 2 * ngwv_},
+                         {ncol_}},
+                        {{&lat, &xv, &yv},
+                         {&dpm, &rdpm, &ubm, &t, &nm, &utgw, &vtgw},
+                         {&c},
+                         {&tau},
+                         {&gwut}},
+                        {{&tend_level}}),
+        ncol(ncol_), ngwv(ngwv_), do_taper(do_taper_), dt(dt_), effgw(effgw_),
+        init(init_) {}
 
-  PTD_STD_DEF_INIT(GwdComputeTendenciesFromStressDivergenceData, 5, ncol, ngwv, do_taper, dt,
-                   effgw);
+  PTD_STD_DEF_INIT(GwdComputeTendenciesFromStressDivergenceData, 5, ncol, ngwv,
+                   do_taper, dt, effgw);
 };
 
 // Glue functions to call fortran from from C++ with the Data struct
 
-void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData &d);
+void gwd_compute_tendencies_from_stress_divergence(
+    GwdComputeTendenciesFromStressDivergenceData &d);
 extern "C" { // _f function decls
 }
 

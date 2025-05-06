@@ -23,7 +23,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestSecondMomUbycond
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     // Property test for SHOC subroutine:
@@ -70,14 +71,15 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
         DiagSecondMomentsUbycondData(128),
     };
 
-    static constexpr Int num_runs = sizeof(uby_fortran) / sizeof(DiagSecondMomentsUbycondData);
+    static constexpr Int num_runs =
+        sizeof(uby_fortran) / sizeof(DiagSecondMomentsUbycondData);
 
     for (auto &d : uby_fortran) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     DiagSecondMomentsUbycondData uby_cxx[num_runs] = {
         DiagSecondMomentsUbycondData(uby_fortran[0]),
         DiagSecondMomentsUbycondData(uby_fortran[1]),
@@ -126,15 +128,15 @@ struct UnitWrap::UnitTest<D>::TestSecondMomUbycond : public UnitWrap::UnitTest<D
 namespace {
 
 TEST_CASE("second_mom_uby_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomUbycond;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestSecondMomUbycond;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("second_mom_uby_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestSecondMomUbycond;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestSecondMomUbycond;
 
   TestStruct().run_bfb();
 }

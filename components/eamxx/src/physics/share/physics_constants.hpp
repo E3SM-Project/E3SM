@@ -22,31 +22,36 @@ namespace physics {
 template <typename Scalar> struct Constants {
   using ci_string = ekat::CaseInsensitiveString;
 
-  static constexpr Scalar Cpair       = 1004.64;
-  static constexpr Scalar Rair        = 287.042;
-  static constexpr Scalar RH2O        = 461.505;
-  static constexpr Scalar RV          = RH2O; // Water vapor gas constant ~ J/K/kg     !461.51
+  static constexpr Scalar Cpair = 1004.64;
+  static constexpr Scalar Rair  = 287.042;
+  static constexpr Scalar RH2O  = 461.505;
+  static constexpr Scalar RV =
+      RH2O; // Water vapor gas constant ~ J/K/kg     !461.51
   static constexpr Scalar RHO_H2O     = 1000.0;
   static constexpr Scalar INV_RHO_H2O = 1.0 / RHO_H2O;
-  static constexpr Scalar RhoIce      = 917.0; // Ice density at 0 C from Wallace+Hobbes 1977
-  static constexpr Scalar MWH2O       = 18.016;
-  static constexpr Scalar MWdry       = 28.966;
-  static constexpr Scalar o2mmr       = 0.23143; // o2 mass mixing ratio
+  static constexpr Scalar RhoIce =
+      917.0; // Ice density at 0 C from Wallace+Hobbes 1977
+  static constexpr Scalar MWH2O = 18.016;
+  static constexpr Scalar MWdry = 28.966;
+  static constexpr Scalar o2mmr = 0.23143; // o2 mass mixing ratio
   static constexpr Scalar ep_2 =
-      MWH2O / MWdry; // ratio of molecular mass of water to the molecular mass of dry air !0.622
-  static constexpr Scalar gravit      = 9.80616;
-  static constexpr Scalar LatVap      = 2501000.0;
-  static constexpr Scalar LatIce      = 333700.0;
-  static constexpr Scalar CpLiq       = 4188.0;
-  static constexpr Scalar Tmelt       = 273.15;
-  static constexpr Scalar T_zerodegc  = Tmelt;
-  static constexpr Scalar T_homogfrz  = Tmelt - 40;
-  static constexpr Scalar T_rainfrz   = Tmelt - 4;
-  static constexpr Scalar Pi          = 3.14159265358979323;
-  static constexpr Scalar RHOW        = RHO_H2O;
-  static constexpr Scalar INV_RHOW    = 1.0 / RHOW;
-  static constexpr Scalar RHO_RIMEMIN = 50.0;  // Min limit for rime density [kg m-3]
-  static constexpr Scalar RHO_RIMEMAX = 900.0; // Max limit for rime density [kg m-3]
+      MWH2O / MWdry; // ratio of molecular mass of water to the molecular mass
+                     // of dry air !0.622
+  static constexpr Scalar gravit     = 9.80616;
+  static constexpr Scalar LatVap     = 2501000.0;
+  static constexpr Scalar LatIce     = 333700.0;
+  static constexpr Scalar CpLiq      = 4188.0;
+  static constexpr Scalar Tmelt      = 273.15;
+  static constexpr Scalar T_zerodegc = Tmelt;
+  static constexpr Scalar T_homogfrz = Tmelt - 40;
+  static constexpr Scalar T_rainfrz  = Tmelt - 4;
+  static constexpr Scalar Pi         = 3.14159265358979323;
+  static constexpr Scalar RHOW       = RHO_H2O;
+  static constexpr Scalar INV_RHOW   = 1.0 / RHOW;
+  static constexpr Scalar RHO_RIMEMIN =
+      50.0; // Min limit for rime density [kg m-3]
+  static constexpr Scalar RHO_RIMEMAX =
+      900.0; // Max limit for rime density [kg m-3]
   static constexpr Scalar INV_RHO_RIMEMAX =
       1.0 / RHO_RIMEMAX; // Inverse for limits for rime density [kg m-3]
   static constexpr Scalar THIRD = 1.0 / 3.0;
@@ -68,14 +73,16 @@ template <typename Scalar> struct Constants {
   static constexpr Scalar ZERO       = 0.0;
   static constexpr Scalar ONE        = 1.0;
   static constexpr Scalar P0         = 100000.0; // reference pressure, Pa
-  static constexpr Scalar RD         = Rair;     // gas constant for dry air, J/kg/K
+  static constexpr Scalar RD         = Rair; // gas constant for dry air, J/kg/K
   static constexpr Scalar RHOSUR     = P0 / (RD * Tmelt);
   static constexpr Scalar rhosui     = 60000 / (RD * 253.15);
   static constexpr Scalar RHO_1000MB = P0 / (RD * Tmelt);
   static constexpr Scalar RHO_600MB  = 60000 / (RD * 253.15);
-  static constexpr Scalar CP         = Cpair; // heat constant of air at constant pressure, J/kg
-  static constexpr Scalar INV_CP     = 1.0 / CP;
-  //  static constexpr Scalar Tol           = ekat::is_single_precision<Real>::value ? 2e-5 : 1e-14;
+  static constexpr Scalar CP =
+      Cpair; // heat constant of air at constant pressure, J/kg
+  static constexpr Scalar INV_CP = 1.0 / CP;
+  //  static constexpr Scalar Tol           =
+  //  ekat::is_single_precision<Real>::value ? 2e-5 : 1e-14;
   static constexpr Scalar macheps       = std::numeric_limits<Real>::epsilon();
   static constexpr Scalar dt_left_tol   = 1.e-4;
   static constexpr Scalar bcn           = 2.;
@@ -95,9 +102,10 @@ template <typename Scalar> struct Constants {
   static constexpr Scalar nmltratio =
       1.0; // ratio of rain number produced to ice number loss from melting
   static constexpr Scalar basetemp = 300.0;
-  static constexpr Scalar r_earth  = 6.376e6;  // Radius of the earth in m
-  static constexpr Scalar stebol   = 5.67e-8;  // Stefan-Boltzmann's constant (W/m^2/K^4)
-  static constexpr Scalar omega    = 7.292e-5; // Earth's rotation (rad/sec)
+  static constexpr Scalar r_earth  = 6.376e6; // Radius of the earth in m
+  static constexpr Scalar stebol =
+      5.67e-8; // Stefan-Boltzmann's constant (W/m^2/K^4)
+  static constexpr Scalar omega = 7.292e-5; // Earth's rotation (rad/sec)
 
   // Table dimension constants
   static constexpr int VTABLE_DIM0    = 300;
@@ -105,9 +113,11 @@ template <typename Scalar> struct Constants {
   static constexpr int MU_R_TABLE_DIM = 150;
 
   // Turbulent Mountain Stress constants
-  static constexpr Scalar orocnst = 1; // Converts from standard deviation to height [ no unit ]
+  static constexpr Scalar orocnst =
+      1; // Converts from standard deviation to height [ no unit ]
   static constexpr Scalar z0fac =
-      0.075; // Factor determining z_0 from orographic standard deviation [ no unit ]
+      0.075; // Factor determining z_0 from orographic standard deviation [ no
+             // unit ]
 
   // switch for warm-rain parameterization
   // = 1 Seifert and Beheng 2001
@@ -131,7 +141,8 @@ template <typename Scalar> struct Constants {
 // Gases
 // Define the molecular weight for each gas, which can then be
 // used to determine the volume mixing ratio for each gas.
-template <typename Scalar> Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
+template <typename Scalar>
+Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
   // TODO: Possible improvement would be to design a device friendly function
   if (gas_name == "h2o") {
     return Scalar(Constants<Scalar>::MWH2O);

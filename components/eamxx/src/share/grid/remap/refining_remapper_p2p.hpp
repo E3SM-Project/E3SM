@@ -27,8 +27,8 @@ class GridImportExport;
  * an efficient mat-vec product at runtime.
  *
  * The mat-vec is performed in two stages:
- *   1. Perform a local mat-vec multiplication (on device), producing intermediate
- *      output fields that have "duplicated" entries (that is, 2+ MPI
+ *   1. Perform a local mat-vec multiplication (on device), producing
+ * intermediate output fields that have "duplicated" entries (that is, 2+ MPI
  *      ranks could all own a piece of the result for the same dof).
  *   2. Perform a pack-send-recv-unpack sequence via MPI, to accumulate
  *      partial results on the rank that owns the dof in the tgt grid.
@@ -47,7 +47,8 @@ class GridImportExport;
 
 class RefiningRemapperP2P : public HorizInterpRemapperBase {
 public:
-  RefiningRemapperP2P(const grid_ptr_type &tgt_grid, const std::string &map_file);
+  RefiningRemapperP2P(const grid_ptr_type &tgt_grid,
+                      const std::string &map_file);
 
   ~RefiningRemapperP2P();
 
@@ -56,9 +57,9 @@ protected:
 
   void setup_mpi_data_structures() override;
 
-  // This class uses itself to remap src grid geo data to the tgt grid. But in order
-  // to not pollute the remapper for later use, we must be able to clean it up after
-  // remapping all the geo data.
+  // This class uses itself to remap src grid geo data to the tgt grid. But in
+  // order to not pollute the remapper for later use, we must be able to clean
+  // it up after remapping all the geo data.
   void clean_up();
 
 #ifdef KOKKOS_ENABLE_CUDA
@@ -68,11 +69,13 @@ public:
   void recv_and_unpack();
 
 protected:
-  // If MpiOnDev=true, we pass device pointers to MPI. Otherwise, we use host mirrors.
+  // If MpiOnDev=true, we pass device pointers to MPI. Otherwise, we use host
+  // mirrors.
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
   template <typename T>
   using mpi_view_1d =
-      typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
+      typename std::conditional<MpiOnDev, view_1d<T>,
+                                typename view_1d<T>::HostMirror>::type;
 
   // ----- Data structures for pack/unpack and MPI ----- //
 

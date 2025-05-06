@@ -10,7 +10,8 @@
 
 namespace scream {
 
-RefiningRemapperRMA::RefiningRemapperRMA(const grid_ptr_type &tgt_grid, const std::string &map_file)
+RefiningRemapperRMA::RefiningRemapperRMA(const grid_ptr_type &tgt_grid,
+                                         const std::string &map_file)
     : HorizInterpRemapperBase(tgt_grid, map_file, InterpType::Refine) {
   // Nothing to do here
 }
@@ -34,7 +35,7 @@ void RefiningRemapperRMA::remap_fwd_impl() {
     const int col_stride = m_col_stride[i];
     const int col_offset = m_col_offset[i];
     const auto &win      = m_mpi_win[i];
-    auto ov_data         = m_ov_fields[i].get_internal_view_data<Real, MpiDev>();
+    auto ov_data = m_ov_fields[i].get_internal_view_data<Real, MpiDev>();
     for (int icol = 0; icol < m_ov_coarse_grid->get_num_local_dofs(); ++icol) {
       const int pid = m_remote_pids[icol];
       const int lid = m_remote_lids[icol];
@@ -82,7 +83,8 @@ void RefiningRemapperRMA::remap_fwd_impl() {
 
   // Close exposure RMA epoch on each field
   for (int i = 0; i < m_num_fields; ++i) {
-    check_mpi_call(MPI_Win_wait(m_mpi_win[i]), "MPI_Win_post for field: " + m_src_fields[i].name());
+    check_mpi_call(MPI_Win_wait(m_mpi_win[i]),
+                   "MPI_Win_post for field: " + m_src_fields[i].name());
   }
 }
 
@@ -94,8 +96,10 @@ void RefiningRemapperRMA::setup_mpi_data_structures() {
   check_mpi_call(MPI_Comm_group(mpi_comm, &m_mpi_group), "MPI_Comm_group");
 
   // Figure out where data needs to be retrieved from
-  const auto ov_src_gids = m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type *, Host>();
-  m_src_grid->get_remote_pids_and_lids(ov_src_gids, m_remote_pids, m_remote_lids);
+  const auto ov_src_gids =
+      m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type *, Host>();
+  m_src_grid->get_remote_pids_and_lids(ov_src_gids, m_remote_pids,
+                                       m_remote_lids);
 
   // TODO: scope out possibility of using sub-groups for start/post calls
   //       (but I'm afraid you can't, b/c start/post may require same groups)
@@ -112,14 +116,16 @@ void RefiningRemapperRMA::setup_mpi_data_structures() {
     const auto &layout = fh.get_identifier().get_layout();
     m_col_size[i]      = layout.clone().strip_dim(COL).size();
 
-    const int col_stride = m_col_stride[i] = fap.get_num_scalars() / layout.dim(COL);
+    const int col_stride = m_col_stride[i] =
+        fap.get_num_scalars() / layout.dim(COL);
 
     // If field has a parent, col_stride and col_offset need to be adjusted
     auto p        = fh.get_parent().lock();
     auto win_size = layout.size() * sizeof(Real);
     if (p) {
       EKAT_REQUIRE_MSG(p->get_parent().lock() == nullptr,
-                       "Error! We do not support remapping of subfields of other subfields.\n");
+                       "Error! We do not support remapping of subfields of "
+                       "other subfields.\n");
       const auto &sv_info = fap.get_subview_info();
       m_col_offset[i]     = sv_info.slice_idx * col_stride;
       m_col_stride[i]     = sv_info.dim_extent * col_stride;
@@ -128,11 +134,13 @@ void RefiningRemapperRMA::setup_mpi_data_structures() {
 
     auto data = f.get_internal_view_data<Real, Host>();
     check_mpi_call(
-        MPI_Win_create(data, win_size, sizeof(Real), MPI_INFO_NULL, mpi_comm, &m_mpi_win[i]),
+        MPI_Win_create(data, win_size, sizeof(Real), MPI_INFO_NULL, mpi_comm,
+                       &m_mpi_win[i]),
         "[RefiningRemapperRMA::setup_mpi_data_structures] MPI_Win_create");
 #ifndef EKAT_MPI_ERRORS_ARE_FATAL
     check_mpi_call(MPI_Win_set_errhandler(m_mpi_win[i], MPI_ERRORS_RETURN),
-                   "[RefiningRemapperRMA::setup_mpi_data_structure] setting MPI_ERRORS_RETURN "
+                   "[RefiningRemapperRMA::setup_mpi_data_structure] setting "
+                   "MPI_ERRORS_RETURN "
                    "handler on MPI_Win");
 #endif
   }

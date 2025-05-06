@@ -23,7 +23,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocVarorCovar
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -66,8 +67,8 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>:
     CalcShocVarorcovarData SDS(shcol, nlev, nlevi, tunefac);
 
     // Test that the inputs are reasonable.
-    REQUIRE(
-        (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi && SDS.tunefac == tunefac));
+    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi &&
+             SDS.tunefac == tunefac));
     REQUIRE(nlevi - nlev == 1);
     REQUIRE(shcol > 0);
 
@@ -186,21 +187,24 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>:
         } else {
 
           // well mixed layer test
-          if ((invar_theta[n - 1] - invar_theta[n]) == 0 || (invar_qw[n - 1] - invar_qw[n]) == 0) {
+          if ((invar_theta[n - 1] - invar_theta[n]) == 0 ||
+              (invar_qw[n - 1] - invar_qw[n]) == 0) {
             REQUIRE(SDS.varorcovar[offset] == 0);
           }
 
           // validate values are NEGATIVE if potential
           //  temperature INCREASES with height and total water
           //  DECREASES with height
-          if ((invar_theta[n - 1] - invar_theta[n]) > 0 && (invar_qw[n - 1] - invar_qw[n]) < 0) {
+          if ((invar_theta[n - 1] - invar_theta[n]) > 0 &&
+              (invar_qw[n - 1] - invar_qw[n]) < 0) {
             REQUIRE(SDS.varorcovar[offset] < 0);
           }
 
           // validate values are POSITIVE if both
           //   potential temperature and total water
           //   DECREASE with height
-          if ((invar_theta[n - 1] - invar_theta[n]) < 0 && (invar_qw[n - 1] - invar_qw[n]) < 0) {
+          if ((invar_theta[n - 1] - invar_theta[n]) < 0 &&
+              (invar_qw[n - 1] - invar_qw[n]) < 0) {
             REQUIRE(SDS.varorcovar[offset] > 0);
           }
         }
@@ -275,8 +279,8 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>:
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     CalcShocVarorcovarData SDS_cxx[] = {
         CalcShocVarorcovarData(SDS_baseline[0]),
         CalcShocVarorcovarData(SDS_baseline[1]),
@@ -284,7 +288,8 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>:
         CalcShocVarorcovarData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(CalcShocVarorcovarData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(CalcShocVarorcovarData);
 
     // Assume all data is in C layout
 
@@ -325,15 +330,15 @@ struct UnitWrap::UnitTest<D>::TestShocVarorCovar : public UnitWrap::UnitTest<D>:
 namespace {
 
 TEST_CASE("shoc_varorcovar_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocVarorCovar;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_varorcovar_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocVarorCovar;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocVarorCovar;
 
   TestStruct().run_bfb();
 }

@@ -54,7 +54,9 @@ private:
   ScreamContext() = default;
 
   // Rely on typeid to get a unique name for each type
-  template <typename T> static key_type getKey() { return std::type_index(typeid(T)); }
+  template <typename T> static key_type getKey() {
+    return std::type_index(typeid(T));
+  }
 
   std::map<key_type, ekat::any> m_objects;
 };

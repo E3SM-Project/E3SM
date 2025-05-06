@@ -46,8 +46,9 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
-                                     const util::TimeStamp &t0, const int seed) {
+std::shared_ptr<FieldManager>
+get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+       const util::TimeStamp &t0, const int seed) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -69,7 +70,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
 
-  std::vector<FL> layouts = {FL({COL}, {nlcols}), FL({COL, LEV}, {nlcols, nlevs}),
+  std::vector<FL> layouts = {FL({COL}, {nlcols}),
+                             FL({COL, LEV}, {nlcols, nlevs}),
                              FL({COL, CMP, ILEV}, {nlcols, 2, nlevs + 1})};
 
   auto fm = std::make_shared<FieldManager>(grid);
@@ -166,9 +168,9 @@ void read(const int seed, const ekat::Comm &comm) {
   // Get filename from timestamp
   std::string casename = "io_monthly";
   auto get_filename    = [&](const util::TimeStamp &t) {
-    auto t_str = t.to_string().substr(0, 7);
-    std::string fname =
-        casename + ".INSTANT.nsteps_x1" + ".np" + std::to_string(comm.size()) + "." + t_str + ".nc";
+    auto t_str        = t.to_string().substr(0, 7);
+    std::string fname = casename + ".INSTANT.nsteps_x1" + ".np" +
+                        std::to_string(comm.size()) + "." + t_str + ".nc";
     return fname;
   };
 

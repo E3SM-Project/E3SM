@@ -19,9 +19,10 @@ namespace scream {
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public MAMGenericInterface {
 public:
-  static constexpr int num_aero_modes      = mam_coupling::num_aero_modes();
-  static constexpr int aerosol_categories_ = mam4::DryDeposition::aerosol_categories;
-  static constexpr int n_land_type         = mam4::DryDeposition::n_land_type;
+  static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
+  static constexpr int aerosol_categories_ =
+      mam4::DryDeposition::aerosol_categories;
+  static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
 
   using view_1d       = Field::view_dev_t<Real *>;
   using view_2d       = Field::view_dev_t<Real **>;
@@ -121,7 +122,8 @@ public:
   std::string name() const override { return "mam_dry_deposition"; }
 
   // grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;

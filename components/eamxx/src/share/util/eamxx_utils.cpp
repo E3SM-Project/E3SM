@@ -16,8 +16,9 @@ long long get_mem_usage(const MemoryUnits u) {
 #if defined(SCREAM_ENABLE_STATM)
   FILE *fh = fopen("/proc/self/statm", "r");
   int size;
-  EKAT_REQUIRE_MSG(fscanf(fh, "%d %lld", &size, &mem) == 2,
-                   "Error! Something went wrong while probing file '/proc/self/statm'.\n");
+  EKAT_REQUIRE_MSG(
+      fscanf(fh, "%d %lld", &size, &mem) == 2,
+      "Error! Something went wrong while probing file '/proc/self/statm'.\n");
   fclose(fh);
 #elif defined(SCREAM_ENABLE_GETRUSAGE)
   struct rusage r_usage;
@@ -50,13 +51,15 @@ long long get_mem_usage(const MemoryUnits u) {
     mem /= 1024;
     break;
   default:
-    EKAT_ERROR_MSG("Invalid choice for memory units: " + std::to_string(u) + "\n");
+    EKAT_ERROR_MSG("Invalid choice for memory units: " + std::to_string(u) +
+                   "\n");
   }
 
   return mem;
 }
 
-std::vector<std::string> filename_glob(const std::vector<std::string> &patterns) {
+std::vector<std::string>
+filename_glob(const std::vector<std::string> &patterns) {
   std::vector<std::string> all_files;
   for (const auto &pattern : patterns) {
     auto files = globloc(pattern);
@@ -73,8 +76,8 @@ std::vector<std::string> globloc(const std::string &pattern) {
   int return_value = ::glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
   if (return_value != 0) {
     globfree(&glob_result);
-    EKAT_REQUIRE_MSG(return_value == 0,
-                     "glob() failed with return value " + std::to_string(return_value));
+    EKAT_REQUIRE_MSG(return_value == 0, "glob() failed with return value " +
+                                            std::to_string(return_value));
   }
 
   std::vector<std::string> filenames;

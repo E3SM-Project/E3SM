@@ -20,7 +20,8 @@
 #include "ekat/util/ekat_units.hpp"
 
 extern "C" {
-// These are specific C/F calls for these tests (i.e., not part of eamxx_homme_interface.hpp)
+// These are specific C/F calls for these tests (i.e., not part of
+// eamxx_homme_interface.hpp)
 void init_test_params_f90();
 void cleanup_test_f90();
 }
@@ -37,7 +38,8 @@ TEST_CASE("dyn_grid_io") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
 
-  ekat::Comm comm(MPI_COMM_WORLD); // MPI communicator group used for I/O set as ekat object.
+  ekat::Comm comm(MPI_COMM_WORLD); // MPI communicator group used for I/O set as
+                                   // ekat object.
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);
@@ -79,13 +81,18 @@ TEST_CASE("dyn_grid_io") {
   auto phys_scalar2d     = phys_grid->get_2d_scalar_layout();
 
   auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier fid_dyn_1("field_1", dyn_scalar3d_mid, nondim, dyn_grid->name());
-  FieldIdentifier fid_dyn_2("field_2", dyn_vector3d_mid, nondim, dyn_grid->name());
+  FieldIdentifier fid_dyn_1("field_1", dyn_scalar3d_mid, nondim,
+                            dyn_grid->name());
+  FieldIdentifier fid_dyn_2("field_2", dyn_vector3d_mid, nondim,
+                            dyn_grid->name());
   FieldIdentifier fid_dyn_3("field_3", dyn_scalar2d, nondim, dyn_grid->name());
 
-  FieldIdentifier fid_phys_1("field_1", phys_scalar3d_mid, nondim, phys_grid->name());
-  FieldIdentifier fid_phys_2("field_2", phys_vector3d_mid, nondim, phys_grid->name());
-  FieldIdentifier fid_phys_3("field_3", phys_scalar2d, nondim, phys_grid->name());
+  FieldIdentifier fid_phys_1("field_1", phys_scalar3d_mid, nondim,
+                             phys_grid->name());
+  FieldIdentifier fid_phys_2("field_2", phys_vector3d_mid, nondim,
+                             phys_grid->name());
+  FieldIdentifier fid_phys_3("field_3", phys_scalar2d, nondim,
+                             phys_grid->name());
 
   // FM with dyn and phys where we read into
   auto fm = std::make_shared<FieldManager>(gm);
@@ -143,10 +150,13 @@ TEST_CASE("dyn_grid_io") {
   out_params.sublist("fields")
       .sublist("dynamics")
       .set<std::vector<std::string>>("field_names", fnames);
-  out_params.sublist("fields").sublist("dynamics").set<std::string>("io_grid_name", "physics_gll");
+  out_params.sublist("fields")
+      .sublist("dynamics")
+      .set<std::string>("io_grid_name", "physics_gll");
 
   out_params.sublist("output_control").set<int>("frequency", 1);
-  out_params.sublist("output_control").set<std::string>("frequency_units", "nsteps");
+  out_params.sublist("output_control")
+      .set<std::string>("frequency_units", "nsteps");
   out_params.set<std::string>("floating_point_precision", "real");
 
   OutputManager output;
@@ -156,9 +166,11 @@ TEST_CASE("dyn_grid_io") {
   output.finalize();
 
   // Next, let's load all fields from file directly into the dyn grid fm
-  std::string filename = "dyn_grid_io.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." +
-                         t0.to_string() + ".nc";
-  filename.erase(std::remove(filename.begin(), filename.end(), ':'), filename.end());
+  std::string filename = "dyn_grid_io.INSTANT.nsteps_x1.np" +
+                         std::to_string(comm.size()) + "." + t0.to_string() +
+                         ".nc";
+  filename.erase(std::remove(filename.begin(), filename.end(), ':'),
+                 filename.end());
 
   ekat::ParameterList in_params;
   in_params.set<std::string>("filename", filename);

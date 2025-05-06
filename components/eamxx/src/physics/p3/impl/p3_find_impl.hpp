@@ -12,11 +12,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION Int Functions<S, D>::find_bottom(const MemberType &team,
-                                                 const uview_1d<const Scalar> &v,
-                                                 const Scalar &small, const Int &kbot,
-                                                 const Int &ktop, const Int &kdir,
-                                                 bool &log_present) {
+KOKKOS_FUNCTION Int Functions<S, D>::find_bottom(
+    const MemberType &team, const uview_1d<const Scalar> &v,
+    const Scalar &small, const Int &kbot, const Int &ktop, const Int &kdir,
+    bool &log_present) {
   log_present = false;
   Int k_xbot  = 0;
   if (team.team_size() == 1) {
@@ -55,8 +54,10 @@ KOKKOS_FUNCTION Int Functions<S, D>::find_bottom(const MemberType &team,
 
 template <typename S, typename D>
 KOKKOS_FUNCTION Int Functions<S, D>::find_top(const MemberType &team,
-                                              const uview_1d<const Scalar> &v, const Scalar &small,
-                                              const Int &kbot, const Int &ktop, const Int &kdir,
+                                              const uview_1d<const Scalar> &v,
+                                              const Scalar &small,
+                                              const Int &kbot, const Int &ktop,
+                                              const Int &kdir,
                                               bool &log_present) {
   log_present = false;
   Int k_xtop  = 0;

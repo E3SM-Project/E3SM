@@ -44,15 +44,18 @@ MAMAci::MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params)
   EKAT_REQUIRE_MSG(m_params.isParameter("enable_aero_vertical_mix"),
                    "ERROR: enable_aero_vertical_mix is missing from mam_aci "
                    "parameter list.");
-  EKAT_REQUIRE_MSG(m_params.isParameter("top_level_mam4xx"),
-                   "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
-  check_fields_intervals_ = m_params.get<bool>("create_fields_interval_checks", false);
+  EKAT_REQUIRE_MSG(
+      m_params.isParameter("top_level_mam4xx"),
+      "ERROR: top_level_mam4xx is missing from mam_aci parameter list.");
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMAci::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   // set grid for all the inputs and outputs
   // use physics grid
   grid_ = grids_manager->get_grid("physics");
@@ -60,8 +63,8 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   // Name of the grid
   const auto &grid_name = grid_->name();
 
-  ncol_                = grid_->get_num_local_dofs();      // Number of columns on this rank
-  nlev_                = grid_->get_num_vertical_levels(); // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs();      // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
   len_temporary_views_ = get_len_temporary_views();
   buffer_.set_num_scratch(num_2d_scratch_);
   buffer_.set_len_temporary_views(len_temporary_views_);
@@ -117,7 +120,8 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   constexpr int nmodes = mam4::AeroConfig::num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes = grid_->get_3d_vector_layout(true, nmodes, "nmodes");
+  FieldLayout scalar3d_mid_nmodes =
+      grid_->get_3d_vector_layout(true, nmodes, "nmodes");
 
   // dry diameter of aerosols [m]
   add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);
@@ -177,13 +181,16 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
   // units of number mixing ratios of tracers
   constexpr auto frz_unit = 1 / (cm * cm * cm * s);
   //  heterogeneous freezing by immersion nucleation [cm^-3 s^-1]
-  add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_mid, frz_unit, grid_name);
+  add_field<Computed>("hetfrz_immersion_nucleation_tend", scalar3d_mid,
+                      frz_unit, grid_name);
 
   // heterogeneous freezing by contact nucleation [cm^-3 s^-1]
-  add_field<Computed>("hetfrz_contact_nucleation_tend", scalar3d_mid, frz_unit, grid_name);
+  add_field<Computed>("hetfrz_contact_nucleation_tend", scalar3d_mid, frz_unit,
+                      grid_name);
 
   // heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
-  add_field<Computed>("hetfrz_deposition_nucleation_tend", scalar3d_mid, frz_unit, grid_name);
+  add_field<Computed>("hetfrz_deposition_nucleation_tend", scalar3d_mid,
+                      frz_unit, grid_name);
 } // function set_grids ends
 
 // ================================================================
@@ -191,11 +198,14 @@ void MAMAci::set_grids(const std::shared_ptr<const GridsManager> grids_manager) 
 // ================================================================
 
 void MAMAci::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
+                       requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
-  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
-  EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
-                   "Error! Used memory != requested memory for MAMMicrophysics.");
+  size_t used_mem =
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  EKAT_REQUIRE_MSG(
+      used_mem == requested_buffer_size_in_bytes(),
+      "Error! Used memory != requested memory for MAMMicrophysics.");
 } // function init_buffers ends
 
 int MAMAci::get_len_temporary_views() {
@@ -271,7 +281,8 @@ void MAMAci::init_temporary_views() {
   const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
                    "Error: workspace_used (" + std::to_string(workspace_used) +
-                       ") and workspace_provided (" + std::to_string(workspace_provided) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
                        ") should be equal. \n");
 }
 // ================================================================
@@ -434,7 +445,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // NOTE: If we use buffer_ to initialize dropmixnuc_scratch_mem_,
   //  we must reset these values to zero each time run_impl is called.
   for (int i = 0; i < dropmix_scratch_; ++i) {
-    dropmixnuc_scratch_mem_[i] = view_2d("dropmixnuc_scratch_mem_", ncol_, nlev_);
+    dropmixnuc_scratch_mem_[i] =
+        view_2d("dropmixnuc_scratch_mem_", ncol_, nlev_);
   }
   for (int i = 0; i < mam4::ndrop::ncnst_tot; ++i) {
     // column tendency for diagnostic output
@@ -475,7 +487,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Setup preprocessing and post processing
   //---------------------------------------------------------------------------------
   // set up our preprocess  and postprocess functors
-  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_, dry_aero_);
+  preprocess_.initialize(ncol_, nlev_, wet_atm_, wet_aero_, dry_atm_,
+                         dry_aero_);
 
 } // end function initialize_impl
 
@@ -483,8 +496,8 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  const auto scan_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities
@@ -502,7 +515,8 @@ void MAMAci::run_impl(const double dt) {
                      // output
                      w0_, rho_);
 
-  compute_tke_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_, w_sec_int_,
+  compute_tke_at_interfaces(team_policy, w_sec_mid_, dry_atm_.dz, nlev_,
+                            w_sec_int_,
                             // output
                             tke_);
 
@@ -512,27 +526,31 @@ void MAMAci::run_impl(const double dt) {
                                    wsub_, wsubice_, wsig_);
 
   // We need dry diameter for only aitken mode
-  Kokkos::deep_copy(aitken_dry_dia_,
-                    ekat::subview_1(dgnum_, static_cast<int>(mam4::ModeIndex::Aitken)));
+  Kokkos::deep_copy(
+      aitken_dry_dia_,
+      ekat::subview_1(dgnum_, static_cast<int>(mam4::ModeIndex::Aitken)));
 
   Kokkos::fence(); // wait for aitken_dry_dia_ to be copied.
 
   //  Compute Ice nucleation
   //  NOTE: The Fortran version uses "ast" for cloud fraction which is
   //  equivalent to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
-  compute_nucleate_ice_tendencies(nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
-                                  aitken_dry_dia_, nlev_, dt,
-                                  // output
-                                  nihf_, niim_, nidep_, nimey_, naai_hom_,
-                                  // ## output to be used by the other processes ##
-                                  naai_);
+  compute_nucleate_ice_tendencies(
+      nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
+      aitken_dry_dia_, nlev_, dt,
+      // output
+      nihf_, niim_, nidep_, nimey_, naai_hom_,
+      // ## output to be used by the other processes ##
+      naai_);
 
   // Compute cloud fractions based on cloud threshold
-  store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_, top_lev_, nlev_,
+  store_liquid_cloud_fraction(team_policy, dry_atm_, liqcldf_, liqcldf_prev_,
+                              top_lev_, nlev_,
                               // output
                               cloud_frac_, cloud_frac_prev_);
 
-  mam_coupling::compute_recipical_pseudo_density(team_policy, dry_atm_.p_del, nlev_,
+  mam_coupling::compute_recipical_pseudo_density(team_policy, dry_atm_.p_del,
+                                                 nlev_,
                                                  // output
                                                  rpdel_);
 
@@ -542,22 +560,29 @@ void MAMAci::run_impl(const double dt) {
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
   call_function_dropmixnuc(
-      team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_, cloud_frac_prev_,
-      dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
+      team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
+      cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
       // ## output to be used by the other processes ##
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
       // work arrays
-      raercol_cw_, raercol_, state_q_work_, nact_, mact_, dropmixnuc_scratch_mem_);
+      raercol_cw_, raercol_, state_q_work_, nact_, mact_,
+      dropmixnuc_scratch_mem_);
   Kokkos::fence(); // wait for ptend_q_ to be computed.
 
-  Kokkos::deep_copy(ccn_0p02_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 0));
-  Kokkos::deep_copy(ccn_0p05_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 1));
-  Kokkos::deep_copy(ccn_0p1_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 2));
-  Kokkos::deep_copy(ccn_0p2_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 3));
-  Kokkos::deep_copy(ccn_0p5_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 4));
-  Kokkos::deep_copy(ccn_1p0_, Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 5));
+  Kokkos::deep_copy(ccn_0p02_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 0));
+  Kokkos::deep_copy(ccn_0p05_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 1));
+  Kokkos::deep_copy(ccn_0p1_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 2));
+  Kokkos::deep_copy(ccn_0p2_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 3));
+  Kokkos::deep_copy(ccn_0p5_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 4));
+  Kokkos::deep_copy(ccn_1p0_,
+                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 5));
 
   //---------------------------------------------------------------------------
   //  NOTE: DO NOT UPDATE cloud borne aerosols using the qqcw_fld_work_ array
@@ -566,12 +591,13 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------------------
 
   // Compute hetrozenous freezing
-  call_hetfrz_compute_tendencies(team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
-                                 // ## output to be used by the other processes ##
-                                 hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
-                                 hetfrz_deposition_nucleation_tend_,
-                                 // work arrays
-                                 diagnostic_scratch_);
+  call_hetfrz_compute_tendencies(
+      team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
+      // ## output to be used by the other processes ##
+      hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
+      hetfrz_deposition_nucleation_tend_,
+      // work arrays
+      diagnostic_scratch_);
 
   //---------------------------------------------------------------
   // Now update interstitial and cloud borne aerosols

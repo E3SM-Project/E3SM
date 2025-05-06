@@ -25,9 +25,11 @@ public:
   // The [lb|ub]_repairable bounds are no tighter than [lb,ub] (if not set,
   // they are set equal to lb/ub). If field is outside [lb,ub], but inside
   // [lb_rep,ub_rep], we return a "Repairable" check result, rather than a Fail.
-  FieldWithinIntervalCheck(const Field &field, const std::shared_ptr<const AbstractGrid> &grid,
+  FieldWithinIntervalCheck(const Field &field,
+                           const std::shared_ptr<const AbstractGrid> &grid,
                            const double lower_bound, const double upper_bound,
-                           const bool can_repair = false, const double lb_repairable = -s_max,
+                           const bool can_repair      = false,
+                           const double lb_repairable = -s_max,
                            const double ub_repairable = s_max);
 
   // The name of the property check

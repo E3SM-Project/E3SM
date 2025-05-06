@@ -11,9 +11,10 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::ice_classical_nucleation(
-    const Spack &frzimm, const Spack &frzcnt, const Spack &frzdep, const Spack &rho,
-    const Spack &qc_incld, const Spack &nc_incld, const int Iflag, Spack &ncheti_cnt,
-    Spack &qcheti_cnt, Spack &nicnt, Spack &qicnt, Spack &ninuc_cnt, Spack &qinuc_cnt) {
+    const Spack &frzimm, const Spack &frzcnt, const Spack &frzdep,
+    const Spack &rho, const Spack &qc_incld, const Spack &nc_incld,
+    const int Iflag, Spack &ncheti_cnt, Spack &qcheti_cnt, Spack &nicnt,
+    Spack &qicnt, Spack &ninuc_cnt, Spack &qinuc_cnt) {
   constexpr Scalar pi      = C::Pi;
   constexpr Scalar rho_h2o = C::RHO_H2O;
 
@@ -28,14 +29,16 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_classical_nucleation(
   // minimum mass of new crystal due to freezing of cloud droplets done
   // externally (kg)
 
-  const Scalar mi0l_min = (4.0 / 3.0) * pi * rho_h2o * (4.0e-6) * (4.0e-6) * (4.0e-6);
-  Spack mi0l            = qc_incld / ekat::max(nc_incld, 1.0e6 / rho);
-  mi0l                  = ekat::max(mi0l_min, mi0l);
+  const Scalar mi0l_min =
+      (4.0 / 3.0) * pi * rho_h2o * (4.0e-6) * (4.0e-6) * (4.0e-6);
+  Spack mi0l = qc_incld / ekat::max(nc_incld, 1.0e6 / rho);
+  mi0l       = ekat::max(mi0l_min, mi0l);
 
   const auto mask = qc_incld > qsmall;
   switch (Iflag) {
   case 1: // cloud droplet immersion freezing
-    ncheti_cnt.set(mask, frzimm * 1.0e6 / rho /* frzimm input is in [#/cm3] */, Zero);
+    ncheti_cnt.set(mask, frzimm * 1.0e6 / rho /* frzimm input is in [#/cm3] */,
+                   Zero);
     qcheti_cnt.set(mask, ncheti_cnt * mi0l, Zero);
     break;
   case 2: // deposition freezing / contact freezing
@@ -45,8 +48,8 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_classical_nucleation(
     qinuc_cnt.set(mask, ninuc_cnt * mi0, Zero);
     break;
   default:
-    EKAT_KERNEL_ERROR_MSG(
-        "Error! Unhandled case in switch statement for Iflag in p3_CNT_couple_impl.hpp .\n");
+    EKAT_KERNEL_ERROR_MSG("Error! Unhandled case in switch statement for Iflag "
+                          "in p3_CNT_couple_impl.hpp .\n");
     break;
   }
 }

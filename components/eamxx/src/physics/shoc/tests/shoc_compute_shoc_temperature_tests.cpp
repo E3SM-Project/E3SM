@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestComputeShocTemp : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestComputeShocTemp
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 1;
@@ -81,7 +82,8 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp : public UnitWrap::UnitTest<D>
     // Test Two
     // Given profiles all with cloud liquid water greater than zero,
     //  AND inverse exner functions equal to 1, ensure that tabs is greater that
-    //  absolute temperature is greater than (or equal to) liquid water potential temperature
+    //  absolute temperature is greater than (or equal to) liquid water
+    //  potential temperature
 
     // Inverse Exner value [-]
     Real inv_exner_sec[nlev] = {1, 1, 1};
@@ -197,17 +199,18 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp : public UnitWrap::UnitTest<D>
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    ComputeShocTempData baseline_data[] = {//            shcol, nlev
-                                           ComputeShocTempData(10, 71), ComputeShocTempData(10, 12),
-                                           ComputeShocTempData(7, 16), ComputeShocTempData(2, 7)};
+    ComputeShocTempData baseline_data[] = {
+        //            shcol, nlev
+        ComputeShocTempData(10, 71), ComputeShocTempData(10, 12),
+        ComputeShocTempData(7, 16), ComputeShocTempData(2, 7)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ComputeShocTempData cxx_data[] = {
         ComputeShocTempData(baseline_data[0]),
         ComputeShocTempData(baseline_data[1]),
@@ -231,7 +234,8 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp : public UnitWrap::UnitTest<D>
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeShocTempData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(ComputeShocTempData);
       for (Int i = 0; i < num_runs; ++i) {
         ComputeShocTempData &d_baseline = baseline_data[i];
         ComputeShocTempData &d_cxx      = cxx_data[i];
@@ -255,15 +259,15 @@ struct UnitWrap::UnitTest<D>::TestComputeShocTemp : public UnitWrap::UnitTest<D>
 namespace {
 
 TEST_CASE("shoc_compute_shoc_temperature_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocTemp;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestComputeShocTemp;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_compute_shoc_temperature_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocTemp;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestComputeShocTemp;
 
   TestStruct().run_bfb();
 }

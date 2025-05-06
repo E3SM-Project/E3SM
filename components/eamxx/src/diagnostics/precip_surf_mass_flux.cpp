@@ -5,7 +5,8 @@
 namespace scream {
 
 // ===============================================================================
-PrecipSurfMassFlux::PrecipSurfMassFlux(const ekat::Comm &comm, const ekat::ParameterList &params)
+PrecipSurfMassFlux::PrecipSurfMassFlux(const ekat::Comm &comm,
+                                       const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   ci_string type = m_params.get<std::string>("precip_type");
   if (type == "ice") {
@@ -21,7 +22,8 @@ PrecipSurfMassFlux::PrecipSurfMassFlux(const ekat::Comm &comm, const ekat::Param
 }
 
 // ==============================================================================
-void PrecipSurfMassFlux::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void PrecipSurfMassFlux::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
@@ -29,16 +31,18 @@ void PrecipSurfMassFlux::set_grids(const std::shared_ptr<const GridsManager> gri
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
 
   FieldLayout scalar2d_layout_mid{{COL}, {m_num_cols}};
 
   // The fields required for this diagnostic to be computed
   if (m_type & s_ice) {
-    add_field<Required>("precip_ice_surf_mass", scalar2d_layout_mid, kg / m2, grid_name);
+    add_field<Required>("precip_ice_surf_mass", scalar2d_layout_mid, kg / m2,
+                        grid_name);
   }
   if (m_type & s_liq) {
-    add_field<Required>("precip_liq_surf_mass", scalar2d_layout_mid, kg / m2, grid_name);
+    add_field<Required>("precip_liq_surf_mass", scalar2d_layout_mid, kg / m2,
+                        grid_name);
   }
 
   // Construct and allocate the diagnostic field
@@ -62,20 +66,22 @@ void PrecipSurfMassFlux::compute_diagnostic_impl() {
     auto mass_ice = get_field_in("precip_ice_surf_mass");
     mass_ice_d    = mass_ice.get_view<const Real *>();
 
-    const auto &t_start = mass_ice.get_header().get_tracking().get_accum_start_time();
-    const auto &t_now   = mass_ice.get_header().get_tracking().get_time_stamp();
-    dt                  = t_now - t_start;
+    const auto &t_start =
+        mass_ice.get_header().get_tracking().get_accum_start_time();
+    const auto &t_now = mass_ice.get_header().get_tracking().get_time_stamp();
+    dt                = t_now - t_start;
   }
   if (use_liq) {
     auto mass_liq = get_field_in("precip_liq_surf_mass");
     mass_liq_d    = mass_liq.get_view<const Real *>();
 
-    const auto &t_start = mass_liq.get_header().get_tracking().get_accum_start_time();
-    const auto &t_now   = mass_liq.get_header().get_tracking().get_time_stamp();
+    const auto &t_start =
+        mass_liq.get_header().get_tracking().get_accum_start_time();
+    const auto &t_now = mass_liq.get_header().get_tracking().get_time_stamp();
     if (use_ice) {
-      EKAT_REQUIRE_MSG(
-          dt == (t_now - t_start),
-          "Error! Liquid and ice precip mass fields have different accumulation time stamps!\n");
+      EKAT_REQUIRE_MSG(dt == (t_now - t_start),
+                       "Error! Liquid and ice precip mass fields have "
+                       "different accumulation time stamps!\n");
     } else {
       dt = t_now - t_start;
     }

@@ -17,7 +17,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -51,15 +52,16 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager - single column for these tests
-  const int ncols = 1; // TODO should be set to the size of the communication group.
-  auto gm         = create_gm(comm, ncols, num_levs);
+  const int ncols =
+      1; // TODO should be set to the size of the communication group.
+  auto gm = create_gm(comm, ncols, num_levs);
 
   // Kokkos Policy
   auto policy = ESU::get_default_team_policy(ncols, num_levs);
 
   // Input (randomized) views
-  view_1d qv("qv", num_levs), pseudo_density("pseudo_density", num_levs), u("u", num_levs),
-      v("v", num_levs);
+  view_1d qv("qv", num_levs), pseudo_density("pseudo_density", num_levs),
+      u("u", num_levs), v("v", num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -72,9 +74,11 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   register_diagnostics();
   auto &diag_factory = AtmosphereDiagnosticFactory::instance();
 
-  REQUIRE_THROWS(diag_factory.create("VaporFlux", comm, params)); // No 'wind_component'
+  REQUIRE_THROWS(
+      diag_factory.create("VaporFlux", comm, params)); // No 'wind_component'
   params.set<std::string>("wind_component", "foo");
-  REQUIRE_THROWS(diag_factory.create("VaporFlux", comm, params)); // Invalid 'wind_component'
+  REQUIRE_THROWS(diag_factory.create("VaporFlux", comm,
+                                     params)); // Invalid 'wind_component'
   for (const std::string which_comp : {"Zonal", "Meridional"}) {
     // Construct the Diagnostic
     params.set<std::string>("wind_component", which_comp);
@@ -127,9 +131,10 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
       const auto &diag_out              = diag->get_diagnostic();
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
       qv_vert_integrated_flux_u_f.deep_copy(0);
-      const auto &qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real *>();
-      constexpr Real g                        = PC::gravit;
-      int comp                                = which_comp == "Zonal" ? 0 : 1;
+      const auto &qv_vert_integrated_flux_u_v =
+          qv_vert_integrated_flux_u_f.get_view<Real *>();
+      constexpr Real g = PC::gravit;
+      int comp         = which_comp == "Zonal" ? 0 : 1;
 
       Kokkos::parallel_for(
           "", policy, KOKKOS_LAMBDA(const MemberType &team) {
@@ -138,7 +143,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
             Kokkos::parallel_reduce(
                 Kokkos::TeamVectorRange(team, num_levs),
                 [&](const int &ilev, Real &lsum) {
-                  lsum += wind(ilev) * qv_v(icol, ilev) * pseudo_density_v(icol, ilev) / g;
+                  lsum += wind(ilev) * qv_v(icol, ilev) *
+                          pseudo_density_v(icol, ilev) / g;
                 },
                 qv_vert_integrated_flux_u_v(icol));
           });

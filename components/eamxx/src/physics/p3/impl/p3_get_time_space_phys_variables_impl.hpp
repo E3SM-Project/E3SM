@@ -9,9 +9,10 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::get_time_space_phys_variables(
-    const Spack &T_atm, const Spack &pres, const Spack &rho, const Spack &qv_sat_l,
-    const Spack &qv_sat_i, Spack &mu, Spack &dv, Spack &sc, Spack &dqsdt, Spack &dqsidt, Spack &ab,
-    Spack &abi, Spack &kap, Spack &eii, const Smask &context) {
+    const Spack &T_atm, const Spack &pres, const Spack &rho,
+    const Spack &qv_sat_l, const Spack &qv_sat_i, Spack &mu, Spack &dv,
+    Spack &sc, Spack &dqsdt, Spack &dqsidt, Spack &ab, Spack &abi, Spack &kap,
+    Spack &eii, const Smask &context) {
   // time/space varying physical variables
   mu.set(context, sp(1.496e-6) * pow(T_atm, sp(1.5)) / (T_atm + 120));
   dv.set(context, sp(8.794e-5) * pow(T_atm, sp(1.81)) / pres);

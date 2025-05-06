@@ -13,26 +13,31 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::rain_immersion_freezing(
-    const Spack &T_atm, const Spack &lamr, const Spack &mu_r, const Spack &cdistr,
-    const Spack &qr_incld, Spack &qr2qi_immers_freeze_tend, Spack &nr2ni_immers_freeze_tend,
-    const P3Runtime &runtime_options, const Smask &context) {
+    const Spack &T_atm, const Spack &lamr, const Spack &mu_r,
+    const Spack &cdistr, const Spack &qr_incld, Spack &qr2qi_immers_freeze_tend,
+    Spack &nr2ni_immers_freeze_tend, const P3Runtime &runtime_options,
+    const Smask &context) {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar T_rainfrz  = C::T_rainfrz;
   constexpr Scalar T_zerodegc = C::T_zerodegc;
   constexpr Scalar CONS5      = C::CONS5;
   constexpr Scalar CONS6      = C::CONS6;
 
-  const Scalar immersion_freezing_exponent = runtime_options.immersion_freezing_exponent;
+  const Scalar immersion_freezing_exponent =
+      runtime_options.immersion_freezing_exponent;
 
-  const auto qr_not_small_and_t_freezing = (qr_incld >= qsmall) && (T_atm <= T_rainfrz) && context;
+  const auto qr_not_small_and_t_freezing =
+      (qr_incld >= qsmall) && (T_atm <= T_rainfrz) && context;
   if (qr_not_small_and_t_freezing.any()) {
     qr2qi_immers_freeze_tend.set(
         qr_not_small_and_t_freezing,
-        CONS6 * exp(log(cdistr) + log(tgamma(sp(7.) + mu_r)) - sp(6.) * log(lamr)) *
+        CONS6 *
+            exp(log(cdistr) + log(tgamma(sp(7.) + mu_r)) - sp(6.) * log(lamr)) *
             exp(immersion_freezing_exponent * (T_zerodegc - T_atm)));
     nr2ni_immers_freeze_tend.set(
         qr_not_small_and_t_freezing,
-        CONS5 * exp(log(cdistr) + log(tgamma(sp(4.) + mu_r)) - sp(3.) * log(lamr)) *
+        CONS5 *
+            exp(log(cdistr) + log(tgamma(sp(4.) + mu_r)) - sp(3.) * log(lamr)) *
             exp(immersion_freezing_exponent * (T_zerodegc - T_atm)));
   }
 }

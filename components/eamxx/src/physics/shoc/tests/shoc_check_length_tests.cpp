@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCheckShocLength : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCheckShocLength
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real maxlen = scream::shoc::Constants<Real>::maxlen;
@@ -106,8 +107,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength : public UnitWrap::UnitTest<D>
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     CheckLengthScaleShocLengthData SDS_cxx[] = {
         CheckLengthScaleShocLengthData(SDS_baseline[0]),
         CheckLengthScaleShocLengthData(SDS_baseline[1]),
@@ -115,7 +116,8 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength : public UnitWrap::UnitTest<D>
         CheckLengthScaleShocLengthData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(CheckLengthScaleShocLengthData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(CheckLengthScaleShocLengthData);
 
     // Assume all data is in C layout
 
@@ -156,15 +158,15 @@ struct UnitWrap::UnitTest<D>::TestCheckShocLength : public UnitWrap::UnitTest<D>
 namespace {
 
 TEST_CASE("shoc_check_length_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCheckShocLength;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_check_length_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckShocLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCheckShocLength;
 
   TestStruct().run_bfb();
 }

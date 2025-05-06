@@ -28,17 +28,19 @@ template <> MPI_Datatype get_mpi_type<RealInt>() {
 
 namespace scream {
 
-SCMInput::SCMInput(const std::string &filename, const double lat, const double lon,
-                   const std::vector<Field> &fields, const ekat::Comm &comm)
+SCMInput::SCMInput(const std::string &filename, const double lat,
+                   const double lon, const std::vector<Field> &fields,
+                   const ekat::Comm &comm)
     : m_comm(comm), m_filename(filename) {
   auto iotype = scorpio::str2iotype("default");
   scorpio::register_file(m_filename, scorpio::Read, iotype);
 
-  // Some input files have the "time" dimension as non-unlimited. This messes up our
-  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
-  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
-  // no unlim dim, this ptr remains inited.
-  if (not scorpio::has_time_dim(m_filename) and scorpio::has_dim(m_filename, "time")) {
+  // Some input files have the "time" dimension as non-unlimited. This messes up
+  // our scorpio interface, which stores a pointer to a "time" dim to be used to
+  // read/write slices. This ptr is automatically inited to the unlimited dim in
+  // the file. If there is no unlim dim, this ptr remains inited.
+  if (not scorpio::has_time_dim(m_filename) and
+      scorpio::has_dim(m_filename, "time")) {
     scorpio::mark_dim_as_time(m_filename, "time");
   }
 
@@ -62,8 +64,8 @@ SCMInput::SCMInput(const std::string &filename, const double lat, const double l
                          fl.to_string() + "\n");
 
     m_fields.push_back(f.subfield(0, 0));
-    FieldIdentifier fid_io(f.name(), fl.clone().reset_dim(0, ncols), fid.get_units(),
-                           m_io_grid->name());
+    FieldIdentifier fid_io(f.name(), fl.clone().reset_dim(0, ncols),
+                           fid.get_units(), m_io_grid->name());
     auto &f_io = m_io_fields.emplace_back(fid_io);
     f_io.allocate_view();
   }
@@ -80,8 +82,9 @@ void SCMInput::create_io_grid() {
                    "  - filename: " +
                        m_filename + "\n");
   const int ncols = scorpio::get_dimlen(m_filename, "ncol");
-  const int nlevs =
-      scorpio::has_dim(m_filename, "lev") ? scorpio::get_dimlen(m_filename, "lev") : 1;
+  const int nlevs = scorpio::has_dim(m_filename, "lev")
+                        ? scorpio::get_dimlen(m_filename, "lev")
+                        : 1;
 
   m_io_grid = create_point_grid("scm_io_grid", ncols, nlevs, m_comm);
 }
@@ -91,8 +94,10 @@ void SCMInput::create_closest_col_info(double target_lat, double target_lon) {
   const auto ncols = m_io_grid->get_num_local_dofs();
 
   auto nondim = ekat::units::Units::nondimensional();
-  auto lat    = m_io_grid->create_geometry_data("lat", m_io_grid->get_2d_scalar_layout(), nondim);
-  auto lon    = m_io_grid->create_geometry_data("lon", m_io_grid->get_2d_scalar_layout(), nondim);
+  auto lat    = m_io_grid->create_geometry_data(
+      "lat", m_io_grid->get_2d_scalar_layout(), nondim);
+  auto lon = m_io_grid->create_geometry_data(
+      "lon", m_io_grid->get_2d_scalar_layout(), nondim);
 
   // Read from file
   AtmosphereInput file_reader(m_filename, m_io_grid, {lat, lon});
@@ -108,7 +113,8 @@ void SCMInput::create_closest_col_info(double target_lat, double target_lon) {
   Kokkos::parallel_reduce(
       ncols,
       KOKKOS_LAMBDA(int icol, minloc_value_t &result) {
-        auto dist = std::abs(lat_d(icol) - target_lat) + std::abs(lon_d(icol) - target_lon);
+        auto dist = std::abs(lat_d(icol) - target_lat) +
+                    std::abs(lon_d(icol) - target_lon);
         if (dist < result.val) {
           result.val = dist;
           result.loc = icol;
@@ -121,16 +127,19 @@ void SCMInput::create_closest_col_info(double target_lat, double target_lon) {
   RealInt min_dist_and_rank = {minloc.val, my_rank};
   m_comm.all_reduce(&min_dist_and_rank, 1, MPI_MINLOC);
 
-  // Set local col idx to -1 for mpi ranks not containing minimum lat/lon distance
+  // Set local col idx to -1 for mpi ranks not containing minimum lat/lon
+  // distance
   m_closest_col_info.mpi_rank = min_dist_and_rank.idx;
-  m_closest_col_info.col_lid  = my_rank == min_dist_and_rank.idx ? minloc.loc : -1;
+  m_closest_col_info.col_lid =
+      my_rank == min_dist_and_rank.idx ? minloc.loc : -1;
 }
 
 void SCMInput::read_variables(const int time_index) {
   auto func_start = std::chrono::steady_clock::now();
   auto fname      = [](const Field &f) { return f.name(); };
   if (m_atm_logger) {
-    m_atm_logger->info("[EAMxx::scorpio_scm_input] Reading variables from file");
+    m_atm_logger->info(
+        "[EAMxx::scorpio_scm_input] Reading variables from file");
     m_atm_logger->info("  file name: " + m_filename);
     m_atm_logger->info("  var names: " + ekat::join(m_fields, fname, ", "));
     if (time_index != -1) {
@@ -145,7 +154,8 @@ void SCMInput::read_variables(const int time_index) {
     const auto &name = f_io.name();
 
     // Read the data
-    scorpio::read_var(m_filename, name, f_io.get_internal_view_data<Real, Host>(), time_index);
+    scorpio::read_var(m_filename, name,
+                      f_io.get_internal_view_data<Real, Host>(), time_index);
 
     auto &f = m_fields[i];
     if (m_comm.rank() == m_closest_col_info.mpi_rank) {
@@ -155,7 +165,8 @@ void SCMInput::read_variables(const int time_index) {
 
     // Broadcast column data to all other ranks
     const auto col_size = f.get_header().get_identifier().get_layout().size();
-    m_comm.broadcast(f.get_internal_view_data<Real, Host>(), col_size, m_closest_col_info.mpi_rank);
+    m_comm.broadcast(f.get_internal_view_data<Real, Host>(), col_size,
+                     m_closest_col_info.mpi_rank);
 
     // Sync fields to device
     f.sync_to_dev();
@@ -163,9 +174,11 @@ void SCMInput::read_variables(const int time_index) {
 
   auto func_finish = std::chrono::steady_clock::now();
   if (m_atm_logger) {
-    auto duration =
-        std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start) / 1000.0;
-    m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration.count()) + " seconds");
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        func_finish - func_start) /
+                    1000.0;
+    m_atm_logger->info("  Done! Elapsed time: " +
+                       std::to_string(duration.count()) + " seconds");
   }
 }
 
@@ -210,26 +223,28 @@ void SCMInput::init_scorpio_structures() {
 
     // Check that all dims for this var match the ones on file
     for (int i = 0; i < layout.rank(); ++i) {
-      const int file_len  = scorpio::get_dimlen(m_filename, dim_names[i]);
-      const int eamxx_len = i == 0 ? m_io_grid->get_partitioned_dim_global_size() : layout.dim(i);
-      EKAT_REQUIRE_MSG(eamxx_len == file_len, "Error! Dimension mismatch for input file variable.\n"
-                                              " - filename : " +
-                                                  m_filename +
-                                                  "\n"
-                                                  " - varname  : " +
-                                                  f.name() +
-                                                  "\n"
-                                                  " - var dims : " +
-                                                  ekat::join(dim_names, ",") +
-                                                  "\n"
-                                                  " - dim name : " +
-                                                  dim_names[i] +
-                                                  "\n"
-                                                  " - expected extent : " +
-                                                  std::to_string(eamxx_len) +
-                                                  "\n"
-                                                  " - extent from file: " +
-                                                  std::to_string(file_len) + "\n");
+      const int file_len = scorpio::get_dimlen(m_filename, dim_names[i]);
+      const int eamxx_len =
+          i == 0 ? m_io_grid->get_partitioned_dim_global_size() : layout.dim(i);
+      EKAT_REQUIRE_MSG(eamxx_len == file_len,
+                       "Error! Dimension mismatch for input file variable.\n"
+                       " - filename : " +
+                           m_filename +
+                           "\n"
+                           " - varname  : " +
+                           f.name() +
+                           "\n"
+                           " - var dims : " +
+                           ekat::join(dim_names, ",") +
+                           "\n"
+                           " - dim name : " +
+                           dim_names[i] +
+                           "\n"
+                           " - expected extent : " +
+                           std::to_string(eamxx_len) +
+                           "\n"
+                           " - extent from file: " +
+                           std::to_string(file_len) + "\n");
     }
 
     // Ensure that we can read the var using Real data type

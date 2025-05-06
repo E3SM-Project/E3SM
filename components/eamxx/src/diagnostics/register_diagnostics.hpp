@@ -31,43 +31,64 @@ namespace scream {
 
 inline void register_diagnostics() {
   auto &diag_factory = AtmosphereDiagnosticFactory::instance();
-  diag_factory.register_product("PotentialTemperature",
-                                &create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
-  diag_factory.register_product("FieldAtLevel", &create_atmosphere_diagnostic<FieldAtLevel>);
-  diag_factory.register_product("FieldAtHeight", &create_atmosphere_diagnostic<FieldAtHeight>);
-  diag_factory.register_product("FieldAtPressureLevel",
-                                &create_atmosphere_diagnostic<FieldAtPressureLevel>);
-  diag_factory.register_product("AtmosphereDensity",
-                                &create_atmosphere_diagnostic<AtmDensityDiagnostic>);
-  diag_factory.register_product("Exner", &create_atmosphere_diagnostic<ExnerDiagnostic>);
-  diag_factory.register_product("VirtualTemperature",
-                                &create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
-  diag_factory.register_product("DryStaticEnergy",
-                                &create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
-  diag_factory.register_product("SeaLevelPressure",
-                                &create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
-  diag_factory.register_product("WaterPath", &create_atmosphere_diagnostic<WaterPathDiagnostic>);
-  diag_factory.register_product("ShortwaveCloudForcing",
-                                &create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
-  diag_factory.register_product("LongwaveCloudForcing",
-                                &create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
-  diag_factory.register_product("RelativeHumidity",
-                                &create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
-  diag_factory.register_product("VaporFlux", &create_atmosphere_diagnostic<VaporFluxDiagnostic>);
-  diag_factory.register_product("VerticalLayer",
-                                &create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
-  diag_factory.register_product("precip_surf_mass_flux",
-                                &create_atmosphere_diagnostic<PrecipSurfMassFlux>);
-  diag_factory.register_product("surface_upward_latent_heat_flux",
-                                &create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
-  diag_factory.register_product("wind_speed", &create_atmosphere_diagnostic<WindSpeed>);
-  diag_factory.register_product("AerosolOpticalDepth550nm", &create_atmosphere_diagnostic<AODVis>);
-  diag_factory.register_product("NumberPath", &create_atmosphere_diagnostic<NumberPathDiagnostic>);
-  diag_factory.register_product("AeroComCld", &create_atmosphere_diagnostic<AeroComCld>);
-  diag_factory.register_product("AtmBackTendDiag", &create_atmosphere_diagnostic<AtmBackTendDiag>);
-  diag_factory.register_product("HorizAvgDiag", &create_atmosphere_diagnostic<HorizAvgDiag>);
-  diag_factory.register_product("VertContractDiag",
-                                &create_atmosphere_diagnostic<VertContractDiag>);
+  diag_factory.register_product(
+      "PotentialTemperature",
+      &create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
+  diag_factory.register_product("FieldAtLevel",
+                                &create_atmosphere_diagnostic<FieldAtLevel>);
+  diag_factory.register_product("FieldAtHeight",
+                                &create_atmosphere_diagnostic<FieldAtHeight>);
+  diag_factory.register_product(
+      "FieldAtPressureLevel",
+      &create_atmosphere_diagnostic<FieldAtPressureLevel>);
+  diag_factory.register_product(
+      "AtmosphereDensity", &create_atmosphere_diagnostic<AtmDensityDiagnostic>);
+  diag_factory.register_product("Exner",
+                                &create_atmosphere_diagnostic<ExnerDiagnostic>);
+  diag_factory.register_product(
+      "VirtualTemperature",
+      &create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
+  diag_factory.register_product(
+      "DryStaticEnergy",
+      &create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
+  diag_factory.register_product(
+      "SeaLevelPressure",
+      &create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
+  diag_factory.register_product(
+      "WaterPath", &create_atmosphere_diagnostic<WaterPathDiagnostic>);
+  diag_factory.register_product(
+      "ShortwaveCloudForcing",
+      &create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
+  diag_factory.register_product(
+      "LongwaveCloudForcing",
+      &create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
+  diag_factory.register_product(
+      "RelativeHumidity",
+      &create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
+  diag_factory.register_product(
+      "VaporFlux", &create_atmosphere_diagnostic<VaporFluxDiagnostic>);
+  diag_factory.register_product(
+      "VerticalLayer", &create_atmosphere_diagnostic<VerticalLayerDiagnostic>);
+  diag_factory.register_product(
+      "precip_surf_mass_flux",
+      &create_atmosphere_diagnostic<PrecipSurfMassFlux>);
+  diag_factory.register_product(
+      "surface_upward_latent_heat_flux",
+      &create_atmosphere_diagnostic<SurfaceUpwardLatentHeatFlux>);
+  diag_factory.register_product("wind_speed",
+                                &create_atmosphere_diagnostic<WindSpeed>);
+  diag_factory.register_product("AerosolOpticalDepth550nm",
+                                &create_atmosphere_diagnostic<AODVis>);
+  diag_factory.register_product(
+      "NumberPath", &create_atmosphere_diagnostic<NumberPathDiagnostic>);
+  diag_factory.register_product("AeroComCld",
+                                &create_atmosphere_diagnostic<AeroComCld>);
+  diag_factory.register_product("AtmBackTendDiag",
+                                &create_atmosphere_diagnostic<AtmBackTendDiag>);
+  diag_factory.register_product("HorizAvgDiag",
+                                &create_atmosphere_diagnostic<HorizAvgDiag>);
+  diag_factory.register_product(
+      "VertContractDiag", &create_atmosphere_diagnostic<VertContractDiag>);
 }
 
 } // namespace scream

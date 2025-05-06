@@ -8,11 +8,12 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::calculate_incloud_mixingratios(
-    const Spack &qc, const Spack &qr, const Spack &qi, const Spack &qm, const Spack &nc,
-    const Spack &nr, const Spack &ni, const Spack &bm, const Spack &inv_cld_frac_l,
-    const Spack &inv_cld_frac_i, const Spack &inv_cld_frac_r, Spack &qc_incld, Spack &qr_incld,
-    Spack &qi_incld, Spack &qm_incld, Spack &nc_incld, Spack &nr_incld, Spack &ni_incld,
-    Spack &bm_incld, const Smask &context) {
+    const Spack &qc, const Spack &qr, const Spack &qi, const Spack &qm,
+    const Spack &nc, const Spack &nr, const Spack &ni, const Spack &bm,
+    const Spack &inv_cld_frac_l, const Spack &inv_cld_frac_i,
+    const Spack &inv_cld_frac_r, Spack &qc_incld, Spack &qr_incld,
+    Spack &qi_incld, Spack &qm_incld, Spack &nc_incld, Spack &nr_incld,
+    Spack &ni_incld, Spack &bm_incld, const Smask &context) {
   constexpr Scalar qsmall        = C::QSMALL;
   constexpr Scalar incloud_limit = C::incloud_limit;
   constexpr Scalar precip_limit  = C::precip_limit;
@@ -23,7 +24,7 @@ KOKKOS_FUNCTION void Functions<S, D>::calculate_incloud_mixingratios(
   const auto qi_ge_qsmall     = qi >= qsmall && context;
   const auto not_qi_ge_qsmall = !qi_ge_qsmall && context;
 
-  const auto qi_and_qm_ge_qsmall     = (qi >= qsmall) && (qm >= qsmall) && context;
+  const auto qi_and_qm_ge_qsmall = (qi >= qsmall) && (qm >= qsmall) && context;
   const auto not_qi_and_qm_ge_qsmall = !qi_and_qm_ge_qsmall && context;
 
   const auto qr_ge_qsmall     = qr >= qsmall && context;
@@ -53,9 +54,10 @@ KOKKOS_FUNCTION void Functions<S, D>::calculate_incloud_mixingratios(
   qr_incld.set(not_qr_ge_qsmall, 0);
   nr_incld.set(not_qr_ge_qsmall, 0);
 
-  const auto any_gt_limit = (qc_incld > incloud_limit || qi_incld > incloud_limit ||
-                             qr_incld > precip_limit || bm_incld > incloud_limit) &&
-                            context;
+  const auto any_gt_limit =
+      (qc_incld > incloud_limit || qi_incld > incloud_limit ||
+       qr_incld > precip_limit || bm_incld > incloud_limit) &&
+      context;
 
   qc_incld.set(any_gt_limit, min(qc_incld, incloud_limit));
   qi_incld.set(any_gt_limit, min(qi_incld, incloud_limit));

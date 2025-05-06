@@ -9,7 +9,8 @@ namespace scream {
 class InverseRemapper : public AbstractRemapper {
 public:
   InverseRemapper(std::shared_ptr<AbstractRemapper> remapper) {
-    EKAT_REQUIRE_MSG(remapper != nullptr, "Error! Null pointer for inner remapper.\n");
+    EKAT_REQUIRE_MSG(remapper != nullptr,
+                     "Error! Null pointer for inner remapper.\n");
 
     set_grids(remapper->get_tgt_grid(), remapper->get_src_grid());
 
@@ -29,7 +30,8 @@ public:
     return m_remapper->create_src_layout(src_layout);
   }
 
-  bool compatible_layouts(const FieldLayout &src, const FieldLayout &tgt) const override {
+  bool compatible_layouts(const FieldLayout &src,
+                          const FieldLayout &tgt) const override {
     return m_remapper->compatible_layouts(tgt, src);
   }
   virtual bool is_valid_src_layout(const FieldLayout &layout) const {

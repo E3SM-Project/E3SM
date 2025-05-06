@@ -18,10 +18,12 @@ class Nudging : public AtmosphereProcess {
 public:
   // enum to track how the source pressure levels are defined
   enum SourcePresType {
-    // DEFAULT - source data should include time/spatially varying p_mid with dimensions (time, col,
+    // DEFAULT - source data should include time/spatially varying p_mid with
+    // dimensions (time, col,
     // lev)
     TIME_DEPENDENT_3D_PROFILE,
-    // source data includes p_levs which is a static set of levels in both space and time, with
+    // source data includes p_levs which is a static set of levels in both space
+    // and time, with
     // dimensions (lev),
     STATIC_1D_VERTICAL_PROFILE
   };
@@ -30,13 +32,16 @@ public:
   Nudging(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
+  AtmosphereProcessType type() const override {
+    return AtmosphereProcessType::Physics;
+  }
 
   // The name of the subcomponent
   std::string name() const override { return "Nudging"; }
 
   // Set the grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -61,7 +66,9 @@ protected:
                             const std::string &grid_name, const int ps = 1);
 
   // Retrieve a helper field
-  Field get_helper_field(const std::string &name) const { return m_helper_fields.at(name); }
+  Field get_helper_field(const std::string &name) const {
+    return m_helper_fields.at(name);
+  }
 
   std::shared_ptr<const AbstractGrid> m_grid;
   // Keep track of field dimensions and the iteration count

@@ -8,7 +8,8 @@
 #include "share/util/eamxx_universal_constants.hpp"
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -53,8 +54,10 @@ TEST_CASE("aodvis") {
   auto grid = gm->get_grid("physics");
 
   // Input (randomized) tau
-  FieldLayout scalar3d_swband_layout = grid->get_3d_vector_layout(true, nbnds, "swband");
-  FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, nondim, grid->name());
+  FieldLayout scalar3d_swband_layout =
+      grid->get_3d_vector_layout(true, nbnds, "swband");
+  FieldIdentifier tau_fid("aero_tau_sw", scalar3d_swband_layout, nondim,
+                          grid->name());
   Field tau(tau_fid);
   tau.allocate_view();
   tau.get_header().get_tracking().update_time_stamp(t0);

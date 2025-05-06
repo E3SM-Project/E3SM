@@ -43,12 +43,14 @@ protected:
 
   // For each admissible physics grid type/rebalance, store an integer code
   // We pass these codes to f90, rather than a bunch of strings
-  template <typename T> using strmap_t = std::map<ekat::CaseInsensitiveString, T>;
+  template <typename T>
+  using strmap_t = std::map<ekat::CaseInsensitiveString, T>;
   strmap_t<strmap_t<int>> m_pg_codes;
 };
 
-inline std::shared_ptr<GridsManager> create_homme_grids_manager(const ekat::Comm &comm,
-                                                                const ekat::ParameterList &p) {
+inline std::shared_ptr<GridsManager>
+create_homme_grids_manager(const ekat::Comm &comm,
+                           const ekat::ParameterList &p) {
   return std::make_shared<HommeGridsManager>(comm, p);
 }
 

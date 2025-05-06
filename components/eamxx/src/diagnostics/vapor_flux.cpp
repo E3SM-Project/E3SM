@@ -5,11 +5,12 @@
 
 namespace scream {
 
-VaporFluxDiagnostic::VaporFluxDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params)
+VaporFluxDiagnostic::VaporFluxDiagnostic(const ekat::Comm &comm,
+                                         const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(
-      params.isParameter("wind_component"),
-      "Error! VaporFluxDiagnostic requires 'wind_component' in its input parameters.\n");
+  EKAT_REQUIRE_MSG(params.isParameter("wind_component"),
+                   "Error! VaporFluxDiagnostic requires 'wind_component' in "
+                   "its input parameters.\n");
 
   const auto &comp = m_params.get<std::string>("wind_component");
   if (comp == "Zonal") {
@@ -17,22 +18,24 @@ VaporFluxDiagnostic::VaporFluxDiagnostic(const ekat::Comm &comm, const ekat::Par
   } else if (comp == "Meridional") {
     m_component = 1;
   } else {
-    EKAT_ERROR_MSG("Error! Invalid choice for 'wind_component' in VaporFluxDiagnostic.\n"
-                   "  - input value: " +
-                   comp +
-                   "\n"
-                   "  - valid values: Zonal, Meridional\n");
+    EKAT_ERROR_MSG(
+        "Error! Invalid choice for 'wind_component' in VaporFluxDiagnostic.\n"
+        "  - input value: " +
+        comp +
+        "\n"
+        "  - valid values: Zonal, Meridional\n");
   }
   m_name = comp + "VapFlux";
 }
 
-void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void VaporFluxDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
   auto scalar3d = grid->get_3d_scalar_layout(true);
@@ -60,8 +63,9 @@ void VaporFluxDiagnostic::compute_diagnostic_impl() {
   const auto diag = m_diagnostic_output.get_view<Real *>();
   const auto qv   = get_field_in("qv").get_view<const Real **>();
   const auto rho  = get_field_in("pseudo_density").get_view<const Real **>();
-  const auto wind =
-      get_field_in("horiz_winds").get_component(m_component).get_view<const Real **>();
+  const auto wind = get_field_in("horiz_winds")
+                        .get_component(m_component)
+                        .get_view<const Real **>();
 
   const auto num_levs = m_num_levs;
   const auto policy   = ESU::get_default_team_policy(m_num_cols, m_num_levs);

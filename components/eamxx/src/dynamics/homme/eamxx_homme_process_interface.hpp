@@ -26,12 +26,15 @@ class HommeDynamics : public AtmosphereProcess {
   using IntPack = ekat::Pack<int, SCREAM_PACK_SIZE>;
   using Mask    = ekat::Mask<SCREAM_PACK_SIZE>;
 
-  using KT                                         = KokkosTypes<DefaultDevice>;
-  template <typename ScalarT> using view_1d        = typename KT::template view_1d<ScalarT>;
-  template <typename ScalarT> using view_2d        = typename KT::template view_2d<ScalarT>;
-  template <typename ScalarT, int N> using view_Nd = typename KT::template view_ND<ScalarT, N>;
-  template <typename ST> using uview_1d            = ekat::Unmanaged<view_1d<ST>>;
-  template <typename ST> using uview_2d            = ekat::Unmanaged<view_2d<ST>>;
+  using KT = KokkosTypes<DefaultDevice>;
+  template <typename ScalarT>
+  using view_1d = typename KT::template view_1d<ScalarT>;
+  template <typename ScalarT>
+  using view_2d = typename KT::template view_2d<ScalarT>;
+  template <typename ScalarT, int N>
+  using view_Nd = typename KT::template view_ND<ScalarT, N>;
+  template <typename ST> using uview_1d = ekat::Unmanaged<view_1d<ST>>;
+  template <typename ST> using uview_2d = ekat::Unmanaged<view_2d<ST>>;
 
   using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
   using Workspace    = WorkspaceMgr::Workspace;
@@ -90,11 +93,13 @@ protected:
   void fv_phys_set_grids();
   void fv_phys_requested_buffer_size_in_bytes() const;
   void fv_phys_initialize_impl();
-  void fv_phys_dyn_to_fv_phys(const util::TimeStamp &t, const bool restart = false);
+  void fv_phys_dyn_to_fv_phys(const util::TimeStamp &t,
+                              const bool restart = false);
   void fv_phys_pre_process();
   void fv_phys_post_process();
   // See [rrtmgp active gases] in eamxx_homme_fv_phys.cpp.
-  void fv_phys_rrtmgp_active_gases_init(const std::shared_ptr<const GridsManager> &gm);
+  void fv_phys_rrtmgp_active_gases_init(
+      const std::shared_ptr<const GridsManager> &gm);
   void fv_phys_rrtmgp_active_gases_remap(const RunType run_type);
 
   // Rayleigh friction functions
@@ -126,8 +131,10 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Creates an helper field, not to be shared with the AD's FieldManager
-  void create_helper_field(const std::string &name, const std::vector<FieldTag> &tags,
-                           const std::vector<int> &dims, const std::string &grid);
+  void create_helper_field(const std::string &name,
+                           const std::vector<FieldTag> &tags,
+                           const std::vector<int> &dims,
+                           const std::string &grid);
 
   // Some helper fields.
   std::map<std::string, Field> m_helper_fields;
@@ -140,15 +147,16 @@ protected:
   std::shared_ptr<AbstractRemapper> m_ic_remapper;
 
   // The dynamics and reference grids
-  std::shared_ptr<const AbstractGrid> m_dyn_grid;  // Dynamics DGLL
-  std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
+  std::shared_ptr<const AbstractGrid> m_dyn_grid; // Dynamics DGLL
+  std::shared_ptr<const AbstractGrid>
+      m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
 
   // Rayleigh friction decay rate profile
   view_1d<Pack> m_otau;
 
   // Rayleigh friction paramaters
-  int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
+  int m_rayk0; // Vertical level at which rayleigh friction term is centered.
   Real m_raykrange; // Range of rayleigh friction profile.
   Real m_raytau0;   // Approximate value of decay time at model top (days)
                     // if set to 0, no rayleigh friction is applied

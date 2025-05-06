@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocIntColStab
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -132,8 +133,8 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data (if any) is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data (if any) is in original state
     IntegColumnStabilityData cxx_data[] = {
         IntegColumnStabilityData(baseline_data[0]),
         IntegColumnStabilityData(baseline_data[1]),
@@ -157,7 +158,8 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IntegColumnStabilityData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(IntegColumnStabilityData);
       for (Int i = 0; i < num_runs; ++i) {
         IntegColumnStabilityData &d_baseline = baseline_data[i];
         IntegColumnStabilityData &d_cxx      = cxx_data[i];
@@ -181,15 +183,15 @@ struct UnitWrap::UnitTest<D>::TestShocIntColStab : public UnitWrap::UnitTest<D>:
 namespace {
 
 TEST_CASE("shoc_tke_column_stab_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_column_stab_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIntColStab;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocIntColStab;
 
   TestStruct().run_bfb();
 }

@@ -28,7 +28,8 @@ namespace scream {
  *      as View<Pack<Real,4>**>. The second view will have dimensions (3,3),
         in terms of its value type (i.e., Pack<Real,4>).
  *      This means the field needs an allocation bigger than 30 Real's, namely
- *      3*4*3=36 Real's. This class does the book-keeping for the allocation size,
+ *      3*4*3=36 Real's. This class does the book-keeping for the allocation
+ size,
  *      so that 1) the field can be allocated with enough memory to accommodate
  *      all requests, 2) customers of the field can check what the allocation
  *      is, so that they know whether there is padding in the field, and
@@ -61,11 +62,15 @@ namespace scream {
 // Helper struct to store info related to the subviewing process
 struct SubviewInfo {
   SubviewInfo() = default;
-  SubviewInfo(const int dim, const int slice, const int extent, const bool is_dynamic)
-      : dim_idx(dim), slice_idx(slice), dim_extent(extent), dynamic(is_dynamic) {}
+  SubviewInfo(const int dim, const int slice, const int extent,
+              const bool is_dynamic)
+      : dim_idx(dim), slice_idx(slice), dim_extent(extent),
+        dynamic(is_dynamic) {}
   // multi-slice subview across contiguous indices
-  SubviewInfo(const int dim, const int slice_beg, const int slice_end, const int extent)
-      : dim_idx(dim), slice_idx(slice_beg), slice_idx_end(slice_end), dim_extent(extent) {}
+  SubviewInfo(const int dim, const int slice_beg, const int slice_end,
+              const int extent)
+      : dim_idx(dim), slice_idx(slice_beg), slice_idx_end(slice_end),
+        dim_extent(extent) {}
   SubviewInfo(const SubviewInfo &)            = default;
   SubviewInfo &operator=(const SubviewInfo &) = default;
 
@@ -86,8 +91,8 @@ inline bool operator==(const SubviewInfo &lhs, const SubviewInfo &rhs) {
   return lhs.dim_idx == rhs.dim_idx && lhs.slice_idx == rhs.slice_idx &&
          //  slice_idx_end == -1 for single slice, and the ending index when
          // it's a multi-slice
-         lhs.slice_idx_end == rhs.slice_idx_end && lhs.dim_extent == rhs.dim_extent &&
-         lhs.dynamic == rhs.dynamic;
+         lhs.slice_idx_end == rhs.slice_idx_end &&
+         lhs.dim_extent == rhs.dim_extent && lhs.dynamic == rhs.dynamic;
 }
 
 class FieldAllocProp {
@@ -106,9 +111,11 @@ public:
   FieldAllocProp subview(const int idim, const int k, const bool dynamic) const;
 
   // multi-slice subview over contiguous indices
-  FieldAllocProp subview(const int idim, const int k_beg, const int k_end) const;
+  FieldAllocProp subview(const int idim, const int k_beg,
+                         const int k_end) const;
 
-  // Request allocation able to accommodate a pack of ScalarType of the given pack size
+  // Request allocation able to accommodate a pack of ScalarType of the given
+  // pack size
   void request_allocation(const int pack_size = 1);
 
   // Request allocation able to accommodate all the alloc props in src.
@@ -136,7 +143,9 @@ public:
   long long get_alloc_size() const;
 
   // Get number of m_scalar_type_size-sized scalars in the allocation.
-  long long get_num_scalars() const { return get_alloc_size() / m_scalar_type_size; }
+  long long get_num_scalars() const {
+    return get_alloc_size() / m_scalar_type_size;
+  }
 
   // Get the largest pack size that this allocation was requested to accommodate
   int get_largest_pack_size() const;
@@ -184,7 +193,8 @@ protected:
   bool m_committed;
 };
 
-// ================================= IMPLEMENTATION ================================== //
+// ================================= IMPLEMENTATION
+// ================================== //
 
 template <typename ValueType> bool FieldAllocProp::is_compatible() const {
   using ekat::ScalarTraits;

@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCalcShocVertflux : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCalcShocVertflux
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -144,8 +145,8 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux : public UnitWrap::UnitTest<D
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     CalcShocVertfluxData SDS_cxx[] = {
         CalcShocVertfluxData(SDS_baseline[0]),
         CalcShocVertfluxData(SDS_baseline[1]),
@@ -153,7 +154,8 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux : public UnitWrap::UnitTest<D
         CalcShocVertfluxData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(CalcShocVertfluxData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(CalcShocVertfluxData);
 
     // Assume all data is in C layout
 
@@ -194,15 +196,15 @@ struct UnitWrap::UnitTest<D>::TestCalcShocVertflux : public UnitWrap::UnitTest<D
 namespace {
 
 TEST_CASE("shoc_vertflux_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcShocVertflux;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCalcShocVertflux;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_vertflux_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcShocVertflux;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCalcShocVertflux;
 
   TestStruct().run_bfb();
 }

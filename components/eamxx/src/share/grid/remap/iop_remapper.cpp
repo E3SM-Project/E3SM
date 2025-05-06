@@ -20,18 +20,24 @@ template <> MPI_Datatype get_mpi_type<RealInt>() {
 
 namespace scream {
 
-IOPRemapper::IOPRemapper(const grid_ptr_type src_grid, const grid_ptr_type tgt_grid, const Real lat,
+IOPRemapper::IOPRemapper(const grid_ptr_type src_grid,
+                         const grid_ptr_type tgt_grid, const Real lat,
                          const Real lon)
     : AbstractRemapper(src_grid, tgt_grid) {
   m_bwd_allowed = false;
 
-  EKAT_REQUIRE_MSG(src_grid->has_geometry_data("lat") and src_grid->has_geometry_data("lon"),
-                   "Error! IOP remapper requires lat/lon geometry data in the source grid.\n");
+  EKAT_REQUIRE_MSG(src_grid->has_geometry_data("lat") and
+                       src_grid->has_geometry_data("lon"),
+                   "Error! IOP remapper requires lat/lon geometry data in the "
+                   "source grid.\n");
+  EKAT_REQUIRE_MSG(src_grid->get_num_vertical_levels() ==
+                       tgt_grid->get_num_vertical_levels(),
+                   "Error! IOP remapper requires src/tgt grid to have the same "
+                   "number of vertical levels.\n");
   EKAT_REQUIRE_MSG(
-      src_grid->get_num_vertical_levels() == tgt_grid->get_num_vertical_levels(),
-      "Error! IOP remapper requires src/tgt grid to have the same number of vertical levels.\n");
-  EKAT_REQUIRE_MSG(src_grid->type() == GridType::Point and tgt_grid->type() == GridType::Point,
-                   "Error! IOP remapper requires src/tgt grid to be PointGrid instances.\n");
+      src_grid->type() == GridType::Point and
+          tgt_grid->type() == GridType::Point,
+      "Error! IOP remapper requires src/tgt grid to be PointGrid instances.\n");
 
   m_comm = src_grid->get_comm();
 
@@ -41,24 +47,32 @@ IOPRemapper::IOPRemapper(const grid_ptr_type src_grid, const grid_ptr_type tgt_g
 void IOPRemapper::setup_closest_col_info(const Real lat, const Real lon) {
   auto lat_f = m_src_grid->get_geometry_data("lat");
   auto lon_f = m_src_grid->get_geometry_data("lon");
-  EKAT_REQUIRE_MSG(lat_f.get_header().get_identifier().get_layout().type() == LayoutType::Scalar2D,
-                   "Error! Source grid 'lat' field has the wrong layout.\n"
-                   " - expected layout: " +
-                       e2str(LayoutType::Scalar2D) +
-                       "\n"
-                       " - actual layout  : " +
-                       e2str(lat_f.get_header().get_identifier().get_layout().type()) + "\n");
-  EKAT_REQUIRE_MSG(lon_f.get_header().get_identifier().get_layout().type() == LayoutType::Scalar2D,
-                   "Error! Source grid 'lon' field has the wrong layout.\n"
-                   " - expected layout: " +
-                       e2str(LayoutType::Scalar2D) +
-                       "\n"
-                       " - actual layout  : " +
-                       e2str(lon_f.get_header().get_identifier().get_layout().type()) + "\n");
-  EKAT_REQUIRE_MSG(-90 <= lat and lat <= 90, "Error! IOPRemapper lat=" + std::to_string(lat) +
-                                                 " outside of expected range [-90, 90].\n");
-  EKAT_REQUIRE_MSG(0 <= lon and lon <= 360, "Error! IOPRemapper lon=" + std::to_string(lon) +
-                                                " outside of expected range [0, 360].\n");
+  EKAT_REQUIRE_MSG(
+      lat_f.get_header().get_identifier().get_layout().type() ==
+          LayoutType::Scalar2D,
+      "Error! Source grid 'lat' field has the wrong layout.\n"
+      " - expected layout: " +
+          e2str(LayoutType::Scalar2D) +
+          "\n"
+          " - actual layout  : " +
+          e2str(lat_f.get_header().get_identifier().get_layout().type()) +
+          "\n");
+  EKAT_REQUIRE_MSG(
+      lon_f.get_header().get_identifier().get_layout().type() ==
+          LayoutType::Scalar2D,
+      "Error! Source grid 'lon' field has the wrong layout.\n"
+      " - expected layout: " +
+          e2str(LayoutType::Scalar2D) +
+          "\n"
+          " - actual layout  : " +
+          e2str(lon_f.get_header().get_identifier().get_layout().type()) +
+          "\n");
+  EKAT_REQUIRE_MSG(-90 <= lat and lat <= 90,
+                   "Error! IOPRemapper lat=" + std::to_string(lat) +
+                       " outside of expected range [-90, 90].\n");
+  EKAT_REQUIRE_MSG(0 <= lon and lon <= 360,
+                   "Error! IOPRemapper lon=" + std::to_string(lon) +
+                       " outside of expected range [0, 360].\n");
 
   auto lat_v           = lat_f.get_view<const Real *>();
   auto lon_v           = lon_f.get_view<const Real *>();

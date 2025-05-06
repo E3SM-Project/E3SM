@@ -11,7 +11,8 @@
 namespace scream {
 
 /*
- * Class that handles tracking of parent/children instances of the same class type
+ * Class that handles tracking of parent/children instances of the same class
+ * type
  *
  * This class is useful when we have a class T that needs to keep a pointer
  * to other instances of T, stored as weak pointer.  In particular, we allow
@@ -51,7 +52,9 @@ public:
 
   std::shared_ptr<derived_type> get_parent() const { return m_parent; }
 
-  const std::list<std::weak_ptr<derived_type>> &get_children() const { return m_children; }
+  const std::list<std::weak_ptr<derived_type>> &get_children() const {
+    return m_children;
+  }
 
 protected:
   // Check if a weak_ptr points to the same object as this class
@@ -66,10 +69,11 @@ protected:
 template <typename DerivedType> FamilyTracking<DerivedType>::FamilyTracking() {
   // Note: we cannot put the static assert in the class decl, cause DerivedType
   //       is still incomplete at that point.
-  static_assert(
-      std::is_base_of<tracking_type, derived_type>::value,
-      "Error! Do not instantiate FamilyTracking<T> if T does not inherit from FamilyTracking.\n"
-      "       This class exploits the Curiously Recurring Template Pattern (CRTP).\n");
+  static_assert(std::is_base_of<tracking_type, derived_type>::value,
+                "Error! Do not instantiate FamilyTracking<T> if T does not "
+                "inherit from FamilyTracking.\n"
+                "       This class exploits the Curiously Recurring Template "
+                "Pattern (CRTP).\n");
 }
 
 template <typename DerivedType> FamilyTracking<DerivedType>::~FamilyTracking() {
@@ -99,7 +103,8 @@ template <typename DerivedType> FamilyTracking<DerivedType>::~FamilyTracking() {
 
     // Note: Cannot throw in a destructor, so just print and call std::abort
     if (not found) {
-      printf("Error! Could not find this object in the list of the parent's children.\n"
+      printf("Error! Could not find this object in the list of the parent's "
+             "children.\n"
              "       Aborting...\n");
       std::abort();
     }
@@ -124,20 +129,23 @@ template <typename DerivedType>
 void FamilyTracking<DerivedType>::create_parent_child_link(
     const std::shared_ptr<derived_type> &parent) {
   // Sanity checks
-  EKAT_REQUIRE_MSG(this->shared_from_this(), "Error! Failure to get a shared object from *this.\n");
-  EKAT_REQUIRE_MSG(m_parent == nullptr, "Error! This object already stores a parent.\n");
+  EKAT_REQUIRE_MSG(this->shared_from_this(),
+                   "Error! Failure to get a shared object from *this.\n");
+  EKAT_REQUIRE_MSG(m_parent == nullptr,
+                   "Error! This object already stores a parent.\n");
 
   auto me = this->weak_from_this();
-  EKAT_REQUIRE_MSG(me.lock(), "Error! Unable to aquire a shared_ptr to this object.\n");
+  EKAT_REQUIRE_MSG(me.lock(),
+                   "Error! Unable to aquire a shared_ptr to this object.\n");
 
   // Set parent
   m_parent = parent;
 
   // Safety check. This should never happen, but just in case
   for (auto it : parent->get_children()) {
-    EKAT_REQUIRE_MSG(
-        not is_same(it),
-        "Error! This object is already in the list of children of the input parent.\n");
+    EKAT_REQUIRE_MSG(not is_same(it),
+                     "Error! This object is already in the list of children of "
+                     "the input parent.\n");
   }
 
   // Add myself as child in my parent's list
@@ -145,7 +153,8 @@ void FamilyTracking<DerivedType>::create_parent_child_link(
 }
 
 template <typename DerivedType>
-bool FamilyTracking<DerivedType>::is_same(const std::weak_ptr<derived_type> &src) const {
+bool FamilyTracking<DerivedType>::is_same(
+    const std::weak_ptr<derived_type> &src) const {
   auto me = this->weak_from_this();
   return not src.owner_before(me) and not me.owner_before(src);
 }

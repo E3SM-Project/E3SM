@@ -15,14 +15,14 @@ namespace scream {
 /*
  *  A class representing a group of atmosphere processes as a single process.
  *
- *  This class allows to create nested lists of processes, by representing a group
- *  of processes as a single atmosphere process.
- *  All the calls to setup/run methods are simply forwarded to the stored list of
- *  atm processes, and the stored list of required/computed fields is simply a
- *  concatenation of the correspong lists in the underlying atm processes.
- *  The only caveat is required fields in sequential scheduling: if an atm proc
- *  requires a field that is computed by a previous atm proc in the group,
- *  that field is not exposed as a required field of the group.
+ *  This class allows to create nested lists of processes, by representing a
+ * group of processes as a single atmosphere process. All the calls to setup/run
+ * methods are simply forwarded to the stored list of atm processes, and the
+ * stored list of required/computed fields is simply a concatenation of the
+ * correspong lists in the underlying atm processes. The only caveat is required
+ * fields in sequential scheduling: if an atm proc requires a field that is
+ * computed by a previous atm proc in the group, that field is not exposed as a
+ * required field of the group.
  */
 
 class AtmosphereProcessGroup : public AtmosphereProcess {
@@ -30,7 +30,8 @@ public:
   using atm_proc_type = AtmosphereProcess;
 
   // Constructor(s)
-  AtmosphereProcessGroup(const ekat::Comm &comm, const ekat::ParameterList &params);
+  AtmosphereProcessGroup(const ekat::Comm &comm,
+                         const ekat::ParameterList &params);
 
   virtual ~AtmosphereProcessGroup() = default;
 
@@ -43,7 +44,8 @@ public:
   // Grab the proper grid from the grids manager
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Setup the tendencies requests for this group, as well as for all procs in the group
+  // Setup the tendencies requests for this group, as well as for all procs in
+  // the group
   void setup_tendencies_requests();
 
   // --- Methods specific to AtmosphereProcessGroup --- //
@@ -58,7 +60,8 @@ public:
   }
 
   // Returns atmosphere process if contained in this group, error out if not
-  std::shared_ptr<atm_proc_type> get_process_nonconst(const std::string &name) const;
+  std::shared_ptr<atm_proc_type>
+  get_process_nonconst(const std::string &name) const;
 
   // returns true if this group contains the process (either directly or within
   // a nested group), false if not
@@ -79,10 +82,11 @@ public:
   void set_required_group(const FieldGroup &group);
 
   // Gather internal fields from all processes in the group
-  // NOTE: this method *must* be called before any attempt to query this atm proc group
-  //       for its internal fields, otherwise it will appear as if this atm proc group
-  //       stores ZERO internal fields. In other words, this method populates the list
-  //       of internal fields of the group.
+  // NOTE: this method *must* be called before any attempt to query this atm
+  // proc group
+  //       for its internal fields, otherwise it will appear as if this atm proc
+  //       group stores ZERO internal fields. In other words, this method
+  //       populates the list of internal fields of the group.
   void gather_internal_fields();
 
   // Returns true if any internal processes enables
@@ -92,7 +96,8 @@ public:
   // Adds the mass and energy conservation
   // checks to appropriate physics processes.
   void setup_column_conservation_checks(
-      const std::shared_ptr<MassAndEnergyColumnConservationCheck> &conservation_check,
+      const std::shared_ptr<MassAndEnergyColumnConservationCheck>
+          &conservation_check,
       const CheckFailHandling fail_handling_type) const;
 
   // Add nan checks after each non-group process, for each computed field.
@@ -135,7 +140,8 @@ protected:
   void set_required_group_impl(const FieldGroup &group);
   void set_computed_group_impl(const FieldGroup &group);
 
-  // The name of the group. This is usually a concatenation of the names of the individual processes
+  // The name of the group. This is usually a concatenation of the names of the
+  // individual processes
   std::string m_group_name;
   int m_group_size;
 

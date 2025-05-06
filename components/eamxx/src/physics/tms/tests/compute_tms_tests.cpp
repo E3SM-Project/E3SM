@@ -14,7 +14,8 @@ namespace tms {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestComputeTMS
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     // Should property tests be created?
@@ -23,22 +24,24 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Bas
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    ComputeTMSData baseline_data[] = {//             ncols, nlevs
-                                      ComputeTMSData(12, 72), ComputeTMSData(8, 12),
-                                      ComputeTMSData(7, 16), ComputeTMSData(2, 7)};
+    ComputeTMSData baseline_data[] = {
+        //             ncols, nlevs
+        ComputeTMSData(12, 72), ComputeTMSData(8, 12), ComputeTMSData(7, 16),
+        ComputeTMSData(2, 7)};
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeTMSData);
+    static constexpr Int num_runs =
+        sizeof(baseline_data) / sizeof(ComputeTMSData);
 
     // Generate random input data
     for (auto &d : baseline_data) {
       d.randomize(engine, {{d.sgh, {0.5, 1.5}}});
     }
 
-    // Create copies of data for use by cxx. Needs to happen before read calls so that
-    // inout data is in original state
-    ComputeTMSData cxx_data[] = {ComputeTMSData(baseline_data[0]), ComputeTMSData(baseline_data[1]),
-                                 ComputeTMSData(baseline_data[2]),
-                                 ComputeTMSData(baseline_data[3])};
+    // Create copies of data for use by cxx. Needs to happen before read calls
+    // so that inout data is in original state
+    ComputeTMSData cxx_data[] = {
+        ComputeTMSData(baseline_data[0]), ComputeTMSData(baseline_data[1]),
+        ComputeTMSData(baseline_data[2]), ComputeTMSData(baseline_data[3])};
 
     // Assume all data is in C layout
 
@@ -84,8 +87,8 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Bas
 namespace {
 
 TEST_CASE("compute_tms_bfb", "tms") {
-  using TestStruct =
-      scream::tms::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeTMS;
+  using TestStruct = scream::tms::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestComputeTMS;
 
   TestStruct t;
   t.run_bfb();

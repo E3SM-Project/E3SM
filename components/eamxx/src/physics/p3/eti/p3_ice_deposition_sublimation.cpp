@@ -4,8 +4,8 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instantiation for doing update prognostics functions on Reals using the
- * default device.
+ * Explicit instantiation for doing update prognostics functions on Reals using
+ * the default device.
  */
 
 template struct Functions<Real, DefaultDevice>;

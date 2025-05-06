@@ -17,8 +17,9 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_vv_parameters(
-    const Spack &w_first, const Spack &w_sec, const Spack &w3var, const Scalar w_tol_sqd,
-    Spack &Skew_w, Spack &w1_1, Spack &w1_2, Spack &w2_1, Spack &w2_2, Spack &a) {
+    const Spack &w_first, const Spack &w_sec, const Spack &w3var,
+    const Scalar w_tol_sqd, Spack &Skew_w, Spack &w1_1, Spack &w1_2,
+    Spack &w2_1, Spack &w2_2, Spack &a) {
   Skew_w = 0;
   w1_1   = w_first;
   w1_2   = w_first;
@@ -36,10 +37,13 @@ KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_vv_parameters(
   a.set(condition,
         ekat::max(
             sp(0.01),
-            ekat::min(sp(0.99),
-                      sp(0.5) * (1 - Skew_w * ekat::sqrt(1 / (4 * (one_m_tmp_val * one_m_tmp_val *
-                                                                   one_m_tmp_val) +
-                                                              ekat::square(Skew_w)))))));
+            ekat::min(
+                sp(0.99),
+                sp(0.5) *
+                    (1 - Skew_w * ekat::sqrt(
+                                      1 / (4 * (one_m_tmp_val * one_m_tmp_val *
+                                                one_m_tmp_val) +
+                                           ekat::square(Skew_w)))))));
 
   w1_1.set(condition, ekat::sqrt((1 - a) / a) * sqrtw2t);
   w1_2.set(condition, -1 * ekat::sqrt(a / (1 - a)) * sqrtw2t);

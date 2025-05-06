@@ -5,12 +5,13 @@
 namespace scream {
 
 // ==============================================================================
-SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(const ekat::Comm &comm,
-                                                         const ekat::ParameterList &params)
-    : AtmosphereDiagnostic(comm, params), m_name("surface_upward_latent_heat_flux"),
+SurfaceUpwardLatentHeatFlux::SurfaceUpwardLatentHeatFlux(
+    const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereDiagnostic(comm, params),
+      m_name("surface_upward_latent_heat_flux"),
       cf_long_name("surface_upward_latent_heat_flux_due_to_evaporation") {
-  // In the future we may add options to include latent heat fluxes due to other water species.
-  // See precip_surf_mass_flux.hpp and *.cpp for an example.
+  // In the future we may add options to include latent heat fluxes due to other
+  // water species. See precip_surf_mass_flux.hpp and *.cpp for an example.
   // We'll need to change the cf_long_name, too, when this happens.
 }
 
@@ -24,13 +25,14 @@ void SurfaceUpwardLatentHeatFlux::set_grids(
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
 
   FieldLayout scalar2d_layout_mid{{ShortFieldTagsNames::COL}, {m_num_cols}};
 
   // The fields required for this diagnostic to be computed
   // surf_evap is defined by SurfaceCouplingImporter
-  add_field<Required>("surf_evap", scalar2d_layout_mid, surf_evap_units, grid_name);
+  add_field<Required>("surf_evap", scalar2d_layout_mid, surf_evap_units,
+                      grid_name);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid(m_name, scalar2d_layout_mid, W / m2, grid_name);
@@ -54,7 +56,9 @@ void SurfaceUpwardLatentHeatFlux::compute_diagnostic_impl() {
   const auto &flux_view = m_diagnostic_output.get_view<Real *>();
   Kokkos::parallel_for(
       "SurfaceUpwardLatentHeatFlux", KT::RangePolicy(0, m_num_cols),
-      KOKKOS_LAMBDA(const Int &icol) { flux_view(icol) = evap_view_d(icol) * latent_heat_evap; });
+      KOKKOS_LAMBDA(const Int &icol) {
+        flux_view(icol) = evap_view_d(icol) * latent_heat_evap;
+      });
 }
 
 } // namespace scream

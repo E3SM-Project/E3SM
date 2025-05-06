@@ -21,10 +21,14 @@ template <> struct ScalarTraits<Homme::Scalar> {
   static std::string name() { return "Homme::Scalar"; }
 
   KOKKOS_INLINE_FUNCTION
-  static const value_type quiet_NaN() { return value_type(inner_traits::quiet_NaN()); }
+  static const value_type quiet_NaN() {
+    return value_type(inner_traits::quiet_NaN());
+  }
 
   KOKKOS_INLINE_FUNCTION
-  static const value_type invalid() { return value_type(inner_traits::invalid()); }
+  static const value_type invalid() {
+    return value_type(inner_traits::invalid());
+  }
 };
 
 } // namespace ekat

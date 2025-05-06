@@ -28,16 +28,19 @@ struct PyField {
     const auto &fh  = f.get_header();
     const auto &fid = fh.get_identifier();
 
-    // Can this actually happen? For now, no, since we only create fields from identifiers, so each
-    // PyField holds separate memory. However, this may change if we allow subfields.
+    // Can this actually happen? For now, no, since we only create fields from
+    // identifiers, so each PyField holds separate memory. However, this may
+    // change if we allow subfields.
     EKAT_REQUIRE_MSG(f.get_header().get_parent().lock() == nullptr,
-                     "Error! Cannot get the array for a field that is a subfield of another. "
+                     "Error! Cannot get the array for a field that is a "
+                     "subfield of another. "
                      "Please, get array of parent field.\n"
                      "  - field name : " +
                          fid.name() +
                          "\n"
                          "  - parent name: " +
-                         fh.get_parent().lock()->get_identifier().name() + "\n");
+                         fh.get_parent().lock()->get_identifier().name() +
+                         "\n");
 
     // Get array shape and strides.
     // NOTE: since the field may be padded, the strides do not necessarily
@@ -65,10 +68,12 @@ struct PyField {
       EKAT_ERROR_MSG("Unrecognized/unsupported data type.\n");
     }
 
-    // NOTE: you MUST set the parent handle, or else you won't have view semantic
+    // NOTE: you MUST set the parent handle, or else you won't have view
+    // semantic
     auto data     = f.get_internal_view_data_unsafe<void, Host>();
     auto this_obj = nb::cast(this);
-    return nb::ndarray<FRAMEWORK>(data, shape_t, shape, nb::handle(this_obj), strides.data(), dt);
+    return nb::ndarray<FRAMEWORK>(data, shape_t, shape, nb::handle(this_obj),
+                                  strides.data(), dt);
   }
 
   void sync_to_host() { f.sync_to_host(); }
@@ -77,7 +82,8 @@ struct PyField {
 
 private:
   template <typename T>
-  nb::dlpack::dtype get_dt_and_set_strides(std::vector<ssize_t> &strides) const {
+  nb::dlpack::dtype
+  get_dt_and_set_strides(std::vector<ssize_t> &strides) const {
     strides.resize(f.rank());
     switch (f.rank()) {
     case 1: {

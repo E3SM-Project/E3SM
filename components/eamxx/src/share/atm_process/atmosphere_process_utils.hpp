@@ -12,9 +12,12 @@ enum class CheckFailHandling { Fatal, Warning };
 enum class AtmosphereProcessType {
   Dynamics,                // Process responsible of handling the dynamics
   Physics,                 // Process handling a physics parametrization
-  SurfaceCouplingImporter, // Process handling the transfers from surface models to atm
-  SurfaceCouplingExporter, // Process handling the transfers from atm to surface models
-  Group,     // Process that groups a bunch of processes (so they look as a single process)
+  SurfaceCouplingImporter, // Process handling the transfers from surface models
+                           // to atm
+  SurfaceCouplingExporter, // Process handling the transfers from atm to surface
+                           // models
+  Group, // Process that groups a bunch of processes (so they look as a single
+         // process)
   Diagnostic // Process that handles a diagnostic output
 };
 
@@ -33,7 +36,8 @@ inline std::string e2str(const AtmosphereProcessType ap_type) {
   case AtmosphereProcessType::Diagnostic:
     return "Atmosphere Diagnostic";
   default:
-    ekat::error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
+    ekat::error::runtime_abort(
+        "Error! Unrecognized atmosphere process type.\n");
   }
   return "INVALID";
 }

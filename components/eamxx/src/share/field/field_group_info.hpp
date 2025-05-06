@@ -12,8 +12,8 @@ namespace scream {
  * A FieldGroupInfo is a small structure storing some info on a group of fields.
  *
  * A group is basically a "label" attached to fields, to allow users to
- * query a FieldManager for all fields that have such label attached. A field can
- * belong to any number of groups, or no group at all.
+ * query a FieldManager for all fields that have such label attached. A field
+ * can belong to any number of groups, or no group at all.
  *
  * A FieldGroupInfo stores:
  *
@@ -29,8 +29,8 @@ struct FieldGroupInfo {
 
   // Default initialize everything
   FieldGroupInfo(const ci_string &group_name)
-      : m_group_name(group_name), m_fields_names{}, m_monolithic_allocation(false),
-        m_subview_dim(-1), m_subview_idx{} {
+      : m_group_name(group_name), m_fields_names{},
+        m_monolithic_allocation(false), m_subview_dim(-1), m_subview_idx{} {
     // Nothing to do here
   }
 
@@ -69,9 +69,11 @@ struct FieldGroupInfo {
 };
 
 inline bool operator==(const FieldGroupInfo &lhs, const FieldGroupInfo &rhs) {
-  return lhs.m_group_name == rhs.m_group_name && lhs.m_fields_names == rhs.m_fields_names &&
+  return lhs.m_group_name == rhs.m_group_name &&
+         lhs.m_fields_names == rhs.m_fields_names &&
          lhs.m_monolithic_allocation == rhs.m_monolithic_allocation &&
-         lhs.m_subview_dim == rhs.m_subview_dim && lhs.m_subview_idx == rhs.m_subview_idx;
+         lhs.m_subview_dim == rhs.m_subview_dim &&
+         lhs.m_subview_idx == rhs.m_subview_idx;
 }
 
 } // namespace scream

@@ -16,8 +16,10 @@ namespace scream {
 inline void register_surface_coupling() {
   auto &proc_factory = AtmosphereProcessFactory::instance();
 
-  proc_factory.register_product("sc_import", &create_atmosphere_process<SurfaceCouplingImporter>);
-  proc_factory.register_product("sc_export", &create_atmosphere_process<SurfaceCouplingExporter>);
+  proc_factory.register_product(
+      "sc_import", &create_atmosphere_process<SurfaceCouplingImporter>);
+  proc_factory.register_product(
+      "sc_export", &create_atmosphere_process<SurfaceCouplingExporter>);
 }
 
 } // namespace scream

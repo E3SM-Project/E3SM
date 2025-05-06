@@ -9,24 +9,28 @@
 namespace scream {
 
 // For reading soil erodibility file
-using soilErodibilityFunc = soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
+using soilErodibilityFunc =
+    soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
 
 // ================================================================
 //  Constructor
 // ================================================================
-MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params)
+MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
+                                     const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params) {
   // FIXME: Do we want to read dust emiss factor from the namelist??
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
-  check_fields_intervals_ = m_params.get<bool>("create_fields_interval_checks", false);
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMSrfOnlineEmiss::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
@@ -87,12 +91,14 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   // These variables are "Updated" or input-outputs for the process
   // -------------------------------------------------------------
 
-  constexpr int pcnst              = mam4::aero_model::pcnst;
-  const FieldLayout vector2d_pcnst = grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  const FieldLayout vector2d_pcnst =
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
   // Constituent fluxes of species in [kg/m2/s]
   // FIXME: confirm if it is Updated or Computed
-  add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s, grid_name);
+  add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
+                     grid_name);
 
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
@@ -124,7 +130,7 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ bc_a4;
   // File name, name and sectors
-  bc_a4.data_file    = m_params.get<std::string>("srf_emis_specifier_for_bc_a4");
+  bc_a4.data_file = m_params.get<std::string>("srf_emis_specifier_for_bc_a4");
   bc_a4.species_name = "bc_a4";
   bc_a4.sectors      = {"AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(bc_a4); // add to the vector
@@ -134,9 +140,10 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ num_a1;
   // File name, name and sectors
-  num_a1.data_file    = m_params.get<std::string>("srf_emis_specifier_for_num_a1");
+  num_a1.data_file = m_params.get<std::string>("srf_emis_specifier_for_num_a1");
   num_a1.species_name = "num_a1";
-  num_a1.sectors      = {"num_a1_SO4_AGR", "num_a1_SO4_SHP", "num_a1_SO4_SLV", "num_a1_SO4_WST"};
+  num_a1.sectors      = {"num_a1_SO4_AGR", "num_a1_SO4_SHP", "num_a1_SO4_SLV",
+                         "num_a1_SO4_WST"};
   srf_emiss_species_.push_back(num_a1); // add to the vector
 
   //--------------------------------------------------------------------
@@ -144,7 +151,7 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ num_a2;
   // File name, name and sectors
-  num_a2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_num_a2");
+  num_a2.data_file = m_params.get<std::string>("srf_emis_specifier_for_num_a2");
   num_a2.species_name = "num_a2";
   num_a2.sectors      = {"num_a2_SO4_RCO", "num_a2_SO4_TRA"};
   srf_emiss_species_.push_back(num_a2); // add to the vector
@@ -154,12 +161,13 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ num_a4;
   // File name, name and sectors
-  num_a4.data_file    = m_params.get<std::string>("srf_emis_specifier_for_num_a4");
+  num_a4.data_file = m_params.get<std::string>("srf_emis_specifier_for_num_a4");
   num_a4.species_name = "num_a4";
-  num_a4.sectors      = {"num_a1_BC_AGR",  "num_a1_BC_ENE",  "num_a1_BC_IND",  "num_a1_BC_RCO",
-                         "num_a1_BC_SHP",  "num_a1_BC_SLV",  "num_a1_BC_TRA",  "num_a1_BC_WST",
-                         "num_a1_POM_AGR", "num_a1_POM_ENE", "num_a1_POM_IND", "num_a1_POM_RCO",
-                         "num_a1_POM_SHP", "num_a1_POM_SLV", "num_a1_POM_TRA", "num_a1_POM_WST"};
+  num_a4.sectors      = {
+      "num_a1_BC_AGR",  "num_a1_BC_ENE",  "num_a1_BC_IND",  "num_a1_BC_RCO",
+      "num_a1_BC_SHP",  "num_a1_BC_SLV",  "num_a1_BC_TRA",  "num_a1_BC_WST",
+      "num_a1_POM_AGR", "num_a1_POM_ENE", "num_a1_POM_IND", "num_a1_POM_RCO",
+      "num_a1_POM_SHP", "num_a1_POM_SLV", "num_a1_POM_TRA", "num_a1_POM_WST"};
   srf_emiss_species_.push_back(num_a4); // add to the vector
 
   //--------------------------------------------------------------------
@@ -167,9 +175,9 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ pom_a4;
   // File name, name and sectors
-  pom_a4.data_file    = m_params.get<std::string>("srf_emis_specifier_for_pom_a4");
+  pom_a4.data_file = m_params.get<std::string>("srf_emis_specifier_for_pom_a4");
   pom_a4.species_name = "pom_a4";
-  pom_a4.sectors      = {"AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
+  pom_a4.sectors = {"AGR", "ENE", "IND", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(pom_a4); // add to the vector
 
   //--------------------------------------------------------------------
@@ -177,7 +185,7 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ so4_a1;
   // File name, name and sectors
-  so4_a1.data_file    = m_params.get<std::string>("srf_emis_specifier_for_so4_a1");
+  so4_a1.data_file = m_params.get<std::string>("srf_emis_specifier_for_so4_a1");
   so4_a1.species_name = "so4_a1";
   so4_a1.sectors      = {"AGR", "SHP", "SLV", "WST"};
   srf_emiss_species_.push_back(so4_a1);
@@ -187,7 +195,7 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   //--------------------------------------------------------------------
   srf_emiss_ so4_a2;
   // File name, name and sectors
-  so4_a2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_so4_a2");
+  so4_a2.data_file = m_params.get<std::string>("srf_emis_specifier_for_so4_a2");
   so4_a2.species_name = "so4_a2";
   so4_a2.sectors      = {"RCO", "TRA"};
   srf_emiss_species_.push_back(so4_a2);
@@ -199,15 +207,16 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
     srfEmissFunc::init_srf_emiss_objects(
         ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
         // output
-        ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_, ispec_srf.data_out_,
-        ispec_srf.dataReader_);
+        ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
+        ispec_srf.data_out_, ispec_srf.dataReader_);
   } // srf emissions file read init
 
   // -------------------------------------------------------------
   // Setup to enable reading soil erodibility file
   // -------------------------------------------------------------
 
-  const std::string soil_erodibility_data_file = m_params.get<std::string>("soil_erodibility_file");
+  const std::string soil_erodibility_data_file =
+      m_params.get<std::string>("soil_erodibility_file");
 
   // Field to be read from file
   const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
@@ -216,28 +225,32 @@ void MAMSrfOnlineEmiss::set_grids(const std::shared_ptr<const GridsManager> grid
   const std::string soil_erod_dname = "ncol";
 
   // initialize the file read
-  soilErodibilityFunc::init_soil_erodibility_file_read(ncol_, soil_erod_fld_name, soil_erod_dname,
-                                                       grid_, soil_erodibility_data_file,
-                                                       srf_map_file, serod_horizInterp_,
-                                                       serod_dataReader_); // output
+  soilErodibilityFunc::init_soil_erodibility_file_read(
+      ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
+      soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
+      serod_dataReader_); // output
 
   // -------------------------------------------------------------
   // Setup to enable reading marine organics file
   // -------------------------------------------------------------
-  const std::string marine_organics_data_file = m_params.get<std::string>("marine_organics_file");
+  const std::string marine_organics_data_file =
+      m_params.get<std::string>("marine_organics_file");
 
   // Fields to be read from file (order matters as they are read in the same
   // order)
-  const std::vector<std::string> marine_org_fld_name = {"TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
+  const std::vector<std::string> marine_org_fld_name = {
+      "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
 
   // Dimensions of the field
   const std::string marine_org_dname = "ncol";
 
   // initialize the file read
   marineOrganicsFunc::init_marine_organics_file_read(
-      ncol_, marine_org_fld_name, marine_org_dname, grid_, marine_organics_data_file, srf_map_file,
+      ncol_, marine_org_fld_name, marine_org_dname, grid_,
+      marine_organics_data_file, srf_map_file,
       // output
-      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_, morg_dataReader_);
+      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
+      morg_dataReader_);
 
 } // set_grid ends
 
@@ -257,12 +270,15 @@ size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
 void MAMSrfOnlineEmiss::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
+                       requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
-  EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
-                   "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
+  size_t used_mem =
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  EKAT_REQUIRE_MSG(
+      used_mem == requested_buffer_size_in_bytes(),
+      "Error! Used memory != requested memory for MAMSrfOnlineEmiss.");
 }
 
 // ================================================================
@@ -309,8 +325,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Update surface emissions from file
   //--------------------------------------------------------------------
   for (srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    srfEmissFunc::update_srfEmiss_data_from_file(ispec_srf.dataReader_, start_of_step_ts(),
-                                                 curr_month, *ispec_srf.horizInterp_,
+    srfEmissFunc::update_srfEmiss_data_from_file(ispec_srf.dataReader_,
+                                                 start_of_step_ts(), curr_month,
+                                                 *ispec_srf.horizInterp_,
                                                  ispec_srf.data_end_); // output
   }
 
@@ -319,17 +336,17 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // This data is time-independent, we read all data here for the
   // entire simulation
-  soilErodibilityFunc::update_soil_erodibility_data_from_file(serod_dataReader_,
-                                                              *serod_horizInterp_,
-                                                              soil_erodibility_); // output
+  soilErodibilityFunc::update_soil_erodibility_data_from_file(
+      serod_dataReader_, *serod_horizInterp_,
+      soil_erodibility_); // output
 
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
   // Time dependent data
-  marineOrganicsFunc::update_marine_organics_data_from_file(morg_dataReader_, start_of_step_ts(),
-                                                            curr_month, *morg_horizInterp_,
-                                                            morg_data_end_); // output
+  marineOrganicsFunc::update_marine_organics_data_from_file(
+      morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
+      morg_data_end_); // output
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -342,8 +359,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
-  const auto scan_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   Kokkos::parallel_for("preprocess", scan_policy, preprocess_);
@@ -369,14 +386,14 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   morg_timeState_.t_now = ts.frac_of_year_in_days();
 
   // Update time state and if the month has changed, update the data.
-  marineOrganicsFunc::update_marine_organics_timestate(morg_dataReader_, ts, *morg_horizInterp_,
-                                                       // output
-                                                       morg_timeState_, morg_data_start_,
-                                                       morg_data_end_);
+  marineOrganicsFunc::update_marine_organics_timestate(
+      morg_dataReader_, ts, *morg_horizInterp_,
+      // output
+      morg_timeState_, morg_data_start_, morg_data_end_);
 
   // Call the main marine organics routine to get interpolated forcings.
-  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_, morg_data_end_,
-                                          morg_data_out_);
+  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
+                                          morg_data_end_, morg_data_out_);
 
   // Marine organics emission data read from the file (order is important here)
   const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
@@ -384,7 +401,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
 
   // Ocean fraction [unitless]
-  const const_view_1d ocnfrac = get_field_in("ocnfrac").get_view<const Real *>();
+  const const_view_1d ocnfrac =
+      get_field_in("ocnfrac").get_view<const Real *>();
 
   // Sea surface temperature [K]
   const const_view_1d sst = get_field_in("sst").get_view<const Real *>();
@@ -406,8 +424,9 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Vertical layer height at midpoints
   const const_view_2d z_mid = dry_atm_.z_mid;
 
-  compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind, dstflx, mpoly, mprot,
-                                 mlip, soil_erodibility, z_mid,
+  compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind,
+                                 dstflx, mpoly, mprot, mlip, soil_erodibility,
+                                 z_mid,
                                  // output
                                  constituent_fluxes);
   Kokkos::fence();
@@ -420,14 +439,14 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     ispec_srf.timeState_.t_now = ts.frac_of_year_in_days();
 
     // Update time state and if the month has changed, update the data.
-    srfEmissFunc::update_srfEmiss_timestate(ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
-                                            // output
-                                            ispec_srf.timeState_, ispec_srf.data_start_,
-                                            ispec_srf.data_end_);
+    srfEmissFunc::update_srfEmiss_timestate(
+        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_,
+        // output
+        ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
 
     // Call the main srfEmiss routine to get interpolated aerosol forcings.
-    srfEmissFunc::srfEmiss_main(ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_,
-                                ispec_srf.data_out_);
+    srfEmissFunc::srfEmiss_main(ispec_srf.timeState_, ispec_srf.data_start_,
+                                ispec_srf.data_end_, ispec_srf.data_out_);
 
     //--------------------------------------------------------------------
     // Modify units to MKS units (from molecules/cm2/s to kg/m2/s)
@@ -437,13 +456,15 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     const int species_index = spcIndex_in_pcnst_.at(ispec_srf.species_name);
 
     // modify units from molecules/cm2/s to kg/m2/s
-    auto fluxes_in_mks_units     = this->fluxes_in_mks_units_;
-    const Real mfactor           = amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
-    const view_1d ispec_outdata0 = ekat::subview(ispec_srf.data_out_.emiss_sectors, 0);
+    auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
+    const Real mfactor =
+        amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
+    const view_1d ispec_outdata0 =
+        ekat::subview(ispec_srf.data_out_.emiss_sectors, 0);
     // Parallel loop over all the columns to update units
     Kokkos::parallel_for(
         "srf_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-          fluxes_in_mks_units(icol)               = ispec_outdata0(icol) * mfactor;
+          fluxes_in_mks_units(icol) = ispec_outdata0(icol) * mfactor;
           constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
         });
   } // for loop for species

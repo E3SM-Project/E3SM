@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestImpCompTmpi : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestImpCompTmpi
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -116,17 +117,18 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi : public UnitWrap::UnitTest<D>::Ba
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    ComputeTmpiData baseline_data[] = {//          shcol, nlevi, dtime
-                                       ComputeTmpiData(10, 72, 1), ComputeTmpiData(10, 13, 10),
-                                       ComputeTmpiData(7, 17, 125), ComputeTmpiData(2, 8, 300)};
+    ComputeTmpiData baseline_data[] = {
+        //          shcol, nlevi, dtime
+        ComputeTmpiData(10, 72, 1), ComputeTmpiData(10, 13, 10),
+        ComputeTmpiData(7, 17, 125), ComputeTmpiData(2, 8, 300)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ComputeTmpiData cxx_data[] = {
         ComputeTmpiData(baseline_data[0]),
         ComputeTmpiData(baseline_data[1]),
@@ -134,7 +136,8 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi : public UnitWrap::UnitTest<D>::Ba
         ComputeTmpiData(baseline_data[3]),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeTmpiData);
+    static constexpr Int num_runs =
+        sizeof(baseline_data) / sizeof(ComputeTmpiData);
 
     // Assume all data is in C layout
 
@@ -175,15 +178,15 @@ struct UnitWrap::UnitTest<D>::TestImpCompTmpi : public UnitWrap::UnitTest<D>::Ba
 namespace {
 
 TEST_CASE("shoc_imp_comp_tmpi_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpCompTmpi;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestImpCompTmpi;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_imp_comp_tmpi_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestImpCompTmpi;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestImpCompTmpi;
 
   TestStruct().run_bfb();
 }

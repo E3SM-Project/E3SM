@@ -16,8 +16,8 @@ namespace scream {
 
 class HorizInterpRemapperBase : public AbstractRemapper {
 public:
-  HorizInterpRemapperBase(const grid_ptr_type &fine_grid, const std::string &map_file,
-                          const InterpType type);
+  HorizInterpRemapperBase(const grid_ptr_type &fine_grid,
+                          const std::string &map_file, const InterpType type);
 
   ~HorizInterpRemapperBase();
 
@@ -39,7 +39,8 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  template <int N> void local_mat_vec(const Field &f_src, const Field &f_tgt) const;
+  template <int N>
+  void local_mat_vec(const Field &f_src, const Field &f_tgt) const;
 
   // The fine and coarse grids. Depending on m_type, they could be
   // respectively m_src_grid and m_tgt_grid or viceversa

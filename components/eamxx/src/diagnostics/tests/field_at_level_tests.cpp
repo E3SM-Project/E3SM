@@ -8,7 +8,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -40,8 +41,10 @@ TEST_CASE("field_at_level") {
   // Create input fields
   const auto units = ekat::units::Units::invalid();
 
-  FieldIdentifier fid_mid("M", FL({COL, CMP, LEV}, {ncols, 2, nlevs}), units, grid->name());
-  FieldIdentifier fid_int("I", FL({COL, LEV}, {ncols, nlevs}), units, grid->name());
+  FieldIdentifier fid_mid("M", FL({COL, CMP, LEV}, {ncols, 2, nlevs}), units,
+                          grid->name());
+  FieldIdentifier fid_int("I", FL({COL, LEV}, {ncols, nlevs}), units,
+                          grid->name());
 
   Field f_mid(fid_mid);
   Field f_int(fid_int);

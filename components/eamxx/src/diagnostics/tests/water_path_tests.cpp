@@ -17,7 +17,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -59,12 +60,14 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   auto policy = ESU::get_default_team_policy(ncols, num_levs);
 
   // Input (randomized) views
-  view_1d pseudo_density("pseudo_density", num_levs), qv("qv", num_levs), qc("qc", num_levs),
-      qr("qr", num_levs), qi("qi", num_levs), qm("qm", num_levs);
+  view_1d pseudo_density("pseudo_density", num_levs), qv("qv", num_levs),
+      qc("qc", num_levs), qr("qr", num_levs), qi("qi", num_levs),
+      qm("qm", num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_qv(1e-12, 1e-6), pdf_qx(0.0, 1e-3), pdf_pseudodens(1.0, 100.0), pdf_alpha(0.1, 0.9);
+  RPDF pdf_qv(1e-12, 1e-6), pdf_qx(0.0, 1e-3), pdf_pseudodens(1.0, 100.0),
+      pdf_alpha(0.1, 0.9);
 
   // A time stamp
   util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
@@ -75,9 +78,11 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   register_diagnostics();
   ekat::ParameterList params;
 
-  REQUIRE_THROWS(diag_factory.create("WaterPath", comm, params)); // No 'water_kind'
+  REQUIRE_THROWS(
+      diag_factory.create("WaterPath", comm, params)); // No 'water_kind'
   params.set<std::string>("water_kind", "Foo");
-  REQUIRE_THROWS(diag_factory.create("WaterPath", comm, params)); // Invalid 'water_kind'
+  REQUIRE_THROWS(
+      diag_factory.create("WaterPath", comm, params)); // Invalid 'water_kind'
 
   // Vapor
   params.set<std::string>("water_kind", "Vap");
@@ -181,7 +186,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
     for (const auto &dd : diags) {
       dd.second->compute_diagnostic();
     }
-    // Test 1: The water path should be >= the maximum cell level mass per column
+    // Test 1: The water path should be >= the maximum cell level mass per
+    // column
     {
       Kokkos::parallel_for(
           "", policy, KOKKOS_LAMBDA(const MemberType &team) {
@@ -335,7 +341,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
             const int icol = idx / num_levs;
             const int ilev = idx % num_levs;
 
-            total_mass(icol) = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
+            total_mass(icol) =
+                vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
 
             auto qv_to_qc = alpha_qv_to_qc * qv_v(icol, ilev);
             auto qc_to_qi = alpha_qc_to_qi * qc_v(icol, ilev);
@@ -362,7 +369,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
       iwp.sync_to_host();
       rwp.sync_to_host();
       for (int icol = 0; icol < ncols; icol++) {
-        const auto new_total_mass = vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
+        const auto new_total_mass =
+            vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
         REQUIRE(std::abs(total_mass_h(icol) - new_total_mass) < macheps);
       }
     }
@@ -376,7 +384,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
       view_1d delta_mass("", ncols);
       Kokkos::parallel_for(
           "", ncols, KOKKOS_LAMBDA(const int &icol) {
-            total_mass(icol) = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
+            total_mass(icol) =
+                vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
             // simulate the loss of mass due to precipitation
             const auto &qc_sub = ekat::subview(qc_v, icol);
             const auto &qi_sub = ekat::subview(qi_v, icol);
@@ -393,7 +402,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
             qi_sub(surf_lev) -= qi_precip;
             qr_sub(surf_lev) -= qr_precip;
 
-            delta_mass(icol) = -(qc_precip + qi_precip + qr_precip) * dp_surf / gravit;
+            delta_mass(icol) =
+                -(qc_precip + qi_precip + qr_precip) * dp_surf / gravit;
           });
       Kokkos::fence();
       for (const auto &dd : diags) {
@@ -406,7 +416,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
       iwp.sync_to_host();
       rwp.sync_to_host();
       for (int icol = 0; icol < ncols; icol++) {
-        const auto new_total_mass = vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
+        const auto new_total_mass =
+            vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
         const auto new_delta_mass = new_total_mass - total_mass_h(icol);
         REQUIRE(std::abs(delta_mass_h(icol) - new_delta_mass) < macheps);
       }

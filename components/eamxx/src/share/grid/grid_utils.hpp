@@ -12,7 +12,8 @@ namespace scream {
  *
  *  - Undefined: a placeholder to spot uninitialized stuff
  *  - SE: the dofs are the gauss points (GP) of a Spectral Element mesh.
- *  - Point: the dofs are simply a range of gids, and there's no assumed connection between dofs.
+ *  - Point: the dofs are simply a range of gids, and there's no assumed
+ * connection between dofs.
  */
 
 enum class GridType {

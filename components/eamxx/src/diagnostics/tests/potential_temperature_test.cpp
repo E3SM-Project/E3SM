@@ -18,7 +18,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -47,8 +48,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine, int int_ptype) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
-                        // some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last
+                        // pack can also have some empty slots (packsize>1).
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -58,7 +59,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine, int int_ptype) {
   auto gm         = create_gm(comm, ncols, num_levs);
 
   // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_levs);
+  auto policy =
+      ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -127,15 +129,18 @@ template <typename DeviceT> void run(std::mt19937_64 &engine, int int_ptype) {
     Kokkos::parallel_for(
         "", policy, KOKKOS_LAMBDA(const MemberType &team) {
           const int icol = team.league_rank();
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_levs), [&](const Int &ilev) {
-            auto theta = PF::calculate_theta_from_T(T_mid_v(icol, ilev), p_mid_v(icol, ilev));
-            if (int_ptype == 1) {
-              theta_v(icol, ilev) = theta - (theta / T_mid_v(icol, ilev)) *
-                                                (PC::LatVap / PC::Cpair) * q_mid_v(icol, ilev);
-            } else {
-              theta_v(icol, ilev) = theta;
-            }
-          });
+          Kokkos::parallel_for(
+              Kokkos::TeamVectorRange(team, num_levs), [&](const Int &ilev) {
+                auto theta = PF::calculate_theta_from_T(T_mid_v(icol, ilev),
+                                                        p_mid_v(icol, ilev));
+                if (int_ptype == 1) {
+                  theta_v(icol, ilev) = theta - (theta / T_mid_v(icol, ilev)) *
+                                                    (PC::LatVap / PC::Cpair) *
+                                                    q_mid_v(icol, ilev);
+                } else {
+                  theta_v(icol, ilev) = theta;
+                }
+              });
           team.team_barrier();
         });
     Kokkos::fence();
@@ -148,7 +153,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine, int int_ptype) {
 } // run()
 
 TEST_CASE("potential_temp_test", "potential_temp_test]") {
-  // Run tests for both Real and Pack, and for (potentially) different pack sizes
+  // Run tests for both Real and Pack, and for (potentially) different pack
+  // sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
 

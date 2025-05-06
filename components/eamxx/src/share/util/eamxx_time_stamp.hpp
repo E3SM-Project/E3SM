@@ -13,9 +13,10 @@ namespace util {
 class TimeStamp {
 public:
   TimeStamp();
-  TimeStamp(const std::vector<int> &date, const std::vector<int> &time, const int num_steps = 0);
-  TimeStamp(const int yy, const int mm, int dd, const int h, const int min, const int sec,
+  TimeStamp(const std::vector<int> &date, const std::vector<int> &time,
             const int num_steps = 0);
+  TimeStamp(const int yy, const int mm, int dd, const int h, const int min,
+            const int sec, const int num_steps = 0);
   TimeStamp(const TimeStamp &) = default;
 
   // === Query methods === //
@@ -32,7 +33,9 @@ public:
 
   bool is_valid() const;
 
-  int sec_of_day() const { return m_time[0] * 3600 + m_time[1] * 60 + m_time[2]; }
+  int sec_of_day() const {
+    return m_time[0] * 3600 + m_time[1] * 60 + m_time[2];
+  }
   std::int64_t seconds_from(const TimeStamp &ts) const;
   double days_from(const TimeStamp &ts) const;
 
@@ -56,14 +59,16 @@ public:
   // This method checks that time shifts forward (i.e. that seconds is positive)
   TimeStamp &operator+=(const double seconds);
 
-  // Clones the stamps and sets num steps to given value. If -1, clones num steps too
+  // Clones the stamps and sets num steps to given value. If -1, clones num
+  // steps too
   TimeStamp clone(const int num_steps);
 
 protected:
   std::vector<int> m_date; // [year, month, day]
   std::vector<int> m_time; // [hour, min, sec]
 
-  int m_num_steps = std::numeric_limits<int>::lowest(); // Number of steps since simulation started
+  int m_num_steps = std::numeric_limits<int>::lowest(); // Number of steps since
+                                                        // simulation started
 };
 
 // Overload operators for TimeStamp
@@ -78,13 +83,15 @@ std::int64_t operator-(const TimeStamp &ts1, const TimeStamp &ts2);
 // Rewind time by given number of seconds
 TimeStamp operator-(const TimeStamp &ts, const int dt);
 
-// If input string is not of the format YYYY-MM-DD-XXXXX, returns an invalid time stamp
+// If input string is not of the format YYYY-MM-DD-XXXXX, returns an invalid
+// time stamp
 TimeStamp str_to_time_stamp(const std::string &s);
 
 // An enum describing two ways to look at timestamps:
 //  - Linear: treat them as part of a 1d line
 //  - YearlyPeriodic: treat them as part of a yearly periodic orbit
-// This is used in the TimeInterval class below to correctly handle time stamps differences
+// This is used in the TimeInterval class below to correctly handle time stamps
+// differences
 enum class TimeLine { YearlyPeriodic, Linear };
 
 /*
@@ -95,8 +102,8 @@ enum class TimeLine { YearlyPeriodic, Linear };
  * a timestamp lies within the interval.
  *
  * When the TimeLine arg to the ctor is YearlyPeriodic, the year part of beg/end
- * time points is ignored. In this case, the length of the time interval is bound
- * to be in the interval [0,365] (in non-leap years)
+ * time points is ignored. In this case, the length of the time interval is
+ * bound to be in the interval [0,365] (in non-leap years)
  */
 struct TimeInterval {
 

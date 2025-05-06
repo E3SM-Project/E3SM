@@ -24,11 +24,11 @@ namespace physics {
 namespace unit_test {
 
 template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
-  KOKKOS_FUNCTION static void saturation_tests(const Scalar &temperature, const Scalar &pressure,
-                                               Scalar &sat_ice_fp, Scalar &sat_liq_fp,
-                                               Scalar &mix_ice_fr, Scalar &mix_liq_fr,
-                                               Scalar &sat_ice_mkp, Scalar &sat_liq_mkp,
-                                               Scalar &mix_ice_mkr, Scalar &mix_liq_mkr) {
+  KOKKOS_FUNCTION static void
+  saturation_tests(const Scalar &temperature, const Scalar &pressure,
+                   Scalar &sat_ice_fp, Scalar &sat_liq_fp, Scalar &mix_ice_fr,
+                   Scalar &mix_liq_fr, Scalar &sat_ice_mkp, Scalar &sat_liq_mkp,
+                   Scalar &mix_ice_mkr, Scalar &mix_liq_mkr) {
     // Nomenclature:
     // subscript "_fp"  stands for "Flatau Pressure"
     // subscript "_fr"  stands for "Flatau mixing Ratios"
@@ -38,30 +38,36 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
     // Allow usage of saturation functions
     using physics = scream::physics::Functions<Scalar, Device>;
 
-    // Convert Scalar inputs to Spacks because that's what polysvp1 and qv_sat expect as inputs.
+    // Convert Scalar inputs to Spacks because that's what polysvp1 and qv_sat
+    // expect as inputs.
     //--------------------------------------
     const Spack temps(temperature);
     const Spack pres(pressure);
 
-    // Get values from polysvp1 and qv_sat (qv_sat calls polysvp1 here) to test against "expected"
-    // values
+    // Get values from polysvp1 and qv_sat (qv_sat calls polysvp1 here) to test
+    // against "expected" values
     //--------------------------------------
     sat_ice_fp = physics::polysvp1(temps, true, Smask(true))[0];
     sat_liq_fp = physics::polysvp1(temps, false, Smask(true))[0];
 
-    // Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry, const bool ice, const
-    // Smask& range_mask,
-    //                            const SaturationFcn func_idx, const char* caller)
-    mix_ice_fr = physics::qv_sat_dry(temps, pres, true, Smask(true), physics::Polysvp1)[0];
-    mix_liq_fr = physics::qv_sat_dry(temps, pres, false, Smask(true), physics::Polysvp1)[0];
+    // Functions<S,D>::qv_sat_dry(const Spack& t_atm, const Spack& p_atm_dry,
+    // const bool ice, const Smask& range_mask,
+    //                            const SaturationFcn func_idx, const char*
+    //                            caller)
+    mix_ice_fr = physics::qv_sat_dry(temps, pres, true, Smask(true),
+                                     physics::Polysvp1)[0];
+    mix_liq_fr = physics::qv_sat_dry(temps, pres, false, Smask(true),
+                                     physics::Polysvp1)[0];
 
-    // Get values from MurphyKoop_svp and qv_sat_dry (qv_sat_dry calls MurphyKoop_svp here) to test
-    // against "expected" values
+    // Get values from MurphyKoop_svp and qv_sat_dry (qv_sat_dry calls
+    // MurphyKoop_svp here) to test against "expected" values
     sat_ice_mkp = physics::MurphyKoop_svp(temps, true, Smask(true))[0];
     sat_liq_mkp = physics::MurphyKoop_svp(temps, false, Smask(true))[0];
 
-    mix_ice_mkr = physics::qv_sat_dry(temps, pres, true, Smask(true), physics::MurphyKoop)[0];
-    mix_liq_mkr = physics::qv_sat_dry(temps, pres, false, Smask(true), physics::MurphyKoop)[0];
+    mix_ice_mkr = physics::qv_sat_dry(temps, pres, true, Smask(true),
+                                      physics::MurphyKoop)[0];
+    mix_liq_mkr = physics::qv_sat_dry(temps, pres, false, Smask(true),
+                                      physics::MurphyKoop)[0];
   }
 
   static constexpr auto atm_pres = 1e5;
@@ -71,12 +77,14 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
     Originally written by Kyle Pressel, updated by Peter Caldwell on 4/5/20 and
     by Jim Foucar on 4/21/23.
 
-    This code tests polysvp1 and qv_sat at 0 degrees C, at a very cold T, and at a very hot T
-    to make sure our impl gets the same answer as Flatau et al 1992:
+    This code tests polysvp1 and qv_sat at 0 degrees C, at a very cold T, and at
+    a very hot T to make sure our impl gets the same answer as Flatau et al
+    1992:
     (https://journals.ametsoc.org/jamc/article/31/12/1507/14870/Polynomial-Fits-to-Saturation-Vapor-Pressure)
-    For 0 degrees C, polysvp values can be read directly from Flatau. For other cases, I
-    independently coded up the Flatau scheme (polysvp1) in python and used it to derive the expected
-    values. My python code is in https://github.com/E3SM-Project/scream-docs.git
+    For 0 degrees C, polysvp values can be read directly from Flatau. For other
+    cases, I independently coded up the Flatau scheme (polysvp1) in python and
+    used it to derive the expected values. My python code is in
+    https://github.com/E3SM-Project/scream-docs.git
     analysis-scripts/test_qv_sat.py
    */
 
@@ -84,17 +92,18 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
       :          // Hardcode these for now
         params_({// Just Freezing Case: Test values @ 273.15K (tmelt) @ 1e5 Pa
                  //---------------------------------------
-                 // This is the nicest test b/c polysvp1 is a polynomial fit around (T-273.15)
-                 // so T=273.15 collapses back to the intercept coefficient which can be read
-                 // directly from the RHS of table 4 of Flatau et al 1992.
+                 // This is the nicest test b/c polysvp1 is a polynomial fit
+                 // around (T-273.15) so T=273.15 collapses back to the
+                 // intercept coefficient which can be read directly from the
+                 // RHS of table 4 of Flatau et al 1992.
                  {tmelt, atm_pres},
                  {243.15, atm_pres},
                  {303.15, atm_pres},
 
                  // Following values are picked from Murphy and Koop (2005)
-                 // Table C1 titled: "VALUES RECOMMENDED FOR CHECKING COMPUTER CODES"
-                 // Saturation vapor pressure (SVP) values in the table were upto only 5 significant
-                 // digits.
+                 // Table C1 titled: "VALUES RECOMMENDED FOR CHECKING COMPUTER
+                 // CODES" Saturation vapor pressure (SVP) values in the table
+                 // were upto only 5 significant digits.
                  {150, atm_pres},
                  {180, atm_pres},
                  {210, atm_pres},
@@ -113,9 +122,10 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
       Kokkos::parallel_for(
           1, KOKKOS_LAMBDA(const size_t &) {
             TestSaturation::saturation_tests(
-                ps.temperature, ps.pressure, d_dev[0].sat_ice_fp, d_dev[0].sat_liq_fp,
-                d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr, d_dev[0].sat_ice_mkp,
-                d_dev[0].sat_liq_mkp, d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
+                ps.temperature, ps.pressure, d_dev[0].sat_ice_fp,
+                d_dev[0].sat_liq_fp, d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr,
+                d_dev[0].sat_ice_mkp, d_dev[0].sat_liq_mkp,
+                d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
           });
       Kokkos::fence();
 
@@ -137,16 +147,18 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestSaturation {
       ++case_num;
       OutputData ref;
       ParamSet ps = p;
-      std::cout << "--- checking physics saturation case # " << case_num << std::endl;
+      std::cout << "--- checking physics saturation case # " << case_num
+                << std::endl;
       read(fid, ref);
 
       Kokkos::View<OutputData *> d_dev("", 1);
       Kokkos::parallel_for(
           1, KOKKOS_LAMBDA(const size_t &) {
             TestSaturation::saturation_tests(
-                ps.temperature, ps.pressure, d_dev[0].sat_ice_fp, d_dev[0].sat_liq_fp,
-                d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr, d_dev[0].sat_ice_mkp,
-                d_dev[0].sat_liq_mkp, d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
+                ps.temperature, ps.pressure, d_dev[0].sat_ice_fp,
+                d_dev[0].sat_liq_fp, d_dev[0].mix_ice_fr, d_dev[0].mix_liq_fr,
+                d_dev[0].sat_ice_mkp, d_dev[0].sat_liq_mkp,
+                d_dev[0].mix_ice_mkr, d_dev[0].mix_liq_mkr);
           });
       Kokkos::fence();
 
@@ -225,18 +237,27 @@ private:
     ekat::read(&d.mix_liq_mkr, 1, fid);
   }
 
-  static Int compare(const Scalar &tol, const OutputData &ref, const OutputData &d) {
+  static Int compare(const Scalar &tol, const OutputData &ref,
+                     const OutputData &d) {
     Int nerr = 0;
 
-    nerr += scream::compare("sat_ice_fp", &ref.sat_ice_fp, &d.sat_ice_fp, 1, tol);
-    nerr += scream::compare("sat_liq_fp", &ref.sat_liq_fp, &d.sat_liq_fp, 1, tol);
-    nerr += scream::compare("mix_ice_fr", &ref.mix_ice_fr, &d.mix_ice_fr, 1, tol);
-    nerr += scream::compare("mix_liq_fr", &ref.mix_liq_fr, &d.mix_liq_fr, 1, tol);
+    nerr +=
+        scream::compare("sat_ice_fp", &ref.sat_ice_fp, &d.sat_ice_fp, 1, tol);
+    nerr +=
+        scream::compare("sat_liq_fp", &ref.sat_liq_fp, &d.sat_liq_fp, 1, tol);
+    nerr +=
+        scream::compare("mix_ice_fr", &ref.mix_ice_fr, &d.mix_ice_fr, 1, tol);
+    nerr +=
+        scream::compare("mix_liq_fr", &ref.mix_liq_fr, &d.mix_liq_fr, 1, tol);
 
-    nerr += scream::compare("sat_ice_mkp", &ref.sat_ice_mkp, &d.sat_ice_mkp, 1, tol);
-    nerr += scream::compare("sat_liq_mkp", &ref.sat_liq_mkp, &d.sat_liq_mkp, 1, tol);
-    nerr += scream::compare("mix_ice_mkr", &ref.mix_ice_mkr, &d.mix_ice_mkr, 1, tol);
-    nerr += scream::compare("mix_liq_mkr", &ref.mix_liq_mkr, &d.mix_liq_mkr, 1, tol);
+    nerr += scream::compare("sat_ice_mkp", &ref.sat_ice_mkp, &d.sat_ice_mkp, 1,
+                            tol);
+    nerr += scream::compare("sat_liq_mkp", &ref.sat_liq_mkp, &d.sat_liq_mkp, 1,
+                            tol);
+    nerr += scream::compare("mix_ice_mkr", &ref.mix_ice_mkr, &d.mix_ice_mkr, 1,
+                            tol);
+    nerr += scream::compare("mix_liq_mkr", &ref.mix_liq_mkr, &d.mix_liq_mkr, 1,
+                            tol);
 
     return nerr;
   }
@@ -255,19 +276,22 @@ void expect_another_arg(int i, int argc) {
 } // namespace
 
 int main(int argc, char **argv) {
-  using UnitTest       = scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>;
+  using UnitTest =
+      scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>;
   using TestSaturation = UnitTest::TestSaturation;
 
   int nerr = 0;
 
   if (argc == 1) {
-    std::cout << argv[0]
-              << " [options]\n"
-                 "Options:\n"
-                 "  -g                  Generate baseline file. Default False.\n"
-                 "  -b <baseline-file>  Path to baseline file. Required.\n"
-                 "  -t <tol>            Tolerance for relative error. Default machine eps (*10000 "
-                 "for Release).\n";
+    std::cout
+        << argv[0]
+        << " [options]\n"
+           "Options:\n"
+           "  -g                  Generate baseline file. Default False.\n"
+           "  -b <baseline-file>  Path to baseline file. Required.\n"
+           "  -t <tol>            Tolerance for relative error. Default "
+           "machine eps (*10000 "
+           "for Release).\n";
     return 1;
   }
 

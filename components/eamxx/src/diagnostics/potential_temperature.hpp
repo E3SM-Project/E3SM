@@ -12,7 +12,8 @@ namespace scream {
 class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  PotentialTemperatureDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
+  PotentialTemperatureDiagnostic(const ekat::Comm &comm,
+                                 const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "PotentialTemperature"; }

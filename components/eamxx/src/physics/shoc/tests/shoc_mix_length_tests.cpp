@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCompShocMixLength
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 3;
@@ -118,16 +119,18 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
 
     ComputeShocMixShocLengthData SDS_baseline[] = {
         //               shcol, nlev
-        ComputeShocMixShocLengthData(10, 71), ComputeShocMixShocLengthData(10, 12),
-        ComputeShocMixShocLengthData(7, 16), ComputeShocMixShocLengthData(2, 7)};
+        ComputeShocMixShocLengthData(10, 71),
+        ComputeShocMixShocLengthData(10, 12),
+        ComputeShocMixShocLengthData(7, 16),
+        ComputeShocMixShocLengthData(2, 7)};
 
     // Generate random input data
     for (auto &d : SDS_baseline) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ComputeShocMixShocLengthData SDS_cxx[] = {
         ComputeShocMixShocLengthData(SDS_baseline[0]),
         ComputeShocMixShocLengthData(SDS_baseline[1]),
@@ -135,7 +138,8 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
         ComputeShocMixShocLengthData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ComputeShocMixShocLengthData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ComputeShocMixShocLengthData);
 
     // Assume all data is in C layout
 
@@ -176,15 +180,15 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
 namespace {
 
 TEST_CASE("shoc_mix_length_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocMixLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCompShocMixLength;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_mix_length_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompShocMixLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCompShocMixLength;
 
   TestStruct().run_bfb();
 }

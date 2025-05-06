@@ -19,7 +19,8 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -83,9 +84,10 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
           }
 
           Spack epsr{0.0}, epsc{0.0};
-          Functions::calc_liq_relaxation_timescale(revap_table_vals, rho, self_device(0).f1r,
-                                                   self_device(0).f2r, dv, mu, sc, mu_r, lamr,
-                                                   cdistr, cdist, qr_incld, qc_incld, epsr, epsc);
+          Functions::calc_liq_relaxation_timescale(
+              revap_table_vals, rho, self_device(0).f1r, self_device(0).f2r, dv,
+              mu, sc, mu_r, lamr, cdistr, cdist, qr_incld, qc_incld, epsr,
+              epsc);
 
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             self_device(vs).epsr = epsr[s];

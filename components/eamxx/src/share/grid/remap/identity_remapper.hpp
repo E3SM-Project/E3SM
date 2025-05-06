@@ -19,7 +19,8 @@ class IdentityRemapper : public AbstractRemapper {
 public:
   enum Aliasing { SrcAliasTgt, TgtAliasSrc, NoAliasing };
 
-  IdentityRemapper(const grid_ptr_type grid, const Aliasing aliasing = NoAliasing);
+  IdentityRemapper(const grid_ptr_type grid,
+                   const Aliasing aliasing = NoAliasing);
 
   ~IdentityRemapper() = default;
 

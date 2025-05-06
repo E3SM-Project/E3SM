@@ -39,7 +39,8 @@ template <typename ST> DataType get_data_type() {
 }
 
 inline bool is_narrowing_conversion(const DataType from, const DataType to) {
-  return (from == DataType::FloatType || from == DataType::DoubleType) && to == DataType::IntType;
+  return (from == DataType::FloatType || from == DataType::DoubleType) &&
+         to == DataType::IntType;
 }
 
 inline std::string e2str(const DataType data_type) {

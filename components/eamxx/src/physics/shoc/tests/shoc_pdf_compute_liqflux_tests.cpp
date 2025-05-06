@@ -151,15 +151,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfCompLiqFlux {
 namespace {
 
 TEST_CASE("shoc_pdf_compute_liqflux_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompLiqFlux;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfCompLiqFlux;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_compute_liqflux_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompLiqFlux;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfCompLiqFlux;
 
   TestStruct::run_bfb();
 }

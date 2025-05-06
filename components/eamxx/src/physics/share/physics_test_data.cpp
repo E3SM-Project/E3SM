@@ -11,9 +11,11 @@ PhysicsTestData::PhysicsTestData(const std::vector<std::vector<Int>> &dims,
                                  const std::vector<std::vector<Int **>> &ints,
                                  const std::vector<std::vector<bool **>> &bools)
     : m_reals(dims.begin(), dims.begin() + reals.size(), reals),
-      m_ints(dims.begin() + reals.size(), dims.begin() + reals.size() + ints.size(), ints),
-      m_bools(dims.begin() + reals.size() + ints.size(), dims.end(),
-              reinterpret_cast<const std::vector<std::vector<char **>> &>(bools)) {}
+      m_ints(dims.begin() + reals.size(),
+             dims.begin() + reals.size() + ints.size(), ints),
+      m_bools(
+          dims.begin() + reals.size() + ints.size(), dims.end(),
+          reinterpret_cast<const std::vector<std::vector<char **>> &>(bools)) {}
 
 PhysicsTestData &PhysicsTestData::assignment_impl(const PhysicsTestData &rhs) {
   m_reals.assignment_impl(rhs.m_reals);
@@ -24,8 +26,10 @@ PhysicsTestData &PhysicsTestData::assignment_impl(const PhysicsTestData &rhs) {
 }
 
 void PhysicsTestData::read(const ekat::FILEPtr &fid) {
-  EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate "
-                        "baselines for some BFB unit tests");
+  EKAT_REQUIRE_MSG(
+      fid,
+      "Tried to read from missing file. You may have forgotten to generate "
+      "baselines for some BFB unit tests");
   m_reals.read(fid);
   m_ints.read(fid);
   m_bools.read(fid);

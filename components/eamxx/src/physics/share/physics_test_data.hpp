@@ -14,14 +14,14 @@
 #include <vector>
 
 /*
-PhysicsTestData is meant to offer the client something they can inherit to provide
-convenient handling of arrays of data in the common *Data structs that are used for
-unit-testing and bridging. This class supports storing reals, ints, and bools of
-any multidimensionality.
+PhysicsTestData is meant to offer the client something they can inherit to
+provide convenient handling of arrays of data in the common *Data structs that
+are used for unit-testing and bridging. This class supports storing reals, ints,
+and bools of any multidimensionality.
 
 Subclasses of PhysicsTestData should look like the following. Note that the copy
-constructor and assignment operators must be defined if you want to be able to copy
-objects of this type. The PTD_STD_DEF macro is there to help you do this.
+constructor and assignment operators must be defined if you want to be able to
+copy objects of this type. The PTD_STD_DEF macro is there to help you do this.
 
 struct SHOCGridData : public PhysicsTestData {
   // Inputs
@@ -38,7 +38,8 @@ struct SHOCGridData : public PhysicsTestData {
       dim1(dim1_), dim2(dim2_), dim3(dim3_)// initialize your own scalars
   {}
 
-  PTD_STD_DEF(SHOCGridData, 3, dim1, dim2, dim3); // 3 => number of scalars followed by their names
+  PTD_STD_DEF(SHOCGridData, 3, dim1, dim2, dim3); // 3 => number of scalars
+followed by their names
 };
 */
 
@@ -246,21 +247,29 @@ struct SHOCGridData : public PhysicsTestData {
     return *this;                                  \
   }
 
-#define PTD_RW_SCALARS(num_scalars, ...)                                                         \
-  void read_scalars(const ekat::FILEPtr &fid) {                                                  \
-    EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate " \
-                          "baselines for some BFB unit tests");                                  \
-    PTD_RW##num_scalars(read, __VA_ARGS__);                                                      \
-  }                                                                                              \
-  void write_scalars(const ekat::FILEPtr &fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
+#define PTD_RW_SCALARS(num_scalars, ...)                                       \
+  void read_scalars(const ekat::FILEPtr &fid) {                                \
+    EKAT_REQUIRE_MSG(                                                          \
+        fid,                                                                   \
+        "Tried to read from missing file. You may have forgotten to generate " \
+        "baselines for some BFB unit tests");                                  \
+    PTD_RW##num_scalars(read, __VA_ARGS__);                                    \
+  }                                                                            \
+  void write_scalars(const ekat::FILEPtr &fid) const {                         \
+    PTD_RW##num_scalars(write, __VA_ARGS__);                                   \
+  }
 
-#define PTD_RW_SCALARS_ONLY(num_scalars, ...)                                                    \
-  void read(const ekat::FILEPtr &fid) {                                                          \
-    EKAT_REQUIRE_MSG(fid, "Tried to read from missing file. You may have forgotten to generate " \
-                          "baselines for some BFB unit tests");                                  \
-    PTD_RW##num_scalars(read, __VA_ARGS__);                                                      \
-  }                                                                                              \
-  void write(const ekat::FILEPtr &fid) const { PTD_RW##num_scalars(write, __VA_ARGS__); }
+#define PTD_RW_SCALARS_ONLY(num_scalars, ...)                                  \
+  void read(const ekat::FILEPtr &fid) {                                        \
+    EKAT_REQUIRE_MSG(                                                          \
+        fid,                                                                   \
+        "Tried to read from missing file. You may have forgotten to generate " \
+        "baselines for some BFB unit tests");                                  \
+    PTD_RW##num_scalars(read, __VA_ARGS__);                                    \
+  }                                                                            \
+  void write(const ekat::FILEPtr &fid) const {                                 \
+    PTD_RW##num_scalars(write, __VA_ARGS__);                                   \
+  }
 
 #define PTD_RW()                               \
   void read(const ekat::FILEPtr &fid) {        \
@@ -294,8 +303,9 @@ class PhysicsTestData {
             const std::vector<std::vector<T **>> &members_list)
         : m_dims_list(dims_begin, dims_end), m_members_list(members_list),
           m_totals(m_dims_list.size(), 0) {
-      EKAT_REQUIRE_MSG(m_dims_list.size() == m_members_list.size(),
-                       "Length of member lists did not match length of dimensions");
+      EKAT_REQUIRE_MSG(
+          m_dims_list.size() == m_members_list.size(),
+          "Length of member lists did not match length of dimensions");
 
       // Compute totals
       Int total_total = 0;
@@ -339,14 +349,16 @@ class PhysicsTestData {
       return m_totals[index];
     }
 
-    template <typename Gen, typename Dist> void randomize(Gen &generator, Dist &dist) {
+    template <typename Gen, typename Dist>
+    void randomize(Gen &generator, Dist &dist) {
       for (auto &&item : m_data) {
         item = static_cast<T>(dist(generator));
       }
     }
 
     template <typename Gen, typename Dist>
-    void randomize(Gen &generator, Dist &dist, const std::pair<size_t, size_t> &index) {
+    void randomize(Gen &generator, Dist &dist,
+                   const std::pair<size_t, size_t> &index) {
       const Int total = get_total(index.first);
       T *member       = *(m_members_list[index.first][index.second]);
       for (Int i = 0; i < total; ++i) {
@@ -391,16 +403,19 @@ class PhysicsTestData {
         if (dims.size() > 1) { // no need to transpose 1d data
           if (dims.size() == 2) {
             for (auto member : members) {
-              ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1]);
+              ekat::transpose<D>(*member, new_data.data() + offset, dims[0],
+                                 dims[1]);
               offset += total;
             }
           } else if (dims.size() == 3) {
             for (auto member : members) {
-              ekat::transpose<D>(*member, new_data.data() + offset, dims[0], dims[1], dims[2]);
+              ekat::transpose<D>(*member, new_data.data() + offset, dims[0],
+                                 dims[1], dims[2]);
               offset += total;
             }
           } else {
-            EKAT_REQUIRE_MSG(false, "Data dimension > 3 not currently supported");
+            EKAT_REQUIRE_MSG(false,
+                             "Data dimension > 3 not currently supported");
           }
         } else {
           offset += (total * num_members);
@@ -410,30 +425,47 @@ class PhysicsTestData {
       m_data = new_data;
     }
 
-    void read(const ekat::FILEPtr &fid) { ekat::read(m_data.data(), m_data.size(), fid); }
+    void read(const ekat::FILEPtr &fid) {
+      ekat::read(m_data.data(), m_data.size(), fid);
+    }
 
-    void write(const ekat::FILEPtr &fid) const { ekat::write(m_data.data(), m_data.size(), fid); }
+    void write(const ekat::FILEPtr &fid) const {
+      ekat::write(m_data.data(), m_data.size(), fid);
+    }
 
-    std::vector<std::vector<Int>> m_dims_list; // list of dims, one per unique set of dims
+    std::vector<std::vector<Int>>
+        m_dims_list; // list of dims, one per unique set of dims
     std::vector<std::vector<T **>>
-        m_members_list;        // list of member pointers, same outer index space as m_dims_list
-    std::vector<T> m_data;     // the member data in a flat vector
-    std::vector<Int> m_totals; // total sizes of each set of data, same index space as m_dims_list
+        m_members_list;    // list of member pointers, same outer index space as
+                           // m_dims_list
+    std::vector<T> m_data; // the member data in a flat vector
+    std::vector<Int> m_totals; // total sizes of each set of data, same index
+                               // space as m_dims_list
   };
 
 public:
-  // dims -> the dimensions of real data should come before dimensions of int data
+  // dims -> the dimensions of real data should come before dimensions of int
+  // data
   //         and the dims of int data should come before bool data
-  PhysicsTestData(
-      const std::vector<std::vector<Int>>
-          &dims, // vector of dimensions, each set of dimensions is a vector of Int
-      const std::vector<std::vector<Real **>> &reals,       // vector of pointers to real* members
-      const std::vector<std::vector<Int **>> &ints   = {},  // vector of pointers to int* members
-      const std::vector<std::vector<bool **>> &bools = {}); // vector of pointers to bool* members
+  PhysicsTestData(const std::vector<std::vector<Int>>
+                      &dims, // vector of dimensions, each set of dimensions is
+                             // a vector of Int
+                  const std::vector<std::vector<Real **>>
+                      &reals, // vector of pointers to real* members
+                  const std::vector<std::vector<Int **>> &ints =
+                      {}, // vector of pointers to int* members
+                  const std::vector<std::vector<bool **>> &bools =
+                      {}); // vector of pointers to bool* members
 
-  Int total(const Real *member) const { return m_reals.get_total(get_index(member).first); }
-  Int total(const Int *member) const { return m_ints.get_total(get_index(member).first); }
-  Int total(const bool *member) const { return m_bools.get_total(get_index(member).first); }
+  Int total(const Real *member) const {
+    return m_reals.get_total(get_index(member).first);
+  }
+  Int total(const Int *member) const {
+    return m_ints.get_total(get_index(member).first);
+  }
+  Int total(const bool *member) const {
+    return m_bools.get_total(get_index(member).first);
+  }
 
   Int dim(const Real *member, const size_t &dim_idx) const {
     return m_reals.get_dim(get_index(member).first, dim_idx);
@@ -445,7 +477,8 @@ public:
     return m_bools.get_dim(get_index(member).first, dim_idx);
   }
 
-  // Delete this to block subclasses getting the default impls, which would be incorrect
+  // Delete this to block subclasses getting the default impls, which would be
+  // incorrect
   PhysicsTestData(const PhysicsTestData &rhs)            = delete;
   PhysicsTestData &operator=(const PhysicsTestData &rhs) = delete;
 
@@ -456,7 +489,8 @@ public:
   // d.randomize({ {d.wthl, {-1, 1}} });
   template <typename Engine>
   void randomize(Engine &engine,
-                 const std::vector<std::pair<void *, std::pair<Real, Real>>> &ranges = {}) {
+                 const std::vector<std::pair<void *, std::pair<Real, Real>>>
+                     &ranges = {}) {
     std::uniform_real_distribution<Real> default_real_dist(0.0, 1.0);
     std::uniform_int_distribution<Int> default_int_dist(0, 1);
     std::uniform_int_distribution<Int> default_bool_dist(0, 1);
@@ -471,22 +505,26 @@ public:
       const auto &range       = p.second;
       const Real bottom_range = range.first;
       const Real top_range    = range.second;
-      EKAT_REQUIRE_MSG(bottom_range <= top_range, "Expect bottom of range <= top of range");
+      EKAT_REQUIRE_MSG(bottom_range <= top_range,
+                       "Expect bottom of range <= top of range");
       void *member = p.first;
 
       const auto real_search = get_index(reinterpret_cast<Real *>(member));
       if (real_search.first != std::string::npos) {
-        std::uniform_real_distribution<Real> real_dist(range.first, range.second);
+        std::uniform_real_distribution<Real> real_dist(range.first,
+                                                       range.second);
         m_reals.randomize(engine, real_dist, real_search);
       } else {
         const auto int_search = get_index(reinterpret_cast<Int *>(member));
         if (int_search.first != std::string::npos) {
           EKAT_REQUIRE_MSG(std::ceil(bottom_range) == bottom_range,
-                           "Use of non-round float for integer random range:" << bottom_range);
-          EKAT_REQUIRE_MSG(std::ceil(top_range) == top_range,
-                           "Use of non-round float for integer random range:" << top_range);
-          std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range),
-                                                       std::lround(top_range));
+                           "Use of non-round float for integer random range:"
+                               << bottom_range);
+          EKAT_REQUIRE_MSG(
+              std::ceil(top_range) == top_range,
+              "Use of non-round float for integer random range:" << top_range);
+          std::uniform_int_distribution<Int> data_dist(
+              std::lround(bottom_range), std::lround(top_range));
 
           m_ints.randomize(engine, data_dist, int_search);
         } else {
@@ -497,23 +535,24 @@ public:
                            "Use 0 or 1 for bool ranges, not:" << bottom_range);
           EKAT_REQUIRE_MSG(top_range == 0.0 || top_range == 1.0,
                            "Use 0 or 1 for bool ranges, not:" << top_range);
-          std::uniform_int_distribution<Int> data_dist(std::lround(bottom_range),
-                                                       std::lround(top_range));
+          std::uniform_int_distribution<Int> data_dist(
+              std::lround(bottom_range), std::lround(top_range));
           m_bools.randomize(engine, data_dist, bool_search);
         }
       }
     }
   }
 
-  // Since we are also preparing index data, this function is doing more than transposing. It's
-  // shifting the format of all data from one language to another
+  // Since we are also preparing index data, this function is doing more than
+  // transposing. It's shifting the format of all data from one language to
+  // another
   template <ekat::TransposeDirection::Enum D> void transpose() {
     m_reals.transpose<D>();
     m_ints.transpose<D>();
     m_bools.transpose<D>();
 
-    // Shift the indices. We might not be able to make the assumption that int data represented
-    // indices
+    // Shift the indices. We might not be able to make the assumption that int
+    // data represented indices
     for (size_t i = 0; i < m_ints.m_data.size(); ++i) {
       m_ints.m_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
       EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
@@ -531,23 +570,25 @@ private:
   std::pair<size_t, size_t> get_index(const Real *member) const {
     return m_reals.get_index(member);
   }
-  std::pair<size_t, size_t> get_index(const Int *member) const { return m_ints.get_index(member); }
+  std::pair<size_t, size_t> get_index(const Int *member) const {
+    return m_ints.get_index(member);
+  }
   std::pair<size_t, size_t> get_index(const bool *member) const {
     return m_bools.get_index(reinterpret_cast<const char *>(member));
   }
 
   PTDImpl<Real> m_reals; // manage real data with this member
   PTDImpl<Int> m_ints;   // manage int data with this member
-  PTDImpl<char> m_bools; // manage bool data with this member, use chars internally to dodge
-                         // vector<bool> specialization
+  PTDImpl<char> m_bools; // manage bool data with this member, use chars
+                         // internally to dodge vector<bool> specialization
 };
 
 enum BASELINE_ACTION { NONE, COMPARE, GENERATE };
 
 /**
- * In $phys_unit_tests_common.hpp, the UnitWrap struct should have an inner struct "Base"
- * that inherits from the struct below. This will ensure common BFB baseline unit tests
- * are set up in a consistent manner.
+ * In $phys_unit_tests_common.hpp, the UnitWrap struct should have an inner
+ * struct "Base" that inherits from the struct below. This will ensure common
+ * BFB baseline unit tests are set up in a consistent manner.
  */
 struct UnitBase {
 
@@ -557,7 +598,8 @@ struct UnitBase {
   ekat::FILEPtr m_fid;
 
   UnitBase()
-      : m_baseline_path(""), m_test_name(Catch::getResultCapture().getCurrentTestName()),
+      : m_baseline_path(""),
+        m_test_name(Catch::getResultCapture().getCurrentTestName()),
         m_baseline_action(NONE), m_fid() {
     auto &ts = ekat::TestSession::get();
     if (ts.flags["c"]) {
@@ -570,7 +612,8 @@ struct UnitBase {
     m_baseline_path = ts.params["b"];
 
     EKAT_REQUIRE_MSG(!(m_baseline_action != NONE && m_baseline_path == ""),
-                     "Unit test flags problem: baseline actions were requested but no baseline "
+                     "Unit test flags problem: baseline actions were requested "
+                     "but no baseline "
                      "path was provided");
 
     std::string baseline_name = m_baseline_path + "/" + m_test_name;

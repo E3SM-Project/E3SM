@@ -17,11 +17,13 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::shoc_energy_fixer(
-    const MemberType &team, const Int &nlev, const Int &nlevi, const Scalar &dtime, const Int &nadv,
-    const uview_1d<const Spack> &zt_grid, const uview_1d<const Spack> &zi_grid, const Scalar &se_b,
-    const Scalar &ke_b, const Scalar &wv_b, const Scalar &wl_b, const Scalar &se_a,
-    const Scalar &ke_a, const Scalar &wv_a, const Scalar &wl_a, const Scalar &wthl_sfc,
-    const Scalar &wqw_sfc, const uview_1d<const Spack> &rho_zt, const uview_1d<const Spack> &tke,
+    const MemberType &team, const Int &nlev, const Int &nlevi,
+    const Scalar &dtime, const Int &nadv, const uview_1d<const Spack> &zt_grid,
+    const uview_1d<const Spack> &zi_grid, const Scalar &se_b,
+    const Scalar &ke_b, const Scalar &wv_b, const Scalar &wl_b,
+    const Scalar &se_a, const Scalar &ke_a, const Scalar &wv_a,
+    const Scalar &wl_a, const Scalar &wthl_sfc, const Scalar &wqw_sfc,
+    const uview_1d<const Spack> &rho_zt, const uview_1d<const Spack> &tke,
     const uview_1d<const Spack> &pint, const Workspace &workspace,
     const uview_1d<Spack> &host_dse) {
   // Define temporary variables
@@ -89,11 +91,14 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_energy_fixer(
   // Update host_dse
   const int shoctop_pack = shoctop / Spack::n;
   const auto nlev_packs  = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, shoctop_pack, nlev_packs), [&](const Int &k) {
-    auto range_pack = ekat::range<IntSmallPack>(k * Spack::n);
+  Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, shoctop_pack, nlev_packs),
+      [&](const Int &k) {
+        auto range_pack = ekat::range<IntSmallPack>(k * Spack::n);
 
-    host_dse(k).set(range_pack >= shoctop && range_pack < nlev, host_dse(k) - se_dis * ggr);
-  });
+        host_dse(k).set(range_pack >= shoctop && range_pack < nlev,
+                        host_dse(k) - se_dis * ggr);
+      });
 
   // Release temporary variables from the workspace
   workspace.release(rho_zi);

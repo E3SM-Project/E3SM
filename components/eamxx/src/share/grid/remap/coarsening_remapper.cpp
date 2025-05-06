@@ -12,19 +12,22 @@
 
 namespace scream {
 
-CoarseningRemapper::CoarseningRemapper(const grid_ptr_type &src_grid, const std::string &map_file,
-                                       const bool track_mask, const bool populate_tgt_grid_geo_data)
-    : HorizInterpRemapperBase(src_grid, map_file, InterpType::Coarsen), m_track_mask(track_mask) {
+CoarseningRemapper::CoarseningRemapper(const grid_ptr_type &src_grid,
+                                       const std::string &map_file,
+                                       const bool track_mask,
+                                       const bool populate_tgt_grid_geo_data)
+    : HorizInterpRemapperBase(src_grid, map_file, InterpType::Coarsen),
+      m_track_mask(track_mask) {
   using namespace ShortFieldTagsNames;
 
   if (populate_tgt_grid_geo_data) {
-    // Replicate the src grid geo data in the tgt grid. We use this remapper to do
-    // the remapping (if needed), and clean it up afterwards.
+    // Replicate the src grid geo data in the tgt grid. We use this remapper to
+    // do the remapping (if needed), and clean it up afterwards.
     const auto &src_geo_data_names = src_grid->get_geometry_data_names();
     registration_begins();
     for (const auto &name : src_geo_data_names) {
-      // Since different remappers may share the same data (if the map file is the same)
-      // the coarse grid may already have the geo data.
+      // Since different remappers may share the same data (if the map file is
+      // the same) the coarse grid may already have the geo data.
       if (m_coarse_grid->has_geometry_data(name)) {
         continue;
       }
@@ -33,16 +36,20 @@ CoarseningRemapper::CoarseningRemapper(const grid_ptr_type &src_grid, const std:
       const auto &layout       = src_data_fid.get_layout();
       if (layout.tags().empty()) {
         // This is a scalar field, so won't be coarsened.
-        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-        FieldIdentifier tgt_data_fid(src_data_fid.name(), src_data_fid.get_layout(),
-                                     src_data_fid.get_units(), m_tgt_grid->name());
+        // Simply copy it in the tgt grid, but we still need to assign the new
+        // grid name.
+        FieldIdentifier tgt_data_fid(
+            src_data_fid.name(), src_data_fid.get_layout(),
+            src_data_fid.get_units(), m_tgt_grid->name());
         auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
         tgt_data.deep_copy(src_data);
       } else if (layout.tags()[0] != COL) {
         // Not a field to be coarsened (perhaps a vertical coordinate field).
-        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-        FieldIdentifier tgt_data_fid(src_data_fid.name(), src_data_fid.get_layout(),
-                                     src_data_fid.get_units(), m_tgt_grid->name());
+        // Simply copy it in the tgt grid, but we still need to assign the new
+        // grid name.
+        FieldIdentifier tgt_data_fid(
+            src_data_fid.name(), src_data_fid.get_layout(),
+            src_data_fid.get_units(), m_tgt_grid->name());
         auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
         tgt_data.deep_copy(src_data);
       } else {
@@ -84,10 +91,11 @@ void CoarseningRemapper::registration_ends_impl() {
     return;
   }
 
-  // We store masks (src-tgt) here, and register them AFTER we parse all currently registered
-  // fields. That makes the for loop below easier, since we can take references without worrring
-  // that they would get invalidated. In fact, if you call register_field inside the loop, the
-  // src/tgt fields vectors will grow, which may cause reallocation and references invalidation
+  // We store masks (src-tgt) here, and register them AFTER we parse all
+  // currently registered fields. That makes the for loop below easier, since we
+  // can take references without worrring that they would get invalidated. In
+  // fact, if you call register_field inside the loop, the src/tgt fields
+  // vectors will grow, which may cause reallocation and references invalidation
   std::vector<std::pair<Field, Field>> masks;
 
   auto get_mask_idx = [&](const FieldIdentifier &src_mask_fid) {
@@ -109,14 +117,18 @@ void CoarseningRemapper::registration_ends_impl() {
     if (not src.get_header().has_extra_data("mask_data"))
       continue;
 
-    // First, check that we also have the mask value, to be used if mask_data is too small
+    // First, check that we also have the mask value, to be used if mask_data is
+    // too small
     EKAT_REQUIRE_MSG(src.get_header().has_extra_data("mask_value"),
-                     "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
+                     "Error! Field " + src.name() +
+                         " stores a mask field but not a mask value.\n");
 
-    const auto &src_mask     = src.get_header().get_extra_data<Field>("mask_data");
-    const auto &src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+    const auto &src_mask = src.get_header().get_extra_data<Field>("mask_data");
+    const auto &src_mask_val =
+        src.get_header().get_extra_data<Real>("mask_value");
 
-    // Make sure fields representing masks are not themselves meant to be masked.
+    // Make sure fields representing masks are not themselves meant to be
+    // masked.
     EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
                      "Error! A mask field cannot be itself masked.\n"
                      "  - field name: " +
@@ -152,10 +164,12 @@ void CoarseningRemapper::registration_ends_impl() {
 
     // If not there, set mask value in the tgt field too
     if (tgt.get_header().has_extra_data("mask_value")) {
-      const auto &tgt_mask_val = tgt.get_header().get_extra_data<Real>("mask_value");
+      const auto &tgt_mask_val =
+          tgt.get_header().get_extra_data<Real>("mask_value");
 
       EKAT_REQUIRE_MSG(tgt_mask_val == src_mask_val,
-                       "Error! Target field stores a mask data different from the src field.\n"
+                       "Error! Target field stores a mask data different from "
+                       "the src field.\n"
                        "  - src field name: " +
                                src.name() +
                                "\n"
@@ -171,13 +185,16 @@ void CoarseningRemapper::registration_ends_impl() {
       tgt.get_header().set_extra_data("mask_value", src_mask_val);
     }
 
-    // If it's the first time we find this mask, store it, so we can register later
+    // If it's the first time we find this mask, store it, so we can register
+    // later
     const auto &src_mask_fid = src_mask.get_header().get_identifier();
     int mask_idx             = get_mask_idx(src_mask_fid);
     if (mask_idx == -1) {
       Field tgt_mask(create_tgt_fid(src_mask_fid));
-      auto src_pack_size = src_mask.get_header().get_alloc_properties().get_largest_pack_size();
-      tgt_mask.get_header().get_alloc_properties().request_allocation(src_pack_size);
+      auto src_pack_size =
+          src_mask.get_header().get_alloc_properties().get_largest_pack_size();
+      tgt_mask.get_header().get_alloc_properties().request_allocation(
+          src_pack_size);
       tgt_mask.allocate_view();
 
       masks.push_back(std::make_pair(src_mask, tgt_mask));
@@ -191,7 +208,8 @@ void CoarseningRemapper::registration_ends_impl() {
     register_field(it.first, it.second);
   }
 
-  // Now that ALL fields (including masks) are registered, we can setup internal data
+  // Now that ALL fields (including masks) are registered, we can setup internal
+  // data
   HorizInterpRemapperBase::registration_ends_impl();
 }
 
@@ -200,13 +218,15 @@ void CoarseningRemapper::remap_fwd_impl() {
   // is done packing before us, we can start receiving their data
   if (not m_recv_req.empty()) {
     int ierr = MPI_Startall(m_recv_req.size(), m_recv_req.data());
-    EKAT_REQUIRE_MSG(ierr == MPI_SUCCESS,
-                     "Error! Something whent wrong while starting persistent recv requests.\n"
-                     "  - recv rank: " +
-                         std::to_string(m_comm.rank()) + "\n");
+    EKAT_REQUIRE_MSG(ierr == MPI_SUCCESS, "Error! Something whent wrong while "
+                                          "starting persistent recv requests.\n"
+                                          "  - recv rank: " +
+                                              std::to_string(m_comm.rank()) +
+                                              "\n");
   }
 
-  // TODO: Add check that if there are mask values they are either 1's or 0's for unmasked/masked.
+  // TODO: Add check that if there are mask values they are either 1's or 0's
+  // for unmasked/masked.
 
   // Helpef function, to establish if a field can be handled with packs
   auto can_pack_field = [](const Field &f) {
@@ -221,13 +241,15 @@ void CoarseningRemapper::remap_fwd_impl() {
     const auto &f_src = m_src_fields[i];
     const auto &f_ov  = m_ov_fields[i];
 
-    const bool masked = m_track_mask and f_src.get_header().has_extra_data("mask_data");
+    const bool masked =
+        m_track_mask and f_src.get_header().has_extra_data("mask_data");
     if (masked) {
       // Pass the mask to the local_mat_vec routine
       const auto &mask = f_src.get_header().get_extra_data<Field>("mask_data");
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
-      if (can_pack_field(f_src) and can_pack_field(f_ov) and can_pack_field(mask)) {
+      if (can_pack_field(f_src) and can_pack_field(f_ov) and
+          can_pack_field(mask)) {
         local_mat_vec<SCREAM_PACK_SIZE>(f_src, f_ov, mask);
       } else {
         local_mat_vec<1>(f_src, f_ov, mask);
@@ -250,9 +272,11 @@ void CoarseningRemapper::remap_fwd_impl() {
 
   // Wait for all sends to be completed
   if (not m_send_req.empty()) {
-    int ierr = MPI_Waitall(m_send_req.size(), m_send_req.data(), MPI_STATUSES_IGNORE);
+    int ierr =
+        MPI_Waitall(m_send_req.size(), m_send_req.data(), MPI_STATUSES_IGNORE);
     EKAT_REQUIRE_MSG(ierr == MPI_SUCCESS,
-                     "Error! Something whent wrong while waiting on persistent send requests.\n"
+                     "Error! Something whent wrong while waiting on persistent "
+                     "send requests.\n"
                      "  - send rank: " +
                          std::to_string(m_comm.rank()) + "\n");
   }
@@ -263,7 +287,8 @@ void CoarseningRemapper::remap_fwd_impl() {
       const auto &f_tgt = m_tgt_fields[i];
       if (f_tgt.get_header().has_extra_data("mask_data")) {
         // Then this field did use a mask
-        const auto &mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
+        const auto &mask =
+            f_tgt.get_header().get_extra_data<Field>("mask_data");
         if (can_pack_field(f_tgt) and can_pack_field(mask)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt, mask);
         } else {
@@ -275,7 +300,8 @@ void CoarseningRemapper::remap_fwd_impl() {
 }
 
 template <int PackSize>
-void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask) const {
+void CoarseningRemapper::rescale_masked_fields(const Field &x,
+                                               const Field &mask) const {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
@@ -293,8 +319,9 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
                    " is masked, but stores no mask_value extra data.\n");
   }
   const Real mask_threshold =
-      std::numeric_limits<Real>::epsilon(); // TODO: Should we not hardcode the threshold for
-                                            // simply masking out the column.
+      std::numeric_limits<Real>::epsilon(); // TODO: Should we not hardcode the
+                                            // threshold for simply masking out
+                                            // the column.
 
   switch (rank) {
   case 1: {
@@ -318,8 +345,9 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
     bool mask1d = mask.rank() == 1;
     view_1d<const Real> mask_1d;
     view_2d<const Pack> mask_2d;
-    // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-    // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+    // If the mask comes from FieldAtLevel, it's only defined on columns
+    // (rank=1) If the mask comes from vert interpolation remapper, it is
+    // defined on ncols x nlevs (rank=2)
     if (mask.rank() == 1) {
       mask_1d = mask.get_view<const Real *>();
     } else {
@@ -339,13 +367,14 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
             }
           } else {
             auto m_sub = ekat::subview(mask_2d, icol);
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1), [&](const int j) {
-              auto masked = m_sub(j) > mask_threshold;
-              if (masked.any()) {
-                x_sub(j).set(masked, x_sub(j) / m_sub(j));
-              }
-              x_sub(j).set(!masked, mask_val);
-            });
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1),
+                                 [&](const int j) {
+                                   auto masked = m_sub(j) > mask_threshold;
+                                   if (masked.any()) {
+                                     x_sub(j).set(masked, x_sub(j) / m_sub(j));
+                                   }
+                                   x_sub(j).set(!masked, mask_val);
+                                 });
           }
         });
     break;
@@ -355,8 +384,9 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
     bool mask1d = mask.rank() == 1;
     view_1d<const Real> mask_1d;
     view_2d<const Pack> mask_2d;
-    // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-    // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+    // If the mask comes from FieldAtLevel, it's only defined on columns
+    // (rank=1) If the mask comes from vert interpolation remapper, it is
+    // defined on ncols x nlevs (rank=2)
     if (mask.rank() == 1) {
       mask_1d = mask.get_view<const Real *>();
     } else {
@@ -371,26 +401,29 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
           if (mask1d) {
             auto mask = mask_1d(icol);
             if (mask > mask_threshold) {
-              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2), [&](const int idx) {
-                const int j = idx / dim2;
-                const int k = idx % dim2;
-                auto x_sub  = ekat::subview(x_view, icol, j);
-                x_sub(k) /= mask;
-              });
+              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2),
+                                   [&](const int idx) {
+                                     const int j = idx / dim2;
+                                     const int k = idx % dim2;
+                                     auto x_sub =
+                                         ekat::subview(x_view, icol, j);
+                                     x_sub(k) /= mask;
+                                   });
             }
           } else {
             auto m_sub = ekat::subview(mask_2d, icol);
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2), [&](const int idx) {
-              const int j = idx / dim2;
-              const int k = idx % dim2;
-              auto x_sub  = ekat::subview(x_view, icol, j);
-              auto masked = m_sub(k) > mask_threshold;
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2),
+                                 [&](const int idx) {
+                                   const int j = idx / dim2;
+                                   const int k = idx % dim2;
+                                   auto x_sub  = ekat::subview(x_view, icol, j);
+                                   auto masked = m_sub(k) > mask_threshold;
 
-              if (masked.any()) {
-                x_sub(k).set(masked, x_sub(k) / m_sub(k));
-              }
-              x_sub(k).set(!masked, mask_val);
-            });
+                                   if (masked.any()) {
+                                     x_sub(k).set(masked, x_sub(k) / m_sub(k));
+                                   }
+                                   x_sub(k).set(!masked, mask_val);
+                                 });
           }
         });
     break;
@@ -400,8 +433,9 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
     bool mask1d = mask.rank() == 1;
     view_1d<const Real> mask_1d;
     view_2d<const Pack> mask_2d;
-    // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-    // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+    // If the mask comes from FieldAtLevel, it's only defined on columns
+    // (rank=1) If the mask comes from vert interpolation remapper, it is
+    // defined on ncols x nlevs (rank=2)
     if (mask.rank() == 1) {
       mask_1d = mask.get_view<const Real *>();
     } else {
@@ -417,30 +451,32 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
           if (mask1d) {
             auto mask = mask_1d(icol);
             if (mask > mask_threshold) {
-              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
-                                   [&](const int idx) {
-                                     const int j = (idx / dim3) / dim2;
-                                     const int k = (idx / dim3) % dim2;
-                                     const int l = idx % dim3;
-                                     auto x_sub  = ekat::subview(x_view, icol, j, k);
-                                     x_sub(l) /= mask;
-                                   });
+              Kokkos::parallel_for(
+                  Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
+                  [&](const int idx) {
+                    const int j = (idx / dim3) / dim2;
+                    const int k = (idx / dim3) % dim2;
+                    const int l = idx % dim3;
+                    auto x_sub  = ekat::subview(x_view, icol, j, k);
+                    x_sub(l) /= mask;
+                  });
             }
           } else {
             auto m_sub = ekat::subview(mask_2d, icol);
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
-                                 [&](const int idx) {
-                                   const int j = (idx / dim3) / dim2;
-                                   const int k = (idx / dim3) % dim2;
-                                   const int l = idx % dim3;
-                                   auto x_sub  = ekat::subview(x_view, icol, j, k);
-                                   auto masked = m_sub(l) > mask_threshold;
+            Kokkos::parallel_for(
+                Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
+                [&](const int idx) {
+                  const int j = (idx / dim3) / dim2;
+                  const int k = (idx / dim3) % dim2;
+                  const int l = idx % dim3;
+                  auto x_sub  = ekat::subview(x_view, icol, j, k);
+                  auto masked = m_sub(l) > mask_threshold;
 
-                                   if (masked.any()) {
-                                     x_sub(l).set(masked, x_sub(l) / m_sub(l));
-                                   }
-                                   x_sub(l).set(!masked, mask_val);
-                                 });
+                  if (masked.any()) {
+                    x_sub(l).set(masked, x_sub(l) / m_sub(l));
+                  }
+                  x_sub(l).set(!masked, mask_val);
+                });
           }
         });
     break;
@@ -449,7 +485,8 @@ void CoarseningRemapper::rescale_masked_fields(const Field &x, const Field &mask
 }
 
 template <int PackSize>
-void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y, const Field &mask) const {
+void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y,
+                                       const Field &mask) const {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
@@ -477,9 +514,11 @@ void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y, const Fie
         RangePolicy(0, nrows), KOKKOS_LAMBDA(const int &row) {
           const auto beg = row_offsets(row);
           const auto end = row_offsets(row + 1);
-          y_view(row)    = weights(beg) * x_view(col_lids(beg)) * mask_view(col_lids(beg));
+          y_view(row) =
+              weights(beg) * x_view(col_lids(beg)) * mask_view(col_lids(beg));
           for (int icol = beg + 1; icol < end; ++icol) {
-            y_view(row) += weights(icol) * x_view(col_lids(icol)) * mask_view(col_lids(icol));
+            y_view(row) += weights(icol) * x_view(col_lids(icol)) *
+                           mask_view(col_lids(icol));
           }
         });
     break;
@@ -489,8 +528,9 @@ void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y, const Fie
     auto y_view = y.get_view<Pack **>();
     view_1d<const Real> mask_1d;
     view_2d<const Pack> mask_2d;
-    // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-    // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+    // If the mask comes from FieldAtLevel, it's only defined on columns
+    // (rank=1) If the mask comes from vert interpolation remapper, it is
+    // defined on ncols x nlevs (rank=2)
     bool mask1d = mask.rank() == 1;
     if (mask1d) {
       mask_1d = mask.get_view<const Real *>();
@@ -505,26 +545,31 @@ void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y, const Fie
 
           const auto beg = row_offsets(row);
           const auto end = row_offsets(row + 1);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1), [&](const int j) {
-            y_view(row, j) = weights(beg) * x_view(col_lids(beg), j) *
-                             (mask1d ? mask_1d(col_lids(beg)) : mask_2d(col_lids(beg), j));
-            for (int icol = beg + 1; icol < end; ++icol) {
-              y_view(row, j) += weights(icol) * x_view(col_lids(icol), j) *
-                                (mask1d ? mask_1d(col_lids(icol)) : mask_2d(col_lids(icol), j));
-            }
-          });
+          Kokkos::parallel_for(
+              Kokkos::TeamVectorRange(team, dim1), [&](const int j) {
+                y_view(row, j) = weights(beg) * x_view(col_lids(beg), j) *
+                                 (mask1d ? mask_1d(col_lids(beg))
+                                         : mask_2d(col_lids(beg), j));
+                for (int icol = beg + 1; icol < end; ++icol) {
+                  y_view(row, j) += weights(icol) * x_view(col_lids(icol), j) *
+                                    (mask1d ? mask_1d(col_lids(icol))
+                                            : mask_2d(col_lids(icol), j));
+                }
+              });
         });
     break;
   }
   case 3: {
     auto x_view = x.get_view<const Pack ***>();
     auto y_view = y.get_view<Pack ***>();
-    // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
+    // Note, the mask is still assumed to be defined on COLxLEV so still only 2D
+    // for case 3.
     view_1d<const Real> mask_1d;
     view_2d<const Pack> mask_2d;
     bool mask1d = mask.rank() == 1;
-    // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-    // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+    // If the mask comes from FieldAtLevel, it's only defined on columns
+    // (rank=1) If the mask comes from vert interpolation remapper, it is
+    // defined on ncols x nlevs (rank=2)
     if (mask1d) {
       mask_1d = mask.get_view<const Real *>();
     } else {
@@ -539,28 +584,34 @@ void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y, const Fie
 
           const auto beg = row_offsets(row);
           const auto end = row_offsets(row + 1);
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2), [&](const int idx) {
-            const int j       = idx / dim2;
-            const int k       = idx % dim2;
-            y_view(row, j, k) = weights(beg) * x_view(col_lids(beg), j, k) *
-                                (mask1d ? mask_1d(col_lids(beg)) : mask_2d(col_lids(beg), k));
-            for (int icol = beg + 1; icol < end; ++icol) {
-              y_view(row, j, k) += weights(icol) * x_view(col_lids(icol), j, k) *
-                                   (mask1d ? mask_1d(col_lids(icol)) : mask_2d(col_lids(icol), k));
-            }
-          });
+          Kokkos::parallel_for(
+              Kokkos::TeamVectorRange(team, dim1 * dim2), [&](const int idx) {
+                const int j       = idx / dim2;
+                const int k       = idx % dim2;
+                y_view(row, j, k) = weights(beg) * x_view(col_lids(beg), j, k) *
+                                    (mask1d ? mask_1d(col_lids(beg))
+                                            : mask_2d(col_lids(beg), k));
+                for (int icol = beg + 1; icol < end; ++icol) {
+                  y_view(row, j, k) += weights(icol) *
+                                       x_view(col_lids(icol), j, k) *
+                                       (mask1d ? mask_1d(col_lids(icol))
+                                               : mask_2d(col_lids(icol), k));
+                }
+              });
         });
     break;
   }
   case 4: {
     auto x_view = x.get_view<const Pack ****>();
     auto y_view = y.get_view<Pack ****>();
-    // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
+    // Note, the mask is still assumed to be defined on COLxLEV so still only 2D
+    // for case 3.
     view_1d<const Real> mask_1d;
     view_2d<const Pack> mask_2d;
     bool mask1d = mask.rank() == 1;
-    // If the mask comes from FieldAtLevel, it's only defined on columns (rank=1)
-    // If the mask comes from vert interpolation remapper, it is defined on ncols x nlevs (rank=2)
+    // If the mask comes from FieldAtLevel, it's only defined on columns
+    // (rank=1) If the mask comes from vert interpolation remapper, it is
+    // defined on ncols x nlevs (rank=2)
     if (mask1d) {
       mask_1d = mask.get_view<const Real *>();
     } else {
@@ -577,25 +628,28 @@ void CoarseningRemapper::local_mat_vec(const Field &x, const Field &y, const Fie
           const auto beg = row_offsets(row);
           const auto end = row_offsets(row + 1);
           Kokkos::parallel_for(
-              Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3), [&](const int idx) {
-                const int j = (idx / dim3) / dim2;
-                const int k = (idx / dim3) % dim2;
-                const int l = idx % dim3;
-                y_view(row, j, k, l) =
-                    weights(beg) * x_view(col_lids(beg), j, k, l) *
-                    (mask1d ? mask_1d(col_lids(beg)) : mask_2d(col_lids(beg), l));
+              Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
+              [&](const int idx) {
+                const int j          = (idx / dim3) / dim2;
+                const int k          = (idx / dim3) % dim2;
+                const int l          = idx % dim3;
+                y_view(row, j, k, l) = weights(beg) *
+                                       x_view(col_lids(beg), j, k, l) *
+                                       (mask1d ? mask_1d(col_lids(beg))
+                                               : mask_2d(col_lids(beg), l));
                 for (int icol = beg + 1; icol < end; ++icol) {
-                  y_view(row, j, k, l) +=
-                      weights(icol) * x_view(col_lids(icol), j, k, l) *
-                      (mask1d ? mask_1d(col_lids(icol)) : mask_2d(col_lids(icol), l));
+                  y_view(row, j, k, l) += weights(icol) *
+                                          x_view(col_lids(icol), j, k, l) *
+                                          (mask1d ? mask_1d(col_lids(icol))
+                                                  : mask_2d(col_lids(icol), l));
                 }
               });
         });
     break;
   }
   default: {
-    EKAT_ERROR_MSG(
-        "Error::coarsening_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
+    EKAT_ERROR_MSG("Error::coarsening_remapper::local_mat_vec doesn't support "
+                   "fields of rank 4 or greater");
   }
   }
 }
@@ -647,9 +701,10 @@ void CoarseningRemapper::pack_and_send() {
             const int lidpos = i - pid_lid_start(pid);
             const int offset = f_pid_offsets(pid);
 
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1), [&](const int idim) {
-              buf(offset + lidpos * dim1 + idim) = v(lid, idim);
-            });
+            Kokkos::parallel_for(
+                Kokkos::TeamVectorRange(team, dim1), [&](const int idim) {
+                  buf(offset + lidpos * dim1 + idim) = v(lid, idim);
+                });
           });
     } break;
     case 3: {
@@ -665,11 +720,13 @@ void CoarseningRemapper::pack_and_send() {
             const int lidpos = i - pid_lid_start(pid);
             const int offset = f_pid_offsets(pid);
 
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2), [&](const int idx) {
-              const int idim                                          = idx / dim2;
-              const int ilev                                          = idx % dim2;
-              buf(offset + lidpos * dim1 * dim2 + idim * dim2 + ilev) = v(lid, idim, ilev);
-            });
+            Kokkos::parallel_for(
+                Kokkos::TeamVectorRange(team, dim1 * dim2), [&](const int idx) {
+                  const int idim = idx / dim2;
+                  const int ilev = idx % dim2;
+                  buf(offset + lidpos * dim1 * dim2 + idim * dim2 + ilev) =
+                      v(lid, idim, ilev);
+                });
           });
     } break;
     case 4: {
@@ -677,7 +734,8 @@ void CoarseningRemapper::pack_and_send() {
       const int dim1 = fl.dim(1);
       const int dim2 = fl.dim(2);
       const int dim3 = fl.dim(3);
-      auto policy    = ESU::get_default_team_policy(num_send_gids, dim1 * dim2 * dim3);
+      auto policy =
+          ESU::get_default_team_policy(num_send_gids, dim1 * dim2 * dim3);
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const MemberType &team) {
             const int i      = team.league_rank();
@@ -686,14 +744,16 @@ void CoarseningRemapper::pack_and_send() {
             const int lidpos = i - pid_lid_start(pid);
             const int offset = f_pid_offsets(pid);
 
-            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
-                                 [&](const int idx) {
-                                   const int idim          = (idx / dim3) / dim2;
-                                   const int jdim          = (idx / dim3) % dim2;
-                                   const int ilev          = idx % dim3;
-                                   buf(offset + lidpos * dim1 * dim2 * dim3 + idim * dim2 * dim3 +
-                                       jdim * dim3 + ilev) = v(lid, idim, jdim, ilev);
-                                 });
+            Kokkos::parallel_for(
+                Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
+                [&](const int idx) {
+                  const int idim = (idx / dim3) / dim2;
+                  const int jdim = (idx / dim3) % dim2;
+                  const int ilev = idx % dim3;
+                  buf(offset + lidpos * dim1 * dim2 * dim3 +
+                      idim * dim2 * dim3 + jdim * dim3 + ilev) =
+                      v(lid, idim, jdim, ilev);
+                });
           });
     } break;
 
@@ -720,18 +780,21 @@ void CoarseningRemapper::pack_and_send() {
 
   if (not m_send_req.empty()) {
     int ierr = MPI_Startall(m_send_req.size(), m_send_req.data());
-    EKAT_REQUIRE_MSG(ierr == MPI_SUCCESS,
-                     "Error! Something whent wrong while starting persistent send requests.\n"
-                     "  - send rank: " +
-                         std::to_string(m_comm.rank()) + "\n");
+    EKAT_REQUIRE_MSG(ierr == MPI_SUCCESS, "Error! Something whent wrong while "
+                                          "starting persistent send requests.\n"
+                                          "  - send rank: " +
+                                              std::to_string(m_comm.rank()) +
+                                              "\n");
   }
 }
 
 void CoarseningRemapper::recv_and_unpack() {
   if (not m_recv_req.empty()) {
-    int ierr = MPI_Waitall(m_recv_req.size(), m_recv_req.data(), MPI_STATUSES_IGNORE);
+    int ierr =
+        MPI_Waitall(m_recv_req.size(), m_recv_req.data(), MPI_STATUSES_IGNORE);
     EKAT_REQUIRE_MSG(ierr == MPI_SUCCESS,
-                     "Error! Something whent wrong while waiting on persistent recv requests.\n"
+                     "Error! Something whent wrong while waiting on persistent "
+                     "recv requests.\n"
                      "  - recv rank: " +
                          std::to_string(m_comm.rank()) + "\n");
   }
@@ -787,8 +850,9 @@ void CoarseningRemapper::recv_and_unpack() {
               const int pid    = recv_lids_pidpos(irecv, 0);
               const int lidpos = recv_lids_pidpos(irecv, 1);
               const int offset = f_pid_offsets(pid) + lidpos * dim1;
-              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1),
-                                   [&](const int idim) { v(lid, idim) += buf(offset + idim); });
+              Kokkos::parallel_for(
+                  Kokkos::TeamVectorRange(team, dim1),
+                  [&](const int idim) { v(lid, idim) += buf(offset + idim); });
             }
           });
     } break;
@@ -807,11 +871,13 @@ void CoarseningRemapper::recv_and_unpack() {
               const int lidpos = recv_lids_pidpos(irecv, 1);
               const int offset = f_pid_offsets(pid) + lidpos * dim1 * dim2;
 
-              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim2 * dim1), [&](const int idx) {
-                const int idim = idx / dim2;
-                const int ilev = idx % dim2;
-                v(lid, idim, ilev) += buf(offset + idim * dim2 + ilev);
-              });
+              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim2 * dim1),
+                                   [&](const int idx) {
+                                     const int idim = idx / dim2;
+                                     const int ilev = idx % dim2;
+                                     v(lid, idim, ilev) +=
+                                         buf(offset + idim * dim2 + ilev);
+                                   });
             }
           });
     } break;
@@ -821,7 +887,8 @@ void CoarseningRemapper::recv_and_unpack() {
       const int dim1 = fl.dim(1);
       const int dim2 = fl.dim(2);
       const int dim3 = fl.dim(3);
-      auto policy    = ESU::get_default_team_policy(num_tgt_dofs, dim1 * dim2 * dim3);
+      auto policy =
+          ESU::get_default_team_policy(num_tgt_dofs, dim1 * dim2 * dim3);
       Kokkos::parallel_for(
           policy, KOKKOS_LAMBDA(const MemberType &team) {
             const int lid      = team.league_rank();
@@ -830,16 +897,18 @@ void CoarseningRemapper::recv_and_unpack() {
             for (int irecv = recv_beg; irecv < recv_end; ++irecv) {
               const int pid    = recv_lids_pidpos(irecv, 0);
               const int lidpos = recv_lids_pidpos(irecv, 1);
-              const int offset = f_pid_offsets(pid) + lidpos * dim1 * dim2 * dim3;
+              const int offset =
+                  f_pid_offsets(pid) + lidpos * dim1 * dim2 * dim3;
 
-              Kokkos::parallel_for(Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
-                                   [&](const int idx) {
-                                     const int idim = (idx / dim3) / dim2;
-                                     const int jdim = (idx / dim3) % dim2;
-                                     const int ilev = idx % dim3;
-                                     v(lid, idim, jdim, ilev) +=
-                                         buf(offset + idim * dim2 * dim3 + jdim * dim3 + ilev);
-                                   });
+              Kokkos::parallel_for(
+                  Kokkos::TeamVectorRange(team, dim1 * dim2 * dim3),
+                  [&](const int idx) {
+                    const int idim = (idx / dim3) / dim2;
+                    const int jdim = (idx / dim3) % dim2;
+                    const int ilev = idx % dim3;
+                    v(lid, idim, jdim, ilev) +=
+                        buf(offset + idim * dim2 * dim3 + jdim * dim3 + ilev);
+                  });
             }
           });
     } break;
@@ -855,7 +924,8 @@ void CoarseningRemapper::recv_and_unpack() {
   }
 }
 
-std::vector<int> CoarseningRemapper::get_pids_for_recv(const std::vector<int> &send_to_pids) const {
+std::vector<int> CoarseningRemapper::get_pids_for_recv(
+    const std::vector<int> &send_to_pids) const {
   // Figure out how many sends each PID is doing
   std::vector<int> num_sends(m_comm.size(), 0);
   num_sends[m_comm.rank()] = send_to_pids.size();
@@ -871,8 +941,9 @@ std::vector<int> CoarseningRemapper::get_pids_for_recv(const std::vector<int> &s
   // Gather all the pids that each rank is sending data to
   auto nglobal_sends = std::accumulate(num_sends.begin(), num_sends.end(), 0);
   std::vector<int> global_send_pids(nglobal_sends, -1);
-  MPI_Allgatherv(send_to_pids.data(), send_to_pids.size(), MPI_INT, global_send_pids.data(),
-                 num_sends.data(), sends_offsets.data(), MPI_INT, m_comm.mpi_comm());
+  MPI_Allgatherv(send_to_pids.data(), send_to_pids.size(), MPI_INT,
+                 global_send_pids.data(), num_sends.data(),
+                 sends_offsets.data(), MPI_INT, m_comm.mpi_comm());
 
   // Loop over all the ranks, and all the pids they send to, and look for my pid
   std::vector<int> recv_from_pids;
@@ -922,10 +993,12 @@ std::map<int, std::vector<int>> CoarseningRemapper::recv_gids_from_pids(
   send_req.resize(0);
   recv_req.resize(0);
 
-  // Now that we know how many gids we will get from each pid, we can send/recv them
+  // Now that we know how many gids we will get from each pid, we can send/recv
+  // them
   for (const auto &it : pid2gids_send) {
     send_req.emplace_back();
-    MPI_Isend(it.second.data(), it.second.size(), MPI_INT, it.first, 0, comm, &send_req.back());
+    MPI_Isend(it.second.data(), it.second.size(), MPI_INT, it.first, 0, comm,
+              &send_req.back());
   }
   std::map<int, std::vector<int>> pid2gids_recv;
   for (const auto &it : nrecvs) {
@@ -933,7 +1006,8 @@ std::map<int, std::vector<int>> CoarseningRemapper::recv_gids_from_pids(
     const int n   = it.second;
     pid2gids_recv[pid].resize(n);
     recv_req.emplace_back();
-    MPI_Irecv(pid2gids_recv[pid].data(), n, MPI_INT, pid, 0, comm, &recv_req.back());
+    MPI_Irecv(pid2gids_recv[pid].data(), n, MPI_INT, pid, 0, comm,
+              &recv_req.back());
   }
   MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE);
   MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE);
@@ -966,8 +1040,9 @@ void CoarseningRemapper::setup_mpi_data_structures() {
 
   // 1. Retrieve pid (and associated lid) of all ov gids
   //    on the tgt grid
-  const auto ov_gids = m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type *, Host>();
-  auto gids_owners   = m_tgt_grid->get_owners(ov_gids);
+  const auto ov_gids =
+      m_ov_coarse_grid->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto gids_owners = m_tgt_grid->get_owners(ov_gids);
 
   // 2. Group dofs to send by remote pid
   const int num_ov_gids = ov_gids.size();
@@ -978,11 +1053,12 @@ void CoarseningRemapper::setup_mpi_data_structures() {
     pid2lids_send[pid].push_back(i);
     pid2gids_send[pid].push_back(ov_gids(i));
   }
-  const int num_send_pids    = pid2lids_send.size();
-  m_send_lids_pids           = view_2d<int>("", num_ov_gids, 2);
-  m_send_pid_lids_start      = view_1d<int>("", m_comm.size());
-  auto send_lids_pids_h      = Kokkos::create_mirror_view(m_send_lids_pids);
-  auto send_pid_lids_start_h = Kokkos::create_mirror_view(m_send_pid_lids_start);
+  const int num_send_pids = pid2lids_send.size();
+  m_send_lids_pids        = view_2d<int>("", num_ov_gids, 2);
+  m_send_pid_lids_start   = view_1d<int>("", m_comm.size());
+  auto send_lids_pids_h   = Kokkos::create_mirror_view(m_send_lids_pids);
+  auto send_pid_lids_start_h =
+      Kokkos::create_mirror_view(m_send_pid_lids_start);
   for (int pid = 0, pos = 0; pid < m_comm.size(); ++pid) {
     send_pid_lids_start_h(pid) = pos;
     for (auto lid : pid2lids_send[pid]) {
@@ -1004,19 +1080,20 @@ void CoarseningRemapper::setup_mpi_data_structures() {
       pos += field_col_size[i] * pid2lids_send[pid].size();
     }
 
-    // At the end, pos must match the total amount of data in the overlapped fields
+    // At the end, pos must match the total amount of data in the overlapped
+    // fields
     if (pid == last_rank) {
-      EKAT_REQUIRE_MSG(
-          pos == num_ov_gids * sum_fields_col_sizes,
-          "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+      EKAT_REQUIRE_MSG(pos == num_ov_gids * sum_fields_col_sizes,
+                       "Error! Something went wrong in "
+                       "CoarseningRemapper::setup_mpi_structures.\n");
     }
   }
   Kokkos::deep_copy(m_send_f_pid_offsets, send_f_pid_offsets_h);
 
   // 4. Allocate send buffers
-  m_send_buffer = view_1d<Real>("", sum_fields_col_sizes * num_ov_gids);
-  m_mpi_send_buffer =
-      Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(), m_send_buffer);
+  m_send_buffer     = view_1d<Real>("", sum_fields_col_sizes * num_ov_gids);
+  m_mpi_send_buffer = Kokkos::create_mirror_view(
+      decltype(m_mpi_send_buffer)::execution_space(), m_send_buffer);
 
   // 5. Setup send requests
   m_send_req.reserve(num_send_pids);
@@ -1066,17 +1143,20 @@ void CoarseningRemapper::setup_mpi_data_structures() {
   auto recv_lids_beg_h    = Kokkos::create_mirror_view(m_recv_lids_beg);
   auto recv_lids_end_h    = Kokkos::create_mirror_view(m_recv_lids_end);
 
-  auto tgt_dofs_h = m_tgt_grid->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto tgt_dofs_h =
+      m_tgt_grid->get_dofs_gids().get_view<const gid_type *, Host>();
   for (int i = 0, pos = 0; i < num_tgt_dofs; ++i) {
     recv_lids_beg_h(i) = pos;
     const int gid      = tgt_dofs_h[i];
     for (auto pid : lid2pids_recv[i]) {
-      auto it = std::find(pid2gids_recv.at(pid).begin(), pid2gids_recv.at(pid).end(), gid);
-      EKAT_REQUIRE_MSG(
-          it != pid2gids_recv.at(pid).end(),
-          "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
-      recv_lids_pidpos_h(pos, 0)   = pid;
-      recv_lids_pidpos_h(pos++, 1) = std::distance(pid2gids_recv.at(pid).begin(), it);
+      auto it = std::find(pid2gids_recv.at(pid).begin(),
+                          pid2gids_recv.at(pid).end(), gid);
+      EKAT_REQUIRE_MSG(it != pid2gids_recv.at(pid).end(),
+                       "Error! Something went wrong in "
+                       "CoarseningRemapper::setup_mpi_structures.\n");
+      recv_lids_pidpos_h(pos, 0) = pid;
+      recv_lids_pidpos_h(pos++, 1) =
+          std::distance(pid2gids_recv.at(pid).begin(), it);
     }
     recv_lids_end_h(i) = pos;
   }
@@ -1084,7 +1164,8 @@ void CoarseningRemapper::setup_mpi_data_structures() {
   Kokkos::deep_copy(m_recv_lids_beg, recv_lids_beg_h);
   Kokkos::deep_copy(m_recv_lids_end, recv_lids_end_h);
 
-  // 3. Splice gids from all pids, and convert to lid, and compute the offset of each pid
+  // 3. Splice gids from all pids, and convert to lid, and compute the offset of
+  // each pid
   //    in the spliced list of gids.
   std::vector<int> recv_pid_start(m_comm.size() + 1);
   for (int pid = 0, pos = 0; pid <= m_comm.size(); ++pid) {
@@ -1106,17 +1187,17 @@ void CoarseningRemapper::setup_mpi_data_structures() {
 
     // // At the end, pos must match the total amount of data received
     if (pid == last_rank) {
-      EKAT_REQUIRE_MSG(
-          pos == num_total_recv_gids * sum_fields_col_sizes,
-          "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+      EKAT_REQUIRE_MSG(pos == num_total_recv_gids * sum_fields_col_sizes,
+                       "Error! Something went wrong in "
+                       "CoarseningRemapper::setup_mpi_structures.\n");
     }
   }
   Kokkos::deep_copy(m_recv_f_pid_offsets, recv_f_pid_offsets_h);
 
   // 5. Allocate recv buffers
   m_recv_buffer = view_1d<Real>("", sum_fields_col_sizes * num_total_recv_gids);
-  m_mpi_recv_buffer =
-      Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(), m_recv_buffer);
+  m_mpi_recv_buffer = Kokkos::create_mirror_view(
+      decltype(m_mpi_recv_buffer)::execution_space(), m_recv_buffer);
 
   // 6. Setup recv requests
   m_recv_req.reserve(num_recv_pids);

@@ -11,7 +11,8 @@ namespace scream {
 
 class RefiningRemapperRMATester : public RefiningRemapperRMA {
 public:
-  RefiningRemapperRMATester(const grid_ptr_type &tgt_grid, const std::string &map_file)
+  RefiningRemapperRMATester(const grid_ptr_type &tgt_grid,
+                            const std::string &map_file)
       : RefiningRemapperRMA(tgt_grid, map_file) {}
 
   ~RefiningRemapperRMATester() = default;
@@ -26,8 +27,10 @@ public:
     REQUIRE(m_col_stride.size() == n);
     REQUIRE(m_col_offset.size() == n);
     REQUIRE(m_mpi_win.size() == n);
-    REQUIRE(m_remote_lids.size() == static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
-    REQUIRE(m_remote_pids.size() == static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
+    REQUIRE(m_remote_lids.size() ==
+            static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
+    REQUIRE(m_remote_pids.size() ==
+            static_cast<size_t>(m_ov_coarse_grid->get_num_local_dofs()));
 
     // Test field specs
     constexpr auto COL = ShortFieldTagsNames::COL;
@@ -38,8 +41,10 @@ public:
       const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
       REQUIRE(m_col_size[i] == fl.clone().strip_dim(COL).size());
       if (fh.get_parent()) {
-        REQUIRE(m_col_stride[i] == col_alloc_size * fap.get_subview_info().dim_extent);
-        REQUIRE(m_col_offset[i] == col_alloc_size * fap.get_subview_info().slice_idx);
+        REQUIRE(m_col_stride[i] ==
+                col_alloc_size * fap.get_subview_info().dim_extent);
+        REQUIRE(m_col_offset[i] ==
+                col_alloc_size * fap.get_subview_info().slice_idx);
       } else {
         REQUIRE(m_col_stride[i] == col_alloc_size);
         REQUIRE(m_col_offset[i] == 0);
@@ -53,10 +58,11 @@ public:
     auto row_offsets_h = cmvdc(m_row_offsets);
     auto col_lids_h    = cmvdc(m_col_lids);
     auto weights_h     = cmvdc(m_weights);
-    auto col_gids_h =
-        m_ov_coarse_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type *, Host>();
+    auto col_gids_h    = m_ov_coarse_grid->get_dofs_gids()
+                          .get_view<const AbstractGrid::gid_type *, Host>();
 
-    auto row_gids_h = m_tgt_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type *, Host>();
+    auto row_gids_h = m_tgt_grid->get_dofs_gids()
+                          .get_view<const AbstractGrid::gid_type *, Host>();
     for (int i = 0; i < nldofs_tgt; ++i) {
       auto row_gid = row_gids_h[i];
       auto beg     = row_offsets_h(i);
@@ -73,7 +79,8 @@ public:
   }
 };
 
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid) {
+Field create_field(const std::string &name, const LayoutType lt,
+                   const AbstractGrid &grid) {
   const auto u     = ekat::units::Units::nondimensional();
   const auto &gn   = grid.name();
   const auto ndims = 2;
@@ -90,7 +97,8 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
     break;
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   case LayoutType::Vector3D:
-    f = Field(FieldIdentifier(name, grid.get_3d_vector_layout(false, ndims), u, gn));
+    f = Field(
+        FieldIdentifier(name, grid.get_3d_vector_layout(false, ndims), u, gn));
     break;
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   default:
@@ -102,13 +110,14 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
 }
 
 template <typename Engine>
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid,
-                   Engine &engine) {
+Field create_field(const std::string &name, const LayoutType lt,
+                   const AbstractGrid &grid, Engine &engine) {
   auto f = create_field(name, lt, grid);
 
-  // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
-  // This guarantees numbers that are exactly represented as FP numbers, which ensures
-  // the test will produce the expected answer, regardless of how math ops are performed.
+  // Use discrete_distribution to get an integer, then use that as exponent for
+  // 2^-n. This guarantees numbers that are exactly represented as FP numbers,
+  // which ensures the test will produce the expected answer, regardless of how
+  // math ops are performed.
   using IPDF = std::discrete_distribution<int>;
   IPDF ipdf({1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
   auto pdf = [&](Engine &e) { return std::pow(2, ipdf(e)); };
@@ -128,7 +137,8 @@ Field all_gather_field(const Field &f, const ekat::Comm &comm) {
   ;
   comm.all_reduce(&my_cols, &dims.front(), 1, MPI_SUM);
   FieldLayout gfl(tags, dims);
-  FieldIdentifier gfid("g" + f.name(), gfl, fid.get_units(), fid.get_grid_name(), fid.data_type());
+  FieldIdentifier gfid("g" + f.name(), gfl, fid.get_units(),
+                       fid.get_grid_name(), fid.data_type());
   Field gf(gfid);
   gf.allocate_view();
   std::vector<Real> data_vec(col_size);
@@ -229,7 +239,7 @@ TEST_CASE("refining_remapper") {
   // Create a map file
   const int ngdofs_src = 4 * comm.size();
   const int ngdofs_tgt = 2 * ngdofs_src - 1;
-  auto filename        = "rr_rma_tests_map.np" + std::to_string(comm.size()) + ".nc";
+  auto filename = "rr_rma_tests_map.np" + std::to_string(comm.size()) + ".nc";
   write_map_file(filename, ngdofs_src);
 
   // Create target grid. Ensure gids are numbered like in map file
@@ -246,15 +256,18 @@ TEST_CASE("refining_remapper") {
   }
   tgt_grid->get_dofs_gids().sync_to_dev();
 
-  // Test bad registrations separately, since they corrupt the remapper state for later
+  // Test bad registrations separately, since they corrupt the remapper state
+  // for later
   {
-    auto r        = std::make_shared<RefiningRemapperRMATester>(tgt_grid, filename);
+    auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid, filename);
     auto src_grid = r->get_src_grid();
     r->registration_begins();
-    Field bad_src(FieldIdentifier("", src_grid->get_2d_scalar_layout(), ekat::units::m,
-                                  src_grid->name(), DataType::IntType));
-    Field bad_tgt(FieldIdentifier("", tgt_grid->get_2d_scalar_layout(), ekat::units::m,
-                                  tgt_grid->name(), DataType::IntType));
+    Field bad_src(FieldIdentifier("", src_grid->get_2d_scalar_layout(),
+                                  ekat::units::m, src_grid->name(),
+                                  DataType::IntType));
+    Field bad_tgt(FieldIdentifier("", tgt_grid->get_2d_scalar_layout(),
+                                  ekat::units::m, tgt_grid->name(),
+                                  DataType::IntType));
     CHECK_THROWS(r->register_field(bad_src, bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();
@@ -262,20 +275,26 @@ TEST_CASE("refining_remapper") {
     CHECK_THROWS(r->registration_ends()); // bad data type (must be real)
   }
 
-  auto r        = std::make_shared<RefiningRemapperRMATester>(tgt_grid, filename);
+  auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid, filename);
   auto src_grid = r->get_src_grid();
 
-  auto bundle_src = create_field("bundle3d_src", LayoutType::Vector3D, *src_grid, engine);
-  auto s2d_src    = create_field("s2d_src", LayoutType::Scalar2D, *src_grid, engine);
-  auto v2d_src    = create_field("v2d_src", LayoutType::Vector2D, *src_grid, engine);
-  auto s3d_src    = create_field("s3d_src", LayoutType::Scalar3D, *src_grid, engine);
-  auto v3d_src    = create_field("v3d_src", LayoutType::Vector3D, *src_grid, engine);
+  auto bundle_src =
+      create_field("bundle3d_src", LayoutType::Vector3D, *src_grid, engine);
+  auto s2d_src =
+      create_field("s2d_src", LayoutType::Scalar2D, *src_grid, engine);
+  auto v2d_src =
+      create_field("v2d_src", LayoutType::Vector2D, *src_grid, engine);
+  auto s3d_src =
+      create_field("s3d_src", LayoutType::Scalar3D, *src_grid, engine);
+  auto v3d_src =
+      create_field("v3d_src", LayoutType::Vector3D, *src_grid, engine);
 
-  auto bundle_tgt = create_field("bundle3d_tgt", LayoutType::Vector3D, *tgt_grid);
-  auto s2d_tgt    = create_field("s2d_tgt", LayoutType::Scalar2D, *tgt_grid);
-  auto v2d_tgt    = create_field("v2d_tgt", LayoutType::Vector2D, *tgt_grid);
-  auto s3d_tgt    = create_field("s3d_tgt", LayoutType::Scalar3D, *tgt_grid);
-  auto v3d_tgt    = create_field("v3d_tgt", LayoutType::Vector3D, *tgt_grid);
+  auto bundle_tgt =
+      create_field("bundle3d_tgt", LayoutType::Vector3D, *tgt_grid);
+  auto s2d_tgt = create_field("s2d_tgt", LayoutType::Scalar2D, *tgt_grid);
+  auto v2d_tgt = create_field("v2d_tgt", LayoutType::Vector2D, *tgt_grid);
+  auto s3d_tgt = create_field("s3d_tgt", LayoutType::Scalar3D, *tgt_grid);
+  auto v3d_tgt = create_field("v3d_tgt", LayoutType::Vector3D, *tgt_grid);
 
   r->registration_begins();
   r->register_field(s2d_src, s2d_tgt);

@@ -12,7 +12,8 @@ namespace scream {
 
 class LibraryGridsManager : public GridsManager {
 public:
-  template <typename... Pointers> explicit LibraryGridsManager(Pointers &&...ptrs) {
+  template <typename... Pointers>
+  explicit LibraryGridsManager(Pointers &&...ptrs) {
     add_grids(std::forward<Pointers>(ptrs)...);
   }
 
@@ -24,7 +25,8 @@ public:
 
   void add_grids() {}
 
-  template <typename... Pointers> void add_grids(grid_ptr_type p, Pointers &&...ptrs) {
+  template <typename... Pointers>
+  void add_grids(grid_ptr_type p, Pointers &&...ptrs) {
     add_grid(p);
     add_grids(std::forward<Pointers>(ptrs)...);
   }
@@ -32,12 +34,13 @@ public:
 protected:
   remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid,
                                        const grid_ptr_type to_grid) const {
-    EKAT_ERROR_MSG("Error! LibraryGridsManager is not capable of creating remappers.\n"
-                   " - from_grid: " +
-                   from_grid->name() +
-                   "\n"
-                   " - to_grid:   " +
-                   to_grid->name() + "\n");
+    EKAT_ERROR_MSG(
+        "Error! LibraryGridsManager is not capable of creating remappers.\n"
+        " - from_grid: " +
+        from_grid->name() +
+        "\n"
+        " - to_grid:   " +
+        to_grid->name() + "\n");
     return nullptr;
   }
 };

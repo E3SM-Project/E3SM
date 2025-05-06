@@ -18,10 +18,14 @@ template <typename View> auto chc(const View &view) {
 #endif
 
 // Names of input files we will need.
-std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
-std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g128-210809.nc";
-std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
-std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
+std::string coefficients_file_sw =
+    SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
+std::string coefficients_file_lw =
+    SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g128-210809.nc";
+std::string cloud_optics_file_sw =
+    SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+std::string cloud_optics_file_lw =
+    SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
 
 #ifdef RRTMGP_ENABLE_YAKL
 TEST_CASE("rrtmgp_test_heating") {
@@ -36,7 +40,8 @@ TEST_CASE("rrtmgp_test_heating") {
   auto flux_dn = real2d("flux_dn", 1, 2);
   auto heating = real2d("heating", 1, 1);
   // Simple no-heating test
-  // NOTE: yakl::fortran::parallel_for because we need to do these in a kernel on the device
+  // NOTE: yakl::fortran::parallel_for because we need to do these in a kernel
+  // on the device
   yakl::fortran::parallel_for(
       1, YAKL_LAMBDA(int /* dummy */) {
         dp(1, 1)      = 10;
@@ -49,7 +54,8 @@ TEST_CASE("rrtmgp_test_heating") {
   REQUIRE(heating.createHostCopy()(1, 1) == 0);
 
   // Simple net postive heating; net flux into layer should be 1.0
-  // NOTE: yakl::fortran::parallel_for because we need to do these in a kernel on the device
+  // NOTE: yakl::fortran::parallel_for because we need to do these in a kernel
+  // on the device
   yakl::fortran::parallel_for(
       1, YAKL_LAMBDA(int /* dummy */) {
         flux_up(1, 1) = 1.0;
@@ -66,7 +72,8 @@ TEST_CASE("rrtmgp_test_heating") {
   REQUIRE(heating.createHostCopy()(1, 1) == heating_ref);
 
   // Simple net negative heating; net flux into layer should be -1.0
-  // NOTE: yakl::fortran::parallel_for because we need to do these in a kernel on the device
+  // NOTE: yakl::fortran::parallel_for because we need to do these in a kernel
+  // on the device
   yakl::fortran::parallel_for(
       1, YAKL_LAMBDA(int /* dummy */) {
         flux_up(1, 1) = 1.5;
@@ -108,9 +115,10 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
         cloud_fraction(1, 1) = 1.0;
       });
   auto cloud_mass_ref = mixing_ratio.createHostCopy()(1, 1) /
-                        cloud_fraction.createHostCopy()(1, 1) * dp.createHostCopy()(1, 1) /
-                        physconst::gravit;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+                        cloud_fraction.createHostCopy()(1, 1) *
+                        dp.createHostCopy()(1, 1) / physconst::gravit;
+  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                             cloud_mass);
   REQUIRE(cloud_mass.createHostCopy()(1, 1) == cloud_mass_ref);
 
   // Test with no cloud
@@ -121,7 +129,8 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
         cloud_fraction(1, 1) = 0.0;
       });
   cloud_mass_ref = 0.0;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                             cloud_mass);
   REQUIRE(cloud_mass.createHostCopy()(1, 1) == cloud_mass_ref);
 
   // Test with empty clouds (cloud fraction but with no associated mixing ratio)
@@ -134,7 +143,8 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
         cloud_fraction(1, 1) = 0.1;
       });
   cloud_mass_ref = 0.0;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                             cloud_mass);
   REQUIRE(cloud_mass.createHostCopy()(1, 1) == cloud_mass_ref);
 
   // Test with cell half filled with cloud
@@ -144,9 +154,11 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass") {
         mixing_ratio(1, 1)   = 0.0001;
         cloud_fraction(1, 1) = 0.5;
       });
-  cloud_mass_ref = mixing_ratio.createHostCopy()(1, 1) / cloud_fraction.createHostCopy()(1, 1) *
+  cloud_mass_ref = mixing_ratio.createHostCopy()(1, 1) /
+                   cloud_fraction.createHostCopy()(1, 1) *
                    dp.createHostCopy()(1, 1) / physconst::gravit;
-  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  scream::rrtmgp::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                             cloud_mass);
   REQUIRE(cloud_mass.createHostCopy()(1, 1) == cloud_mass_ref);
 
   // Clean up
@@ -183,7 +195,8 @@ TEST_CASE("rrtmgp_test_limit_to_bounds") {
   REQUIRE(arr.createHostCopy()(2, 1) == arr_limited.createHostCopy()(2, 1));
   REQUIRE(arr.createHostCopy()(2, 2) == arr_limited.createHostCopy()(2, 2));
 
-  // Limit to bounds that do not completely contain the data; should be a change in values!
+  // Limit to bounds that do not completely contain the data; should be a change
+  // in values!
   scream::rrtmgp::limit_to_bounds(arr, 1.5, 3.5, arr_limited);
   REQUIRE(arr_limited.createHostCopy()(1, 1) == 1.5);
   REQUIRE(arr_limited.createHostCopy()(1, 2) == 2.0);
@@ -218,8 +231,9 @@ TEST_CASE("rrtmgp_test_zenith") {
   double lambm0;
   double mvelpp;
   // bool flag_print = false;
-  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, &obliqr, &lambm0,
-                     &mvelpp); //, flag_print); // Note fortran code has optional arg
+  shr_orb_params_c2f(
+      &orbital_year, &eccen, &obliq, &mvelp, &obliqr, &lambm0,
+      &mvelpp); //, flag_print); // Note fortran code has optional arg
   REQUIRE(eccen == eccen_ref);
   REQUIRE(obliqr == obliqr_ref);
   REQUIRE(mvelpp == mvelpp_ref);
@@ -281,22 +295,24 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
   string1dv gas_names = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
   gas_concs.init(gas_names, ncol, nlay);
   logger->info("Init RRTMGP...\n");
-  scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw,
-                                    cloud_optics_file_sw, cloud_optics_file_lw, logger);
+  scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw,
+                                    coefficients_file_lw, cloud_optics_file_sw,
+                                    cloud_optics_file_lw, logger);
 
   // Create simple test cases; We expect, given the input data, that band 10
-  // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14
-  // will be purely VIS. The implementation in EAMF90 was hard-coded with this
-  // band information, but our implementation of compute_broadband_surface_fluxes
-  // actually checks the wavenumber limits. These tests will mostly check to make
-  // sure our implementation of that is doing what we think it is.
+  // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands
+  // 11-14 will be purely VIS. The implementation in EAMF90 was hard-coded with
+  // this band information, but our implementation of
+  // compute_broadband_surface_fluxes actually checks the wavenumber limits.
+  // These tests will mostly check to make sure our implementation of that is
+  // doing what we think it is.
 
   // ---------------------------------
   // Test case: flux only in straddled band
   auto sw_bnd_flux_dir = real3d("sw_bnd_flux_dir", ncol, nlay + 1, nbnd);
   auto sw_bnd_flux_dif = real3d("sw_bnd_flux_dif", ncol, nlay + 1, nbnd);
-  logger->info(
-      "Populate band-resolved 3d fluxes for test case with only transition band flux...\n");
+  logger->info("Populate band-resolved 3d fluxes for test case with only "
+               "transition band flux...\n");
   yakl::fortran::parallel_for(
       yakl::fortran::SimpleBounds<3>(nbnd, nlay + 1, ncol),
       YAKL_LAMBDA(int ibnd, int ilay, int icol) {
@@ -314,11 +330,12 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
   scream::rrtmgp::compute_broadband_surface_fluxes(
-      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis, sfc_flux_dir_nir,
-      sfc_flux_dif_vis, sfc_flux_dif_nir);
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
-  const double tol = 1e-10; // tolerance on floating point inequality for assertions
+  const double tol =
+      1e-10; // tolerance on floating point inequality for assertions
   REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.5) < tol);
   REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.5) < tol);
   REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 0.5) < tol);
@@ -327,7 +344,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
 
   // ---------------------------------
   // Test case, only flux in NIR bands
-  logger->info("Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
+  logger->info(
+      "Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
   yakl::fortran::parallel_for(
       yakl::fortran::SimpleBounds<3>(nbnd, nlay + 1, ncol),
       YAKL_LAMBDA(int ibnd, int ilay, int icol) {
@@ -345,8 +363,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
   scream::rrtmgp::compute_broadband_surface_fluxes(
-      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis, sfc_flux_dir_nir,
-      sfc_flux_dif_vis, sfc_flux_dif_nir);
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 9.0) < tol);
@@ -357,7 +375,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
 
   // ---------------------------------
   // Test case, only flux in VIS bands
-  logger->info("Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n");
+  logger->info("Populate band-resolved 3d fluxes for test case with only "
+               "VIS/UV flux...\n");
   yakl::fortran::parallel_for(
       yakl::fortran::SimpleBounds<3>(nbnd, nlay + 1, ncol),
       YAKL_LAMBDA(int ibnd, int ilay, int icol) {
@@ -375,8 +394,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
   scream::rrtmgp::compute_broadband_surface_fluxes(
-      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis, sfc_flux_dir_nir,
-      sfc_flux_dif_vis, sfc_flux_dif_nir);
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.0) < tol);
@@ -387,7 +406,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
 
   // ---------------------------------
   // Test case, only flux in all bands
-  logger->info("Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n");
+  logger->info("Populate band-resolved 3d fluxes for test with non-zero flux "
+               "in all bands...\n");
   yakl::fortran::parallel_for(
       yakl::fortran::SimpleBounds<3>(nbnd, nlay + 1, ncol),
       YAKL_LAMBDA(int ibnd, int ilay, int icol) {
@@ -405,8 +425,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
   scream::rrtmgp::compute_broadband_surface_fluxes(
-      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis, sfc_flux_dir_nir,
-      sfc_flux_dif_vis, sfc_flux_dif_nir);
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 10.5) < tol);
@@ -457,7 +477,8 @@ TEST_CASE("rrtmgp_test_check_range") {
   if (!yakl::isInitialized()) {
     yakl::init();
   }
-  // Create some dummy data and test with both values inside valid range and outside
+  // Create some dummy data and test with both values inside valid range and
+  // outside
   auto dummy = real2d("dummy", 2, 1);
   // All values within range
   memset(dummy, 0.1);
@@ -495,37 +516,43 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
       });
   auto cldmask           = int3d("cldmask", ncol, nlay, ngpt);
   auto cldfrac_from_mask = real2d("cldfrac_from_mask", ncol, nlay);
-  // Run subcol gen, make sure we get what we expect; do this for some different seed values
+  // Run subcol gen, make sure we get what we expect; do this for some different
+  // seed values
   for (unsigned seed = 1; seed <= 10; seed++) {
     auto seeds = int1d("seeds", ncol);
     memset(seeds, seed);
-    cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    cldmask =
+        scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
     // Check answers by computing new cldfrac from mask
     memset(cldfrac_from_mask, 0.0);
     yakl::fortran::parallel_for(
-        yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::SimpleBounds<2>(nlay, ncol),
+        YAKL_LAMBDA(int ilay, int icol) {
           for (int igpt = 1; igpt <= ngpt; ++igpt) {
             real cldmask_real = cldmask(icol, ilay, igpt);
             cldfrac_from_mask(icol, ilay) += cldmask_real;
           }
         });
     yakl::fortran::parallel_for(
-        yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::SimpleBounds<2>(nlay, ncol),
+        YAKL_LAMBDA(int ilay, int icol) {
           cldfrac_from_mask(icol, ilay) = cldfrac_from_mask(icol, ilay) / ngpt;
         });
-    // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be
-    // sure deterministically, since the computed cloud mask depends on pseudo-random numbers
+    // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in
+    // between we cannot be sure deterministically, since the computed cloud
+    // mask depends on pseudo-random numbers
     REQUIRE(cldfrac_from_mask.createHostCopy()(1, 1) == 1);
     REQUIRE(cldfrac_from_mask.createHostCopy()(1, 2) <= 1);
     REQUIRE(cldfrac_from_mask.createHostCopy()(1, 3) == 0);
     REQUIRE(cldfrac_from_mask.createHostCopy()(1, 4) == 1);
   }
 
-  // For maximum-random overlap, vertically-contiguous layers maximimally overlap,
-  // thus if we have non-zero cloud fraction in two adjacent layers, then every subcolumn
-  // that has cloud in the layer above must also have cloud in the layer below; test
-  // this property by creating two layers with non-zero cloud fraction, creating subcolums,
-  // and verifying that every subcolumn with cloud in layer 1 has cloud in layer 2
+  // For maximum-random overlap, vertically-contiguous layers maximimally
+  // overlap, thus if we have non-zero cloud fraction in two adjacent layers,
+  // then every subcolumn that has cloud in the layer above must also have cloud
+  // in the layer below; test this property by creating two layers with non-zero
+  // cloud fraction, creating subcolums, and verifying that every subcolumn with
+  // cloud in layer 1 has cloud in layer 2
   yakl::fortran::parallel_for(
       1, YAKL_LAMBDA(int /* dummy */) {
         cldfrac(1, 1) = 0.5;
@@ -536,7 +563,8 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
   for (unsigned seed = 1; seed <= 10; seed++) {
     auto seeds = int1d("seeds", ncol);
     memset(seeds, seed);
-    cldmask        = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+    cldmask =
+        scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
     auto cldmask_h = cldmask.createHostCopy();
     for (int igpt = 1; igpt <= ngpt; igpt++) {
       if (cldmask_h(1, 1, igpt) == 1) {
@@ -586,7 +614,8 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1, 2, 2) = 0;
         cldtau(1, 2, 3) = 0;
       });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                     std::numeric_limits<scream::Real>::max(),
                                      pmid, cldtau, cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 0.0);
 
@@ -605,7 +634,8 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1, 2, 2) = 1;
         cldtau(1, 2, 3) = 1;
       });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                     std::numeric_limits<scream::Real>::max(),
                                      pmid, cldtau, cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 1.0);
 
@@ -624,12 +654,15 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1, 2, 2) = 0;
         cldtau(1, 2, 3) = 1.0;
       });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                     std::numeric_limits<scream::Real>::max(),
                                      pmid, cldtau, cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 1.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau, cldtot);
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau,
+                                     cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau, cldtot);
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau,
+                                     cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 1.0 / 3.0);
 
   // Case:
@@ -647,12 +680,15 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1, 2, 2) = 0;
         cldtau(1, 2, 3) = 1;
       });
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                     std::numeric_limits<scream::Real>::max(),
                                      pmid, cldtau, cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau, cldtot);
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau,
+                                     cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 0.0);
-  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
+  scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau,
+                                     cldtot);
   REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
   pmid.deallocate();
   cldtau.deallocate();
@@ -702,9 +738,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
   memset(rei, 10.0);
   // Call the function
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   // Check the results
   REQUIRE(tmid_at_cldtop.createHostCopy()(1) == 0.0);
@@ -719,9 +756,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
   // Case 2: if all clouds, everything goes to 1 * its value
   memset(cldfrac_tot, 1.0);
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(tmid_at_cldtop.createHostCopy()(1) == 300.0);
   REQUIRE(pmid_at_cldtop.createHostCopy()(1) == 100.0);
@@ -742,9 +780,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
         cldfrac_tot(1, 5) = 0.2;
       });
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == .7);
 
@@ -758,9 +797,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
         cldfrac_tot(1, 7) = 0.2;
       });
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) > .7);
 
@@ -772,11 +812,13 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
         cldfrac_tot(1, 6) = 0.1;
       });
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
-  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) > .7); // larger than the max
+  REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) >
+          .7); // larger than the max
 
   // Case 5a: test independence of ice and liquid fractions
   yakl::fortran::parallel_for(
@@ -788,9 +830,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
   memset(qc, 1.0);
   memset(qi, 0.0);
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == 1.0);
   REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) == 1.0);
@@ -806,9 +849,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
   memset(qc, 0.0);
   memset(qi, 1.0);
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) == 1.0);
   REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) == 0.0);
@@ -842,9 +886,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop") {
         qc(1, 8) = 10;
       });
   scream::rrtmgp::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
   REQUIRE(cldfrac_tot_at_cldtop.createHostCopy()(1) > 0.70); // unaffected
   REQUIRE(cldfrac_liq_at_cldtop.createHostCopy()(1) < 0.50); // not max
   REQUIRE(cldfrac_ice_at_cldtop.createHostCopy()(1) == 0.7); // max
@@ -896,7 +941,8 @@ TEST_CASE("rrtmgp_test_heating_k") {
   auto flux_dn = real2dk("flux_dn", 1, 2);
   auto heating = real2dk("heating", 1, 1);
   // Simple no-heating test
-  // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the device
+  // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the
+  // device
   Kokkos::parallel_for(
       1, KOKKOS_LAMBDA(int /* dummy */) {
         dp(0, 0)      = 10;
@@ -909,7 +955,8 @@ TEST_CASE("rrtmgp_test_heating_k") {
   REQUIRE(chc(heating)(0, 0) == 0);
 
   // Simple net postive heating; net flux into layer should be 1.0
-  // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the device
+  // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the
+  // device
   Kokkos::parallel_for(
       1, KOKKOS_LAMBDA(int /* dummy */) {
         flux_up(0, 0) = 1.0;
@@ -926,7 +973,8 @@ TEST_CASE("rrtmgp_test_heating_k") {
   REQUIRE(chc(heating)(0, 0) == heating_ref);
 
   // Simple net negative heating; net flux into layer should be -1.0
-  // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the device
+  // NOTE: Kokkos::parallel_for because we need to do these in a kernel on the
+  // device
   Kokkos::parallel_for(
       1, KOKKOS_LAMBDA(int /* dummy */) {
         flux_up(0, 0) = 1.5;
@@ -963,9 +1011,10 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
         mixing_ratio(0, 0)   = 0.0001;
         cloud_fraction(0, 0) = 1.0;
       });
-  auto cloud_mass_ref =
-      chc(mixing_ratio)(0, 0) / chc(cloud_fraction)(0, 0) * chc(dp)(0, 0) / physconst::gravit;
-  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  auto cloud_mass_ref = chc(mixing_ratio)(0, 0) / chc(cloud_fraction)(0, 0) *
+                        chc(dp)(0, 0) / physconst::gravit;
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                          cloud_mass);
   REQUIRE(chc(cloud_mass)(0, 0) == cloud_mass_ref);
 
   // Test with no cloud
@@ -976,7 +1025,8 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
         cloud_fraction(0, 0) = 0.0;
       });
   cloud_mass_ref = 0.0;
-  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                          cloud_mass);
   REQUIRE(chc(cloud_mass)(0, 0) == cloud_mass_ref);
 
   // Test with empty clouds (cloud fraction but with no associated mixing ratio)
@@ -989,7 +1039,8 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
         cloud_fraction(0, 0) = 0.1;
       });
   cloud_mass_ref = 0.0;
-  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                          cloud_mass);
   REQUIRE(chc(cloud_mass)(0, 0) == cloud_mass_ref);
 
   // Test with cell half filled with cloud
@@ -999,9 +1050,10 @@ TEST_CASE("rrtmgp_test_mixing_ratio_to_cloud_mass_k") {
         mixing_ratio(0, 0)   = 0.0001;
         cloud_fraction(0, 0) = 0.5;
       });
-  cloud_mass_ref =
-      chc(mixing_ratio)(0, 0) / chc(cloud_fraction)(0, 0) * chc(dp)(0, 0) / physconst::gravit;
-  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp, cloud_mass);
+  cloud_mass_ref = chc(mixing_ratio)(0, 0) / chc(cloud_fraction)(0, 0) *
+                   chc(dp)(0, 0) / physconst::gravit;
+  interface_t::mixing_ratio_to_cloud_mass(mixing_ratio, cloud_fraction, dp,
+                                          cloud_mass);
   REQUIRE(chc(cloud_mass)(0, 0) == cloud_mass_ref);
 
   // Clean up
@@ -1034,7 +1086,8 @@ TEST_CASE("rrtmgp_test_limit_to_bounds_k") {
   REQUIRE(chc(arr)(1, 0) == chc(arr_limited)(1, 0));
   REQUIRE(chc(arr)(1, 1) == chc(arr_limited)(1, 1));
 
-  // Limit to bounds that do not completely contain the data; should be a change in values!
+  // Limit to bounds that do not completely contain the data; should be a change
+  // in values!
   interface_t::limit_to_bounds_k(arr, 1.5, 3.5, arr_limited);
   REQUIRE(chc(arr_limited)(0, 0) == 1.5);
   REQUIRE(chc(arr_limited)(0, 1) == 2.0);
@@ -1069,8 +1122,9 @@ TEST_CASE("rrtmgp_test_zenith_k") {
   double lambm0;
   double mvelpp;
   // bool flag_print = false;
-  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, &obliqr, &lambm0,
-                     &mvelpp); //, flag_print); // Note fortran code has optional arg
+  shr_orb_params_c2f(
+      &orbital_year, &eccen, &obliq, &mvelp, &obliqr, &lambm0,
+      &mvelpp); //, flag_print); // Note fortran code has optional arg
   REQUIRE(eccen == eccen_ref);
   REQUIRE(obliqr == obliqr_ref);
   REQUIRE(mvelpp == mvelpp_ref);
@@ -1131,24 +1185,27 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
   string1dv gas_names = {"h2o", "co2", "o3", "n2o", "co", "ch4", "o2", "n2"};
   gas_concs.init(gas_names, ncol, nlay);
   logger->info("Init RRTMGP...\n");
-  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw,
-                                 cloud_optics_file_sw, cloud_optics_file_lw, logger);
+  interface_t::rrtmgp_initialize(gas_concs, coefficients_file_sw,
+                                 coefficients_file_lw, cloud_optics_file_sw,
+                                 cloud_optics_file_lw, logger);
 
   // Create simple test cases; We expect, given the input data, that band 10
-  // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14
-  // will be purely VIS. The implementation in EAMF90 was hard-coded with this
-  // band information, but our implementation of compute_broadband_surface_fluxes
-  // actually checks the wavenumber limits. These tests will mostly check to make
-  // sure our implementation of that is doing what we think it is.
+  // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands
+  // 11-14 will be purely VIS. The implementation in EAMF90 was hard-coded with
+  // this band information, but our implementation of
+  // compute_broadband_surface_fluxes actually checks the wavenumber limits.
+  // These tests will mostly check to make sure our implementation of that is
+  // doing what we think it is.
 
   // ---------------------------------
   // Test case: flux only in straddled band
   auto sw_bnd_flux_dir = real3dk("sw_bnd_flux_dir", ncol, nlay + 1, nbnd);
   auto sw_bnd_flux_dif = real3dk("sw_bnd_flux_dif", ncol, nlay + 1, nbnd);
-  logger->info(
-      "Populate band-resolved 3d fluxes for test case with only transition band flux...\n");
+  logger->info("Populate band-resolved 3d fluxes for test case with only "
+               "transition band flux...\n");
   Kokkos::parallel_for(
-      MDRP::template get<3>({ncol, nlay + 1, nbnd}), KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
+      MDRP::template get<3>({ncol, nlay + 1, nbnd}),
+      KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
         if (ibnd < 9) {
           sw_bnd_flux_dir(icol, ilay, ibnd) = 0;
           sw_bnd_flux_dif(icol, ilay, ibnd) = 0;
@@ -1162,12 +1219,13 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
       });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  interface_t::compute_broadband_surface_fluxes(ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif,
-                                                sfc_flux_dir_vis, sfc_flux_dir_nir,
-                                                sfc_flux_dif_vis, sfc_flux_dif_nir);
+  interface_t::compute_broadband_surface_fluxes(
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
-  const double tol = 1e-10; // tolerance on floating point inequality for assertions
+  const double tol =
+      1e-10; // tolerance on floating point inequality for assertions
   REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 0.5) < tol);
   REQUIRE(std::abs(chc(sfc_flux_dir_vis)(0) - 0.5) < tol);
   REQUIRE(std::abs(chc(sfc_flux_dif_nir)(0) - 0.5) < tol);
@@ -1176,9 +1234,11 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // ---------------------------------
   // Test case, only flux in NIR bands
-  logger->info("Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
+  logger->info(
+      "Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
   Kokkos::parallel_for(
-      MDRP::template get<3>({ncol, nlay + 1, nbnd}), KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
+      MDRP::template get<3>({ncol, nlay + 1, nbnd}),
+      KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
         if (ibnd < 9) {
           sw_bnd_flux_dir(icol, ilay, ibnd) = 1;
           sw_bnd_flux_dif(icol, ilay, ibnd) = 1;
@@ -1192,9 +1252,9 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
       });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  interface_t::compute_broadband_surface_fluxes(ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif,
-                                                sfc_flux_dir_vis, sfc_flux_dir_nir,
-                                                sfc_flux_dif_vis, sfc_flux_dif_nir);
+  interface_t::compute_broadband_surface_fluxes(
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 9.0) < tol);
@@ -1205,9 +1265,11 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // ---------------------------------
   // Test case, only flux in VIS bands
-  logger->info("Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n");
+  logger->info("Populate band-resolved 3d fluxes for test case with only "
+               "VIS/UV flux...\n");
   Kokkos::parallel_for(
-      MDRP::template get<3>({ncol, nlay + 1, nbnd}), KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
+      MDRP::template get<3>({ncol, nlay + 1, nbnd}),
+      KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
         if (ibnd < 9) {
           sw_bnd_flux_dir(icol, ilay, ibnd) = 0;
           sw_bnd_flux_dif(icol, ilay, ibnd) = 0;
@@ -1221,9 +1283,9 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
       });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  interface_t::compute_broadband_surface_fluxes(ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif,
-                                                sfc_flux_dir_vis, sfc_flux_dir_nir,
-                                                sfc_flux_dif_vis, sfc_flux_dif_nir);
+  interface_t::compute_broadband_surface_fluxes(
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 0.0) < tol);
@@ -1234,9 +1296,11 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 
   // ---------------------------------
   // Test case, only flux in all bands
-  logger->info("Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n");
+  logger->info("Populate band-resolved 3d fluxes for test with non-zero flux "
+               "in all bands...\n");
   Kokkos::parallel_for(
-      MDRP::template get<3>({ncol, nlay + 1, nbnd}), KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
+      MDRP::template get<3>({ncol, nlay + 1, nbnd}),
+      KOKKOS_LAMBDA(int icol, int ilay, int ibnd) {
         if (ibnd < 9) {
           sw_bnd_flux_dir(icol, ilay, ibnd) = 1.0;
           sw_bnd_flux_dif(icol, ilay, ibnd) = 2.0;
@@ -1250,9 +1314,9 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
       });
   // Compute surface fluxes
   logger->info("Compute broadband surface fluxes...\n");
-  interface_t::compute_broadband_surface_fluxes(ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif,
-                                                sfc_flux_dir_vis, sfc_flux_dir_nir,
-                                                sfc_flux_dif_vis, sfc_flux_dif_nir);
+  interface_t::compute_broadband_surface_fluxes(
+      ncol, kbot, nbnd, sw_bnd_flux_dir, sw_bnd_flux_dif, sfc_flux_dir_vis,
+      sfc_flux_dir_nir, sfc_flux_dif_vis, sfc_flux_dif_nir);
   // Check computed surface fluxes
   logger->info("Check computed fluxes...\n");
   REQUIRE(std::abs(chc(sfc_flux_dir_nir)(0) - 10.5) < tol);
@@ -1295,7 +1359,8 @@ TEST_CASE("rrtmgp_test_check_range_k") {
   // Initialize YAKL
   scream::init_kls();
   pool_t::init(10000);
-  // Create some dummy data and test with both values inside valid range and outside
+  // Create some dummy data and test with both values inside valid range and
+  // outside
   auto dummy = real2dk("dummy", 2, 1);
   // All values within range
   Kokkos::deep_copy(dummy, 0.1);
@@ -1330,11 +1395,13 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
       });
   auto cldmask           = int3dk("cldmask", ncol, nlay, ngpt);
   auto cldfrac_from_mask = real2dk("cldfrac_from_mask", ncol, nlay);
-  // Run subcol gen, make sure we get what we expect; do this for some different seed values
+  // Run subcol gen, make sure we get what we expect; do this for some different
+  // seed values
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds, cldmask);
+    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds,
+                                    cldmask);
     // Check answers by computing new cldfrac from mask
     Kokkos::deep_copy(cldfrac_from_mask, 0.0);
     Kokkos::parallel_for(
@@ -1348,19 +1415,21 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
         MDRP::template get<2>({ncol, nlay}), KOKKOS_LAMBDA(int icol, int ilay) {
           cldfrac_from_mask(icol, ilay) = cldfrac_from_mask(icol, ilay) / ngpt;
         });
-    // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be
-    // sure deterministically, since the computed cloud mask depends on pseudo-random numbers
+    // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in
+    // between we cannot be sure deterministically, since the computed cloud
+    // mask depends on pseudo-random numbers
     REQUIRE(chc(cldfrac_from_mask)(0, 0) == 1);
     REQUIRE(chc(cldfrac_from_mask)(0, 1) <= 1);
     REQUIRE(chc(cldfrac_from_mask)(0, 2) == 0);
     REQUIRE(chc(cldfrac_from_mask)(0, 3) == 1);
   }
 
-  // For maximum-random overlap, vertically-contiguous layers maximimally overlap,
-  // thus if we have non-zero cloud fraction in two adjacent layers, then every subcolumn
-  // that has cloud in the layer above must also have cloud in the layer below; test
-  // this property by creating two layers with non-zero cloud fraction, creating subcolums,
-  // and verifying that every subcolumn with cloud in layer 1 has cloud in layer 2
+  // For maximum-random overlap, vertically-contiguous layers maximimally
+  // overlap, thus if we have non-zero cloud fraction in two adjacent layers,
+  // then every subcolumn that has cloud in the layer above must also have cloud
+  // in the layer below; test this property by creating two layers with non-zero
+  // cloud fraction, creating subcolums, and verifying that every subcolumn with
+  // cloud in layer 1 has cloud in layer 2
   Kokkos::parallel_for(
       1, KOKKOS_LAMBDA(int /* dummy */) {
         cldfrac(0, 0) = 0.5;
@@ -1371,7 +1440,8 @@ TEST_CASE("rrtmgp_test_subcol_gen_k") {
   for (unsigned seed = 0; seed < 10; seed++) {
     auto seeds = int1dk("seeds", ncol);
     Kokkos::deep_copy(seeds, seed);
-    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds, cldmask);
+    interface_t::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds,
+                                    cldmask);
     auto cldmask_h = chc(cldmask);
     for (int igpt = 0; igpt < ngpt; igpt++) {
       if (cldmask_h(0, 0, igpt) == 1) {
@@ -1418,7 +1488,8 @@ TEST_CASE("rrtmgp_cloud_area_k") {
         cldtau(0, 1, 1) = 0;
         cldtau(0, 1, 2) = 0;
       });
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                  std::numeric_limits<scream::Real>::max(),
                                   pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 0.0);
 
@@ -1437,7 +1508,8 @@ TEST_CASE("rrtmgp_cloud_area_k") {
         cldtau(0, 1, 1) = 1;
         cldtau(0, 1, 2) = 1;
       });
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                  std::numeric_limits<scream::Real>::max(),
                                   pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 1.0);
 
@@ -1456,12 +1528,15 @@ TEST_CASE("rrtmgp_cloud_area_k") {
         cldtau(0, 1, 1) = 0;
         cldtau(0, 1, 2) = 1.0;
       });
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                  std::numeric_limits<scream::Real>::max(),
                                   pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 1.0);
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau,
+                                  cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau,
+                                  cldtot);
   REQUIRE(chc(cldtot)(0) == 1.0 / 3.0);
 
   // Case:
@@ -1479,12 +1554,15 @@ TEST_CASE("rrtmgp_cloud_area_k") {
         cldtau(0, 1, 1) = 0;
         cldtau(0, 1, 2) = 1;
       });
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(),
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0,
+                                  std::numeric_limits<scream::Real>::max(),
                                   pmid, cldtau, cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau,
+                                  cldtot);
   REQUIRE(chc(cldtot)(0) == 0.0);
-  interface_t::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
+  interface_t::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau,
+                                  cldtot);
   REQUIRE(chc(cldtot)(0) == 2.0 / 3.0);
   pool_t::finalize();
   scream::finalize_kls();
@@ -1532,9 +1610,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   Kokkos::deep_copy(rei, 10.0);
   // Call the function
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   // Check the results
   REQUIRE(chc(tmid_at_cldtop)(0) == 0.0);
@@ -1549,9 +1628,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   // Case 2: if all clouds, everything goes to 1 * its value
   Kokkos::deep_copy(cldfrac_tot, 1.0);
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(chc(tmid_at_cldtop)(0) == 300.0);
   REQUIRE(chc(pmid_at_cldtop)(0) == 100.0);
@@ -1572,9 +1652,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
         cldfrac_tot(0, 4) = 0.2;
       });
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(chc(cldfrac_tot_at_cldtop)(0) == .7);
 
@@ -1588,9 +1669,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
         cldfrac_tot(0, 6) = 0.2;
       });
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(chc(cldfrac_tot_at_cldtop)(0) > .7);
 
@@ -1602,9 +1684,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
         cldfrac_tot(0, 5) = 0.1;
       });
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(chc(cldfrac_tot_at_cldtop)(0) > .7); // larger than the max
 
@@ -1618,9 +1701,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   Kokkos::deep_copy(qc, 1.0);
   Kokkos::deep_copy(qi, 0.0);
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(chc(cldfrac_tot_at_cldtop)(0) == 1.0);
   REQUIRE(chc(cldfrac_liq_at_cldtop)(0) == 1.0);
@@ -1636,9 +1720,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
   Kokkos::deep_copy(qc, 0.0);
   Kokkos::deep_copy(qi, 1.0);
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
 
   REQUIRE(chc(cldfrac_tot_at_cldtop)(0) == 1.0);
   REQUIRE(chc(cldfrac_liq_at_cldtop)(0) == 0.0);
@@ -1672,9 +1757,10 @@ TEST_CASE("rrtmgp_aerocom_cloudtop_k") {
         qc(0, 7) = 10;
       });
   interface_t::compute_aerocom_cloudtop(
-      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc, tmid_at_cldtop,
-      pmid_at_cldtop, cldfrac_ice_at_cldtop, cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop,
-      cdnc_at_cldtop, eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
+      ncol, nlay, tmid, pmid, p_del, z_del, qc, qi, rel, rei, cldfrac_tot, nc,
+      tmid_at_cldtop, pmid_at_cldtop, cldfrac_ice_at_cldtop,
+      cldfrac_liq_at_cldtop, cldfrac_tot_at_cldtop, cdnc_at_cldtop,
+      eff_radius_qc_at_cldtop, eff_radius_qi_at_cldtop);
   REQUIRE(chc(cldfrac_tot_at_cldtop)(0) > 0.70); // unaffected
   REQUIRE(chc(cldfrac_liq_at_cldtop)(0) < 0.50); // not max
   REQUIRE(chc(cldfrac_ice_at_cldtop)(0) == 0.7); // max

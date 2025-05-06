@@ -18,7 +18,8 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_phys() {
     // TODO
@@ -26,44 +27,60 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 
   void run_bfb() {
     // This is the threshold for whether the qc and qr cloud mixing ratios are
-    // large enough to affect the warm-phase process rates qc2qr_accret_tend and nc_accret_tend.
+    // large enough to affect the warm-phase process rates qc2qr_accret_tend and
+    // nc_accret_tend.
     constexpr Scalar qsmall = C::QSMALL;
 
-    constexpr Scalar t_freezing = 0.9 * C::T_rainfrz, t_not_freezing = 2.0 * C::T_rainfrz;
+    constexpr Scalar t_freezing         = 0.9 * C::T_rainfrz,
+                     t_not_freezing     = 2.0 * C::T_rainfrz;
     constexpr Scalar qc_incld_small     = 0.9 * qsmall;
     constexpr Scalar qc_incld_not_small = 2.0 * qsmall;
     constexpr Scalar lamc1 = 0.1, lamc2 = 0.2, lamc3 = 0.3, lamc4 = 0.4;
     constexpr Scalar mu_c1 = 0.2, mu_c2 = 0.4, mu_c3 = 0.6, mu_c4 = 0.8;
-    constexpr Scalar cdist11 = 0.25, cdist12 = 0.5, cdist13 = 0.75, cdist14 = 1.0;
+    constexpr Scalar cdist11 = 0.25, cdist12 = 0.5, cdist13 = 0.75,
+                     cdist14           = 1.0;
     constexpr Scalar inv_qc_relvar_val = 1;
 
     CldliqImmersionFreezingData cldliq_imm_freezing_data[max_pack_size] = {
         // T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar
-        {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small, inv_qc_relvar_val},
-        {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small, inv_qc_relvar_val},
-        {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small, inv_qc_relvar_val},
-        {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_small, inv_qc_relvar_val},
+        {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_small,
+         inv_qc_relvar_val},
+        {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_small,
+         inv_qc_relvar_val},
+        {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_small,
+         inv_qc_relvar_val},
+        {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_small,
+         inv_qc_relvar_val},
 
-        {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small, inv_qc_relvar_val},
-        {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small, inv_qc_relvar_val},
-        {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small, inv_qc_relvar_val},
-        {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small, inv_qc_relvar_val},
+        {t_not_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,
+         inv_qc_relvar_val},
+        {t_not_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,
+         inv_qc_relvar_val},
+        {t_not_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,
+         inv_qc_relvar_val},
+        {t_not_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,
+         inv_qc_relvar_val},
 
         {t_freezing, lamc1, mu_c1, cdist11, qc_incld_small, inv_qc_relvar_val},
         {t_freezing, lamc2, mu_c2, cdist12, qc_incld_small, inv_qc_relvar_val},
         {t_freezing, lamc3, mu_c3, cdist13, qc_incld_small, inv_qc_relvar_val},
         {t_freezing, lamc4, mu_c4, cdist14, qc_incld_small, inv_qc_relvar_val},
 
-        {t_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small, inv_qc_relvar_val},
-        {t_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small, inv_qc_relvar_val},
-        {t_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small, inv_qc_relvar_val},
-        {t_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small, inv_qc_relvar_val}};
+        {t_freezing, lamc1, mu_c1, cdist11, qc_incld_not_small,
+         inv_qc_relvar_val},
+        {t_freezing, lamc2, mu_c2, cdist12, qc_incld_not_small,
+         inv_qc_relvar_val},
+        {t_freezing, lamc3, mu_c3, cdist13, qc_incld_not_small,
+         inv_qc_relvar_val},
+        {t_freezing, lamc4, mu_c4, cdist14, qc_incld_not_small,
+         inv_qc_relvar_val}};
 
     // Sync to device
-    view_1d<CldliqImmersionFreezingData> device_data("cldliq_imm_freezing", max_pack_size);
+    view_1d<CldliqImmersionFreezingData> device_data("cldliq_imm_freezing",
+                                                     max_pack_size);
     const auto host_data = Kokkos::create_mirror_view(device_data);
-    std::copy(&cldliq_imm_freezing_data[0], &cldliq_imm_freezing_data[0] + max_pack_size,
-              host_data.data());
+    std::copy(&cldliq_imm_freezing_data[0],
+              &cldliq_imm_freezing_data[0] + max_pack_size, host_data.data());
     Kokkos::deep_copy(device_data, host_data);
 
     // Read baseline data
@@ -92,14 +109,17 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
           Spack qc2qi_hetero_freeze_tend{0.0};
           Spack nc2ni_immers_freeze_tend{0.0};
 
-          Functions::cldliq_immersion_freezing(T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
-                                               qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend,
-                                               p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::cldliq_immersion_freezing(
+              T_atm, lamc, mu_c, cdist1, qc_incld, inv_qc_relvar,
+              qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend,
+              p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-            device_data(vs).qc2qi_hetero_freeze_tend = qc2qi_hetero_freeze_tend[s];
-            device_data(vs).nc2ni_immers_freeze_tend = nc2ni_immers_freeze_tend[s];
+            device_data(vs).qc2qi_hetero_freeze_tend =
+                qc2qi_hetero_freeze_tend[s];
+            device_data(vs).nc2ni_immers_freeze_tend =
+                nc2ni_immers_freeze_tend[s];
           }
         });
 
@@ -129,8 +149,8 @@ struct UnitWrap::UnitTest<D>::TestCldliqImmersionFreezing : public UnitWrap::Uni
 namespace {
 
 TEST_CASE("p3_cldliq_immersion_freezing", "[p3_functions]") {
-  using T =
-      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCldliqImmersionFreezing;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCldliqImmersionFreezing;
 
   T t;
   t.run_phys();

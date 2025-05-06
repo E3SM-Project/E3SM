@@ -11,8 +11,8 @@ namespace scream {
  * as well as pointers to the fields.
  *
  * A group is basically a "label" attached to fields, to allow users to
- * query a FieldManager for all fields that have such label attached. A field can
- * belong to any number of groups, or no group at all.
+ * query a FieldManager for all fields that have such label attached. A field
+ * can belong to any number of groups, or no group at all.
  *
  * A FieldGroup contains:
  *
@@ -23,11 +23,11 @@ namespace scream {
  * The same FieldGroupInfo can be recycled for several FieldGroup's, each living
  * on a different grid.
  *
- * Notice that, if the group has a monolithic allocation, the monolithic field is allocated
- * with layout given by grid->get_Xd_vector_layout(), where grid is the
- * grid object where the fields are defined on, and X=2 or 3.
- * Each field is then subviewed at entry k (different for each field)
- * along dimension I (same for all field) of the monolithic field.
+ * Notice that, if the group has a monolithic allocation, the monolithic field
+ * is allocated with layout given by grid->get_Xd_vector_layout(), where grid is
+ * the grid object where the fields are defined on, and X=2 or 3. Each field is
+ * then subviewed at entry k (different for each field) along dimension I (same
+ * for all field) of the monolithic field.
  *
  * E.g., say we have 3d scalar fields F1,F2,F3,F4 belonging to group MyGroup,
  * which is then allocated as a monolithic field F. F will have layout
@@ -37,10 +37,11 @@ namespace scream {
  *       of info nevertheless, in case things change later on.
  */
 
-// In order to allow downstream code to still use FieldGroup<T> during the refactor,
-// the non-templated class need to use a different name. When refactor is complete,
-// and all downstream code uses FieldGroup instead of FieldGroup<T>, we can remove this
-// macro, and sed s/FieldGroup/FieldGroup/g all over the repo.
+// In order to allow downstream code to still use FieldGroup<T> during the
+// refactor, the non-templated class need to use a different name. When refactor
+// is complete, and all downstream code uses FieldGroup instead of
+// FieldGroup<T>, we can remove this macro, and sed s/FieldGroup/FieldGroup/g
+// all over the repo.
 
 struct FieldGroup {
   using ci_string = FieldGroupInfo::ci_string;
@@ -74,9 +75,11 @@ private:
 };
 
 // We use this to find a FieldGroup in a std container.
-// We do NOT allow two entries with same group name and grid name in such containers.
+// We do NOT allow two entries with same group name and grid name in such
+// containers.
 inline bool operator==(const FieldGroup &lhs, const FieldGroup &rhs) {
-  return lhs.m_info->m_group_name == rhs.m_info->m_group_name && lhs.grid_name() == rhs.grid_name();
+  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
+         lhs.grid_name() == rhs.grid_name();
 }
 
 } // namespace scream

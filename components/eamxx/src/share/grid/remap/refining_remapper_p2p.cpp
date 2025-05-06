@@ -12,7 +12,8 @@
 
 namespace scream {
 
-RefiningRemapperP2P::RefiningRemapperP2P(const grid_ptr_type &tgt_grid, const std::string &map_file)
+RefiningRemapperP2P::RefiningRemapperP2P(const grid_ptr_type &tgt_grid,
+                                         const std::string &map_file)
     : HorizInterpRemapperBase(tgt_grid, map_file, InterpType::Refine) {
   // Nothing to do here
 }
@@ -23,8 +24,9 @@ void RefiningRemapperP2P::remap_fwd_impl() {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
   if (not m_recv_req.empty()) {
-    check_mpi_call(MPI_Startall(m_recv_req.size(), m_recv_req.data()),
-                   "[RefiningRemapperP2P] starting persistent recv requests.\n");
+    check_mpi_call(
+        MPI_Startall(m_recv_req.size(), m_recv_req.data()),
+        "[RefiningRemapperP2P] starting persistent recv requests.\n");
   }
 
   // Do P2P communications
@@ -64,8 +66,9 @@ void RefiningRemapperP2P::remap_fwd_impl() {
 
   // Wait for all sends to be completed
   if (not m_send_req.empty()) {
-    check_mpi_call(MPI_Waitall(m_send_req.size(), m_send_req.data(), MPI_STATUSES_IGNORE),
-                   "[RefiningRemapperP2P] waiting on persistent send requests.\n");
+    check_mpi_call(
+        MPI_Waitall(m_send_req.size(), m_send_req.data(), MPI_STATUSES_IGNORE),
+        "[RefiningRemapperP2P] waiting on persistent send requests.\n");
   }
 }
 
@@ -81,8 +84,9 @@ void RefiningRemapperP2P::setup_mpi_data_structures() {
     const auto &fl = f.get_header().get_identifier().get_layout();
 
     // Fields without COL tag are nor remapped, so consider their col size as 0
-    auto col_size                      = fl.has_tag(COL) ? fl.clone().strip_dim(COL).size() : 0;
-    m_fields_col_sizes_scan_sum[i + 1] = m_fields_col_sizes_scan_sum[i] + col_size;
+    auto col_size = fl.has_tag(COL) ? fl.clone().strip_dim(COL).size() : 0;
+    m_fields_col_sizes_scan_sum[i + 1] =
+        m_fields_col_sizes_scan_sum[i] + col_size;
   }
   auto total_col_size = m_fields_col_sizes_scan_sum.back();
 
@@ -105,9 +109,10 @@ void RefiningRemapperP2P::setup_mpi_data_structures() {
 
   // Create the recv buffer(s)
   auto recv_buf_size = ncols_recv * total_col_size;
-  m_recv_buffer      = decltype(m_recv_buffer)("RefiningRemapperP2P::recv_buf", recv_buf_size);
-  m_mpi_recv_buffer =
-      Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(), m_recv_buffer);
+  m_recv_buffer =
+      decltype(m_recv_buffer)("RefiningRemapperP2P::recv_buf", recv_buf_size);
+  m_mpi_recv_buffer = Kokkos::create_mirror_view(
+      decltype(m_mpi_recv_buffer)::execution_space(), m_recv_buffer);
 
   // ----------- Compute SEND metadata -------------- //
 
@@ -122,9 +127,10 @@ void RefiningRemapperP2P::setup_mpi_data_structures() {
 
   // Create the send buffer(s)
   auto send_buf_size = pids_send_offsets_h(nranks) * total_col_size;
-  m_send_buffer      = decltype(m_send_buffer)("RefiningRemapperP2P::send_buf", send_buf_size);
-  m_mpi_send_buffer =
-      Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(), m_send_buffer);
+  m_send_buffer =
+      decltype(m_send_buffer)("RefiningRemapperP2P::send_buf", send_buf_size);
+  m_mpi_send_buffer = Kokkos::create_mirror_view(
+      decltype(m_mpi_send_buffer)::execution_space(), m_send_buffer);
 
   // ----------- Create Requests ------------ //
 
@@ -133,14 +139,16 @@ void RefiningRemapperP2P::setup_mpi_data_structures() {
   for (int pid = 0; pid < nranks; ++pid) {
     // Send request
     if (ncols_send_h(pid) > 0) {
-      auto send_ptr   = m_mpi_send_buffer.data() + pids_send_offsets_h(pid) * total_col_size;
+      auto send_ptr =
+          m_mpi_send_buffer.data() + pids_send_offsets_h(pid) * total_col_size;
       auto send_count = ncols_send_h(pid) * total_col_size;
       auto &req       = m_send_req.emplace_back();
       MPI_Send_init(send_ptr, send_count, mpi_real, pid, 0, mpi_comm, &req);
     }
     // Recv request
     if (ncols_recv_h(pid) > 0) {
-      auto recv_ptr   = m_mpi_recv_buffer.data() + pids_recv_offsets_h(pid) * total_col_size;
+      auto recv_ptr =
+          m_mpi_recv_buffer.data() + pids_recv_offsets_h(pid) * total_col_size;
       auto recv_count = ncols_recv_h(pid) * total_col_size;
       auto &req       = m_recv_req.emplace_back();
       MPI_Recv_init(recv_ptr, recv_count, mpi_real, pid, 0, mpi_comm, &req);
@@ -178,8 +186,8 @@ void RefiningRemapperP2P::pack_and_send() {
         auto icol           = export_lids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset =
-            pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid;
+        auto offset         = pid_offset * total_col_size +
+                      ncols_send(pid) * f_col_sizes_scan_sum + pos_within_pid;
         send_buf(offset) = v(icol);
       };
       Kokkos::parallel_for(RangePolicy(0, num_exports), pack);
@@ -195,10 +203,13 @@ void RefiningRemapperP2P::pack_and_send() {
         const int pid       = export_pids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum +
+        auto offset         = pid_offset * total_col_size +
+                      ncols_send(pid) * f_col_sizes_scan_sum +
                       pos_within_pid * dim1;
-        auto col_pack = [&](const int &k) { send_buf(offset + k) = v(icol, k); };
-        auto tvr      = Kokkos::TeamVectorRange(team, dim1);
+        auto col_pack = [&](const int &k) {
+          send_buf(offset + k) = v(icol, k);
+        };
+        auto tvr = Kokkos::TeamVectorRange(team, dim1);
         Kokkos::parallel_for(tvr, col_pack);
       };
       Kokkos::parallel_for(policy, pack);
@@ -209,14 +220,15 @@ void RefiningRemapperP2P::pack_and_send() {
       const int dim1       = fl.dim(1);
       const int dim2       = fl.dim(2);
       const int f_col_size = dim1 * dim2;
-      auto policy          = ESU::get_default_team_policy(num_exports, dim1 * dim2);
-      auto pack            = KOKKOS_LAMBDA(const TeamMember &team) {
+      auto policy = ESU::get_default_team_policy(num_exports, dim1 * dim2);
+      auto pack   = KOKKOS_LAMBDA(const TeamMember &team) {
         const int iexp      = team.league_rank();
         const int icol      = export_lids(iexp);
         const int pid       = export_pids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum +
+        auto offset         = pid_offset * total_col_size +
+                      ncols_send(pid) * f_col_sizes_scan_sum +
                       pos_within_pid * f_col_size;
         auto col_pack = [&](const int &idx) {
           const int j            = idx / dim2;
@@ -235,14 +247,16 @@ void RefiningRemapperP2P::pack_and_send() {
       const int dim2       = fl.dim(2);
       const int dim3       = fl.dim(3);
       const int f_col_size = dim1 * dim2 * dim3;
-      auto policy          = ESU::get_default_team_policy(num_exports, dim1 * dim2 * dim3);
-      auto pack            = KOKKOS_LAMBDA(const TeamMember &team) {
+      auto policy =
+          ESU::get_default_team_policy(num_exports, dim1 * dim2 * dim3);
+      auto pack = KOKKOS_LAMBDA(const TeamMember &team) {
         const int iexp      = team.league_rank();
         const int icol      = export_lids(iexp);
         const int pid       = export_pids(iexp);
         auto pid_offset     = pids_send_offsets(pid);
         auto pos_within_pid = iexp - pid_offset;
-        auto offset         = pid_offset * total_col_size + ncols_send(pid) * f_col_sizes_scan_sum +
+        auto offset         = pid_offset * total_col_size +
+                      ncols_send(pid) * f_col_sizes_scan_sum +
                       pos_within_pid * f_col_size;
         auto col_pack = [&](const int &idx) {
           const int j            = (idx / dim3) / dim2;
@@ -285,8 +299,9 @@ void RefiningRemapperP2P::pack_and_send() {
 
 void RefiningRemapperP2P::recv_and_unpack() {
   if (not m_recv_req.empty()) {
-    check_mpi_call(MPI_Waitall(m_recv_req.size(), m_recv_req.data(), MPI_STATUSES_IGNORE),
-                   "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
+    check_mpi_call(
+        MPI_Waitall(m_recv_req.size(), m_recv_req.data(), MPI_STATUSES_IGNORE),
+        "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
   }
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
@@ -322,8 +337,8 @@ void RefiningRemapperP2P::recv_and_unpack() {
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset =
-            pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid;
+        auto offset               = pid_offset * total_col_size +
+                      ncols_recv(pid) * f_col_sizes_scan_sum + pos_within_pid;
         v(icol) = recv_buf(offset);
       };
       Kokkos::parallel_for(RangePolicy(0, num_imports), unpack);
@@ -339,10 +354,13 @@ void RefiningRemapperP2P::recv_and_unpack() {
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum +
+        auto offset               = pid_offset * total_col_size +
+                      ncols_recv(pid) * f_col_sizes_scan_sum +
                       pos_within_pid * dim1;
-        auto col_unpack = [&](const int &k) { v(icol, k) = recv_buf(offset + k); };
-        auto tvr        = Kokkos::TeamVectorRange(team, dim1);
+        auto col_unpack = [&](const int &k) {
+          v(icol, k) = recv_buf(offset + k);
+        };
+        auto tvr = Kokkos::TeamVectorRange(team, dim1);
         Kokkos::parallel_for(tvr, col_unpack);
       };
       Kokkos::parallel_for(policy, unpack);
@@ -353,14 +371,15 @@ void RefiningRemapperP2P::recv_and_unpack() {
       const int dim1       = fl.dim(1);
       const int dim2       = fl.dim(2);
       const int f_col_size = dim1 * dim2;
-      auto policy          = ESU::get_default_team_policy(num_imports, dim1 * dim2);
-      auto unpack          = KOKKOS_LAMBDA(const TeamMember &team) {
+      auto policy = ESU::get_default_team_policy(num_imports, dim1 * dim2);
+      auto unpack = KOKKOS_LAMBDA(const TeamMember &team) {
         const int idx             = team.league_rank();
         const int pid             = import_pids(idx);
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum +
+        auto offset               = pid_offset * total_col_size +
+                      ncols_recv(pid) * f_col_sizes_scan_sum +
                       pos_within_pid * f_col_size;
         auto col_unpack = [&](const int &idx) {
           const int j   = idx / dim2;
@@ -379,14 +398,16 @@ void RefiningRemapperP2P::recv_and_unpack() {
       const int dim2       = fl.dim(2);
       const int dim3       = fl.dim(3);
       const int f_col_size = dim1 * dim2 * dim3;
-      auto policy          = ESU::get_default_team_policy(num_imports, dim1 * dim2 * dim3);
-      auto unpack          = KOKKOS_LAMBDA(const TeamMember &team) {
+      auto policy =
+          ESU::get_default_team_policy(num_imports, dim1 * dim2 * dim3);
+      auto unpack = KOKKOS_LAMBDA(const TeamMember &team) {
         const int idx             = team.league_rank();
         const int pid             = import_pids(idx);
         const int icol            = import_lids(idx);
         const auto pid_offset     = pids_recv_offsets(pid);
         const auto pos_within_pid = idx - pid_offset;
-        auto offset = pid_offset * total_col_size + ncols_recv(pid) * f_col_sizes_scan_sum +
+        auto offset               = pid_offset * total_col_size +
+                      ncols_recv(pid) * f_col_sizes_scan_sum +
                       pos_within_pid * f_col_size;
         auto col_unpack = [&](const int &idx) {
           const int j      = (idx / dim3) / dim2;

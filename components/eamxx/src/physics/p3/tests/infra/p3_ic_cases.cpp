@@ -43,8 +43,8 @@ P3Data::Ptr make_mixed(const Int ncol, const Int nlev) {
       d.ni(i, k) = 1e6;
     for (k = 0; k < 15; ++k)
       d.qm(i, nk - 20 + k) = 1e-4 * (1 - double(k) / 14);
-    // guess at reasonable value based on: m3/kg is 1/density and liquid water has
-    // a density of 1000 kg/m3
+    // guess at reasonable value based on: m3/kg is 1/density and liquid water
+    // has a density of 1000 kg/m3
     for (k = 0; k < 15; ++k)
       d.bm(i, nk - 20 + k) = 1e-2;
 
@@ -64,7 +64,8 @@ P3Data::Ptr make_mixed(const Int ncol, const Int nlev) {
     // dpres is actually an input variable, but needed here to compute theta.
     for (k = 0; k < nk; ++k)
       d.dpres(i, k) = 1e5 / double(nk);
-    // inv_exner is actually an input variable, but needed here to compute theta.
+    // inv_exner is actually an input variable, but needed here to compute
+    // theta.
     for (k = 0; k < nk; ++k)
       d.inv_exner(i, k) = std::pow((1e5 / d.pres(i, k)), (287.15 / 1005.0));
     // cloud fraction is an input variable, just set to 1 everywhere
@@ -74,28 +75,29 @@ P3Data::Ptr make_mixed(const Int ncol, const Int nlev) {
       d.cld_frac_l(i, k) = 1.0;
     for (k = 0; k < nk; ++k)
       d.cld_frac_r(i, k) = 1.0;
-    // inv_qc_relvar=mean(qc)/var(qc) measures subgrid qc variability. It is computed in SHOC
-    // and used by P3. It can range between 0.1 and 10.0. Setting to a typical value of 1.0
-    // here.
+    // inv_qc_relvar=mean(qc)/var(qc) measures subgrid qc variability. It is
+    // computed in SHOC and used by P3. It can range between 0.1 and 10.0.
+    // Setting to a typical value of 1.0 here.
     for (k = 0; k < nk; ++k)
       d.inv_qc_relvar(i, k) = 1.0;
 
     // To get potential temperature, start by making absolute temperature vary
-    // between 150K at top of atmos and 300k at surface, then convert to potential
-    // temp.
+    // between 150K at top of atmos and 300k at surface, then convert to
+    // potential temp.
     P3Data::Array1 T_atm("T", nk);
     for (k = 0; k < nk; ++k) {
       T_atm(k) = 150 + 150 / double(nk) * k;
       if (i > 0)
         T_atm(k) += ((i % 3) - 0.5) / double(nk) * k;
-      d.th_atm(i, k) =
-          T_atm(k) * std::pow(Real(consts::P0 / d.pres(i, k)), Real(consts::RD / consts::CP));
+      d.th_atm(i, k) = T_atm(k) * std::pow(Real(consts::P0 / d.pres(i, k)),
+                                           Real(consts::RD / consts::CP));
     }
 
     // The next section modifies inout variables to satisfy weird conditions
     // needed for code coverage.
     d.qi(i, nk - 1) = 1e-9;
-    d.qv(i, nk - 1) = 5e-2; // also needs to be supersaturated to avoid getting set
+    d.qv(i, nk - 1) =
+        5e-2; // also needs to be supersaturated to avoid getting set
     // to 0 earlier.
 
     // make lowest-level qc and qr>0 to trigger surface rain and drizzle
@@ -123,11 +125,13 @@ P3Data::Ptr make_mixed(const Int ncol, const Int nlev) {
     static constexpr double g = 9.8; // gravity, m/s^2
     for (k = 0; k < nk; ++k) {
       double plo, phi; // pressure at cell edges, Pa
-      plo              = (k == 0)
-                             ? std::max<double>(i, d.pres(i, 0) - 0.5 * (d.pres(i, 1) - d.pres(i, 0)) / (1 - 0))
-                             : 0.5 * (d.pres(i, k - 1) + d.pres(i, k));
+      plo              = (k == 0) ? std::max<double>(
+                           i, d.pres(i, 0) -
+                                  0.5 * (d.pres(i, 1) - d.pres(i, 0)) / (1 - 0))
+                                  : 0.5 * (d.pres(i, k - 1) + d.pres(i, k));
       phi              = (k == nk - 1)
-                             ? d.pres(i, nk - 1) + 0.5 * (d.pres(i, nk - 1) - d.pres(i, nk - 2)) / (1 - 0)
+                             ? d.pres(i, nk - 1) +
+                      0.5 * (d.pres(i, nk - 1) - d.pres(i, nk - 2)) / (1 - 0)
                              : 0.5 * (d.pres(i, k) + d.pres(i, k + 1));
       const auto dpres = phi - plo;
       d.dz(i, k)       = consts::RD * T_atm(k) / (g * d.pres(i, k)) * dpres;

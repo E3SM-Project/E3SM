@@ -13,7 +13,8 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestNcConservation
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     auto engine = Base::get_engine();
@@ -21,17 +22,19 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
     NcConservationData baseline_data[max_pack_size];
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine);
       d.dt = baseline_data[0].dt; // Hold this fixed, this is not packed data
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so
-    // that inout data is in original state
+    // Create copies of data for use by cxx and sync it to device. Needs to
+    // happen before reads so that inout data is in original state
     view_1d<NcConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size,
+              cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Read baseline data
@@ -41,38 +44,42 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
       }
     }
 
-    // Get data from cxx. Run nc_conservation from a kernel and copy results back to host
+    // Get data from cxx. Run nc_conservation from a kernel and copy results
+    // back to host
     Kokkos::parallel_for(
         num_test_itrs, KOKKOS_LAMBDA(const Int &i) {
           const Int offset = i * Spack::n;
 
           // Init pack inputs
-          Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend, nc_accret_tend, nc_collect_tend,
-              nc_selfcollect_tend, ncheti_cnt, nicnt;
+          Spack nc, nc2ni_immers_freeze_tend, nc2nr_autoconv_tend,
+              nc_accret_tend, nc_collect_tend, nc_selfcollect_tend, ncheti_cnt,
+              nicnt;
           Smask context;
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-            nc[s]                       = cxx_device(vs).nc;
-            nc2ni_immers_freeze_tend[s] = cxx_device(vs).nc2ni_immers_freeze_tend;
-            nc2nr_autoconv_tend[s]      = cxx_device(vs).nc2nr_autoconv_tend;
-            nc_accret_tend[s]           = cxx_device(vs).nc_accret_tend;
-            nc_collect_tend[s]          = cxx_device(vs).nc_collect_tend;
-            nc_selfcollect_tend[s]      = cxx_device(vs).nc_selfcollect_tend;
-            ncheti_cnt[s]               = cxx_device(vs).ncheti_cnt;
-            nicnt[s]                    = cxx_device(vs).nicnt;
+            nc[s] = cxx_device(vs).nc;
+            nc2ni_immers_freeze_tend[s] =
+                cxx_device(vs).nc2ni_immers_freeze_tend;
+            nc2nr_autoconv_tend[s] = cxx_device(vs).nc2nr_autoconv_tend;
+            nc_accret_tend[s]      = cxx_device(vs).nc_accret_tend;
+            nc_collect_tend[s]     = cxx_device(vs).nc_collect_tend;
+            nc_selfcollect_tend[s] = cxx_device(vs).nc_selfcollect_tend;
+            ncheti_cnt[s]          = cxx_device(vs).ncheti_cnt;
+            nicnt[s]               = cxx_device(vs).nicnt;
             context.set(s, cxx_device(vs).context);
           }
           const bool use_hetfrz_classnuc = false;
-          Functions::nc_conservation(nc, nc_selfcollect_tend, cxx_device(offset).dt,
-                                     nc_collect_tend, nc2ni_immers_freeze_tend, nc_accret_tend,
-                                     nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc,
-                                     context);
+          Functions::nc_conservation(
+              nc, nc_selfcollect_tend, cxx_device(offset).dt, nc_collect_tend,
+              nc2ni_immers_freeze_tend, nc_accret_tend, nc2nr_autoconv_tend,
+              ncheti_cnt, nicnt, use_hetfrz_classnuc, context);
 
           // Copy spacks back into cxx_device view
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-            cxx_device(vs).nc2ni_immers_freeze_tend = nc2ni_immers_freeze_tend[s];
-            cxx_device(vs).nc2nr_autoconv_tend      = nc2nr_autoconv_tend[s];
-            cxx_device(vs).nc_accret_tend           = nc_accret_tend[s];
-            cxx_device(vs).nc_collect_tend          = nc_collect_tend[s];
+            cxx_device(vs).nc2ni_immers_freeze_tend =
+                nc2ni_immers_freeze_tend[s];
+            cxx_device(vs).nc2nr_autoconv_tend = nc2nr_autoconv_tend[s];
+            cxx_device(vs).nc_accret_tend      = nc_accret_tend[s];
+            cxx_device(vs).nc_collect_tend     = nc_collect_tend[s];
           }
         });
 
@@ -84,7 +91,8 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
         NcConservationData &d_baseline = baseline_data[i];
         NcConservationData &d_cxx      = cxx_host[i];
         REQUIRE(d_baseline.nc_collect_tend == d_cxx.nc_collect_tend);
-        REQUIRE(d_baseline.nc2ni_immers_freeze_tend == d_cxx.nc2ni_immers_freeze_tend);
+        REQUIRE(d_baseline.nc2ni_immers_freeze_tend ==
+                d_cxx.nc2ni_immers_freeze_tend);
         REQUIRE(d_baseline.nc_accret_tend == d_cxx.nc_accret_tend);
         REQUIRE(d_baseline.nc2nr_autoconv_tend == d_cxx.nc2nr_autoconv_tend);
       }
@@ -103,7 +111,8 @@ struct UnitWrap::UnitTest<D>::TestNcConservation : public UnitWrap::UnitTest<D>:
 namespace {
 
 TEST_CASE("nc_conservation_bfb", "[p3]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestNcConservation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestNcConservation;
 
   T t;
   t.run_bfb();

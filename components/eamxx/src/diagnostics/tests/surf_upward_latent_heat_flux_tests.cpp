@@ -15,7 +15,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm,
+                                        const int ncols) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -55,8 +56,9 @@ void run(std::mt19937_64 &engine, const ekat::Comm &comm, LoggerType &logger) {
   register_diagnostics();
   ekat::ParameterList params;
 
-  auto &diag_factory    = AtmosphereDiagnosticFactory::instance();
-  auto diag_latent_heat = diag_factory.create("surface_upward_latent_heat_flux", comm, params);
+  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto diag_latent_heat =
+      diag_factory.create("surface_upward_latent_heat_flux", comm, params);
   diag_latent_heat->set_grids(gm);
 
   // Set the required fields for the diagnostic.
@@ -88,17 +90,20 @@ void run(std::mt19937_64 &engine, const ekat::Comm &comm, LoggerType &logger) {
   constexpr auto latent_heat_evap = PC::LatVap; // [J/kg]
   Kokkos::parallel_for(
       "surf_upward_latent_heat_flux_test", typename KT::RangePolicy(0, ncols),
-      KOKKOS_LAMBDA(const int &icol) { surf_lhf_v(icol) = surf_evap_v(icol) * latent_heat_evap; });
+      KOKKOS_LAMBDA(const int &icol) {
+        surf_lhf_v(icol) = surf_evap_v(icol) * latent_heat_evap;
+      });
   Kokkos::fence();
 
   if (!views_are_equal(diag_latent_heat_out, surf_lhf)) {
     // In case of failure, log additional info before aborting with
     // Catch2's REQUIRE macro
-    logger.error(
-        "error: surf_lhf_v and diag_latent_heat_out are not passing the views_are_equal test.");
+    logger.error("error: surf_lhf_v and diag_latent_heat_out are not passing "
+                 "the views_are_equal test.");
     auto surf_lhf_h = Kokkos::create_mirror_view(surf_lhf_v);
     diag_latent_heat_out.sync_to_host();
-    auto diag_latent_heat_out_h = diag_latent_heat->get_diagnostic().get_view<Real *, Host>();
+    auto diag_latent_heat_out_h =
+        diag_latent_heat->get_diagnostic().get_view<Real *, Host>();
     Kokkos::deep_copy(surf_lhf_h, surf_lhf_v);
     for (int i = 0; i < ncols; ++i) {
       logger.debug("\tat col {}: diag_latent_heat_out = {} surf_lhf = {}", i,
@@ -111,13 +116,14 @@ void run(std::mt19937_64 &engine, const ekat::Comm &comm, LoggerType &logger) {
   diag_latent_heat->finalize();
 } // run
 
-TEST_CASE("surf_upward_latent_heat_flux_test", "[surf_upward_latent_heat_flux_test]") {
+TEST_CASE("surf_upward_latent_heat_flux_test",
+          "[surf_upward_latent_heat_flux_test]") {
   using scream::Real;
   using Device = scream::DefaultDevice;
 
   ekat::Comm comm(MPI_COMM_WORLD);
-  ekat::logger::Logger<> logger("surf_upward_latent_heat_flux_test", ekat::logger::LogLevel::debug,
-                                comm);
+  ekat::logger::Logger<> logger("surf_upward_latent_heat_flux_test",
+                                ekat::logger::LogLevel::debug, comm);
   constexpr int num_runs = 5;
   auto engine            = scream::setup_random_test();
   logger.info(" -> Number of randomized runs: {}", num_runs);

@@ -6,7 +6,8 @@
 namespace scream {
 
 /*
- * This diagnostic will produce a slice of a field at a given height (above surface)
+ * This diagnostic will produce a slice of a field at a given height (above
+ * surface)
  */
 
 class FieldAtHeight : public AtmosphereDiagnostic {

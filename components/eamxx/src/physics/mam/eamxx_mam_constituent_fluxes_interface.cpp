@@ -13,13 +13,15 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  check_fields_intervals_ = m_params.get<bool>("create_fields_interval_checks", false);
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMConstituentFluxes::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMConstituentFluxes::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
@@ -29,7 +31,8 @@ void MAMConstituentFluxes::set_grids(const std::shared_ptr<const GridsManager> g
   using namespace ekat::units;
   static constexpr int pcnst = mam4::aero_model::pcnst;
 
-  const FieldLayout scalar2d_pcnct = grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
+  const FieldLayout scalar2d_pcnct =
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
@@ -41,7 +44,8 @@ void MAMConstituentFluxes::set_grids(const std::shared_ptr<const GridsManager> g
   static constexpr Units m2(m * m, "m2");
   // Constituent fluxes at the surface (gasses and aerosols)
   //[units: kg/m2/s (mass) or #/m2/s (number)]
-  add_field<Required>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s, grid_name);
+  add_field<Required>("constituent_fluxes", scalar2d_pcnct, kg / m2 / s,
+                      grid_name);
 
   // ---------------------------------------------------------------------
   // These variables are "Updated" or inputs/outputs for the process
@@ -74,13 +78,17 @@ size_t MAMConstituentFluxes::requested_buffer_size_in_bytes() const {
 // ON HOST, initializes the Buffer type with sufficient memory to store
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
-void MAMConstituentFluxes::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+void MAMConstituentFluxes::init_buffers(
+    const ATMBufferManager &buffer_manager) {
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
+                       requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
-  EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
-                   "Error! Used memory != requested memory for MAMConstituentFluxes.");
+  size_t used_mem =
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  EKAT_REQUIRE_MSG(
+      used_mem == requested_buffer_size_in_bytes(),
+      "Error! Used memory != requested memory for MAMConstituentFluxes.");
 }
 
 // ================================================================
@@ -104,7 +112,8 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
   populate_dry_atm(dry_atm_, buffer_);
 
   // Constituent fluxes at the surface (gasses and aerosols) [kg/m2/s]
-  constituent_fluxes_ = get_field_in("constituent_fluxes").get_view<const Real **>();
+  constituent_fluxes_ =
+      get_field_in("constituent_fluxes").get_view<const Real **>();
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
@@ -150,7 +159,8 @@ void MAMConstituentFluxes::run_impl(const double dt) {
   const auto &wet_atm = wet_atm_;
   const auto &dry_atm = dry_atm_;
 
-  auto lambda = KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
+  auto lambda =
+      KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) {
     const int icol = team.league_rank();     // column index
     compute_dry_mixing_ratios(team, wet_atm, // in
                               dry_atm,       // out
@@ -167,13 +177,14 @@ void MAMConstituentFluxes::run_impl(const double dt) {
                                icol);         // in
   };
   // policy
-  const auto scan_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   Kokkos::parallel_for("mam_cfi_compute_updraft", scan_policy, lambda);
   Kokkos::fence();
 
-  update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_, constituent_fluxes_,
+  update_gas_aerosols_using_constituents(ncol_, nlev_, dt, dry_atm_,
+                                         constituent_fluxes_,
                                          // output
                                          wet_aero_);
   Kokkos::fence();

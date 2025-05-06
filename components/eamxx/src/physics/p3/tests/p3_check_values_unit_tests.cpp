@@ -19,7 +19,8 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCheckValues
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_check_values_bfb() {
     // This is not really a bfb test since no results are being checked.
@@ -34,13 +35,14 @@ struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Ba
     };
 
     for (auto &d : cvd_cxx) {
-      d.randomize(engine, {{d.qv, {-4.056E-01, 1.153E+00}}, {d.temp, {1.000E+02, 5.000E+02}}});
+      d.randomize(engine, {{d.qv, {-4.056E-01, 1.153E+00}},
+                           {d.temp, {1.000E+02, 5.000E+02}}});
     }
 
     // Get data from cxx
     for (auto &d : cvd_cxx) {
-      check_values_host(d.qv, d.temp, d.kts, d.kte, d.timestepcount, d.force_abort, d.source_ind,
-                        d.col_loc);
+      check_values_host(d.qv, d.temp, d.kts, d.kte, d.timestepcount,
+                        d.force_abort, d.source_ind, d.col_loc);
     }
   }
 
@@ -56,7 +58,8 @@ struct UnitWrap::UnitTest<D>::TestCheckValues : public UnitWrap::UnitTest<D>::Ba
 namespace {
 
 TEST_CASE("p3_check_values", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCheckValues;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCheckValues;
 
   T t;
   t.run_check_values_phys();

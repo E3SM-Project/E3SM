@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocDiagThird
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -46,7 +47,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
     // Define potential temperature second moment [K2]
     static constexpr Real thl_sec[nlevi] = {0.5, 0.9, 1.2, 0.8, 0.4, 0.3};
     // Define vertical flux of temperature [K m/s]
-    static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04, -0.01, 0.01, 0.03};
+    static constexpr Real wthl_sec[nlevi] = {0.003, -0.03, -0.04,
+                                             -0.01, 0.01,  0.03};
     // Define the heights on the zi grid [m]
     static constexpr Real zi_grid[nlevi] = {900, 500, 150, 90, 50, 0};
     // Define the return to isotropy timescale [s]
@@ -214,8 +216,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
       d.randomize(engine, {{d.thetal, {300, 301}}});
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     DiagThirdShocMomentsData SDS_cxx[] = {
         DiagThirdShocMomentsData(SDS_baseline[0]),
         DiagThirdShocMomentsData(SDS_baseline[1]),
@@ -223,7 +225,8 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
         DiagThirdShocMomentsData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(DiagThirdShocMomentsData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(DiagThirdShocMomentsData);
 
     // Assume all data is in C layout
 
@@ -264,15 +267,15 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
 namespace {
 
 TEST_CASE("shoc_diag_third_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagThird;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocDiagThird;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_diag_third_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocDiagThird;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocDiagThird;
 
   TestStruct().run_bfb();
 }

@@ -138,15 +138,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocInPlumeCorr {
 namespace {
 
 TEST_CASE("shoc_pdf_inplume_corr_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocInPlumeCorr;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocInPlumeCorr;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_inplume_corr_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocInPlumeCorr;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocInPlumeCorr;
 
   TestStruct::run_bfb();
 }

@@ -13,10 +13,11 @@ std::string eamxx_config_string() {
   config += "\n-------- SCREAM CONFIGS --------\n\n";
   config += " sizeof(Real) = " + std::to_string(sizeof(Real)) + "\n";
   config += " default pack size = " + std::to_string(SCREAM_PACK_SIZE) + "\n";
-  config += " default FPE mask: " + (get_default_fpes() == 0
-                                         ? "0 (NONE) \n"
-                                         : std::to_string(get_default_fpes()) +
-                                               " (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW) \n");
+  config += " default FPE mask: " +
+            (get_default_fpes() == 0
+                 ? "0 (NONE) \n"
+                 : std::to_string(get_default_fpes()) +
+                       " (FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW) \n");
   config += "-------------------------------\n";
 
   return config;

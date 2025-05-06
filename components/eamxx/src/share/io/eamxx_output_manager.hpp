@@ -29,30 +29,28 @@ namespace scream {
  * during those respective steps.
  *
  * PROPER USAGE:
- * The output manager requires a communication group, a parameter list of control
- * variables, a grid manager and a field manager.
- * Each of these four things are set using the setter function 'set_X' where
- *   X = comm, for the EKAT comm group.
- *     = params, for the parameter list.  In typical SCREAM runs this parameter
- *       list is a sublist of the scream control yaml file.
- *     = grids, for the grids mananger
- *     = fm, for the field manager.
- * The setup of the output manager in the SCREAM-AD is one of the last steps to
- * ensure that all four of the above objects have already been constructed.
- * see /control/atmospheric_driver.cpp for an example.
+ * The output manager requires a communication group, a parameter list of
+ * control variables, a grid manager and a field manager. Each of these four
+ * things are set using the setter function 'set_X' where X = comm, for the EKAT
+ * comm group. = params, for the parameter list.  In typical SCREAM runs this
+ * parameter list is a sublist of the scream control yaml file. = grids, for the
+ * grids mananger = fm, for the field manager. The setup of the output manager
+ * in the SCREAM-AD is one of the last steps to ensure that all four of the
+ * above objects have already been constructed. see
+ * /control/atmospheric_driver.cpp for an example.
  *
  * For UNIT TESTS:
- * The output manager does require a comm group, list of parameters, grids manager
- * and field manager to work.  If output is desired in a unit test then these
- * must be established.  There are examples in /src/share/io/tests of how to
- * establish a simple grids manager and field manager.  As well as how to
+ * The output manager does require a comm group, list of parameters, grids
+ * manager and field manager to work.  If output is desired in a unit test then
+ * these must be established.  There are examples in /src/share/io/tests of how
+ * to establish a simple grids manager and field manager.  As well as how to
  * locally create a parameter list.
  *
  * Adding output streams mid-simulation:
  * TODO - This doesn't actually exist
  * It is possible to add an output stream after init has been called by calling
- * the internal function 'add_output_stream' which takes an EKAT parameter list as input.
- * See comments in add_output_stream below for more details.
+ * the internal function 'add_output_stream' which takes an EKAT parameter list
+ * as input. See comments in add_output_stream below for more details.
  *
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
@@ -68,13 +66,17 @@ public:
   OutputManager() = default;
   virtual ~OutputManager();
 
-  // Initialize manager by storing class members that only depend on runtime parameters.
-  // Inputs:
-  //  - params: the parameter list with file/fields info, as well as method of output options
+  // Initialize manager by storing class members that only depend on runtime
+  // parameters. Inputs:
+  //  - params: the parameter list with file/fields info, as well as method of
+  //  output options
   //  - run_t0: the timestamp of the start of the current simulation
-  //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
-  //             a restarted simulation. Restart logic is triggered *only* if case_t0<run_t0.
-  //  - is_model_restart_output: whether this output stream is to write a model restart file
+  //  - case_t0: the timestamp of the start of the overall simulation (precedes
+  //  run_r0 for
+  //             a restarted simulation. Restart logic is triggered *only* if
+  //             case_t0<run_t0.
+  //  - is_model_restart_output: whether this output stream is to write a model
+  //  restart file
   void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
                   const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
                   const bool is_model_restart_output, const RunType run_type);
@@ -84,18 +86,22 @@ public:
                   const util::TimeStamp &run_t0, const util::TimeStamp &case_t0,
                   const bool is_model_restart_output) {
     auto run_type = case_t0 < run_t0 ? RunType::Restart : RunType::Initial;
-    initialize(io_comm, params, run_t0, case_t0, is_model_restart_output, run_type);
+    initialize(io_comm, params, run_t0, case_t0, is_model_restart_output,
+               run_type);
   }
   void initialize(const ekat::Comm &io_comm, const ekat::ParameterList &params,
-                  const util::TimeStamp &run_t0, const bool is_model_restart_output) {
-    initialize(io_comm, params, run_t0, run_t0, is_model_restart_output, RunType::Initial);
+                  const util::TimeStamp &run_t0,
+                  const bool is_model_restart_output) {
+    initialize(io_comm, params, run_t0, run_t0, is_model_restart_output,
+               RunType::Initial);
   }
 
-  // Setup manager by creating the internal output streams using grids/field data
-  // Inputs:
+  // Setup manager by creating the internal output streams using grids/field
+  // data Inputs:
   //  - field_mgr: field manager storing fields to be outputed on various grids
   //  - grid_names: grid names used for output
-  void setup(const std::shared_ptr<fm_type> &field_mgr, const std::set<std::string> &grid_names);
+  void setup(const std::shared_ptr<fm_type> &field_mgr,
+             const std::set<std::string> &grid_names);
 
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger) {
     m_atm_logger = atm_logger;
@@ -128,7 +134,8 @@ protected:
   void setup_file(IOFileSpecs &filespecs, const IOControl &control);
 
   // If a file can be closed (next snap won't fit) or needs flushing, do so
-  void close_or_flush_if_needed(IOFileSpecs &file_specs, const IOControl &control) const;
+  void close_or_flush_if_needed(IOFileSpecs &file_specs,
+                                const IOControl &control) const;
 
   // Manage logging of info to atm.log
   void push_to_logger();
@@ -152,7 +159,8 @@ protected:
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType m_avg_type;
 
-  // Whether this OutputManager handles a model restart file, or normal model output.
+  // Whether this OutputManager handles a model restart file, or normal model
+  // output.
   bool m_is_model_restart_output;
 
   // Frequency of output and checkpointing
@@ -169,12 +177,14 @@ protected:
   // we might have to load an output checkpoint file (depending on avg type)
   RunType m_run_type;
 
-  // Whether a restarted run can resume filling previous run output file (if not full)
+  // Whether a restarted run can resume filling previous run output file (if not
+  // full)
   bool m_resume_output_file = false;
 
-  // The initial time stamp of the simulation and run. For initial runs, they coincide,
-  // but for restarted runs, run_t0>case_t0, with the former being the time at which the
-  // restart happens, and the latter being the start time of the *original* run.
+  // The initial time stamp of the simulation and run. For initial runs, they
+  // coincide, but for restarted runs, run_t0>case_t0, with the former being the
+  // time at which the restart happens, and the latter being the start time of
+  // the *original* run.
   util::TimeStamp m_case_t0;
   util::TimeStamp m_run_t0;
 

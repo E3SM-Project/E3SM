@@ -14,7 +14,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestDiagSecondMoments : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestDiagSecondMoments
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -257,8 +258,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments : public UnitWrap::UnitTest<
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     DiagSecondMomentsData cxx_data[] = {
         DiagSecondMomentsData(baseline_data[0]),
         DiagSecondMomentsData(baseline_data[1]),
@@ -282,7 +283,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments : public UnitWrap::UnitTest<
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(DiagSecondMomentsData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(DiagSecondMomentsData);
       for (Int i = 0; i < num_runs; ++i) {
         DiagSecondMomentsData &d_baseline = baseline_data[i];
         DiagSecondMomentsData &d_cxx      = cxx_data[i];
@@ -316,15 +318,15 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMoments : public UnitWrap::UnitTest<
 namespace {
 
 TEST_CASE("diag_second_moments_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDiagSecondMoments;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestDiagSecondMoments;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("diag_second_moments_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDiagSecondMoments;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestDiagSecondMoments;
 
   TestStruct().run_bfb();
 }

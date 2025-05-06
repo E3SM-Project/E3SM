@@ -16,7 +16,8 @@ constexpr double fill_val  = 1e30;
 
 util::TimeStamp get_t0() { return util::TimeStamp({2000, 1, 1}, {12, 0, 0}); }
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ngcols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm,
+                                        const int ngcols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
@@ -33,7 +34,8 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ngcols
   return gm;
 }
 
-std::shared_ptr<FieldManager> create_fm(const std::shared_ptr<const AbstractGrid> &grid) {
+std::shared_ptr<FieldManager>
+create_fm(const std::shared_ptr<const AbstractGrid> &grid) {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   using FR = FieldRequest;
@@ -109,9 +111,10 @@ void compute_field(Field f, const util::TimeStamp &time, const ekat::Comm &comm,
   f.get_header().get_tracking().update_time_stamp(time);
 }
 
-void compute_fields(const std::shared_ptr<FieldManager> &fm, const util::TimeStamp &time,
-                    const ekat::Comm &comm, const int num_masked_levs = 0,
-                    const bool update_p_mid = true) {
+void compute_fields(const std::shared_ptr<FieldManager> &fm,
+                    const util::TimeStamp &time, const ekat::Comm &comm,
+                    const int num_masked_levs = 0,
+                    const bool update_p_mid   = true) {
   if (update_p_mid) {
     // Don't mask pressure
     compute_field(fm->get_field("p_mid"), time, comm, 0);
@@ -120,13 +123,17 @@ void compute_fields(const std::shared_ptr<FieldManager> &fm, const util::TimeSta
   compute_field(fm->get_field("V"), time, comm, num_masked_levs);
 
   // Not sure if we need it, since we don't handle horiz_winds directly, I think
-  fm->get_field("horiz_winds").get_header().get_tracking().update_time_stamp(time);
+  fm->get_field("horiz_winds")
+      .get_header()
+      .get_tracking()
+      .update_time_stamp(time);
 }
 
-std::shared_ptr<OutputManager> create_om(const std::string &filename_prefix,
-                                         const std::shared_ptr<FieldManager> &fm,
-                                         const std::shared_ptr<GridsManager> &gm,
-                                         const util::TimeStamp &t0, const ekat::Comm &comm) {
+std::shared_ptr<OutputManager>
+create_om(const std::string &filename_prefix,
+          const std::shared_ptr<FieldManager> &fm,
+          const std::shared_ptr<GridsManager> &gm, const util::TimeStamp &t0,
+          const ekat::Comm &comm) {
   using strvec_t = std::vector<std::string>;
 
   // NOTE: ask "real" fp precision, so even when building in double precision

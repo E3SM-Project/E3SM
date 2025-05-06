@@ -8,7 +8,8 @@
 
 using namespace scream;
 
-std::shared_ptr<Nudging> create_nudging(const ekat::Comm &comm, const ekat::ParameterList &params,
+std::shared_ptr<Nudging> create_nudging(const ekat::Comm &comm,
+                                        const ekat::ParameterList &params,
                                         const std::shared_ptr<FieldManager> &fm,
                                         const std::shared_ptr<GridsManager> &gm,
                                         const util::TimeStamp &t0) {
@@ -48,11 +49,11 @@ TEST_CASE("nudging_tests") {
   const int nlevs_fine  = 2 * nlevs_data - 1;
 
   // Files names
-  auto postfix             = ".INSTANT.nsteps_x1.np*." + get_t0().to_string() + ".nc";
-  auto nudging_data        = "nudging_data" + postfix;
+  auto postfix      = ".INSTANT.nsteps_x1.np*." + get_t0().to_string() + ".nc";
+  auto nudging_data = "nudging_data" + postfix;
   auto nudging_data_filled = "nudging_data_filled" + postfix;
-  auto map_file =
-      "map_ncol" + std::to_string(ngcols_data) + "_to_" + std::to_string(ngcols_fine) + ".nc";
+  auto map_file            = "map_ncol" + std::to_string(ngcols_data) + "_to_" +
+                  std::to_string(ngcols_fine) + ".nc";
 
   // For grids managers, depending on whether ncols/nlevs match the (coarse)
   // values used to generate the data or are finer
@@ -72,7 +73,8 @@ TEST_CASE("nudging_tests") {
   SECTION("no-horiz-no-vert") {
     ekat::ParameterList params;
     params.set<strvec_t>("nudging_filenames_patterns", {nudging_data});
-    params.set<std::string>("source_pressure_type", "TIME_DEPENDENT_3D_PROFILE");
+    params.set<std::string>("source_pressure_type",
+                            "TIME_DEPENDENT_3D_PROFILE");
     params.set<strvec_t>("nudging_fields", {"U"});
     params.get<std::string>("log_level", "warn");
 
@@ -82,7 +84,8 @@ TEST_CASE("nudging_tests") {
 
     auto U = fm->get_field("U");
     SECTION("same-time") {
-      std::string msg = " -> Testing same time/horiz/vert grid as data ...........";
+      std::string msg =
+          " -> Testing same time/horiz/vert grid as data ...........";
       root_print(msg + "\n");
       bool ok = true;
 
@@ -108,9 +111,11 @@ TEST_CASE("nudging_tests") {
       root_print(msg + (ok ? " PASS\n" : " FAIL\n"));
     }
 
-    // Test case where model times are in the middle of input data time intervals
+    // Test case where model times are in the middle of input data time
+    // intervals
     SECTION("half-time") {
-      std::string msg = " -> Testing same horiz/vert grid, different time grid ...";
+      std::string msg =
+          " -> Testing same horiz/vert grid, different time grid ...";
       root_print(msg + "\n");
       bool ok = true;
 
@@ -143,7 +148,8 @@ TEST_CASE("nudging_tests") {
         // Run nudging
         nudging->run(dt_data);
 
-        // Compare the two. Since we're exactly half way, we should get exact fp representation
+        // Compare the two. Since we're exactly half way, we should get exact fp
+        // representation
         check_f(U, t_prev, t_next);
 
         t_prev = t_next;
@@ -156,12 +162,13 @@ TEST_CASE("nudging_tests") {
   SECTION("no-horiz-yes-vert") {
     const auto Pa = ekat::units::Pa;
 
-    // Helper lambda, to compute f on the "fine" vert grid from f on the data vert grid
-    // If in_bounds=false, top/bot entries are extrapolated:
+    // Helper lambda, to compute f on the "fine" vert grid from f on the data
+    // vert grid If in_bounds=false, top/bot entries are extrapolated:
     //  top: f_out(0) = f_in(1) / 2
     //  bot: f_out(bot) = f_in(bot-1)
 
-    auto manual_interp = [&](const Field &data, const Field &fine, const bool in_bounds) {
+    auto manual_interp = [&](const Field &data, const Field &fine,
+                             const bool in_bounds) {
       auto fine_h          = fine.get_view<Real **, Host>();
       auto data_h          = data.get_view<Real **, Host>();
       const bool is_pmid   = data.name() == "p_mid";
@@ -175,7 +182,8 @@ TEST_CASE("nudging_tests") {
         }
         // Odd entries are avg of the two adjacent even entries
         for (int ilev = 0; ilev < nlevs_data - 1; ++ilev) {
-          fine_h(icol, 2 * ilev + 1) = (fine_h(icol, 2 * ilev) + fine_h(icol, 2 * ilev + 2)) / 2;
+          fine_h(icol, 2 * ilev + 1) =
+              (fine_h(icol, 2 * ilev) + fine_h(icol, 2 * ilev + 2)) / 2;
         }
         if (not in_bounds) {
           fine_h(icol, top) *= 0.5;
@@ -187,14 +195,16 @@ TEST_CASE("nudging_tests") {
 
     ekat::ParameterList params;
     params.set<strvec_t>("nudging_filenames_patterns", {nudging_data});
-    params.set<std::string>("source_pressure_type", "TIME_DEPENDENT_3D_PROFILE");
+    params.set<std::string>("source_pressure_type",
+                            "TIME_DEPENDENT_3D_PROFILE");
     params.set<strvec_t>("nudging_fields", {"U"});
     params.get<std::string>("log_level", "warn");
 
     std::string msg = " -> Testing same time/horiz grid, different vert grid";
     root_print(msg + "\n");
     SECTION("pmid_in_bounds") {
-      std::string msg = "   -> Target pressure within source pressure bounds .....";
+      std::string msg =
+          "   -> Target pressure within source pressure bounds .....";
       root_print(msg + "\n");
       bool ok = true;
 
@@ -208,7 +218,8 @@ TEST_CASE("nudging_tests") {
 
       // Compute pmid on data grid
       auto layout_data = grid_data->get_3d_scalar_layout(true);
-      Field p_mid_data(FieldIdentifier("p_mid", layout_data, Pa, grid_data->name()));
+      Field p_mid_data(
+          FieldIdentifier("p_mid", layout_data, Pa, grid_data->name()));
       p_mid_data.allocate_view();
       compute_field(p_mid_data, get_t0(), comm, 0);
 
@@ -234,7 +245,8 @@ TEST_CASE("nudging_tests") {
     }
 
     SECTION("pmid_out_of_bounds") {
-      std::string msg = "   -> Target pressure outside source pressure bounds ....";
+      std::string msg =
+          "   -> Target pressure outside source pressure bounds ....";
       root_print(msg + "\n");
       bool ok = true;
 
@@ -248,7 +260,8 @@ TEST_CASE("nudging_tests") {
 
       // Compute pmid on data grid
       auto layout_data = grid_data->get_3d_scalar_layout(true);
-      Field p_mid_data(FieldIdentifier("p_mid", layout_data, Pa, grid_data->name()));
+      Field p_mid_data(
+          FieldIdentifier("p_mid", layout_data, Pa, grid_data->name()));
       p_mid_data.allocate_view();
       compute_field(p_mid_data, get_t0(), comm, 0);
 
@@ -275,7 +288,8 @@ TEST_CASE("nudging_tests") {
   }
 
   SECTION("horiz-remap") {
-    std::string msg = " -> Testing different horiz grids .......................";
+    std::string msg =
+        " -> Testing different horiz grids .......................";
     root_print(msg + "\n");
     bool ok = true;
 
@@ -293,7 +307,8 @@ TEST_CASE("nudging_tests") {
       comm.all_reduce(&ncols, 1, MPI_SUM);
 
       FieldLayout glb_layout = fid.get_layout().clone().reset_dim(0, ncols);
-      FieldIdentifier glb_fid(fid.name(), glb_layout, fid.get_units(), fid.get_grid_name());
+      FieldIdentifier glb_fid(fid.name(), glb_layout, fid.get_units(),
+                              fid.get_grid_name());
       Field glb(glb_fid);
       glb.allocate_view();
       return glb;
@@ -363,7 +378,8 @@ TEST_CASE("nudging_tests") {
 
     ekat::ParameterList params;
     params.set<strvec_t>("nudging_filenames_patterns", {nudging_data});
-    params.set<std::string>("source_pressure_type", "TIME_DEPENDENT_3D_PROFILE");
+    params.set<std::string>("source_pressure_type",
+                            "TIME_DEPENDENT_3D_PROFILE");
     params.set<std::string>("nudging_refine_remap_mapfile", map_file);
     params.set<strvec_t>("nudging_fields", {"U"});
     params.get<std::string>("log_level", "warn");
@@ -378,7 +394,8 @@ TEST_CASE("nudging_tests") {
 
     // Compute pmid on data grid
     auto layout_data = grid_data->get_3d_scalar_layout(true);
-    Field p_mid_data(FieldIdentifier("p_mid", layout_data, Pa, grid_data->name()));
+    Field p_mid_data(
+        FieldIdentifier("p_mid", layout_data, Pa, grid_data->name()));
     p_mid_data.allocate_view();
     compute_field(p_mid_data, get_t0(), comm, 0);
 
@@ -404,7 +421,8 @@ TEST_CASE("nudging_tests") {
   }
 
   SECTION("filled-data") {
-    std::string msg = " -> Testing data with top/bot levels filled .............";
+    std::string msg =
+        " -> Testing data with top/bot levels filled .............";
     root_print(msg + "\n");
     bool ok = true;
 
@@ -428,7 +446,8 @@ TEST_CASE("nudging_tests") {
 
     ekat::ParameterList params;
     params.set<strvec_t>("nudging_filenames_patterns", {nudging_data_filled});
-    params.set<std::string>("source_pressure_type", "TIME_DEPENDENT_3D_PROFILE");
+    params.set<std::string>("source_pressure_type",
+                            "TIME_DEPENDENT_3D_PROFILE");
     params.set<strvec_t>("nudging_fields", {"U"});
     params.get<std::string>("log_level", "warn");
 

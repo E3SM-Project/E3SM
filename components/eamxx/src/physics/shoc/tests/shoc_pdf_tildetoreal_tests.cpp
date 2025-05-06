@@ -105,15 +105,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfTildetoReal {
 namespace {
 
 TEST_CASE("shoc_pdf_tildetoreal_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildetoReal;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfTildetoReal;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_tildetoreal_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfTildetoReal;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfTildetoReal;
 
   TestStruct::run_bfb();
 }

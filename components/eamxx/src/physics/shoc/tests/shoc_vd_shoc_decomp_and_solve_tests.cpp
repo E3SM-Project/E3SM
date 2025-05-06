@@ -14,17 +14,21 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     auto engine = Base::get_engine();
 
     VdShocDecompandSolveData baseline_data[] = {
         // shcol, nlev, nlevi, dtime, n_rhs
-        VdShocDecompandSolveData(10, 71, 72, 5, 19), VdShocDecompandSolveData(10, 12, 13, 2.5, 7),
-        VdShocDecompandSolveData(7, 16, 17, 1, 2), VdShocDecompandSolveData(2, 7, 8, 1, 1)};
+        VdShocDecompandSolveData(10, 71, 72, 5, 19),
+        VdShocDecompandSolveData(10, 12, 13, 2.5, 7),
+        VdShocDecompandSolveData(7, 16, 17, 1, 2),
+        VdShocDecompandSolveData(2, 7, 8, 1, 1)};
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(VdShocDecompandSolveData);
+    static constexpr Int num_runs =
+        sizeof(baseline_data) / sizeof(VdShocDecompandSolveData);
 
     // Generate random input data. Diagonals in solver data will be overwritten
     // after results of decomp routine.
@@ -33,11 +37,13 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : public UnitWrap::UnitTe
       d_baseline.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     VdShocDecompandSolveData cxx_data[] = {
-        VdShocDecompandSolveData(baseline_data[0]), VdShocDecompandSolveData(baseline_data[1]),
-        VdShocDecompandSolveData(baseline_data[2]), VdShocDecompandSolveData(baseline_data[3])};
+        VdShocDecompandSolveData(baseline_data[0]),
+        VdShocDecompandSolveData(baseline_data[1]),
+        VdShocDecompandSolveData(baseline_data[2]),
+        VdShocDecompandSolveData(baseline_data[3])};
 
     // Assume all data is in C layout
 
@@ -80,8 +86,8 @@ struct UnitWrap::UnitTest<D>::TestVdShocDecompandSolve : public UnitWrap::UnitTe
 namespace {
 
 TEST_CASE("vd_shoc_solve_bfb", "[shoc]") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestVdShocDecompandSolve;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestVdShocDecompandSolve;
 
   TestStruct().run_bfb();
 }

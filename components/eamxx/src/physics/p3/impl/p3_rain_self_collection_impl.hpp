@@ -7,10 +7,10 @@ namespace scream {
 namespace p3 {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::rain_self_collection(const Spack &rho, const Spack &qr_incld,
-                                      const Spack &nr_incld, Spack &nr_selfcollect_tend,
-                                      const P3Runtime &runtime_options, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::rain_self_collection(
+    const Spack &rho, const Spack &qr_incld, const Spack &nr_incld,
+    Spack &nr_selfcollect_tend, const P3Runtime &runtime_options,
+    const Smask &context) {
   // ------------------------------------------------------
   // self-collection and breakup of rain
   // (breakup following modified Verlinde and Cotton scheme)
@@ -21,7 +21,8 @@ Functions<S, D>::rain_self_collection(const Spack &rho, const Spack &qr_incld,
 
   const Scalar rain_selfcollection_breakup_diameter =
       runtime_options.rain_selfcollection_breakup_diameter;
-  const Scalar rain_selfcollection_prefactor = runtime_options.rain_selfcollection_prefactor;
+  const Scalar rain_selfcollection_prefactor =
+      runtime_options.rain_selfcollection_prefactor;
 
   const auto qr_incld_not_small = qr_incld >= qsmall && context;
 
@@ -34,15 +35,19 @@ Functions<S, D>::rain_self_collection(const Spack &rho, const Spack &qr_incld,
     const auto dum2 = cbrt((qr_incld) / (pi * rho_h2o * nr_incld));
 
     Spack dum;
-    const auto dum2_lt_dum1 = dum2 < rain_selfcollection_breakup_diameter && qr_incld_not_small;
-    const auto dum2_gt_dum1 = dum2 >= rain_selfcollection_breakup_diameter && qr_incld_not_small;
+    const auto dum2_lt_dum1 =
+        dum2 < rain_selfcollection_breakup_diameter && qr_incld_not_small;
+    const auto dum2_gt_dum1 =
+        dum2 >= rain_selfcollection_breakup_diameter && qr_incld_not_small;
     dum.set(dum2_lt_dum1, 1);
     if (dum2_gt_dum1.any()) {
-      dum.set(dum2_gt_dum1, 2 - exp(2300 * (dum2 - rain_selfcollection_breakup_diameter)));
+      dum.set(dum2_gt_dum1,
+              2 - exp(2300 * (dum2 - rain_selfcollection_breakup_diameter)));
     }
 
     nr_selfcollect_tend.set(qr_incld_not_small,
-                            dum * rain_selfcollection_prefactor * nr_incld * qr_incld * rho);
+                            dum * rain_selfcollection_prefactor * nr_incld *
+                                qr_incld * rho);
   }
 }
 

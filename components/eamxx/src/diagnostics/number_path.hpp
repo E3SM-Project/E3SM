@@ -12,7 +12,8 @@ namespace scream {
 class NumberPathDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  NumberPathDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
+  NumberPathDiagnostic(const ekat::Comm &comm,
+                       const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "NumberPath"; }

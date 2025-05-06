@@ -10,8 +10,8 @@
 namespace scream {
 
 void f_z_src(const Real y0, const Real m, const Field &z_data, Field &out_data);
-void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_data,
-             Field &out_data);
+void f_z_tgt(const Real y0, const Real m, const Real z_target,
+             const Field &z_data, Field &out_data);
 bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol,
                             const bool msg = true);
 
@@ -33,28 +33,39 @@ TEST_CASE("field_at_height") {
   int ndims           = 4;
   int nlevs           = 10;
   int num_global_cols = ncols * comm.size();
-  auto gm             = create_mesh_free_grids_manager(comm, 0, 0, nlevs, num_global_cols);
+  auto gm = create_mesh_free_grids_manager(comm, 0, 0, nlevs, num_global_cols);
   gm->build_grids();
   auto grid = gm->get_grid("point_grid");
 
   const auto m = ekat::units::m;
   // Create input data test fields
-  FieldIdentifier s_mid_fid("s_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
-  FieldIdentifier s_int_fid("s_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
-  FieldIdentifier v_mid_fid("v_mid", FieldLayout({COL, CMP, LEV}, {ncols, ndims, nlevs}), m,
+  FieldIdentifier s_mid_fid("s_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m,
                             grid->name());
-  FieldIdentifier v_int_fid("v_int", FieldLayout({COL, CMP, ILEV}, {ncols, ndims, nlevs + 1}), m,
-                            grid->name());
+  FieldIdentifier s_int_fid(
+      "s_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
+  FieldIdentifier v_mid_fid("v_mid",
+                            FieldLayout({COL, CMP, LEV}, {ncols, ndims, nlevs}),
+                            m, grid->name());
+  FieldIdentifier v_int_fid(
+      "v_int", FieldLayout({COL, CMP, ILEV}, {ncols, ndims, nlevs + 1}), m,
+      grid->name());
   // Create vertical fields z and geo on both midpoints and interfaces
-  FieldIdentifier z_surf_fid("z_surf", FieldLayout({COL}, {ncols}), m, grid->name());
-  FieldIdentifier z_mid_fid("z_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
-  FieldIdentifier z_int_fid("z_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
-  FieldIdentifier h_mid_fid("height_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
-  FieldIdentifier h_int_fid("height_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m,
+  FieldIdentifier z_surf_fid("z_surf", FieldLayout({COL}, {ncols}), m,
+                             grid->name());
+  FieldIdentifier z_mid_fid("z_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m,
+                            grid->name());
+  FieldIdentifier z_int_fid(
+      "z_int", FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m, grid->name());
+  FieldIdentifier h_mid_fid(
+      "height_mid", FieldLayout({COL, LEV}, {ncols, nlevs}), m, grid->name());
+  FieldIdentifier h_int_fid("height_int",
+                            FieldLayout({COL, ILEV}, {ncols, nlevs + 1}), m,
                             grid->name());
   // Keep track of reference fields for comparison
-  FieldIdentifier s_tgt_fid("scalar_target", FieldLayout({COL}, {ncols}), m, grid->name());
-  FieldIdentifier v_tgt_fid("vector_target", FieldLayout({COL, CMP}, {ncols, ndims}), m,
+  FieldIdentifier s_tgt_fid("scalar_target", FieldLayout({COL}, {ncols}), m,
+                            grid->name());
+  FieldIdentifier v_tgt_fid("vector_target",
+                            FieldLayout({COL, CMP}, {ncols, ndims}), m,
                             grid->name());
 
   Field s_mid(s_mid_fid);
@@ -108,7 +119,8 @@ TEST_CASE("field_at_height") {
   RPDF pdf_y0(0, 5);
 
   // Lambda to create and run a diag, and return output
-  auto run_diag = [&](const Field &f, const Field &z, const double h, const std::string &surf_ref) {
+  auto run_diag = [&](const Field &f, const Field &z, const double h,
+                      const std::string &surf_ref) {
     util::TimeStamp t0({2022, 1, 1}, {0, 0, 0});
     auto &factory = AtmosphereDiagnosticFactory::instance();
     ekat::ParameterList pl;
@@ -150,12 +162,13 @@ TEST_CASE("field_at_height") {
     zsurf_v(ii)              = ii * surf_slope;
     max_surf                 = zsurf_v(ii) > max_surf ? zsurf_v(ii) : max_surf;
     const Real col_thickness = z_top - zsurf_v(ii);
-    min_col_thickness = min_col_thickness < col_thickness ? col_thickness : min_col_thickness;
-    const Real dz     = (z_top - zsurf_v(ii)) / nlevs;
-    zint_v(ii, 0)     = z_top;
+    min_col_thickness =
+        min_col_thickness < col_thickness ? col_thickness : min_col_thickness;
+    const Real dz = (z_top - zsurf_v(ii)) / nlevs;
+    zint_v(ii, 0) = z_top;
     geoint_v(ii, 0) =
-        z_top -
-        zsurf_v(ii); // Note, the distance above surface needs to consider the surface height.
+        z_top - zsurf_v(ii); // Note, the distance above surface needs to
+                             // consider the surface height.
     for (int jj = 0; jj < nlevs; ++jj) {
       zint_v(ii, jj + 1)   = zint_v(ii, jj) - dz;
       zmid_v(ii, jj)       = 0.5 * (zint_v(ii, jj) + zint_v(ii, jj + 1));
@@ -168,12 +181,13 @@ TEST_CASE("field_at_height") {
   z_surf.sync_to_dev();
   h_int.sync_to_dev();
   h_mid.sync_to_dev();
-  // Set the PDF for target height in the test to always be within the shortest column.
-  // This ensures that we don't havea target z that extrapolates everywhere.
-  // We test this case individually.
+  // Set the PDF for target height in the test to always be within the shortest
+  // column. This ensures that we don't havea target z that extrapolates
+  // everywhere. We test this case individually.
   IPDF pdf_levs(max_surf, min_col_thickness);
   // Sanity check that the geo and z vertical structures are in fact different,
-  // so we know we are testing above_surface and above_sealevel as different cases.
+  // so we know we are testing above_surface and above_sealevel as different
+  // cases.
   REQUIRE(!views_are_equal(z_int, h_int));
   REQUIRE(!views_are_equal(z_mid, h_mid));
 
@@ -187,7 +201,8 @@ TEST_CASE("field_at_height") {
   // Run many times
   int z_tgt;
   for (std::string surf_ref : {"sealevel", "surface"}) {
-    printf(" -> Testing for a reference height above %s...\n", surf_ref.c_str());
+    printf(" -> Testing for a reference height above %s...\n",
+           surf_ref.c_str());
     const auto mid_src       = surf_ref == "sealevel" ? z_mid : h_mid;
     const auto int_src       = surf_ref == "sealevel" ? z_int : h_int;
     const int max_surf_4test = surf_ref == "sealevel" ? max_surf : 0;
@@ -238,7 +253,8 @@ TEST_CASE("field_at_height") {
         auto d              = run_diag(s_int, int_src, z_tgt_adj, surf_ref);
         f_z_tgt(inter, slope, z_tgt, int_src, s_tgt);
         REQUIRE(!views_are_approx_equal(d, s_tgt, tol, false));
-        print("    -> Forced fail, give incorrect location............... OK!\n");
+        print(
+            "    -> Forced fail, give incorrect location............... OK!\n");
       }
     }
     {
@@ -258,18 +274,21 @@ TEST_CASE("field_at_height") {
       REQUIRE(views_are_approx_equal(dbot, s_tgt, tol));
       print("    -> Forced extrapolation at bot............... OK!\n");
     }
-    printf(" -> Testing for a reference height above %s... OK!\n", surf_ref.c_str());
+    printf(" -> Testing for a reference height above %s... OK!\n",
+           surf_ref.c_str());
   }
 }
 
 //-------------------------------
-// Set up the inpute data.  To make the test simple we assume a linear distribution of the data
-// with height.  That way we can exactly calculate what a linear interpolation to a random
-// height would be.
-void f_z_src(const Real y0, const Real m, const Field &z_data, Field &out_data) {
+// Set up the inpute data.  To make the test simple we assume a linear
+// distribution of the data with height.  That way we can exactly calculate what
+// a linear interpolation to a random height would be.
+void f_z_src(const Real y0, const Real m, const Field &z_data,
+             Field &out_data) {
   using namespace ShortFieldTagsNames;
   const auto layout = out_data.get_header().get_identifier().get_layout();
-  if (layout.has_tag(CMP)) { // Is a vector layout, meaning different dims than z_data.
+  if (layout.has_tag(
+          CMP)) { // Is a vector layout, meaning different dims than z_data.
     const auto &dims     = layout.dims();
     const auto &z_view   = z_data.get_view<const Real **, Host>();
     const auto &out_view = out_data.get_view<Real ***, Host>();
@@ -282,8 +301,8 @@ void f_z_src(const Real y0, const Real m, const Field &z_data, Field &out_data) 
     }
   } else { // Not a vector output, easier to deal with
     const auto z_view = z_data.get_internal_view_data<const Real, Host>();
-    const auto &size  = z_data.get_header().get_identifier().get_layout().size();
-    auto out_view     = out_data.get_internal_view_data<Real, Host>();
+    const auto &size = z_data.get_header().get_identifier().get_layout().size();
+    auto out_view    = out_data.get_internal_view_data<Real, Host>();
     for (int ii = 0; ii < size; ++ii) {
       out_view[ii] = y0 + m * z_view[ii];
     }
@@ -291,14 +310,16 @@ void f_z_src(const Real y0, const Real m, const Field &z_data, Field &out_data) 
   out_data.sync_to_dev();
 }
 //-------------------------------
-// Calculate the target data.  Note expression here must match the f_z_src abovel
-void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_data,
-             Field &out_data) {
+// Calculate the target data.  Note expression here must match the f_z_src
+// abovel
+void f_z_tgt(const Real y0, const Real m, const Real z_target,
+             const Field &z_data, Field &out_data) {
   using namespace ShortFieldTagsNames;
   const auto layout  = out_data.get_header().get_identifier().get_layout();
   const auto &z_view = z_data.get_view<const Real **, Host>();
   const auto &zdims  = z_data.get_header().get_identifier().get_layout().dims();
-  if (layout.has_tag(CMP)) { // Is a vector layout, meaning different dims than z_target.
+  if (layout.has_tag(
+          CMP)) { // Is a vector layout, meaning different dims than z_target.
     const auto &dims     = layout.dims();
     const auto &out_view = out_data.get_view<Real **, Host>();
     for (int ii = 0; ii < dims[0]; ++ii) {
@@ -330,20 +351,22 @@ void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field &z_da
   out_data.sync_to_dev();
 }
 /*-----------------------------------------------------------------------------------------------*/
-bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol, const bool msg) {
+bool views_are_approx_equal(const Field &f0, const Field &f1, const Real tol,
+                            const bool msg) {
   const auto &l0 = f0.get_header().get_identifier().get_layout();
   const auto &l1 = f1.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(l0 == l1,
-                   "Error! views_are_approx_equal - the two fields don't have matching layouts.");
-  // Take advantage of field utils update, min and max to assess the max difference between the two
-  // fields simply.
+  EKAT_REQUIRE_MSG(l0 == l1, "Error! views_are_approx_equal - the two fields "
+                             "don't have matching layouts.");
+  // Take advantage of field utils update, min and max to assess the max
+  // difference between the two fields simply.
   auto ft = f0.clone();
   ft.update(f1, 1.0, -1.0);
   auto d_min = field_min<Real>(ft);
   auto d_max = field_max<Real>(ft);
   if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
     if (msg) {
-      printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The "
+      printf("The two copies of (%16s) are NOT approx equal within a tolerance "
+             "of %e.\n     The "
              "min and max errors are "
              "%e and %e respectively.\n",
              f0.name().c_str(), tol, d_min, d_max);

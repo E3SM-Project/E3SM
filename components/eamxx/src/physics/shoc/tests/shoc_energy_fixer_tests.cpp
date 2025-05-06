@@ -23,7 +23,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocEnergyFixer
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real gravit = scream::physics::Constants<Real>::gravit;
@@ -64,7 +65,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>
     // Define TKE inputs
     static constexpr Real tke[nlev] = {mintke, mintke, 0.3, 0.4, 0.1};
     //  Pressure at interface [Pa]
-    static constexpr Real pint[nlevi] = {50000, 60000, 70000, 80000, 90000, 100000};
+    static constexpr Real pint[nlevi] = {50000, 60000, 70000,
+                                         80000, 90000, 100000};
     // Define integrated static energy, kinetic energy, water vapor,
     //  and liquid water respectively
     static constexpr Real se = 200;
@@ -83,8 +85,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>
 
     // Test that the inputs are reasonable.
     // for this test we need exactly two columns
-    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi && SDS.dtime == dtime &&
-             SDS.nadv == nadv));
+    REQUIRE((SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi &&
+             SDS.dtime == dtime && SDS.nadv == nadv));
     // Want exactly three columns for this case
     REQUIRE(shcol == 3);
     REQUIRE(nlevi == nlev + 1);
@@ -270,8 +272,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ShocEnergyFixerData SDS_cxx[] = {
         ShocEnergyFixerData(SDS_baseline[0]),
         ShocEnergyFixerData(SDS_baseline[1]),
@@ -279,7 +281,8 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>
         ShocEnergyFixerData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocEnergyFixerData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ShocEnergyFixerData);
 
     // Assume all data is in C layout
 
@@ -320,15 +323,15 @@ struct UnitWrap::UnitTest<D>::TestShocEnergyFixer : public UnitWrap::UnitTest<D>
 namespace {
 
 TEST_CASE("shoc_energy_fixer_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocEnergyFixer;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_energy_fixer_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEnergyFixer;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocEnergyFixer;
 
   TestStruct().run_bfb();
 }

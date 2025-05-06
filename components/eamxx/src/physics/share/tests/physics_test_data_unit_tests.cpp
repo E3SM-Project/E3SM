@@ -44,7 +44,8 @@ struct AllTrue : public PhysicsTestData {
   bool *bools;
 
   AllTrue(Int dim1_)
-      : PhysicsTestData({{dim1_}}, {/*no reals*/}, {/*no ints*/}, {{&bools}}), dim1(dim1_) {}
+      : PhysicsTestData({{dim1_}}, {/*no reals*/}, {/*no ints*/}, {{&bools}}),
+        dim1(dim1_) {}
 
   PTD_STD_DEF(AllTrue, 1, dim1);
 };
@@ -55,19 +56,20 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestTestData {
   static void test_fake_class1() {
     auto engine = setup_random_test();
 
-    const std::vector<std::tuple<Int, Int, Int, Int>> dims = {std::make_tuple(7, 13, 29, 3),
-                                                              std::make_tuple(4, 8, 16, 2)};
-    const std::vector<Real> scalars                        = {42.1, 43.1};
-    FakeClass1 fakes_1[]                                   = {
-        FakeClass1(std::get<0>(dims[0]), std::get<1>(dims[0]), std::get<2>(dims[0]),
-                                                     std::get<3>(dims[0]), scalars[0]),
-        FakeClass1(std::get<0>(dims[1]), std::get<1>(dims[1]), std::get<2>(dims[1]),
-                                                     std::get<3>(dims[1]), scalars[1]),
+    const std::vector<std::tuple<Int, Int, Int, Int>> dims = {
+        std::make_tuple(7, 13, 29, 3), std::make_tuple(4, 8, 16, 2)};
+    const std::vector<Real> scalars = {42.1, 43.1};
+    FakeClass1 fakes_1[]            = {
+        FakeClass1(std::get<0>(dims[0]), std::get<1>(dims[0]),
+                              std::get<2>(dims[0]), std::get<3>(dims[0]), scalars[0]),
+        FakeClass1(std::get<0>(dims[1]), std::get<1>(dims[1]),
+                              std::get<2>(dims[1]), std::get<3>(dims[1]), scalars[1]),
     };
 
     for (auto &d : fakes_1) {
-      d.randomize(engine,
-                  {{d.two123, {-2.0, -1.0}}, {d.three124, {-3.0, -2.0}}, {d.int124, {42, 84}}});
+      d.randomize(engine, {{d.two123, {-2.0, -1.0}},
+                           {d.three124, {-3.0, -2.0}},
+                           {d.int124, {42, 84}}});
     }
 
     static constexpr Int num_runs = sizeof(fakes_1) / sizeof(FakeClass1);
@@ -94,31 +96,37 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestTestData {
       auto &d3 = fakes_3[n];
 
       // Check dimensions
-      REQUIRE(d1.total(d1.one123) ==
-              std::get<0>(dims[n]) * std::get<1>(dims[n]) * std::get<2>(dims[n]));
+      REQUIRE(d1.total(d1.one123) == std::get<0>(dims[n]) *
+                                         std::get<1>(dims[n]) *
+                                         std::get<2>(dims[n]));
       REQUIRE(d1.total(d1.one123) == d2.total(d2.one123));
       REQUIRE(d1.total(d1.one123) == d3.total(d3.one123));
 
-      REQUIRE(d1.total(d1.two123) ==
-              std::get<0>(dims[n]) * std::get<1>(dims[n]) * std::get<2>(dims[n]));
+      REQUIRE(d1.total(d1.two123) == std::get<0>(dims[n]) *
+                                         std::get<1>(dims[n]) *
+                                         std::get<2>(dims[n]));
       REQUIRE(d1.total(d1.two123) == d2.total(d2.two123));
       REQUIRE(d1.total(d1.two123) == d3.total(d3.two123));
 
-      REQUIRE(d1.total(d1.three124) ==
-              std::get<0>(dims[n]) * std::get<1>(dims[n]) * std::get<3>(dims[n]));
+      REQUIRE(d1.total(d1.three124) == std::get<0>(dims[n]) *
+                                           std::get<1>(dims[n]) *
+                                           std::get<3>(dims[n]));
       REQUIRE(d1.total(d1.three124) == d2.total(d2.three124));
       REQUIRE(d1.total(d1.three124) == d3.total(d3.three124));
 
-      REQUIRE(d1.total(d1.int12) == std::get<0>(dims[n]) * std::get<1>(dims[n]));
+      REQUIRE(d1.total(d1.int12) ==
+              std::get<0>(dims[n]) * std::get<1>(dims[n]));
       REQUIRE(d1.total(d1.int12) == d2.total(d2.int12));
       REQUIRE(d1.total(d1.int12) == d3.total(d3.int12));
 
-      REQUIRE(d1.total(d1.int124) ==
-              std::get<0>(dims[n]) * std::get<1>(dims[n]) * std::get<3>(dims[n]));
+      REQUIRE(d1.total(d1.int124) == std::get<0>(dims[n]) *
+                                         std::get<1>(dims[n]) *
+                                         std::get<3>(dims[n]));
       REQUIRE(d1.total(d1.int124) == d2.total(d2.int124));
       REQUIRE(d1.total(d1.int124) == d3.total(d3.int124));
 
-      REQUIRE(d1.total(d1.bools12) == std::get<0>(dims[n]) * std::get<1>(dims[n]));
+      REQUIRE(d1.total(d1.bools12) ==
+              std::get<0>(dims[n]) * std::get<1>(dims[n]));
       REQUIRE(d1.total(d1.bools12) == d2.total(d2.bools12));
       REQUIRE(d1.total(d1.bools12) == d3.total(d3.bools12));
       REQUIRE(d1.total(d1.bools12) == d1.total(d1.int12));
@@ -261,7 +269,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestTestData {
 namespace {
 
 TEST_CASE("physics_test_data", "[physics_test_data]") {
-  scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTestData::run();
+  scream::physics::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestTestData::run();
 }
 
 } // namespace

@@ -28,7 +28,8 @@ TEST_CASE("find_filename_in_rpointer") {
   bar2_c.frequency       = 6;
   bar2_c.frequency_units = "nhours";
 
-  std::string suffix     = ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  std::string suffix =
+      ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   std::string foo_fname  = "foo.r.INSTANT.nsteps_x3" + suffix;
   std::string bar_fname  = "bar.rhist.AVERAGE.ndays_x1" + suffix;
   std::string bar2_fname = "bar.rhist.AVERAGE.nhours_x6" + suffix;
@@ -39,28 +40,32 @@ TEST_CASE("find_filename_in_rpointer") {
   rpointer.close();
 
   // Now test find_filename_in_rpointer with different inputs
-  REQUIRE_THROWS(find_filename_in_rpointer("baz", false, comm, t0, false,
-                                           AVG)); // missing control (needed for rhist files)
-  REQUIRE_THROWS(
-      find_filename_in_rpointer("baz", false, comm, t0, false, AVG, bar_c)); // wrong prefix
-  REQUIRE_THROWS(
-      find_filename_in_rpointer("bar", false, comm, t1, false, AVG, bar_c)); // wrong timestamp
+  REQUIRE_THROWS(find_filename_in_rpointer(
+      "baz", false, comm, t0, false,
+      AVG)); // missing control (needed for rhist files)
+  REQUIRE_THROWS(find_filename_in_rpointer("baz", false, comm, t0, false, AVG,
+                                           bar_c)); // wrong prefix
+  REQUIRE_THROWS(find_filename_in_rpointer("bar", false, comm, t1, false, AVG,
+                                           bar_c)); // wrong timestamp
   REQUIRE_THROWS(find_filename_in_rpointer("bar", true, comm, t0, false, AVG,
                                            bar_c)); // bar is not model restart
-  REQUIRE_THROWS(
-      find_filename_in_rpointer("bar", false, comm, t0, false, INST, bar_c)); // wrong avg type
-  REQUIRE_THROWS(
-      find_filename_in_rpointer("bar", false, comm, t0, false, INST, bar2_c)); // wrong freq specs
+  REQUIRE_THROWS(find_filename_in_rpointer("bar", false, comm, t0, false, INST,
+                                           bar_c)); // wrong avg type
+  REQUIRE_THROWS(find_filename_in_rpointer("bar", false, comm, t0, false, INST,
+                                           bar2_c)); // wrong freq specs
   REQUIRE_THROWS(find_filename_in_rpointer("foo", false, comm, t0, false, INST,
                                            foo_c)); // foo is model restart
-  REQUIRE_THROWS(find_filename_in_rpointer("foo", true, comm, t0, false,
-                                           AVG)); // model restart MUST be INSTANT
+  REQUIRE_THROWS(
+      find_filename_in_rpointer("foo", true, comm, t0, false,
+                                AVG)); // model restart MUST be INSTANT
   auto not_found = find_filename_in_rpointer("bar", false, comm, t0, true, INST,
                                              bar2_c); // Allowed to not find it
   REQUIRE(not_found == "");
 
-  REQUIRE(find_filename_in_rpointer("bar", false, comm, t0, false, AVG, bar_c) == bar_fname);
-  REQUIRE(find_filename_in_rpointer("bar", false, comm, t0, false, AVG, bar2_c) == bar2_fname);
+  REQUIRE(find_filename_in_rpointer("bar", false, comm, t0, false, AVG,
+                                    bar_c) == bar_fname);
+  REQUIRE(find_filename_in_rpointer("bar", false, comm, t0, false, AVG,
+                                    bar2_c) == bar2_fname);
   REQUIRE(find_filename_in_rpointer("foo", true, comm, t0) == foo_fname);
 }
 

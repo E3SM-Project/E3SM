@@ -15,13 +15,13 @@ namespace scream {
  *   in a field refers to, and help distinguish fields.
  *   For instance, say there are two classes A and B, storing a field
  *   called 'tracers', but they expect the layout to be different.
- *   Namely, A expects to index the field as (element, dim, gauss point, gauss point),
- *   while B expects to index it as (element, gauss point, gauss point, dim).
- *   A check on the field name and rank is not enough to establish
- *   that the two fields are not the same. If the number of dimensions
- *   is equal to the number of points, even a check on the extents
- *   would not distinguish the two. At this point, using a tag for each
- *   dimension is the only way to distiguish the two.
+ *   Namely, A expects to index the field as (element, dim, gauss point, gauss
+ * point), while B expects to index it as (element, gauss point, gauss point,
+ * dim). A check on the field name and rank is not enough to establish that the
+ * two fields are not the same. If the number of dimensions is equal to the
+ * number of points, even a check on the extents would not distinguish the two.
+ * At this point, using a tag for each dimension is the only way to distiguish
+ * the two.
  */
 
 enum class FieldTag {

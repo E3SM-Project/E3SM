@@ -43,8 +43,9 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
-                                     const util::TimeStamp &t0, const int seed, const int ps) {
+std::shared_ptr<FieldManager>
+get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+       const util::TimeStamp &t0, const int seed, const int ps) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -86,7 +87,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
 }
 
 // Returns fields after initialization
-void write(const int freq, const int seed, const int ps, const ekat::Comm &comm) {
+void write(const int freq, const int seed, const int ps,
+           const ekat::Comm &comm) {
   // Create grid
   auto gm   = get_gm(comm);
   auto grid = gm->get_grid("point_grid");
@@ -145,8 +147,9 @@ void read(const int freq, const int seed, const int ps_write, const int ps_read,
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_packed_ps" + std::to_string(ps_write);
-  auto filename        = casename + ".INSTANT.nsteps" + "_x" + std::to_string(freq) + ".np" +
-                  std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  auto filename = casename + ".INSTANT.nsteps" + "_x" + std::to_string(freq) +
+                  ".np" + std::to_string(comm.size()) + "." + t0.to_string() +
+                  ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);

@@ -12,10 +12,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const Spack &rho,
-                                Spack &nu, const view_dnu_table &dnu, Spack &lamc, Spack &cdist,
-                                Spack &cdist1, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::get_cloud_dsd2(
+    const Spack &qc, Spack &nc, Spack &mu_c, const Spack &rho, Spack &nu,
+    const view_dnu_table &dnu, Spack &lamc, Spack &cdist, Spack &cdist1,
+    const Smask &context) {
   lamc.set(context, 0);
   cdist.set(context, 0);
   cdist1.set(context, 0);
@@ -40,7 +40,8 @@ Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const S
       mu_c.set(qc_gt_small, mu_c_local);
     }
 
-    // interpolate for mass distribution spectral shape parameter (for SB warm processes)
+    // interpolate for mass distribution spectral shape parameter (for SB warm
+    // processes)
     if (P3C::iparam == 1) {
       IntSmallPack dumi = IntSmallPack(mu_c) - 1;
       Spack dnu0, dnu1;
@@ -49,7 +50,8 @@ Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const S
     }
 
     // calculate lamc
-    lamc.set(qc_gt_small, cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
+    lamc.set(qc_gt_small,
+             cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
 
     // apply lambda limiters
     Spack lammin = (mu_c + 1) * sp(2.5e+4); // min: 40 micron mean diameter
@@ -61,8 +63,9 @@ Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const S
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc /
-                           (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
+    nc.set(min_or_max,
+           6 * (lamc * lamc * lamc) * qc /
+               (C::Pi * C::RHO_H2O * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c + 1) / lamc);
     cdist1.set(qc_gt_small, nc / tgamma(mu_c + 1));
@@ -70,9 +73,10 @@ Functions<S, D>::get_cloud_dsd2(const Spack &qc, Spack &nc, Spack &mu_c, const S
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, Spack &mu_r,
-                                                    Spack &lamr, const P3Runtime &runtime_options,
-                                                    const Smask &context) {
+KOKKOS_FUNCTION void
+Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, Spack &mu_r,
+                               Spack &lamr, const P3Runtime &runtime_options,
+                               const Smask &context) {
   constexpr auto nsmall = C::NSMALL;
   constexpr auto qsmall = C::QSMALL;
   constexpr auto cons1  = C::CONS1;
@@ -99,8 +103,9 @@ KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, 
 
     // check for slope
     const auto lammax = (mu_r + 1.) * sp(1.e+5);
-    // Below, 500 is inverse of max allowable number-weighted mean raindrop size=2mm
-    // Since breakup is explicitly included, mean raindrop size can be relatively small
+    // Below, 500 is inverse of max allowable number-weighted mean raindrop
+    // size=2mm Since breakup is explicitly included, mean raindrop size can be
+    // relatively small
     const auto lammin = (mu_r + 1.) * 500;
 
     // apply lambda limiters for rain
@@ -119,10 +124,9 @@ KOKKOS_FUNCTION void Functions<S, D>::get_rain_dsd2(const Spack &qr, Spack &nr, 
 }
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::get_cdistr_logn0r(const Spack &qr, const Spack &nr,
-                                                        const Spack &mu_r, const Spack &lamr,
-                                                        Spack &cdistr, Spack &logn0r,
-                                                        const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::get_cdistr_logn0r(
+    const Spack &qr, const Spack &nr, const Spack &mu_r, const Spack &lamr,
+    Spack &cdistr, Spack &logn0r, const Smask &context) {
   constexpr auto qsmall = C::QSMALL;
 
   cdistr.set(context, 0);

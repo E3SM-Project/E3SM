@@ -7,8 +7,8 @@
 namespace scream {
 
 // =========================================================================================
-VerticalLayerDiagnostic::VerticalLayerDiagnostic(const ekat::Comm &comm,
-                                                 const ekat::ParameterList &params)
+VerticalLayerDiagnostic::VerticalLayerDiagnostic(
+    const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   m_diag_name                        = params.get<std::string>("diag_name");
   std::vector<std::string> supported = {"z", "geopotential", "height", "dz"};
@@ -22,8 +22,8 @@ VerticalLayerDiagnostic::VerticalLayerDiagnostic(const ekat::Comm &comm,
                        ekat::join(supported, ", ") + "\n");
 
   auto vert_pos = params.get<std::string>("vert_location");
-  EKAT_REQUIRE_MSG(vert_pos == "mid" || vert_pos == "int" || vert_pos == "midpoints" ||
-                       vert_pos == "interfaces",
+  EKAT_REQUIRE_MSG(vert_pos == "mid" || vert_pos == "int" ||
+                       vert_pos == "midpoints" || vert_pos == "interfaces",
                    "[VerticalLayerDiagnostic] Error! Invalid 'vert_location'.\n"
                    "  - input value: " +
                        vert_pos +
@@ -39,7 +39,8 @@ VerticalLayerDiagnostic::VerticalLayerDiagnostic(const ekat::Comm &comm,
   }
 }
 // ========================================================================================
-void VerticalLayerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void VerticalLayerDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
@@ -48,8 +49,8 @@ void VerticalLayerDiagnostic::set_grids(const std::shared_ptr<const GridsManager
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   const auto scalar2d     = grid->get_2d_scalar_layout();
   const auto scalar3d_mid = grid->get_3d_scalar_layout(true);
@@ -74,12 +75,12 @@ void VerticalLayerDiagnostic::initialize_impl(const RunType /*run_type*/) {
   auto m2 = pow(m, 2);
   auto s2 = pow(s, 2);
 
-  const auto &T   = get_field_in("T_mid");
-  const auto &rho = get_field_in("pseudo_density");
-  const auto &p   = get_field_in("p_mid");
-  const auto &qv  = get_field_in("qv");
-  const auto &phis =
-      m_from_sea_level ? get_field_in("phis") : T; // unused if m_from_sea_level=false
+  const auto &T    = get_field_in("T_mid");
+  const auto &rho  = get_field_in("pseudo_density");
+  const auto &p    = get_field_in("p_mid");
+  const auto &qv   = get_field_in("qv");
+  const auto &phis = m_from_sea_level ? get_field_in("phis")
+                                      : T; // unused if m_from_sea_level=false
 
   // Construct and allocate the diagnostic field.
   // Notes:
@@ -90,7 +91,8 @@ void VerticalLayerDiagnostic::initialize_impl(const RunType /*run_type*/) {
   const auto VLEV       = m_is_interface_layout ? ILEV : LEV;
   const auto nlevs      = m_is_interface_layout ? m_num_levs + 1 : m_num_levs;
   FieldLayout diag_layout({COL, VLEV}, {m_num_cols, nlevs});
-  FieldIdentifier fid(m_diag_name, diag_layout, m_geopotential ? m2 / s2 : m, grid_name);
+  FieldIdentifier fid(m_diag_name, diag_layout, m_geopotential ? m2 / s2 : m,
+                      grid_name);
 
   m_diagnostic_output = Field(fid);
   auto &diag_fap      = m_diagnostic_output.get_header().get_alloc_properties();
@@ -106,8 +108,8 @@ void VerticalLayerDiagnostic::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output.allocate_view();
 
   using stratts_t = std::map<std::string, std::string>;
-  auto &io_atts =
-      m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto &io_atts   = m_diagnostic_output.get_header().get_extra_data<stratts_t>(
+      "io: string attributes");
   auto &long_name = io_atts["long_name"];
   if (m_diag_name == "dz") {
     long_name = "level thickness";
@@ -125,7 +127,8 @@ void VerticalLayerDiagnostic::initialize_impl(const RunType /*run_type*/) {
     long_name = "geopotential height relative to sealevel at level interfaces";
   }
 
-  // Initialize temporary views based on need. Can alias the diag if a temp is not needed
+  // Initialize temporary views based on need. Can alias the diag if a temp is
+  // not needed
   auto create_temp = [&](const std::string &name, int levs) {
     auto u = Units::nondimensional();
     FieldLayout fl({COL, LEV}, {m_num_cols, levs});
@@ -156,7 +159,8 @@ void VerticalLayerDiagnostic::compute_diagnostic_impl() {
   }
 }
 
-template <int PackSize> void VerticalLayerDiagnostic::do_compute_diagnostic_impl() {
+template <int PackSize>
+void VerticalLayerDiagnostic::do_compute_diagnostic_impl() {
   using column_ops = ColumnOps<DefaultDevice, Real>;
   using PackT      = ekat::Pack<Real, PackSize>;
   using KT         = KokkosTypes<DefaultDevice>;
@@ -167,15 +171,17 @@ template <int PackSize> void VerticalLayerDiagnostic::do_compute_diagnostic_impl
   constexpr bool FromTop = false;
 
   const auto npacks = ekat::npack<PackT>(m_num_levs);
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(
-      m_num_cols, npacks);
+  const auto policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols,
+                                                                npacks);
 
   const auto &T   = get_field_in("T_mid").get_view<const PackT **>();
   const auto &p   = get_field_in("p_mid").get_view<const PackT **>();
   const auto &qv  = get_field_in("qv").get_view<const PackT **>();
   const auto &rho = get_field_in("pseudo_density").get_view<const PackT **>();
-  const auto phis = m_from_sea_level ? get_field_in("phis").get_view<const Real *>()
-                                     : typename KT::view_1d<const Real>();
+  const auto phis = m_from_sea_level
+                        ? get_field_in("phis").get_view<const Real *>()
+                        : typename KT::view_1d<const Real>();
 
   const bool only_compute_dz     = m_diag_name == "dz";
   const bool is_interface_layout = m_is_interface_layout;
@@ -194,8 +200,8 @@ template <int PackSize> void VerticalLayerDiagnostic::do_compute_diagnostic_impl
 
     // Whatever the output needs, the first thing to compute is dz.
     const auto &dz = ekat::subview(tmp_mid, icol);
-    PF::calculate_dz(team, ekat::subview(rho, icol), ekat::subview(p, icol), ekat::subview(T, icol),
-                     ekat::subview(qv, icol), dz);
+    PF::calculate_dz(team, ekat::subview(rho, icol), ekat::subview(p, icol),
+                     ekat::subview(T, icol), ekat::subview(qv, icol), dz);
     team.team_barrier();
 
     // If dz is all we need, we're done
@@ -209,10 +215,12 @@ template <int PackSize> void VerticalLayerDiagnostic::do_compute_diagnostic_impl
     // phi and z are related by phi=z*g, so dphi=dz*g, and z_surf = phis/g
     if (geopotential) {
       auto dphi = [&](const int ilev) { return dz(ilev) * g; };
-      column_ops::template column_scan<FromTop>(team, num_levs, dphi, v_int, phis(icol));
+      column_ops::template column_scan<FromTop>(team, num_levs, dphi, v_int,
+                                                phis(icol));
     } else {
       const Real surf_val = from_sea_level ? phis(icol) / g : 0;
-      column_ops::template column_scan<FromTop>(team, num_levs, dz, v_int, surf_val);
+      column_ops::template column_scan<FromTop>(team, num_levs, dz, v_int,
+                                                surf_val);
     }
 
     // If we need quantity at midpoints, simply do int->mid averaging

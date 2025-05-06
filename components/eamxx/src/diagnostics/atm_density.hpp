@@ -8,7 +8,8 @@ namespace scream {
 class AtmDensityDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  AtmDensityDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
+  AtmDensityDiagnostic(const ekat::Comm &comm,
+                       const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const { return "AtmosphereDensity"; }

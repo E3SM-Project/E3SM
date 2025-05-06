@@ -8,9 +8,10 @@ namespace shoc {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::shoc_diag_second_moments_lbycond(
-    const Scalar &wthl_sfc, const Scalar &wqw_sfc, const Scalar &uw_sfc, const Scalar &vw_sfc,
-    const Scalar &ustar2, const Scalar &wstar, Scalar &wthl_sec, Scalar &wqw_sec, Scalar &uw_sec,
-    Scalar &vw_sec, Scalar &wtke_sec, Scalar &thl_sec, Scalar &qw_sec, Scalar &qwthl_sec) {
+    const Scalar &wthl_sfc, const Scalar &wqw_sfc, const Scalar &uw_sfc,
+    const Scalar &vw_sfc, const Scalar &ustar2, const Scalar &wstar,
+    Scalar &wthl_sec, Scalar &wqw_sec, Scalar &uw_sec, Scalar &vw_sec,
+    Scalar &wtke_sec, Scalar &thl_sec, Scalar &qw_sec, Scalar &qwthl_sec) {
   // Purpose of this subroutine is to diagnose the lower
   // boundary condition for the second order moments needed
   // for the SHOC parameterization.

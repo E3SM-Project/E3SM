@@ -12,12 +12,10 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::shoc_diag_obklen(const Scalar &uw_sfc, const Scalar &vw_sfc,
-                                                       const Scalar &wthl_sfc,
-                                                       const Scalar &wqw_sfc, const Scalar &thl_sfc,
-                                                       const Scalar &cldliq_sfc,
-                                                       const Scalar &qv_sfc, Scalar &ustar,
-                                                       Scalar &kbfs, Scalar &obklen) {
+KOKKOS_FUNCTION void Functions<S, D>::shoc_diag_obklen(
+    const Scalar &uw_sfc, const Scalar &vw_sfc, const Scalar &wthl_sfc,
+    const Scalar &wqw_sfc, const Scalar &thl_sfc, const Scalar &cldliq_sfc,
+    const Scalar &qv_sfc, Scalar &ustar, Scalar &kbfs, Scalar &obklen) {
   // Constants
   const auto cp        = C::CP;
   const auto lcond     = C::LatVap;
@@ -35,7 +33,7 @@ KOKKOS_FUNCTION void Functions<S, D>::shoc_diag_obklen(const Scalar &uw_sfc, con
   ustar                 = ekat::impl::max(ustar_min, ustar_val);
   kbfs                  = wthl_sfc + eps * th_sfc * wqw_sfc;
   const Scalar sign_val = (kbfs >= 0 ? 1e-10 : -1e-10);
-  obklen                = -thv_sfc * (ustar * ustar * ustar) / (ggr * vk * (kbfs + sign_val));
+  obklen = -thv_sfc * (ustar * ustar * ustar) / (ggr * vk * (kbfs + sign_val));
 }
 
 } // namespace shoc

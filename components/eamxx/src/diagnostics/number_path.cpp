@@ -24,23 +24,25 @@ NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
     m_qname = "qr";
     m_nname = "nr";
   } else {
-    EKAT_ERROR_MSG("Error! Invalid choice for 'NumberKind' in NumberPathDiagnostic.\n"
-                   "  - input value: " +
-                   m_kind +
-                   "\n"
-                   "  - valid values: Liq, Ice, Rain\n");
+    EKAT_ERROR_MSG(
+        "Error! Invalid choice for 'NumberKind' in NumberPathDiagnostic.\n"
+        "  - input value: " +
+        m_kind +
+        "\n"
+        "  - valid values: Liq, Ice, Rain\n");
   }
 }
 
-void NumberPathDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void NumberPathDiagnostic::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto m2 = pow(m, 2);
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
   auto scalar3d = grid->get_3d_scalar_layout(true);

@@ -61,8 +61,9 @@ protected:
   void add_grid(grid_ptr_type grid);
   void alias_grid(const std::string &grid_name, const std::string &grid_alias);
 
-  virtual remapper_ptr_type do_create_remapper(const grid_ptr_type from_grid,
-                                               const grid_ptr_type to_grid) const = 0;
+  virtual remapper_ptr_type
+  do_create_remapper(const grid_ptr_type from_grid,
+                     const grid_ptr_type to_grid) const = 0;
 
 private:
   grid_repo_type m_grids;
@@ -71,8 +72,9 @@ private:
 
 // A short name for the factory for grid managers
 using GridsManagerFactory =
-    ekat::Factory<GridsManager, ekat::CaseInsensitiveString, std::shared_ptr<GridsManager>,
-                  const ekat::Comm &, const ekat::ParameterList &>;
+    ekat::Factory<GridsManager, ekat::CaseInsensitiveString,
+                  std::shared_ptr<GridsManager>, const ekat::Comm &,
+                  const ekat::ParameterList &>;
 
 } // namespace scream
 

@@ -56,7 +56,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     Real u_wind[nlev] = {2, 1, 0, -1, -2};
     // Define meridional wind on nlev grid [m/s]
     Real v_wind[nlev] = {1, 2, 3, 4, 5};
-    // Define surface temperature [K] (value irrelevant, just make sure it's physical)
+    // Define surface temperature [K] (value irrelevant, just make sure it's
+    // physical)
     Real tabs[nlev] = {300, 300, 300, 300, 300};
     // Define thickness on the interface grid [m]
     Real dz_zi[nlevi] = {0, 100, 100, 100, 100, 50};
@@ -255,13 +256,14 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     };
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ShocTkeData cxx_data[] = {
         ShocTkeData(baseline_data[0]),
         ShocTkeData(baseline_data[1]),
@@ -285,14 +287,16 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ShocTkeData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(ShocTkeData);
       for (Int i = 0; i < num_runs; ++i) {
         ShocTkeData &d_baseline = baseline_data[i];
         ShocTkeData &d_cxx      = cxx_data[i];
         REQUIRE(d_baseline.total(d_baseline.tke) == d_cxx.total(d_cxx.tke));
         REQUIRE(d_baseline.total(d_baseline.tke) == d_cxx.total(d_cxx.tk));
         REQUIRE(d_baseline.total(d_baseline.tke) == d_cxx.total(d_cxx.tkh));
-        REQUIRE(d_baseline.total(d_baseline.tke) == d_cxx.total(d_cxx.isotropy));
+        REQUIRE(d_baseline.total(d_baseline.tke) ==
+                d_cxx.total(d_cxx.isotropy));
         for (Int k = 0; k < d_baseline.total(d_baseline.tke); ++k) {
           REQUIRE(d_baseline.tke[k] == d_cxx.tke[k]);
           REQUIRE(d_baseline.tk[k] == d_cxx.tk[k]);
@@ -316,15 +320,15 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
 namespace {
 
 TEST_CASE("shoc_tke_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocTke;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocTke;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocTke;
 
   TestStruct().run_bfb();
 }

@@ -30,8 +30,10 @@ using complex_view_2d = typename KT::template view_2d<Kokkos::complex<Real>>;
 using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
 
 // unmanaged views (for buffer and workspace manager)
-using uview_1d = typename ekat::template Unmanaged<typename KT::template view_1d<Real>>;
-using uview_2d = typename ekat::template Unmanaged<typename KT::template view_2d<Real>>;
+using uview_1d =
+    typename ekat::template Unmanaged<typename KT::template view_1d<Real>>;
+using uview_2d =
+    typename ekat::template Unmanaged<typename KT::template view_2d<Real>>;
 
 using PF = scream::PhysicsFunctions<DefaultDevice>;
 
@@ -129,7 +131,8 @@ void concat_2_strings(const char *s1, const char *s2, char *concatted) {
 }
 
 KOKKOS_INLINE_FUNCTION
-void concat_3_strings(const char *s1, const char *s2, const char *s3, char *concatted) {
+void concat_3_strings(const char *s1, const char *s2, const char *s3,
+                      char *concatted) {
   size_t len1 = gpu_strlen(s1);
   for (size_t i = 0; i < len1; ++i)
     concatted[i] = s1[i];
@@ -156,13 +159,15 @@ char *cld_aero_nmr_names(int mode) {
 
 KOKKOS_INLINE_FUNCTION
 char *int_aero_mmr_names(int mode, int species) {
-  static char int_aero_mmr_names_[num_aero_modes()][num_aero_species()][max_field_name_len()] = {};
+  static char int_aero_mmr_names_[num_aero_modes()][num_aero_species()]
+                                 [max_field_name_len()] = {};
   return int_aero_mmr_names_[mode][species];
 }
 
 KOKKOS_INLINE_FUNCTION
 char *cld_aero_mmr_names(int mode, int species) {
-  static char cld_aero_mmr_names_[num_aero_modes()][num_aero_species()][max_field_name_len()] = {};
+  static char cld_aero_mmr_names_[num_aero_modes()][num_aero_species()]
+                                 [max_field_name_len()] = {};
   return cld_aero_mmr_names_[mode][species];
 }
 
@@ -204,8 +209,8 @@ const char *int_aero_mmr_field_name(const int mode, const int species) {
   if (!int_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      concat_3_strings(aero_species_name(static_cast<int>(aero_id)), "_a", aero_mode_name(mode),
-                       int_aero_mmr_names(mode, species));
+      concat_3_strings(aero_species_name(static_cast<int>(aero_id)), "_a",
+                       aero_mode_name(mode), int_aero_mmr_names(mode, species));
     }
   }
   return const_cast<const char *>(int_aero_mmr_names(mode, species));
@@ -221,8 +226,8 @@ const char *cld_aero_mmr_field_name(const int mode, const int species) {
   if (!cld_aero_mmr_names(mode, species)[0]) {
     const auto aero_id = mam4::mode_aero_species(mode, species);
     if (aero_id != mam4::AeroId::None) {
-      concat_3_strings(aero_species_name(static_cast<int>(aero_id)), "_c", aero_mode_name(mode),
-                       cld_aero_mmr_names(mode, species));
+      concat_3_strings(aero_species_name(static_cast<int>(aero_id)), "_c",
+                       aero_mode_name(mode), cld_aero_mmr_names(mode, species));
     }
   }
   return const_cast<const char *>(cld_aero_mmr_names(mode, species));
@@ -238,32 +243,36 @@ const char *gas_mmr_field_name(const int gas) {
 // This type stores multi-column views related specifically to the wet
 // atmospheric state used by EAMxx.
 struct WetAtmosphere {
-  const_view_2d qv; // wet water vapor specific humidity [kg vapor / kg moist air]
+  const_view_2d
+      qv; // wet water vapor specific humidity [kg vapor / kg moist air]
   const_view_2d qc; // wet cloud liquid water mass mixing ratio [kg cloud
                     // water/kg moist air]
-  const_view_2d nc; // wet cloud liquid water number mixing ratio [# / kg moist air]
+  const_view_2d
+      nc; // wet cloud liquid water number mixing ratio [# / kg moist air]
   const_view_2d qi; // wet cloud ice water mass mixing ratio [kg cloud ice
                     // water / kg moist air]
-  const_view_2d ni; // wet cloud ice water number mixing ratio [# / kg moist air]
+  const_view_2d
+      ni; // wet cloud ice water number mixing ratio [# / kg moist air]
 };
 
 // This type stores multi-column views related to the dry atmospheric state
 // used by MAM.
 struct DryAtmosphere {
-  Real z_surf;           // height of bottom of atmosphere [m]
-  const_view_2d T_mid;   // temperature at grid midpoints [K]
-  const_view_2d p_mid;   // total pressure at grid midpoints [Pa]
-  view_2d qv;            // dry water vapor mixing ratio [kg vapor / kg dry air]
-  view_2d qc;            // dry cloud liquid water mass mixing ratio [kg cloud water/kg
-                         // dry air]
-  view_2d nc;            // dry cloud liquid water number mixing ratio [# / kg dry air]
-  view_2d qi;            // dry cloud ice water mass mixing ratio [kg cloud ice water / kg
-                         // dry air]
-  view_2d ni;            // dry cloud ice water number mixing ratio [# / kg dry air]
-  view_2d z_mid;         // height at layer midpoints [m]
-  view_2d z_iface;       // height at layer interfaces [m]
-  view_2d dz;            // layer thickness [m]
-  const_view_2d p_del;   // hydrostatic "pressure thickness" at grid interfaces [Pa]
+  Real z_surf;         // height of bottom of atmosphere [m]
+  const_view_2d T_mid; // temperature at grid midpoints [K]
+  const_view_2d p_mid; // total pressure at grid midpoints [Pa]
+  view_2d qv;          // dry water vapor mixing ratio [kg vapor / kg dry air]
+  view_2d qc; // dry cloud liquid water mass mixing ratio [kg cloud water/kg
+              // dry air]
+  view_2d nc; // dry cloud liquid water number mixing ratio [# / kg dry air]
+  view_2d qi; // dry cloud ice water mass mixing ratio [kg cloud ice water / kg
+              // dry air]
+  view_2d ni; // dry cloud ice water number mixing ratio [# / kg dry air]
+  view_2d z_mid;   // height at layer midpoints [m]
+  view_2d z_iface; // height at layer interfaces [m]
+  view_2d dz;      // layer thickness [m]
+  const_view_2d
+      p_del; // hydrostatic "pressure thickness" at grid interfaces [Pa]
   const_view_2d p_int;   // total pressure at grid interfaces [Pa]
   const_view_2d cldfrac; // cloud fraction [-]
   view_2d w_updraft;     // updraft velocity [m/s]
@@ -280,14 +289,16 @@ struct DryAtmosphere {
 // ratio) in the same way as they are in mam4xx, and indexed using
 // mam4::AeroConfig.
 struct AerosolState {
-  view_2d int_aero_nmr[num_aero_modes()];                     // modal interstitial aerosol number
-                                                              // mixing ratios [# / kg air]
-  view_2d cld_aero_nmr[num_aero_modes()];                     // modal cloudborne aerosol number
-                                                              // mixing ratios [# / kg air]
-  view_2d int_aero_mmr[num_aero_modes()][num_aero_species()]; // interstitial aerosol mass mixing
-                                                              // ratios [kg aerosol / kg air]
-  view_2d cld_aero_mmr[num_aero_modes()][num_aero_species()]; // cloudborne aerosol mass mixing
-                                                              // ratios [kg aerosol / kg air]
+  view_2d int_aero_nmr[num_aero_modes()]; // modal interstitial aerosol number
+                                          // mixing ratios [# / kg air]
+  view_2d cld_aero_nmr[num_aero_modes()]; // modal cloudborne aerosol number
+                                          // mixing ratios [# / kg air]
+  view_2d int_aero_mmr[num_aero_modes()]
+                      [num_aero_species()]; // interstitial aerosol mass mixing
+                                            // ratios [kg aerosol / kg air]
+  view_2d cld_aero_mmr[num_aero_modes()]
+                      [num_aero_species()]; // cloudborne aerosol mass mixing
+                                            // ratios [kg aerosol / kg air]
   view_2d gas_mmr[num_aero_gases()]; // gas mass mixing ratios [kg gas / kg air]
 };
 
@@ -304,9 +315,9 @@ struct Buffer {
   static constexpr int max_num_2d_scratch = 201;
 
   // number of local fields stored at column midpoints
-  static constexpr int min_num_2d_mid = 8 + // number of dry atm fields
-                                        2 * (num_aero_modes() + num_aero_tracers()) +
-                                        num_aero_gases();
+  static constexpr int min_num_2d_mid =
+      8 + // number of dry atm fields
+      2 * (num_aero_modes() + num_aero_tracers()) + num_aero_gases();
   // +
   // num_2d_scratch;
   int num_2d_scratch{0};
@@ -364,28 +375,31 @@ struct Buffer {
 
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
-inline size_t buffer_size(const int ncol, const int nlev, const int num_2d_scratch,
+inline size_t buffer_size(const int ncol, const int nlev,
+                          const int num_2d_scratch,
                           const int len_temporary_views) {
   const int num_2d_mid = Buffer::min_num_2d_mid + num_2d_scratch;
-  return sizeof(Real) * (num_2d_mid * ncol * nlev + Buffer::num_2d_iface * ncol * (nlev + 1)) +
+  return sizeof(Real) * (num_2d_mid * ncol * nlev +
+                         Buffer::num_2d_iface * ncol * (nlev + 1)) +
          sizeof(Real) * len_temporary_views;
 }
 
 // ON HOST, initializeѕ the Buffer type with sufficient memory to store
 // intermediate (dry) quantities on the given number of columns with the given
 // number of vertical levels. Returns the number of bytes allocated.
-inline size_t init_buffer(const ATMBufferManager &buffer_manager, const int ncol, const int nlev,
-                          Buffer &buffer) {
+inline size_t init_buffer(const ATMBufferManager &buffer_manager,
+                          const int ncol, const int nlev, Buffer &buffer) {
   Real *mem = reinterpret_cast<Real *>(buffer_manager.get_memory());
 
   // set view pointers for midpoint fields
   uview_2d *view_2d_min_mid_ptrs[Buffer::min_num_2d_mid] = {
-      &buffer.z_mid, &buffer.dz, &buffer.qv_dry, &buffer.qc_dry, &buffer.nc_dry, &buffer.qi_dry,
-      &buffer.ni_dry, &buffer.w_updraft,
+      &buffer.z_mid, &buffer.dz, &buffer.qv_dry, &buffer.qc_dry, &buffer.nc_dry,
+      &buffer.qi_dry, &buffer.ni_dry, &buffer.w_updraft,
 
       // aerosol modes
-      &buffer.dry_int_aero_nmr[0], &buffer.dry_int_aero_nmr[1], &buffer.dry_int_aero_nmr[2],
-      &buffer.dry_int_aero_nmr[3], &buffer.dry_cld_aero_nmr[0], &buffer.dry_cld_aero_nmr[1],
+      &buffer.dry_int_aero_nmr[0], &buffer.dry_int_aero_nmr[1],
+      &buffer.dry_int_aero_nmr[2], &buffer.dry_int_aero_nmr[3],
+      &buffer.dry_cld_aero_nmr[0], &buffer.dry_cld_aero_nmr[1],
       &buffer.dry_cld_aero_nmr[2], &buffer.dry_cld_aero_nmr[3],
 
       // the following requires knowledge of mam4's mode-species layout
@@ -469,16 +483,22 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager, const int ncol
 // column with the given index. This object can be provided to mam4xx for the
 // column.
 KOKKOS_INLINE_FUNCTION
-haero::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm, const int column_index) {
+haero::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm,
+                                        const int column_index) {
   EKAT_KERNEL_ASSERT_MSG(dry_atm.T_mid.data() != nullptr,
                          "T_mid not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_mid.data() != nullptr,
                          "p_mid not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.qv.data() != nullptr, "qv not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.qc.data() != nullptr, "qc not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.nc.data() != nullptr, "nc not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.qi.data() != nullptr, "qi not defined for dry atmosphere state!");
-  EKAT_KERNEL_ASSERT_MSG(dry_atm.ni.data() != nullptr, "ni not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.qv.data() != nullptr,
+                         "qv not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.qc.data() != nullptr,
+                         "qc not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.nc.data() != nullptr,
+                         "nc not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.qi.data() != nullptr,
+                         "qi not defined for dry atmosphere state!");
+  EKAT_KERNEL_ASSERT_MSG(dry_atm.ni.data() != nullptr,
+                         "ni not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.z_mid.data() != nullptr,
                          "z_mid not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del.data() != nullptr,
@@ -489,14 +509,20 @@ haero::Atmosphere atmosphere_for_column(const DryAtmosphere &dry_atm, const int 
                          "cldfrac not defined for dry atmosphere state!");
   EKAT_KERNEL_ASSERT_MSG(dry_atm.w_updraft.data() != nullptr,
                          "w_updraft not defined for dry atmosphere state!");
-  return haero::Atmosphere(
-      mam4::nlev, ekat::subview(dry_atm.T_mid, column_index),
-      ekat::subview(dry_atm.p_mid, column_index), ekat::subview(dry_atm.qv, column_index),
-      ekat::subview(dry_atm.qc, column_index), ekat::subview(dry_atm.nc, column_index),
-      ekat::subview(dry_atm.qi, column_index), ekat::subview(dry_atm.ni, column_index),
-      ekat::subview(dry_atm.z_mid, column_index), ekat::subview(dry_atm.p_del, column_index),
-      ekat::subview(dry_atm.p_int, column_index), ekat::subview(dry_atm.cldfrac, column_index),
-      ekat::subview(dry_atm.w_updraft, column_index), dry_atm.pblh(column_index));
+  return haero::Atmosphere(mam4::nlev,
+                           ekat::subview(dry_atm.T_mid, column_index),
+                           ekat::subview(dry_atm.p_mid, column_index),
+                           ekat::subview(dry_atm.qv, column_index),
+                           ekat::subview(dry_atm.qc, column_index),
+                           ekat::subview(dry_atm.nc, column_index),
+                           ekat::subview(dry_atm.qi, column_index),
+                           ekat::subview(dry_atm.ni, column_index),
+                           ekat::subview(dry_atm.z_mid, column_index),
+                           ekat::subview(dry_atm.p_del, column_index),
+                           ekat::subview(dry_atm.p_int, column_index),
+                           ekat::subview(dry_atm.cldfrac, column_index),
+                           ekat::subview(dry_atm.w_updraft, column_index),
+                           dry_atm.pblh(column_index));
 }
 
 // Given an AerosolState with views for dry aerosol quantities, creates a
@@ -514,7 +540,8 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState &dry_aero,
     progs.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.int_aero_mmr[m][a].data()) {
-        progs.q_aero_i[m][a] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+        progs.q_aero_i[m][a] =
+            ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
       }
     }
   }
@@ -531,8 +558,9 @@ mam4::Prognostics interstitial_aerosols_for_column(const AerosolState &dry_aero,
 // ONLY INTERSTITIAL AEROSOL VIEWS DEFINED. This object can be provided to
 // mam4xx for the column.
 KOKKOS_INLINE_FUNCTION
-mam4::Tendencies interstitial_aerosols_tendencies_for_column(const AerosolState &dry_aero,
-                                                             const int column_index) {
+mam4::Tendencies
+interstitial_aerosols_tendencies_for_column(const AerosolState &dry_aero,
+                                            const int column_index) {
   constexpr int nlev = mam4::nlev;
   mam4::Tendencies tends(nlev);
   for (int m = 0; m < num_aero_modes(); ++m) {
@@ -541,7 +569,8 @@ mam4::Tendencies interstitial_aerosols_tendencies_for_column(const AerosolState 
     tends.n_mode_i[m] = ekat::subview(dry_aero.int_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.int_aero_mmr[m][a].data()) {
-        tends.q_aero_i[m][a] = ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
+        tends.q_aero_i[m][a] =
+            ekat::subview(dry_aero.int_aero_mmr[m][a], column_index);
       }
     }
   }
@@ -557,7 +586,8 @@ mam4::Tendencies interstitial_aerosols_tendencies_for_column(const AerosolState 
 // with the given index with interstitial and cloudborne aerosol views defined.
 // This object can be provided to mam4xx for the column.
 KOKKOS_INLINE_FUNCTION
-mam4::Prognostics aerosols_for_column(const AerosolState &dry_aero, const int column_index) {
+mam4::Prognostics aerosols_for_column(const AerosolState &dry_aero,
+                                      const int column_index) {
   auto progs = interstitial_aerosols_for_column(dry_aero, column_index);
   for (int m = 0; m < num_aero_modes(); ++m) {
     EKAT_KERNEL_ASSERT_MSG(dry_aero.cld_aero_nmr[m].data(),
@@ -565,7 +595,8 @@ mam4::Prognostics aerosols_for_column(const AerosolState &dry_aero, const int co
     progs.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
-        progs.q_aero_c[m][a] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
+        progs.q_aero_c[m][a] =
+            ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
       }
     }
   }
@@ -577,14 +608,17 @@ mam4::Prognostics aerosols_for_column(const AerosolState &dry_aero, const int co
 KOKKOS_INLINE_FUNCTION
 mam4::Tendencies aerosols_tendencies_for_column(const AerosolState &dry_aero,
                                                 const int column_index) {
-  auto tends = interstitial_aerosols_tendencies_for_column(dry_aero, column_index);
+  auto tends =
+      interstitial_aerosols_tendencies_for_column(dry_aero, column_index);
   for (int m = 0; m < num_aero_modes(); ++m) {
-    EKAT_KERNEL_ASSERT_MSG(dry_aero.cld_aero_nmr[m].data(),
-                           "Tendencies : dry_cld_aero_nmr not defined for aerosol state!");
+    EKAT_KERNEL_ASSERT_MSG(
+        dry_aero.cld_aero_nmr[m].data(),
+        "Tendencies : dry_cld_aero_nmr not defined for aerosol state!");
     tends.n_mode_c[m] = ekat::subview(dry_aero.cld_aero_nmr[m], column_index);
     for (int a = 0; a < num_aero_species(); ++a) {
       if (dry_aero.cld_aero_mmr[m][a].data()) {
-        tends.q_aero_c[m][a] = ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
+        tends.q_aero_c[m][a] =
+            ekat::subview(dry_aero.cld_aero_mmr[m][a], column_index);
       }
     }
   }
@@ -594,10 +628,12 @@ mam4::Tendencies aerosols_tendencies_for_column(const AerosolState &dry_aero,
 // team to compute vertical layer heights and interfaces for the column with
 // the given index.
 KOKKOS_INLINE_FUNCTION
-void compute_vertical_layer_heights(const Team &team, const DryAtmosphere &dry_atm,
+void compute_vertical_layer_heights(const Team &team,
+                                    const DryAtmosphere &dry_atm,
                                     const int column_index) {
-  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
-                         "Given column index does not correspond to given team!");
+  EKAT_KERNEL_ASSERT_MSG(
+      column_index == team.league_rank(),
+      "Given column index does not correspond to given team!");
 
   // outputs
   const auto dz      = ekat::subview(dry_atm.dz, column_index);
@@ -617,7 +653,7 @@ void compute_vertical_layer_heights(const Team &team, const DryAtmosphere &dry_a
   EKAT_KERNEL_ASSERT_MSG(dry_atm.z_surf == 0, "dry_atm.z_surf must be zero");
   PF::calculate_z_int(team, mam4::nlev, dz, dry_atm.z_surf, // inputs
                       z_iface);                             // output
-  team.team_barrier();                           // likely necessary to have z_iface up to date
+  team.team_barrier(); // likely necessary to have z_iface up to date
   PF::calculate_z_mid(team, mam4::nlev, z_iface, // input
                       z_mid);                    // output
 }
@@ -627,17 +663,22 @@ void compute_vertical_layer_heights(const Team &team, const DryAtmosphere &dry_a
 // index.
 KOKKOS_INLINE_FUNCTION
 void compute_updraft_velocities(const Team &team, const WetAtmosphere &wet_atm,
-                                const DryAtmosphere &dry_atm, const int column_index) {
-  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
-                         "Given column index does not correspond to given team!");
+                                const DryAtmosphere &dry_atm,
+                                const int column_index) {
+  EKAT_KERNEL_ASSERT_MSG(
+      column_index == team.league_rank(),
+      "Given column index does not correspond to given team!");
 
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
-    dry_atm.dz(i, k)        = PF::calculate_dz(dry_atm.p_del(i, k), dry_atm.p_mid(i, k),
-                                               dry_atm.T_mid(i, k), wet_atm.qv(i, k));
-    const auto rho          = PF::calculate_density(dry_atm.p_del(i, k), dry_atm.dz(i, k));
-    dry_atm.w_updraft(i, k) = PF::calculate_vertical_velocity(dry_atm.omega(i, k), rho);
+    dry_atm.dz(i, k) =
+        PF::calculate_dz(dry_atm.p_del(i, k), dry_atm.p_mid(i, k),
+                         dry_atm.T_mid(i, k), wet_atm.qv(i, k));
+    const auto rho =
+        PF::calculate_density(dry_atm.p_del(i, k), dry_atm.dz(i, k));
+    dry_atm.w_updraft(i, k) =
+        PF::calculate_vertical_velocity(dry_atm.omega(i, k), rho);
   });
 }
 
@@ -646,19 +687,26 @@ void compute_updraft_velocities(const Team &team, const WetAtmosphere &wet_atm,
 // column with the given index.
 KOKKOS_INLINE_FUNCTION
 void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
-                               const DryAtmosphere &dry_atm, const int column_index) {
-  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
-                         "Given column index does not correspond to given team!");
+                               const DryAtmosphere &dry_atm,
+                               const int column_index) {
+  EKAT_KERNEL_ASSERT_MSG(
+      column_index == team.league_rank(),
+      "Given column index does not correspond to given team!");
 
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
     const auto qv_ik = wet_atm.qv(i, k);
-    dry_atm.qv(i, k) = PF::calculate_drymmr_from_wetmmr(wet_atm.qv(i, k), qv_ik);
-    dry_atm.qc(i, k) = PF::calculate_drymmr_from_wetmmr(wet_atm.qc(i, k), qv_ik);
-    dry_atm.nc(i, k) = PF::calculate_drymmr_from_wetmmr(wet_atm.nc(i, k), qv_ik);
-    dry_atm.qi(i, k) = PF::calculate_drymmr_from_wetmmr(wet_atm.qi(i, k), qv_ik);
-    dry_atm.ni(i, k) = PF::calculate_drymmr_from_wetmmr(wet_atm.ni(i, k), qv_ik);
+    dry_atm.qv(i, k) =
+        PF::calculate_drymmr_from_wetmmr(wet_atm.qv(i, k), qv_ik);
+    dry_atm.qc(i, k) =
+        PF::calculate_drymmr_from_wetmmr(wet_atm.qc(i, k), qv_ik);
+    dry_atm.nc(i, k) =
+        PF::calculate_drymmr_from_wetmmr(wet_atm.nc(i, k), qv_ik);
+    dry_atm.qi(i, k) =
+        PF::calculate_drymmr_from_wetmmr(wet_atm.qi(i, k), qv_ik);
+    dry_atm.ni(i, k) =
+        PF::calculate_drymmr_from_wetmmr(wet_atm.ni(i, k), qv_ik);
   });
 }
 
@@ -667,30 +715,32 @@ void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
 // aerosol state for the column with the given index.
 KOKKOS_INLINE_FUNCTION
 void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
-                               const AerosolState &wet_aero, const AerosolState &dry_aero,
+                               const AerosolState &wet_aero,
+                               const AerosolState &dry_aero,
                                const int column_index) {
-  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
-                         "Given column index does not correspond to given team!");
+  EKAT_KERNEL_ASSERT_MSG(
+      column_index == team.league_rank(),
+      "Given column index does not correspond to given team!");
 
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
     const auto qv_ik = wet_atm.qv(i, k);
     for (int m = 0; m < num_aero_modes(); ++m) {
-      dry_aero.int_aero_nmr[m](i, k) =
-          PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_nmr[m](i, k), qv_ik);
+      dry_aero.int_aero_nmr[m](i, k) = PF::calculate_drymmr_from_wetmmr(
+          wet_aero.int_aero_nmr[m](i, k), qv_ik);
       if (dry_aero.cld_aero_nmr[m].data()) {
-        dry_aero.cld_aero_nmr[m](i, k) =
-            PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_nmr[m](i, k), qv_ik);
+        dry_aero.cld_aero_nmr[m](i, k) = PF::calculate_drymmr_from_wetmmr(
+            wet_aero.cld_aero_nmr[m](i, k), qv_ik);
       }
       for (int a = 0; a < num_aero_species(); ++a) {
         if (dry_aero.int_aero_mmr[m][a].data()) {
-          dry_aero.int_aero_mmr[m][a](i, k) =
-              PF::calculate_drymmr_from_wetmmr(wet_aero.int_aero_mmr[m][a](i, k), qv_ik);
+          dry_aero.int_aero_mmr[m][a](i, k) = PF::calculate_drymmr_from_wetmmr(
+              wet_aero.int_aero_mmr[m][a](i, k), qv_ik);
         }
         if (dry_aero.cld_aero_mmr[m][a].data()) {
-          dry_aero.cld_aero_mmr[m][a](i, k) =
-              PF::calculate_drymmr_from_wetmmr(wet_aero.cld_aero_mmr[m][a](i, k), qv_ik);
+          dry_aero.cld_aero_mmr[m][a](i, k) = PF::calculate_drymmr_from_wetmmr(
+              wet_aero.cld_aero_mmr[m][a](i, k), qv_ik);
         }
       }
     }
@@ -706,30 +756,32 @@ void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
 // aerosol state for the column with the given index.
 KOKKOS_INLINE_FUNCTION
 void compute_wet_mixing_ratios(const Team &team, const DryAtmosphere &dry_atm,
-                               const AerosolState &dry_aero, const AerosolState &wet_aero,
+                               const AerosolState &dry_aero,
+                               const AerosolState &wet_aero,
                                const int column_index) {
-  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
-                         "Given column index does not correspond to given team!");
+  EKAT_KERNEL_ASSERT_MSG(
+      column_index == team.league_rank(),
+      "Given column index does not correspond to given team!");
 
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
     const auto qv_ik = dry_atm.qv(i, k);
     for (int m = 0; m < num_aero_modes(); ++m) {
-      wet_aero.int_aero_nmr[m](i, k) =
-          PF::calculate_wetmmr_from_drymmr(dry_aero.int_aero_nmr[m](i, k), qv_ik);
+      wet_aero.int_aero_nmr[m](i, k) = PF::calculate_wetmmr_from_drymmr(
+          dry_aero.int_aero_nmr[m](i, k), qv_ik);
       if (wet_aero.cld_aero_nmr[m].data()) {
-        wet_aero.cld_aero_nmr[m](i, k) =
-            PF::calculate_wetmmr_from_drymmr(dry_aero.cld_aero_nmr[m](i, k), qv_ik);
+        wet_aero.cld_aero_nmr[m](i, k) = PF::calculate_wetmmr_from_drymmr(
+            dry_aero.cld_aero_nmr[m](i, k), qv_ik);
       }
       for (int a = 0; a < num_aero_species(); ++a) {
         if (wet_aero.int_aero_mmr[m][a].data()) {
-          wet_aero.int_aero_mmr[m][a](i, k) =
-              PF::calculate_wetmmr_from_drymmr(dry_aero.int_aero_mmr[m][a](i, k), qv_ik);
+          wet_aero.int_aero_mmr[m][a](i, k) = PF::calculate_wetmmr_from_drymmr(
+              dry_aero.int_aero_mmr[m][a](i, k), qv_ik);
         }
         if (wet_aero.cld_aero_mmr[m][a].data()) {
-          wet_aero.cld_aero_mmr[m][a](i, k) =
-              PF::calculate_wetmmr_from_drymmr(dry_aero.cld_aero_mmr[m][a](i, k), qv_ik);
+          wet_aero.cld_aero_mmr[m][a](i, k) = PF::calculate_wetmmr_from_drymmr(
+              dry_aero.cld_aero_mmr[m][a](i, k), qv_ik);
         }
       }
     }
@@ -744,54 +796,63 @@ void compute_wet_mixing_ratios(const Team &team, const DryAtmosphere &dry_atm,
 KOKKOS_INLINE_FUNCTION
 void set_min_background_mmr(const Team &team, const AerosolState &dry_aero,
                             const int column_index) {
-  EKAT_KERNEL_ASSERT_MSG(column_index == team.league_rank(),
-                         "Given column index does not correspond to given team!");
+  EKAT_KERNEL_ASSERT_MSG(
+      column_index == team.league_rank(),
+      "Given column index does not correspond to given team!");
 
   // Minimum background value for the interstitial aerosols
   constexpr Real INTERSTITIAL_AERO_MIN_VAL = 1e-36;
 
   constexpr int nlev = mam4::nlev;
   const int icol     = column_index;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int klev) {
-    for (int imode = 0; imode < num_aero_modes(); ++imode) {
-      dry_aero.int_aero_nmr[imode](icol, klev) =
-          haero::max(dry_aero.int_aero_nmr[imode](icol, klev), INTERSTITIAL_AERO_MIN_VAL);
-      for (int ispec = 0; ispec < num_aero_species(); ++ispec) {
-        if (dry_aero.int_aero_mmr[imode][ispec].data()) {
-          dry_aero.int_aero_mmr[imode][ispec](icol, klev) = haero::max(
-              dry_aero.int_aero_mmr[imode][ispec](icol, klev), INTERSTITIAL_AERO_MIN_VAL);
-        }
-      } // ispec
-    } // imode
-  });
+  Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, nlev), [&](const int klev) {
+        for (int imode = 0; imode < num_aero_modes(); ++imode) {
+          dry_aero.int_aero_nmr[imode](icol, klev) =
+              haero::max(dry_aero.int_aero_nmr[imode](icol, klev),
+                         INTERSTITIAL_AERO_MIN_VAL);
+          for (int ispec = 0; ispec < num_aero_species(); ++ispec) {
+            if (dry_aero.int_aero_mmr[imode][ispec].data()) {
+              dry_aero.int_aero_mmr[imode][ispec](icol, klev) =
+                  haero::max(dry_aero.int_aero_mmr[imode][ispec](icol, klev),
+                             INTERSTITIAL_AERO_MIN_VAL);
+            }
+          } // ispec
+        } // imode
+      });
 } // set_min_background_mmr
 
 // Computes the reciprocal of pseudo density for a column
-inline void compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
-                                             const_view_2d pdel, const int nlev,
-                                             // output
-                                             view_2d rpdel) {
+inline void
+compute_recipical_pseudo_density(haero::ThreadTeamPolicy team_policy,
+                                 const_view_2d pdel, const int nlev,
+                                 // output
+                                 view_2d rpdel) {
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
-          EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk), "Error: pdel should be > 0.\n");
-          rpdel(icol, kk) = 1 / pdel(icol, kk);
-        });
+        Kokkos::parallel_for(
+            Kokkos::TeamVectorRange(team, 0, nlev), [&](int kk) {
+              EKAT_KERNEL_ASSERT_MSG(0 < pdel(icol, kk),
+                                     "Error: pdel should be > 0.\n");
+              rpdel(icol, kk) = 1 / pdel(icol, kk);
+            });
       });
 }
 // Scream (or EAMxx) can sometimes extend views beyond model levels (nlev) as it
 // uses "packs". Following function copies a 2d view till model levels
-inline void copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, // inputs
-                                const_view_2d &inp_view,             // input view to copy
-                                const int dim,       // dimension till view should be copied
-                                view_2d &out_view) { // output view
+inline void
+copy_view_lev_slice(haero::ThreadTeamPolicy team_policy, // inputs
+                    const_view_2d &inp_view,             // input view to copy
+                    const int dim,       // dimension till view should be copied
+                    view_2d &out_view) { // output view
 
   Kokkos::parallel_for(
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim),
-                             [&](int kk) { out_view(icol, kk) = inp_view(icol, kk); });
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, dim), [&](int kk) {
+          out_view(icol, kk) = inp_view(icol, kk);
+        });
       });
 }
 

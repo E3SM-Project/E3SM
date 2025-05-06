@@ -21,7 +21,8 @@ namespace unit_test {
  * Unit-tests for p3 ice table functions.
  */
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
 
   void run_cloud_bfb() {
     // Read in tables
@@ -30,22 +31,30 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
     view_2d_table revap_table_vals;
     view_1d_table mu_r_table_vals;
     view_dnu_table dnu;
-    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals,
-                                 dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals,
+                                 mu_r_table_vals, dnu);
 
     // Load some lookup inputs, need at least one per pack value
     GetCloudDsd2Data gcdd[max_pack_size] = {
-        {0.998086E-06, 0.114746E+01, 0.100000E+01}, {0.292481E-07, 0.758028E+00, 0.100000E+01},
-        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.510000E-02, 0.980946E+00, 0.100000E+01},
+        {0.998086E-06, 0.114746E+01, 0.100000E+01},
+        {0.292481E-07, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01},
+        {0.510000E-02, 0.980946E+00, 0.100000E+01},
 
-        {0.998086E-06, 0.114746E+01, 0.100000E+01}, {0.0, 0.758028E+00, 0.100000E+01},
-        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.0, 0.980946E+00, 0.100000E+01},
+        {0.998086E-06, 0.114746E+01, 0.100000E+01},
+        {0.0, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01},
+        {0.0, 0.980946E+00, 0.100000E+01},
 
-        {0.000000E+00, 1.144941E+00, 1.000000E+00}, {0.292481E-07, 0.758028E+00, 0.100000E+01},
-        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.510000E-02, 0.980946E+00, 0.100000E+01},
+        {0.000000E+00, 1.144941E+00, 1.000000E+00},
+        {0.292481E-07, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01},
+        {0.510000E-02, 0.980946E+00, 0.100000E+01},
 
-        {0.998086E-06, 0.114746E+01, 0.100000E+01}, {0.292481E-07, 0.758028E+00, 0.100000E+01},
-        {0.510000E-02, 0.970269E+00, 0.100000E+01}, {0.510000E-02, 0.980946E+00, 0.100000E+01}};
+        {0.998086E-06, 0.114746E+01, 0.100000E+01},
+        {0.292481E-07, 0.758028E+00, 0.100000E+01},
+        {0.510000E-02, 0.970269E+00, 0.100000E+01},
+        {0.510000E-02, 0.980946E+00, 0.100000E+01}};
 
     // Sync to device
     view_1d<GetCloudDsd2Data> gcdd_device("gcdd", max_pack_size);
@@ -74,7 +83,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
           }
 
           Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
-          Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1);
+          Functions::get_cloud_dsd2(qc, nc, mu_c, rho, nu, dnu, lamc, cdist,
+                                    cdist1);
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -153,8 +163,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
           }
 
           Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
-          Functions::get_rain_dsd2(qr, nr, mu_r, lamr,
-                                   p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::get_rain_dsd2(
+              qr, nr, mu_r, lamr,
+              p3::Functions<Real, DefaultDevice>::P3Runtime());
           Functions::get_cdistr_logn0r(qr, nr, mu_r, lamr, cdistr, logn0r);
 
           // Copy results back into views
@@ -198,7 +209,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::
 namespace {
 
 TEST_CASE("p3_cloud_dsd2", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestDsd2;
 
   T t;
   t.run_cloud_phys();
@@ -206,7 +218,8 @@ TEST_CASE("p3_cloud_dsd2", "[p3_functions]") {
 }
 
 TEST_CASE("p3_rain_dsd2", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDsd2;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestDsd2;
 
   T t;
   t.run_rain_phys();

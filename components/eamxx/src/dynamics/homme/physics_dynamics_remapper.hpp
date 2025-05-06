@@ -21,22 +21,26 @@ public:
   using device_type = typename Field::device_t;
   using KT          = KokkosTypes<device_type>;
 
-  template <typename T, int N> using view_Nd = typename KT::template view_ND<T, N>;
-  template <typename T> using view_1d        = view_Nd<T, 1>;
+  template <typename T, int N>
+  using view_Nd                       = typename KT::template view_ND<T, N>;
+  template <typename T> using view_1d = view_Nd<T, 1>;
 
   using pack_type       = ekat::Pack<Real, SCREAM_PACK_SIZE>;
   using small_pack_type = ekat::Pack<Real, SCREAM_SMALL_PACK_SIZE>;
 
-  PhysicsDynamicsRemapper(const grid_ptr_type &phys_grid, const grid_ptr_type &dyn_grid);
+  PhysicsDynamicsRemapper(const grid_ptr_type &phys_grid,
+                          const grid_ptr_type &dyn_grid);
 
   ~PhysicsDynamicsRemapper() = default;
 
-  bool compatible_layouts(const FieldLayout &src, const FieldLayout &tgt) const override {
+  bool compatible_layouts(const FieldLayout &src,
+                          const FieldLayout &tgt) const override {
     return src.type() == tgt.type();
   }
 
   bool is_valid_tgt_layout(const FieldLayout &layout) const override {
-    // We don't want fields with TimeLevel in it. Just subview the fields instead
+    // We don't want fields with TimeLevel in it. Just subview the fields
+    // instead
     return AbstractRemapper::is_valid_tgt_layout(layout) and
            not ekat::contains(layout.tags(), FieldTag::TimeLevel);
   }
@@ -59,15 +63,16 @@ protected:
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
-  // These structs and function should be morally private, but CUDA complains that
-  // they cannot be private/protected
+  // These structs and function should be morally private, but CUDA complains
+  // that they cannot be private/protected
 #endif
   void create_p2d_map();
 
   enum AllocPropType : int { PackAlloc = 0, SmallPackAlloc = 1, RealAlloc = 2 };
 
   // A container structure to hold the physically-shaped views for the fields.
-  // Notice that only one of the vNd will be set, while the others will be empty.
+  // Notice that only one of the vNd will be set, while the others will be
+  // empty.
   template <typename T> struct ViewsContainer {
     view_Nd<T, 1> v1d;
     view_Nd<T, 2> v2d;
@@ -99,7 +104,8 @@ protected:
   //       should have a const value type. But the code is a bit tedious,
   //       so we'll just force to call this as pack_view<const T>(v).
   template <typename NewValueT, typename OldViewT>
-  KOKKOS_INLINE_FUNCTION view_Nd<NewValueT, OldViewT::rank> pack_view(const OldViewT &v) const {
+  KOKKOS_INLINE_FUNCTION view_Nd<NewValueT, OldViewT::rank>
+  pack_view(const OldViewT &v) const {
     constexpr int N = OldViewT::rank;
     Kokkos::LayoutRight kl;
     for (int i = 0; i < N; ++i) {
@@ -123,7 +129,8 @@ protected:
   view_1d<Int> m_layout;
   view_1d<Int> m_pack_alloc_property;
 
-  // Only meaningful for 3d fields. Set to -1 for 2d fields, in case wrongfully used
+  // Only meaningful for 3d fields. Set to -1 for 2d fields, in case wrongfully
+  // used
   view_1d<Int> m_num_levels;
 
   // List of phys/dyn fields that are subfields of other fields.
@@ -135,10 +142,12 @@ protected:
 
   void initialize_device_variables();
 
-  bool subfields_info_has_changed(const std::map<int, SubviewInfo> &subfield_info,
-                                  const std::vector<Field> &fields) const;
+  bool
+  subfields_info_has_changed(const std::map<int, SubviewInfo> &subfield_info,
+                             const std::vector<Field> &fields) const;
   void update_subfields_views(const std::map<int, SubviewInfo> &subfield_info,
-                              const ViewsRepo &repo, const std::vector<Field> &fields) const;
+                              const ViewsRepo &repo,
+                              const std::vector<Field> &fields) const;
 
   // Remap methods
   void remap_fwd_impl() override;
@@ -150,12 +159,14 @@ protected:
   template <typename ScalarT, typename MT>
   KOKKOS_FUNCTION void set_dyn_to_zero(const MT &team) const;
 
-  template <typename MT> KOKKOS_FUNCTION void local_remap_fwd_2d(const MT &team) const;
+  template <typename MT>
+  KOKKOS_FUNCTION void local_remap_fwd_2d(const MT &team) const;
 
   template <typename ScalarT, typename MT>
   KOKKOS_FUNCTION void local_remap_fwd_3d(const MT &team) const;
 
-  template <typename MT> KOKKOS_FUNCTION void local_remap_bwd_2d(const MT &team) const;
+  template <typename MT>
+  KOKKOS_FUNCTION void local_remap_bwd_2d(const MT &team) const;
 
   template <typename ScalarT, typename MT>
   KOKKOS_FUNCTION void local_remap_bwd_3d(const MT &team) const;
@@ -165,9 +176,11 @@ public:
   struct RemapBwdTag {};
 
   template <typename MT>
-  KOKKOS_INLINE_FUNCTION void operator()(const RemapFwdTag &, const MT &team) const;
+  KOKKOS_INLINE_FUNCTION void operator()(const RemapFwdTag &,
+                                         const MT &team) const;
   template <typename MT>
-  KOKKOS_INLINE_FUNCTION void operator()(const RemapBwdTag &, const MT &team) const;
+  KOKKOS_INLINE_FUNCTION void operator()(const RemapBwdTag &,
+                                         const MT &team) const;
 };
 
 } // namespace scream

@@ -8,13 +8,15 @@ AtmosphereDiagnostic::AtmosphereDiagnostic(const ekat::Comm &comm,
   // Nothing to do here
 }
 
-// Function to retrieve the diagnostic output which is stored in m_diagnostic_output
+// Function to retrieve the diagnostic output which is stored in
+// m_diagnostic_output
 Field AtmosphereDiagnostic::get_diagnostic() const {
-  EKAT_REQUIRE_MSG(
-      m_diagnostic_output.is_allocated(),
-      "Error! Getting a diagnostic field before it is allocated is suspicious at best.\n"
-      "       We chose to throw an error, but if this is a legit use, please, contact "
-      "developers.\n");
+  EKAT_REQUIRE_MSG(m_diagnostic_output.is_allocated(),
+                   "Error! Getting a diagnostic field before it is allocated "
+                   "is suspicious at best.\n"
+                   "       We chose to throw an error, but if this is a legit "
+                   "use, please, contact "
+                   "developers.\n");
   return m_diagnostic_output;
 }
 
@@ -34,9 +36,10 @@ void AtmosphereDiagnostic::compute_diagnostic(const double dt) {
   }
 
   // If all inputs have invalid timestamps, we have a problem.
-  EKAT_REQUIRE_MSG(ts.is_valid(), "Error! All inputs to diagnostic have invalid timestamp.\n"
-                                  "  - Diag name: " +
-                                      name() + "\n");
+  EKAT_REQUIRE_MSG(ts.is_valid(),
+                   "Error! All inputs to diagnostic have invalid timestamp.\n"
+                   "  - Diag name: " +
+                       name() + "\n");
 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
@@ -63,7 +66,8 @@ void AtmosphereDiagnostic::set_required_field_impl(const Field &f) {
     if (it.fid.name() == f.name()) {
       const auto &fap = f.get_header().get_alloc_properties();
       EKAT_REQUIRE_MSG(fap.get_largest_pack_size() >= it.pack_size,
-                       "Error! Diagnostic input field cannot accommodate the needed pack size.\n"
+                       "Error! Diagnostic input field cannot accommodate the "
+                       "needed pack size.\n"
                        "  - diag field: " +
                            m_diagnostic_output.name() +
                            "\n"
@@ -81,12 +85,15 @@ void AtmosphereDiagnostic::set_required_field_impl(const Field &f) {
 }
 
 void AtmosphereDiagnostic::set_computed_field_impl(const Field & /* f */) {
-  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " + name() + ".\n");
+  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " +
+                 name() + ".\n");
 }
 
-void AtmosphereDiagnostic::set_computed_group_impl(const FieldGroup & /* group */) {
-  EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute field groups. See " + name() +
-                 ".\n");
+void AtmosphereDiagnostic::set_computed_group_impl(
+    const FieldGroup & /* group */) {
+  EKAT_ERROR_MSG(
+      "Error! Diagnostics are not allowed to compute field groups. See " +
+      name() + ".\n");
 }
 
 } // namespace scream

@@ -171,15 +171,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocThlParameters {
 namespace {
 
 TEST_CASE("shoc_pdf_thl_parameters_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocThlParameters;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_thl_parameters_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocThlParameters;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocThlParameters;
 
   TestStruct::run_bfb();
 }

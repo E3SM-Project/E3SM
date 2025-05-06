@@ -50,7 +50,8 @@ public:
                       const bool throw_if_existing = false);
 
   template <typename T>
-  void set_extra_data(const std::string &key, const T &data, const bool throw_if_existing = false) {
+  void set_extra_data(const std::string &key, const T &data,
+                      const bool throw_if_existing = false) {
     ekat::any data_any;
     data_any.reset<T>(data);
     set_extra_data(key, data_any, throw_if_existing);
@@ -64,7 +65,9 @@ public:
   // Get the tracking
   const tracking_type &get_tracking() const { return *m_tracking; }
   tracking_type &get_tracking() { return *m_tracking; }
-  const std::shared_ptr<tracking_type> &get_tracking_ptr() const { return m_tracking; }
+  const std::shared_ptr<tracking_type> &get_tracking_ptr() const {
+    return m_tracking;
+  }
 
   // Get the allocation properties
   const FieldAllocProp &get_alloc_properties() const { return *m_alloc_prop; }
@@ -79,20 +82,21 @@ public:
 
   // Two headers alias each other if either
   //   - they are the same obj
-  //   - they have the same tracking, alloc_prop and extra data (they were created by alias above)
-  //   - they have the same parent field and their subview info (form alloc prop) are the same
+  //   - they have the same tracking, alloc_prop and extra data (they were
+  //   created by alias above)
+  //   - they have the same parent field and their subview info (form alloc
+  //   prop) are the same
   bool is_aliasing(const FieldHeader &rhs) const;
 
 protected:
   // Friend this function, so it can set up a subfield header
-  friend std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &,
-                                                             std::shared_ptr<FieldHeader>,
-                                                             const int, const int, const bool);
+  friend std::shared_ptr<FieldHeader>
+  create_subfield_header(const FieldIdentifier &, std::shared_ptr<FieldHeader>,
+                         const int, const int, const bool);
   // for creating multi-slice subfield (continuous indices)
-  friend std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &,
-                                                             std::shared_ptr<FieldHeader>,
-                                                             const int idim, const int k_beg,
-                                                             const int k_end);
+  friend std::shared_ptr<FieldHeader>
+  create_subfield_header(const FieldIdentifier &, std::shared_ptr<FieldHeader>,
+                         const int idim, const int k_beg, const int k_end);
 
   // NOTE: the identifier *cannot* be a shared_ptr, b/c we
   //       don't foresee sharing an identifier between two
@@ -111,50 +115,58 @@ protected:
   std::shared_ptr<extra_data_type> m_extra_data;
 };
 
-template <typename T> inline const T &FieldHeader::get_extra_data(const std::string &key) const {
-  EKAT_REQUIRE_MSG(has_extra_data(key), "Error! Extra data not found in field header.\n"
-                                        "  - field name: " +
-                                            m_identifier.name() +
-                                            "\n"
-                                            "  - extra data: " +
-                                            key + "\n");
+template <typename T>
+inline const T &FieldHeader::get_extra_data(const std::string &key) const {
+  EKAT_REQUIRE_MSG(has_extra_data(key),
+                   "Error! Extra data not found in field header.\n"
+                   "  - field name: " +
+                       m_identifier.name() +
+                       "\n"
+                       "  - extra data: " +
+                       key + "\n");
   auto a = m_extra_data->at(key);
-  EKAT_REQUIRE_MSG(a.isType<T>(), "Error! Attempting to access extra data using the wrong type.\n"
-                                  "  - field name    : " +
-                                      m_identifier.name() +
-                                      "\n"
-                                      "  - extra data    : " +
-                                      key +
-                                      "\n"
-                                      "  - actual type   : " +
-                                      std::string(a.content().type().name()) +
-                                      "\n"
-                                      "  - requested type: " +
-                                      std::string(typeid(T).name()) + ".\n");
+  EKAT_REQUIRE_MSG(
+      a.isType<T>(),
+      "Error! Attempting to access extra data using the wrong type.\n"
+      "  - field name    : " +
+          m_identifier.name() +
+          "\n"
+          "  - extra data    : " +
+          key +
+          "\n"
+          "  - actual type   : " +
+          std::string(a.content().type().name()) +
+          "\n"
+          "  - requested type: " +
+          std::string(typeid(T).name()) + ".\n");
 
   return ekat::any_cast<T>(a);
 }
 
-template <typename T> inline T &FieldHeader::get_extra_data(const std::string &key) {
-  EKAT_REQUIRE_MSG(has_extra_data(key), "Error! Extra data not found in field header.\n"
-                                        "  - field name: " +
-                                            m_identifier.name() +
-                                            "\n"
-                                            "  - extra data: " +
-                                            key + "\n");
+template <typename T>
+inline T &FieldHeader::get_extra_data(const std::string &key) {
+  EKAT_REQUIRE_MSG(has_extra_data(key),
+                   "Error! Extra data not found in field header.\n"
+                   "  - field name: " +
+                       m_identifier.name() +
+                       "\n"
+                       "  - extra data: " +
+                       key + "\n");
   auto a = m_extra_data->at(key);
-  EKAT_REQUIRE_MSG(a.isType<T>(), "Error! Attempting to access extra data using the wrong type.\n"
-                                  "  - field name    : " +
-                                      m_identifier.name() +
-                                      "\n"
-                                      "  - extra data    : " +
-                                      key +
-                                      "\n"
-                                      "  - actual type   : " +
-                                      std::string(a.content().type().name()) +
-                                      "\n"
-                                      "  - requested type: " +
-                                      std::string(typeid(T).name()) + ".\n");
+  EKAT_REQUIRE_MSG(
+      a.isType<T>(),
+      "Error! Attempting to access extra data using the wrong type.\n"
+      "  - field name    : " +
+          m_identifier.name() +
+          "\n"
+          "  - extra data    : " +
+          key +
+          "\n"
+          "  - actual type   : " +
+          std::string(a.content().type().name()) +
+          "\n"
+          "  - requested type: " +
+          std::string(typeid(T).name()) + ".\n");
 
   return ekat::any_cast<T>(a);
 }
@@ -164,7 +176,8 @@ inline bool FieldHeader::has_extra_data(const std::string &key) const {
 }
 
 // Use this free function to exploit features of enable_from_this
-template <typename... Args> inline std::shared_ptr<FieldHeader> create_header(const Args &...args) {
+template <typename... Args>
+inline std::shared_ptr<FieldHeader> create_header(const Args &...args) {
   auto ptr = std::make_shared<FieldHeader>(args...);
   ptr->setSelfPointer(ptr);
   return ptr;
@@ -173,14 +186,14 @@ template <typename... Args> inline std::shared_ptr<FieldHeader> create_header(co
 // Use this free function to create a header for a field that
 // is the subfield of another field, that is, for something
 // that (in matlab syntax) looks like sf = f(:,1,:)
-std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &id,
-                                                    std::shared_ptr<FieldHeader> parent,
-                                                    const int idim, const int k,
-                                                    const bool dynamic);
-std::shared_ptr<FieldHeader> create_subfield_header(const FieldIdentifier &id,
-                                                    std::shared_ptr<FieldHeader> parent,
-                                                    const int idim, const int k_beg,
-                                                    const int k_end);
+std::shared_ptr<FieldHeader>
+create_subfield_header(const FieldIdentifier &id,
+                       std::shared_ptr<FieldHeader> parent, const int idim,
+                       const int k, const bool dynamic);
+std::shared_ptr<FieldHeader>
+create_subfield_header(const FieldIdentifier &id,
+                       std::shared_ptr<FieldHeader> parent, const int idim,
+                       const int k_beg, const int k_end);
 
 } // namespace scream
 

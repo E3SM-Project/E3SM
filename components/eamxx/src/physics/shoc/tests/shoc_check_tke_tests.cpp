@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocCheckTke : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocCheckTke
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -87,8 +88,8 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke : public UnitWrap::UnitTest<D>::B
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     CheckTkeData SDS_cxx[] = {
         CheckTkeData(SDS_baseline[0]),
         CheckTkeData(SDS_baseline[1]),
@@ -137,15 +138,15 @@ struct UnitWrap::UnitTest<D>::TestShocCheckTke : public UnitWrap::UnitTest<D>::B
 namespace {
 
 TEST_CASE("shoc_check_tke_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCheckTke;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocCheckTke;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_check_tke_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocCheckTke;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocCheckTke;
 
   TestStruct().run_bfb();
 }

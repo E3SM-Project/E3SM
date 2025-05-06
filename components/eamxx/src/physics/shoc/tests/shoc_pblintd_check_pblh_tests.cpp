@@ -14,13 +14,15 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
-    static constexpr auto ustar_min = scream::shoc::Constants<Scalar>::ustar_min;
-    static constexpr Int shcol      = 5;
-    static constexpr Int nlev       = 4;
-    static constexpr Int nlevi      = nlev + 1;
+    static constexpr auto ustar_min =
+        scream::shoc::Constants<Scalar>::ustar_min;
+    static constexpr Int shcol = 5;
+    static constexpr Int nlev  = 4;
+    static constexpr Int nlevi = nlev + 1;
 
     // Tests for the subroutine pblintd_check_pblh
 
@@ -88,13 +90,14 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : public UnitWrap::UnitTest<D
     };
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine, {{d.check, {1, 1}}});
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     PblintdCheckPblhData cxx_data[] = {
         PblintdCheckPblhData(baseline_data[0]),
         PblintdCheckPblhData(baseline_data[1]),
@@ -118,7 +121,8 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : public UnitWrap::UnitTest<D
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(PblintdCheckPblhData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(PblintdCheckPblhData);
       for (Int i = 0; i < num_runs; ++i) {
         PblintdCheckPblhData &d_baseline = baseline_data[i];
         PblintdCheckPblhData &d_cxx      = cxx_data[i];
@@ -143,15 +147,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdCheckPblh : public UnitWrap::UnitTest<D
 namespace {
 
 TEST_CASE("pblintd_check_pblh_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCheckPblh;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdCheckPblh;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("pblintd_check_pblh_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCheckPblh;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdCheckPblh;
 
   TestStruct().run_bfb();
 }

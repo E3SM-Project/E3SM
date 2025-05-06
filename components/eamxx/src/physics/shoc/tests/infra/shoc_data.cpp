@@ -58,23 +58,24 @@ FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_)
   wqw_sec      = Array2("Vertical moisture flux [K m/s]", shcol, nlevi);
   wtke_sec     = Array2("Vertical tke flux [m3/s3]", shcol, nlevi);
   uw_sec       = Array2("Vertical zonal momentum flux [m2/s2]", shcol, nlevi);
-  vw_sec       = Array2("Vertical meridional momentum flux [m2/s2]", shcol, nlevi);
-  w3           = Array2("Third moment vertical velocity [m3/s3]", shcol, nlevi);
-  wqls_sec     = Array2("Liquid water flux [kg/kg m/s]", shcol, nlev);
-  brunt        = Array2("Brunt-Vaisala frequency [s-1]", shcol, nlev);
-  isotropy     = Array2("Return to isotropic timescale [s]", shcol, nlev);
-  shoc_ql2     = Array2("Variance in liquid water [kg2/kg2]", shcol, nlev);
+  vw_sec   = Array2("Vertical meridional momentum flux [m2/s2]", shcol, nlevi);
+  w3       = Array2("Third moment vertical velocity [m3/s3]", shcol, nlevi);
+  wqls_sec = Array2("Liquid water flux [kg/kg m/s]", shcol, nlev);
+  brunt    = Array2("Brunt-Vaisala frequency [s-1]", shcol, nlev);
+  isotropy = Array2("Return to isotropic timescale [s]", shcol, nlev);
+  shoc_ql2 = Array2("Variance in liquid water [kg2/kg2]", shcol, nlev);
 }
 
 FortranDataIterator::FortranDataIterator(const FortranData::Ptr &d) { init(d); }
 
 void FortranDataIterator::init(const FortranData::Ptr &dp) {
   d_ = dp;
-#define fdipb(name)                                                                            \
-  fields_.push_back({#name,                                                                    \
-                     2,                                                                        \
-                     {d_->name.extent_int(0), d_->name.extent_int(1), d_->name.extent_int(2)}, \
-                     d_->name.data(),                                                          \
+#define fdipb(name)                                                   \
+  fields_.push_back({#name,                                           \
+                     2,                                               \
+                     {d_->name.extent_int(0), d_->name.extent_int(1), \
+                      d_->name.extent_int(2)},                        \
+                     d_->name.data(),                                 \
                      d_->name.size()})
   fdipb(host_dx);
   fdipb(host_dy);
@@ -125,7 +126,8 @@ void FortranDataIterator::init(const FortranData::Ptr &dp) {
 #undef fdipb
 }
 
-const FortranDataIterator::RawArray &FortranDataIterator::getfield(Int i) const {
+const FortranDataIterator::RawArray &
+FortranDataIterator::getfield(Int i) const {
   EKAT_ASSERT(i >= 0 || i < nfield());
   return fields_[i];
 }

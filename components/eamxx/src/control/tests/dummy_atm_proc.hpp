@@ -45,8 +45,10 @@ public:
     if (m_dummy_type == A2G) {
       // Check request by field/grid name only works
       add_field<Required>("A", layout, ekat::units::m, m_grid->name());
-      add_field<Computed>("B", layout, ekat::units::m, m_grid->name(), "The Group");
-      add_field<Computed>("C", layout, ekat::units::m, m_grid->name(), "The Group");
+      add_field<Computed>("B", layout, ekat::units::m, m_grid->name(),
+                          "The Group");
+      add_field<Computed>("C", layout, ekat::units::m, m_grid->name(),
+                          "The Group");
       // These are not used at run time, but we use them to test
       // the initialization of IC fields
       add_field<Required>("V", layout_vec, ekat::units::m, m_grid->name());
@@ -100,9 +102,11 @@ public:
             view_C(icol, ilev) = view_C(icol, ilev) / 2;
           });
     } else {
-      const auto &g     = get_group_in("The Group");
-      const auto view_B = g.m_individual_fields.at("B")->get_view<const Real **>();
-      const auto view_C = g.m_individual_fields.at("C")->get_view<const Real **>();
+      const auto &g = get_group_in("The Group");
+      const auto view_B =
+          g.m_individual_fields.at("B")->get_view<const Real **>();
+      const auto view_C =
+          g.m_individual_fields.at("C")->get_view<const Real **>();
       const auto view_A = get_field_out("A").get_view<Real **>();
 
       Kokkos::parallel_for(

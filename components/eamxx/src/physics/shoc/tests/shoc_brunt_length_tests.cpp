@@ -22,7 +22,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestCompBruntShocLength : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestCompBruntShocLength
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -136,8 +137,8 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength : public UnitWrap::UnitTes
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ComputeBruntShocLengthData SDS_cxx[] = {
         ComputeBruntShocLengthData(SDS_baseline[0]),
         ComputeBruntShocLengthData(SDS_baseline[1]),
@@ -145,7 +146,8 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength : public UnitWrap::UnitTes
         ComputeBruntShocLengthData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ComputeBruntShocLengthData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ComputeBruntShocLengthData);
 
     // Assume all data is in C layout
 
@@ -186,15 +188,15 @@ struct UnitWrap::UnitTest<D>::TestCompBruntShocLength : public UnitWrap::UnitTes
 namespace {
 
 TEST_CASE("shoc_brunt_length_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompBruntShocLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCompBruntShocLength;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_brunt_length_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCompBruntShocLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestCompBruntShocLength;
 
   TestStruct().run_bfb();
 }

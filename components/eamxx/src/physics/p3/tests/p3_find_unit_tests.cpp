@@ -21,7 +21,8 @@ namespace unit_test {
 // Test find_top and find_bottom
 //
 
-template <typename D> struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::UnitTest<D>::Base {
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::UnitTest<D>::Base {
 
   void run() {
     const int max_threads =
@@ -46,7 +47,9 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::
 
     for (int i = 0; i < num_vert; ++i) {
       mirror_qrnp(i) = small - 0.1;
-      mirror_qrp(i)  = (i >= large_idx_start && i <= large_idx_stop) ? small + 0.1 : small - 0.1;
+      mirror_qrp(i)  = (i >= large_idx_start && i <= large_idx_stop)
+                           ? small + 0.1
+                           : small - 0.1;
     }
 
     // add "hole"
@@ -57,7 +60,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::
 
     for (int team_size : {1, max_threads}) {
       const auto policy =
-          ekat::ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(1, team_size);
+          ekat::ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(
+              1, team_size);
 
       int errs_for_this_ts = 0;
       Kokkos::parallel_reduce(
@@ -70,39 +74,47 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::
             //
 
             bool log_qxpresent;
-            int top = Functions::find_top(team, qr_present, small, kbot, ktop, 1, log_qxpresent);
+            int top = Functions::find_top(team, qr_present, small, kbot, ktop,
+                                          1, log_qxpresent);
             if (!log_qxpresent)
               ++nerrs_local;
             if (top != large_idx_stop)
               ++nerrs_local;
 
-            int bot = Functions::find_bottom(team, qr_present, small, kbot, top, 1, log_qxpresent);
+            int bot = Functions::find_bottom(team, qr_present, small, kbot, top,
+                                             1, log_qxpresent);
             if (!log_qxpresent)
               ++nerrs_local;
             if (bot != large_idx_start)
               ++nerrs_local;
 
-            top = Functions::find_top(team, qr_present, small, ktop, kbot, -1, log_qxpresent);
+            top = Functions::find_top(team, qr_present, small, ktop, kbot, -1,
+                                      log_qxpresent);
             if (!log_qxpresent)
               ++nerrs_local;
             if (top != large_idx_start)
               ++nerrs_local;
 
-            bot = Functions::find_bottom(team, qr_present, small, ktop, top, -1, log_qxpresent);
+            bot = Functions::find_bottom(team, qr_present, small, ktop, top, -1,
+                                         log_qxpresent);
             if (!log_qxpresent)
               ++nerrs_local;
             if (bot != large_idx_stop)
               ++nerrs_local;
 
-            top = Functions::find_top(team, qr_not_present, small, kbot, ktop, 1, log_qxpresent);
+            top = Functions::find_top(team, qr_not_present, small, kbot, ktop,
+                                      1, log_qxpresent);
             if (log_qxpresent)
               ++nerrs_local;
-            // if (top != 0) { std::cout << "top(" << top << ") != 0" << std::endl; ++nerrs_local; }
+            // if (top != 0) { std::cout << "top(" << top << ") != 0" <<
+            // std::endl; ++nerrs_local; }
 
-            bot = Functions::find_bottom(team, qr_not_present, small, kbot, ktop, 1, log_qxpresent);
+            bot = Functions::find_bottom(team, qr_not_present, small, kbot,
+                                         ktop, 1, log_qxpresent);
             if (log_qxpresent)
               ++nerrs_local;
-            // if (bot != 0) { std::cout << "bot(" << bot << ") != 0" << std::endl; ++nerrs_local; }
+            // if (bot != 0) { std::cout << "bot(" << bot << ") != 0" <<
+            // std::endl; ++nerrs_local; }
 
             total_errs += nerrs_local;
           },
@@ -120,7 +132,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::
 namespace {
 
 TEST_CASE("p3_find", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestFind;
 
   T t;
   t.run();

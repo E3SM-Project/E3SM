@@ -11,12 +11,14 @@ namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params), aero_config_() {
-  check_fields_intervals_ = m_params.get<bool>("create_fields_interval_checks", false);
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 std::string MAMOptics::name() const { return "mam4_optics"; }
 
-void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMOptics::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   grid_                 = grids_manager->get_grid("physics");
@@ -25,7 +27,7 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   const auto m2 = pow(m, 2);
   const auto s2 = pow(s, 2);
 
-  ncol_     = grid_->get_num_local_dofs();      // number of columns on this rank
+  ncol_     = grid_->get_num_local_dofs(); // number of columns on this rank
   nlev_     = grid_->get_num_vertical_levels(); // number of levels per column
   nswbands_ = mam4::modal_aer_opt::nswbands;    // number of shortwave bands
   nlwbands_ = mam4::modal_aer_opt::nlwbands;    // number of longwave bands
@@ -39,8 +41,10 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   auto nondim = Units::nondimensional();
   // 3D layout for short/longwave aerosol fields: columns, number of
   // short/longwave band, nlev
-  FieldLayout scalar3d_swband = grid_->get_3d_vector_layout(true, nswbands_, "swband");
-  FieldLayout scalar3d_lwband = grid_->get_3d_vector_layout(true, nlwbands_, "lwband");
+  FieldLayout scalar3d_swband =
+      grid_->get_3d_vector_layout(true, nswbands_, "swband");
+  FieldLayout scalar3d_lwband =
+      grid_->get_3d_vector_layout(true, nlwbands_, "lwband");
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
   // midpoints/interfaces
@@ -90,7 +94,8 @@ void MAMOptics::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 }
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporary_views_);
+  return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                   len_temporary_views_);
 }
 
 int MAMOptics::get_len_temporary_views() {
@@ -109,7 +114,7 @@ void MAMOptics::init_temporary_views() {
   work_ptr += ncol_ * work_len;
 
   // shortwave aerosol scattering asymmetry parameter [unitless]
-  tau_ssa_g_sw_    = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
+  tau_ssa_g_sw_ = mam_coupling::view_3d(work_ptr, ncol_, nswbands_, nlev_ + 1);
   const int nlev_f = nlev_ + 1;
   work_ptr += ncol_ * nswbands_ * nlev_f;
   // shortwave aerosol single-scattering albedo [unitless]
@@ -129,15 +134,18 @@ void MAMOptics::init_temporary_views() {
   const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
                    "Error: workspace_used (" + std::to_string(workspace_used) +
-                       ") and workspace_provided (" + std::to_string(workspace_provided) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
                        ") should be equal. \n");
 }
 
 void MAMOptics::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
+                       requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  size_t used_mem =
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMOptics.");
 }
@@ -188,10 +196,13 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   dry_atm_.phis  = get_field_in("phis").get_view<const Real *>();
   dry_atm_.p_del = get_field_in("pseudo_density_dry").get_view<const Real **>();
 
-  ssa_cmip6_sw_ = mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
-  af_cmip6_sw_  = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
-  ext_cmip6_sw_ = mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
-  ext_cmip6_lw_ = mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
+  ssa_cmip6_sw_ =
+      mam_coupling::view_3d("ssa_cmip6_sw", ncol_, nlev_, nswbands_);
+  af_cmip6_sw_ = mam_coupling::view_3d("af_cmip6_sw", ncol_, nlev_, nswbands_);
+  ext_cmip6_sw_ =
+      mam_coupling::view_3d("ext_cmip6_sw", ncol_, nswbands_, nlev_);
+  ext_cmip6_lw_ =
+      mam_coupling::view_3d("ext_cmip6_lw_", ncol_, nlev_, nlwbands_);
 
   init_temporary_views();
 
@@ -202,7 +213,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 
     // Note: these functions do not set values for aerosol_optics_device_data_.
-    mam4::modal_aer_opt::set_complex_views_modal_aero(aerosol_optics_device_data_);
+    mam4::modal_aer_opt::set_complex_views_modal_aero(
+        aerosol_optics_device_data_);
     mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_sw_views(
         aerosol_optics_device_data_);
     mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_lw_views(
@@ -214,21 +226,26 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     std::map<std::string, view_1d_host> host_views;
     ekat::ParameterList rrtmg_params;
 
-    mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params, layouts, host_views);
+    mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params,
+                                       layouts, host_views);
 
     for (int imode = 0; imode < ntot_amode; imode++) {
-      const auto key    = "mam4_mode" + std::to_string(imode + 1) + "_physical_properties_file";
+      const auto key =
+          "mam4_mode" + std::to_string(imode + 1) + "_physical_properties_file";
       const auto &fname = m_params.get<std::string>(key);
       mam_coupling::read_rrtmg_table(fname,
                                      imode, // mode No
                                      rrtmg_params, grid_, host_views, layouts,
-                                     aerosol_optics_host_data, aerosol_optics_device_data_);
+                                     aerosol_optics_host_data,
+                                     aerosol_optics_device_data_);
     }
 
-    std::string table_name_water = m_params.get<std::string>("mam4_water_refindex_file");
+    std::string table_name_water =
+        m_params.get<std::string>("mam4_water_refindex_file");
 
     // it will syn data to device.
-    mam_coupling::read_water_refindex(table_name_water, grid_, aerosol_optics_device_data_.crefwlw,
+    mam_coupling::read_water_refindex(table_name_water, grid_,
+                                      aerosol_optics_device_data_.crefwlw,
                                       aerosol_optics_device_data_.crefwsw);
     //
     {
@@ -238,14 +255,15 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       std::map<std::string, FieldLayout> layouts_aero;
       ekat::ParameterList params_aero;
       std::string surname_aero = "aer";
-      mam_coupling::set_refindex_names(surname_aero, params_aero, host_views_aero, layouts_aero);
+      mam_coupling::set_refindex_names(surname_aero, params_aero,
+                                       host_views_aero, layouts_aero);
 
       constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
-      auto specrefndxsw_host =
-          mam_coupling::complex_view_2d::HostMirror("specrefndxsw_host", nswbands_, maxd_aspectype);
+      auto specrefndxsw_host       = mam_coupling::complex_view_2d::HostMirror(
+          "specrefndxsw_host", nswbands_, maxd_aspectype);
 
-      auto specrefndxlw_host =
-          mam_coupling::complex_view_2d::HostMirror("specrefndxlw_host", nlwbands_, maxd_aspectype);
+      auto specrefndxlw_host = mam_coupling::complex_view_2d::HostMirror(
+          "specrefndxlw_host", nlwbands_, maxd_aspectype);
 
       // read physical properties data for aerosol species
       std::map<std::string, int> map_table_name_species_id;
@@ -258,14 +276,16 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       map_table_name_species_id["mom"]  = 8; // mom:m-organic
 
       for (const auto &item : map_table_name_species_id) {
-        const auto spec_name  = item.first;
-        const int species_id  = item.second;
-        const auto table_name = "mam4_" + spec_name + "_physical_properties_file";
-        const auto &fname     = m_params.get<std::string>(table_name);
+        const auto spec_name = item.first;
+        const int species_id = item.second;
+        const auto table_name =
+            "mam4_" + spec_name + "_physical_properties_file";
+        const auto &fname = m_params.get<std::string>(table_name);
         // read data
         // need to update table name
         params_aero.set("filename", fname);
-        AtmosphereInput refindex_aerosol(params_aero, grid_, host_views_aero, layouts_aero);
+        AtmosphereInput refindex_aerosol(params_aero, grid_, host_views_aero,
+                                         layouts_aero);
         refindex_aerosol.read_variables();
         refindex_aerosol.finalize();
         // copy data to device
@@ -275,10 +295,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
             specrefndxlw_host);
       } // done ispec
       // reshape specrefndxsw_host and copy it to device
-      mam4::modal_aer_opt::set_device_specrefindex(aerosol_optics_device_data_.specrefindex_sw,
-                                                   "short_wave", specrefndxsw_host);
-      mam4::modal_aer_opt::set_device_specrefindex(aerosol_optics_device_data_.specrefindex_lw,
-                                                   "long_wave", specrefndxlw_host);
+      mam4::modal_aer_opt::set_device_specrefindex(
+          aerosol_optics_device_data_.specrefindex_sw, "short_wave",
+          specrefndxsw_host);
+      mam4::modal_aer_opt::set_device_specrefindex(
+          aerosol_optics_device_data_.specrefindex_lw, "long_wave",
+          specrefndxlw_host);
     }
   }
   // FIXME: We are hard-coding the band ordering in RRTMGP.
@@ -295,16 +317,18 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       mam_coupling::view_int_1d::HostMirror(temporal.data(), nswbands_);
   get_idx_rrtmgp_from_rrtmg_swbands_ =
       mam_coupling::view_int_1d("rrtmg_to_rrtmgp_swbands", nswbands_);
-  Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_, get_idx_rrtmgp_from_rrtmg_swbands_host);
+  Kokkos::deep_copy(get_idx_rrtmgp_from_rrtmg_swbands_,
+                    get_idx_rrtmgp_from_rrtmg_swbands_host);
   calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
   constexpr Real zero = 0.0;
   constexpr Real one  = 1.0;
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  const auto scan_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto policy =
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
@@ -322,8 +346,10 @@ void MAMOptics::run_impl(const double dt) {
 
   const auto aero_g_sw_eamxx = get_field_out("aero_g_sw").get_view<Real ***>();
 
-  const auto aero_ssa_sw_eamxx = get_field_out("aero_ssa_sw").get_view<Real ***>();
-  const auto aero_tau_sw_eamxx = get_field_out("aero_tau_sw").get_view<Real ***>();
+  const auto aero_ssa_sw_eamxx =
+      get_field_out("aero_ssa_sw").get_view<Real ***>();
+  const auto aero_tau_sw_eamxx =
+      get_field_out("aero_tau_sw").get_view<Real ***>();
   // tau_w_f : aerosol forward scattered fraction * tau * w
   const auto tau_f_sw = tau_f_sw_;
   const auto aodvis   = get_field_out("aodvis").get_view<Real *>();
@@ -370,12 +396,13 @@ void MAMOptics::run_impl(const double dt) {
         auto work_icol = ekat::subview(work, icol);
 
         // fetch column-specific subviews into aerosol prognostics
-        mam4::Prognostics progs = mam_coupling::aerosols_for_column(dry_aero, icol);
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
 
         mam4::aer_rad_props::aer_rad_props_sw(
-            team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol, af_cmip6_sw_icol, ext_cmip6_sw_icol,
-            tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol, aerosol_optics_device_data,
-            calsize_data, aodvis(icol), work_icol);
+            team, dt, progs, atm, zi, pdel, ssa_cmip6_sw_icol, af_cmip6_sw_icol,
+            ext_cmip6_sw_icol, tau_icol, tau_w_icol, tau_w_g_icol, tau_w_f_icol,
+            aerosol_optics_device_data, calsize_data, aodvis(icol), work_icol);
       });
   Kokkos::fence();
   Kokkos::parallel_for(
@@ -391,11 +418,12 @@ void MAMOptics::run_impl(const double dt) {
         auto ext_cmip6_lw_icol = ekat::subview(ext_cmip6_lw, icol);
 
         // fetch column-specific subviews into aerosol prognostics
-        mam4::Prognostics progs = mam_coupling::aerosols_for_column(dry_aero, icol);
+        mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
 
-        mam4::aer_rad_props::aer_rad_props_lw(team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
-                                              aerosol_optics_device_data, calsize_data,
-                                              odap_aer_icol);
+        mam4::aer_rad_props::aer_rad_props_lw(
+            team, dt, progs, atm, zi, pdel, ext_cmip6_lw_icol,
+            aerosol_optics_device_data, calsize_data, odap_aer_icol);
       });
   Kokkos::fence();
   // TODO: We will need to generate optical inputs files with  band ordering
@@ -407,7 +435,8 @@ void MAMOptics::run_impl(const double dt) {
   // Here, we copy data from kk=1 in mam4xx Here, we are following:
   // E3SM/components/eam/src/physics/rrtmgp
   /// cam_optics.F90
-  const auto &get_idx_rrtmgp_from_rrtmg_swbands = get_idx_rrtmgp_from_rrtmg_swbands_;
+  const auto &get_idx_rrtmgp_from_rrtmg_swbands =
+      get_idx_rrtmgp_from_rrtmg_swbands_;
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
@@ -415,25 +444,30 @@ void MAMOptics::run_impl(const double dt) {
   // nswbands loop is using rrtmg indexing.
   Kokkos::parallel_for(
       "copying data from mam4xx to eamxx",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol_, nswbands_, nlev_}),
+      Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
+                                             {ncol_, nswbands_, nlev_}),
       KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
         // Extract single scattering albedo from the product-defined fields
         if (tau_sw(icol, iswband, kk + 1) > zero) {
-          aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
+          aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband),
+                            kk) =
               tau_ssa_sw(icol, iswband, kk + 1) / tau_sw(icol, iswband, kk + 1);
         } else {
-          aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = one;
+          aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband),
+                            kk) = one;
         }
         // Extract assymmetry parameter from the product-defined fields
         if (tau_ssa_sw(icol, iswband, kk + 1) > zero) {
-          aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
-              tau_ssa_g_sw(icol, iswband, kk + 1) / tau_ssa_sw(icol, iswband, kk + 1);
+          aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband),
+                          kk) = tau_ssa_g_sw(icol, iswband, kk + 1) /
+                                tau_ssa_sw(icol, iswband, kk + 1);
         } else {
-          aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) = zero;
+          aero_g_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband),
+                          kk) = zero;
         }
         // Copy cloud optical depth over directly
-        aero_tau_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband), kk) =
-            tau_sw(icol, iswband, kk + 1);
+        aero_tau_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband),
+                          kk) = tau_sw(icol, iswband, kk + 1);
       });
   Kokkos::fence();
 }

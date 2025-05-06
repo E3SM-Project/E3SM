@@ -70,8 +70,9 @@ std::shared_ptr<const GridsManager> get_gm(const ekat::Comm &comm) {
   return gm;
 }
 
-std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &grid,
-                                     const util::TimeStamp &t0, const int seed) {
+std::shared_ptr<FieldManager>
+get_fm(const std::shared_ptr<const AbstractGrid> &grid,
+       const util::TimeStamp &t0, const int seed) {
   using FL  = FieldLayout;
   using FID = FieldIdentifier;
   using namespace ShortFieldTagsNames;
@@ -93,7 +94,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
 
-  std::vector<FL> layouts = {FL({COL}, {nlcols}), FL({COL, LEV}, {nlcols, nlevs}),
+  std::vector<FL> layouts = {FL({COL}, {nlcols}),
+                             FL({COL, LEV}, {nlcols, nlevs}),
                              FL({COL, CMP, ILEV}, {nlcols, 2, nlevs + 1})};
 
   auto fm = std::make_shared<FieldManager>(grid);
@@ -105,7 +107,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
     FID fid("f_" + std::to_string(count), fl, units, grid->name());
     Field f(fid);
     f.allocate_view();
-    auto &str_atts   = f.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto &str_atts =
+        f.get_header().get_extra_data<stratts_t>("io: string attributes");
     str_atts["test"] = f.name();
     randomize(f, engine, my_pdf);
     f.get_header().get_tracking().update_time_stamp(t0);
@@ -117,8 +120,8 @@ std::shared_ptr<FieldManager> get_fm(const std::shared_ptr<const AbstractGrid> &
 }
 
 // Returns fields after initialization
-void write(const std::string &avg_type, const std::string &freq_units, const int freq,
-           const int seed, const ekat::Comm &comm) {
+void write(const std::string &avg_type, const std::string &freq_units,
+           const int freq, const int seed, const ekat::Comm &comm) {
   // Create grid
   auto gm   = get_gm(comm);
   auto grid = gm->get_grid("point_grid");
@@ -190,8 +193,8 @@ void write(const std::string &avg_type, const std::string &freq_units, const int
   om.finalize();
 }
 
-void read(const std::string &avg_type, const std::string &freq_units, const int freq,
-          const int seed, const ekat::Comm &comm) {
+void read(const std::string &avg_type, const std::string &freq_units,
+          const int freq, const int seed, const ekat::Comm &comm) {
   // Only INSTANT writes at t=0
   bool instant = avg_type == "INSTANT";
 
@@ -215,8 +218,9 @@ void read(const std::string &avg_type, const std::string &freq_units, const int 
   // Create reader pl
   ekat::ParameterList reader_pl;
   std::string casename = "io_basic";
-  auto filename = casename + "." + avg_type + "." + freq_units + "_x" + std::to_string(freq) +
-                  ".np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  auto filename        = casename + "." + avg_type + "." + freq_units + "_x" +
+                  std::to_string(freq) + ".np" + std::to_string(comm.size()) +
+                  "." + t0.to_string() + ".nc";
   reader_pl.set("filename", filename);
   reader_pl.set("field_names", fnames);
   AtmosphereInput reader(reader_pl, fm);
@@ -267,7 +271,8 @@ void read(const std::string &avg_type, const std::string &freq_units, const int 
 }
 
 TEST_CASE("io_basic") {
-  std::vector<std::string> freq_units = {"nsteps", "nsecs", "nmins", "nhours", "ndays"};
+  std::vector<std::string> freq_units = {"nsteps", "nsecs", "nmins", "nhours",
+                                         "ndays"};
   std::vector<std::string> avg_type   = {"INSTANT", "MAX", "MIN", "AVERAGE"};
 
   ekat::Comm comm(MPI_COMM_WORLD);

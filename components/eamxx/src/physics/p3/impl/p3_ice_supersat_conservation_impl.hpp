@@ -13,9 +13,10 @@ namespace p3 {
 
 template <typename S, typename D>
 KOKKOS_FUNCTION void Functions<S, D>::ice_supersat_conservation(
-    Spack &qv2qi_vapdep_tend, Spack &qv2qi_nucleat_tend, Spack &qinuc_cnt, const Spack &cld_frac_i,
-    const Spack &qv, const Spack &qv_sat_i, const Spack &t_atm, const Real &dt,
-    const Spack &qi2qv_sublim_tend, const Spack &qr2qv_evap_tend, const bool &use_hetfrz_classnuc,
+    Spack &qv2qi_vapdep_tend, Spack &qv2qi_nucleat_tend, Spack &qinuc_cnt,
+    const Spack &cld_frac_i, const Spack &qv, const Spack &qv_sat_i,
+    const Spack &t_atm, const Real &dt, const Spack &qi2qv_sublim_tend,
+    const Spack &qr2qv_evap_tend, const bool &use_hetfrz_classnuc,
     const Smask &context) {
   constexpr Scalar qsmall     = C::QSMALL;
   constexpr Scalar cp         = C::CP;
@@ -26,16 +27,19 @@ KOKKOS_FUNCTION void Functions<S, D>::ice_supersat_conservation(
 
   Spack qv_sink;
   if (use_hetfrz_classnuc) {
-    qv_sink = qv2qi_vapdep_tend + qv2qi_nucleat_tend + qinuc_cnt; // in [kg/kg] cell-avg values
+    qv_sink = qv2qi_vapdep_tend + qv2qi_nucleat_tend +
+              qinuc_cnt; // in [kg/kg] cell-avg values
   } else {
-    qv_sink = qv2qi_vapdep_tend + qv2qi_nucleat_tend; // in [kg/kg] cell-avg values
+    qv_sink =
+        qv2qi_vapdep_tend + qv2qi_nucleat_tend; // in [kg/kg] cell-avg values
   }
 
   const auto mask = qv_sink > qsmall && cld_frac_i > 1e-20 && context;
   if (mask.any()) {
     // --- Available water vapor for deposition/nucleation
-    auto qv_avail = (qv + (qi2qv_sublim_tend + qr2qv_evap_tend) * dt - qv_sat_i) /
-                    (1 + latsublim2 * qv_sat_i / (cp * rv * square(t_atm))) / dt;
+    auto qv_avail =
+        (qv + (qi2qv_sublim_tend + qr2qv_evap_tend) * dt - qv_sat_i) /
+        (1 + latsublim2 * qv_sat_i / (cp * rv * square(t_atm))) / dt;
 
     // --- Only excess water vapor can be limited
     qv_avail = max(qv_avail, 0);

@@ -49,18 +49,24 @@ public:
   ~GridImportExport() = default;
 
   template <typename T>
-  void scatter(const MPI_Datatype mpi_data_t, const std::map<int, std::vector<T>> &src,
+  void scatter(const MPI_Datatype mpi_data_t,
+               const std::map<int, std::vector<T>> &src,
                std::map<int, std::vector<T>> &dst) const;
 
   template <typename T>
-  void gather(const MPI_Datatype mpi_data_t, const std::map<int, std::vector<T>> &src,
+  void gather(const MPI_Datatype mpi_data_t,
+              const std::map<int, std::vector<T>> &src,
               std::map<int, std::vector<T>> &dst) const;
 
   view_1d<int> num_exports_per_pid() const { return m_num_exports_per_pid; }
   view_1d<int> num_imports_per_pid() const { return m_num_imports_per_pid; }
 
-  view_1d<int>::HostMirror num_exports_per_pid_h() const { return m_num_exports_per_pid_h; }
-  view_1d<int>::HostMirror num_imports_per_pid_h() const { return m_num_imports_per_pid_h; }
+  view_1d<int>::HostMirror num_exports_per_pid_h() const {
+    return m_num_exports_per_pid_h;
+  }
+  view_1d<int>::HostMirror num_imports_per_pid_h() const {
+    return m_num_imports_per_pid_h;
+  }
 
   view_1d<int> import_pids() const { return m_import_pids; }
   view_1d<int> import_lids() const { return m_import_lids; }
@@ -101,18 +107,20 @@ protected:
 
 // --------------------- IMPLEMENTATION ------------------------ //
 
-// Both gather and scatter proceed in 4 stages. If pid1 needs to send data to pid2, then
-//  1. pid1 sends pid2 the list of GIDs [gid1,...,gidN] it will send. Although pid2
+// Both gather and scatter proceed in 4 stages. If pid1 needs to send data to
+// pid2, then
+//  1. pid1 sends pid2 the list of GIDs [gid1,...,gidN] it will send. Although
+//  pid2
 //     already knows the GIDs, this step specifies the ORDER, since GIDs
 //     may be ordered differently on different pids
 //  2. pid1 sends pid2 the number of T's it will send for each of those gids
 //  3. pid1 sends pid3 all T's (first T's for gid1, then T's for gid2, etc)
 //  4. Finally, pid2 parses the data received, stuffing it into dst, according
 //     to the lid on pid2 (needs converting gids to lids)
-// The two only differ in which members to use. They are mostly specular: where one
-// uses m_unique grid, the other uses m_overlapped grid, and where one use m_export_lids/pids,
-// the other uses m_import_lids/pids. That's b/c they do the same operation, just
-// in opposite directions.
+// The two only differ in which members to use. They are mostly specular: where
+// one uses m_unique grid, the other uses m_overlapped grid, and where one use
+// m_export_lids/pids, the other uses m_import_lids/pids. That's b/c they do the
+// same operation, just in opposite directions.
 
 template <typename T>
 void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
@@ -138,7 +146,8 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, gids] : send_pid2gids) {
     auto &req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(gids.data(), gids.size(), mpi_gid_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Isend(gids.data(), gids.size(), mpi_gid_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::scatter, creating send request (step 1)");
   }
   std::map<int, std::vector<gid_type>> recv_pid2gids;
@@ -148,13 +157,16 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, gids] : recv_pid2gids) {
     auto &req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(gids.data(), gids.size(), mpi_gid_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Irecv(gids.data(), gids.size(), mpi_gid_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::scatter, creating recv request (step 1)");
   }
-  check_mpi_call(MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::scatter, waiting on send requests (step 1)");
-  check_mpi_call(MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::scatter, waiting on recv requests (step 1)");
+  check_mpi_call(
+      MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::scatter, waiting on send requests (step 1)");
+  check_mpi_call(
+      MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::scatter, waiting on recv requests (step 1)");
   send_req.clear();
   recv_req.clear();
 
@@ -167,7 +179,8 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, count] : send_pid2count) {
     auto &req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(count.data(), count.size(), MPI_INT, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Isend(count.data(), count.size(), MPI_INT, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::scatter, creating send request (step 2)");
   }
 
@@ -177,13 +190,16 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, count] : recv_pid2count) {
     auto &req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(count.data(), count.size(), MPI_INT, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Irecv(count.data(), count.size(), MPI_INT, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::scatter, creating recv request (step 2)");
   }
-  check_mpi_call(MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::scatter, waiting on send requests (step 2)");
-  check_mpi_call(MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::scatter, waiting on recv requests (step 2)");
+  check_mpi_call(
+      MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::scatter, waiting on send requests (step 2)");
+  check_mpi_call(
+      MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::scatter, waiting on recv requests (step 2)");
   send_req.clear();
   recv_req.clear();
 
@@ -199,7 +215,8 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, data] : send_pid2data) {
     auto &req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(data.data(), data.size(), mpi_data_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Isend(data.data(), data.size(), mpi_data_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::scatter, creating send request (step 3)");
   }
 
@@ -214,13 +231,16 @@ void GridImportExport::scatter(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, data] : recv_pid2data) {
     auto &req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(data.data(), data.size(), mpi_data_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Irecv(data.data(), data.size(), mpi_data_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::scatter, creating recv request (step 3)");
   }
-  check_mpi_call(MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::scatter, waiting on send requests (step 3)");
-  check_mpi_call(MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::scatter, waiting on recv requests (step 3)");
+  check_mpi_call(
+      MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::scatter, waiting on send requests (step 3)");
+  check_mpi_call(
+      MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::scatter, waiting on recv requests (step 3)");
   send_req.clear();
   recv_req.clear();
 
@@ -254,7 +274,8 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   auto mpi_comm  = m_comm.mpi_comm();
   auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
 
-  auto ov_gids_h = m_overlapped->get_dofs_gids().get_view<const gid_type *, Host>();
+  auto ov_gids_h =
+      m_overlapped->get_dofs_gids().get_view<const gid_type *, Host>();
 
   // 1. Communicate GIDs lists to recv pids
   std::map<int, std::vector<gid_type>> send_pid2gids;
@@ -265,7 +286,8 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, gids] : send_pid2gids) {
     auto &req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(gids.data(), gids.size(), mpi_gid_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Isend(gids.data(), gids.size(), mpi_gid_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::gather, creating send request (step 1)");
   }
   std::map<int, std::vector<gid_type>> recv_pid2gids;
@@ -275,13 +297,16 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, gids] : recv_pid2gids) {
     auto &req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(gids.data(), gids.size(), mpi_gid_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Irecv(gids.data(), gids.size(), mpi_gid_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::gather, creating recv request (step 1)");
   }
-  check_mpi_call(MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::gather, waiting on send requests (step 1)");
-  check_mpi_call(MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::gather, waiting on recv requests (step 1)");
+  check_mpi_call(
+      MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::gather, waiting on send requests (step 1)");
+  check_mpi_call(
+      MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::gather, waiting on recv requests (step 1)");
   send_req.clear();
   recv_req.clear();
 
@@ -294,7 +319,8 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, count] : send_pid2count) {
     auto &req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(count.data(), count.size(), MPI_INT, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Isend(count.data(), count.size(), MPI_INT, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::gather, creating send request (step 2)");
   }
 
@@ -304,13 +330,16 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, count] : recv_pid2count) {
     auto &req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(count.data(), count.size(), MPI_INT, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Irecv(count.data(), count.size(), MPI_INT, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::gather, creating recv request (step 2)");
   }
-  check_mpi_call(MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::gather, waiting on send requests (step 2)");
-  check_mpi_call(MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::gather, waiting on recv requests (step 2)");
+  check_mpi_call(
+      MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::gather, waiting on send requests (step 2)");
+  check_mpi_call(
+      MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::gather, waiting on recv requests (step 2)");
   send_req.clear();
   recv_req.clear();
 
@@ -326,7 +355,8 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, data] : send_pid2data) {
     auto &req = send_req.emplace_back();
-    check_mpi_call(MPI_Isend(data.data(), data.size(), mpi_data_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Isend(data.data(), data.size(), mpi_data_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::gather, creating send request (step 3)");
   }
 
@@ -341,13 +371,16 @@ void GridImportExport::gather(const MPI_Datatype mpi_data_t,
   }
   for (auto &[pid, data] : recv_pid2data) {
     auto &req = recv_req.emplace_back();
-    check_mpi_call(MPI_Irecv(data.data(), data.size(), mpi_data_t, pid, tag, mpi_comm, &req),
+    check_mpi_call(MPI_Irecv(data.data(), data.size(), mpi_data_t, pid, tag,
+                             mpi_comm, &req),
                    "GridImportExport::gather, creating recv request (step 3)");
   }
-  check_mpi_call(MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::gather, waiting on send requests (step 3)");
-  check_mpi_call(MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
-                 "GridImportExport::gather, waiting on recv requests (step 3)");
+  check_mpi_call(
+      MPI_Waitall(send_req.size(), send_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::gather, waiting on send requests (step 3)");
+  check_mpi_call(
+      MPI_Waitall(recv_req.size(), recv_req.data(), MPI_STATUSES_IGNORE),
+      "GridImportExport::gather, waiting on recv requests (step 3)");
   send_req.clear();
   recv_req.clear();
 

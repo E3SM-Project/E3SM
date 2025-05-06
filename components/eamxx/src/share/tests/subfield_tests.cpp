@@ -188,7 +188,8 @@ TEST_CASE("field", "") {
           for (int j = j1; j < j2; j++) {
             for (int k = k1; k < k2; k++) {
               for (int l = l1; l < l2; l++) {
-                REQUIRE(v4d_h(i, j, k, l) == sv_h(i - i1, j - j1, k - k1, l - l1));
+                REQUIRE(v4d_h(i, j, k, l) ==
+                        sv_h(i - i1, j - j1, k - k1, l - l1));
               }
             }
           }
@@ -232,7 +233,8 @@ TEST_CASE("field", "") {
             for (int k = k1; k < k2; k++) {
               for (int l = l1; l < l2; l++) {
                 for (int m = m1; m < m2; m++) {
-                  REQUIRE(v5d_h(i, j, k, l, m) == sv_h(i - i1, j - j1, k - k1, l - l1, m - m1));
+                  REQUIRE(v5d_h(i, j, k, l, m) ==
+                          sv_h(i - i1, j - j1, k - k1, l - l1, m - m1));
                 }
               }
             }
@@ -281,11 +283,15 @@ TEST_CASE("field", "") {
               for (int l = l1; l < l2; l++) {
                 for (int m = m1; m < m2; m++) {
                   for (int n = n1; n < n2; n++) {
-                    REQUIRE(v6d_h(i, j, k, l, m, n) ==
-                            sv_h(i - i1, j - j1, k - k1, l - l1, m - m1, n - n1));
-                    REQUIRE((sv_h.extent_int(0) == (i2 - i1) && sv_h.extent_int(1) == (j2 - j1) &&
-                             sv_h.extent_int(2) == (k2 - k1) && sv_h.extent_int(3) == (l2 - l1) &&
-                             sv_h.extent_int(4) == (m2 - m1) && sv_h.extent_int(5) == (n2 - n1)));
+                    REQUIRE(v6d_h(i, j, k, l, m, n) == sv_h(i - i1, j - j1,
+                                                            k - k1, l - l1,
+                                                            m - m1, n - n1));
+                    REQUIRE((sv_h.extent_int(0) == (i2 - i1) &&
+                             sv_h.extent_int(1) == (j2 - j1) &&
+                             sv_h.extent_int(2) == (k2 - k1) &&
+                             sv_h.extent_int(3) == (l2 - l1) &&
+                             sv_h.extent_int(4) == (m2 - m1) &&
+                             sv_h.extent_int(5) == (n2 - n1)));
                   }
                 }
               }

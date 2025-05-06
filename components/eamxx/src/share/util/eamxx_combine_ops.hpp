@@ -41,10 +41,12 @@ enum class CombineMode {
 // This routine should have no overhead compared to a manual
 // update (assuming you call it with the proper CM)
 
-template <CombineMode CM, typename ScalarIn, typename ScalarOut,
-          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
-KOKKOS_FORCEINLINE_FUNCTION void combine(const ScalarIn &newVal, ScalarOut &result,
-                                         const CoeffType alpha, const CoeffType beta) {
+template <
+    CombineMode CM, typename ScalarIn, typename ScalarOut,
+    typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
+KOKKOS_FORCEINLINE_FUNCTION void
+combine(const ScalarIn &newVal, ScalarOut &result, const CoeffType alpha,
+        const CoeffType beta) {
   switch (CM) {
   case CombineMode::Replace:
     result = alpha * newVal;
@@ -62,11 +64,13 @@ KOKKOS_FORCEINLINE_FUNCTION void combine(const ScalarIn &newVal, ScalarOut &resu
   }
 }
 /* Special version of combine that takes a mask into account */
-template <CombineMode CM, typename ScalarIn, typename ScalarOut,
-          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
-KOKKOS_FORCEINLINE_FUNCTION void combine_and_fill(const ScalarIn &newVal, ScalarOut &result,
-                                                  const ScalarOut fill_val, const CoeffType alpha,
-                                                  const CoeffType beta) {
+template <
+    CombineMode CM, typename ScalarIn, typename ScalarOut,
+    typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
+KOKKOS_FORCEINLINE_FUNCTION void
+combine_and_fill(const ScalarIn &newVal, ScalarOut &result,
+                 const ScalarOut fill_val, const CoeffType alpha,
+                 const CoeffType beta) {
   switch (CM) {
   case CombineMode::Replace:
     combine<CM>(newVal, result, alpha, beta);

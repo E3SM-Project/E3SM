@@ -15,10 +15,10 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_INLINE_FUNCTION void
-Functions<S, D>::shoc_assumed_pdf_compute_qs(const Spack &Tl1_1, const Spack &Tl1_2,
-                                             const Spack &pval, const Smask &active_entries,
-                                             Spack &qs1, Spack &beta1, Spack &qs2, Spack &beta2) {
+KOKKOS_INLINE_FUNCTION void Functions<S, D>::shoc_assumed_pdf_compute_qs(
+    const Spack &Tl1_1, const Spack &Tl1_2, const Spack &pval,
+    const Smask &active_entries, Spack &qs1, Spack &beta1, Spack &qs2,
+    Spack &beta2) {
   const Scalar rair  = C::Rair;
   const Scalar rv    = C::RV;
   const Scalar cp    = C::CP;
@@ -40,8 +40,10 @@ Functions<S, D>::shoc_assumed_pdf_compute_qs(const Spack &Tl1_1, const Spack &Tl
   qs2                   = qs1;
   beta2                 = beta1;
 
-  qs2.set(condition, sp(0.622) * esval1_2 / ekat::max(esval1_2, pval - esval1_2));
-  beta2.set(condition, (rair / rv) * (lstarn / (rair * Tl1_2)) * (lstarn / (cp * Tl1_2)));
+  qs2.set(condition,
+          sp(0.622) * esval1_2 / ekat::max(esval1_2, pval - esval1_2));
+  beta2.set(condition,
+            (rair / rv) * (lstarn / (rair * Tl1_2)) * (lstarn / (cp * Tl1_2)));
 }
 
 } // namespace shoc

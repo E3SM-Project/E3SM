@@ -9,18 +9,23 @@
 
 namespace scream {
 
-constexpr int ncmps             = 2;
-constexpr auto spd              = constants::seconds_per_day;
-constexpr int data_ngcols       = 12;
-constexpr int fine_ngcols       = 2 * data_ngcols - 1; // stick one dof between each data dofs
+constexpr int ncmps       = 2;
+constexpr auto spd        = constants::seconds_per_day;
+constexpr int data_ngcols = 12;
+constexpr int fine_ngcols =
+    2 * data_ngcols - 1; // stick one dof between each data dofs
 constexpr int data_nlevs        = 32;
 constexpr int fine_nlevs        = 64;
 const std::string map_file_name = "map_file_for_data_interp.nc";
 
-// At each month in the input data, we are adding a delta to the "base" value of the fields.
-constexpr double delta_data[12] = {0, 30, 60, 90, 120, 150, 180, 150, 120, 90, 60, 30};
+// At each month in the input data, we are adding a delta to the "base" value of
+// the fields.
+constexpr double delta_data[12] = {0,   30,  60,  90, 120, 150,
+                                   180, 150, 120, 90, 60,  30};
 
-inline util::TimeStamp get_t_ref() { return util::TimeStamp({2010, 1, 1}, {0, 0, 0}); }
+inline util::TimeStamp get_t_ref() {
+  return util::TimeStamp({2010, 1, 1}, {0, 0, 0});
+}
 
 // Slices are at midnight between 15th and 16th of each month
 // First slice is Jul 15th
@@ -42,9 +47,10 @@ inline util::TimeStamp get_last_slice_time() {
   return t;
 }
 
-std::vector<Field> create_fields(const std::shared_ptr<const AbstractGrid> &grid,
-                                 const bool init_values, const bool int_same_as_mid = false,
-                                 const bool pad_for_packing = true) {
+std::vector<Field>
+create_fields(const std::shared_ptr<const AbstractGrid> &grid,
+              const bool init_values, const bool int_same_as_mid = false,
+              const bool pad_for_packing = true) {
   constexpr auto m = ekat::units::m;
   const auto &gn   = grid->name();
 
@@ -67,10 +73,14 @@ std::vector<Field> create_fields(const std::shared_ptr<const AbstractGrid> &grid
   Field v3d_i(FieldIdentifier("v3d_i", layout_v3d_i, m, gn));
 
   if (pad_for_packing) {
-    s3d_m.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-    v3d_m.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-    s3d_i.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-    v3d_i.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    s3d_m.get_header().get_alloc_properties().request_allocation(
+        SCREAM_PACK_SIZE);
+    v3d_m.get_header().get_alloc_properties().request_allocation(
+        SCREAM_PACK_SIZE);
+    s3d_i.get_header().get_alloc_properties().request_allocation(
+        SCREAM_PACK_SIZE);
+    v3d_i.get_header().get_alloc_properties().request_allocation(
+        SCREAM_PACK_SIZE);
   }
 
   s2d.allocate_view();
@@ -102,17 +112,21 @@ std::vector<Field> create_fields(const std::shared_ptr<const AbstractGrid> &grid
       for (int ilev = 0; ilev < nlevs; ++ilev) {
         v_value = ilev * dv;
         for (int icmp = 0; icmp < ncmps; ++icmp) {
-          v3d_m.get_view<Real ***, Host>()(icol, icmp, ilev) = h_value * (v_value + dv / 2) + icmp;
+          v3d_m.get_view<Real ***, Host>()(icol, icmp, ilev) =
+              h_value * (v_value + dv / 2) + icmp;
           if (int_same_as_mid) {
             v3d_i.get_view<Real ***, Host>()(icol, icmp, ilev) =
                 h_value * (v_value + dv / 2) + icmp;
           } else {
-            v3d_i.get_view<Real ***, Host>()(icol, icmp, ilev) = h_value * (v_value) + icmp;
+            v3d_i.get_view<Real ***, Host>()(icol, icmp, ilev) =
+                h_value * (v_value) + icmp;
           }
         }
-        s3d_m.get_view<Real **, Host>()(icol, ilev) = h_value * (v_value + dv / 2);
+        s3d_m.get_view<Real **, Host>()(icol, ilev) =
+            h_value * (v_value + dv / 2);
         if (int_same_as_mid) {
-          s3d_i.get_view<Real **, Host>()(icol, ilev) = h_value * (v_value + dv / 2);
+          s3d_i.get_view<Real **, Host>()(icol, ilev) =
+              h_value * (v_value + dv / 2);
         } else {
           s3d_i.get_view<Real **, Host>()(icol, ilev) = h_value * (v_value);
         }

@@ -31,7 +31,8 @@ private:
 
 public:
   // Constructor
-  MAMConstituentFluxes(const ekat::Comm &comm, const ekat::ParameterList &params);
+  MAMConstituentFluxes(const ekat::Comm &comm,
+                       const ekat::ParameterList &params);
 
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
@@ -41,7 +42,8 @@ public:
   std::string name() const { return "mam_constituent_fluxes"; }
 
   // grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;

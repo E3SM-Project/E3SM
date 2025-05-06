@@ -31,7 +31,8 @@ ekat::logger::LogLevel str2LogLevel(const std::string &s) {
   return log_level;
 }
 
-AtmosphereProcess::AtmosphereProcess(const ekat::Comm &comm, const ekat::ParameterList &params)
+AtmosphereProcess::AtmosphereProcess(const ekat::Comm &comm,
+                                     const ekat::ParameterList &params)
     : m_comm(comm), m_params(params) {
   if (m_params.isParameter("logger")) {
     m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("logger");
@@ -40,31 +41,36 @@ AtmosphereProcess::AtmosphereProcess(const ekat::Comm &comm, const ekat::Paramet
     using namespace ekat::logger;
     using logger_impl_t = Logger<LogNoFile, LogAllRanks>;
     auto log_level      = m_params.get<std::string>("log_level", "trace");
-    m_atm_logger        = std::make_shared<logger_impl_t>("", str2LogLevel(log_level), m_comm);
+    m_atm_logger =
+        std::make_shared<logger_impl_t>("", str2LogLevel(log_level), m_comm);
     m_atm_logger->set_no_format();
   }
 
   if (m_params.isParameter("number_of_subcycles")) {
     m_num_subcycles = m_params.get<int>("number_of_subcycles");
   }
-  EKAT_REQUIRE_MSG(m_num_subcycles > 0, "Error! Invalid number of subcycles in param list " +
-                                            m_params.name() +
-                                            ".\n"
-                                            "  - Num subcycles: " +
-                                            std::to_string(m_num_subcycles) + "\n");
+  EKAT_REQUIRE_MSG(m_num_subcycles > 0,
+                   "Error! Invalid number of subcycles in param list " +
+                       m_params.name() +
+                       ".\n"
+                       "  - Num subcycles: " +
+                       std::to_string(m_num_subcycles) + "\n");
 
   m_timer_prefix = m_params.get<std::string>("timer_prefix", "EAMxx::");
 
-  m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level", "warn"));
+  m_repair_log_level =
+      str2LogLevel(m_params.get<std::string>("repair_log_level", "warn"));
 
   // Info for mass and energy conservation checks
   m_column_conservation_check_data.has_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
 
-  m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
+  m_internal_diagnostics_level =
+      m_params.get<int>("internal_diagnostics_level", 0);
 }
 
-void AtmosphereProcess::initialize(const TimeStamp &t0, const RunType run_type) {
+void AtmosphereProcess::initialize(const TimeStamp &t0,
+                                   const RunType run_type) {
   if (this->type() != AtmosphereProcessType::Group) {
     start_timer(m_timer_prefix + this->name() + "::init");
   }
@@ -113,20 +119,22 @@ void AtmosphereProcess::run(const double dt) {
   // Init single step tendencies (if any) with current value of output field
   init_step_tendencies();
 
-  for (m_subcycle_iter = 0; m_subcycle_iter < m_num_subcycles; ++m_subcycle_iter) {
+  for (m_subcycle_iter = 0; m_subcycle_iter < m_num_subcycles;
+       ++m_subcycle_iter) {
     m_start_of_step_ts = m_end_of_step_ts;
     m_end_of_step_ts += dt_sub;
 
     if (has_column_conservation_check()) {
       // Column local mass and energy checks requires the total mass and energy
-      // to be computed directly before the atm process is run, as well and store
-      // the correct timestep for the process.
+      // to be computed directly before the atm process is run, as well and
+      // store the correct timestep for the process.
       compute_column_conservation_checks_data(dt_sub);
     }
 
     if (m_internal_diagnostics_level > 0)
       // Print hash of INPUTS before run
-      print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
+      print_global_state_hash(name() + "-pre-sc-" +
+                                  std::to_string(m_subcycle_iter),
                               m_start_of_step_ts, true, false, false);
 
     // Run derived class implementation
@@ -134,7 +142,8 @@ void AtmosphereProcess::run(const double dt) {
 
     if (m_internal_diagnostics_level > 0)
       // Print hash of OUTPUTS/INTERNALS after run
-      print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
+      print_global_state_hash(name() + "-pst-sc-" +
+                                  std::to_string(m_subcycle_iter),
                               m_end_of_step_ts, true, true, true);
 
     if (has_column_conservation_check()) {
@@ -158,7 +167,9 @@ void AtmosphereProcess::run(const double dt) {
   stop_timer(m_timer_prefix + this->name() + "::run");
 }
 
-void AtmosphereProcess::finalize(/* what inputs? */) { finalize_impl(/* what inputs? */); }
+void AtmosphereProcess::finalize(/* what inputs? */) {
+  finalize_impl(/* what inputs? */);
+}
 
 void AtmosphereProcess::setup_tendencies_requests() {
   using vos_t   = std::vector<std::string>;
@@ -190,12 +201,15 @@ void AtmosphereProcess::setup_tendencies_requests() {
 
   // Allow to request tendency of a field on a particular grid
   // by using the syntax 'field_name#grid_name'
-  auto field_grid = [&](const std::string &tn) -> std::pair<std::string, std::string> {
+  auto field_grid =
+      [&](const std::string &tn) -> std::pair<std::string, std::string> {
     auto tokens = ekat::split(tn, '#');
-    EKAT_REQUIRE_MSG(tokens.size() == 1 || tokens.size() == 2,
-                     "Error! Invalid format for tendency calculation request: " + tn +
-                         "\n"
-                         "  To request tendencies for F, use 'F' or 'F#grid_name' format.\n");
+    EKAT_REQUIRE_MSG(
+        tokens.size() == 1 || tokens.size() == 2,
+        "Error! Invalid format for tendency calculation request: " + tn +
+            "\n"
+            "  To request tendencies for F, use 'F' or 'F#grid_name' "
+            "format.\n");
     return std::make_pair(tokens[0], tokens.size() == 2 ? tokens[1] : "");
   };
 
@@ -208,25 +222,27 @@ void AtmosphereProcess::setup_tendencies_requests() {
     std::vector<std::string> matches_vec;
     for (auto it : get_computed_field_requests()) {
       if (it.fid.name() == fn && (gn == "" || gn == it.fid.get_grid_name())) {
-        auto it_bool = matches_set.insert(std::make_pair(fn, it.fid.get_grid_name()));
+        auto it_bool =
+            matches_set.insert(std::make_pair(fn, it.fid.get_grid_name()));
         if (it_bool.second) {
           auto gname = it_bool.first->second;
           matches_vec.push_back(fn + "(grid=" + gname + ")");
         }
       }
     }
-    EKAT_ERROR_MSG("Error! Could not uniquely determine field for tendency calculation.\n"
-                   " - atm proc name: " +
-                   this->name() +
-                   "\n"
-                   " - tend requested: " +
-                   tn +
-                   "\n"
-                   " - all matches: " +
-                   ekat::join(matches_vec, ", ") +
-                   "\n"
-                   "If atm process computes " +
-                   fn + " on multiple grids, use " + fn + "#grid_name\n");
+    EKAT_ERROR_MSG(
+        "Error! Could not uniquely determine field for tendency calculation.\n"
+        " - atm proc name: " +
+        this->name() +
+        "\n"
+        " - tend requested: " +
+        tn +
+        "\n"
+        " - all matches: " +
+        ekat::join(matches_vec, ", ") +
+        "\n"
+        "If atm process computes " +
+        fn + " on multiple grids, use " + fn + "#grid_name\n");
   };
 
   // Parse all the tendencies requested, looking for a corresponding
@@ -255,16 +271,17 @@ void AtmosphereProcess::setup_tendencies_requests() {
         }
 
         // Check this computed field is also required (hence, updated)
-        EKAT_REQUIRE_MSG(has_required_field(fn, gname),
-                         "Error! Tendency calculation available only for updated fields.\n"
-                         " - atm proc name: " +
-                             this->name() +
-                             "\n"
-                             " - field name   : " +
-                             fn +
-                             "\n"
-                             " - grid name    : " +
-                             gn + "\n");
+        EKAT_REQUIRE_MSG(
+            has_required_field(fn, gname),
+            "Error! Tendency calculation available only for updated fields.\n"
+            " - atm proc name: " +
+                this->name() +
+                "\n"
+                " - field name   : " +
+                fn +
+                "\n"
+                " - grid name    : " +
+                gn + "\n");
 
         // Create tend FID and request field
         FieldIdentifier t_fid(tname, layout, units, gname, dtype);
@@ -273,12 +290,13 @@ void AtmosphereProcess::setup_tendencies_requests() {
       }
     }
 
-    EKAT_REQUIRE_MSG(grid_found != "", "Error! Could not locate field for tendency request.\n"
-                                       " - atm proc name: " +
-                                           this->name() +
-                                           "\n"
-                                           " - tendency request: " +
-                                           tn + "\n");
+    EKAT_REQUIRE_MSG(grid_found != "",
+                     "Error! Could not locate field for tendency request.\n"
+                     " - atm proc name: " +
+                         this->name() +
+                         "\n"
+                         " - tendency request: " +
+                         tn + "\n");
 
     // Add an empty field, to be reset when we set the computed field
     m_proc_tendencies[tname] = {};
@@ -298,7 +316,8 @@ void AtmosphereProcess::set_required_field(const Field &f) {
                        "    atm process: " +
                        this->name() +
                        "\n"
-                       "Something is wrong up the call stack. Please, contact developers.\n");
+                       "Something is wrong up the call stack. Please, contact "
+                       "developers.\n");
 
   if (not ekat::contains(m_fields_in, f)) {
     m_fields_in.emplace_back(f);
@@ -324,7 +343,8 @@ void AtmosphereProcess::set_computed_field(const Field &f) {
                        "   atm process: " +
                        this->name() +
                        "\n"
-                       "Something is wrong up the call stack. Please, contact developers.\n");
+                       "Something is wrong up the call stack. Please, contact "
+                       "developers.\n");
 
   if (not ekat::contains(m_fields_out, f)) {
     m_fields_out.emplace_back(f);
@@ -346,18 +366,20 @@ void AtmosphereProcess::set_computed_field(const Field &f) {
 
 void AtmosphereProcess::set_required_group(const FieldGroup &group) {
   // Sanity check
-  EKAT_REQUIRE_MSG(has_required_group(group.m_info->m_group_name, group.grid_name()),
-                   "Error! This atmosphere process does not require the input group.\n"
-                   "   group name: " +
-                       group.m_info->m_group_name +
-                       "\n"
-                       "   grid name : " +
-                       group.grid_name() +
-                       "\n"
-                       "   atm process: " +
-                       this->name() +
-                       "\n"
-                       "Something is wrong up the call stack. Please, contact developers.\n");
+  EKAT_REQUIRE_MSG(
+      has_required_group(group.m_info->m_group_name, group.grid_name()),
+      "Error! This atmosphere process does not require the input group.\n"
+      "   group name: " +
+          group.m_info->m_group_name +
+          "\n"
+          "   grid name : " +
+          group.grid_name() +
+          "\n"
+          "   atm process: " +
+          this->name() +
+          "\n"
+          "Something is wrong up the call stack. Please, contact "
+          "developers.\n");
 
   if (not ekat::contains(m_groups_in, group)) {
     m_groups_in.emplace_back(group);
@@ -379,18 +401,20 @@ void AtmosphereProcess::set_required_group(const FieldGroup &group) {
 
 void AtmosphereProcess::set_computed_group(const FieldGroup &group) {
   // Sanity check
-  EKAT_REQUIRE_MSG(has_computed_group(group.m_info->m_group_name, group.grid_name()),
-                   "Error! This atmosphere process does not compute the input group.\n"
-                   "   group name: " +
-                       group.m_info->m_group_name +
-                       "\n"
-                       "   grid name : " +
-                       group.grid_name() +
-                       "\n"
-                       "   atm process: " +
-                       this->name() +
-                       "\n"
-                       "Something is wrong up the call stack. Please, contact developers.\n");
+  EKAT_REQUIRE_MSG(
+      has_computed_group(group.m_info->m_group_name, group.grid_name()),
+      "Error! This atmosphere process does not compute the input group.\n"
+      "   group name: " +
+          group.m_info->m_group_name +
+          "\n"
+          "   grid name : " +
+          group.grid_name() +
+          "\n"
+          "   atm process: " +
+          this->name() +
+          "\n"
+          "Something is wrong up the call stack. Please, contact "
+          "developers.\n");
 
   if (not ekat::contains(m_groups_out, group)) {
     m_groups_out.emplace_back(group);
@@ -411,10 +435,11 @@ void AtmosphereProcess::set_computed_group(const FieldGroup &group) {
 }
 
 void AtmosphereProcess::run_property_check(
-    const prop_check_ptr &property_check, const CheckFailHandling check_fail_handling,
+    const prop_check_ptr &property_check,
+    const CheckFailHandling check_fail_handling,
     const PropertyCheckCategory property_check_category) const {
-  m_atm_logger->trace("[" + this->name() + "] run_property_check '" + property_check->name() +
-                      "'...");
+  m_atm_logger->trace("[" + this->name() + "] run_property_check '" +
+                      property_check->name() + "'...");
   auto res_and_msg = property_check->check();
 
   // string for output
@@ -460,8 +485,8 @@ void AtmosphereProcess::run_property_check(
                               "  - Message: " +
                               res_and_msg.msg);
     } else {
-      // No hope. Crash. But before crashing, print all the input and output fields at the samme
-      // location where the check failed.
+      // No hope. Crash. But before crashing, print all the input and output
+      // fields at the samme location where the check failed.
       std::ostringstream ss;
       ss << "Error! Failed " + pre_post_str +
                 " property check (cannot be repaired).\n"
@@ -477,8 +502,8 @@ void AtmosphereProcess::run_property_check(
                 "  - Message: " +
                 res_and_msg.msg;
       if (res_and_msg.fail_loc_indices.size() > 0) {
-        // If the location is 3d, we not use the level index to slice the fields,
-        // but print a column worth of data for all fields.
+        // If the location is 3d, we not use the level index to slice the
+        // fields, but print a column worth of data for all fields.
         using namespace ShortFieldTagsNames;
         auto tags = res_and_msg.fail_loc_tags;
         auto idx  = res_and_msg.fail_loc_indices;
@@ -493,34 +518,42 @@ void AtmosphereProcess::run_property_check(
           tags.erase(iti);
           idx.erase(idx.begin() + pos);
         }
-        ss << "\n *************************** INPUT FIELDS ******************************\n";
+        ss << "\n *************************** INPUT FIELDS "
+              "******************************\n";
         ss << "\n  ------- INPUT FIELDS -------\n";
         for (const auto &f : m_fields_in) {
           if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
             print_field_hyperslab(f, tags, idx, ss);
-            ss << " -----------------------------------------------------------------------\n";
+            ss << " -----------------------------------------------------------"
+                  "------------\n";
           }
         }
         for (const auto &g : m_groups_in) {
           for (const auto &f : g.m_individual_fields) {
-            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
+            if (f.second->get_header().get_identifier().get_layout().has_tags(
+                    tags)) {
               print_field_hyperslab(*f.second, tags, idx, ss);
-              ss << " -----------------------------------------------------------------------\n";
+              ss << " ---------------------------------------------------------"
+                    "--------------\n";
             }
           }
         }
-        ss << "\n ************************** OUTPUT FIELDS ******************************\n";
+        ss << "\n ************************** OUTPUT FIELDS "
+              "******************************\n";
         for (const auto &f : m_fields_out) {
           if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
             print_field_hyperslab(f, tags, idx, ss);
-            ss << " -----------------------------------------------------------------------\n";
+            ss << " -----------------------------------------------------------"
+                  "------------\n";
           }
         }
         for (const auto &g : m_groups_out) {
           for (const auto &f : g.m_individual_fields) {
-            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
+            if (f.second->get_header().get_identifier().get_layout().has_tags(
+                    tags)) {
               print_field_hyperslab(*f.second, tags, idx, ss);
-              ss << " -----------------------------------------------------------------------\n";
+              ss << " ---------------------------------------------------------"
+                    "--------------\n";
             }
           }
         }
@@ -535,7 +568,8 @@ void AtmosphereProcess::run_precondition_checks() const {
   start_timer(m_timer_prefix + this->name() + "::run-precondition-checks");
   // Run all pre-condition property checks
   for (const auto &it : m_precondition_checks) {
-    run_property_check(it.second, it.first, PropertyCheckCategory::Precondition);
+    run_property_check(it.second, it.first,
+                       PropertyCheckCategory::Precondition);
   }
   stop_timer(m_timer_prefix + this->name() + "::run-precondition-checks");
   m_atm_logger->debug("[" + this->name() + "] run_precondition_checks...done!");
@@ -546,20 +580,27 @@ void AtmosphereProcess::run_postcondition_checks() const {
   start_timer(m_timer_prefix + this->name() + "::run-postcondition-checks");
   // Run all post-condition property checks
   for (const auto &it : m_postcondition_checks) {
-    run_property_check(it.second, it.first, PropertyCheckCategory::Postcondition);
+    run_property_check(it.second, it.first,
+                       PropertyCheckCategory::Postcondition);
   }
   stop_timer(m_timer_prefix + this->name() + "::run-postcondition-checks");
-  m_atm_logger->debug("[" + this->name() + "] run_postcondition_checks...done!");
+  m_atm_logger->debug("[" + this->name() +
+                      "] run_postcondition_checks...done!");
 }
 
 void AtmosphereProcess::run_column_conservation_check() const {
-  m_atm_logger->debug("[" + this->name() + "] run_column_conservation_check...");
-  start_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
+  m_atm_logger->debug("[" + this->name() +
+                      "] run_column_conservation_check...");
+  start_timer(m_timer_prefix + this->name() +
+              "::run-column-conservation-checks");
   // Conservation check is run as a postcondition check
-  run_property_check(m_column_conservation_check.second, m_column_conservation_check.first,
+  run_property_check(m_column_conservation_check.second,
+                     m_column_conservation_check.first,
                      PropertyCheckCategory::Postcondition);
-  stop_timer(m_timer_prefix + this->name() + "::run-column-conservation-checks");
-  m_atm_logger->debug("[" + this->name() + "] run_column-conservation_checks...done!");
+  stop_timer(m_timer_prefix + this->name() +
+             "::run-column-conservation-checks");
+  m_atm_logger->debug("[" + this->name() +
+                      "] run_column-conservation_checks...done!");
 }
 
 void AtmosphereProcess::init_step_tendencies() {
@@ -588,7 +629,8 @@ void AtmosphereProcess::compute_step_tendencies(const double dt) {
       auto &f_beg       = m_start_of_step_fields.at(fname);
       auto &tend        = it.second;
 
-      // Compute tend from this atm proc step, then sum into overall atm timestep tendency
+      // Compute tend from this atm proc step, then sum into overall atm
+      // timestep tendency
       f_beg.update(f, 1, -1);
       tend.update(f_beg, 1, 1);
     }
@@ -624,7 +666,8 @@ bool AtmosphereProcess::has_computed_field(const std::string &name,
   return false;
 }
 
-bool AtmosphereProcess::has_required_group(const std::string &name, const std::string &grid) const {
+bool AtmosphereProcess::has_required_group(const std::string &name,
+                                           const std::string &grid) const {
   for (const auto &it : m_required_group_requests) {
     if (it.name == name && it.grid == grid) {
       return true;
@@ -633,7 +676,8 @@ bool AtmosphereProcess::has_required_group(const std::string &name, const std::s
   return false;
 }
 
-bool AtmosphereProcess::has_computed_group(const std::string &name, const std::string &grid) const {
+bool AtmosphereProcess::has_computed_group(const std::string &name,
+                                           const std::string &grid) const {
   for (const auto &it : m_computed_group_requests) {
     if (it.name == name && it.grid == grid) {
       return true;
@@ -678,10 +722,13 @@ void AtmosphereProcess::add_me_as_customer(const Field &f) {
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void AtmosphereProcess::add_internal_field(const Field &f) { m_internal_fields.push_back(f); }
+void AtmosphereProcess::add_internal_field(const Field &f) {
+  m_internal_fields.push_back(f);
+}
 
-const Field &AtmosphereProcess::get_field_in(const std::string &field_name,
-                                             const std::string &grid_name) const {
+const Field &
+AtmosphereProcess::get_field_in(const std::string &field_name,
+                                const std::string &grid_name) const {
   return get_field_in_impl(field_name, grid_name);
 }
 
@@ -690,7 +737,8 @@ Field &AtmosphereProcess::get_field_in(const std::string &field_name,
   return get_field_in_impl(field_name, grid_name);
 }
 
-const Field &AtmosphereProcess::get_field_in(const std::string &field_name) const {
+const Field &
+AtmosphereProcess::get_field_in(const std::string &field_name) const {
   return get_field_in_impl(field_name);
 }
 
@@ -698,8 +746,9 @@ Field &AtmosphereProcess::get_field_in(const std::string &field_name) {
   return get_field_in_impl(field_name);
 }
 
-const Field &AtmosphereProcess::get_field_out(const std::string &field_name,
-                                              const std::string &grid_name) const {
+const Field &
+AtmosphereProcess::get_field_out(const std::string &field_name,
+                                 const std::string &grid_name) const {
   return get_field_out_impl(field_name, grid_name);
 }
 
@@ -708,7 +757,8 @@ Field &AtmosphereProcess::get_field_out(const std::string &field_name,
   return get_field_out_impl(field_name, grid_name);
 }
 
-const Field &AtmosphereProcess::get_field_out(const std::string &field_name) const {
+const Field &
+AtmosphereProcess::get_field_out(const std::string &field_name) const {
   return get_field_out_impl(field_name);
 }
 
@@ -716,8 +766,9 @@ Field &AtmosphereProcess::get_field_out(const std::string &field_name) {
   return get_field_out_impl(field_name);
 }
 
-const FieldGroup &AtmosphereProcess::get_group_in(const std::string &group_name,
-                                                  const std::string &grid_name) const {
+const FieldGroup &
+AtmosphereProcess::get_group_in(const std::string &group_name,
+                                const std::string &grid_name) const {
   return get_group_in_impl(group_name, grid_name);
 }
 
@@ -726,7 +777,8 @@ FieldGroup &AtmosphereProcess::get_group_in(const std::string &group_name,
   return get_group_in_impl(group_name, grid_name);
 }
 
-const FieldGroup &AtmosphereProcess::get_group_in(const std::string &group_name) const {
+const FieldGroup &
+AtmosphereProcess::get_group_in(const std::string &group_name) const {
   return get_group_in_impl(group_name);
 }
 
@@ -734,8 +786,9 @@ FieldGroup &AtmosphereProcess::get_group_in(const std::string &group_name) {
   return get_group_in_impl(group_name);
 }
 
-const FieldGroup &AtmosphereProcess::get_group_out(const std::string &group_name,
-                                                   const std::string &grid_name) const {
+const FieldGroup &
+AtmosphereProcess::get_group_out(const std::string &group_name,
+                                 const std::string &grid_name) const {
   return get_group_out_impl(group_name, grid_name);
 }
 
@@ -744,7 +797,8 @@ FieldGroup &AtmosphereProcess::get_group_out(const std::string &group_name,
   return get_group_out_impl(group_name, grid_name);
 }
 
-const FieldGroup &AtmosphereProcess::get_group_out(const std::string &group_name) const {
+const FieldGroup &
+AtmosphereProcess::get_group_out(const std::string &group_name) const {
   return get_group_out_impl(group_name);
 }
 
@@ -752,8 +806,9 @@ FieldGroup &AtmosphereProcess::get_group_out(const std::string &group_name) {
   return get_group_out_impl(group_name);
 }
 
-const Field &AtmosphereProcess::get_internal_field(const std::string &field_name,
-                                                   const std::string &grid_name) const {
+const Field &
+AtmosphereProcess::get_internal_field(const std::string &field_name,
+                                      const std::string &grid_name) const {
   return get_internal_field_impl(field_name, grid_name);
 }
 
@@ -766,11 +821,13 @@ Field &AtmosphereProcess::get_internal_field(const std::string &field_name) {
   return get_internal_field_impl(field_name);
 }
 
-const Field &AtmosphereProcess::get_internal_field(const std::string &field_name) const {
+const Field &
+AtmosphereProcess::get_internal_field(const std::string &field_name) const {
   return get_internal_field_impl(field_name);
 }
 
-void AtmosphereProcess::add_invariant_check(const prop_check_ptr &pc, const CheckFailHandling cfh) {
+void AtmosphereProcess::add_invariant_check(const prop_check_ptr &pc,
+                                            const CheckFailHandling cfh) {
   add_precondition_check(pc, cfh);
   add_postcondition_check(pc, cfh);
 }
@@ -783,13 +840,15 @@ void AtmosphereProcess::add_precondition_check(const prop_check_ptr &pc,
   // update a field, without that appearing in the dag.
   for (const auto &ptr : pc->repairable_fields()) {
     const auto &fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG(has_computed_field(fid) || has_computed_group(fid.name(), fid.get_grid_name()),
-                     "Error! Input property check can repair a non-computed field.\n"
-                     "  - Atmosphere process name: " +
-                         name() +
-                         "\n"
-                         "  - Property check name: " +
-                         pc->name() + "\n");
+    EKAT_REQUIRE_MSG(
+        has_computed_field(fid) ||
+            has_computed_group(fid.name(), fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " +
+            name() +
+            "\n"
+            "  - Property check name: " +
+            pc->name() + "\n");
   }
   m_precondition_checks.push_back(std::make_pair(cfh, pc));
 }
@@ -815,19 +874,20 @@ void AtmosphereProcess::add_postcondition_check(const prop_check_ptr &pc,
   // Avoid adding the *SAME* test twice
   for (const auto &it : m_postcondition_checks) {
     if (it.second->same_as(*pc)) {
-      EKAT_REQUIRE_MSG(it.first == cfh,
-                       "Error! Duplicate property check with different CheckFailHandling.\n"
-                       "  - Atmosphere process name: " +
-                           name() +
-                           "\n"
-                           "  - Property check name: " +
-                           pc->name() +
-                           "\n"
-                           "  - Current CFH: " +
-                           cfh2str(it.first) +
-                           "\n"
-                           "  - Input CFH: " +
-                           cfh2str(cfh) + "\n");
+      EKAT_REQUIRE_MSG(
+          it.first == cfh,
+          "Error! Duplicate property check with different CheckFailHandling.\n"
+          "  - Atmosphere process name: " +
+              name() +
+              "\n"
+              "  - Property check name: " +
+              pc->name() +
+              "\n"
+              "  - Current CFH: " +
+              cfh2str(it.first) +
+              "\n"
+              "  - Input CFH: " +
+              cfh2str(cfh) + "\n");
       return;
     }
   }
@@ -838,19 +898,21 @@ void AtmosphereProcess::add_postcondition_check(const prop_check_ptr &pc,
   // update a field, without that appearing in the dag.
   for (const auto &ptr : pc->repairable_fields()) {
     const auto &fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG(has_computed_field(fid) || has_computed_group(fid.name(), fid.get_grid_name()),
-                     "Error! Input property check can repair a non-computed field.\n"
-                     "  - Atmosphere process name: " +
-                         name() +
-                         "\n"
-                         "  - Property check name: " +
-                         pc->name() + "\n");
+    EKAT_REQUIRE_MSG(
+        has_computed_field(fid) ||
+            has_computed_group(fid.name(), fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " +
+            name() +
+            "\n"
+            "  - Property check name: " +
+            pc->name() + "\n");
   }
   m_postcondition_checks.push_back(std::make_pair(cfh, pc));
 }
 
-void AtmosphereProcess::add_column_conservation_check(const prop_check_ptr &prop_check,
-                                                      const CheckFailHandling cfh) {
+void AtmosphereProcess::add_column_conservation_check(
+    const prop_check_ptr &prop_check, const CheckFailHandling cfh) {
   EKAT_REQUIRE_MSG(m_column_conservation_check.second == nullptr,
                    "Error! Conservation check for process \"" + name() +
                        "\" has already been added.");
@@ -860,11 +922,11 @@ void AtmosphereProcess::add_column_conservation_check(const prop_check_ptr &prop
 
 void AtmosphereProcess::set_fields_and_groups_pointers() {
   for (auto &f : m_fields_in) {
-    const auto &fid                                       = f.get_header().get_identifier();
+    const auto &fid = f.get_header().get_identifier();
     m_fields_in_pointers[fid.name()][fid.get_grid_name()] = &f;
   }
   for (auto &f : m_fields_out) {
-    const auto &fid                                        = f.get_header().get_identifier();
+    const auto &fid = f.get_header().get_identifier();
     m_fields_out_pointers[fid.name()][fid.get_grid_name()] = &f;
   }
   for (auto &g : m_groups_in) {
@@ -876,15 +938,17 @@ void AtmosphereProcess::set_fields_and_groups_pointers() {
     m_groups_out_pointers[group_name][g.grid_name()] = &g;
   }
   for (auto &f : m_internal_fields) {
-    const auto &fid                                             = f.get_header().get_identifier();
+    const auto &fid = f.get_header().get_identifier();
     m_internal_fields_pointers[fid.name()][fid.get_grid_name()] = &f;
   }
 }
 
-void AtmosphereProcess::alias_field_in(const std::string &field_name, const std::string &grid_name,
+void AtmosphereProcess::alias_field_in(const std::string &field_name,
+                                       const std::string &grid_name,
                                        const std::string &alias_name) {
   try {
-    m_fields_in_pointers[alias_name][grid_name] = m_fields_in_pointers.at(field_name).at(grid_name);
+    m_fields_in_pointers[alias_name][grid_name] =
+        m_fields_in_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -897,7 +961,8 @@ void AtmosphereProcess::alias_field_in(const std::string &field_name, const std:
   }
 }
 
-void AtmosphereProcess::alias_field_out(const std::string &field_name, const std::string &grid_name,
+void AtmosphereProcess::alias_field_out(const std::string &field_name,
+                                        const std::string &grid_name,
                                         const std::string &alias_name) {
   try {
     m_fields_out_pointers[alias_name][grid_name] =
@@ -905,19 +970,22 @@ void AtmosphereProcess::alias_field_out(const std::string &field_name, const std
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG("Error! Could not locate output field for aliasing request.\n"
-                   "    - field name: " +
-                   field_name +
-                   "\n"
-                   "    - grid name:  " +
-                   grid_name + "\n");
+    EKAT_ERROR_MSG(
+        "Error! Could not locate output field for aliasing request.\n"
+        "    - field name: " +
+        field_name +
+        "\n"
+        "    - grid name:  " +
+        grid_name + "\n");
   }
 }
 
-void AtmosphereProcess::alias_group_in(const std::string &group_name, const std::string &grid_name,
+void AtmosphereProcess::alias_group_in(const std::string &group_name,
+                                       const std::string &grid_name,
                                        const std::string &alias_name) {
   try {
-    m_groups_in_pointers[alias_name][grid_name] = m_groups_in_pointers.at(group_name).at(grid_name);
+    m_groups_in_pointers[alias_name][grid_name] =
+        m_groups_in_pointers.at(group_name).at(grid_name);
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
@@ -930,7 +998,8 @@ void AtmosphereProcess::alias_group_in(const std::string &group_name, const std:
   }
 }
 
-void AtmosphereProcess::alias_group_out(const std::string &group_name, const std::string &grid_name,
+void AtmosphereProcess::alias_group_out(const std::string &group_name,
+                                        const std::string &grid_name,
                                         const std::string &alias_name) {
   try {
     m_groups_out_pointers[alias_name][grid_name] =
@@ -938,17 +1007,19 @@ void AtmosphereProcess::alias_group_out(const std::string &group_name, const std
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG("Error! Could not locate output group for aliasing request.\n"
-                   "    - group name: " +
-                   group_name +
-                   "\n"
-                   "    - grid name:  " +
-                   grid_name + "\n");
+    EKAT_ERROR_MSG(
+        "Error! Could not locate output group for aliasing request.\n"
+        "    - group name: " +
+        group_name +
+        "\n"
+        "    - grid name:  " +
+        grid_name + "\n");
   }
 }
 
-Field &AtmosphereProcess::get_field_in_impl(const std::string &field_name,
-                                            const std::string &grid_name) const {
+Field &
+AtmosphereProcess::get_field_in_impl(const std::string &field_name,
+                                     const std::string &grid_name) const {
   try {
     return *m_fields_in_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range &) {
@@ -968,20 +1039,22 @@ Field &AtmosphereProcess::get_field_in_impl(const std::string &field_name,
   return f;
 }
 
-Field &AtmosphereProcess::get_field_in_impl(const std::string &field_name) const {
+Field &
+AtmosphereProcess::get_field_in_impl(const std::string &field_name) const {
   try {
     auto &copies = m_fields_in_pointers.at(field_name);
-    EKAT_REQUIRE_MSG(copies.size() == 1,
-                     "Error! Attempt to find input field providing only the name,\n"
-                     "       but multiple copies (on different grids) are present.\n"
-                     "  field name: " +
-                         field_name +
-                         "\n"
-                         "  atm process: " +
-                         this->name() +
-                         "\n"
-                         "  number of copies: " +
-                         std::to_string(copies.size()) + "\n");
+    EKAT_REQUIRE_MSG(
+        copies.size() == 1,
+        "Error! Attempt to find input field providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  field name: " +
+            field_name +
+            "\n"
+            "  atm process: " +
+            this->name() +
+            "\n"
+            "  number of copies: " +
+            std::to_string(copies.size()) + "\n");
     return *copies.begin()->second;
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
@@ -997,8 +1070,9 @@ Field &AtmosphereProcess::get_field_in_impl(const std::string &field_name) const
   return f;
 }
 
-Field &AtmosphereProcess::get_field_out_impl(const std::string &field_name,
-                                             const std::string &grid_name) const {
+Field &
+AtmosphereProcess::get_field_out_impl(const std::string &field_name,
+                                      const std::string &grid_name) const {
   try {
     return *m_fields_out_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range &) {
@@ -1018,20 +1092,22 @@ Field &AtmosphereProcess::get_field_out_impl(const std::string &field_name,
   return f;
 }
 
-Field &AtmosphereProcess::get_field_out_impl(const std::string &field_name) const {
+Field &
+AtmosphereProcess::get_field_out_impl(const std::string &field_name) const {
   try {
     auto &copies = m_fields_out_pointers.at(field_name);
-    EKAT_REQUIRE_MSG(copies.size() == 1,
-                     "Error! Attempt to find output field providing only the name,\n"
-                     "       but multiple copies (on different grids) are present.\n"
-                     "  field name: " +
-                         field_name +
-                         "\n"
-                         "  atm process: " +
-                         this->name() +
-                         "\n"
-                         "  number of copies: " +
-                         std::to_string(copies.size()) + "\n");
+    EKAT_REQUIRE_MSG(
+        copies.size() == 1,
+        "Error! Attempt to find output field providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  field name: " +
+            field_name +
+            "\n"
+            "  atm process: " +
+            this->name() +
+            "\n"
+            "  number of copies: " +
+            std::to_string(copies.size()) + "\n");
     return *copies.begin()->second;
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
@@ -1047,8 +1123,9 @@ Field &AtmosphereProcess::get_field_out_impl(const std::string &field_name) cons
   return f;
 }
 
-FieldGroup &AtmosphereProcess::get_group_in_impl(const std::string &group_name,
-                                                 const std::string &grid_name) const {
+FieldGroup &
+AtmosphereProcess::get_group_in_impl(const std::string &group_name,
+                                     const std::string &grid_name) const {
   try {
     return *m_groups_in_pointers.at(group_name).at(grid_name);
   } catch (const std::out_of_range &) {
@@ -1068,20 +1145,22 @@ FieldGroup &AtmosphereProcess::get_group_in_impl(const std::string &group_name,
   return g;
 }
 
-FieldGroup &AtmosphereProcess::get_group_in_impl(const std::string &group_name) const {
+FieldGroup &
+AtmosphereProcess::get_group_in_impl(const std::string &group_name) const {
   try {
     auto &copies = m_groups_in_pointers.at(group_name);
-    EKAT_REQUIRE_MSG(copies.size() == 1,
-                     "Error! Attempt to find input group providing only the name,\n"
-                     "       but multiple copies (on different grids) are present.\n"
-                     "  group name: " +
-                         group_name +
-                         "\n"
-                         "  atm process: " +
-                         this->name() +
-                         "\n"
-                         "  number of copies: " +
-                         std::to_string(copies.size()) + "\n");
+    EKAT_REQUIRE_MSG(
+        copies.size() == 1,
+        "Error! Attempt to find input group providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  group name: " +
+            group_name +
+            "\n"
+            "  atm process: " +
+            this->name() +
+            "\n"
+            "  number of copies: " +
+            std::to_string(copies.size()) + "\n");
     return *copies.begin()->second;
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
@@ -1097,8 +1176,9 @@ FieldGroup &AtmosphereProcess::get_group_in_impl(const std::string &group_name) 
   return g;
 }
 
-FieldGroup &AtmosphereProcess::get_group_out_impl(const std::string &group_name,
-                                                  const std::string &grid_name) const {
+FieldGroup &
+AtmosphereProcess::get_group_out_impl(const std::string &group_name,
+                                      const std::string &grid_name) const {
   try {
     return *m_groups_out_pointers.at(group_name).at(grid_name);
   } catch (const std::out_of_range &) {
@@ -1118,20 +1198,22 @@ FieldGroup &AtmosphereProcess::get_group_out_impl(const std::string &group_name,
   return g;
 }
 
-FieldGroup &AtmosphereProcess::get_group_out_impl(const std::string &group_name) const {
+FieldGroup &
+AtmosphereProcess::get_group_out_impl(const std::string &group_name) const {
   try {
     auto &copies = m_groups_out_pointers.at(group_name);
-    EKAT_REQUIRE_MSG(copies.size() == 1,
-                     "Error! Attempt to find output group providing only the name,\n"
-                     "       but multiple copies (on different grids) are present.\n"
-                     "  group name: " +
-                         group_name +
-                         "\n"
-                         "  atm process: " +
-                         this->name() +
-                         "\n"
-                         "  number of copies: " +
-                         std::to_string(copies.size()) + "\n");
+    EKAT_REQUIRE_MSG(
+        copies.size() == 1,
+        "Error! Attempt to find output group providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  group name: " +
+            group_name +
+            "\n"
+            "  atm process: " +
+            this->name() +
+            "\n"
+            "  number of copies: " +
+            std::to_string(copies.size()) + "\n");
     return *copies.begin()->second;
   } catch (const std::out_of_range &) {
     // std::out_of_range would message would not help detecting where
@@ -1147,59 +1229,66 @@ FieldGroup &AtmosphereProcess::get_group_out_impl(const std::string &group_name)
   return g;
 }
 
-Field &AtmosphereProcess::get_internal_field_impl(const std::string &field_name,
-                                                  const std::string &grid_name) const {
+Field &
+AtmosphereProcess::get_internal_field_impl(const std::string &field_name,
+                                           const std::string &grid_name) const {
   try {
     return *m_internal_fields_pointers.at(field_name).at(grid_name);
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG("Error! Could not locate internal field in this atm proces.\n"
-                   "   atm proc name: " +
-                   this->name() +
-                   "\n"
-                   "   field name: " +
-                   field_name +
-                   "\n"
-                   "   grid name: " +
-                   grid_name + "\n");
+    EKAT_ERROR_MSG(
+        "Error! Could not locate internal field in this atm proces.\n"
+        "   atm proc name: " +
+        this->name() +
+        "\n"
+        "   field name: " +
+        field_name +
+        "\n"
+        "   grid name: " +
+        grid_name + "\n");
   }
   static Field f;
   return f;
 }
 
-Field &AtmosphereProcess::get_internal_field_impl(const std::string &field_name) const {
+Field &AtmosphereProcess::get_internal_field_impl(
+    const std::string &field_name) const {
   try {
     auto &copies = m_internal_fields_pointers.at(field_name);
-    EKAT_REQUIRE_MSG(copies.size() == 1,
-                     "Error! Attempt to find internal field providing only the name,\n"
-                     "       but multiple copies (on different grids) are present.\n"
-                     "  field name: " +
-                         field_name +
-                         "\n"
-                         "  atm process: " +
-                         this->name() +
-                         "\n"
-                         "  number of copies: " +
-                         std::to_string(copies.size()) + "\n");
+    EKAT_REQUIRE_MSG(
+        copies.size() == 1,
+        "Error! Attempt to find internal field providing only the name,\n"
+        "       but multiple copies (on different grids) are present.\n"
+        "  field name: " +
+            field_name +
+            "\n"
+            "  atm process: " +
+            this->name() +
+            "\n"
+            "  number of copies: " +
+            std::to_string(copies.size()) + "\n");
     return *copies.begin()->second;
   } catch (const std::out_of_range &) {
     // std::out_of_range message would not help detecting where
     // the exception originated, so print a more meaningful message.
-    EKAT_ERROR_MSG("Error! Could not locate internal field in this atm proces.\n"
-                   "   atm proc name: " +
-                   this->name() +
-                   "\n"
-                   "   field name: " +
-                   field_name + "\n");
+    EKAT_ERROR_MSG(
+        "Error! Could not locate internal field in this atm proces.\n"
+        "   atm proc name: " +
+        this->name() +
+        "\n"
+        "   field name: " +
+        field_name + "\n");
   }
   static Field f;
   return f;
 }
 
-void AtmosphereProcess ::remove_field(const std::string &field_name, const std::string &grid_name) {
+void AtmosphereProcess ::remove_field(const std::string &field_name,
+                                      const std::string &grid_name) {
   typedef std::list<Field>::iterator It;
-  const auto rmf = [&](std::list<Field> &fields, strmap_t<strmap_t<Field *>> &ptrs) {
+  const auto rmf = [&](std::list<Field> &fields,
+                       strmap_t<strmap_t<Field *>> &ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
       const auto &fid = it->get_header().get_identifier();
@@ -1216,12 +1305,15 @@ void AtmosphereProcess ::remove_field(const std::string &field_name, const std::
   rmf(m_internal_fields, m_internal_fields_pointers);
 }
 
-void AtmosphereProcess ::remove_group(const std::string &group_name, const std::string &grid_name) {
+void AtmosphereProcess ::remove_group(const std::string &group_name,
+                                      const std::string &grid_name) {
   typedef std::list<FieldGroup>::iterator It;
-  const auto rmg = [&](std::list<FieldGroup> &fields, strmap_t<strmap_t<FieldGroup *>> &ptrs) {
+  const auto rmg = [&](std::list<FieldGroup> &fields,
+                       strmap_t<strmap_t<FieldGroup *>> &ptrs) {
     std::vector<It> rm_its;
     for (It it = fields.begin(); it != fields.end(); ++it) {
-      if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
+      if (it->m_info->m_group_name == group_name and
+          it->grid_name() == grid_name) {
         rm_its.push_back(it);
         ptrs[group_name][grid_name] = nullptr;
         for (auto &kv : it->m_individual_fields)
@@ -1241,8 +1333,9 @@ void AtmosphereProcess::compute_column_conservation_checks_data(const int dt) {
                    "but no conservation check exists.\n");
 
   // Set dt and compute current mass and energy.
-  const auto &conservation_check = std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(
-      m_column_conservation_check.second);
+  const auto &conservation_check =
+      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(
+          m_column_conservation_check.second);
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();

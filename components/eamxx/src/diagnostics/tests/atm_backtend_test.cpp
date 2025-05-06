@@ -7,7 +7,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;

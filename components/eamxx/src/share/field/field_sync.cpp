@@ -4,15 +4,15 @@ namespace scream {
 
 void Field::sync_to_host(const bool fence) const {
   // Sanity check
-  EKAT_REQUIRE_MSG(
-      is_allocated(),
-      "Error! Input field must be allocated in order to sync host and device views.\n");
+  EKAT_REQUIRE_MSG(is_allocated(), "Error! Input field must be allocated in "
+                                   "order to sync host and device views.\n");
 
   // Check for early return if Host and Device are the same memory space
   if (host_and_device_share_memory_space())
     return;
 
-  // We allow sync_to_host for constant fields. Temporarily disable read only flag.
+  // We allow sync_to_host for constant fields. Temporarily disable read only
+  // flag.
   const bool original_read_only = m_is_read_only;
   m_is_read_only                = false;
 
@@ -27,7 +27,8 @@ void Field::sync_to_host(const bool fence) const {
     sync_views_impl<double, Device, Host>();
     break;
   default:
-    EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_host.\n");
+    EKAT_ERROR_MSG(
+        "Error! Unrecognized field data type in Field::sync_to_host.\n");
   }
 
   if (fence)
@@ -39,9 +40,8 @@ void Field::sync_to_host(const bool fence) const {
 
 void Field::sync_to_dev(const bool fence) const {
   // Sanity check
-  EKAT_REQUIRE_MSG(
-      is_allocated(),
-      "Error! Input field must be allocated in order to sync host and device views.\n");
+  EKAT_REQUIRE_MSG(is_allocated(), "Error! Input field must be allocated in "
+                                   "order to sync host and device views.\n");
 
   // Check for early return if Host and Device are the same memory space
   if (host_and_device_share_memory_space())
@@ -58,7 +58,8 @@ void Field::sync_to_dev(const bool fence) const {
     sync_views_impl<double, Host, Device>();
     break;
   default:
-    EKAT_ERROR_MSG("Error! Unrecognized field data type in Field::sync_to_dev.\n");
+    EKAT_ERROR_MSG(
+        "Error! Unrecognized field data type in Field::sync_to_dev.\n");
   }
 
   if (fence)

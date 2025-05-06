@@ -117,15 +117,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfComputeTemp {
 namespace {
 
 TEST_CASE("shoc_pdf_computetemp_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeTemp;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfComputeTemp;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_computetemp_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeTemp;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfComputeTemp;
 
   TestStruct::run_bfb();
 }

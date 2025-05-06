@@ -65,8 +65,9 @@ void HommeDynamics::rayleigh_friction_apply(const Real dt) const {
   const auto nlevs  = m_phys_grid->get_num_vertical_levels();
   const auto npacks = ekat::npack<Pack>(nlevs);
 
-  const auto horiz_winds_view = get_field_out("horiz_winds").get_view<Pack ***>();
-  const auto T_mid_view       = get_field_out("T_mid").get_view<Pack **>();
+  const auto horiz_winds_view =
+      get_field_out("horiz_winds").get_view<Pack ***>();
+  const auto T_mid_view = get_field_out("T_mid").get_view<Pack **>();
 
   // local for lambda captures to avoid issues on GPU
   auto otau = m_otau;

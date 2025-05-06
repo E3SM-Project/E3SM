@@ -25,8 +25,8 @@
  * This allows easier usage from the user point of view, but has some drawbacks:
  *  - the file is open/closed every time you query it
  *  - the file is open with default IOType
- * If you need to do several queries, you should consider registering the file manually
- * before doing any query, and release it once you are done.
+ * If you need to do several queries, you should consider registering the file
+ * manually before doing any query, and release it once you are done.
  */
 
 namespace scream {
@@ -50,7 +50,8 @@ template <typename T> std::string get_dtype() {
     s = "float";
   } else if constexpr (std::is_same<raw_t, double>::value) {
     s = "double";
-  } else if constexpr (std::is_integral<raw_t>::value && std::is_signed<raw_t>::value &&
+  } else if constexpr (std::is_integral<raw_t>::value &&
+                       std::is_signed<raw_t>::value &&
                        sizeof(raw_t) == sizeof(long long)) {
     s = "int64";
   } else if constexpr (std::is_same<raw_t, char>::value) {
@@ -69,14 +70,16 @@ void finalize_subsystem();
 
 // =================== File operations ================= //
 
-// Opens a file, returns const handle to it (useful for Read mode, to get dims/vars)
+// Opens a file, returns const handle to it (useful for Read mode, to get
+// dims/vars)
 void register_file(const std::string &filename, const FileMode mode,
                    const IOType iotype = IOType::DefaultIOType);
 
 // Release a file (if in Write mode, sync and close the file);
 void release_file(const std::string &filename);
 
-// Check if file is open. If mode!=Unset, also checks that it's open with given mode
+// Check if file is open. If mode!=Unset, also checks that it's open with given
+// mode
 bool is_file_open(const std::string &filename, const FileMode mode = Unset);
 
 // Force a flush to file (for Write mode only)
@@ -89,11 +92,13 @@ void enddef(const std::string &filename);
 // =================== Dimensions operations ======================= //
 
 // Define dim on output file (cannot call on Read/Append files)
-void define_dim(const std::string &filename, const std::string &dimname, const int length);
+void define_dim(const std::string &filename, const std::string &dimname,
+                const int length);
 
-// Check that the given dimension is in the file. If length>0, also check that the length is as
-// expected.
-bool has_dim(const std::string &filename, const std::string &dimname, const int length = -1);
+// Check that the given dimension is in the file. If length>0, also check that
+// the length is as expected.
+bool has_dim(const std::string &filename, const std::string &dimname,
+             const int length = -1);
 
 int get_dimlen(const std::string &filename, const std::string &dimname);
 int get_dimlen_local(const std::string &filename, const std::string &dimname);
@@ -102,13 +107,15 @@ int get_dimlen_local(const std::string &filename, const std::string &dimname);
 // orresponding to a particular time index. In this case, the time dim is a
 // "record" dimension. When we open a file, if there is an unlimited dim, it is
 // automatically marked as the "time" dim (regardless of its name). But if there
-// is no unlimited dim, we may need to tell the interface to interpret one of the
-// dims as the record dimension (which in the interface we refer to as "time" dim).
+// is no unlimited dim, we may need to tell the interface to interpret one of
+// the dims as the record dimension (which in the interface we refer to as
+// "time" dim).
 void mark_dim_as_time(const std::string &filename, const std::string &dimname);
 bool has_time_dim(const std::string &filename);
 
-// This is used by I/O when restarting a simulation after a crash: the existing file
-// may contain some snapshots after the rest time, but we may want to overwrite them.
+// This is used by I/O when restarting a simulation after a crash: the existing
+// file may contain some snapshots after the rest time, but we may want to
+// overwrite them.
 void reset_time_dim_len(const std::string &filename, const int new_length);
 
 // Get len/name of the time dimension
@@ -122,21 +129,29 @@ std::string get_time_name(const std::string &filename);
 // Notes:
 // - we declare a decomposition along a single dimension.
 // - set_dim_decomp requires *offsets* in the global array, not global indices
-//   (for 0-based indices, they're the same, but for 1-based indices they're not)
-// - the second version is a shortcut for contiguous decompositions. Notice that NO
-//   check is performed to ensure that the decomposition covers the entire dimension,
-//   or that there are no overlaps (in fact, one *may* need overlap, in certain reads).
-// - the third version is a shortcut of the second, where we compute start/count based
-//   on a linear decomposition of the dimension along all ranks in the IO comm stored
-//   in the ScorpioInstance. The return value is the local length of the dimension
+//   (for 0-based indices, they're the same, but for 1-based indices they're
+//   not)
+// - the second version is a shortcut for contiguous decompositions. Notice that
+// NO
+//   check is performed to ensure that the decomposition covers the entire
+//   dimension, or that there are no overlaps (in fact, one *may* need overlap,
+//   in certain reads).
+// - the third version is a shortcut of the second, where we compute start/count
+// based
+//   on a linear decomposition of the dimension along all ranks in the IO comm
+//   stored in the ScorpioInstance. The return value is the local length of the
+//   dimension
 // - if allow_reset=true, we simply reset the decomposition (if present).
-// - if allow_reset=false, if a decomposition for this dim is already set, we error out
+// - if allow_reset=false, if a decomposition for this dim is already set, we
+// error out
 
 void set_dim_decomp(const std::string &filename, const std::string &dimname,
-                    const std::vector<offset_t> &my_offsets, const bool allow_reset = false);
+                    const std::vector<offset_t> &my_offsets,
+                    const bool allow_reset = false);
 
-void set_dim_decomp(const std::string &filename, const std::string &dimname, const offset_t start,
-                    const offset_t count, const bool allow_reset = false);
+void set_dim_decomp(const std::string &filename, const std::string &dimname,
+                    const offset_t start, const offset_t count,
+                    const bool allow_reset = false);
 
 void set_dim_decomp(const std::string &filename, const std::string &dimname,
                     const bool allow_reset = false);
@@ -144,14 +159,16 @@ void set_dim_decomp(const std::string &filename, const std::string &dimname,
 // ================== Variable operations ================== //
 
 // Define var on output file (cannot call on Read/Append files)
-void define_var(const std::string &filename, const std::string &varname, const std::string &units,
-                const std::vector<std::string> &dimensions, const std::string &dtype,
-                const std::string &nc_dtype, const bool time_dependent = false);
+void define_var(const std::string &filename, const std::string &varname,
+                const std::string &units,
+                const std::vector<std::string> &dimensions,
+                const std::string &dtype, const std::string &nc_dtype,
+                const bool time_dependent = false);
 
 // Shortcut when units are not used, and dtype==nc_dtype
 void define_var(const std::string &filename, const std::string &varname,
-                const std::vector<std::string> &dimensions, const std::string &dtype,
-                const bool time_dependent = false);
+                const std::vector<std::string> &dimensions,
+                const std::string &dtype, const bool time_dependent = false);
 
 // This is useful when reading data sets. E.g., if the pio file is storing
 // a var as float, but we need to read it as double, we need to call this.
@@ -182,10 +199,10 @@ double get_time(const std::string &filename, const int time_index = -1);
 std::vector<double> get_all_times(const std::string &filename);
 
 // Read variable into user provided buffer.
-// If time dim is present, read given time slice (time_index=-1 means "read last record).
-// If time dim is not present and time_index>=0, it is interpreted as the index of the
-// first dimension (which is not unlimited).
-// NOTE: ETI in the cpp file for int, float, double.
+// If time dim is present, read given time slice (time_index=-1 means "read last
+// record). If time dim is not present and time_index>=0, it is interpreted as
+// the index of the first dimension (which is not unlimited). NOTE: ETI in the
+// cpp file for int, float, double.
 template <typename T>
 void read_var(const std::string &filename, const std::string &varname, T *buf,
               const int time_index = -1);
@@ -193,8 +210,8 @@ void read_var(const std::string &filename, const std::string &varname, T *buf,
 // Write data from user provided buffer into the requested variable
 // NOTE: ETI in the cpp file for int, float, double.
 template <typename T>
-void write_var(const std::string &filename, const std::string &varname, const T *buf,
-               const T *fillValue = nullptr);
+void write_var(const std::string &filename, const std::string &varname,
+               const T *buf, const T *fillValue = nullptr);
 
 // =============== Attributes operations ================== //
 
@@ -217,7 +234,8 @@ void set_attribute(const std::string &filename, const std::string &varname,
 // Shortcut, to allow calling set_attribute with compile-time strings, like so
 //   set_attribute(my_file,my_var,my_att_name,"my_value");
 template <int N>
-inline void set_attribute(const std::string &filename, const std::string &varname,
+inline void set_attribute(const std::string &filename,
+                          const std::string &varname,
                           const std::string &attname, const char (&att)[N]) {
   set_attribute<std::string>(filename, varname, attname, att);
 }

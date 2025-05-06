@@ -37,13 +37,15 @@ public:
   std::string name() const override { return "mam4_wetscav"; }
 
   // Set the grid and input output variables
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   // ON HOST, returns the number of bytes of device memory needed by the above
   // Buffer type given the number of columns and vertical levels
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_, len_temporary_views_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                     len_temporary_views_);
   }
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 

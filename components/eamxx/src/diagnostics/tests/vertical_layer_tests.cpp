@@ -6,7 +6,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -32,8 +33,8 @@ void run(const std::string &diag_name, const std::string &location) {
 
   const int packsize = N;
   constexpr int num_levs =
-      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
-                        // some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last
+                        // pack can also have some empty slots (packsize>1).
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -131,13 +132,16 @@ void run(const std::string &diag_name, const std::string &location) {
       if (diag_name == "dz") {
         REQUIRE(d_h(icol, ilev) == dz_val);
       } else {
-        // If interface, check value, otherwise perform int->mid averaging and check value
+        // If interface, check value, otherwise perform int->mid averaging and
+        // check value
         auto int_val = prev_int_val + delta;
         if (location == "interfaces") {
-          REQUIRE_THAT(d_h(icol, ilev), Catch::Matchers::WithinRel(int_val, 1e-5));
+          REQUIRE_THAT(d_h(icol, ilev),
+                       Catch::Matchers::WithinRel(int_val, 1e-5));
         } else {
           auto mid_val = (int_val + prev_int_val) / 2;
-          REQUIRE_THAT(d_h(icol, ilev), Catch::Matchers::WithinRel(mid_val, 1e-5));
+          REQUIRE_THAT(d_h(icol, ilev),
+                       Catch::Matchers::WithinRel(mid_val, 1e-5));
         }
         prev_int_val = int_val;
       }
@@ -150,7 +154,8 @@ void run(const std::string &diag_name, const std::string &location) {
 } // run()
 
 TEST_CASE("vertical_layer_test", "vertical_layer_test]") {
-  // Run tests for both Real and Pack, and for (potentially) different pack sizes
+  // Run tests for both Real and Pack, and for (potentially) different pack
+  // sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
 
@@ -163,7 +168,8 @@ TEST_CASE("vertical_layer_test", "vertical_layer_test]") {
   auto do_run = [&](auto int_const) {
     constexpr int N = decltype(int_const)::value;
     root_print("\n");
-    root_print(" -> Testing diagnostic for pack_size=" + std::to_string(N) + "\n");
+    root_print(" -> Testing diagnostic for pack_size=" + std::to_string(N) +
+               "\n");
     for (std::string loc : {"midpoints", "interfaces"}) {
       for (std::string diag : {"geopotential", "height", "z"}) {
         std::string msg = "    -> Testing diag=" + diag + " at " + loc + " ";

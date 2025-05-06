@@ -2,7 +2,8 @@
 
 namespace scream {
 
-template Field::get_strided_view_type<double, Host> Field::get_strided_view<double, Host>() const;
+template Field::get_strided_view_type<double, Host>
+Field::get_strided_view<double, Host>() const;
 template Field::get_strided_view_type<double *, Host>
 Field::get_strided_view<double *, Host>() const;
 template Field::get_strided_view_type<double **, Host>

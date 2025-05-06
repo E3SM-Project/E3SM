@@ -12,7 +12,8 @@ class CoarseningRemapperTester : public CoarseningRemapper {
 public:
   using gid_type = AbstractGrid::gid_type;
 
-  CoarseningRemapperTester(const grid_ptr_type &src_grid, const std::string &map_file)
+  CoarseningRemapperTester(const grid_ptr_type &src_grid,
+                           const std::string &map_file)
       : CoarseningRemapper(src_grid, map_file) {
     // Nothing to do
   }
@@ -20,7 +21,9 @@ public:
   // Note: we use this instead of get_tgt_grid, b/c the nonconst grid
   //       will give use a not read-only gids field, so we can pass
   //       pointers to MPI_Bcast (which needs pointer to nonconst)
-  std::shared_ptr<AbstractGrid> get_coarse_grid() const { return m_coarse_grid; }
+  std::shared_ptr<AbstractGrid> get_coarse_grid() const {
+    return m_coarse_grid;
+  }
 
   view_1d<int> get_row_offsets() const { return m_row_offsets; }
   view_1d<int> get_col_lids() const { return m_col_lids; }
@@ -28,16 +31,30 @@ public:
 
   grid_ptr_type get_ov_tgt_grid() const { return m_ov_coarse_grid; }
 
-  view_2d<int>::HostMirror get_send_f_pid_offsets() const { return cmvdc(m_send_f_pid_offsets); }
-  view_2d<int>::HostMirror get_recv_f_pid_offsets() const { return cmvdc(m_recv_f_pid_offsets); }
+  view_2d<int>::HostMirror get_send_f_pid_offsets() const {
+    return cmvdc(m_send_f_pid_offsets);
+  }
+  view_2d<int>::HostMirror get_recv_f_pid_offsets() const {
+    return cmvdc(m_recv_f_pid_offsets);
+  }
 
-  view_1d<int>::HostMirror get_recv_lids_beg() const { return cmvdc(m_recv_lids_beg); }
-  view_1d<int>::HostMirror get_recv_lids_end() const { return cmvdc(m_recv_lids_end); }
+  view_1d<int>::HostMirror get_recv_lids_beg() const {
+    return cmvdc(m_recv_lids_beg);
+  }
+  view_1d<int>::HostMirror get_recv_lids_end() const {
+    return cmvdc(m_recv_lids_end);
+  }
 
-  view_2d<int>::HostMirror get_send_lids_pids() const { return cmvdc(m_send_lids_pids); }
-  view_2d<int>::HostMirror get_recv_lids_pidpos() const { return cmvdc(m_recv_lids_pidpos); }
+  view_2d<int>::HostMirror get_send_lids_pids() const {
+    return cmvdc(m_send_lids_pids);
+  }
+  view_2d<int>::HostMirror get_recv_lids_pidpos() const {
+    return cmvdc(m_recv_lids_pidpos);
+  }
 
-  view_1d<int>::HostMirror get_send_pid_lids_start() const { return cmvdc(m_send_pid_lids_start); }
+  view_1d<int>::HostMirror get_send_pid_lids_start() const {
+    return cmvdc(m_send_pid_lids_start);
+  }
 };
 
 void root_print(const std::string &msg, const ekat::Comm &comm) {
@@ -49,8 +66,8 @@ void root_print(const std::string &msg, const ekat::Comm &comm) {
 // Create a source grid given number of global dofs.
 // Dofs are scattered around randomly
 template <typename Engine>
-std::shared_ptr<AbstractGrid> build_src_grid(const ekat::Comm &comm, const int ngdofs,
-                                             Engine &engine) {
+std::shared_ptr<AbstractGrid> build_src_grid(const ekat::Comm &comm,
+                                             const int ngdofs, Engine &engine) {
   using gid_type  = AbstractGrid::gid_type;
   const int nlevs = 20;
 
@@ -80,8 +97,8 @@ std::shared_ptr<AbstractGrid> build_src_grid(const ekat::Comm &comm, const int n
 constexpr int vec_dim   = 2;
 constexpr int tens_dim1 = 3;
 constexpr int tens_dim2 = 4;
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid,
-                   const bool midpoints) {
+Field create_field(const std::string &name, const LayoutType lt,
+                   const AbstractGrid &grid, const bool midpoints) {
   const auto u   = ekat::units::Units::nondimensional();
   const auto &gn = grid.name();
   Field f;
@@ -93,19 +110,23 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
     f = Field(FieldIdentifier(name, grid.get_2d_vector_layout(vec_dim), u, gn));
     break;
   case LayoutType::Tensor2D:
-    f = Field(FieldIdentifier(name, grid.get_2d_tensor_layout({tens_dim1, tens_dim2}), u, gn));
+    f = Field(FieldIdentifier(
+        name, grid.get_2d_tensor_layout({tens_dim1, tens_dim2}), u, gn));
     break;
   case LayoutType::Scalar3D:
-    f = Field(FieldIdentifier(name, grid.get_3d_scalar_layout(midpoints), u, gn));
+    f = Field(
+        FieldIdentifier(name, grid.get_3d_scalar_layout(midpoints), u, gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   case LayoutType::Vector3D:
-    f = Field(FieldIdentifier(name, grid.get_3d_vector_layout(midpoints, vec_dim), u, gn));
+    f = Field(FieldIdentifier(
+        name, grid.get_3d_vector_layout(midpoints, vec_dim), u, gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   case LayoutType::Tensor3D:
-    f = Field(
-        FieldIdentifier(name, grid.get_3d_tensor_layout(midpoints, {tens_dim1, tens_dim2}), u, gn));
+    f = Field(FieldIdentifier(
+        name, grid.get_3d_tensor_layout(midpoints, {tens_dim1, tens_dim2}), u,
+        gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   default:
@@ -117,13 +138,15 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
 }
 
 template <typename Engine>
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid,
-                   const bool midpoints, Engine &engine) {
+Field create_field(const std::string &name, const LayoutType lt,
+                   const AbstractGrid &grid, const bool midpoints,
+                   Engine &engine) {
   auto f = create_field(name, lt, grid, midpoints);
 
-  // Use discrete_distribution to get an integer, then use that as exponent for 2^-n.
-  // This guarantees numbers that are exactly represented as FP numbers, which ensures
-  // the test will produce the expected answer, regardless of how math ops are performed.
+  // Use discrete_distribution to get an integer, then use that as exponent for
+  // 2^-n. This guarantees numbers that are exactly represented as FP numbers,
+  // which ensures the test will produce the expected answer, regardless of how
+  // math ops are performed.
   using IPDF = std::discrete_distribution<int>;
   IPDF ipdf({1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
   auto pdf = [&](Engine &e) { return Real(std::pow(2, ipdf(e))); };
@@ -132,7 +155,8 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
   return f;
 }
 
-template <typename T> Field all_gather_field_impl(const Field &f, const ekat::Comm &comm) {
+template <typename T>
+Field all_gather_field_impl(const Field &f, const ekat::Comm &comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto &fid    = f.get_header().get_identifier();
   const auto &fl     = fid.get_layout();
@@ -143,7 +167,8 @@ template <typename T> Field all_gather_field_impl(const Field &f, const ekat::Co
   ;
   comm.all_reduce(&my_cols, &dims.front(), 1, MPI_SUM);
   FieldLayout gfl(tags, dims);
-  FieldIdentifier gfid("g" + f.name(), gfl, fid.get_units(), fid.get_grid_name(), fid.data_type());
+  FieldIdentifier gfid("g" + f.name(), gfl, fid.get_units(),
+                       fid.get_grid_name(), fid.data_type());
   Field gf(gfid);
   gf.allocate_view();
   std::vector<T> data_vec(col_size);
@@ -274,7 +299,7 @@ TEST_CASE("coarsening_remap") {
 
   const int ngdofs_src = ngdofs_tgt + 1;
   auto src_grid        = build_src_grid(comm, ngdofs_src, engine);
-  auto remap           = std::make_shared<CoarseningRemapperTester>(src_grid, filename);
+  auto remap = std::make_shared<CoarseningRemapperTester>(src_grid, filename);
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
@@ -284,30 +309,44 @@ TEST_CASE("coarsening_remap") {
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_coarse_grid();
 
-  auto src_s2d   = create_field("s2d", LayoutType::Scalar2D, *src_grid, false, engine);
-  auto src_v2d   = create_field("v2d", LayoutType::Vector2D, *src_grid, false, engine);
-  auto src_t2d   = create_field("t2d", LayoutType::Tensor2D, *src_grid, false, engine);
-  auto src_s3d_m = create_field("s3d_m", LayoutType::Scalar3D, *src_grid, true, engine);
-  auto src_s3d_i = create_field("s3d_i", LayoutType::Scalar3D, *src_grid, false, engine);
-  auto src_v3d_m = create_field("v3d_m", LayoutType::Vector3D, *src_grid, true, engine);
-  auto src_v3d_i = create_field("v3d_i", LayoutType::Vector3D, *src_grid, false, engine);
-  auto src_t3d_m = create_field("t3d_m", LayoutType::Tensor3D, *src_grid, true, engine);
-  auto src_t3d_i = create_field("t3d_i", LayoutType::Tensor3D, *src_grid, false, engine);
+  auto src_s2d =
+      create_field("s2d", LayoutType::Scalar2D, *src_grid, false, engine);
+  auto src_v2d =
+      create_field("v2d", LayoutType::Vector2D, *src_grid, false, engine);
+  auto src_t2d =
+      create_field("t2d", LayoutType::Tensor2D, *src_grid, false, engine);
+  auto src_s3d_m =
+      create_field("s3d_m", LayoutType::Scalar3D, *src_grid, true, engine);
+  auto src_s3d_i =
+      create_field("s3d_i", LayoutType::Scalar3D, *src_grid, false, engine);
+  auto src_v3d_m =
+      create_field("v3d_m", LayoutType::Vector3D, *src_grid, true, engine);
+  auto src_v3d_i =
+      create_field("v3d_i", LayoutType::Vector3D, *src_grid, false, engine);
+  auto src_t3d_m =
+      create_field("t3d_m", LayoutType::Tensor3D, *src_grid, true, engine);
+  auto src_t3d_i =
+      create_field("t3d_i", LayoutType::Tensor3D, *src_grid, false, engine);
 
   auto tgt_s2d   = create_field("s2d", LayoutType::Scalar2D, *tgt_grid, false);
   auto tgt_v2d   = create_field("v2d", LayoutType::Vector2D, *tgt_grid, false);
   auto tgt_t2d   = create_field("t2d", LayoutType::Tensor2D, *tgt_grid, false);
   auto tgt_s3d_m = create_field("s3d_m", LayoutType::Scalar3D, *tgt_grid, true);
-  auto tgt_s3d_i = create_field("s3d_i", LayoutType::Scalar3D, *tgt_grid, false);
+  auto tgt_s3d_i =
+      create_field("s3d_i", LayoutType::Scalar3D, *tgt_grid, false);
   auto tgt_v3d_m = create_field("v3d_m", LayoutType::Vector3D, *tgt_grid, true);
-  auto tgt_v3d_i = create_field("v3d_i", LayoutType::Vector3D, *tgt_grid, false);
+  auto tgt_v3d_i =
+      create_field("v3d_i", LayoutType::Vector3D, *tgt_grid, false);
   auto tgt_t3d_m = create_field("t3d_m", LayoutType::Tensor3D, *tgt_grid, true);
-  auto tgt_t3d_i = create_field("t3d_i", LayoutType::Tensor3D, *tgt_grid, false);
+  auto tgt_t3d_i =
+      create_field("t3d_i", LayoutType::Tensor3D, *tgt_grid, false);
 
-  std::vector<Field> src_f = {src_s2d,   src_v2d,   src_t2d,   src_s3d_m, src_s3d_i,
-                              src_v3d_m, src_v3d_i, src_t3d_m, src_t3d_i};
-  std::vector<Field> tgt_f = {tgt_s2d,   tgt_v2d,   tgt_t2d,   tgt_s3d_m, tgt_s3d_i,
-                              tgt_v3d_m, tgt_v3d_i, tgt_t3d_m, tgt_t3d_i};
+  std::vector<Field> src_f = {src_s2d,   src_v2d,   src_t2d,
+                              src_s3d_m, src_s3d_i, src_v3d_m,
+                              src_v3d_i, src_t3d_m, src_t3d_i};
+  std::vector<Field> tgt_f = {tgt_s2d,   tgt_v2d,   tgt_t2d,
+                              tgt_s3d_m, tgt_s3d_i, tgt_v3d_m,
+                              tgt_v3d_i, tgt_t3d_m, tgt_t3d_i};
 
   // -------------------------------------- //
   //     Register fields in the remapper    //
@@ -404,7 +443,8 @@ TEST_CASE("coarsening_remap") {
       case LayoutType::Scalar3D: {
         const auto v_src = gsrc.get_view<const Real **, Host>();
         const auto v_tgt = gtgt.get_view<const Real **, Host>();
-        auto f_nlevs     = gsrc.get_header().get_identifier().get_layout().dims().back();
+        auto f_nlevs =
+            gsrc.get_header().get_identifier().get_layout().dims().back();
         for (int idof = 0; idof < ngdofs_tgt; ++idof) {
           for (int ilev = 0; ilev < f_nlevs; ++ilev) {
             Real expected = 0;
@@ -422,7 +462,8 @@ TEST_CASE("coarsening_remap") {
       case LayoutType::Vector3D: {
         const auto v_src = gsrc.get_view<const Real ***, Host>();
         const auto v_tgt = gtgt.get_view<const Real ***, Host>();
-        auto f_nlevs     = gsrc.get_header().get_identifier().get_layout().dims().back();
+        auto f_nlevs =
+            gsrc.get_header().get_identifier().get_layout().dims().back();
         for (int idof = 0; idof < ngdofs_tgt; ++idof) {
           for (int icmp = 0; icmp < vec_dim; ++icmp) {
             for (int ilev = 0; ilev < f_nlevs; ++ilev) {
@@ -442,7 +483,8 @@ TEST_CASE("coarsening_remap") {
       case LayoutType::Tensor3D: {
         const auto v_src = gsrc.get_view<const Real ****, Host>();
         const auto v_tgt = gtgt.get_view<const Real ****, Host>();
-        auto f_nlevs     = gsrc.get_header().get_identifier().get_layout().dims().back();
+        auto f_nlevs =
+            gsrc.get_header().get_identifier().get_layout().dims().back();
         for (int idof = 0; idof < ngdofs_tgt; ++idof) {
           for (int icmp = 0; icmp < tens_dim1; ++icmp) {
             for (int jcmp = 0; jcmp < tens_dim2; ++jcmp) {

@@ -9,7 +9,8 @@ WindSpeed::WindSpeed(const ekat::Comm &comm, const ekat::ParameterList &params)
   // Nothing to do here
 }
 
-void WindSpeed::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void WindSpeed::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto grid             = grids_manager->get_grid("physics");
@@ -39,7 +40,8 @@ void WindSpeed::compute_diagnostic_impl() {
 
   const int nlevs = m_nlevs;
   Kokkos::parallel_for(
-      "Compute " + name(), RP(0, m_nlevs * m_ncols), KOKKOS_LAMBDA(const int &idx) {
+      "Compute " + name(), RP(0, m_nlevs * m_ncols),
+      KOKKOS_LAMBDA(const int &idx) {
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
         const auto &u  = uv(icol, 0, ilev);

@@ -22,7 +22,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestPblintdInitPot
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -210,15 +211,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
 namespace {
 
 TEST_CASE("shoc_pblintd_init_pot_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdInitPot;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_pblintd_init_pot_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdInitPot;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdInitPot;
 
   TestStruct().run_bfb();
 }

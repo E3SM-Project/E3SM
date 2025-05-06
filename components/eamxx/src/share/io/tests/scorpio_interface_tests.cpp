@@ -22,7 +22,8 @@ TEST_CASE("write_and_read") {
 
   init_subsystem(comm);
 
-  std::string filename = "scorpio_interface_write_test_np" + std::to_string(comm.size()) + ".nc";
+  std::string filename =
+      "scorpio_interface_write_test_np" + std::to_string(comm.size()) + ".nc";
 
   const int dim1  = 2;
   const int dim2  = 4;
@@ -38,41 +39,46 @@ TEST_CASE("write_and_read") {
   // Write phase
   {
     register_file(filename, Write);
-    REQUIRE_THROWS(
-        register_file(filename, Read)); // ERROR: cannot open in both read and write modes
+    REQUIRE_THROWS(register_file(
+        filename, Read)); // ERROR: cannot open in both read and write modes
     REQUIRE(is_file_open(filename));
     REQUIRE(is_file_open(filename, Write));
     REQUIRE(not is_file_open(filename, Read));
 
     define_dim(filename, "dim1", dim1);
     define_dim(filename, "dim2", dim2);
-    define_dim(filename, "dim2", dim2);                     // OK, same specs
-    REQUIRE_THROWS(define_dim(filename, "dim2", dim2 + 3)); // ERROR: changing dim length
+    define_dim(filename, "dim2", dim2); // OK, same specs
+    REQUIRE_THROWS(
+        define_dim(filename, "dim2", dim2 + 3)); // ERROR: changing dim length
     define_dim(filename, "dim3", dim3);
 
-    REQUIRE_THROWS(set_dim_decomp(filename, "dim4", my_offsets)); // ERROR: dimension not found
+    REQUIRE_THROWS(set_dim_decomp(filename, "dim4",
+                                  my_offsets)); // ERROR: dimension not found
 
     set_dim_decomp(filename, "dim3", my_offsets);
 
-    REQUIRE_THROWS(
-        define_var(filename, "var1", {"dim1"}, "double", true)); // ERROR: no time dimension (yet)
-    REQUIRE_THROWS(
-        define_var(filename, "var1", {"dim0"}, "double", false)); // ERROR: dim0 not found
-    REQUIRE_THROWS(
-        define_var(filename, "var1", {"dim1"}, "complex", false)); // ERROR: unsupported dtype
+    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "double",
+                              true)); // ERROR: no time dimension (yet)
+    REQUIRE_THROWS(define_var(filename, "var1", {"dim0"}, "double",
+                              false)); // ERROR: dim0 not found
+    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "complex",
+                              false)); // ERROR: unsupported dtype
     define_var(filename, "var1", {"dim1"}, "double", false);
     define_var(filename, "var1", {"dim1"}, "double", false); // OK, same specs
-    REQUIRE_THROWS(
-        define_var(filename, "var1", {"dim2"}, "double", false)); // ERROR: changing var dimensions
-    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "int", false)); // ERROR: changing dtype
+    REQUIRE_THROWS(define_var(filename, "var1", {"dim2"}, "double",
+                              false)); // ERROR: changing var dimensions
+    REQUIRE_THROWS(define_var(filename, "var1", {"dim1"}, "int",
+                              false)); // ERROR: changing dtype
 
     define_time(filename, "some_units", "the_time");
-    REQUIRE_THROWS(
-        define_time(filename, "", "another_name")); // ERROR: time already defined with another name
+    REQUIRE_THROWS(define_time(
+        filename, "",
+        "another_name")); // ERROR: time already defined with another name
 
     define_var(filename, "var2", {"dim1", "dim2"}, "float", true);
     define_var(filename, "var3", {}, "int", true);
-    REQUIRE_THROWS(define_var(filename, "var3", {}, "int", false)); // ERROR: changing time_dep flag
+    REQUIRE_THROWS(define_var(filename, "var3", {}, "int",
+                              false)); // ERROR: changing time_dep flag
     define_var(filename, "var4", {"dim3", "dim1"}, "double", false);
     define_var(filename, "var5", {"dim3", "dim1"}, "double", true);
 
@@ -96,7 +102,8 @@ TEST_CASE("write_and_read") {
     write_var(filename, "var5", var45.data());
 
     REQUIRE_THROWS(
-        write_var(filename, "var3", static_cast<int *>(nullptr))); // ERROR: invalid pointer
+        write_var(filename, "var3",
+                  static_cast<int *>(nullptr))); // ERROR: invalid pointer
 
     // Write second time slice
     update_time(filename, 0.5);
@@ -175,15 +182,18 @@ TEST_CASE("write_and_read") {
     std::iota(tgt_var1.begin(), tgt_var1.end(), 100);
     std::iota(tgt_var2.begin(), tgt_var2.end(), 100);
     std::iota(tgt_var3.begin(), tgt_var3.end(), 100);
-    std::iota(tgt_var45.begin(), tgt_var45.end(), 100 + comm.rank() * ldim3 * dim1);
+    std::iota(tgt_var45.begin(), tgt_var45.end(),
+              100 + comm.rank() * ldim3 * dim1);
 
     read_var(filename, "var1", var1.data());
     REQUIRE(tgt_var1 == var1);
 
     // Read first time slice
-    REQUIRE_THROWS(read_var(filename, "var3", var3.data(), 3)); // ERROR: time_idx out of bounds
+    REQUIRE_THROWS(read_var(filename, "var3", var3.data(),
+                            3)); // ERROR: time_idx out of bounds
     REQUIRE_THROWS(
-        read_var(filename, "var3", static_cast<int *>(nullptr))); // ERROR: invalid pointer
+        read_var(filename, "var3",
+                 static_cast<int *>(nullptr))); // ERROR: invalid pointer
 
     read_var(filename, "var2", var2.data(), 0);
     REQUIRE(tgt_var2 == var2);
@@ -200,7 +210,8 @@ TEST_CASE("write_and_read") {
     // Read second time slice
     std::iota(tgt_var2.begin(), tgt_var2.end(), 200);
     std::iota(tgt_var3.begin(), tgt_var3.end(), 200);
-    std::iota(tgt_var45.begin(), tgt_var45.end(), 200 + comm.rank() * ldim3 * dim1);
+    std::iota(tgt_var45.begin(), tgt_var45.end(),
+              200 + comm.rank() * ldim3 * dim1);
 
     read_var(filename, "var2", var2.data(), 1);
     REQUIRE(tgt_var2 == var2);

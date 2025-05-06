@@ -128,15 +128,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfComputeSgsLiq {
 namespace {
 
 TEST_CASE("shoc_pdf_compute_sgsliq_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_compute_sgsliq_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfComputeSgsLiq;
 
   TestStruct::run_bfb();
 }

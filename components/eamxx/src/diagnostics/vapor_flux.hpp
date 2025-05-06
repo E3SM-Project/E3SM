@@ -12,7 +12,8 @@ namespace scream {
 class VaporFluxDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  VaporFluxDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
+  VaporFluxDiagnostic(const ekat::Comm &comm,
+                      const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "VaporFlux"; }

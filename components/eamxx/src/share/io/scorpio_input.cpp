@@ -9,21 +9,24 @@
 
 namespace scream {
 
-AtmosphereInput::AtmosphereInput(const ekat::ParameterList &params,
-                                 const std::shared_ptr<const fm_type> &field_mgr) {
+AtmosphereInput::AtmosphereInput(
+    const ekat::ParameterList &params,
+    const std::shared_ptr<const fm_type> &field_mgr) {
   init(params, field_mgr);
 }
 
-AtmosphereInput::AtmosphereInput(const ekat::ParameterList &params,
-                                 const std::shared_ptr<const grid_type> &grid,
-                                 const std::map<std::string, view_1d_host> &host_views_1d,
-                                 const std::map<std::string, FieldLayout> &layouts) {
+AtmosphereInput::AtmosphereInput(
+    const ekat::ParameterList &params,
+    const std::shared_ptr<const grid_type> &grid,
+    const std::map<std::string, view_1d_host> &host_views_1d,
+    const std::map<std::string, FieldLayout> &layouts) {
   init(params, grid, host_views_1d, layouts);
 }
 
 AtmosphereInput::AtmosphereInput(const std::string &filename,
                                  const std::shared_ptr<const grid_type> &grid,
-                                 const std::vector<Field> &fields, const bool skip_grid_checks) {
+                                 const std::vector<Field> &fields,
+                                 const bool skip_grid_checks) {
   // Create param list and field manager on the fly
   ekat::ParameterList params;
   params.set("filename", filename);
@@ -45,9 +48,10 @@ AtmosphereInput::AtmosphereInput(const std::vector<std::string> &fields_names,
 }
 
 AtmosphereInput::~AtmosphereInput() {
-  // In practice, this should always be true, but since we have a do-nothing default ctor,
-  // it is possible to create an instance without ever using it. Since finalize would
-  // attempt to close the pio file, we need to call it only if init happened.
+  // In practice, this should always be true, but since we have a do-nothing
+  // default ctor, it is possible to create an instance without ever using it.
+  // Since finalize would attempt to close the pio file, we need to call it only
+  // if init happened.
   if (m_inited_with_views || m_inited_with_fields) {
     finalize();
   }
@@ -56,9 +60,11 @@ AtmosphereInput::~AtmosphereInput() {
 void AtmosphereInput::init(const ekat::ParameterList &params,
                            const std::shared_ptr<const fm_type> &field_mgr) {
   EKAT_REQUIRE_MSG(field_mgr->get_grids_manager()->size() == 1,
-                   "Error! AtmosphereInput expects FieldManager defined only on a single grid.\n");
-  EKAT_REQUIRE_MSG(not m_inited_with_views,
-                   "Error! Input class was already inited (with user-provided views).\n");
+                   "Error! AtmosphereInput expects FieldManager defined only "
+                   "on a single grid.\n");
+  EKAT_REQUIRE_MSG(
+      not m_inited_with_views,
+      "Error! Input class was already inited (with user-provided views).\n");
   EKAT_REQUIRE_MSG(not m_inited_with_fields,
                    "Error! Input class was already inited (with fields).\n");
 
@@ -75,12 +81,14 @@ void AtmosphereInput::init(const ekat::ParameterList &params,
   init_scorpio_structures();
 }
 
-void AtmosphereInput::init(const ekat::ParameterList &params,
-                           const std::shared_ptr<const grid_type> &grid,
-                           const std::map<std::string, view_1d_host> &host_views_1d,
-                           const std::map<std::string, FieldLayout> &layouts) {
-  EKAT_REQUIRE_MSG(not m_inited_with_views,
-                   "Error! Input class was already inited (with user-provided views).\n");
+void AtmosphereInput::init(
+    const ekat::ParameterList &params,
+    const std::shared_ptr<const grid_type> &grid,
+    const std::map<std::string, view_1d_host> &host_views_1d,
+    const std::map<std::string, FieldLayout> &layouts) {
+  EKAT_REQUIRE_MSG(
+      not m_inited_with_views,
+      "Error! Input class was already inited (with user-provided views).\n");
   EKAT_REQUIRE_MSG(not m_inited_with_fields,
                    "Error! Input class was already inited (with fields).\n");
 
@@ -90,13 +98,14 @@ void AtmosphereInput::init(const ekat::ParameterList &params,
   // Set the grid associated with the input views
   set_grid(grid);
 
-  EKAT_REQUIRE_MSG(host_views_1d.size() == layouts.size(),
-                   "Error! Input host views and layouts maps has different sizes.\n"
-                   "       host_views_1d size: " +
-                       std::to_string(host_views_1d.size()) +
-                       "\n"
-                       "       layouts size: " +
-                       std::to_string(layouts.size()) + "\n");
+  EKAT_REQUIRE_MSG(
+      host_views_1d.size() == layouts.size(),
+      "Error! Input host views and layouts maps has different sizes.\n"
+      "       host_views_1d size: " +
+          std::to_string(host_views_1d.size()) +
+          "\n"
+          "       layouts size: " +
+          std::to_string(layouts.size()) + "\n");
 
   m_layouts       = layouts;
   m_host_views_1d = host_views_1d;
@@ -105,10 +114,11 @@ void AtmosphereInput::init(const ekat::ParameterList &params,
   // and check that the two maps have the same keys
   for (const auto &it : m_layouts) {
     m_fields_names.push_back(it.first);
-    EKAT_REQUIRE_MSG(m_host_views_1d.count(it.first) == 1,
-                     "Error! Input layouts and views maps do not store the same keys.\n"
-                     "    layout = " +
-                         it.first);
+    EKAT_REQUIRE_MSG(
+        m_host_views_1d.count(it.first) == 1,
+        "Error! Input layouts and views maps do not store the same keys.\n"
+        "    layout = " +
+            it.first);
   }
 
   m_inited_with_views = true;
@@ -119,12 +129,15 @@ void AtmosphereInput::init(const ekat::ParameterList &params,
 
 /* ---------------------------------------------------------- */
 
-void AtmosphereInput::set_field_manager(const std::shared_ptr<const fm_type> &field_mgr) {
+void AtmosphereInput::set_field_manager(
+    const std::shared_ptr<const fm_type> &field_mgr) {
   // Sanity checks
   EKAT_REQUIRE_MSG(field_mgr, "Error! Invalid field manager pointer.\n");
-  EKAT_REQUIRE_MSG(field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
+  EKAT_REQUIRE_MSG(field_mgr->get_grid(),
+                   "Error! Field manager stores an invalid grid pointer.\n");
 
-  // If resetting a field manager we want to check that the layouts of all fields are the same.
+  // If resetting a field manager we want to check that the layouts of all
+  // fields are the same.
   if (m_field_mgr) {
     for (auto felem : m_field_mgr->get_repo()) {
       auto name       = felem.second->name();
@@ -134,11 +147,13 @@ void AtmosphereInput::set_field_manager(const std::shared_ptr<const fm_type> &fi
       auto lay_curr = field_curr.get_header().get_identifier().get_layout();
       auto lay_new  = field_new.get_header().get_identifier().get_layout();
       EKAT_REQUIRE_MSG(lay_curr == lay_new,
-                       "ERROR!! AtmosphereInput::set_field_manager - setting new field manager "
+                       "ERROR!! AtmosphereInput::set_field_manager - setting "
+                       "new field manager "
                        "which has different layout for field "
                            << name << "\n"
                            << "    Old Layout: " << lay_curr.to_string() << "\n"
-                           << "    New Layout: " << lay_new.to_string() << "\n");
+                           << "    New Layout: " << lay_new.to_string()
+                           << "\n");
     }
   }
 
@@ -160,7 +175,8 @@ void AtmosphereInput::set_field_manager(const std::shared_ptr<const fm_type> &fi
 
     // If we can alias the field's host view, do it.
     // Otherwise, create a temporary.
-    bool can_alias_field_view = fh.get_parent() == nullptr && fap.get_padding() == 0;
+    bool can_alias_field_view =
+        fh.get_parent() == nullptr && fap.get_padding() == 0;
     if (can_alias_field_view) {
       auto data             = f.get_internal_view_data<Real, Host>();
       m_host_views_1d[name] = view_1d_host(data, fl.size());
@@ -193,18 +209,21 @@ void AtmosphereInput::reset_filename(const std::string &filename) {
 }
 
 /* ---------------------------------------------------------- */
-void AtmosphereInput::set_grid(const std::shared_ptr<const AbstractGrid> &grid) {
+void AtmosphereInput::set_grid(
+    const std::shared_ptr<const AbstractGrid> &grid) {
   // Sanity checks
   EKAT_REQUIRE_MSG(grid, "Error! Input grid pointer is invalid.\n");
   const bool skip_grid_chk = m_params.get<bool>("skip_grid_checks", false);
   if (!skip_grid_chk) {
-    EKAT_REQUIRE_MSG(grid->is_unique(),
-                     "Error! I/O only supports grids which are 'unique', meaning that the\n"
-                     "       map dof_gid->proc_id is well defined.\n");
+    EKAT_REQUIRE_MSG(
+        grid->is_unique(),
+        "Error! I/O only supports grids which are 'unique', meaning that the\n"
+        "       map dof_gid->proc_id is well defined.\n");
     EKAT_REQUIRE_MSG(
         (grid->get_global_max_dof_gid() - grid->get_global_min_dof_gid() + 1) ==
             grid->get_num_global_dofs(),
-        "Error! IO requires DOF gids to (globally)  be in interval [gid_0,gid_0+num_global_dofs).\n"
+        "Error! IO requires DOF gids to (globally)  be in interval "
+        "[gid_0,gid_0+num_global_dofs).\n"
         "   - global min GID : " +
             std::to_string(grid->get_global_min_dof_gid()) +
             "\n"
@@ -234,9 +253,9 @@ void AtmosphereInput::read_variables(const int time_index) {
       m_atm_logger->info("  time idx : " + std::to_string(time_index));
     }
   }
-  EKAT_REQUIRE_MSG(
-      m_inited_with_views || m_inited_with_fields,
-      "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
+  EKAT_REQUIRE_MSG(m_inited_with_views || m_inited_with_fields,
+                   "Error! Scorpio structures not inited yet. Did you forget "
+                   "to call 'init(..)'?\n");
 
   for (auto const &name : m_fields_names) {
 
@@ -255,7 +274,8 @@ void AtmosphereInput::read_variables(const int time_index) {
       const auto &fap = fh.get_alloc_properties();
 
       // Check if the stored 1d view is sharing the data ptr with the field
-      const bool can_alias_field_view = fh.get_parent() == nullptr && fap.get_padding() == 0;
+      const bool can_alias_field_view =
+          fh.get_parent() == nullptr && fap.get_padding() == 0;
 
       // If the 1d view is a simple reshape of the field's Host view data,
       // then we're already done. Otherwise, we need to manually copy.
@@ -287,7 +307,8 @@ void AtmosphereInput::read_variables(const int time_index) {
         case 3: {
           // Reshape temp_view to a 3d view, then copy
           auto dst = f.get_view<Real ***, Host>();
-          auto src = view_Nd_host<3>(view_1d.data(), fl.dim(0), fl.dim(1), fl.dim(2));
+          auto src =
+              view_Nd_host<3>(view_1d.data(), fl.dim(0), fl.dim(1), fl.dim(2));
           for (int i = 0; i < fl.dim(0); ++i) {
             for (int j = 0; j < fl.dim(1); ++j) {
               for (int k = 0; k < fl.dim(2); ++k) {
@@ -300,7 +321,8 @@ void AtmosphereInput::read_variables(const int time_index) {
         case 4: {
           // Reshape temp_view to a 4d view, then copy
           auto dst = f.get_view<Real ****, Host>();
-          auto src = view_Nd_host<4>(view_1d.data(), fl.dim(0), fl.dim(1), fl.dim(2), fl.dim(3));
+          auto src = view_Nd_host<4>(view_1d.data(), fl.dim(0), fl.dim(1),
+                                     fl.dim(2), fl.dim(3));
           for (int i = 0; i < fl.dim(0); ++i) {
             for (int j = 0; j < fl.dim(1); ++j) {
               for (int k = 0; k < fl.dim(2); ++k) {
@@ -315,8 +337,8 @@ void AtmosphereInput::read_variables(const int time_index) {
         case 5: {
           // Reshape temp_view to a 5d view, then copy
           auto dst = f.get_view<Real *****, Host>();
-          auto src = view_Nd_host<5>(view_1d.data(), fl.dim(0), fl.dim(1), fl.dim(2), fl.dim(3),
-                                     fl.dim(4));
+          auto src = view_Nd_host<5>(view_1d.data(), fl.dim(0), fl.dim(1),
+                                     fl.dim(2), fl.dim(3), fl.dim(4));
           for (int i = 0; i < fl.dim(0); ++i) {
             for (int j = 0; j < fl.dim(1); ++j) {
               for (int k = 0; k < fl.dim(2); ++k) {
@@ -333,8 +355,9 @@ void AtmosphereInput::read_variables(const int time_index) {
         case 6: {
           // Reshape temp_view to a 6d view, then copy
           auto dst = f.get_view<Real ******, Host>();
-          auto src = view_Nd_host<6>(view_1d.data(), fl.dim(0), fl.dim(1), fl.dim(2), fl.dim(3),
-                                     fl.dim(4), fl.dim(5));
+          auto src =
+              view_Nd_host<6>(view_1d.data(), fl.dim(0), fl.dim(1), fl.dim(2),
+                              fl.dim(3), fl.dim(4), fl.dim(5));
           for (int i = 0; i < fl.dim(0); ++i) {
             for (int j = 0; j < fl.dim(1); ++j) {
               for (int k = 0; k < fl.dim(2); ++k) {
@@ -351,7 +374,8 @@ void AtmosphereInput::read_variables(const int time_index) {
           break;
         }
         default:
-          EKAT_ERROR_MSG("Error! Unexpected field rank (" + std::to_string(rank) + ").\n");
+          EKAT_ERROR_MSG("Error! Unexpected field rank (" +
+                         std::to_string(rank) + ").\n");
         }
       }
 
@@ -361,9 +385,11 @@ void AtmosphereInput::read_variables(const int time_index) {
   }
   auto func_finish = std::chrono::steady_clock::now();
   if (m_atm_logger) {
-    auto duration =
-        std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start) / 1000.0;
-    m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration.count()) + " seconds");
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        func_finish - func_start) /
+                    1000.0;
+    m_atm_logger->info("  Done! Elapsed time: " +
+                       std::to_string(duration.count()) + " seconds");
   }
 }
 
@@ -384,18 +410,20 @@ void AtmosphereInput::finalize() {
 /* ---------------------------------------------------------- */
 void AtmosphereInput::init_scorpio_structures() {
   EKAT_REQUIRE_MSG(m_inited_with_views or m_inited_with_fields,
-                   "Error! Cannot init scorpio structures until fields/views have been set.\n");
+                   "Error! Cannot init scorpio structures until fields/views "
+                   "have been set.\n");
 
   std::string iotype_str = m_params.get<std::string>("iotype", "default");
   auto iotype            = scorpio::str2iotype(iotype_str);
 
   scorpio::register_file(m_filename, scorpio::Read, iotype);
 
-  // Some input files have the "time" dimension as non-unlimited. This messes up our
-  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
-  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
-  // no unlim dim, this ptr remains inited.
-  if (not scorpio::has_time_dim(m_filename) and scorpio::has_dim(m_filename, "time")) {
+  // Some input files have the "time" dimension as non-unlimited. This messes up
+  // our scorpio interface, which stores a pointer to a "time" dim to be used to
+  // read/write slices. This ptr is automatically inited to the unlimited dim in
+  // the file. If there is no unlim dim, this ptr remains inited.
+  if (not scorpio::has_time_dim(m_filename) and
+      scorpio::has_dim(m_filename, "time")) {
     scorpio::mark_dim_as_time(m_filename, "time");
   }
 
@@ -403,7 +431,8 @@ void AtmosphereInput::init_scorpio_structures() {
   for (auto const &name : m_fields_names) {
     const auto &layout = m_layouts.at(name);
 
-    // Determine the IO-decomp and construct a vector of dimension ids for this variable:
+    // Determine the IO-decomp and construct a vector of dimension ids for this
+    // variable:
     auto vec_of_dims = get_vec_of_dims(layout);
 
     // Check that the variable is in the file.
@@ -432,28 +461,31 @@ void AtmosphereInput::init_scorpio_structures() {
 
     // Check that all dims for this var match the ones on file
     for (int i = 0; i < layout.rank(); ++i) {
-      const int file_len     = scorpio::get_dimlen(m_filename, vec_of_dims[i]);
-      const bool partitioned = m_io_grid->get_partitioned_dim_tag() == layout.tag(i);
-      const int eamxx_len =
-          partitioned ? m_io_grid->get_partitioned_dim_global_size() : layout.dim(i);
-      EKAT_REQUIRE_MSG(eamxx_len == file_len, "Error! Dimension mismatch for input file variable.\n"
-                                              " - filename : " +
-                                                  m_filename +
-                                                  "\n"
-                                                  " - varname  : " +
-                                                  name +
-                                                  "\n"
-                                                  " - var dims : " +
-                                                  ekat::join(vec_of_dims, ",") +
-                                                  "\n"
-                                                  " - dim name : " +
-                                                  vec_of_dims[i] +
-                                                  "\n"
-                                                  " - expected extent : " +
-                                                  std::to_string(eamxx_len) +
-                                                  "\n"
-                                                  " - extent from file: " +
-                                                  std::to_string(file_len) + "\n");
+      const int file_len = scorpio::get_dimlen(m_filename, vec_of_dims[i]);
+      const bool partitioned =
+          m_io_grid->get_partitioned_dim_tag() == layout.tag(i);
+      const int eamxx_len = partitioned
+                                ? m_io_grid->get_partitioned_dim_global_size()
+                                : layout.dim(i);
+      EKAT_REQUIRE_MSG(eamxx_len == file_len,
+                       "Error! Dimension mismatch for input file variable.\n"
+                       " - filename : " +
+                           m_filename +
+                           "\n"
+                           " - varname  : " +
+                           name +
+                           "\n"
+                           " - var dims : " +
+                           ekat::join(vec_of_dims, ",") +
+                           "\n"
+                           " - dim name : " +
+                           vec_of_dims[i] +
+                           "\n"
+                           " - expected extent : " +
+                           std::to_string(eamxx_len) +
+                           "\n"
+                           " - extent from file: " +
+                           std::to_string(file_len) + "\n");
     }
 
     // Ensure that we can read the var using Real data type
@@ -465,16 +497,18 @@ void AtmosphereInput::init_scorpio_structures() {
 }
 
 /* ---------------------------------------------------------- */
-std::vector<std::string> AtmosphereInput::get_vec_of_dims(const FieldLayout &layout) {
+std::vector<std::string>
+AtmosphereInput::get_vec_of_dims(const FieldLayout &layout) {
   // Given a set of dimensions in field tags, extract a vector of strings
   // for those dimensions to be used with IO
   using namespace ShortFieldTagsNames;
   std::vector<std::string> dims_names;
   dims_names.reserve(layout.rank());
   for (int i = 0; i < layout.rank(); ++i) {
-    const auto t = layout.tag(i);
-    std::string n =
-        m_io_grid->has_special_tag_name(t) ? m_io_grid->get_special_tag_name(t) : layout.names()[i];
+    const auto t  = layout.tag(i);
+    std::string n = m_io_grid->has_special_tag_name(t)
+                        ? m_io_grid->get_special_tag_name(t)
+                        : layout.names()[i];
 
     // If t==CMP, and the name stored in the layout is the default ("dim"),
     // we append also the extent, to allow different vector dims in the file

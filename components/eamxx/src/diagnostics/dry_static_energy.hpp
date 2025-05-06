@@ -13,7 +13,8 @@ public:
   using view_2d = typename KT::template view_2d<Real>;
 
   // Constructors
-  DryStaticEnergyDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
+  DryStaticEnergyDiagnostic(const ekat::Comm &comm,
+                            const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const { return "DryStaticEnergy"; }

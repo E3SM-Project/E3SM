@@ -64,7 +64,8 @@ TEST_CASE("property_checks", "") {
   const int nlevs     = 12;
 
   // Create a point grid
-  const auto grid   = create_point_grid("some_grid", num_lcols * comm.size(), nlevs, comm);
+  const auto grid =
+      create_point_grid("some_grid", num_lcols * comm.size(), nlevs, comm);
   const auto layout = grid->get_2d_scalar_layout();
   const auto units  = ekat::units::Units::nondimensional();
   const auto &lat   = grid->create_geometry_data("lat", layout, units);
@@ -97,13 +98,15 @@ TEST_CASE("property_checks", "") {
 
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals =
+        f.get_header().get_alloc_properties().get_num_scalars();
 
     auto nan_check = std::make_shared<FieldNaNCheck>(f, grid);
     nan_check->set_additional_data_field(data);
 
     // Assign  values to the field and make sure it passes our test for NaNs.
-    auto f_data = reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
+    auto f_data =
+        reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
     ekat::genRandArray(f_data, num_reals, engine, neg_pdf);
     f.sync_to_dev();
     auto res_and_msg = nan_check->check();
@@ -116,30 +119,35 @@ TEST_CASE("property_checks", "") {
     res_and_msg = nan_check->check();
     REQUIRE(res_and_msg.result == CheckResult::Fail);
 
-    std::string expected_msg = "FieldNaNCheck failed.\n"
-                               "  - field id: " +
-                               fid.get_id_string() +
-                               "\n"
-                               "  - indices (w/ global column index): (1,2,3)\n"
-                               "  - lat/lon: (1.000000, -1.000000)\n"
-                               "  - additional data (w/ local column index):\n\n"
-                               "     data<ncol>(2)\n\n" +
-                               "  data(1)\n" + "    1, \n\n" + "  END OF ADDITIONAL DATA\n";
+    std::string expected_msg =
+        "FieldNaNCheck failed.\n"
+        "  - field id: " +
+        fid.get_id_string() +
+        "\n"
+        "  - indices (w/ global column index): (1,2,3)\n"
+        "  - lat/lon: (1.000000, -1.000000)\n"
+        "  - additional data (w/ local column index):\n\n"
+        "     data<ncol>(2)\n\n" +
+        "  data(1)\n" + "    1, \n\n" + "  END OF ADDITIONAL DATA\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
   }
 
   // Check that the values of a field lie within an interval.
   SECTION("field_within_interval_check") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals =
+        f.get_header().get_alloc_properties().get_num_scalars();
 
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck>(f, grid, 0, 1, true);
+    auto interval_check =
+        std::make_shared<FieldWithinIntervalCheck>(f, grid, 0, 1, true);
     REQUIRE(interval_check->can_repair());
 
     interval_check->set_additional_data_field(data);
 
-    // Assign in-bound values to the field and make sure it passes the within-interval check
-    auto f_data = reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
+    // Assign in-bound values to the field and make sure it passes the
+    // within-interval check
+    auto f_data =
+        reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
     ekat::genRandArray(f_data, num_reals, engine, pos_pdf);
     f.sync_to_dev();
     auto res_and_msg = interval_check->check();
@@ -154,19 +162,20 @@ TEST_CASE("property_checks", "") {
     f.sync_to_dev();
     res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result == CheckResult::Repairable);
-    std::string expected_msg = "Check failed.\n"
-                               "  - check name: field_1 within interval [0, 1]\n"
-                               "  - field id: " +
-                               fid.get_id_string() +
-                               "\n"
-                               "  - minimum:\n"
-                               "    - value: 0\n"
-                               "    - indices (w/ global column index): (0,1,2)\n"
-                               "    - lat/lon: (0, 0)\n"
-                               "  - maximum:\n"
-                               "    - value: 2\n"
-                               "    - indices (w/ global column index): (1,2,3)\n"
-                               "    - lat/lon: (1, -1)\n";
+    std::string expected_msg =
+        "Check failed.\n"
+        "  - check name: field_1 within interval [0, 1]\n"
+        "  - field id: " +
+        fid.get_id_string() +
+        "\n"
+        "  - minimum:\n"
+        "    - value: 0\n"
+        "    - indices (w/ global column index): (0,1,2)\n"
+        "    - lat/lon: (0, 0)\n"
+        "  - maximum:\n"
+        "    - value: 2\n"
+        "    - indices (w/ global column index): (1,2,3)\n"
+        "    - lat/lon: (1, -1)\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
 
@@ -178,7 +187,8 @@ TEST_CASE("property_checks", "") {
   SECTION("field_within_interval_check_repairable_bounds") {
     using FWIC = FieldWithinIntervalCheck;
 
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals =
+        f.get_header().get_alloc_properties().get_num_scalars();
 
     // Repairable bounds must be less tight than bounds
     REQUIRE_THROWS(FWIC(f, grid, 0, 1, true, 1, 2));
@@ -188,7 +198,8 @@ TEST_CASE("property_checks", "") {
     REQUIRE(interval_check->can_repair());
 
     // Assign slightly out-of-bound values to the field
-    auto f_data = reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
+    auto f_data =
+        reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
     ekat::genRandArray(f_data, num_reals, engine, pos_pdf);
     f_data[0]             = -0.5;
     f_data[num_reals - 1] = 1.5;
@@ -196,26 +207,27 @@ TEST_CASE("property_checks", "") {
     auto res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result == CheckResult::Repairable);
 
-    // Assign completely out-of-bounds values to the field, make sure it fails the check,
-    // and then repair the field so it passes.
+    // Assign completely out-of-bounds values to the field, make sure it fails
+    // the check, and then repair the field so it passes.
     f_data[0]             = -2;
     f_data[num_reals - 1] = 3;
     f.sync_to_dev();
     res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result == CheckResult::Fail);
-    std::string expected_msg = "Check failed.\n"
-                               "  - check name: field_1 within interval [0, 1]\n"
-                               "  - field id: " +
-                               fid.get_id_string() +
-                               "\n"
-                               "  - minimum:\n"
-                               "    - value: -2\n"
-                               "    - indices (w/ global column index): (0,0,0)\n"
-                               "    - lat/lon: (0, 0)\n"
-                               "  - maximum:\n"
-                               "    - value: 3\n"
-                               "    - indices (w/ global column index): (1,2,11)\n"
-                               "    - lat/lon: (1, -1)\n";
+    std::string expected_msg =
+        "Check failed.\n"
+        "  - check name: field_1 within interval [0, 1]\n"
+        "  - field id: " +
+        fid.get_id_string() +
+        "\n"
+        "  - minimum:\n"
+        "    - value: -2\n"
+        "    - indices (w/ global column index): (0,0,0)\n"
+        "    - lat/lon: (0, 0)\n"
+        "  - maximum:\n"
+        "    - value: 3\n"
+        "    - indices (w/ global column index): (1,2,11)\n"
+        "    - lat/lon: (1, -1)\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
 
@@ -224,8 +236,8 @@ TEST_CASE("property_checks", "") {
     res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result == CheckResult::Pass);
 
-    // Re-assign an out-of-bounds value to the field, but only in the lower-bound.  Check if it
-    // fails and reports just the min fail.
+    // Re-assign an out-of-bounds value to the field, but only in the
+    // lower-bound.  Check if it fails and reports just the min fail.
     std::vector<int> exp_fail_loc = {0, 0, 1};
     f_data[1]                     = -2;
     f.sync_to_dev();
@@ -236,8 +248,8 @@ TEST_CASE("property_checks", "") {
     interval_check->repair();
     f.sync_to_host();
 
-    // Re-assign an out-of-bounds value to the field, but only in the upper-bound.  Check if it
-    // fails and reports just the max fail.
+    // Re-assign an out-of-bounds value to the field, but only in the
+    // upper-bound.  Check if it fails and reports just the max fail.
     exp_fail_loc          = {1, 2, 11};
     f_data[num_reals - 1] = 4;
     f.sync_to_dev();
@@ -248,13 +260,17 @@ TEST_CASE("property_checks", "") {
 
   // Check that the values of a field are above a lower bound
   SECTION("field_lower_bound_check") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals =
+        f.get_header().get_alloc_properties().get_num_scalars();
 
-    auto lower_bound_check = std::make_shared<FieldLowerBoundCheck>(f, grid, -1.0, true);
+    auto lower_bound_check =
+        std::make_shared<FieldLowerBoundCheck>(f, grid, -1.0, true);
     REQUIRE(lower_bound_check->can_repair());
 
-    // Assign in-bound values to the field and make sure it passes the lower_bound check
-    auto f_data = reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
+    // Assign in-bound values to the field and make sure it passes the
+    // lower_bound check
+    auto f_data =
+        reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
     for (int i = 0; i < num_reals; ++i) {
       f_data[i] = std::numeric_limits<Real>::max() - i * 1.0;
     }
@@ -282,12 +298,16 @@ TEST_CASE("property_checks", "") {
 
   // Check that the values of a field are above below an upper bound
   SECTION("field_upper_bound_check") {
-    auto upper_bound_check = std::make_shared<FieldUpperBoundCheck>(f, grid, 1.0, true);
+    auto upper_bound_check =
+        std::make_shared<FieldUpperBoundCheck>(f, grid, 1.0, true);
     REQUIRE(upper_bound_check->can_repair());
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals =
+        f.get_header().get_alloc_properties().get_num_scalars();
 
-    // Assign in-bound values to the field and make sure it passes the upper_bound check
-    auto f_data = reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
+    // Assign in-bound values to the field and make sure it passes the
+    // upper_bound check
+    auto f_data =
+        reinterpret_cast<Real *>(f.get_internal_view_data<Real, Host>());
     for (int i = 0; i < num_reals; ++i) {
       f_data[i] = -std::numeric_limits<Real>::max() + i * 1.0;
     }

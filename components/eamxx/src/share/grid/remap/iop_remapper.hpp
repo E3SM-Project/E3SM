@@ -15,8 +15,8 @@ namespace scream {
 
 class IOPRemapper : public AbstractRemapper {
 public:
-  IOPRemapper(const grid_ptr_type src_grid, const grid_ptr_type tgt_grid, const Real lat,
-              const Real lon);
+  IOPRemapper(const grid_ptr_type src_grid, const grid_ptr_type tgt_grid,
+              const Real lat, const Real lon);
 
   ~IOPRemapper() = default;
 

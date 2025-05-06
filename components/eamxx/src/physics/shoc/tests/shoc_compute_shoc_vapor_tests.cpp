@@ -14,7 +14,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestComputeShocVapor
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 2;
@@ -98,8 +99,8 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ComputeShocVaporData cxx_data[] = {
         ComputeShocVaporData(baseline_data[0]),
         ComputeShocVaporData(baseline_data[1]),
@@ -123,7 +124,8 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ComputeShocVaporData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(ComputeShocVaporData);
       for (Int i = 0; i < num_runs; ++i) {
         ComputeShocVaporData &d_baseline = baseline_data[i];
         ComputeShocVaporData &d_cxx      = cxx_data[i];
@@ -147,15 +149,15 @@ struct UnitWrap::UnitTest<D>::TestComputeShocVapor : public UnitWrap::UnitTest<D
 namespace {
 
 TEST_CASE("compute_shoc_vapor_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestComputeShocVapor;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("compute_shoc_vapor_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestComputeShocVapor;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestComputeShocVapor;
 
   TestStruct().run_bfb();
 }

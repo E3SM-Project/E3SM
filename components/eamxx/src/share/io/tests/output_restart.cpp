@@ -29,16 +29,20 @@ namespace scream {
 
 constexpr Real FillValue = constants::DefaultFillValue<float>().value;
 
-std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGrid> &grid);
+std::shared_ptr<FieldManager>
+get_test_fm(const std::shared_ptr<const AbstractGrid> &grid);
 
-std::shared_ptr<FieldManager> clone_fm(const std::shared_ptr<const FieldManager> &fm);
+std::shared_ptr<FieldManager>
+clone_fm(const std::shared_ptr<const FieldManager> &fm);
 
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &comm, const Int num_gcols,
-                                          const Int num_levs);
+std::shared_ptr<GridsManager>
+get_test_gm(const ekat::Comm &comm, const Int num_gcols, const Int num_levs);
 
-template <typename Engine> void randomize_fields(const FieldManager &fm, Engine &engine);
+template <typename Engine>
+void randomize_fields(const FieldManager &fm, Engine &engine);
 
-void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveString> &fnames,
+void time_advance(const FieldManager &fm,
+                  const std::list<ekat::CaseInsensitiveString> &fnames,
                   const int dt);
 
 TEST_CASE("output_restart", "io") {
@@ -52,7 +56,8 @@ TEST_CASE("output_restart", "io") {
 
   auto engine = setup_random_test(&comm);
 
-  // First set up a field manager and grids manager to interact with the output functions
+  // First set up a field manager and grids manager to interact with the output
+  // functions
   auto gm   = get_test_gm(comm, num_gcols, num_levs);
   auto grid = gm->get_grid("point_grid");
 
@@ -76,21 +81,25 @@ TEST_CASE("output_restart", "io") {
   output_params.set<double>("fill_value", FillValue);
   output_params.set<int>("flush_frequency", 1);
   output_params.sublist("restart").set<bool>("force_new_file", false);
-  output_params.sublist("output_control").set<std::string>("frequency_units", "nsteps");
+  output_params.sublist("output_control")
+      .set<std::string>("frequency_units", "nsteps");
   output_params.sublist("output_control").set<int>("frequency", 10);
   output_params.sublist("checkpoint_control").set<int>("frequency", 5);
   // This skips a test that only matters for AD runs
-  output_params.sublist("checkpoint_control").set<bool>("is_unit_testing", "true");
+  output_params.sublist("checkpoint_control")
+      .set<bool>("is_unit_testing", "true");
 
   // Creates and runs an OM from output_params and given inputs
-  auto run = [&](std::shared_ptr<FieldManager> fm, const util::TimeStamp &case_t0,
-                 const util::TimeStamp &run_t0, const int nsteps) {
+  auto run = [&](std::shared_ptr<FieldManager> fm,
+                 const util::TimeStamp &case_t0, const util::TimeStamp &run_t0,
+                 const int nsteps) {
     OutputManager output_manager;
     output_manager.initialize(comm, output_params, run_t0, case_t0, false);
     output_manager.setup(fm, gm->get_grid_names());
 
-    // We advance the fields, by adding dt to each entry of the fields at each time step
-    // The output restart data is written every 5 time steps, while the output freq is 10.
+    // We advance the fields, by adding dt to each entry of the fields at each
+    // time step The output restart data is written every 5 time steps, while
+    // the output freq is 10.
     auto time = run_t0;
     for (int i = 0; i < nsteps; ++i) {
       output_manager.init_timestep(time, dt);
@@ -113,8 +122,9 @@ TEST_CASE("output_restart", "io") {
   // Run test for different avg type choices
   for (const std::string avg_type : {"INSTANT", "AVERAGE"}) {
     {
-      // In normal runs, the OM for the model restart takes care of nuking rpointer.atm,
-      // and re-creating a new one. Here, we don't have that, so we must nuke it manually
+      // In normal runs, the OM for the model restart takes care of nuking
+      // rpointer.atm, and re-creating a new one. Here, we don't have that, so
+      // we must nuke it manually
       std::ofstream ofs;
       ofs.open("rpointer.atm", std::ofstream::out | std::ofstream::trunc);
     }
@@ -124,19 +134,24 @@ TEST_CASE("output_restart", "io") {
     // 1. Run for full 20 days, no restarts needed
     auto fm_mono = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix", "monolithic");
-    output_params.sublist("checkpoint_control").set<std::string>("frequency_units", "never");
+    output_params.sublist("checkpoint_control")
+        .set<std::string>("frequency_units", "never");
     run(fm_mono, t0, t0, 20);
 
     // 2. Run for 15 days on fm0, write restart every 5 steps
     auto fm_rest = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix", "restarted");
-    output_params.sublist("checkpoint_control").set<std::string>("frequency_units", "nsteps");
+    output_params.sublist("checkpoint_control")
+        .set<std::string>("frequency_units", "nsteps");
     run(fm_rest, t0, t0, 15);
 
     // 3. Restart the second run at step=15, and do 5 more steps
-    // NOTE: keep fm_rest FM, since we are not testing the restart of the state, just the history.
-    //       Here, we proceed as if the AD already restarted the state correctly.
-    output_params.sublist("checkpoint_control").set<std::string>("frequency_units", "never");
+    // NOTE: keep fm_rest FM, since we are not testing the restart of the state,
+    // just the history.
+    //       Here, we proceed as if the AD already restarted the state
+    //       correctly.
+    output_params.sublist("checkpoint_control")
+        .set<std::string>("frequency_units", "never");
 
     // Ensure nsteps is equal to 15 upon restart
     auto run_t0 = (t0 + 15 * dt).clone(15);
@@ -148,7 +163,8 @@ TEST_CASE("output_restart", "io") {
 }
 
 /*=============================================================================================*/
-std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGrid> &grid) {
+std::shared_ptr<FieldManager>
+get_test_fm(const std::shared_ptr<const AbstractGrid> &grid) {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
@@ -184,7 +200,8 @@ std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGr
   // Initialize fields to -1.0, and set initial time stamp
   util::TimeStamp time({2000, 1, 1}, {0, 0, 0});
   fm->init_fields_time_stamp(time);
-  for (const auto &fn : {"field_1", "field_2", "field_3", "field_4", "field_5"}) {
+  for (const auto &fn :
+       {"field_1", "field_2", "field_3", "field_4", "field_5"}) {
     fm->get_field(fn).deep_copy(-1.0);
     fm->get_field(fn).sync_to_host();
   }
@@ -192,7 +209,8 @@ std::shared_ptr<FieldManager> get_test_fm(const std::shared_ptr<const AbstractGr
   return fm;
 }
 
-std::shared_ptr<FieldManager> clone_fm(const std::shared_ptr<const FieldManager> &src) {
+std::shared_ptr<FieldManager>
+clone_fm(const std::shared_ptr<const FieldManager> &src) {
   auto copy = std::make_shared<FieldManager>(src->get_grid());
   copy->registration_begins();
   copy->registration_ends();
@@ -204,7 +222,8 @@ std::shared_ptr<FieldManager> clone_fm(const std::shared_ptr<const FieldManager>
 }
 
 /*=================================================================================================*/
-template <typename Engine> void randomize_fields(const FieldManager &fm, Engine &engine) {
+template <typename Engine>
+void randomize_fields(const FieldManager &fm, Engine &engine) {
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf(0.01, 0.99);
 
@@ -222,14 +241,15 @@ template <typename Engine> void randomize_fields(const FieldManager &fm, Engine 
 }
 
 /*=============================================================================================*/
-std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm &comm, const Int num_gcols,
-                                          const Int num_levs) {
+std::shared_ptr<GridsManager>
+get_test_gm(const ekat::Comm &comm, const Int num_gcols, const Int num_levs) {
   auto gm = create_mesh_free_grids_manager(comm, 0, 0, num_levs, num_gcols);
   gm->build_grids();
   return gm;
 }
 /*===================================================================================================*/
-void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveString> &fnames,
+void time_advance(const FieldManager &fm,
+                  const std::list<ekat::CaseInsensitiveString> &fnames,
                   const int dt) {
   for (const auto &fname : fnames) {
     auto f = fm.get_field(fname);
@@ -258,8 +278,9 @@ void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveS
             if (fname == "field_5") {
               // field_5 is used to test restarts w/ filled values, so
               // we cycle between filled and unfilled states.
-              v(i, j, k) =
-                  (v(i, j, k) == FillValue) ? dt : ((v(i, j, k) == 1.0) ? 2.0 * dt : FillValue);
+              v(i, j, k) = (v(i, j, k) == FillValue)
+                               ? dt
+                               : ((v(i, j, k) == 1.0) ? 2.0 * dt : FillValue);
             } else {
               v(i, j, k) += dt;
             }
@@ -268,7 +289,8 @@ void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveS
       }
     } break;
     default:
-      EKAT_ERROR_MSG("Error! Unexpected field of rank " + std::to_string(fl.rank()) + ".\n");
+      EKAT_ERROR_MSG("Error! Unexpected field of rank " +
+                     std::to_string(fl.rank()) + ".\n");
     }
     f.sync_to_dev();
     auto ft = f.get_header_ptr()->get_tracking();
@@ -277,10 +299,12 @@ void time_advance(const FieldManager &fm, const std::list<ekat::CaseInsensitiveS
   }
 }
 
-std::shared_ptr<FieldManager> backup_fm(const std::shared_ptr<FieldManager> &src_fm) {
+std::shared_ptr<FieldManager>
+backup_fm(const std::shared_ptr<FieldManager> &src_fm) {
   // Now, create a copy of the field manager current status, for comparisong
   auto dst_fm = get_test_fm(src_fm->get_grid());
-  for (const auto &fn : {"field_1", "field_2", "field_3", "field_4", "field_5"}) {
+  for (const auto &fn :
+       {"field_1", "field_2", "field_3", "field_4", "field_5"}) {
     auto f_dst       = dst_fm->get_field(fn);
     const auto f_src = src_fm->get_field(fn);
     f_dst.deep_copy(f_src);

@@ -17,7 +17,8 @@ public:
     None,
     Static1D,     // Uses a constant 1d (vertical) pressure from input data
     Dynamic3D,    // Uses a time-dep 3d pressure from input data
-    Dynamic3DRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
+    Dynamic3DRef, // Reconstructs a reference 3d pressure from time-dep PS in
+                  // input data
   };
 
   struct RemapData {
@@ -31,7 +32,8 @@ public:
     VRemapType vr_type;
     std::string extrap_top = "P0";
     std::string extrap_bot = "P0";
-    Real mask_value        = std::numeric_limits<Real>::quiet_NaN(); // Unused for P0 extrapolation
+    Real mask_value =
+        std::numeric_limits<Real>::quiet_NaN(); // Unused for P0 extrapolation
     std::string pname; // What we need to load from nc file
     Field pmid, pint;
   };
@@ -42,9 +44,12 @@ public:
 
   ~DataInterpolation() = default;
 
-  void toggle_debug_output(bool enable_dbg_output) { m_dbg_output = enable_dbg_output; }
+  void toggle_debug_output(bool enable_dbg_output) {
+    m_dbg_output = enable_dbg_output;
+  }
 
-  void setup_time_database(const strvec_t &input_files, const util::TimeLine timeline,
+  void setup_time_database(const strvec_t &input_files,
+                           const util::TimeLine timeline,
                            const util::TimeStamp &ref_ts = util::TimeStamp());
 
   void setup_remappers(const RemapData &data);

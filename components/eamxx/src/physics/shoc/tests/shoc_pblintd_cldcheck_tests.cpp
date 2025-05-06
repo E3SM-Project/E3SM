@@ -22,7 +22,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestPblintdCldCheck
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol = 5;
@@ -126,11 +127,13 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>
     }
 
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(cldcheck_data_baseline) / sizeof(PblintdCldcheckData);
+      static constexpr Int num_runs =
+          sizeof(cldcheck_data_baseline) / sizeof(PblintdCldcheckData);
       for (Int i = 0; i < num_runs; ++i) {
         const Int shcol = cldcheck_data_cxx[i].shcol;
         for (Int k = 0; k < shcol; ++k) {
-          REQUIRE(cldcheck_data_baseline[i].pblh[k] == cldcheck_data_cxx[i].pblh[k]);
+          REQUIRE(cldcheck_data_baseline[i].pblh[k] ==
+                  cldcheck_data_cxx[i].pblh[k]);
         }
       }
     } // SCREAM_BFB_TESTING
@@ -149,15 +152,15 @@ struct UnitWrap::UnitTest<D>::TestPblintdCldCheck : public UnitWrap::UnitTest<D>
 namespace {
 
 TEST_CASE("shoc_pblintd_cldcheck_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCldCheck;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdCldCheck;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_pblintd_cldcheck_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestPblintdCldCheck;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestPblintdCldCheck;
 
   TestStruct().run_bfb();
 }

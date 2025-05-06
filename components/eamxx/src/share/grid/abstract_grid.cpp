@@ -10,12 +10,14 @@
 
 namespace scream {
 // Constructor(s) & Destructor
-AbstractGrid::AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
-                           const int num_vertical_lev, const ekat::Comm &comm)
+AbstractGrid::AbstractGrid(const std::string &name, const GridType type,
+                           const int num_local_dofs, const int num_vertical_lev,
+                           const ekat::Comm &comm)
     : m_type(type), m_name(name), m_num_local_dofs(num_local_dofs),
       m_num_vert_levs(num_vertical_lev), m_comm(comm) {
   // Sanity checks
-  EKAT_REQUIRE_MSG(m_num_local_dofs >= 0, "Error! Number of local dofs must be non-negative.\n");
+  EKAT_REQUIRE_MSG(m_num_local_dofs >= 0,
+                   "Error! Number of local dofs must be non-negative.\n");
 
   m_comm.all_reduce(&m_num_local_dofs, &m_num_global_dofs, 1, MPI_SUM);
 
@@ -28,25 +30,25 @@ AbstractGrid::AbstractGrid(const std::string &name, const GridType type, const i
   ++counter;
 }
 
-AbstractGrid::AbstractGrid(const std::string &name, const GridType type, const int num_local_dofs,
-                           const int num_global_dofs, const int num_vertical_lev,
-                           const ekat::Comm &comm)
+AbstractGrid::AbstractGrid(const std::string &name, const GridType type,
+                           const int num_local_dofs, const int num_global_dofs,
+                           const int num_vertical_lev, const ekat::Comm &comm)
     : AbstractGrid(name, type, num_local_dofs, num_vertical_lev, comm) {
   m_num_global_dofs = num_global_dofs;
 #ifndef NDEBUG
   int max_nldofs = m_num_local_dofs;
   m_comm.all_reduce(&max_nldofs, 1, MPI_MAX);
-  EKAT_REQUIRE_MSG(
-      max_nldofs <= m_num_global_dofs,
-      "Error! The number of global dof is smaller than the local number of dofs on some ranks.\n"
-      " - grid name: " +
-          name +
-          "\n"
-          " - num global dofs: " +
-          std::to_string(m_num_global_dofs) +
-          "\n"
-          " - max num local dofs: " +
-          std::to_string(max_nldofs) + "\n");
+  EKAT_REQUIRE_MSG(max_nldofs <= m_num_global_dofs,
+                   "Error! The number of global dof is smaller than the local "
+                   "number of dofs on some ranks.\n"
+                   " - grid name: " +
+                       name +
+                       "\n"
+                       " - num global dofs: " +
+                       std::to_string(m_num_global_dofs) +
+                       "\n"
+                       " - max num local dofs: " +
+                       std::to_string(max_nldofs) + "\n");
 #endif
 }
 
@@ -63,8 +65,9 @@ FieldLayout AbstractGrid::get_vertical_layout(const bool midpoints) const {
   return FieldLayout({t}, {d}).rename_dims(m_special_tag_names);
 }
 
-FieldLayout AbstractGrid::get_vertical_layout(const bool midpoints, const int vector_dim,
-                                              const std::string &vec_dim_name) const {
+FieldLayout
+AbstractGrid::get_vertical_layout(const bool midpoints, const int vector_dim,
+                                  const std::string &vec_dim_name) const {
   using namespace ShortFieldTagsNames;
   auto l = get_vertical_layout(midpoints);
   l.append_dim(CMP, vector_dim, vec_dim_name);
@@ -76,36 +79,44 @@ FieldLayout AbstractGrid::get_2d_vector_layout(const int vector_dim) const {
   return get_2d_vector_layout(vector_dim, e2str(CMP));
 }
 
-FieldLayout AbstractGrid::get_2d_tensor_layout(const std::vector<int> &cmp_dims) const {
+FieldLayout
+AbstractGrid::get_2d_tensor_layout(const std::vector<int> &cmp_dims) const {
   using namespace ShortFieldTagsNames;
   std::vector<std::string> names(cmp_dims.size(), e2str(CMP));
   return get_2d_tensor_layout(cmp_dims, names);
 }
 
-FieldLayout AbstractGrid::get_3d_vector_layout(const bool midpoints, const int vector_dim) const {
+FieldLayout AbstractGrid::get_3d_vector_layout(const bool midpoints,
+                                               const int vector_dim) const {
   using namespace ShortFieldTagsNames;
   return get_3d_vector_layout(midpoints, vector_dim, e2str(CMP));
 }
 
-FieldLayout AbstractGrid::get_3d_tensor_layout(const bool midpoints,
-                                               const std::vector<int> &cmp_dims) const {
+FieldLayout
+AbstractGrid::get_3d_tensor_layout(const bool midpoints,
+                                   const std::vector<int> &cmp_dims) const {
   using namespace ShortFieldTagsNames;
   std::vector<std::string> names(cmp_dims.size(), e2str(CMP));
   return get_3d_tensor_layout(midpoints, cmp_dims, names);
 }
 
-FieldLayout AbstractGrid::equivalent_layout(const FieldLayout &template_layout) const {
+FieldLayout
+AbstractGrid::equivalent_layout(const FieldLayout &template_layout) const {
   using namespace ShortFieldTagsNames;
 
   FieldLayout ret_layout = FieldLayout::invalid();
 
-  const bool midpoints = template_layout.has_tag(LEV);
-  const auto names     = template_layout.names();
-  const auto vec_cmp =
-      template_layout.is_vector_layout() ? template_layout.get_vector_component_idx() : -1;
-  const auto vec_dim = template_layout.is_vector_layout() ? template_layout.get_vector_dim() : -1;
-  const auto tensor_dims =
-      template_layout.is_tensor_layout() ? template_layout.get_tensor_dims() : std::vector<int>{};
+  const bool midpoints   = template_layout.has_tag(LEV);
+  const auto names       = template_layout.names();
+  const auto vec_cmp     = template_layout.is_vector_layout()
+                               ? template_layout.get_vector_component_idx()
+                               : -1;
+  const auto vec_dim     = template_layout.is_vector_layout()
+                               ? template_layout.get_vector_dim()
+                               : -1;
+  const auto tensor_dims = template_layout.is_tensor_layout()
+                               ? template_layout.get_tensor_dims()
+                               : std::vector<int>{};
   std::vector<std::string> tdims_names;
   if (template_layout.is_tensor_layout()) {
     for (auto idx : template_layout.get_tensor_components_ids()) {
@@ -161,7 +172,8 @@ bool AbstractGrid::is_unique() const {
     auto dofs_h = dofs.get_view<gid_type *, Host>();
 
     std::sort(dofs_h.data(), dofs_h.data() + m_num_local_dofs);
-    auto unique_end = std::unique(dofs_h.data(), dofs_h.data() + m_num_local_dofs);
+    auto unique_end =
+        std::unique(dofs_h.data(), dofs_h.data() + m_num_local_dofs);
 
     int locally_unique = unique_end == (dofs_h.data() + m_num_local_dofs);
     int unique;
@@ -170,14 +182,16 @@ bool AbstractGrid::is_unique() const {
       return false;
     }
 
-    // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
+    // Each rank has unique gids locally. Now it's time to verify if they are
+    // also globally unique.
     int max_dofs;
     m_comm.all_reduce(&m_num_local_dofs, &max_dofs, 1, MPI_MAX);
     std::vector<gid_type> gids(max_dofs, -1);
     int unique_gids = 1;
 
     for (int pid = 0; pid < m_comm.size(); ++pid) {
-      // Rank pid broadcasts its gids, everyone else checks if there are duplicates
+      // Rank pid broadcasts its gids, everyone else checks if there are
+      // duplicates
       if (pid == m_comm.rank()) {
         auto start = dofs_h.data();
         auto end   = start + m_num_local_dofs;
@@ -190,7 +204,8 @@ bool AbstractGrid::is_unique() const {
 
       int my_unique_gids = 1;
       if (pid != m_comm.rank()) {
-        // Checking two sorted arrays of length m and n for elements in common is O(m+n) ops.
+        // Checking two sorted arrays of length m and n for elements in common
+        // is O(m+n) ops.
         int i = 0, j = 0;
         while (i < m_num_local_dofs && j < ndofs && my_unique_gids == 1) {
           if (dofs_h[i] < gids[j]) {
@@ -244,9 +259,11 @@ bool AbstractGrid::is_valid_layout(const FieldLayout &layout) const {
   case LayoutType::Scalar3D:
     return layout.congruent(get_3d_scalar_layout(midpoints));
   case LayoutType::Vector3D:
-    return layout.congruent(get_3d_vector_layout(midpoints, layout.get_vector_dim()));
+    return layout.congruent(
+        get_3d_vector_layout(midpoints, layout.get_vector_dim()));
   case LayoutType::Tensor3D:
-    return layout.congruent(get_3d_tensor_layout(midpoints, layout.get_tensor_dims()));
+    return layout.congruent(
+        get_3d_tensor_layout(midpoints, layout.get_tensor_dims()));
   default:
     // Anything else is probably not ok
     return false;
@@ -274,8 +291,10 @@ auto AbstractGrid::get_global_max_dof_gid() const -> gid_type {
 auto AbstractGrid::get_global_min_partitioned_dim_gid() const -> gid_type {
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
-  if (m_global_min_partitioned_dim_gid == std::numeric_limits<gid_type>::max()) {
-    m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids, &get_comm());
+  if (m_global_min_partitioned_dim_gid ==
+      std::numeric_limits<gid_type>::max()) {
+    m_global_min_partitioned_dim_gid =
+        field_min<gid_type>(m_partitioned_dim_gids, &get_comm());
   }
   return m_global_min_partitioned_dim_gid;
 }
@@ -283,8 +302,10 @@ auto AbstractGrid::get_global_min_partitioned_dim_gid() const -> gid_type {
 auto AbstractGrid::get_global_max_partitioned_dim_gid() const -> gid_type {
   std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
-  if (m_global_max_partitioned_dim_gid == -std::numeric_limits<gid_type>::max()) {
-    m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids, &get_comm());
+  if (m_global_max_partitioned_dim_gid ==
+      -std::numeric_limits<gid_type>::max()) {
+    m_global_max_partitioned_dim_gid =
+        field_max<gid_type>(m_partitioned_dim_gids, &get_comm());
   }
   return m_global_max_partitioned_dim_gid;
 }
@@ -293,21 +314,29 @@ Field AbstractGrid::get_dofs_gids() const { return m_dofs_gids.get_const(); }
 
 Field AbstractGrid::get_dofs_gids() { return m_dofs_gids; }
 
-Field AbstractGrid::get_partitioned_dim_gids() { return m_partitioned_dim_gids; }
+Field AbstractGrid::get_partitioned_dim_gids() {
+  return m_partitioned_dim_gids;
+}
 
-Field AbstractGrid::get_partitioned_dim_gids() const { return m_partitioned_dim_gids.get_const(); }
+Field AbstractGrid::get_partitioned_dim_gids() const {
+  return m_partitioned_dim_gids.get_const();
+}
 
-Field AbstractGrid::get_lid_to_idx_map() const { return m_lid_to_idx.get_const(); }
+Field AbstractGrid::get_lid_to_idx_map() const {
+  return m_lid_to_idx.get_const();
+}
 
 Field AbstractGrid::get_lid_to_idx_map() { return m_lid_to_idx; }
 
 Field AbstractGrid::get_geometry_data(const std::string &name) const {
-  EKAT_REQUIRE_MSG(has_geometry_data(name), "Error! Geometry data '" + name + "' not found.\n");
+  EKAT_REQUIRE_MSG(has_geometry_data(name),
+                   "Error! Geometry data '" + name + "' not found.\n");
 
   return m_geo_fields.at(name).get_const();
 }
 
-Field AbstractGrid::create_geometry_data(const FieldIdentifier &fid, const int pack_size) {
+Field AbstractGrid::create_geometry_data(const FieldIdentifier &fid,
+                                         const int pack_size) {
   const auto &name = fid.name();
 
   EKAT_REQUIRE_MSG(
@@ -320,7 +349,11 @@ Field AbstractGrid::create_geometry_data(const FieldIdentifier &fid, const int p
           name +
           "\n"
           "  - geo data layout: " +
-          m_geo_fields.at(name).get_header().get_identifier().get_layout().to_string() +
+          m_geo_fields.at(name)
+              .get_header()
+              .get_identifier()
+              .get_layout()
+              .to_string() +
           "\n"
           "  - input layout: " +
           fid.get_layout().to_string() + "\n");
@@ -333,13 +366,14 @@ Field AbstractGrid::create_geometry_data(const FieldIdentifier &fid, const int p
 }
 
 void AbstractGrid::delete_geometry_data(const std::string &name) {
-  EKAT_REQUIRE_MSG(has_geometry_data(name),
-                   "Error! Cannot delete geometry data, since it is does not exist.\n"
-                   "  - grid name: " +
-                       this->name() +
-                       "\n"
-                       "  - geo data name: " +
-                       name + "\n");
+  EKAT_REQUIRE_MSG(
+      has_geometry_data(name),
+      "Error! Cannot delete geometry data, since it is does not exist.\n"
+      "  - grid name: " +
+          this->name() +
+          "\n"
+          "  - geo data name: " +
+          name + "\n");
 
   m_geo_fields.erase(name);
 }
@@ -392,16 +426,17 @@ std::vector<AbstractGrid::gid_type> AbstractGrid::get_unique_gids() const {
   for (int pid = 1; pid <= m_comm.size(); ++pid) {
     offsets[pid] = offsets[pid - 1] + ngids[pid - 1];
   }
-  EKAT_REQUIRE_MSG(
-      offsets[m_comm.size()] == m_num_global_dofs,
-      "Error! Something went wrong while computing offsets in AbstractGrid::get_unique_grid.\n");
+  EKAT_REQUIRE_MSG(offsets[m_comm.size()] == m_num_global_dofs,
+                   "Error! Something went wrong while computing offsets in "
+                   "AbstractGrid::get_unique_grid.\n");
 
   // Gather all dofs
   const auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
   std::vector<gid_type> all_gids(m_num_global_dofs);
   auto dofs_gids_h = m_dofs_gids.get_view<const gid_type *, Host>();
-  MPI_Allgatherv(dofs_gids_h.data(), m_num_local_dofs, mpi_gid_t, all_gids.data(), ngids.data(),
-                 offsets.data(), mpi_gid_t, m_comm.mpi_comm());
+  MPI_Allgatherv(dofs_gids_h.data(), m_num_local_dofs, mpi_gid_t,
+                 all_gids.data(), ngids.data(), offsets.data(), mpi_gid_t,
+                 m_comm.mpi_comm());
 
   // Figure out unique dofs
   std::vector<gid_type> unique_dofs;
@@ -456,27 +491,29 @@ std::vector<int> AbstractGrid::get_owners(const gid_view_h &gids) const {
     for (int i = 0; i < num_gids_pid && num_found < num_gids_in; ++i) {
       auto it = owners.find(data[i]);
       if (it != owners.end()) {
-        EKAT_REQUIRE_MSG(it->second == -1, "Error! Found a GID with multiple owners.\n"
-                                           "  - owner 1: " +
-                                               std::to_string(it->second) +
-                                               "\n"
-                                               "  - owner 2: " +
-                                               std::to_string(pid) + "\n");
+        EKAT_REQUIRE_MSG(it->second == -1,
+                         "Error! Found a GID with multiple owners.\n"
+                         "  - owner 1: " +
+                             std::to_string(it->second) +
+                             "\n"
+                             "  - owner 2: " +
+                             std::to_string(pid) + "\n");
         it->second = pid;
         ++num_found;
       }
     }
   }
-  EKAT_REQUIRE_MSG(num_found == static_cast<int>(owners.size()),
-                   "Error! Could not locate the owner of one of the input GIDs.\n"
-                   "  - rank: " +
-                       std::to_string(comm.rank()) +
-                       "\n"
-                       "  - num found: " +
-                       std::to_string(num_found) +
-                       "\n"
-                       "  - num gids in: " +
-                       std::to_string(num_gids_in) + "\n");
+  EKAT_REQUIRE_MSG(
+      num_found == static_cast<int>(owners.size()),
+      "Error! Could not locate the owner of one of the input GIDs.\n"
+      "  - rank: " +
+          std::to_string(comm.rank()) +
+          "\n"
+          "  - num found: " +
+          std::to_string(num_found) +
+          "\n"
+          "  - num gids in: " +
+          std::to_string(num_gids_in) + "\n");
 
   // Now create and fill output view
   std::vector<int> result(num_gids_in);
@@ -487,7 +524,8 @@ std::vector<int> AbstractGrid::get_owners(const gid_view_h &gids) const {
   return result;
 }
 
-void AbstractGrid::get_remote_pids_and_lids(const gid_view_h &gids, std::vector<int> &pids,
+void AbstractGrid::get_remote_pids_and_lids(const gid_view_h &gids,
+                                            std::vector<int> &pids,
                                             std::vector<int> &lids) const {
   const auto &comm = get_comm();
   int num_gids_in  = gids.size();
@@ -533,12 +571,13 @@ void AbstractGrid::get_remote_pids_and_lids(const gid_view_h &gids, std::vector<
       auto it = gid2idx.find(data[i]);
       if (it != gid2idx.end()) {
         for (auto idx : it->second) {
-          EKAT_REQUIRE_MSG(pids[idx] == -1, "Error! Found a GID with multiple owners.\n"
-                                            "  - owner 1: " +
-                                                std::to_string(pids[idx]) +
-                                                "\n"
-                                                "  - owner 2: " +
-                                                std::to_string(pid) + "\n");
+          EKAT_REQUIRE_MSG(pids[idx] == -1,
+                           "Error! Found a GID with multiple owners.\n"
+                           "  - owner 1: " +
+                               std::to_string(pids[idx]) +
+                               "\n"
+                               "  - owner 2: " +
+                               std::to_string(pid) + "\n");
           pids[idx] = pid;
           lids[idx] = i;
         }
@@ -546,16 +585,17 @@ void AbstractGrid::get_remote_pids_and_lids(const gid_view_h &gids, std::vector<
       }
     }
   }
-  EKAT_REQUIRE_MSG(num_found == num_unique_gids,
-                   "Error! Could not locate the owner of one of the input GIDs.\n"
-                   "  - rank: " +
-                       std::to_string(comm.rank()) +
-                       "\n"
-                       "  - num found: " +
-                       std::to_string(num_found) +
-                       "\n"
-                       "  - num unique gids in: " +
-                       std::to_string(num_unique_gids) + "\n");
+  EKAT_REQUIRE_MSG(
+      num_found == num_unique_gids,
+      "Error! Could not locate the owner of one of the input GIDs.\n"
+      "  - rank: " +
+          std::to_string(comm.rank()) +
+          "\n"
+          "  - num found: " +
+          std::to_string(num_found) +
+          "\n"
+          "  - num unique gids in: " +
+          std::to_string(num_unique_gids) + "\n");
 }
 
 void AbstractGrid::create_dof_fields(const int scalar2d_layout_rank) {
@@ -566,10 +606,12 @@ void AbstractGrid::create_dof_fields(const int scalar2d_layout_rank) {
   // For both, the 1st dim is the num of local dofs. The 2nd dime of
   // lid2idx is the rank of a 2d scalar layout.
   FieldLayout dof_layout({COL}, {get_num_local_dofs()});
-  FieldLayout lid2idx_layout({COL, CMP}, {get_num_local_dofs(), scalar2d_layout_rank});
-  m_dofs_gids = Field(FieldIdentifier("gids", dof_layout, units, m_name, DataType::IntType));
-  m_lid_to_idx =
-      Field(FieldIdentifier("lid2idx", lid2idx_layout, units, m_name, DataType::IntType));
+  FieldLayout lid2idx_layout({COL, CMP},
+                             {get_num_local_dofs(), scalar2d_layout_rank});
+  m_dofs_gids = Field(
+      FieldIdentifier("gids", dof_layout, units, m_name, DataType::IntType));
+  m_lid_to_idx = Field(FieldIdentifier("lid2idx", lid2idx_layout, units, m_name,
+                                       DataType::IntType));
 
   m_dofs_gids.allocate_view();
   m_lid_to_idx.allocate_view();

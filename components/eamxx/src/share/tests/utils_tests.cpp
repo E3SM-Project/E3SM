@@ -30,10 +30,13 @@ TEST_CASE("contiguous_superset") {
 
   // The following should both allow the superset (A,B,C,D,E,F,G)
   // Note: lol3 is simply a shuffled version of lol2
-  LOLS_type lol2 = {{A, B, C}, {B, C, D, E}, {C, D}, {C, D, E, F}, {D, E, F, G}};
-  LOLS_type lol3 = {{D, E, F, G}, {C, D, E, F}, {A, B, C}, {C, D}, {B, C, D, E}};
+  LOLS_type lol2 = {
+      {A, B, C}, {B, C, D, E}, {C, D}, {C, D, E, F}, {D, E, F, G}};
+  LOLS_type lol3 = {
+      {D, E, F, G}, {C, D, E, F}, {A, B, C}, {C, D}, {B, C, D, E}};
 
-  // Flipping a list is still a valid solution, so consider both tgt and its reverse.
+  // Flipping a list is still a valid solution, so consider both tgt and its
+  // reverse.
   std::list<std::string> tgt     = {A, B, C, D, E, F, G};
   std::list<std::string> tgt_rev = tgt;
   tgt_rev.reverse();
@@ -62,8 +65,10 @@ TEST_CASE("time_stamp") {
   }
 
   SECTION("getters_checks") {
-    // Julian day = frac_of_year_in_days.fraction_of_day, with frac_of_year_in_days=0 at Jan 1st.
-    REQUIRE(ts1.frac_of_year_in_days() == (284 + (17 * 3600 + 8 * 60 + 30) / 86400.0));
+    // Julian day = frac_of_year_in_days.fraction_of_day, with
+    // frac_of_year_in_days=0 at Jan 1st.
+    REQUIRE(ts1.frac_of_year_in_days() ==
+            (284 + (17 * 3600 + 8 * 60 + 30) / 86400.0));
     REQUIRE(ts1.get_num_steps() == 0);
   }
 
@@ -80,7 +85,8 @@ TEST_CASE("time_stamp") {
     // Comparisons
     REQUIRE(TS({2021, 12, 31}, {23, 59, 59}) < TS({2022, 1, 1}, {0, 0, 0}));
     REQUIRE(TS({2022, 1, 1}, {0, 0, 0}) <= TS({2022, 1, 1}, {0, 0, 0}));
-    REQUIRE((TS({2021, 12, 31}, {23, 59, 59}) + 1) == TS({2022, 1, 1}, {0, 0, 0}));
+    REQUIRE((TS({2021, 12, 31}, {23, 59, 59}) + 1) ==
+            TS({2022, 1, 1}, {0, 0, 0}));
   }
 
   SECTION("updates") {
@@ -129,8 +135,8 @@ TEST_CASE("time_stamp") {
     REQUIRE(ts2.get_seconds() == (ts1.get_seconds() + 1));
     REQUIRE(ts2.get_minutes() == (ts1.get_minutes() + 1));
     REQUIRE(ts2.get_hours() == (ts1.get_hours() + 1));
-    REQUIRE(ts2.get_day() ==
-            (ts1.get_day() + 1 + 20 - 31)); // Add 20 days, subtract Oct 31 days (carry)
+    REQUIRE(ts2.get_day() == (ts1.get_day() + 1 + 20 -
+                              31)); // Add 20 days, subtract Oct 31 days (carry)
     REQUIRE(ts2.get_month() == (ts1.get_month() + 1));
     REQUIRE(ts2.get_year() == ts1.get_year());
 
@@ -138,8 +144,8 @@ TEST_CASE("time_stamp") {
     REQUIRE(ts2.get_seconds() == ts1.get_seconds() + 1);
     REQUIRE(ts2.get_minutes() == (ts1.get_minutes() + 1));
     REQUIRE(ts2.get_hours() == (ts1.get_hours() + 1));
-    REQUIRE(ts2.get_day() ==
-            (ts1.get_day() + 1 + 20 - 31)); // Add 20 days, subtract Oct 31 days (carry)
+    REQUIRE(ts2.get_day() == (ts1.get_day() + 1 + 20 -
+                              31)); // Add 20 days, subtract Oct 31 days (carry)
     REQUIRE(ts2.get_month() == (ts1.get_month() + 1));
     REQUIRE(ts2.get_year() == (ts1.get_year() + 1));
 
@@ -208,9 +214,10 @@ TEST_CASE("array_utils") {
     return s;
   };
 
-  // Adds one to fastest striding, doing carrying (if possible) based on max dims d
-  // Note: cannot use recursion with a pure lambda
-  std::function<bool(int *, int, int *)> add_one = [&](int *v, int n, int *d) -> bool {
+  // Adds one to fastest striding, doing carrying (if possible) based on max
+  // dims d Note: cannot use recursion with a pure lambda
+  std::function<bool(int *, int, int *)> add_one = [&](int *v, int n,
+                                                       int *d) -> bool {
     // Increase fastest striding index
     ++v[n];
 

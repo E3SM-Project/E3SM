@@ -44,7 +44,8 @@ public:
   std::string name() const { return "mam_aero_microphysics"; }
 
   // grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void
+  set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
@@ -131,7 +132,8 @@ private:
   std::vector<mam_coupling::TracerData> elevated_emis_data_;
   std::map<std::string, std::string> elevated_emis_file_name_;
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
-  view_2d elevated_emis_output_[mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS];
+  view_2d
+      elevated_emis_output_[mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS];
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
 

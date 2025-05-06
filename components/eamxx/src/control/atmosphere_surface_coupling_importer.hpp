@@ -12,7 +12,8 @@
 namespace scream {
 
 /*
- * The class responsible to handle the calculation of the subgrid cloud fractions
+ * The class responsible to handle the calculation of the subgrid cloud
+ * fractions
  *
  * The AD should store exactly ONE instance of this class stored
  * in its list of subcomponents (the AD should make sure of this).
@@ -25,16 +26,21 @@ public:
   template <typename DevT, typename DataT>
   using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
-  template <typename DevT, typename ScalarT> using uview_1d = Unmanaged<view_1d<DevT, ScalarT>>;
-  template <typename DevT, typename ScalarT> using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
+  template <typename DevT, typename ScalarT>
+  using uview_1d = Unmanaged<view_1d<DevT, ScalarT>>;
+  template <typename DevT, typename ScalarT>
+  using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
 
   using name_t = char[32];
 
   // Constructors
-  SurfaceCouplingImporter(const ekat::Comm &comm, const ekat::ParameterList &params);
+  SurfaceCouplingImporter(const ekat::Comm &comm,
+                          const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type() const { return AtmosphereProcessType::SurfaceCouplingImporter; }
+  AtmosphereProcessType type() const {
+    return AtmosphereProcessType::SurfaceCouplingImporter;
+  }
 
   // The name of the subcomponent
   std::string name() const { return "SurfaceCouplingImporter"; }
@@ -70,15 +76,15 @@ protected:
   Int m_num_scream_imports;
 
   // Views storing a 2d array with dims (num_cols,num_fields) for import data.
-  // The field idx strides faster, since that's what mct does (so we can "view" the
-  // pointer to the whole x2a array from Fortran)
+  // The field idx strides faster, since that's what mct does (so we can "view"
+  // the pointer to the whole x2a array from Fortran)
   view_2d<DefaultDevice, Real> m_cpl_imports_view_d;
   uview_2d<HostDevice, Real> m_cpl_imports_view_h;
 
 #ifdef HAVE_MOAB
   // Views storing a 2d array with dims (num_fields,num_cols) for import data.
-  // The colums index strides faster, since that's what moab does (so we can "view" the
-  // pointer to the whole x2a_am(:,:) array from Fortran)
+  // The colums index strides faster, since that's what moab does (so we can
+  // "view" the pointer to the whole x2a_am(:,:) array from Fortran)
   view_2d<DefaultDevice, Real> m_moab_cpl_imports_view_d;
   uview_2d<HostDevice, Real> m_moab_cpl_imports_view_h;
 #endif

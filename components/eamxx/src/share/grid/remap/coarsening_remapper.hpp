@@ -22,8 +22,8 @@ namespace scream {
  * an efficient mat-vec product at runtime.
  *
  * The mat-vec is performed in two stages:
- *   1. Perform a local mat-vec multiplication (on device), producing intermediate
- *      output fields that have "duplicated" entries (that is, 2+ MPI
+ *   1. Perform a local mat-vec multiplication (on device), producing
+ * intermediate output fields that have "duplicated" entries (that is, 2+ MPI
  *      ranks could all own a piece of the result for the same dof).
  *   2. Perform a pack-send-recv-unpack sequence via MPI, to accumulate
  *      partial results on the rank that owns the dof in the tgt grid.
@@ -40,7 +40,8 @@ namespace scream {
 class CoarseningRemapper : public HorizInterpRemapperBase {
 public:
   CoarseningRemapper(const grid_ptr_type &src_grid, const std::string &map_file,
-                     const bool track_mask = false, const bool populate_tgt_grid_geo_data = true);
+                     const bool track_mask                 = false,
+                     const bool populate_tgt_grid_geo_data = true);
 
   ~CoarseningRemapper();
 
@@ -53,22 +54,25 @@ protected:
 
   void setup_mpi_data_structures() override;
 
-  std::vector<int> get_pids_for_recv(const std::vector<int> &send_to_pids) const;
+  std::vector<int>
+  get_pids_for_recv(const std::vector<int> &send_to_pids) const;
 
-  std::map<int, std::vector<int>>
-  recv_gids_from_pids(const std::map<int, std::vector<int>> &pid2gids_send) const;
+  std::map<int, std::vector<int>> recv_gids_from_pids(
+      const std::map<int, std::vector<int>> &pid2gids_send) const;
 
-  // This class uses itself to remap src grid geo data to the tgt grid. But in order
-  // to not pollute the remapper for later use, we must be able to clean it up after
-  // remapping all the geo data.
+  // This class uses itself to remap src grid geo data to the tgt grid. But in
+  // order to not pollute the remapper for later use, we must be able to clean
+  // it up after remapping all the geo data.
   void clean_up();
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
   template <int N>
-  void local_mat_vec(const Field &f_src, const Field &f_tgt, const Field &mask) const;
-  template <int N> void rescale_masked_fields(const Field &f_tgt, const Field &f_mask) const;
+  void local_mat_vec(const Field &f_src, const Field &f_tgt,
+                     const Field &mask) const;
+  template <int N>
+  void rescale_masked_fields(const Field &f_tgt, const Field &f_mask) const;
   void pack_and_send();
   void recv_and_unpack();
   // Overload, not hide
@@ -77,10 +81,12 @@ public:
 protected:
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 
-  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
+  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need
+  // host mirrors.
   template <typename T>
   using mpi_view_1d =
-      typename std::conditional<MpiOnDev, view_1d<T>, typename view_1d<T>::HostMirror>::type;
+      typename std::conditional<MpiOnDev, view_1d<T>,
+                                typename view_1d<T>::HostMirror>::type;
 
   // Mask fields, if needed
   bool m_track_mask;

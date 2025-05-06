@@ -54,7 +54,8 @@ public:
 protected:
   void finalize_impl();
 
-  // cosp frequency; positive is interpreted as number of steps, negative as number of hours
+  // cosp frequency; positive is interpreted as number of steps, negative as
+  // number of hours
   int m_cosp_frequency;
   ekat::CaseInsensitiveString m_cosp_frequency_units;
 

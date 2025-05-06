@@ -27,7 +27,8 @@ class TurbulentMountainStress : public AtmosphereProcess {
 
 public:
   // Constructors
-  TurbulentMountainStress(const ekat::Comm &comm, const ekat::ParameterList &params);
+  TurbulentMountainStress(const ekat::Comm &comm,
+                          const ekat::ParameterList &params);
 
   // The type of subcomponent
   AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
@@ -38,7 +39,8 @@ public:
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Structure for storing local variables initialized using the ATMBufferManager
+  // Structure for storing local variables initialized using the
+  // ATMBufferManager
   struct Buffer {
     static constexpr int num_2d_midpoint_views  = 3;
     static constexpr int num_2d_interface_views = 1;

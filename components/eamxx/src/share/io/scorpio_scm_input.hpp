@@ -39,7 +39,8 @@ protected:
 
 protected:
   struct ClosestColInfo {
-    // MPI rank which owns the columns whose lat/lon pair is the closest to target lat/lon
+    // MPI rank which owns the columns whose lat/lon pair is the closest to
+    // target lat/lon
     int mpi_rank;
     // Local column index of on rank=mpi_rank (-1 on all other ranks)
     int col_lid;

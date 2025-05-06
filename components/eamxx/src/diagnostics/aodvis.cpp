@@ -11,7 +11,8 @@ AODVis::AODVis(const ekat::Comm &comm, const ekat::ParameterList &params)
   // Nothing to do here
 }
 
-void AODVis::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void AODVis::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto grid             = grids_manager->get_grid("physics");
@@ -44,13 +45,16 @@ void AODVis::compute_diagnostic_impl() {
   Real var_fill_value = constants::DefaultFillValue<Real>().value;
 
   const auto aod     = m_diagnostic_output.get_view<Real *>();
-  const auto tau_vis = get_field_in("aero_tau_sw").subfield(1, m_vis_bnd).get_view<const Real **>();
-  const auto sunlit  = get_field_in("sunlit").get_view<const Real *>();
+  const auto tau_vis = get_field_in("aero_tau_sw")
+                           .subfield(1, m_vis_bnd)
+                           .get_view<const Real **>();
+  const auto sunlit = get_field_in("sunlit").get_view<const Real *>();
 
   const auto num_levs = m_nlevs;
   const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
   Kokkos::parallel_for(
-      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_diagnostic_output.name(), policy,
+      KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         if (sunlit(icol) == 0.0) {
           aod(icol) = var_fill_value;

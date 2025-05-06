@@ -4,13 +4,15 @@
 
 namespace scream {
 
-HorizAvgDiag::HorizAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
+HorizAvgDiag::HorizAvgDiag(const ekat::Comm &comm,
+                           const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   const auto &fname = m_params.get<std::string>("field_name");
   m_diag_name       = fname + "_horiz_avg";
 }
 
-void HorizAvgDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void HorizAvgDiag::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &fn = m_params.get<std::string>("field_name");
   const auto &gn = m_params.get<std::string>("grid_name");
   const auto g   = grids_manager->get_grid("physics");
@@ -43,8 +45,8 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
                        " - field layout: " +
                        layout.to_string() + "\n");
 
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL), fid.get_units(),
-                        fid.get_grid_name());
+  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(COL),
+                        fid.get_units(), fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 

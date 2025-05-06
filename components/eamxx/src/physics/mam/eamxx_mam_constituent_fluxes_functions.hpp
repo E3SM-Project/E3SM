@@ -9,7 +9,8 @@ namespace scream {
 namespace {
 
 void update_gas_aerosols_using_constituents(
-    const int ncol, const int nlev, const double dt, const mam_coupling::DryAtmosphere &dry_atm,
+    const int ncol, const int nlev, const double dt,
+    const mam_coupling::DryAtmosphere &dry_atm,
     const MAMConstituentFluxes::const_view_2d &constituent_fluxes,
     // output
     const mam_coupling::AerosolState &wet_aero) {
@@ -32,17 +33,20 @@ void update_gas_aerosols_using_constituents(
         //----------------------------------------------------------------------
 
         // Get prognostics
-        mam4::Prognostics progs_at_col = mam_coupling::aerosols_for_column(wet_aero, // output
-                                                                           icol);    // input
+        mam4::Prognostics progs_at_col =
+            mam_coupling::aerosols_for_column(wet_aero, // output
+                                              icol);    // input
         // Get atmospheric quantities
-        const haero::Atmosphere haero_atm = atmosphere_for_column(dry_atm, // output
-                                                                  icol);   // input
+        const haero::Atmosphere haero_atm =
+            atmosphere_for_column(dry_atm, // output
+                                  icol);   // input
 
         // Form state%q like array at surface level
         Real state_q_at_surf_lev[pcnst] = {};
-        mam4::utils::extract_stateq_from_prognostics(progs_at_col, haero_atm, // input
-                                                     state_q_at_surf_lev,     // output
-                                                     surface_lev);            // input
+        mam4::utils::extract_stateq_from_prognostics(
+            progs_at_col, haero_atm, // input
+            state_q_at_surf_lev,     // output
+            surface_lev);            // input
 
         // Compute the units conversion factor (kg/m2/s to kg/kg)
         EKAT_KERNEL_ASSERT_MSG(dry_atm.p_del(icol, surface_lev) != 0,
@@ -52,12 +56,13 @@ void update_gas_aerosols_using_constituents(
 
         // Update state vector with constituent fluxes
         for (int icnst = istart; icnst < pcnst; ++icnst) {
-          state_q_at_surf_lev[icnst] += constituent_fluxes(icol, icnst) * unit_factor;
+          state_q_at_surf_lev[icnst] +=
+              constituent_fluxes(icol, icnst) * unit_factor;
         }
         mam4::utils::inject_stateq_to_prognostics(state_q_at_surf_lev, // input
                                                   progs_at_col,        // output
                                                   surface_lev);        // input
-      });                                                              // icol loop
+      }); // icol loop
 }
 
 } // namespace

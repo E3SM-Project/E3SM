@@ -10,7 +10,8 @@ namespace scream {
 // memory buffer for all ATM processes.
 struct ATMBufferManager {
 
-  template <typename S> using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
+  template <typename S>
+  using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
 
   ATMBufferManager() {
     m_size      = 0;
@@ -24,9 +25,9 @@ struct ATMBufferManager {
   // the same time, the total allocation will be the maximum
   // of each request.
   void request_bytes(const size_t num_bytes) {
-    ekat::error::runtime_check(
-        num_bytes % sizeof(Real) == 0,
-        "Error! Must request number of bytes which is divisible by sizeof(Real).\n");
+    ekat::error::runtime_check(num_bytes % sizeof(Real) == 0,
+                               "Error! Must request number of bytes which is "
+                               "divisible by sizeof(Real).\n");
 
     const size_t num_reals = num_bytes / sizeof(Real);
     m_size                 = std::max(num_reals, m_size);
@@ -37,7 +38,8 @@ struct ATMBufferManager {
   size_t allocated_bytes() const { return m_size * sizeof(Real); }
 
   void allocate() {
-    ekat::error::runtime_check(!m_allocated, "Error! Cannot call 'allocate' more than once.\n");
+    ekat::error::runtime_check(
+        !m_allocated, "Error! Cannot call 'allocate' more than once.\n");
 
     m_buffer    = view_1d<Real>("", m_size);
     m_allocated = true;

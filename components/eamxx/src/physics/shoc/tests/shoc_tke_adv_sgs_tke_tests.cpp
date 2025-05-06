@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -189,17 +190,18 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    AdvSgsTkeData baseline_data[] = {//            shcol, nlev
-                                     AdvSgsTkeData(10, 71, 72), AdvSgsTkeData(10, 12, 13),
-                                     AdvSgsTkeData(7, 16, 17), AdvSgsTkeData(2, 7, 8)};
+    AdvSgsTkeData baseline_data[] = {
+        //            shcol, nlev
+        AdvSgsTkeData(10, 71, 72), AdvSgsTkeData(10, 12, 13),
+        AdvSgsTkeData(7, 16, 17), AdvSgsTkeData(2, 7, 8)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     AdvSgsTkeData cxx_data[] = {
         AdvSgsTkeData(baseline_data[0]),
         AdvSgsTkeData(baseline_data[1]),
@@ -223,7 +225,8 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(AdvSgsTkeData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(AdvSgsTkeData);
       for (Int i = 0; i < num_runs; ++i) {
         AdvSgsTkeData &d_baseline = baseline_data[i];
         AdvSgsTkeData &d_cxx      = cxx_data[i];
@@ -248,15 +251,15 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
 namespace {
 
 TEST_CASE("shoc_tke_adv_sgs_tke_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocAdvSgsTke;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_adv_sgs_tke_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocAdvSgsTke;
 
   TestStruct().run_bfb();
 }

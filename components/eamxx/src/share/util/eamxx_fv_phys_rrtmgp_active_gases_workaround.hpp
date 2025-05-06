@@ -21,9 +21,13 @@ public:
     return self;
   }
 
-  void set_remapper(const std::shared_ptr<AbstractRemapper> &remap_ptr) { remapper = remap_ptr; }
+  void set_remapper(const std::shared_ptr<AbstractRemapper> &remap_ptr) {
+    remapper = remap_ptr;
+  }
   void erase_remapper() { remapper = nullptr; }
-  void add_active_gas(const std::string gas_name) { active_gases.push_back(gas_name); }
+  void add_active_gas(const std::string gas_name) {
+    active_gases.push_back(gas_name);
+  }
 
   std::shared_ptr<AbstractRemapper> get_remapper() const { return remapper; }
   std::vector<std::string> get_active_gases() const { return active_gases; }

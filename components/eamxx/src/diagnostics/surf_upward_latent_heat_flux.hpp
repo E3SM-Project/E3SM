@@ -12,7 +12,8 @@ namespace scream {
 class SurfaceUpwardLatentHeatFlux : public AtmosphereDiagnostic {
 public:
   // Constructors
-  SurfaceUpwardLatentHeatFlux(const ekat::Comm &comm, const ekat::ParameterList &params);
+  SurfaceUpwardLatentHeatFlux(const ekat::Comm &comm,
+                              const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const { return "SurfaceUpwardLatentHeatFlux"; }

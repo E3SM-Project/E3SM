@@ -26,10 +26,11 @@ class IOPDataManager {
   using Pack   = ekat::Pack<Real, SCREAM_PACK_SIZE>;
   using Pack1d = ekat::Pack<Real, 1>;
 
-  template <typename ScalarT> using view_1d      = KT::template view_1d<ScalarT>;
-  template <typename ScalarT> using view_2d      = KT::template view_2d<ScalarT>;
-  template <typename ScalarT> using view_3d      = KT::template view_3d<ScalarT>;
-  template <typename ScalarT> using view_1d_host = typename view_1d<ScalarT>::HostMirror;
+  template <typename ScalarT> using view_1d = KT::template view_1d<ScalarT>;
+  template <typename ScalarT> using view_2d = KT::template view_2d<ScalarT>;
+  template <typename ScalarT> using view_3d = KT::template view_3d<ScalarT>;
+  template <typename ScalarT>
+  using view_1d_host = typename view_1d<ScalarT>::HostMirror;
 
 public:
   // Constructor
@@ -38,10 +39,11 @@ public:
   //   - params: Input yaml file needs iop_options sublist
   //   - run_t0: Initial timestamp for the simulation
   //   - model_nlevs: Number of vertical levels in the simulation. Needed since
-  //                  the iop file contains a (potentially) different number of levels
+  //                  the iop file contains a (potentially) different number of
+  //                  levels
   IOPDataManager(const ekat::Comm &comm, const ekat::ParameterList &params,
-                 const util::TimeStamp &run_t0, const int model_nlevs, const Field &hyam,
-                 const Field &hybm);
+                 const util::TimeStamp &run_t0, const int model_nlevs,
+                 const Field &hyam, const Field &hybm);
 
   // Destructor
   ~IOPDataManager();
@@ -50,19 +52,21 @@ public:
   void read_iop_file_data(const util::TimeStamp &current_ts);
 
   // Setup io grids for reading data from file and determine the closest lat/lon
-  // pair in a IC/topo file to the target lat/lon params for a specific grid. This
-  // should be called on each grid that loads field data from file before reading
-  // data since the data file is not guarenteed to contain lat/lon for the correct
-  // grid (e.g., loading PHIS_d from topography file which only contains lat/lon on
-  // PG2 grid). EAMxx expects the ic file to contain lat/lon on GLL grid, and
-  // topography file to contain lat/lon on PG2 grid.
+  // pair in a IC/topo file to the target lat/lon params for a specific grid.
+  // This should be called on each grid that loads field data from file before
+  // reading data since the data file is not guarenteed to contain lat/lon for
+  // the correct grid (e.g., loading PHIS_d from topography file which only
+  // contains lat/lon on PG2 grid). EAMxx expects the ic file to contain lat/lon
+  // on GLL grid, and topography file to contain lat/lon on PG2 grid.
   void setup_io_info(const std::string &file_name, const grid_ptr &grid);
 
-  void read_fields_from_file_for_iop(const std::string &file_name, const std::vector<Field> &fields,
-                                     const std::shared_ptr<const AbstractGrid> &tgt_grid);
+  void read_fields_from_file_for_iop(
+      const std::string &file_name, const std::vector<Field> &fields,
+      const std::shared_ptr<const AbstractGrid> &tgt_grid);
 
   // Set fields using data loaded from the iop file
-  void set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string &grid_name);
+  void set_fields_from_iop_data(const field_mgr_ptr field_mgr,
+                                const std::string &grid_name);
 
   // The IOP file may contain temperature values that are
   // 0 at or above the surface. Correct these values using
@@ -78,11 +82,14 @@ public:
 
   ekat::ParameterList &get_params() { return m_params; }
 
-  bool has_iop_field(const std::string &fname) { return m_iop_fields.count(fname) > 0; }
+  bool has_iop_field(const std::string &fname) {
+    return m_iop_fields.count(fname) > 0;
+  }
 
   Field get_iop_field(const std::string &fname) {
-    EKAT_REQUIRE_MSG(has_iop_field(fname), "Error! Requesting IOP field \"" + fname +
-                                               "\", but field is not stored in object.\n");
+    EKAT_REQUIRE_MSG(has_iop_field(fname),
+                     "Error! Requesting IOP field \"" + fname +
+                         "\", but field is not stored in object.\n");
     return m_iop_fields[fname];
   }
 
@@ -113,7 +120,9 @@ private:
               ") is not within "
               "IOP time period: [" +
               iop_file_begin_time.to_string() + ", " +
-              (iop_file_begin_time + iop_file_times_in_sec(n_iop_times - 1)).to_string() + ").\n");
+              (iop_file_begin_time + iop_file_times_in_sec(n_iop_times - 1))
+                  .to_string() +
+              ").\n");
       return time_idx;
     }
   };

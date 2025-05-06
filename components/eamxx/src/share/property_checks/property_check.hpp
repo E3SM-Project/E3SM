@@ -39,7 +39,7 @@ namespace scream {
 enum class CheckResult { Pass, Fail, Repairable };
 
 enum class PropertyType {
-  PointWise,  // The property is computed pointwise at each entry of the field(s)
+  PointWise, // The property is computed pointwise at each entry of the field(s)
   ColumnWise, // The property is computed over each column of the field(s)
   Global      // The property is computed globally
 };
@@ -67,7 +67,8 @@ public:
   virtual ResultAndMsg check() const = 0;
 
   // Set fields, and whether they can be repaired.
-  void set_fields(const std::list<Field> &fields, const std::list<bool> &repairable);
+  void set_fields(const std::list<Field> &fields,
+                  const std::list<bool> &repairable);
 
   // Additional column data fields can be added to output
   // stream of any property check.
@@ -86,10 +87,14 @@ public:
   // C fixed, the repair might be to set f2=C-f1. So this method
   // would return only f2. If repair is not allowed, this method
   // returns an empty list.
-  const std::list<Field *> &repairable_fields() const { return m_repairable_fields; }
+  const std::list<Field *> &repairable_fields() const {
+    return m_repairable_fields;
+  }
 
   // Return additional data fields used in this property check
-  const std::list<Field> &additional_data_fields() const { return m_additional_data_fields; }
+  const std::list<Field> &additional_data_fields() const {
+    return m_additional_data_fields;
+  }
 
   // If a check fails, attempt to repair things. Default is to throw.
   void repair() const;

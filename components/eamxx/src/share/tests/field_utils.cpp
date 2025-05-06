@@ -288,7 +288,8 @@ TEST_CASE("utils") {
       FieldIdentifier fsc("f", {{}, {}}, m / s, "g"); // scalar
       FieldIdentifier f10("f", {{COL, lev_tag}, {dim0, dim2}}, m / s, "g");
       FieldIdentifier f11("f", {{CMP, lev_tag}, {dim1, dim2}}, m / s, "g");
-      FieldIdentifier f20("f", {{COL, CMP, lev_tag}, {dim0, dim1, dim2}}, m / s, "g");
+      FieldIdentifier f20("f", {{COL, CMP, lev_tag}, {dim0, dim1, dim2}}, m / s,
+                          "g");
       Field fieldsc(fsc);
       Field field10(f10);
       Field field11(f11);
@@ -326,13 +327,15 @@ TEST_CASE("utils") {
       Field result;
 
       // Add test for invalid rank-2 weight field layout
-      FieldIdentifier bad_w("bad_w", {{CMP, lev_tag}, {dim1, dim2}}, m / s, "g");
+      FieldIdentifier bad_w("bad_w", {{CMP, lev_tag}, {dim1, dim2}}, m / s,
+                            "g");
       Field bad_weight(bad_w);
       bad_weight.allocate_view();
       REQUIRE_THROWS(vert_contraction<Real>(result, field20, bad_weight));
 
       // Add test for mismatched weight field dimensions
-      FieldIdentifier wrong_size_w("wrong_w", {{COL, lev_tag}, {dim0 + 1, dim2}}, m / s, "g");
+      FieldIdentifier wrong_size_w(
+          "wrong_w", {{COL, lev_tag}, {dim0 + 1, dim2}}, m / s, "g");
       Field wrong_weight(wrong_size_w);
       wrong_weight.allocate_view();
       REQUIRE_THROWS(vert_contraction<Real>(result, field20, wrong_weight));
@@ -512,21 +515,24 @@ TEST_CASE("utils") {
     const int nlevs = IPDF(3, 9)(engine); // between 3-9 levels
 
     // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
-    FieldIdentifier fid1("f_1d", FieldLayout({LEV}, {nlevs}), Units::nondimensional(), "");
+    FieldIdentifier fid1("f_1d", FieldLayout({LEV}, {nlevs}),
+                         Units::nondimensional(), "");
     FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV}, {ncmps, nlevs}),
                           Units::nondimensional(), "");
     FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV}, {ncols, nlevs}),
                           Units::nondimensional(), "");
-    FieldIdentifier fid3("f_3d", FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}),
+    FieldIdentifier fid3("f_3d",
+                         FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}),
                          Units::nondimensional(), "");
     Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
-    f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
+    f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(),
+        f3.allocate_view();
     f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
 
     // We need GIDs for fields with COL component. This test is not over
     // multiple ranks, so just set as [0, ncols-1].
-    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "",
-                               DataType::IntType));
+    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}),
+                               Units::nondimensional(), "", DataType::IntType));
     gids.allocate_view();
     auto gids_data = gids.get_internal_view_data<int, Host>();
     std::iota(gids_data, gids_data + ncols, 0);
@@ -551,13 +557,15 @@ TEST_CASE("utils") {
     perturb(f3, engine, pdf, base_seed, mask_view, gids);
 
     // Sync to host for checks
-    f1.sync_to_host(), f2a.sync_to_host(), f2b.sync_to_host(), f3.sync_to_host();
+    f1.sync_to_host(), f2a.sync_to_host(), f2b.sync_to_host(),
+        f3.sync_to_host();
     const auto v1  = f1.get_strided_view<Real *, Host>();
     const auto v2a = f2a.get_strided_view<Real **, Host>();
     const auto v2b = f2b.get_strided_view<Real **, Host>();
     const auto v3  = f3.get_strided_view<Real ***, Host>();
 
-    // Check that all field values are 1 for all but last 3 levels and between [2,3] otherwise.
+    // Check that all field values are 1 for all but last 3 levels and between
+    // [2,3] otherwise.
     auto check_level = [&](const int ilev, const Real val) {
       if (ilev < nlevs - 3)
         REQUIRE(val == 1);
@@ -617,7 +625,8 @@ TEST_CASE("utils") {
 
   SECTION("wrong_st") {
     using wrong_real =
-        typename std::conditional<std::is_same<Real, double>::value, float, double>::type;
+        typename std::conditional<std::is_same<Real, double>::value, float,
+                                  double>::type;
     REQUIRE_THROWS(field_min<int>(f1));
     REQUIRE_THROWS(field_max<int>(f1));
     REQUIRE_THROWS(field_sum<wrong_real>(f1));
@@ -674,7 +683,8 @@ TEST_CASE("print_field_hyperslab") {
     expected << "     f" << fid.get_layout().to_string() << "\n\n";
     for (int gp1 = 0; gp1 < ngp; ++gp1) {
       for (int gp2 = 0; gp2 < ngp; ++gp2) {
-        expected << "  f(" << iel << "," << icmp << "," << gp1 << "," << gp2 << ",:)";
+        expected << "  f(" << iel << "," << icmp << "," << gp1 << "," << gp2
+                 << ",:)";
         for (int lev = 0; lev < nlev; ++lev) {
           if (lev % max_per_line == 0) {
             expected << "\n    ";
@@ -695,7 +705,8 @@ TEST_CASE("print_field_hyperslab") {
 
     std::stringstream expected;
     expected << "     f" << fid.get_layout().to_string() << "\n\n";
-    expected << "  f(" << iel << ",:," << igp << "," << jgp << "," << ilev << ")";
+    expected << "  f(" << iel << ",:," << igp << "," << jgp << "," << ilev
+             << ")";
     for (int cmp = 0; cmp < ncmp; ++cmp) {
       if (cmp % max_per_line == 0) {
         expected << "\n    ";
@@ -740,7 +751,8 @@ TEST_CASE("compute_mask") {
   std::vector<int> dims2d      = {ncols, nlevs};
 
   FieldIdentifier fid3d("foo", {tags3d, dims3d}, units, "some_grid");
-  FieldIdentifier fid3di("foo", {tags3d, dims3d}, units, "some_grid", DataType::IntType);
+  FieldIdentifier fid3di("foo", {tags3d, dims3d}, units, "some_grid",
+                         DataType::IntType);
   FieldIdentifier fid2d("foo", {tags2d, dims2d}, units, "some_grid");
 
   SECTION("exceptions") {
@@ -748,14 +760,17 @@ TEST_CASE("compute_mask") {
     Field f(fid3d);
     Field m1(fid3d);
 
-    REQUIRE_THROWS(compute_mask<Comparison::EQ>(f, 1, m1)); // Field not allocated
+    REQUIRE_THROWS(
+        compute_mask<Comparison::EQ>(f, 1, m1)); // Field not allocated
     f.allocate_view();
-    REQUIRE_THROWS(compute_mask<Comparison::EQ>(f, 1, m1)); // Mask not allocated
+    REQUIRE_THROWS(
+        compute_mask<Comparison::EQ>(f, 1, m1)); // Mask not allocated
     m1.allocate_view();
 
     Field m2(fid2d);
     m2.allocate_view();
-    REQUIRE_THROWS(compute_mask<Comparison::EQ>(f, 1, m2)); // incompatible layouts
+    REQUIRE_THROWS(
+        compute_mask<Comparison::EQ>(f, 1, m2)); // incompatible layouts
   }
 
   SECTION("check") {

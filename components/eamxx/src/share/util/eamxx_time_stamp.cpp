@@ -33,27 +33,33 @@ bool is_leap_year(const int yy) {
 }
 
 int days_in_month(const int yy, const int mm) {
-  EKAT_REQUIRE_MSG(
-      mm >= 1 && mm <= 12,
-      "Error! Month out of bounds. Did you call `days_in_month` with yy and mm swapped?\n");
-  constexpr int nonleap_days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-  constexpr int leap_days[12]    = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  EKAT_REQUIRE_MSG(mm >= 1 && mm <= 12,
+                   "Error! Month out of bounds. Did you call `days_in_month` "
+                   "with yy and mm swapped?\n");
+  constexpr int nonleap_days[12] = {31, 28, 31, 30, 31, 30,
+                                    31, 31, 30, 31, 30, 31};
+  constexpr int leap_days[12]    = {31, 29, 31, 30, 31, 30,
+                                    31, 31, 30, 31, 30, 31};
   auto &arr                      = is_leap_year(yy) ? leap_days : nonleap_days;
   return arr[mm - 1];
 }
 
 TimeStamp::TimeStamp()
-    : m_date(3, std::numeric_limits<int>::lowest()), m_time(3, std::numeric_limits<int>::lowest()) {
+    : m_date(3, std::numeric_limits<int>::lowest()),
+      m_time(3, std::numeric_limits<int>::lowest()) {
   // Nothing to do here
 }
 
 TimeStamp::TimeStamp(const std::vector<int> &date, const std::vector<int> &time,
                      const int num_steps) {
-  EKAT_REQUIRE_MSG(date.size() == 3,
-                   "Error! Date should consist of three ints: [year, month, day].\n");
-  EKAT_REQUIRE_MSG(time.size() == 3,
-                   "Error! Time of day should consist of three ints: [hour, min, sec].\n");
-  EKAT_REQUIRE_MSG(num_steps >= 0, "Error! Number of steps should be a non-negative number.\n");
+  EKAT_REQUIRE_MSG(
+      date.size() == 3,
+      "Error! Date should consist of three ints: [year, month, day].\n");
+  EKAT_REQUIRE_MSG(
+      time.size() == 3,
+      "Error! Time of day should consist of three ints: [hour, min, sec].\n");
+  EKAT_REQUIRE_MSG(num_steps >= 0,
+                   "Error! Number of steps should be a non-negative number.\n");
 
   const auto yy   = date[0];
   const auto mm   = date[1];
@@ -65,7 +71,8 @@ TimeStamp::TimeStamp(const std::vector<int> &date, const std::vector<int> &time,
   // Check the days and seconds numbers are non-negative.
   EKAT_REQUIRE_MSG(yy >= 0 && yy <= 9999, "Error! Year out of bounds.\n");
   EKAT_REQUIRE_MSG(mm > 0 && mm <= 12, "Error! Month out of bounds.\n");
-  EKAT_REQUIRE_MSG(dd > 0 && dd <= days_in_month(yy, mm), "Error! Day out of bounds.\n");
+  EKAT_REQUIRE_MSG(dd > 0 && dd <= days_in_month(yy, mm),
+                   "Error! Day out of bounds.\n");
   EKAT_REQUIRE_MSG(sec >= 0 && sec < 60, "Error! Seconds out of bounds.\n");
   EKAT_REQUIRE_MSG(min >= 0 && min < 60, "Error! Minutes out of bounds.\n");
   EKAT_REQUIRE_MSG(hour >= 0 && hour < 24, "Error! Hours out of bounds.\n");
@@ -76,17 +83,21 @@ TimeStamp::TimeStamp(const std::vector<int> &date, const std::vector<int> &time,
   m_num_steps = num_steps;
 }
 
-TimeStamp::TimeStamp(const int yy, const int mm, const int dd, const int h, const int min,
-                     const int sec, const int num_steps)
+TimeStamp::TimeStamp(const int yy, const int mm, const int dd, const int h,
+                     const int min, const int sec, const int num_steps)
     : TimeStamp({yy, mm, dd}, {h, min, sec}, num_steps) {
   // Nothing to do here
 }
 
 bool TimeStamp::is_valid() const { return !(*this == TimeStamp()); }
 
-std::int64_t TimeStamp::seconds_from(const TimeStamp &ts) const { return *this - ts; }
+std::int64_t TimeStamp::seconds_from(const TimeStamp &ts) const {
+  return *this - ts;
+}
 
-double TimeStamp::days_from(const TimeStamp &ts) const { return seconds_from(ts) / 86400.0; }
+double TimeStamp::days_from(const TimeStamp &ts) const {
+  return seconds_from(ts) / 86400.0;
+}
 
 std::string TimeStamp::to_string() const {
 
@@ -119,16 +130,21 @@ std::string TimeStamp::get_time_string() const {
 }
 
 double TimeStamp::frac_of_year_in_days() const {
-  double doy = (m_date[2] - 1) + sec_of_day() / 86400.0; // WARNING: avoid integer division
+  double doy = (m_date[2] - 1) +
+               sec_of_day() / 86400.0; // WARNING: avoid integer division
   for (int m = 1; m < m_date[1]; ++m) {
     doy += days_in_month(m_date[0], m);
   }
   return doy;
 }
 
-int TimeStamp::days_in_curr_month() const { return days_in_month(m_date[0], m_date[1]); }
+int TimeStamp::days_in_curr_month() const {
+  return days_in_month(m_date[0], m_date[1]);
+}
 
-int TimeStamp::days_in_curr_year() const { return is_leap_year(m_date[0]) ? 366 : 365; }
+int TimeStamp::days_in_curr_year() const {
+  return is_leap_year(m_date[0]) ? 366 : 365;
+}
 
 TimeStamp TimeStamp::curr_month_beg() const {
   auto date = m_date;
@@ -138,16 +154,19 @@ TimeStamp TimeStamp::curr_month_beg() const {
 
 TimeStamp &TimeStamp::operator+=(const double seconds) {
   // Sanity checks
-  // Note: (x-int(x)) only works for x small enough that can be stored in an int,
+  // Note: (x-int(x)) only works for x small enough that can be stored in an
+  // int,
   //       but that should be the case here, for use cases in EAMxx.
   EKAT_REQUIRE_MSG(seconds >= 0, "Error! Cannot rewind time.\n");
-  EKAT_REQUIRE_MSG((seconds - round(seconds)) < std::numeric_limits<double>::epsilon() * 10,
-                   "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds
-                                                                                         << "\n");
+  EKAT_REQUIRE_MSG(
+      (seconds - round(seconds)) < std::numeric_limits<double>::epsilon() * 10,
+      "Error! Cannot update TimeStamp with non-integral number of seconds "
+          << seconds << "\n");
 
-  EKAT_REQUIRE_MSG(is_valid(),
-                   "Error! The time stamp contains uninitialized values.\n"
-                   "       To use this object, use operator= with a valid rhs first.\n");
+  EKAT_REQUIRE_MSG(
+      is_valid(),
+      "Error! The time stamp contains uninitialized values.\n"
+      "       To use this object, use operator= with a valid rhs first.\n");
 
   auto &sec  = m_time[2];
   auto &min  = m_time[1];
@@ -198,7 +217,8 @@ TimeStamp &TimeStamp::operator+=(const double seconds) {
 }
 
 TimeStamp TimeStamp::clone(const int num_steps) {
-  return TimeStamp(get_date(), get_time(), num_steps >= 0 ? num_steps : m_num_steps);
+  return TimeStamp(get_date(), get_time(),
+                   num_steps >= 0 ? num_steps : m_num_steps);
 }
 
 bool operator==(const TimeStamp &ts1, const TimeStamp &ts2) {
@@ -243,9 +263,12 @@ std::int64_t operator-(const TimeStamp &ts1, const TimeStamp &ts2) {
   const auto d2     = ts2.get_day();
 
   // Strategy:
-  //  - if y1>y2: add fraction of y1, process whole years in (y1,y2), then add fraction of y2.
-  //  - if m1>m2: add fraction of m1, process whole months in (m1,m2), then add fraction of m2.
-  //  - if d1>m2: add fraction of d1, process whole days in (d1,d2), then add fraction of d2.
+  //  - if y1>y2: add fraction of y1, process whole years in (y1,y2), then add
+  //  fraction of y2.
+  //  - if m1>m2: add fraction of m1, process whole months in (m1,m2), then add
+  //  fraction of m2.
+  //  - if d1>m2: add fraction of d1, process whole days in (d1,d2), then add
+  //  fraction of d2.
   constexpr auto spd = constants::seconds_per_day;
   if (y1 > y2) {
     // Rest of the day, month, and year in ts2's current year

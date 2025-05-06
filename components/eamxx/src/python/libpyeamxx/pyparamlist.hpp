@@ -22,7 +22,8 @@ struct PyParamList {
 
   PyParamList(const nb::dict &d) : PyParamList(d, "") {}
 
-  PyParamList(const nb::dict &d, const std::string &name) : pl(name), pl_ref(pl) {
+  PyParamList(const nb::dict &d, const std::string &name)
+      : pl(name), pl_ref(pl) {
     parse_dict(d, pl);
   }
 
@@ -31,10 +32,18 @@ struct PyParamList {
     return spl;
   }
 
-  bool get_bool(const std::string &name) const { return pl_ref.get().get<bool>(name); }
-  int get_int(const std::string &name) const { return pl_ref.get().get<int>(name); }
-  double get_dbl(const std::string &name) const { return pl_ref.get().get<double>(name); }
-  std::string get_str(const std::string &name) const { return pl_ref.get().get<std::string>(name); }
+  bool get_bool(const std::string &name) const {
+    return pl_ref.get().get<bool>(name);
+  }
+  int get_int(const std::string &name) const {
+    return pl_ref.get().get<int>(name);
+  }
+  double get_dbl(const std::string &name) const {
+    return pl_ref.get().get<double>(name);
+  }
+  std::string get_str(const std::string &name) const {
+    return pl_ref.get().get<std::string>(name);
+  }
 
   std::vector<int> get_int_vec(const std::string &name) const {
     return pl_ref.get().get<std::vector<int>>(name);
@@ -46,7 +55,9 @@ struct PyParamList {
     return pl_ref.get().get<std::vector<std::string>>(name);
   }
 
-  template <typename T> void set(const std::string &name, T val) { pl_ref.get().set(name, val); }
+  template <typename T> void set(const std::string &name, T val) {
+    pl_ref.get().set(name, val);
+  }
 
   void print() { pl_ref.get().print(); }
 
@@ -78,9 +89,11 @@ private:
     }
   }
 
-  void parse_list(const nb::list &l, ekat::ParameterList &p, const std::string &key) {
+  void parse_list(const nb::list &l, ekat::ParameterList &p,
+                  const std::string &key) {
     EKAT_REQUIRE_MSG(nb::len(l) > 0,
-                     "Error! Cannot deduce type for dictionary list entry '" + key + "'\n");
+                     "Error! Cannot deduce type for dictionary list entry '" +
+                         key + "'\n");
     auto first       = l[0];
     bool are_ints    = nb::isinstance<nb::int_>(first);
     bool are_floats  = nb::isinstance<nb::float_>(first);
@@ -97,10 +110,12 @@ private:
   }
 
   template <typename Txx, typename Tpy>
-  void parse_list_impl(const nb::list &l, ekat::ParameterList &p, const std::string &key) {
+  void parse_list_impl(const nb::list &l, ekat::ParameterList &p,
+                       const std::string &key) {
     std::vector<Txx> vals;
     for (auto item : l) {
-      EKAT_REQUIRE_MSG(nb::isinstance<Tpy>(item), "Error! Inconsistent types in list entries.\n");
+      EKAT_REQUIRE_MSG(nb::isinstance<Tpy>(item),
+                       "Error! Inconsistent types in list entries.\n");
       auto item_py = nb::cast<Tpy>(item);
       vals.push_back(nb::cast<Txx>(item_py));
     }

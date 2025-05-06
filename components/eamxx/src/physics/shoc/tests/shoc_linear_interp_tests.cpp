@@ -22,7 +22,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocLinearInt
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property_fixed() {
     static constexpr Int shcol = 2;
@@ -41,7 +42,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
     //  column will be loaded up with meridional wind values.
 
     // Define the interface height grid [m]
-    static constexpr Real zi_grid[km2] = {12500., 7500., 3000., 750., 250.0, 0.};
+    static constexpr Real zi_grid[km2] = {12500., 7500., 3000.,
+                                          750.,   250.0, 0.};
     // Define the liquid water potential temperature [K]
     //  on the midpoint grid
     static constexpr Real thetal_zt[km1] = {320.0, 310.0, 300.0, 300.0, 306.0};
@@ -56,7 +58,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
     LinearInterpData SDS(shcol, km1, km2, minthresh);
 
     // For this test we need exactly two columns
-    REQUIRE((SDS.ncol == shcol && SDS.km1 == km1 && SDS.km2 == km2 && SDS.minthresh == minthresh));
+    REQUIRE((SDS.ncol == shcol && SDS.km1 == km1 && SDS.km2 == km2 &&
+             SDS.minthresh == minthresh));
     REQUIRE(shcol == 2);
 
     // Fill in test data on zt_grid.
@@ -221,9 +224,12 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
 
     static constexpr Real minthresh = -99999.0;
 
-    std::uniform_int_distribution<Int> km1_dist(km1_range.first, km1_range.second);
-    std::uniform_int_distribution<Int> shcol_dist(shcol_range.first, shcol_range.second);
-    std::uniform_real_distribution<Real> y1_dist(y1_range.first, y1_range.second);
+    std::uniform_int_distribution<Int> km1_dist(km1_range.first,
+                                                km1_range.second);
+    std::uniform_int_distribution<Int> shcol_dist(shcol_range.first,
+                                                  shcol_range.second);
+    std::uniform_real_distribution<Real> y1_dist(y1_range.first,
+                                                 y1_range.second);
     std::uniform_real_distribution<Real> x_dist(x_range.first, x_range.second);
 
     const Int shcol = shcol_dist(generator);
@@ -246,7 +252,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
           const auto offset  = k2 + s * km2;
           const auto offset1 = k2 + s * km1;
           REQUIRE(d.x1[offset1] < d.x1[offset1 + 1]);
-          std::uniform_real_distribution<Real> x2_dist(d.x1[offset1], d.x1[offset1 + 1]);
+          std::uniform_real_distribution<Real> x2_dist(d.x1[offset1],
+                                                       d.x1[offset1 + 1]);
           d.x2[offset] = x2_dist(generator);
         }
       } else {
@@ -260,7 +267,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
           const auto offset  = k1 + s * km1;
           const auto offset2 = k1 + s * km2;
           REQUIRE(d.x2[offset2] < d.x2[offset2 + 1]);
-          std::uniform_real_distribution<Real> x1_dist(d.x2[offset2], d.x2[offset2 + 1]);
+          std::uniform_real_distribution<Real> x1_dist(d.x2[offset2],
+                                                       d.x2[offset2 + 1]);
           d.x1[offset] = x1_dist(generator);
           d.y1[offset] = y1_dist(generator);
         }
@@ -272,8 +280,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
 
     // The combination of single-precision and randomness generating points
     // close together can result in larger error margins.
-    const auto margin =
-        std::numeric_limits<Real>::epsilon() * (ekat::is_single_precision<Real>::value ? 1000 : 1);
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+                        (ekat::is_single_precision<Real>::value ? 1000 : 1);
 
     for (Int s = 0; s < shcol; ++s) {
       if (km1_bigger) {
@@ -327,9 +335,12 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
 
     LinearInterpData baseline_data[] = {
         //                   shcol, nlev(km1), nlevi(km2), minthresh
-        LinearInterpData(10, 72, 71, 1e-15), LinearInterpData(10, 71, 72, 1e-15),
-        LinearInterpData(1, 15, 16, 1e-15),  LinearInterpData(1, 16, 15, 1e-15),
-        LinearInterpData(1, 5, 6, 1e-15),    LinearInterpData(1, 6, 5, 1e-15),
+        LinearInterpData(10, 72, 71, 1e-15),
+        LinearInterpData(10, 71, 72, 1e-15),
+        LinearInterpData(1, 15, 16, 1e-15),
+        LinearInterpData(1, 16, 15, 1e-15),
+        LinearInterpData(1, 5, 6, 1e-15),
+        LinearInterpData(1, 6, 5, 1e-15),
     };
 
     // Generate random input data
@@ -337,8 +348,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     LinearInterpData cxx_data[] = {
         LinearInterpData(baseline_data[0]), LinearInterpData(baseline_data[1]),
         LinearInterpData(baseline_data[2]), LinearInterpData(baseline_data[3]),
@@ -361,7 +372,8 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(LinearInterpData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(LinearInterpData);
       for (Int i = 0; i < num_runs; ++i) {
         LinearInterpData &d_baseline = baseline_data[i];
         LinearInterpData &d_cxx      = cxx_data[i];
@@ -385,15 +397,15 @@ struct UnitWrap::UnitTest<D>::TestShocLinearInt : public UnitWrap::UnitTest<D>::
 namespace {
 
 TEST_CASE("shoc_linear_interp_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocLinearInt;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_linear_interp_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLinearInt;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocLinearInt;
 
   TestStruct().run_bfb();
 }

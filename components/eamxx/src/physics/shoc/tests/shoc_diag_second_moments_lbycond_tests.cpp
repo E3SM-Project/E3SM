@@ -14,7 +14,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     // Property tests for the SHOC function
@@ -126,8 +127,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond : public UnitWrap::Un
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     DiagSecondMomentsLbycondData cxx_data[] = {
         DiagSecondMomentsLbycondData(baseline_data[0]),
         DiagSecondMomentsLbycondData(baseline_data[1]),
@@ -151,7 +152,8 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondMomentsLbycond : public UnitWrap::Un
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(DiagSecondMomentsLbycondData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(DiagSecondMomentsLbycondData);
       for (Int i = 0; i < num_runs; ++i) {
         DiagSecondMomentsLbycondData &d_baseline = baseline_data[i];
         DiagSecondMomentsLbycondData &d_cxx      = cxx_data[i];

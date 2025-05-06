@@ -4,8 +4,8 @@
 
 namespace scream {
 
-ShortwaveCloudForcingDiagnostic::ShortwaveCloudForcingDiagnostic(const ekat::Comm &comm,
-                                                                 const ekat::ParameterList &params)
+ShortwaveCloudForcingDiagnostic::ShortwaveCloudForcingDiagnostic(
+    const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
@@ -18,8 +18,8 @@ void ShortwaveCloudForcingDiagnostic::set_grids(
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
   auto scalar3d = grid->get_3d_scalar_layout(true);
@@ -43,14 +43,17 @@ void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl() {
 
   const auto default_policy = ESU::get_default_team_policy(m_num_cols, 1);
 
-  const auto &SWCF              = m_diagnostic_output.get_view<Real *>();
-  const auto &SW_flux_dn        = get_field_in("SW_flux_dn").get_view<const Real **>();
-  const auto &SW_flux_up        = get_field_in("SW_flux_up").get_view<const Real **>();
-  const auto &SW_clrsky_flux_dn = get_field_in("SW_clrsky_flux_dn").get_view<const Real **>();
-  const auto &SW_clrsky_flux_up = get_field_in("SW_clrsky_flux_up").get_view<const Real **>();
+  const auto &SWCF       = m_diagnostic_output.get_view<Real *>();
+  const auto &SW_flux_dn = get_field_in("SW_flux_dn").get_view<const Real **>();
+  const auto &SW_flux_up = get_field_in("SW_flux_up").get_view<const Real **>();
+  const auto &SW_clrsky_flux_dn =
+      get_field_in("SW_clrsky_flux_dn").get_view<const Real **>();
+  const auto &SW_clrsky_flux_up =
+      get_field_in("SW_clrsky_flux_up").get_view<const Real **>();
 
   Kokkos::parallel_for(
-      "ShortwaveCloudForcingDiagnostic", default_policy, KOKKOS_LAMBDA(const MemberType &team) {
+      "ShortwaveCloudForcingDiagnostic", default_policy,
+      KOKKOS_LAMBDA(const MemberType &team) {
         const int icol = team.league_rank();
         SWCF(icol)     = (SW_flux_dn(icol, 0) - SW_flux_up(icol, 0)) -
                      (SW_clrsky_flux_dn(icol, 0) - SW_clrsky_flux_up(icol, 0));

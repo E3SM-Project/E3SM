@@ -31,13 +31,15 @@ long long get_mem_usage(const MemoryUnits u);
 // Micro-utility, that given an enum returns the underlying int.
 // The only use of this is if you need to sort scoped enums.
 template <typename EnumT>
-KOKKOS_FUNCTION constexpr typename std::enable_if<std::is_enum<EnumT>::value,
-                                                  typename std::underlying_type<EnumT>::type>::type
-etoi(const EnumT e) {
+KOKKOS_FUNCTION constexpr
+    typename std::enable_if<std::is_enum<EnumT>::value,
+                            typename std::underlying_type<EnumT>::type>::type
+    etoi(const EnumT e) {
   return static_cast<typename std::underlying_type<EnumT>::type>(e);
 }
 
-inline void broadcast_string(std::string &s, const ekat::Comm &comm, const int root) {
+inline void broadcast_string(std::string &s, const ekat::Comm &comm,
+                             const int root) {
   int size = s.size();
   comm.broadcast(&size, 1, root);
   s.resize(size);
@@ -73,12 +75,14 @@ template <typename T> void sort(std::list<T> &l) {
 //    obtainied by splicing together all the inner lists.
 //  - We are only allowed to modify the outer list in the following ways:
 //      a) rearrange the elements in an inner list: [D,E,F]->[F,D,E]
-//      b) split an inner list into multiple lists: [[A,B,C],[D,E]]->[[A,B],[C],[D,E}]
-//      c) append a new list (that does not overlap with existing sublists):
+//      b) split an inner list into multiple lists:
+//      [[A,B,C],[D,E]]->[[A,B],[C],[D,E}] c) append a new list (that does not
+//      overlap with existing sublists):
 //        [[A,B],[C,D]] -> [[A,B],[C,D],[E,F,G]]
 //  - The 1st group is added as a single sublist, that is, given G1,..,G5 above,
 //    after the first iteration, the list of lists would be [[A,B,C]].
-//  - At the generic k-th step of the algorithm, we try to add group G to the LoL,
+//  - At the generic k-th step of the algorithm, we try to add group G to the
+//  LoL,
 //    doing the following:
 //     - compute intersection of G with each of the sublists of LoL
 //     - check that all non-empty intersections are 'contiguous'. If not, the
@@ -88,22 +92,25 @@ template <typename T> void sort(std::list<T> &l) {
 //        i) all intersections are at the beginning or end of LoL: good.
 //        ii) intersections are neither at the beginning nor at the end of LoL.
 //            In this case, the overall algorithm failed, and we can return.
-//     - if G has a non-empty intersection with sublist S, there are two scenarios:
+//     - if G has a non-empty intersection with sublist S, there are two
+//     scenarios:
 //        i) the intersection is the whole S: nothing to do.
 //        ii) the intersection is smaller than S: two sub-scenarios:
 //          *) S is the first or last sublist with non-empty intersection:
 //             split S into [intersection][rest] or [rest][intersection]
-//             (the former if it's the first intersection, the former if it's the last).
-//             This would correspond to operation (a+b) on the LoL.
+//             (the former if it's the first intersection, the former if it's
+//             the last). This would correspond to operation (a+b) on the LoL.
 //          *) S is neither the first nor the last. In this case the overall
 //             algorithm has failed, and we can return.
 //     - if G has a portion that does not intersect with any sublist S, add it
-//       as a new sublist at the end. This corresponds to operation (c) from above.
+//       as a new sublist at the end. This corresponds to operation (c) from
+//       above.
 
 // Regardless of the order in which we process the individual lists, if there is
 // an arrangement A of T's that allows to have G1,...,Gn as a contiguous sublist
 // of A, the above algorithm is guaranteed to find it.
-template <typename T> std::list<T> contiguous_superset(const std::list<std::list<T>> &groups) {
+template <typename T>
+std::list<T> contiguous_superset(const std::list<std::list<T>> &groups) {
   // Avoid accessing empty lists.
   if (groups.size() == 0) {
     return std::list<T>();
@@ -111,14 +118,18 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
 
   // Intersection and difference of two lists. Simply wrap std::set_intersection
   // and std::set_difference resepectively, allowing a lighter syntax.
-  auto intersect = [](const std::list<T> &lhs, const std::list<T> &rhs) -> std::list<T> {
+  auto intersect = [](const std::list<T> &lhs,
+                      const std::list<T> &rhs) -> std::list<T> {
     std::list<T> out;
-    std::set_intersection(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(out));
+    std::set_intersection(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+                          std::back_inserter(out));
     return out;
   };
-  auto difference = [](const std::list<T> &lhs, const std::list<T> &rhs) -> std::list<T> {
+  auto difference = [](const std::list<T> &lhs,
+                       const std::list<T> &rhs) -> std::list<T> {
     std::list<T> out;
-    std::set_difference(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(out));
+    std::set_difference(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+                        std::back_inserter(out));
     return out;
   };
 
@@ -139,9 +150,11 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
 
   // Check inputs: we require unique lists, already sorted.
   for (const auto &g : groups) {
-    EKAT_REQUIRE_MSG(sort(g) == g, "Error! Individual input lists must already be sorted.\n");
-    EKAT_REQUIRE_MSG(unique(sort(g)).size() == g.size(),
-                     "Error! Individual input lists must not contain repeated elements.\n");
+    EKAT_REQUIRE_MSG(sort(g) == g,
+                     "Error! Individual input lists must already be sorted.\n");
+    EKAT_REQUIRE_MSG(
+        unique(sort(g)).size() == g.size(),
+        "Error! Individual input lists must not contain repeated elements.\n");
   }
 
   // A list-of-lists (lol);
@@ -152,8 +165,9 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
     // Intersect this group with each inner list inside lol, and keep track of
     // where non-empty intersections happen. These intersections must happen
     // with a contiguous set of inner lists (othewise the algo fails, see
-    // description above). Store interval where they happen as [first_pos,last_pos) range.
-    // Note: \cap is the tex command for the set intersection symbol.
+    // description above). Store interval where they happen as
+    // [first_pos,last_pos) range. Note: \cap is the tex command for the set
+    // intersection symbol.
     std::vector<std::list<T>> caps;
     std::vector<size_t> caps_pos;
     auto remainder = g;
@@ -182,21 +196,23 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
     }
 
     // If we have a non-empty reminder, then all the caps must be
-    // either at the front or the back of the lol, that is, either the first intersection
-    // is at pos=0, or the last at pos=lol.size()-1, or both (otherwise this group would be
-    // fragmented).
-    if (remainder.size() > 0 && !(caps_pos.front() == 0 || caps_pos.back() == (lol.size() - 1))) {
+    // either at the front or the back of the lol, that is, either the first
+    // intersection is at pos=0, or the last at pos=lol.size()-1, or both
+    // (otherwise this group would be fragmented).
+    if (remainder.size() > 0 &&
+        !(caps_pos.front() == 0 || caps_pos.back() == (lol.size() - 1))) {
       return std::list<T>();
     }
 
-    // If there is a remainder, then either the first or the last intersection must
-    // be "complete", meaning that the intersection is the whole inner list.
-    // If not, there would be fragmentation. E.g., if G=[B,D,E], and
+    // If there is a remainder, then either the first or the last intersection
+    // must be "complete", meaning that the intersection is the whole inner
+    // list. If not, there would be fragmentation. E.g., if G=[B,D,E], and
     // lol=[[A,B],[C,D]], there's no rearrangement that works.
     if (remainder.size() > 0 && caps_pos.size() > 1) {
       auto it_lol_first = std::next(lol.begin(), caps_pos.front());
       auto it_lol_last  = std::next(lol.begin(), caps_pos.back());
-      if (it_lol_first->size() > caps.front().size() && it_lol_last->size() > caps.back().size()) {
+      if (it_lol_first->size() > caps.front().size() &&
+          it_lol_last->size() > caps.back().size()) {
         return std::list<T>();
       }
     }
@@ -282,8 +298,8 @@ template <typename T> std::list<T> contiguous_superset(const std::list<std::list
  * This is used by the run_and_cmp tests.
  */
 template <typename Scalar, typename Toltype>
-Int compare(const std::string &label, const Scalar *a, const Scalar *b, const Int &n,
-            const Toltype &tol) {
+Int compare(const std::string &label, const Scalar *a, const Scalar *b,
+            const Int &n, const Toltype &tol) {
 
   Int nerr1  = 0;
   Int nerr2  = 0;
@@ -292,7 +308,8 @@ Int compare(const std::string &label, const Scalar *a, const Scalar *b, const In
     den = std::max(den, std::abs(a[i]));
   Scalar worst = 0;
   for (Int i = 0; i < n; ++i) {
-    if (std::isnan(a[i]) || std::isinf(a[i]) || std::isnan(b[i]) || std::isinf(b[i])) {
+    if (std::isnan(a[i]) || std::isinf(a[i]) || std::isnan(b[i]) ||
+        std::isinf(b[i])) {
       ++nerr1;
       continue;
     }
@@ -309,7 +326,8 @@ Int compare(const std::string &label, const Scalar *a, const Scalar *b, const In
   }
 
   if (nerr2) {
-    std::cout << label << " > tol " << nerr2 << " times. Max rel diff= " << (worst / den)
+    std::cout << label << " > tol " << nerr2
+              << " times. Max rel diff= " << (worst / den)
               << " normalized by ref impl val=" << den << ".\n";
   }
 
@@ -317,16 +335,18 @@ Int compare(const std::string &label, const Scalar *a, const Scalar *b, const In
 }
 
 inline void check_mpi_call(int err, const std::string &context) {
-  EKAT_REQUIRE_MSG(err == MPI_SUCCESS, "Error! MPI operation encountered an error.\n"
-                                       "  - err code: " +
-                                           std::to_string(err) +
-                                           "\n"
-                                           "  - context: " +
-                                           context + "\n");
+  EKAT_REQUIRE_MSG(err == MPI_SUCCESS,
+                   "Error! MPI operation encountered an error.\n"
+                   "  - err code: " +
+                       std::to_string(err) +
+                       "\n"
+                       "  - context: " +
+                       context + "\n");
 }
 
 // Find the full filename list from patterns
-std::vector<std::string> filename_glob(const std::vector<std::string> &patterns);
+std::vector<std::string>
+filename_glob(const std::vector<std::string> &patterns);
 
 // Use globloc for each filename pattern
 std::vector<std::string> globloc(const std::string &pattern);
@@ -380,9 +400,10 @@ struct DefaultMetadata {
     }
   }
 
-  void read_csv_file_to_maps(const std::string &filename,
-                             std::map<std::string, std::string> &name_2_standardname,
-                             std::map<std::string, std::string> &name_2_longname) {
+  void
+  read_csv_file_to_maps(const std::string &filename,
+                        std::map<std::string, std::string> &name_2_standardname,
+                        std::map<std::string, std::string> &name_2_longname) {
     std::ifstream file(filename);
     EKAT_REQUIRE_MSG(file.is_open(), "Could not open the file: " + filename);
 
@@ -404,7 +425,8 @@ struct DefaultMetadata {
         // Sanity check: the first line contains the required headers
         EKAT_REQUIRE_MSG(column1 == "variable" && column2 == "standard_name" &&
                              column3 == "long_name",
-                         "CSV file does not contain the required headers: variable, standard_name, "
+                         "CSV file does not contain the required headers: "
+                         "variable, standard_name, "
                          "long_name. Found: " +
                              column1 + ", " + column2 + ", and " + column3 +
                              " respectively in file " + filename);

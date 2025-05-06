@@ -13,7 +13,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm,
+                                        const int ncols) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -146,7 +147,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   diag_liq->finalize();
 } // run()
 
-TEST_CASE("precip_total_surf_mass_flux_test", "precip_total_surf_mass_flux_test]") {
+TEST_CASE("precip_total_surf_mass_flux_test",
+          "precip_total_surf_mass_flux_test]") {
   using scream::Real;
   using Device = scream::DefaultDevice;
 

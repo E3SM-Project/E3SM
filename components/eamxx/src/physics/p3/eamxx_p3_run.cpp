@@ -9,7 +9,8 @@ void P3Microphysics::run_impl(const double dt) {
   // Create policy for pre and post process pfor
   const auto nlev_packs = ekat::npack<Spack>(m_num_levs);
   const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,
+                                                                 nlev_packs);
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for("p3_pre_process", policy, p3_preproc);
@@ -47,8 +48,8 @@ void P3Microphysics::run_impl(const double dt) {
     get_field_out("qi_sed").deep_copy(0.0);
   }
 
-  P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure, history_only,
-               lookup_tables,
+  P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs,
+               infrastructure, history_only, lookup_tables,
 #ifdef SCREAM_P3_SMALL_KERNELS
                temporaries,
 #endif

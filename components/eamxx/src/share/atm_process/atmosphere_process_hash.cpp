@@ -13,17 +13,21 @@ namespace {
 using ExeSpace = KokkosTypes<DefaultDevice>::ExeSpace;
 using bfbhash::HashType;
 
-void hash(const Field::view_dev_t<const Real *> &v, const FieldLayout &lo, HashType &accum_out) {
+void hash(const Field::view_dev_t<const Real *> &v, const FieldLayout &lo,
+          HashType &accum_out) {
   HashType accum = 0;
   Kokkos::parallel_reduce(
       Kokkos::RangePolicy<ExeSpace>(0, lo.size()),
-      KOKKOS_LAMBDA(const int idx, HashType &accum) { bfbhash::hash(v(idx), accum); },
+      KOKKOS_LAMBDA(const int idx, HashType &accum) {
+        bfbhash::hash(v(idx), accum);
+      },
       bfbhash::HashReducer<>(accum));
   Kokkos::fence();
   bfbhash::hash(accum, accum_out);
 }
 
-void hash(const Field::view_dev_t<const Real **> &v, const FieldLayout &lo, HashType &accum_out) {
+void hash(const Field::view_dev_t<const Real **> &v, const FieldLayout &lo,
+          HashType &accum_out) {
   HashType accum   = 0;
   const auto &dims = lo.extents();
   Kokkos::parallel_reduce(
@@ -38,7 +42,8 @@ void hash(const Field::view_dev_t<const Real **> &v, const FieldLayout &lo, Hash
   bfbhash::hash(accum, accum_out);
 }
 
-void hash(const Field::view_dev_t<const Real ***> &v, const FieldLayout &lo, HashType &accum_out) {
+void hash(const Field::view_dev_t<const Real ***> &v, const FieldLayout &lo,
+          HashType &accum_out) {
   HashType accum   = 0;
   const auto &dims = lo.extents();
   Kokkos::parallel_reduce(
@@ -53,7 +58,8 @@ void hash(const Field::view_dev_t<const Real ***> &v, const FieldLayout &lo, Has
   bfbhash::hash(accum, accum_out);
 }
 
-void hash(const Field::view_dev_t<const Real ****> &v, const FieldLayout &lo, HashType &accum_out) {
+void hash(const Field::view_dev_t<const Real ****> &v, const FieldLayout &lo,
+          HashType &accum_out) {
   HashType accum   = 0;
   const auto &dims = lo.extents();
   Kokkos::parallel_reduce(
@@ -123,15 +129,16 @@ void hash(const std::list<FieldGroup> &fgs, HashType &accum) {
 
 } // namespace
 
-void AtmosphereProcess ::print_global_state_hash(const std::string &label, const TimeStamp &t,
-                                                 const bool in, const bool out, const bool internal,
-                                                 const Real *mem, const int nmem) const {
+void AtmosphereProcess ::print_global_state_hash(
+    const std::string &label, const TimeStamp &t, const bool in, const bool out,
+    const bool internal, const Real *mem, const int nmem) const {
   const bool compute[4] = {in, out, internal, mem != nullptr};
 
   std::vector<std::string> hash_names;
   std::vector<HashType> laccum;
 
-  // When calling printf later, how much space does the hash name take (we'll update later)
+  // When calling printf later, how much space does the hash name take (we'll
+  // update later)
   int slen = 0;
   // Compute local hashes
   if (m_internal_diagnostics_level == 1) {
@@ -156,8 +163,9 @@ void AtmosphereProcess ::print_global_state_hash(const std::string &label, const
 
     slen = 10;
   } else if (m_internal_diagnostics_level == 2) {
-    // Hash fields individually. Notice that, if a field is requested individually
-    // as well as part of a group, it will be hashed twice (independently)
+    // Hash fields individually. Notice that, if a field is requested
+    // individually as well as part of a group, it will be hashed twice
+    // (independently)
     auto layout = [](const Field &f) -> std::string {
       const auto &fl = f.get_header().get_identifier().get_layout();
       return " (" + ekat::join(fl.names(), ",") + ")";
@@ -204,7 +212,9 @@ void AtmosphereProcess ::print_global_state_hash(const std::string &label, const
 
     Kokkos::parallel_reduce(
         Kokkos::RangePolicy<ExeSpace>(0, nmem),
-        KOKKOS_LAMBDA(const int i, HashType &accum) { bfbhash::hash(mem[i], accum); },
+        KOKKOS_LAMBDA(const int i, HashType &accum) {
+          bfbhash::hash(mem[i], accum);
+        },
         bfbhash::HashReducer<>(laccum.back()));
     Kokkos::fence();
 
@@ -214,7 +224,8 @@ void AtmosphereProcess ::print_global_state_hash(const std::string &label, const
   // Compute global hashes
   int naccum = laccum.size();
   std::vector<HashType> gaccum(naccum);
-  bfbhash::all_reduce_HashType(m_comm.mpi_comm(), laccum.data(), gaccum.data(), naccum);
+  bfbhash::all_reduce_HashType(m_comm.mpi_comm(), laccum.data(), gaccum.data(),
+                               naccum);
 
   // Print
   if (m_comm.am_i_root()) {
@@ -227,18 +238,19 @@ void AtmosphereProcess ::print_global_state_hash(const std::string &label, const
 
     std::stringstream ss;
 
-    ss << "eamxx hash> date=" << std::setw(4) << std::setfill('0') << date[0] << "-" // Year
-       << std::setw(2) << std::setfill('0') << date[1] << "-"                        // Month
-       << std::setw(2) << std::setfill('0') << date[2] << "-"                        // Day
-       << std::setw(5) << std::setfill('0') << tod << " "                            // Time of day
+    ss << "eamxx hash> date=" << std::setw(4) << std::setfill('0') << date[0]
+       << "-"                                                 // Year
+       << std::setw(2) << std::setfill('0') << date[1] << "-" // Month
+       << std::setw(2) << std::setfill('0') << date[2] << "-" // Day
+       << std::setw(5) << std::setfill('0') << tod << " "     // Time of day
        << "(" << label << "), naccum=" << naccum; // Label and number of accum
     log(ss.str());
 
     for (int i = 0; i < naccum; ++i) {
       ss.str(""); // Clear content
       ss.clear(); // Clear error flags
-      ss << std::setw(slen) << std::setfill(' ') << hash_names[i] << ": " << std::hex
-         << std::setfill('0') << std::setw(16) << gaccum[i];
+      ss << std::setw(slen) << std::setfill(' ') << hash_names[i] << ": "
+         << std::hex << std::setfill('0') << std::setw(16) << gaccum[i];
       log(ss.str());
     }
     m_atm_logger->flush();
@@ -252,7 +264,8 @@ void AtmosphereProcess::print_fast_global_state_hash(const std::string &label,
   HashType gaccum;
   bfbhash::all_reduce_HashType(m_comm.mpi_comm(), &laccum, &gaccum, 1);
   if (m_comm.am_i_root())
-    fprintf(stderr, "bfbhash> %14d %16" PRIx64 " (%s)\n", t.get_num_steps(), gaccum, label.c_str());
+    fprintf(stderr, "bfbhash> %14d %16" PRIx64 " (%s)\n", t.get_num_steps(),
+            gaccum, label.c_str());
 }
 
 } // namespace scream

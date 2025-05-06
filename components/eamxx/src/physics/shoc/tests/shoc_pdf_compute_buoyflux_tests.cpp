@@ -117,15 +117,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocPdfCompBuoyFlux {
 namespace {
 
 TEST_CASE("shoc_pdf_compute_buoyflux_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompBuoyFlux;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfCompBuoyFlux;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_compute_buoyflux_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocPdfCompBuoyFlux;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocPdfCompBuoyFlux;
 
   TestStruct::run_bfb();
 }

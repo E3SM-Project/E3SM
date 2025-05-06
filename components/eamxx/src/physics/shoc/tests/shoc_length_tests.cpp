@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocLength
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real minlen = scream::shoc::Constants<Real>::minlen;
@@ -199,8 +200,8 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ShocLengthData SDS_cxx[] = {
         ShocLengthData(SDS_baseline[0]),
         ShocLengthData(SDS_baseline[1]),
@@ -208,7 +209,8 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
         ShocLengthData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocLengthData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ShocLengthData);
 
     // Assume all data is in C layout
 
@@ -250,15 +252,15 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
 namespace {
 
 TEST_CASE("shoc_length_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocLength;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_length_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocLength;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocLength;
 
   TestStruct().run_bfb();
 }

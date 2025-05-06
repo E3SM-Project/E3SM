@@ -19,7 +19,8 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion
+    : public UnitWrap::UnitTest<D>::Base {
 
   void cloud_water_autoconversion_unit_bfb_tests() {
 
@@ -71,8 +72,8 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::
           const Int offset = i * Spack::n;
 
           // Init pack inputs
-          Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qc2qr_autoconv_tend,
-              nc2nr_autoconv_tend, ncautr, inv_qc_relvar;
+          Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu,
+              qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, inv_qc_relvar;
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             rho[s]                 = cwadc_device(vs).rho;
             qc_incld[s]            = cwadc_device(vs).qc_incld;
@@ -83,9 +84,10 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::
             ncautr[s]              = cwadc_device(vs).ncautr;
           }
 
-          Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, inv_qc_relvar,
-                                                qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr,
-                                                p3::Functions<Real, DefaultDevice>::P3Runtime());
+          Functions::cloud_water_autoconversion(
+              rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend,
+              nc2nr_autoconv_tend, ncautr,
+              p3::Functions<Real, DefaultDevice>::P3Runtime());
 
           // Copy results back into views
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -109,8 +111,10 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::
         REQUIRE(cwadc[s].qc_incld == cwadc_host(s).qc_incld);
         REQUIRE(cwadc[s].nc_incld == cwadc_host(s).nc_incld);
         REQUIRE(cwadc[s].inv_qc_relvar == cwadc_host(s).inv_qc_relvar);
-        REQUIRE(cwadc[s].qc2qr_autoconv_tend == cwadc_host(s).qc2qr_autoconv_tend);
-        REQUIRE(cwadc[s].nc2nr_autoconv_tend == cwadc_host(s).nc2nr_autoconv_tend);
+        REQUIRE(cwadc[s].qc2qr_autoconv_tend ==
+                cwadc_host(s).qc2qr_autoconv_tend);
+        REQUIRE(cwadc[s].nc2nr_autoconv_tend ==
+                cwadc_host(s).nc2nr_autoconv_tend);
         REQUIRE(cwadc[s].ncautr == cwadc_host(s).ncautr);
       }
     } else if (this->m_baseline_action == GENERATE) {
@@ -122,16 +126,19 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::
 
   void run_bfb() { cloud_water_autoconversion_unit_bfb_tests(); }
 
-  KOKKOS_FUNCTION static void autoconversion_is_positive(const Int &i, Int &errors) {
+  KOKKOS_FUNCTION static void autoconversion_is_positive(const Int &i,
+                                                         Int &errors) {
 
     const Spack rho(1.0), inv_qc_relvar(1.0);
-    Spack qc_incld, nc_incld(1e7), qc2qr_autoconv_tend(0.0), nc2nr_autoconv_tend(0.0), ncautr(0.0);
+    Spack qc_incld, nc_incld(1e7), qc2qr_autoconv_tend(0.0),
+        nc2nr_autoconv_tend(0.0), ncautr(0.0);
     for (int si = 0; si < Spack::n; ++si) {
       qc_incld[si] = 1e-6 * i * Spack::n + si;
     }
-    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, inv_qc_relvar,
-                                          qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr,
-                                          p3::Functions<Real, DefaultDevice>::P3Runtime());
+    Functions::cloud_water_autoconversion(
+        rho, qc_incld, nc_incld, inv_qc_relvar, qc2qr_autoconv_tend,
+        nc2nr_autoconv_tend, ncautr,
+        p3::Functions<Real, DefaultDevice>::P3Runtime());
     if ((qc2qr_autoconv_tend < 0.0).any()) {
       errors++;
     }
@@ -143,7 +150,10 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::
 
     Kokkos::parallel_reduce(
         "TestAutoConversionPositive", 1000,
-        KOKKOS_LAMBDA(const Int &i, Int &errors) { autoconversion_is_positive(i, errors); }, nerr);
+        KOKKOS_LAMBDA(const Int &i, Int &errors) {
+          autoconversion_is_positive(i, errors);
+        },
+        nerr);
 
     Kokkos::fence();
     REQUIRE(nerr == 0);
@@ -157,7 +167,8 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion : public UnitWrap::
 
 namespace {
 
-TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_test]") {
+TEST_CASE("p3_cloud_water_autoconversion_test",
+          "[p3_cloud_water_autoconversion_test]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<
       scream::DefaultDevice>::TestP3CloudWaterAutoconversion;
 

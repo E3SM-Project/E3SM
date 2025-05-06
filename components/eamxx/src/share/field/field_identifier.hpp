@@ -16,7 +16,8 @@ namespace scream {
 using FieldValidDataTypes = ekat::TypeList<int, float, double>;
 using FieldValidDataNames = ekat::TypeList<DataType, DataType, DataType>;
 
-inline ekat::TypeMap<FieldValidDataTypes, FieldValidDataNames> field_valid_data_types() {
+inline ekat::TypeMap<FieldValidDataTypes, FieldValidDataNames>
+field_valid_data_types() {
   ekat::TypeMap<FieldValidDataTypes, FieldValidDataNames> map;
   map.at<int>()    = DataType::IntType;
   map.at<float>()  = DataType::FloatType;
@@ -44,11 +45,12 @@ public:
   FieldIdentifier()                        = delete;
   FieldIdentifier(const FieldIdentifier &) = default;
 
-  FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units,
-                  const std::string &grid_name);
+  FieldIdentifier(const std::string &name, const layout_type &layout,
+                  const Units &units, const std::string &grid_name);
 
-  FieldIdentifier(const std::string &name, const layout_type &layout, const Units &units,
-                  const std::string &grid_name, const DataType data_type);
+  FieldIdentifier(const std::string &name, const layout_type &layout,
+                  const Units &units, const std::string &grid_name,
+                  const DataType data_type);
 
   // Delete assignment, to prevent overwriting identifiers sneakyly
   FieldIdentifier &operator=(const FieldIdentifier &) = delete;
@@ -70,7 +72,8 @@ public:
 
   // ----- Setters ----- //
 
-  // We reimplement the equality operator for identifiers comparison (needed for some std container)
+  // We reimplement the equality operator for identifiers comparison (needed for
+  // some std container)
   friend bool operator==(const FieldIdentifier &, const FieldIdentifier &);
   friend bool operator<(const FieldIdentifier &, const FieldIdentifier &);
 
@@ -93,7 +96,8 @@ protected:
 };
 
 bool operator==(const FieldIdentifier &fid1, const FieldIdentifier &fid2);
-inline bool operator!=(const FieldIdentifier &fid1, const FieldIdentifier &fid2) {
+inline bool operator!=(const FieldIdentifier &fid1,
+                       const FieldIdentifier &fid2) {
   return !(fid1 == fid2);
 }
 

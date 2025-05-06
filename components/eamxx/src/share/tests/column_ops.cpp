@@ -111,7 +111,8 @@ TEST_CASE("column_ops_ps_1") {
 
   SECTION("mid_to_int_linear") {
 
-    // Fill v_mid with even numbers and set dz=1, so that v_int should contain odd ones.
+    // Fill v_mid with even numbers and set dz=1, so that v_int should contain
+    // odd ones.
     for (int k = 0; k < num_levs; ++k) {
       v_mid_h(0, k)[0]  = 2 * (k + 1);
       dz_mid_h(0, k)[0] = 1;
@@ -119,7 +120,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::deep_copy(v_mid, v_mid_h);
     Kokkos::deep_copy(dz_mid, dz_mid_h);
 
-    // Use boundary conditions s.t. v_int becomes monotone increasing odd numbers
+    // Use boundary conditions s.t. v_int becomes monotone increasing odd
+    // numbers
     const Real bc_top = 1;
     const Real bc_bot = 2 * num_levs + 1;
 
@@ -131,7 +133,8 @@ TEST_CASE("column_ops_ps_1") {
           auto v_m       = ekat::subview(v_mid, icol);
           auto dz        = ekat::subview(dz_mid, icol);
 
-          column_ops::compute_interface_values_linear(team, num_levs, v_m, dz, bc_top, bc_bot, v_i);
+          column_ops::compute_interface_values_linear(team, num_levs, v_m, dz,
+                                                      bc_top, bc_bot, v_i);
         });
     Kokkos::fence();
 
@@ -151,7 +154,8 @@ TEST_CASE("column_ops_ps_1") {
           auto dz  = [&](const int k) -> pack_type { return dz_mid(icol, k); };
           auto v_i = ekat::subview(v_int, icol);
 
-          column_ops::compute_interface_values_linear(team, num_levs, v_m, dz, bc_top, bc_bot, v_i);
+          column_ops::compute_interface_values_linear(team, num_levs, v_m, dz,
+                                                      bc_top, bc_bot, v_i);
         });
     Kokkos::fence();
 
@@ -164,7 +168,8 @@ TEST_CASE("column_ops_ps_1") {
 
   SECTION("int_to_mid_to_int_linear") {
 
-    // Fill v_mid with even numbers and set dz=1, so that v_int should contain odd ones.
+    // Fill v_mid with even numbers and set dz=1, so that v_int should contain
+    // odd ones.
     for (int k = 0; k < num_levs + 1; ++k) {
       v_int_h(0, k)[0] = 2 * k + 1;
       if (k < num_levs)
@@ -173,7 +178,8 @@ TEST_CASE("column_ops_ps_1") {
     Kokkos::deep_copy(v_int, v_int_h);
     Kokkos::deep_copy(dz_mid, dz_mid_h);
 
-    // Use boundary conditions s.t. v_int becomes monotone increasing odd numbers
+    // Use boundary conditions s.t. v_int becomes monotone increasing odd
+    // numbers
     const Real bc_top = v_int_h(0, 0)[0];
     const Real bc_bot = v_int_h(0, num_levs)[0];
 
@@ -187,7 +193,8 @@ TEST_CASE("column_ops_ps_1") {
 
           column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
           team.team_barrier();
-          column_ops::compute_interface_values_linear(team, num_levs, v_m, dz, bc_top, bc_bot, v_i);
+          column_ops::compute_interface_values_linear(team, num_levs, v_m, dz,
+                                                      bc_top, bc_bot, v_i);
         });
     Kokkos::fence();
 
@@ -213,7 +220,8 @@ TEST_CASE("column_ops_ps_1") {
           auto v_i       = ekat::subview(v_int, icol);
           auto v_m       = ekat::subview(v_mid, icol);
 
-          column_ops::compute_interface_values_compatible<true>(team, num_levs, v_m, 1, v_i);
+          column_ops::compute_interface_values_compatible<true>(team, num_levs,
+                                                                v_m, 1, v_i);
         });
     Kokkos::fence();
 
@@ -232,7 +240,8 @@ TEST_CASE("column_ops_ps_1") {
           auto v_m = [&](const int k) -> pack_type { return v_mid(icol, k); };
           auto v_i = ekat::subview(v_int, icol);
 
-          column_ops::compute_interface_values_compatible<true>(team, num_levs, v_m, 1, v_i);
+          column_ops::compute_interface_values_compatible<true>(team, num_levs,
+                                                                v_m, 1, v_i);
         });
     Kokkos::fence();
 
@@ -258,8 +267,8 @@ TEST_CASE("column_ops_ps_1") {
           auto v_i       = ekat::subview(v_int, icol);
           auto v_m       = ekat::subview(v_mid, icol);
 
-          column_ops::compute_interface_values_compatible<false>(team, num_levs, v_m,
-                                                                 2 * num_levs + 1, v_i);
+          column_ops::compute_interface_values_compatible<false>(
+              team, num_levs, v_m, 2 * num_levs + 1, v_i);
         });
     Kokkos::fence();
 
@@ -278,8 +287,8 @@ TEST_CASE("column_ops_ps_1") {
           auto v_m = [&](const int k) -> pack_type { return v_mid(icol, k); };
           auto v_i = ekat::subview(v_int, icol);
 
-          column_ops::compute_interface_values_compatible<false>(team, num_levs, v_m,
-                                                                 2 * num_levs + 1, v_i);
+          column_ops::compute_interface_values_compatible<false>(
+              team, num_levs, v_m, 2 * num_levs + 1, v_i);
         });
     Kokkos::fence();
 
@@ -307,7 +316,8 @@ TEST_CASE("column_ops_ps_1") {
 
           column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
           team.team_barrier();
-          column_ops::compute_interface_values_compatible<true>(team, num_levs, v_m, 1, v_i);
+          column_ops::compute_interface_values_compatible<true>(team, num_levs,
+                                                                v_m, 1, v_i);
         });
     Kokkos::fence();
 
@@ -335,8 +345,8 @@ TEST_CASE("column_ops_ps_1") {
 
           column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
           team.team_barrier();
-          column_ops::compute_interface_values_compatible<false>(team, num_levs, v_m,
-                                                                 2 * num_levs + 1, v_i);
+          column_ops::compute_interface_values_compatible<false>(
+              team, num_levs, v_m, 2 * num_levs + 1, v_i);
         });
     Kokkos::fence();
 
@@ -521,7 +531,8 @@ TEST_CASE("column_ops_ps_N") {
       auto dv_mid_h = Kokkos::create_mirror_view(dv_mid);
       auto dz_mid_h = Kokkos::create_mirror_view(dz_mid);
 
-      policy_type policy(num_cols, std::min(num_mid_packs, exec_space().concurrency()));
+      policy_type policy(num_cols,
+                         std::min(num_mid_packs, exec_space().concurrency()));
 
       SECTION("int_to_mid") {
 
@@ -558,7 +569,9 @@ TEST_CASE("column_ops_ps_N") {
             policy, KOKKOS_LAMBDA(const member_type &team) {
               const int icol = team.league_rank();
 
-              auto v_i = [&](const int k) -> pack_type { return v_int(icol, k); };
+              auto v_i = [&](const int k) -> pack_type {
+                return v_int(icol, k);
+              };
               auto v_m = ekat::subview(v_mid, icol);
 
               column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
@@ -576,7 +589,8 @@ TEST_CASE("column_ops_ps_N") {
 
       SECTION("mid_to_int_linear") {
 
-        // Fill v_mid with even numbers and set dz=1, so that v_int should contain odd ones.
+        // Fill v_mid with even numbers and set dz=1, so that v_int should
+        // contain odd ones.
         for (int k = 0; k < num_levs; ++k) {
           const int ipack          = k / ps;
           const int ivec           = k % ps;
@@ -586,7 +600,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::deep_copy(v_mid, v_mid_h);
         Kokkos::deep_copy(dz_mid, dz_mid_h);
 
-        // Use boundary conditions s.t. v_int becomes monotone increasing odd numbers
+        // Use boundary conditions s.t. v_int becomes monotone increasing odd
+        // numbers
         const Real bc_top = 1;
         const Real bc_bot = 2 * num_levs + 1;
 
@@ -598,8 +613,8 @@ TEST_CASE("column_ops_ps_N") {
               auto v_m       = ekat::subview(v_mid, icol);
               auto dz        = ekat::subview(dz_mid, icol);
 
-              column_ops::compute_interface_values_linear(team, num_levs, v_m, dz, bc_top, bc_bot,
-                                                          v_i);
+              column_ops::compute_interface_values_linear(
+                  team, num_levs, v_m, dz, bc_top, bc_bot, v_i);
             });
         Kokkos::fence();
 
@@ -614,7 +629,8 @@ TEST_CASE("column_ops_ps_N") {
 
       SECTION("int_to_mid_to_int_linear") {
 
-        // Fill v_mid with even numbers and set dz=1, so that v_int should contain odd ones.
+        // Fill v_mid with even numbers and set dz=1, so that v_int should
+        // contain odd ones.
         for (int k = 0; k < num_levs + 1; ++k) {
           const int ipack         = k / ps;
           const int ivec          = k % ps;
@@ -625,7 +641,8 @@ TEST_CASE("column_ops_ps_N") {
         Kokkos::deep_copy(v_int, v_int_h);
         Kokkos::deep_copy(dz_mid, dz_mid_h);
 
-        // Use boundary conditions s.t. v_int becomes monotone increasing odd numbers
+        // Use boundary conditions s.t. v_int becomes monotone increasing odd
+        // numbers
         const Real bc_top = v_int_h(0, 0)[0];
         const Real bc_bot = v_int_h(0, num_levs / ps)[num_levs % ps];
 
@@ -639,8 +656,8 @@ TEST_CASE("column_ops_ps_N") {
 
               column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
               team.team_barrier();
-              column_ops::compute_interface_values_linear(team, num_levs, v_m, dz, bc_top, bc_bot,
-                                                          v_i);
+              column_ops::compute_interface_values_linear(
+                  team, num_levs, v_m, dz, bc_top, bc_bot, v_i);
             });
         Kokkos::fence();
 
@@ -670,7 +687,8 @@ TEST_CASE("column_ops_ps_N") {
               auto v_i       = ekat::subview(v_int, icol);
               auto v_m       = ekat::subview(v_mid, icol);
 
-              column_ops::compute_interface_values_compatible<true>(team, num_levs, v_m, 1, v_i);
+              column_ops::compute_interface_values_compatible<true>(
+                  team, num_levs, v_m, 1, v_i);
             });
         Kokkos::fence();
 
@@ -688,10 +706,13 @@ TEST_CASE("column_ops_ps_N") {
             policy, KOKKOS_LAMBDA(const member_type &team) {
               const int icol = team.league_rank();
 
-              auto v_m = [&](const int k) -> pack_type { return v_mid(icol, k); };
+              auto v_m = [&](const int k) -> pack_type {
+                return v_mid(icol, k);
+              };
               auto v_i = ekat::subview(v_int, icol);
 
-              column_ops::compute_interface_values_compatible<true>(team, num_levs, v_m, 1, v_i);
+              column_ops::compute_interface_values_compatible<true>(
+                  team, num_levs, v_m, 1, v_i);
             });
         Kokkos::fence();
 
@@ -721,8 +742,8 @@ TEST_CASE("column_ops_ps_N") {
               auto v_i       = ekat::subview(v_int, icol);
               auto v_m       = ekat::subview(v_mid, icol);
 
-              column_ops::compute_interface_values_compatible<false>(team, num_levs, v_m,
-                                                                     2 * num_levs + 1, v_i);
+              column_ops::compute_interface_values_compatible<false>(
+                  team, num_levs, v_m, 2 * num_levs + 1, v_i);
             });
         Kokkos::fence();
 
@@ -740,11 +761,13 @@ TEST_CASE("column_ops_ps_N") {
             policy, KOKKOS_LAMBDA(const member_type &team) {
               const int icol = team.league_rank();
 
-              auto v_m = [&](const int k) -> pack_type { return v_mid(icol, k); };
+              auto v_m = [&](const int k) -> pack_type {
+                return v_mid(icol, k);
+              };
               auto v_i = ekat::subview(v_int, icol);
 
-              column_ops::compute_interface_values_compatible<false>(team, num_levs, v_m,
-                                                                     2 * num_levs + 1, v_i);
+              column_ops::compute_interface_values_compatible<false>(
+                  team, num_levs, v_m, 2 * num_levs + 1, v_i);
             });
         Kokkos::fence();
 
@@ -776,7 +799,8 @@ TEST_CASE("column_ops_ps_N") {
 
               column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
               team.team_barrier();
-              column_ops::compute_interface_values_compatible<true>(team, num_levs, v_m, 1, v_i);
+              column_ops::compute_interface_values_compatible<true>(
+                  team, num_levs, v_m, 1, v_i);
             });
         Kokkos::fence();
 
@@ -808,8 +832,8 @@ TEST_CASE("column_ops_ps_N") {
 
               column_ops::compute_midpoint_values(team, num_levs, v_i, v_m);
               team.team_barrier();
-              column_ops::compute_interface_values_compatible<false>(team, num_levs, v_m,
-                                                                     2 * num_levs + 1, v_i);
+              column_ops::compute_interface_values_compatible<false>(
+                  team, num_levs, v_m, 2 * num_levs + 1, v_i);
             });
         Kokkos::fence();
 
@@ -857,7 +881,9 @@ TEST_CASE("column_ops_ps_N") {
             policy, KOKKOS_LAMBDA(const member_type &team) {
               const int icol = team.league_rank();
 
-              auto v_i  = [&](const int k) -> pack_type { return v_int(icol, k); };
+              auto v_i = [&](const int k) -> pack_type {
+                return v_int(icol, k);
+              };
               auto dv_m = ekat::subview(dv_mid, icol);
 
               column_ops::compute_midpoint_delta(team, num_levs, v_i, dv_m);
@@ -910,8 +936,10 @@ TEST_CASE("column_ops_ps_N") {
             policy, KOKKOS_LAMBDA(const member_type &team) {
               const int icol = team.league_rank();
 
-              auto dv_m = [&](const int k) -> pack_type { return dv_mid(icol, k); };
-              auto v_i  = ekat::subview(v_int, icol);
+              auto dv_m = [&](const int k) -> pack_type {
+                return dv_mid(icol, k);
+              };
+              auto v_i = ekat::subview(v_int, icol);
 
               column_ops::column_scan<true>(team, num_levs, dv_m, v_i, s0);
             });
@@ -965,8 +993,10 @@ TEST_CASE("column_ops_ps_N") {
             policy, KOKKOS_LAMBDA(const member_type &team) {
               const int icol = team.league_rank();
 
-              auto dv_m = [&](const int k) -> pack_type { return dv_mid(icol, k); };
-              auto v_i  = ekat::subview(v_int, icol);
+              auto dv_m = [&](const int k) -> pack_type {
+                return dv_mid(icol, k);
+              };
+              auto v_i = ekat::subview(v_int, icol);
 
               column_ops::column_scan<false>(team, num_levs, dv_m, v_i, s0);
             });

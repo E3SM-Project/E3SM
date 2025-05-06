@@ -3,8 +3,8 @@
 
 namespace scream {
 
-VirtualTemperatureDiagnostic::VirtualTemperatureDiagnostic(const ekat::Comm &comm,
-                                                           const ekat::ParameterList &params)
+VirtualTemperatureDiagnostic::VirtualTemperatureDiagnostic(
+    const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
@@ -16,8 +16,8 @@ void VirtualTemperatureDiagnostic::set_grids(
 
   auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
-  m_num_cols            = grid->get_num_local_dofs();      // Number of columns on this rank
-  m_num_levs            = grid->get_num_vertical_levels(); // Number of levels per column
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   auto scalar3d = grid->get_3d_scalar_layout(true);
 
@@ -40,12 +40,13 @@ void VirtualTemperatureDiagnostic::compute_diagnostic_impl() {
 
   int nlevs = m_num_levs;
   Kokkos::parallel_for(
-      "VirtualTemperatureDiagnostic", Kokkos::RangePolicy<>(0, m_num_cols * nlevs),
+      "VirtualTemperatureDiagnostic",
+      Kokkos::RangePolicy<>(0, m_num_cols * nlevs),
       KOKKOS_LAMBDA(const int &idx) {
-        const int icol = idx / nlevs;
-        const int ilev = idx % nlevs;
-        virtualT(icol, ilev) =
-            PF::calculate_virtual_temperature(T_mid(icol, ilev), qv_mid(icol, ilev));
+        const int icol       = idx / nlevs;
+        const int ilev       = idx % nlevs;
+        virtualT(icol, ilev) = PF::calculate_virtual_temperature(
+            T_mid(icol, ilev), qv_mid(icol, ilev));
       });
   Kokkos::fence();
 }

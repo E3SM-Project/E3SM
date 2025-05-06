@@ -7,7 +7,8 @@ namespace {
 // Find first position in array pointed by [beg,end) that is below z
 // If all z's in array are >=z, return end
 template <typename T>
-KOKKOS_INLINE_FUNCTION const T *find_first_smaller_z(const T *beg, const T *end, const T &z) {
+KOKKOS_INLINE_FUNCTION const T *find_first_smaller_z(const T *beg, const T *end,
+                                                     const T &z) {
   // It's easier to find the last entry that is not smaller than z,
   // and then we'll return the ptr after that
   int count = end - beg;
@@ -29,7 +30,8 @@ KOKKOS_INLINE_FUNCTION const T *find_first_smaller_z(const T *beg, const T *end,
 
 namespace scream {
 
-FieldAtHeight::FieldAtHeight(const ekat::Comm &comm, const ekat::ParameterList &params)
+FieldAtHeight::FieldAtHeight(const ekat::Comm &comm,
+                             const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   m_field_name  = m_params.get<std::string>("field_name");
   auto surf_ref = m_params.get<std::string>("surface_reference");
@@ -56,7 +58,8 @@ FieldAtHeight::FieldAtHeight(const ekat::Comm &comm, const ekat::ParameterList &
   m_diag_name = m_field_name + "_at_" + z_val + units + "_above_" + surf_ref;
 }
 
-void FieldAtHeight::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void FieldAtHeight::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &gname = m_params.get<std::string>("grid_name");
   add_field<Required>(m_field_name, gname);
 
@@ -89,33 +92,35 @@ void FieldAtHeight::initialize_impl(const RunType /*run_type*/) {
           layout.to_string() +
           "\n"
           "NOTE: if you requested something like 'field_horiz_avg_at_Y',\n"
-          "      you can avoid this error by requesting 'fieldX_at_Y_horiz_avg' instead.\n");
+          "      you can avoid this error by requesting "
+          "'fieldX_at_Y_horiz_avg' instead.\n");
   const auto tag = layout.tags().back();
-  EKAT_REQUIRE_MSG(
-      tag == LEV || tag == ILEV,
-      "Error! FieldAtHeight diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
-      " - field name  : " +
-          fid.name() +
-          "\n"
-          " - field layout: " +
-          layout.to_string() + "\n");
+  EKAT_REQUIRE_MSG(tag == LEV || tag == ILEV,
+                   "Error! FieldAtHeight diagnostic expects a layout ending "
+                   "with 'LEV'/'ILEV' tag.\n"
+                   " - field name  : " +
+                       fid.name() +
+                       "\n"
+                       " - field layout: " +
+                       layout.to_string() + "\n");
 
   // Figure out the z value
   m_z_suffix = tag == LEV ? "_mid" : "_int";
 
   // All good, create the diag output
-  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(tag), fid.get_units(),
-                        fid.get_grid_name());
+  FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(tag),
+                        fid.get_units(), fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
   using stratts_t = std::map<std::string, std::string>;
 
   // Propagate any io string attribute from input field to diag field
-  const auto &src      = get_fields_in().front();
-  const auto &src_atts = src.get_header().get_extra_data<stratts_t>("io: string attributes");
-  auto &dst_atts =
-      m_diagnostic_output.get_header().get_extra_data<stratts_t>("io: string attributes");
+  const auto &src = get_fields_in().front();
+  const auto &src_atts =
+      src.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto &dst_atts = m_diagnostic_output.get_header().get_extra_data<stratts_t>(
+      "io: string attributes");
   for (const auto &[name, val] : src_atts) {
     dst_atts[name] = val;
   }
@@ -123,9 +128,10 @@ void FieldAtHeight::initialize_impl(const RunType /*run_type*/) {
 
 // =========================================================================================
 void FieldAtHeight::compute_diagnostic_impl() {
-  const auto z_view = get_field_in(m_z_name + m_z_suffix).get_view<const Real **>();
-  const Field &f    = get_field_in(m_field_name);
-  const auto &fl    = f.get_header().get_identifier().get_layout();
+  const auto z_view =
+      get_field_in(m_z_name + m_z_suffix).get_view<const Real **>();
+  const Field &f = get_field_in(m_field_name);
+  const auto &fl = f.get_header().get_identifier().get_layout();
 
   using RangePolicy = typename KokkosTypes<DefaultDevice>::RangePolicy;
 

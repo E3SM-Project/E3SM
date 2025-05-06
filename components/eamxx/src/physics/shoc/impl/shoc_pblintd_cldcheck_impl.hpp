@@ -3,13 +3,14 @@
 #define SHOC_PBLINTD_CLDCHECK_IMPL_HPP
 
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
-#include "shoc_functions.hpp"                  // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::shoc_pblintd_cldcheck(const Scalar &zi, const Scalar &cldn,
+KOKKOS_FUNCTION void Functions<S, D>::shoc_pblintd_cldcheck(const Scalar &zi,
+                                                            const Scalar &cldn,
                                                             Scalar &pblh) {
   //
   // Final requirement on PBL heightis that it must be greater than the depth

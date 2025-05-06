@@ -95,9 +95,9 @@ public:
   Real m_orbital_obliq; // Obliquity
   Real m_orbital_mvelp; // Vernal Equinox Mean Longitude of Perihelion
 
-  // Value for prescribing an invariant solar constant (i.e. total solar irradiance
-  // at TOA).  Used for idealized experiments such as RCE. This is only used when a
-  // positive value is supplied.
+  // Value for prescribing an invariant solar constant (i.e. total solar
+  // irradiance at TOA).  Used for idealized experiments such as RCE. This is
+  // only used when a positive value is supplied.
   Real m_fixed_total_solar_irradiance;
 
   // Fixed solar zenith angle to use for shortwave calculations
@@ -137,7 +137,8 @@ public:
   // Whether or not to do subcolumn sampling of cloud state for MCICA
   bool m_do_subcol_sampling;
 
-  // Structure for storing local variables initialized using the ATMBufferManager
+  // Structure for storing local variables initialized using the
+  // ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_ncol          = 10;
     static constexpr int num_2d_nlay          = 16;

@@ -35,21 +35,23 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   //
   // --------- Functions ---------
   //
-  static void compute_tms(const int &ncols, const int &nlevs,
-                          const view_3d<const Scalar> &horiz_wind,
-                          const view_2d<const Scalar> &t_mid, const view_2d<const Scalar> &p_mid,
-                          const view_2d<const Scalar> &exner, const view_2d<const Scalar> &z_mid,
-                          const view_1d<const Scalar> &sgh, const view_1d<const Scalar> &landfrac,
-                          const view_1d<Scalar> &ksrf, const view_2d<Scalar> &tau_tms);
+  static void compute_tms(
+      const int &ncols, const int &nlevs,
+      const view_3d<const Scalar> &horiz_wind,
+      const view_2d<const Scalar> &t_mid, const view_2d<const Scalar> &p_mid,
+      const view_2d<const Scalar> &exner, const view_2d<const Scalar> &z_mid,
+      const view_1d<const Scalar> &sgh, const view_1d<const Scalar> &landfrac,
+      const view_1d<Scalar> &ksrf, const view_2d<Scalar> &tau_tms);
 
 }; // struct tms
 
 } // namespace tms
 } // namespace scream
 
-// If a GPU build, without relocatable device code enabled, make all code available
-// to the translation unit; otherwise, ETI is used.
-#if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) && \
+// If a GPU build, without relocatable device code enabled, make all code
+// available to the translation unit; otherwise, ETI is used.
+#if defined(EAMXX_ENABLE_GPU) &&                            \
+    !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) && \
     !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 
 #include "compute_tms_impl.hpp"

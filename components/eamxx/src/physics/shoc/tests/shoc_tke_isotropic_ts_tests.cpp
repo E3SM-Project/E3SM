@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocIsotropicTs
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real maxiso = scream::shoc::Constants<Real>::maxiso;
@@ -174,17 +175,18 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
   void run_bfb() {
     auto engine = Base::get_engine();
 
-    IsotropicTsData baseline_data[] = {//            shcol, nlev
-                                       IsotropicTsData(10, 71), IsotropicTsData(10, 12),
-                                       IsotropicTsData(7, 16), IsotropicTsData(2, 7)};
+    IsotropicTsData baseline_data[] = {
+        //            shcol, nlev
+        IsotropicTsData(10, 71), IsotropicTsData(10, 12),
+        IsotropicTsData(7, 16), IsotropicTsData(2, 7)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     IsotropicTsData cxx_data[] = {
         IsotropicTsData(baseline_data[0]),
         IsotropicTsData(baseline_data[1]),
@@ -208,7 +210,8 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(IsotropicTsData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(IsotropicTsData);
       for (Int i = 0; i < num_runs; ++i) {
         IsotropicTsData &d_baseline = baseline_data[i];
         IsotropicTsData &d_cxx      = cxx_data[i];
@@ -232,15 +235,15 @@ struct UnitWrap::UnitTest<D>::TestShocIsotropicTs : public UnitWrap::UnitTest<D>
 namespace {
 
 TEST_CASE("shoc_tke_isotropic_ts_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_isotropic_ts_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocIsotropicTs;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocIsotropicTs;
 
   TestStruct().run_bfb();
 }

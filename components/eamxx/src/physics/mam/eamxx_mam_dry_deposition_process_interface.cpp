@@ -15,13 +15,15 @@ MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  check_fields_intervals_ = m_params.get<bool>("create_fields_interval_checks", false);
+  check_fields_intervals_ =
+      m_params.get<bool>("create_fields_interval_checks", false);
 }
 
 // ================================================================
 //  SET_GRIDS
 // ================================================================
-void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMDryDep::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   // set grid for all the inputs and outputs
@@ -31,8 +33,8 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // Name of the grid
   const auto &grid_name = grid_->name();
 
-  ncol_                = grid_->get_num_local_dofs();      // Number of columns on this rank
-  nlev_                = grid_->get_num_vertical_levels(); // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs();      // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
   len_temporary_views_ = get_len_temporary_views();
   buffer_.set_len_temporary_views(len_temporary_views_);
 
@@ -48,15 +50,17 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   const FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
 
   // layout for 2D (ncol, pcnst)
-  constexpr int pcnst              = mam4::aero_model::pcnst;
-  const FieldLayout vector2d_pcnst = grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
-  const FieldLayout vector2d_class = grid_->get_2d_vector_layout(n_land_type, "class");
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  const FieldLayout vector2d_pcnst =
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+  const FieldLayout vector2d_class =
+      grid_->get_2d_vector_layout(n_land_type, "class");
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
-  const int num_aero_modes = mam_coupling::num_aero_modes();
-  const FieldLayout vector3d_mid =
-      grid_->get_3d_vector_layout(true, num_aero_modes, mam_coupling::num_modes_tag_name());
+  const int num_aero_modes       = mam_coupling::num_aero_modes();
+  const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(
+      true, num_aero_modes, mam_coupling::num_modes_tag_name());
 
   using namespace ekat::units;
   auto nondim = ekat::units::Units::nondimensional();
@@ -135,11 +139,11 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // -------------------------------------------------------------
   // FIXME: These are diagnostics, remove them from FM after initial evaluation
   // surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", vector2d_pcnst, 1 / m2 / s,
-                      grid_name);
+  add_field<Computed>("deposition_flux_of_cloud_borne_aerosols", vector2d_pcnst,
+                      1 / m2 / s, grid_name);
   // surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
-  add_field<Computed>("deposition_flux_of_interstitial_aerosols", vector2d_pcnst, 1 / m2 / s,
-                      grid_name);
+  add_field<Computed>("deposition_flux_of_interstitial_aerosols",
+                      vector2d_pcnst, 1 / m2 / s, grid_name);
 
   // Fractional land use [fraction]
   add_field<Computed>("fraction_landuse", vector2d_class, nondim, grid_name);
@@ -147,8 +151,9 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   // setup to enable reading fractional land use file
   // -------------------------------------------------------------
 
-  const auto mapping_file                  = m_params.get<std::string>("drydep_remap_file", "");
-  const std::string frac_landuse_data_file = m_params.get<std::string>("fractional_land_use_file");
+  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
+  const std::string frac_landuse_data_file =
+      m_params.get<std::string>("fractional_land_use_file");
 
   // Field to be read from file
   const std::string field_name = "fraction_landuse";
@@ -158,9 +163,10 @@ void MAMDryDep::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   const std::string dim_name2 = "class";
 
   // initialize the file read
-  FracLandUseFunc::init_frac_landuse_file_read(ncol_, field_name, dim_name1, dim_name2, grid_,
-                                               frac_landuse_data_file, mapping_file, horizInterp_,
-                                               dataReader_); // output
+  FracLandUseFunc::init_frac_landuse_file_read(
+      ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
+      mapping_file, horizInterp_,
+      dataReader_); // output
 
 } // set_grids
 
@@ -182,10 +188,12 @@ size_t MAMDryDep::requested_buffer_size_in_bytes() const {
 // columns with the given number of vertical levels. Returns the
 // number of bytes allocated.
 void MAMDryDep::init_buffers(const ATMBufferManager &buffer_manager) {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >=
+                       requested_buffer_size_in_bytes(),
                    "Error! Insufficient buffer size.\n");
 
-  size_t used_mem = mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
+  size_t used_mem =
+      mam_coupling::init_buffer(buffer_manager, ncol_, nlev_, buffer_);
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMDryDep.");
 } // init_buffers
@@ -196,7 +204,8 @@ int MAMDryDep::get_len_temporary_views() {
   // vlc_trb_
   work_len += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
   // vlc_grv_, vlc_dry_
-  work_len += 2 * mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+  work_len +=
+      2 * mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // rho_
   work_len += ncol_ * nlev_;
   // qqcw_, dqdt_tmp_, qtracers_, ptend_q_
@@ -215,16 +224,21 @@ void MAMDryDep::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * pcnst;
 
   // Deposition velocity of turbulent dry deposition [m/s]
-  vlc_trb_ = view_3d(work_ptr, mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_);
+  vlc_trb_ = view_3d(work_ptr, mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_);
   work_ptr += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
 
   // Deposition velocity of gravitational settling [m/s]
-  vlc_grv_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_, nlev_);
-  work_ptr += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+  vlc_grv_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_, nlev_);
+  work_ptr +=
+      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Deposition velocity, [m/s]
   // Fraction landuse weighted sum of vlc_grv and vlc_trb
-  vlc_dry_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(), aerosol_categories_, ncol_, nlev_);
-  work_ptr += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+  vlc_dry_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
+                     aerosol_categories_, ncol_, nlev_);
+  work_ptr +=
+      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Work array to hold the mixing ratios [kg/kg or 1/kg]
   // Packs AerosolState::int_aero_nmr and AerosolState::int_aero_nmr
   // into one array.
@@ -249,7 +263,8 @@ void MAMDryDep::init_temporary_views() {
   const int workspace_provided = buffer_.temporary_views.extent(0);
   EKAT_REQUIRE_MSG(workspace_used == workspace_provided,
                    "Error: workspace_used (" + std::to_string(workspace_used) +
-                       ") and workspace_provided (" + std::to_string(workspace_provided) +
+                       ") and workspace_provided (" +
+                       std::to_string(workspace_provided) +
                        ") should be equal. \n");
 }
 
@@ -310,7 +325,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   frac_landuse_fm_ = get_field_out("fraction_landuse").get_view<Real **>();
   // This data is time-independent, we read all data here for the
   // entire simulation
-  FracLandUseFunc::update_frac_land_use_data_from_file(dataReader_, *horizInterp_,
+  FracLandUseFunc::update_frac_land_use_data_from_file(dataReader_,
+                                                       *horizInterp_,
                                                        frac_landuse_); // output
 
   // Copy fractional landuse values to a FM array to be used by other processes
@@ -319,8 +335,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-  const auto scan_policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto scan_policy = ekat::ExeSpaceUtils<
+      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
@@ -345,24 +361,30 @@ void MAMDryDep::run_impl(const double dt) {
   // Friction velocity from land model [m/s]
   auto friction_velocity_ = get_field_in("fv").get_view<const Real *>();
   // Aerodynamical resistance from land model [s/m]
-  auto aerodynamical_resistance_ = get_field_in("ram1").get_view<const Real *>();
+  auto aerodynamical_resistance_ =
+      get_field_in("ram1").get_view<const Real *>();
   //  Sfc friction velocity or ustar [m/s]
-  auto surface_friction_velocty_ = get_field_in("ustar").get_view<const Real *>();
+  auto surface_friction_velocty_ =
+      get_field_in("ustar").get_view<const Real *>();
 
   // -------------------------------------------------------------
   // Output fields for the process
   // -------------------------------------------------------------
   // Surface deposition flux of cloud-borne  aerosols, [kg/m2/s] or [1/m2/s]
-  auto aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols").get_view<Real **>();
+  auto aerdepdrycw_ = get_field_out("deposition_flux_of_cloud_borne_aerosols")
+                          .get_view<Real **>();
   // Surface deposition flux of interstitial aerosols, [kg/m2/s] or [1/m2/s]
-  auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols").get_view<Real **>();
+  auto aerdepdryis_ = get_field_out("deposition_flux_of_interstitial_aerosols")
+                          .get_view<Real **>();
 
   //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-  compute_tendencies(ncol_, nlev_, dt, obukhov_length_, surface_friction_velocty_, land_fraction_,
-                     ice_fraction_, ocean_fraction_, friction_velocity_, aerodynamical_resistance_,
-                     frac_landuse_, dgncur_awet_, wet_dens_, dry_atm_, dry_aero_,
+  compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
+                     surface_friction_velocty_, land_fraction_, ice_fraction_,
+                     ocean_fraction_, friction_velocity_,
+                     aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
+                     wet_dens_, dry_atm_, dry_aero_,
                      // Inouts-outputs
                      qqcw_,
                      // Outputs

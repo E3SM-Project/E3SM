@@ -4,8 +4,8 @@
 namespace scream {
 
 // =========================================================================================
-SeaLevelPressureDiagnostic::SeaLevelPressureDiagnostic(const ekat::Comm &comm,
-                                                       const ekat::ParameterList &params)
+SeaLevelPressureDiagnostic::SeaLevelPressureDiagnostic(
+    const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   // Nothing to do here
 }
@@ -19,7 +19,7 @@ void SeaLevelPressureDiagnostic::set_grids(
   const auto s2 = pow(s, 2);
 
   auto grid  = grids_manager->get_grid("physics");
-  m_num_cols = grid->get_num_local_dofs();      // Number of columns on this rank
+  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels(); // Number of levels per column
 
   auto scalar2d = grid->get_2d_scalar_layout();
@@ -47,7 +47,8 @@ void SeaLevelPressureDiagnostic::compute_diagnostic_impl() {
   using PF     = scream::PhysicsFunctions<DefaultDevice>;
 
   auto lambda = KOKKOS_LAMBDA(const int &icol) {
-    psl(icol) = PF::calculate_psl(T_mid(icol, surf_lev), p_mid(icol, surf_lev), phis(icol));
+    psl(icol) = PF::calculate_psl(T_mid(icol, surf_lev), p_mid(icol, surf_lev),
+                                  phis(icol));
   };
   Kokkos::parallel_for("SeaLevelPressure", RP(0, m_num_cols), lambda);
 }

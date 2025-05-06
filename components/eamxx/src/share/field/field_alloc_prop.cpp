@@ -4,14 +4,16 @@ namespace scream {
 
 FieldAllocProp::FieldAllocProp(const int scalar_size)
     : m_layout(FieldLayout::invalid()), m_value_type_sizes(1, scalar_size),
-      m_scalar_type_size(scalar_size), m_pack_size_max(1), m_alloc_size(0), m_committed(false) {
+      m_scalar_type_size(scalar_size), m_pack_size_max(1), m_alloc_size(0),
+      m_committed(false) {
   // Nothing to do here
 }
 
 FieldAllocProp &FieldAllocProp::operator=(const FieldAllocProp &src) {
   if (&src != this) {
-    EKAT_REQUIRE_MSG(not m_committed,
-                     "Error! Cannot assign FieldAllocProp once the dst obj is committed.\n");
+    EKAT_REQUIRE_MSG(
+        not m_committed,
+        "Error! Cannot assign FieldAllocProp once the dst obj is committed.\n");
 
     m_layout           = src.m_layout;
     m_value_type_sizes = src.m_value_type_sizes;
@@ -26,11 +28,16 @@ FieldAllocProp &FieldAllocProp::operator=(const FieldAllocProp &src) {
   return *this;
 }
 
-FieldAllocProp FieldAllocProp::subview(const int idim, const int k, const bool dynamic) const {
-  EKAT_REQUIRE_MSG(is_committed(), "Error! Subview requires alloc properties to be committed.\n");
-  EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
-                   "Error! Subviewing is only allowed along first or second dimension.\n");
-  EKAT_REQUIRE_MSG(idim < m_layout.rank(), "Error! Dimension index out of bounds.\n");
+FieldAllocProp FieldAllocProp::subview(const int idim, const int k,
+                                       const bool dynamic) const {
+  EKAT_REQUIRE_MSG(
+      is_committed(),
+      "Error! Subview requires alloc properties to be committed.\n");
+  EKAT_REQUIRE_MSG(
+      idim == 0 || idim == 1,
+      "Error! Subviewing is only allowed along first or second dimension.\n");
+  EKAT_REQUIRE_MSG(idim < m_layout.rank(),
+                   "Error! Dimension index out of bounds.\n");
   EKAT_REQUIRE_MSG(k >= 0 && k < m_layout.dim(idim),
                    "Error! Index along the dimension is out of bounds.\n");
 
@@ -46,15 +53,16 @@ FieldAllocProp FieldAllocProp::subview(const int idim, const int k, const bool d
   //  - m_layout.rank()==1 (we end up with a rank-0 subview)
   auto is_one        = [](int i) { return i == 1; };
   props.m_contiguous = (m_contiguous and idim == 0) || m_layout.rank() == 1 ||
-                       std::all_of(m_layout.dims().begin(), m_layout.dims().begin() + idim, is_one);
+                       std::all_of(m_layout.dims().begin(),
+                                   m_layout.dims().begin() + idim, is_one);
 
   props.m_subview_info = SubviewInfo(idim, k, m_layout.dim(idim), dynamic);
 
   // Figure out strides/packs
   const int rm1 = m_layout.rank() - 1;
   if (idim == rm1) {
-    // We're slicing the possibly padded dim, so everything else is as in the layout,
-    // and there is no packing
+    // We're slicing the possibly padded dim, so everything else is as in the
+    // layout, and there is no packing
     props.m_last_extent   = m_layout.dim(idim);
     props.m_pack_size_max = 1;
   } else {
@@ -69,11 +77,16 @@ FieldAllocProp FieldAllocProp::subview(const int idim, const int k, const bool d
 
 FieldAllocProp FieldAllocProp::subview(const int idim, const int index_beg,
                                        const int index_end) const {
-  EKAT_REQUIRE_MSG(is_committed(), "Error! Subview requires alloc properties to be committed.\n");
-  EKAT_REQUIRE_MSG(idim < m_layout.rank(), "Error! Dimension index out of bounds.\n");
-  EKAT_REQUIRE_MSG(index_beg < index_end, "Error! Slice indices are invalid (non-increasing).\n");
-  EKAT_REQUIRE_MSG(index_beg >= 0 && index_end - 1 < m_layout.dim(idim),
-                   "Error! Slice index range along the idim dimension is out of bounds.\n");
+  EKAT_REQUIRE_MSG(
+      is_committed(),
+      "Error! Subview requires alloc properties to be committed.\n");
+  EKAT_REQUIRE_MSG(idim < m_layout.rank(),
+                   "Error! Dimension index out of bounds.\n");
+  EKAT_REQUIRE_MSG(index_beg < index_end,
+                   "Error! Slice indices are invalid (non-increasing).\n");
+  EKAT_REQUIRE_MSG(
+      index_beg >= 0 && index_end - 1 < m_layout.dim(idim),
+      "Error! Slice index range along the idim dimension is out of bounds.\n");
 
   // Set new layout basic stuff
   FieldAllocProp props(m_scalar_type_size);
@@ -85,7 +98,8 @@ FieldAllocProp FieldAllocProp::subview(const int idim, const int index_beg,
   // we do not currently have the capability for contiguous multi-slice views
   props.m_contiguous = false;
 
-  props.m_subview_info = SubviewInfo(idim, index_beg, index_end, m_layout.dim(idim));
+  props.m_subview_info =
+      SubviewInfo(idim, index_beg, index_end, m_layout.dim(idim));
   // Figure out strides/packs
   if (idim == (m_layout.rank() - 1)) {
     // We're slicing the possibly padded dim, so everything else is as in the
@@ -105,8 +119,8 @@ FieldAllocProp FieldAllocProp::subview(const int idim, const int index_beg,
 void FieldAllocProp::request_allocation(const int pack_size) {
   using ekat::ScalarTraits;
 
-  EKAT_REQUIRE_MSG(!m_committed,
-                   "Error! Cannot change allocation properties after they have been committed.\n");
+  EKAT_REQUIRE_MSG(!m_committed, "Error! Cannot change allocation properties "
+                                 "after they have been committed.\n");
 
   const int vts = m_scalar_type_size * pack_size;
 
@@ -123,18 +137,23 @@ void FieldAllocProp::request_allocation(const FieldAllocProp &src) {
 }
 
 int FieldAllocProp::get_padding() const {
-  EKAT_REQUIRE_MSG(is_committed(),
-                   "Error! You cannot query the allocation padding until after calling commit().");
-  int padding = m_layout.rank() == 0 ? 0 : m_last_extent - m_layout.dims().back();
+  EKAT_REQUIRE_MSG(is_committed(), "Error! You cannot query the allocation "
+                                   "padding until after calling commit().");
+  int padding =
+      m_layout.rank() == 0 ? 0 : m_last_extent - m_layout.dims().back();
   return padding;
 }
 
 void FieldAllocProp::reset_subview_idx(const int idx) {
-  EKAT_REQUIRE_MSG(is_committed(),
-                   "Error! Cannot reset subview idx on a non-committed allocation.\n");
-  EKAT_REQUIRE_MSG(is_subfield(), "Error! Cannot reset subview idx if this is not a subfield.\n");
-  EKAT_REQUIRE_MSG(is_dynamic_subfield(),
-                   "Error! Cannot reset subview idx for non-dynamic subfields.\n");
+  EKAT_REQUIRE_MSG(
+      is_committed(),
+      "Error! Cannot reset subview idx on a non-committed allocation.\n");
+  EKAT_REQUIRE_MSG(
+      is_subfield(),
+      "Error! Cannot reset subview idx if this is not a subfield.\n");
+  EKAT_REQUIRE_MSG(
+      is_dynamic_subfield(),
+      "Error! Cannot reset subview idx for non-dynamic subfields.\n");
   EKAT_REQUIRE_MSG(idx >= 0 && idx < m_subview_info.dim_extent,
                    "Error! Subview slice idx out of bounds.\n");
 
@@ -148,13 +167,13 @@ void FieldAllocProp::commit(const layout_type &layout) {
     return;
   }
 
-  // Sanity checks: we must have requested at least one value type, and the identifier needs all
-  // dimensions set by now.
+  // Sanity checks: we must have requested at least one value type, and the
+  // identifier needs all dimensions set by now.
   EKAT_REQUIRE_MSG(m_value_type_sizes.size() > 0,
                    "Error! No value types requested for the allocation.\n");
-  EKAT_REQUIRE_MSG(
-      layout.are_dimensions_set(),
-      "Error! You need all field dimensions set before committing the allocation properties.\n");
+  EKAT_REQUIRE_MSG(layout.are_dimensions_set(),
+                   "Error! You need all field dimensions set before committing "
+                   "the allocation properties.\n");
 
   // Store layout for future use (in case subview is called)
   m_layout = layout;
@@ -187,9 +206,10 @@ void FieldAllocProp::commit(const layout_type &layout) {
     }
 
     if (m_layout.size() > 0) {
-      m_alloc_size = m_layout.size() / last_phys_extent // All except the last dimension
-                     * m_last_extent *
-                     m_scalar_type_size; // Last dimension must account for padding (if any)
+      m_alloc_size =
+          m_layout.size() / last_phys_extent    // All except the last dimension
+          * m_last_extent * m_scalar_type_size; // Last dimension must account
+                                                // for padding (if any)
     } else {
       m_alloc_size = 0;
     }
@@ -201,22 +221,22 @@ void FieldAllocProp::commit(const layout_type &layout) {
 }
 
 long long FieldAllocProp::get_alloc_size() const {
-  EKAT_REQUIRE_MSG(
-      is_committed(),
-      "Error! You cannot query the allocation properties until they have been committed.");
+  EKAT_REQUIRE_MSG(is_committed(),
+                   "Error! You cannot query the allocation properties until "
+                   "they have been committed.");
   return m_alloc_size;
 }
 
 int FieldAllocProp::get_largest_pack_size() const {
-  EKAT_REQUIRE_MSG(
-      is_committed(),
-      "Error! You cannot query the allocation properties until they have been committed.");
+  EKAT_REQUIRE_MSG(is_committed(),
+                   "Error! You cannot query the allocation properties until "
+                   "they have been committed.");
   return m_pack_size_max;
 }
 
 int FieldAllocProp::get_last_extent() const {
-  EKAT_REQUIRE_MSG(is_committed(),
-                   "Error! You cannot query the allocation strides until after calling commit().");
+  EKAT_REQUIRE_MSG(is_committed(), "Error! You cannot query the allocation "
+                                   "strides until after calling commit().");
   return m_last_extent;
 }
 

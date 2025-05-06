@@ -8,19 +8,22 @@ namespace scream {
 /*
  * This diagnostic will produce data related to the vertical layer based on
  * the parameter "diag_name" (required). The following can be produced:
- *   - diag_name = "dz":                       Vertical layer thickness for each column and level
- *   - diag_name = "z_int":                    Vertical layer height at each column and interface
- * level. Values are computed from sea level (i.e., surf_geopotential=0).
- *   - diag_name = "geopotential_int":         Same as z_int, but computed from topography data
- *                                             (i.e., surf_geopotential=phis).
- *   - diag_name = "z_mid"/"geopotential_mid": Same as z_int/geopotential_int but at midpoint
- * levels.
+ *   - diag_name = "dz":                       Vertical layer thickness for each
+ * column and level
+ *   - diag_name = "z_int":                    Vertical layer height at each
+ * column and interface level. Values are computed from sea level (i.e.,
+ * surf_geopotential=0).
+ *   - diag_name = "geopotential_int":         Same as z_int, but computed from
+ * topography data (i.e., surf_geopotential=phis).
+ *   - diag_name = "z_mid"/"geopotential_mid": Same as z_int/geopotential_int
+ * but at midpoint levels.
  */
 
 class VerticalLayerDiagnostic : public AtmosphereDiagnostic {
 public:
   // Constructors
-  VerticalLayerDiagnostic(const ekat::Comm &comm, const ekat::ParameterList &params);
+  VerticalLayerDiagnostic(const ekat::Comm &comm,
+                          const ekat::ParameterList &params);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name() const { return "VerticalLayer"; }
@@ -51,7 +54,8 @@ protected:
   // Store if the diagnostic output field exists on interface values
   bool m_is_interface_layout;
 
-  // True z_mid/int and geopotential_mid/int, false for height_mid/int. Unused for dz
+  // True z_mid/int and geopotential_mid/int, false for height_mid/int. Unused
+  // for dz
   bool m_from_sea_level;
 
   // If true, output is a geopotential (units m2/s2), otherwise an elevation

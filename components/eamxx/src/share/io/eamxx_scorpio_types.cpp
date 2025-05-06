@@ -6,7 +6,8 @@ namespace scream {
 namespace scorpio {
 
 std::string e2str(const FileMode mode) {
-  auto mode_int = static_cast<typename std::underlying_type<FileMode>::type>(mode);
+  auto mode_int =
+      static_cast<typename std::underlying_type<FileMode>::type>(mode);
   std::string s;
   switch (mode) {
   case Unset:

@@ -14,7 +14,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocMain
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
@@ -54,7 +55,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     // Define the heights on the zi grid [m]
     static constexpr Real zi_grid[nlevi] = {3000, 2000, 1500, 1000, 500, 0};
     // Define pressures on the interface grid [Pa]
-    static constexpr Real presi[nlevi] = {700e2, 800e2, 850e2, 900e2, 950e2, 1000e2};
+    static constexpr Real presi[nlevi] = {700e2, 800e2, 850e2,
+                                          900e2, 950e2, 1000e2};
     // Define temperature on the zt grid [K]
     static constexpr Real temp[nlev] = {290, 295, 297, 297, 300};
     // Define the large scale vertical velocity on zt grid [m/s]
@@ -242,7 +244,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
 
         // Make sure inputs fall within reasonable bounds
         REQUIRE(SDS.zt_grid[offset] > 0);
-        REQUIRE((SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound));
+        REQUIRE((SDS.thetal[offset] > thl_lbound &&
+                 SDS.thetal[offset] < thl_ubound));
         REQUIRE((SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound));
         REQUIRE((SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound));
 
@@ -262,16 +265,19 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
       REQUIRE((SDS.pblh[s] > 0 && SDS.pblh[s] <= zi_grid[0]));
       for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
-        REQUIRE((SDS.thetal[offset] > thl_lbound && SDS.thetal[offset] < thl_ubound));
+        REQUIRE((SDS.thetal[offset] > thl_lbound &&
+                 SDS.thetal[offset] < thl_ubound));
         REQUIRE((SDS.qw[offset] > qw_lbound && SDS.qw[offset] < qw_ubound));
         REQUIRE((SDS.tke[offset] > tke_lbound && SDS.tke[offset] < tke_ubound));
         // Increase wind bounds by 2 m/s to allow for surface flux effects
         REQUIRE(std::abs(SDS.u_wind[offset] < wind_bounds + 2));
         REQUIRE(std::abs(SDS.v_wind[offset] < wind_bounds + 2));
 
-        REQUIRE((SDS.shoc_mix[offset] >= minlen && SDS.shoc_mix[offset] <= maxlen));
+        REQUIRE(
+            (SDS.shoc_mix[offset] >= minlen && SDS.shoc_mix[offset] <= maxlen));
         REQUIRE((SDS.isotropy[offset] >= 0 && SDS.isotropy[offset] < maxiso));
-        REQUIRE((SDS.shoc_cldfrac[offset] >= 0 && SDS.shoc_cldfrac[offset] <= 1));
+        REQUIRE(
+            (SDS.shoc_cldfrac[offset] >= 0 && SDS.shoc_cldfrac[offset] <= 1));
         REQUIRE((SDS.shoc_ql[offset] >= 0 && SDS.shoc_ql[offset] <= 1));
         REQUIRE((SDS.tk[offset] >= 0 && SDS.tk[offset] < 100));
         REQUIRE((SDS.tkh[offset] >= 0 && SDS.tkh[offset] < 100));
@@ -325,10 +331,13 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
     auto engine = Base::get_engine();
 
     ShocMainData baseline_data[] = {
-        //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc, ntop_shoc(C++
+        //           shcol, nlev, nlevi, num_qtracers, dtime, nadv, nbot_shoc,
+        //           ntop_shoc(C++
         //           indexing)
-        ShocMainData(12, 72, 73, 5, 300, 15, 72, 0), ShocMainData(8, 12, 13, 3, 300, 10, 8, 3),
-        ShocMainData(7, 16, 17, 3, 300, 1, 12, 0), ShocMainData(2, 7, 8, 2, 300, 5, 7, 4)};
+        ShocMainData(12, 72, 73, 5, 300, 15, 72, 0),
+        ShocMainData(8, 12, 13, 3, 300, 10, 8, 3),
+        ShocMainData(7, 16, 17, 3, 300, 1, 12, 0),
+        ShocMainData(2, 7, 8, 2, 300, 5, 7, 4)};
 
     // Generate random input data
     for (auto &d : baseline_data) {
@@ -352,10 +361,11 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
                           });
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
-    ShocMainData cxx_data[] = {ShocMainData(baseline_data[0]), ShocMainData(baseline_data[1]),
-                               ShocMainData(baseline_data[2]), ShocMainData(baseline_data[3])};
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
+    ShocMainData cxx_data[] = {
+        ShocMainData(baseline_data[0]), ShocMainData(baseline_data[1]),
+        ShocMainData(baseline_data[2]), ShocMainData(baseline_data[3])};
 
     // Assume all data is in C layout
 
@@ -373,28 +383,44 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
-      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(ShocMainData);
+      static constexpr Int num_runs =
+          sizeof(baseline_data) / sizeof(ShocMainData);
 
       for (Int i = 0; i < num_runs; ++i) {
         ShocMainData &d_baseline = baseline_data[i];
         ShocMainData &d_cxx      = cxx_data[i];
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.host_dse));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tke));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.thetal));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.host_dse));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.tke));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.thetal));
         REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.qw));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.u_wind));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.v_wind));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.wthv_sec));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tkh));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.u_wind));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.v_wind));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.wthv_sec));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.tkh));
         REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.tk));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_ql));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_cldfrac));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_mix));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.isotropy));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.w_sec));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.wqls_sec));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.brunt));
-        REQUIRE(d_baseline.total(d_baseline.host_dse) == d_cxx.total(d_cxx.shoc_ql2));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.shoc_ql));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.shoc_cldfrac));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.shoc_mix));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.isotropy));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.w_sec));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.wqls_sec));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.brunt));
+        REQUIRE(d_baseline.total(d_baseline.host_dse) ==
+                d_cxx.total(d_cxx.shoc_ql2));
         for (Int k = 0; k < d_baseline.total(d_baseline.host_dse); ++k) {
           REQUIRE(d_baseline.host_dse[k] == d_cxx.host_dse[k]);
           REQUIRE(d_baseline.tke[k] == d_cxx.tke[k]);
@@ -414,7 +440,8 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
           REQUIRE(d_baseline.shoc_ql2[k] == d_cxx.shoc_ql2[k]);
         }
 
-        REQUIRE(d_baseline.total(d_baseline.qtracers) == d_cxx.total(d_cxx.qtracers));
+        REQUIRE(d_baseline.total(d_baseline.qtracers) ==
+                d_cxx.total(d_cxx.qtracers));
         for (Int k = 0; k < d_baseline.total(d_baseline.qtracers); ++k) {
           REQUIRE(d_baseline.qtracers[k] == d_cxx.qtracers[k]);
         }
@@ -424,14 +451,22 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
           REQUIRE(d_baseline.pblh[k] == d_cxx.pblh[k]);
         }
 
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.thl_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.qw_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.qwthl_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.wthl_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.wqw_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.wtke_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.uw_sec));
-        REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.vw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.thl_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.qw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.qwthl_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.wthl_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.wqw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.wtke_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.uw_sec));
+        REQUIRE(d_baseline.total(d_baseline.thl_sec) ==
+                d_cxx.total(d_cxx.vw_sec));
         REQUIRE(d_baseline.total(d_baseline.thl_sec) == d_cxx.total(d_cxx.w3));
         for (Int k = 0; k < d_baseline.total(d_baseline.thl_sec); ++k) {
           REQUIRE(d_baseline.thl_sec[k] == d_cxx.thl_sec[k]);
@@ -461,15 +496,15 @@ struct UnitWrap::UnitTest<D>::TestShocMain : public UnitWrap::UnitTest<D>::Base 
 namespace {
 
 TEST_CASE("shoc_main_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocMain;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_main_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocMain;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocMain;
 
   TestStruct().run_bfb();
 }

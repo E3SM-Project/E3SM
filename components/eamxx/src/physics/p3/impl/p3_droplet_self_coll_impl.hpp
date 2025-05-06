@@ -12,10 +12,10 @@ namespace p3 {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::droplet_self_collection(const Spack &, const Spack &, const Spack &qc_incld,
-                                         const Spack &, const Spack &, const Spack &,
-                                         Spack &nc_selfcollect_tend, const Smask &context) {
+KOKKOS_FUNCTION void Functions<S, D>::droplet_self_collection(
+    const Spack &, const Spack &, const Spack &qc_incld, const Spack &,
+    const Spack &, const Spack &, Spack &nc_selfcollect_tend,
+    const Smask &context) {
   constexpr Scalar qsmall = C::QSMALL;
 
   const auto qc_not_small = (qc_incld >= qsmall) && context;

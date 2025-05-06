@@ -250,8 +250,8 @@ void perturb(Field &f, Engine &engine, PDF &&pdf, const unsigned int base_seed,
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of column and level dimension.
     auto perturb_fl = fl.clone().strip_dims({COL, LEV});
-    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(),
-                                "");
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl,
+                                ekat::units::Units::nondimensional(), "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
@@ -282,8 +282,8 @@ void perturb(Field &f, Engine &engine, PDF &&pdf, const unsigned int base_seed,
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of level dimension.
     auto perturb_fl = fl.clone().strip_dim(LEV);
-    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(),
-                                "");
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl,
+                                ekat::units::Units::nondimensional(), "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
@@ -304,8 +304,8 @@ void perturb(Field &f, Engine &engine, PDF &&pdf, const unsigned int base_seed,
 }
 
 template <typename ST>
-void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weight,
-                       const ekat::Comm *comm) {
+void horiz_contraction(const Field &f_out, const Field &f_in,
+                       const Field &weight, const ekat::Comm *comm) {
   using KT          = ekat::KokkosTypes<DefaultDevice>;
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
   using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
@@ -336,8 +336,8 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
         f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
           const int j = tm.league_rank();
           Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, ncols), [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j); },
-              v_out(j));
+              Kokkos::TeamVectorRange(tm, ncols),
+              [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j); }, v_out(j));
         });
   } break;
   case 3: {
@@ -353,7 +353,8 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
           const int k   = idx % d2;
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(tm, ncols),
-              [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j, k); }, v_out(j, k));
+              [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j, k); },
+              v_out(j, k));
         });
   } break;
   default:
@@ -366,14 +367,15 @@ void horiz_contraction(const Field &f_out, const Field &f_in, const Field &weigh
     // TODO: doing cuda-aware MPI allreduce would be ~10% faster
     Kokkos::fence();
     f_out.sync_to_host();
-    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(), l_out.size(), MPI_SUM);
+    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(),
+                     l_out.size(), MPI_SUM);
     f_out.sync_to_dev();
   }
 }
 
 template <typename ST>
-void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight,
-                      const ekat::Comm *comm) {
+void vert_contraction(const Field &f_out, const Field &f_in,
+                      const Field &weight, const ekat::Comm *comm) {
   using KT          = ekat::KokkosTypes<DefaultDevice>;
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
   using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
@@ -416,7 +418,9 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
           const int i = tm.league_rank();
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(tm, nlevs),
-              [&](int j, ST &ac) { ac += w_is_1d ? w1d(j) * v_in(i, j) : w2d(i, j) * v_in(i, j); },
+              [&](int j, ST &ac) {
+                ac += w_is_1d ? w1d(j) * v_in(i, j) : w2d(i, j) * v_in(i, j);
+              },
               v_out(i));
         });
   } break;
@@ -434,7 +438,8 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(tm, nlevs),
               [&](int k, ST &ac) {
-                ac += w_is_1d ? w1d(k) * v_in(i, j, k) : w2d(i, k) * v_in(i, j, k);
+                ac += w_is_1d ? w1d(k) * v_in(i, j, k)
+                              : w2d(i, k) * v_in(i, j, k);
               },
               v_out(i, j));
         });
@@ -449,12 +454,14 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
     // TODO: doing cuda-aware MPI allreduce would be ~10% faster
     Kokkos::fence();
     f_out.sync_to_host();
-    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(), l_out.size(), MPI_SUM);
+    comm->all_reduce(f_out.template get_internal_view_data<ST, Host>(),
+                     l_out.size(), MPI_SUM);
     f_out.sync_to_dev();
   }
 }
 
-template <typename ST> ST frobenius_norm(const Field &f, const ekat::Comm *comm) {
+template <typename ST>
+ST frobenius_norm(const Field &f, const ekat::Comm *comm) {
   const auto &fl = f.get_header().get_identifier().get_layout();
 
   // TODO: compute directly on device
@@ -845,8 +852,9 @@ template <typename ST> ST field_min(const Field &f, const ekat::Comm *comm) {
 }
 
 template <typename T>
-void print_field_hyperslab(const Field &f, std::vector<FieldTag> tags, std::vector<int> indices,
-                           std::ostream &out, const int orig_rank, const size_t curr_idx) {
+void print_field_hyperslab(const Field &f, std::vector<FieldTag> tags,
+                           std::vector<int> indices, std::ostream &out,
+                           const int orig_rank, const size_t curr_idx) {
   // General idea: call f.subfield with the proper index, and recurse
   // until all indices are exausted, then print the field that is left.
   //
@@ -857,8 +865,9 @@ void print_field_hyperslab(const Field &f, std::vector<FieldTag> tags, std::vect
   //   f(0,:,1):
   //     0.123, 0.456, 0.789
 
-  EKAT_REQUIRE_MSG(tags.size() == indices.size(),
-                   "Error! Tags vector size differs from indices vector size.\n");
+  EKAT_REQUIRE_MSG(
+      tags.size() == indices.size(),
+      "Error! Tags vector size differs from indices vector size.\n");
 
   const auto &layout = f.get_header().get_identifier().get_layout();
 
@@ -872,9 +881,10 @@ void print_field_hyperslab(const Field &f, std::vector<FieldTag> tags, std::vect
   };
 
   // Get a vector of strings, which we'll use to print the info of the field
-  // slice/entry currently printed. We can already fill the entries corresponding
-  // to dimensions we sliced away.
-  auto get_dims_str = [&](const FieldLayout &orig_layout) -> std::vector<std::string> {
+  // slice/entry currently printed. We can already fill the entries
+  // corresponding to dimensions we sliced away.
+  auto get_dims_str =
+      [&](const FieldLayout &orig_layout) -> std::vector<std::string> {
     const int orig_rank = orig_layout.rank();
     const int num_tags  = tags.size();
     std::vector<std::string> dims_str(orig_rank, "");
@@ -925,7 +935,8 @@ void print_field_hyperslab(const Field &f, std::vector<FieldTag> tags, std::vect
     switch (rank) {
     case 0: {
       out << "  " << f.name() << "(" << ekat::join(dims_str, ",") << ")";
-      // NOTE: add ", " at the end, to make rank0 behave the same as other ranks,
+      // NOTE: add ", " at the end, to make rank0 behave the same as other
+      // ranks,
       //       for the sake of any script trying to manipulate output
       out << "\n    " << f.get_strided_view<const T, Host>()() << ", \n";
       break;
@@ -1013,32 +1024,35 @@ void print_field_hyperslab(const Field &f, std::vector<FieldTag> tags, std::vect
     auto idx = indices[curr_idx];
 
     auto it = ekat::find(layout.tags(), tag);
-    EKAT_REQUIRE_MSG(it != layout.tags().end(), "Error! Something went wrong while slicing field.\n"
-                                                "  - field name  : " +
-                                                    f.name() +
-                                                    "\n"
-                                                    "  - field layout: " +
-                                                    layout.to_string() +
-                                                    "\n"
-                                                    "  - curr tag    : " +
-                                                    e2str(tag) + "\n");
+    EKAT_REQUIRE_MSG(it != layout.tags().end(),
+                     "Error! Something went wrong while slicing field.\n"
+                     "  - field name  : " +
+                         f.name() +
+                         "\n"
+                         "  - field layout: " +
+                         layout.to_string() +
+                         "\n"
+                         "  - curr tag    : " +
+                         e2str(tag) + "\n");
     auto idim = std::distance(layout.tags().begin(), it);
 
-    EKAT_REQUIRE_MSG(idim == 0 || idim == 1, "Error! Cannot subview field for printing.\n"
-                                             "  - field name  : " +
-                                                 f.name() +
-                                                 "\n"
-                                                 "  - field layout: " +
-                                                 layout.to_string() +
-                                                 "\n"
-                                                 "  - loc tags    : <" +
-                                                 ekat::join(tags, ",") +
-                                                 ">\n"
-                                                 "  - loc indices : (" +
-                                                 ekat::join(indices, ",") + ")\n");
+    EKAT_REQUIRE_MSG(idim == 0 || idim == 1,
+                     "Error! Cannot subview field for printing.\n"
+                     "  - field name  : " +
+                         f.name() +
+                         "\n"
+                         "  - field layout: " +
+                         layout.to_string() +
+                         "\n"
+                         "  - loc tags    : <" +
+                         ekat::join(tags, ",") +
+                         ">\n"
+                         "  - loc indices : (" +
+                         ekat::join(indices, ",") + ")\n");
 
     auto sub_f = f.subfield(idim, idx);
-    return print_field_hyperslab<T>(sub_f, tags, indices, out, orig_rank, curr_idx + 1);
+    return print_field_hyperslab<T>(sub_f, tags, indices, out, orig_rank,
+                                    curr_idx + 1);
   }
 }
 
@@ -1049,8 +1063,8 @@ template <Comparison CMP, typename ViewT, typename MaskT> struct SetMaskHelper {
 
   template <int M>
   using MDRange =
-      Kokkos::MDRangePolicy<exec_space,
-                            Kokkos::Rank<M, Kokkos::Iterate::Right, Kokkos::Iterate::Right>>;
+      Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<M, Kokkos::Iterate::Right,
+                                                     Kokkos::Iterate::Right>>;
 
   static constexpr int N = ViewT::rank;
 
@@ -1071,10 +1085,12 @@ template <Comparison CMP, typename ViewT, typename MaskT> struct SetMaskHelper {
       MDRange<4> policy({0, 0, 0, 0}, {dims[0], dims[1], dims[2], dims[3]});
       Kokkos::parallel_for(policy, *this);
     } else if constexpr (N == 5) {
-      MDRange<5> policy({0, 0, 0, 0, 0}, {dims[0], dims[1], dims[2], dims[3], dims[4]});
+      MDRange<5> policy({0, 0, 0, 0, 0},
+                        {dims[0], dims[1], dims[2], dims[3], dims[4]});
       Kokkos::parallel_for(policy, *this);
     } else if constexpr (N == 6) {
-      MDRange<6> policy({0, 0, 0, 0, 0, 0}, {dims[0], dims[1], dims[2], dims[3], dims[4], dims[5]});
+      MDRange<6> policy({0, 0, 0, 0, 0, 0},
+                        {dims[0], dims[1], dims[2], dims[3], dims[4], dims[5]});
       Kokkos::parallel_for(policy, *this);
     } else {
       EKAT_ERROR_MSG("Unsupported rank! Should be in [2,6].\n");
@@ -1109,9 +1125,13 @@ template <Comparison CMP, typename ViewT, typename MaskT> struct SetMaskHelper {
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, int j) const { set_mask(x(i, j), m(i, j)); }
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, int j, int k) const { set_mask(x(i, j, k), m(i, j, k)); }
+  void operator()(int i, int j, int k) const {
+    set_mask(x(i, j, k), m(i, j, k));
+  }
   KOKKOS_INLINE_FUNCTION
-  void operator()(int i, int j, int k, int l) const { set_mask(x(i, j, k, l), m(i, j, k, l)); }
+  void operator()(int i, int j, int k, int l) const {
+    set_mask(x(i, j, k, l), m(i, j, k, l));
+  }
   KOKKOS_INLINE_FUNCTION
   void operator()(int i, int j, int k, int l, int n) const {
     set_mask(x(i, j, k, l, n), m(i, j, k, l, n));
@@ -1128,7 +1148,8 @@ template <Comparison CMP, typename ViewT, typename MaskT> struct SetMaskHelper {
 
 template <Comparison CMP, typename ViewT, typename MaskT>
 void setMaskHelper(const ViewT &x, const MaskT &m, const FieldHeader &mh,
-                   typename ViewT::traits::value_type val, const std::vector<int> &dims) {
+                   typename ViewT::traits::value_type val,
+                   const std::vector<int> &dims) {
   SetMaskHelper<CMP, ViewT, MaskT> helper;
   helper.m   = m;
   helper.x   = x;
@@ -1136,7 +1157,8 @@ void setMaskHelper(const ViewT &x, const MaskT &m, const FieldHeader &mh,
   helper.run(dims);
 }
 
-template <Comparison CMP, typename ST> void compute_mask(const Field &x, const ST value, Field &m) {
+template <Comparison CMP, typename ST>
+void compute_mask(const Field &x, const ST value, Field &m) {
   const auto &layout    = x.get_header().get_identifier().get_layout();
   const auto &dims      = layout.dims();
   const auto contiguous = x.get_header().get_alloc_properties().contiguous();
@@ -1145,49 +1167,59 @@ template <Comparison CMP, typename ST> void compute_mask(const Field &x, const S
   switch (layout.rank()) {
   case 0:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST>(), m.get_view<int>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST>(), m.get_view<int>(), mh, value,
+                         dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST>(), m.get_view<int>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST>(), m.get_view<int>(), mh,
+                         value, dims);
     break;
   case 1:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST *>(), m.get_view<int *>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST *>(), m.get_view<int *>(), mh,
+                         value, dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST *>(), m.get_view<int *>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST *>(), m.get_view<int *>(),
+                         mh, value, dims);
     break;
   case 2:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST **>(), m.get_view<int **>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST **>(), m.get_view<int **>(), mh,
+                         value, dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST **>(), m.get_view<int **>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST **>(),
+                         m.get_view<int **>(), mh, value, dims);
     break;
   case 3:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST ***>(), m.get_view<int ***>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST ***>(), m.get_view<int ***>(), mh,
+                         value, dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST ***>(), m.get_view<int ***>(), mh, value,
-                         dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST ***>(),
+                         m.get_view<int ***>(), mh, value, dims);
     break;
   case 4:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST ****>(), m.get_view<int ****>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST ****>(), m.get_view<int ****>(),
+                         mh, value, dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST ****>(), m.get_view<int ****>(), mh, value,
-                         dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST ****>(),
+                         m.get_view<int ****>(), mh, value, dims);
     break;
   case 5:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST *****>(), m.get_view<int *****>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST *****>(), m.get_view<int *****>(),
+                         mh, value, dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST *****>(), m.get_view<int *****>(), mh, value,
-                         dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST *****>(),
+                         m.get_view<int *****>(), mh, value, dims);
     break;
   case 6:
     if (contiguous)
-      setMaskHelper<CMP>(x.get_view<const ST ******>(), m.get_view<int ******>(), mh, value, dims);
+      setMaskHelper<CMP>(x.get_view<const ST ******>(),
+                         m.get_view<int ******>(), mh, value, dims);
     else
-      setMaskHelper<CMP>(x.get_strided_view<const ST ******>(), m.get_view<int ******>(), mh, value,
-                         dims);
+      setMaskHelper<CMP>(x.get_strided_view<const ST ******>(),
+                         m.get_view<int ******>(), mh, value, dims);
     break;
   default:
     EKAT_ERROR_MSG("Unsupported field rank in compute_mask.\n"

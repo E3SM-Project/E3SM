@@ -7,7 +7,8 @@
 namespace scream {
 namespace marine_organics {
 
-template <typename ScalarType, typename DeviceType> struct marineOrganicsFunctions {
+template <typename ScalarType, typename DeviceType>
+struct marineOrganicsFunctions {
   using Device = DeviceType;
 
   using KT         = KokkosTypes<Device>;
@@ -32,7 +33,8 @@ template <typename ScalarType, typename DeviceType> struct marineOrganicsFunctio
 
   struct marineOrganicsData {
     marineOrganicsData() = default;
-    marineOrganicsData(const int &ncol_, const int &nfields_) : ncols(ncol_), nsectors(nfields_) {
+    marineOrganicsData(const int &ncol_, const int &nfields_)
+        : ncols(ncol_), nsectors(nfields_) {
       init(ncols, nsectors, true);
     }
 
@@ -51,9 +53,13 @@ template <typename ScalarType, typename DeviceType> struct marineOrganicsFunctio
   // -------------------------------------------------------------------------------------------
   struct marineOrganicsInput {
     marineOrganicsInput() = default;
-    marineOrganicsInput(const int &ncols_, const int &nfields_) { init(ncols_, nfields_); }
+    marineOrganicsInput(const int &ncols_, const int &nfields_) {
+      init(ncols_, nfields_);
+    }
 
-    void init(const int &ncols_, const int &nfields_) { data.init(ncols_, nfields_, true); }
+    void init(const int &ncols_, const int &nfields_) {
+      data.init(ncols_, nfields_, true);
+    }
     marineOrganicsData data; // All marineOrganics fields
   }; // marineOrganicsInput
 
@@ -63,10 +69,10 @@ template <typename ScalarType, typename DeviceType> struct marineOrganicsFunctio
   using marineOrganicsOutput = marineOrganicsData;
 
   // -------------------------------------------------------------------------------------------
-  static std::shared_ptr<AbstractRemapper>
-  create_horiz_remapper(const std::shared_ptr<const AbstractGrid> &model_grid,
-                        const std::string &marineOrganics_data_file, const std::string &map_file,
-                        const std::vector<std::string> &field_name, const std::string &dim_name1);
+  static std::shared_ptr<AbstractRemapper> create_horiz_remapper(
+      const std::shared_ptr<const AbstractGrid> &model_grid,
+      const std::string &marineOrganics_data_file, const std::string &map_file,
+      const std::vector<std::string> &field_name, const std::string &dim_name1);
 
   // -------------------------------------------------------------------------------------------
   static std::shared_ptr<AtmosphereInput>
@@ -75,16 +81,18 @@ template <typename ScalarType, typename DeviceType> struct marineOrganicsFunctio
 
   // -------------------------------------------------------------------------------------------
   static void update_marine_organics_data_from_file(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader, const util::TimeStamp &ts,
+      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      const util::TimeStamp &ts,
       const int &time_index, // zero-based
-      AbstractRemapper &horiz_interp, marineOrganicsInput &marineOrganics_input);
+      AbstractRemapper &horiz_interp,
+      marineOrganicsInput &marineOrganics_input);
 
   // -------------------------------------------------------------------------------------------
-  static void update_marine_organics_timestate(std::shared_ptr<AtmosphereInput> &scorpio_reader,
-                                               const util::TimeStamp &ts,
-                                               AbstractRemapper &horiz_interp,
-                                               marineOrganicsTimeState &time_state,
-                                               marineOrganicsInput &beg, marineOrganicsInput &end);
+  static void update_marine_organics_timestate(
+      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      const util::TimeStamp &ts, AbstractRemapper &horiz_interp,
+      marineOrganicsTimeState &time_state, marineOrganicsInput &beg,
+      marineOrganicsInput &end);
 
   // -------------------------------------------------------------------------------------------
   static void marineOrganics_main(const marineOrganicsTimeState &time_state,
@@ -93,26 +101,28 @@ template <typename ScalarType, typename DeviceType> struct marineOrganicsFunctio
                                   const marineOrganicsOutput &data_out);
 
   // -------------------------------------------------------------------------------------------
-  static void perform_time_interpolation(const marineOrganicsTimeState &time_state,
-                                         const marineOrganicsInput &data_beg,
-                                         const marineOrganicsInput &data_end,
-                                         const marineOrganicsOutput &data_out);
+  static void
+  perform_time_interpolation(const marineOrganicsTimeState &time_state,
+                             const marineOrganicsInput &data_beg,
+                             const marineOrganicsInput &data_end,
+                             const marineOrganicsOutput &data_out);
 
   // -------------------------------------------------------------------------------------------
   // Performs convex interpolation of x0 and x1 at point t
   template <typename ScalarX, typename ScalarT>
-  KOKKOS_INLINE_FUNCTION static ScalarX linear_interp(const ScalarX &x0, const ScalarX &x1,
-                                                      const ScalarT &t);
+  KOKKOS_INLINE_FUNCTION static ScalarX
+  linear_interp(const ScalarX &x0, const ScalarX &x1, const ScalarT &t);
 
   // -------------------------------------------------------------------------------------------
   static void init_marine_organics_file_read(
-      const int &ncol, const std::vector<std::string> &field_name, const std::string &dim_name1,
-      const std::shared_ptr<const AbstractGrid> &grid, const std::string &data_file,
-      const std::string &mapping_file,
+      const int &ncol, const std::vector<std::string> &field_name,
+      const std::string &dim_name1,
+      const std::shared_ptr<const AbstractGrid> &grid,
+      const std::string &data_file, const std::string &mapping_file,
       // output
       std::shared_ptr<AbstractRemapper> &marineOrganicsHorizInterp,
-      marineOrganicsInput &morg_data_start_, marineOrganicsInput &morg_data_end_,
-      marineOrganicsData &morg_data_out_,
+      marineOrganicsInput &morg_data_start_,
+      marineOrganicsInput &morg_data_end_, marineOrganicsData &morg_data_out_,
       std::shared_ptr<AtmosphereInput> &marineOrganicsDataReader);
 
 }; // struct marineOrganicsFunctions

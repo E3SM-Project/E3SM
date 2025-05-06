@@ -21,7 +21,8 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestShocAssumedPdf
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_property() {
     static constexpr Int shcol  = 2;
@@ -149,11 +150,13 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
       for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        REQUIRE((SDS.shoc_cldfrac[offset] == 0 || SDS.shoc_cldfrac[offset] == 1));
+        REQUIRE(
+            (SDS.shoc_cldfrac[offset] == 0 || SDS.shoc_cldfrac[offset] == 1));
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] == 0);
         REQUIRE(std::abs(SDS.shoc_ql2[offset]) <
-                std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
+                std::numeric_limits<Real>::epsilon()); // Computation is not
+                                                       // exactly BFB with 0
         REQUIRE(SDS.shoc_ql[offset] >= 0);
       }
     }
@@ -189,12 +192,14 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
       for (Int n = 0; n < nlev; ++n) {
         const auto offset = n + s * nlev;
 
-        REQUIRE((SDS.shoc_cldfrac[offset] == 0 || SDS.shoc_cldfrac[offset] == 1));
+        REQUIRE(
+            (SDS.shoc_cldfrac[offset] == 0 || SDS.shoc_cldfrac[offset] == 1));
         REQUIRE(SDS.wqls[offset] == 0);
         REQUIRE(SDS.wthv_sec[offset] != 0);
         REQUIRE(std::abs(SDS.wthv_sec[offset] < wthv_sec_bound));
         REQUIRE(std::abs(SDS.shoc_ql2[offset]) <
-                std::numeric_limits<Real>::epsilon()); // Computation is not exactly BFB with 0
+                std::numeric_limits<Real>::epsilon()); // Computation is not
+                                                       // exactly BFB with 0
         REQUIRE(SDS.shoc_ql[offset] >= 0);
         REQUIRE(SDS.shoc_ql[offset] < shoc_ql_bound);
       }
@@ -203,12 +208,15 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     // TEST THREE and FOUR
     // Add in Scalar variances, and POSITIVE vertical velocity skewness test.
 
-    // Add strong scalar variances as such that will produce cloud at every level.
+    // Add strong scalar variances as such that will produce cloud at every
+    // level.
 
     // For the first column feed in zero vertical velocity skewness.
     // For the second column feed in large veriticle velocity skewss.
-    // Verify that for points where cloud fraction was < 0.5 in the first column,
-    //  that cloud fraction then vice versa for points with cloud fraction > 0.5.
+    // Verify that for points where cloud fraction was < 0.5 in the first
+    // column,
+    //  that cloud fraction then vice versa for points with cloud fraction >
+    //  0.5.
 
     // Thetal variance [K^2]
     static constexpr Real thl_sec = 2;
@@ -347,7 +355,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
         const auto offset  = n + s * nlev;
         const auto offsets = n + (s + 1) * nlev;
 
-        REQUIRE((SDS.shoc_cldfrac[offset] >= 0 || SDS.shoc_cldfrac[offset] < 1));
+        REQUIRE(
+            (SDS.shoc_cldfrac[offset] >= 0 || SDS.shoc_cldfrac[offset] < 1));
         REQUIRE(SDS.shoc_ql2[offset] > 0);
         REQUIRE(SDS.shoc_ql[offset] >= 0);
 
@@ -407,8 +416,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
                           });
     }
 
-    // Create copies of data for use by cxx. Needs to happen before reads so that
-    // inout data is in original state
+    // Create copies of data for use by cxx. Needs to happen before reads so
+    // that inout data is in original state
     ShocAssumedPdfData SDS_cxx[] = {
         ShocAssumedPdfData(SDS_baseline[0]),
         ShocAssumedPdfData(SDS_baseline[1]),
@@ -416,7 +425,8 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
         ShocAssumedPdfData(SDS_baseline[3]),
     };
 
-    static constexpr Int num_runs = sizeof(SDS_baseline) / sizeof(ShocAssumedPdfData);
+    static constexpr Int num_runs =
+        sizeof(SDS_baseline) / sizeof(ShocAssumedPdfData);
 
     // Assume all data is in C layout
 
@@ -461,15 +471,15 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
 namespace {
 
 TEST_CASE("shoc_assumed_pdf_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocAssumedPdf;
 
   TestStruct().run_property();
 }
 
 TEST_CASE("shoc_assumed_pdf_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAssumedPdf;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocAssumedPdf;
 
   TestStruct().run_bfb();
 }

@@ -8,7 +8,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
   const int num_global_cols = ncols * comm.size();
 
   using vos_t = std::vector<std::string>;
@@ -123,12 +124,14 @@ TEST_CASE("vert_contract") {
   // // dz_weighted_avg
   // params.set<std::string>("contract_method", "avg");
   // params.set<std::string>("weighting_method", "dz");
-  // auto dz_weighted_avg = diag_factory.create("VertContractDiag", comm, params);
+  // auto dz_weighted_avg = diag_factory.create("VertContractDiag", comm,
+  // params);
 
   // // dz_weighted_sum
   // params.set<std::string>("contract_method", "sum");
   // params.set<std::string>("weighting_method", "dz");
-  // auto dz_weighted_sum = diag_factory.create("VertContractDiag", comm, params);
+  // auto dz_weighted_sum = diag_factory.create("VertContractDiag", comm,
+  // params);
 
   // unweighted_sum
   params.set<std::string>("contract_method", "sum");
@@ -148,18 +151,22 @@ TEST_CASE("vert_contract") {
   unweighted_avg->set_grids(gm);
 
   // Fields for manual calculation
-  FieldIdentifier diag1_fid("qc_vert_contract_manual", scalar2d_layout.clone().strip_dim(LEV),
-                            kg / kg, grid->name());
-  FieldIdentifier diag2_fid("qc_vert_contract_manual", scalar3d_layout.clone().strip_dim(LEV),
-                            kg / kg, grid->name());
+  FieldIdentifier diag1_fid("qc_vert_contract_manual",
+                            scalar2d_layout.clone().strip_dim(LEV), kg / kg,
+                            grid->name());
+  FieldIdentifier diag2_fid("qc_vert_contract_manual",
+                            scalar3d_layout.clone().strip_dim(LEV), kg / kg,
+                            grid->name());
   Field diag1_m(diag1_fid);
   Field diag2_m(diag2_fid);
   diag1_m.allocate_view();
   diag2_m.allocate_view();
 
   // Fields for scaling
-  FieldIdentifier dps_fid("dps", scalar2d_layout.clone().strip_dim(LEV), Pa, grid->name());
-  // FieldIdentifier dzs_fid ("dzs", scalar2d_layout.clone().strip_dim(LEV), m, grid->name());
+  FieldIdentifier dps_fid("dps", scalar2d_layout.clone().strip_dim(LEV), Pa,
+                          grid->name());
+  // FieldIdentifier dzs_fid ("dzs", scalar2d_layout.clone().strip_dim(LEV), m,
+  // grid->name());
   Field dps(dps_fid);
   // Field dzs(dzs_fid);
   dps.allocate_view();

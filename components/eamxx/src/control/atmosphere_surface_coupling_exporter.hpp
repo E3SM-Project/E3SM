@@ -15,7 +15,8 @@
 namespace scream {
 
 /*
- * The class responsible to handle the calculation of the subgrid cloud fractions
+ * The class responsible to handle the calculation of the subgrid cloud
+ * fractions
  *
  * The AD should store exactly ONE instance of this class stored
  * in its list of subcomponents (the AD should make sure of this).
@@ -39,16 +40,21 @@ public:
   template <typename DevT, typename DataT>
   using view_2d = typename KokkosTypes<DevT>::template view_2d<DataT>;
 
-  template <typename DevT, typename ScalarT> using uview_1d = Unmanaged<view_1d<DevT, ScalarT>>;
-  template <typename DevT, typename ScalarT> using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
+  template <typename DevT, typename ScalarT>
+  using uview_1d = Unmanaged<view_1d<DevT, ScalarT>>;
+  template <typename DevT, typename ScalarT>
+  using uview_2d = Unmanaged<view_2d<DevT, ScalarT>>;
 
   using name_t = char[32];
 
   // Constructors
-  SurfaceCouplingExporter(const ekat::Comm &comm, const ekat::ParameterList &params);
+  SurfaceCouplingExporter(const ekat::Comm &comm,
+                          const ekat::ParameterList &params);
 
   // The type of subcomponent
-  AtmosphereProcessType type() const { return AtmosphereProcessType::SurfaceCouplingExporter; }
+  AtmosphereProcessType type() const {
+    return AtmosphereProcessType::SurfaceCouplingExporter;
+  }
 
   // The name of the subcomponent
   std::string name() const { return "SurfaceCouplingExporter"; }
@@ -56,7 +62,8 @@ public:
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Structure for storing local variables initialized using the ATMBufferManager
+  // Structure for storing local variables initialized using the
+  // ATMBufferManager
   struct Buffer {
     static constexpr int num_2d_vector_mid = 2;
     static constexpr int num_2d_vector_int = 1;
@@ -70,15 +77,19 @@ public:
   // If calling in initialize_impl(), set
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
-  void do_export(const double dt,
-                 const bool called_during_initialization = false); // Main export routine
-  void compute_eamxx_exports(
+  void do_export(
       const double dt,
-      const bool called_during_initialization = false); // Export vars are derived from eamxx state
-  void set_constant_exports();                          // Export vars are set to a constant
-  void set_from_file_exports(); // Export vars are set by interpolation of data from files
-  void do_export_to_cpl(const bool called_during_initialization =
-                            false); // Finish export by copying data to cpl structures.
+      const bool called_during_initialization = false); // Main export routine
+  void
+  compute_eamxx_exports(const double dt,
+                        const bool called_during_initialization =
+                            false); // Export vars are derived from eamxx state
+  void set_constant_exports();      // Export vars are set to a constant
+  void set_from_file_exports(); // Export vars are set by interpolation of data
+                                // from files
+  void do_export_to_cpl(
+      const bool called_during_initialization =
+          false); // Finish export by copying data to cpl structures.
 
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
@@ -132,16 +143,16 @@ protected:
   util::TimeInterpolation m_time_interp;
   std::vector<std::string> m_export_from_file_field_names;
 
-  // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
-  // The field idx strides faster, since that's what mct does (so we can "view" the
-  // pointer to the whole a2x array from Fortran)
+  // Views storing a 2d array with dims (num_cols,num_fields) for cpl export
+  // data. The field idx strides faster, since that's what mct does (so we can
+  // "view" the pointer to the whole a2x array from Fortran)
   view_2d<DefaultDevice, Real> m_cpl_exports_view_d;
   uview_2d<HostDevice, Real> m_cpl_exports_view_h;
 
 #ifdef HAVE_MOAB
-  // Views storing a 2d array with dims (num_fields, num_cols) for moab cpl export data.
-  // The field cols strides faster, since that's what moab does (so we can "view" the
-  // pointer to the whole a2x_am(:,:) array from Fortran)
+  // Views storing a 2d array with dims (num_fields, num_cols) for moab cpl
+  // export data. The field cols strides faster, since that's what moab does (so
+  // we can "view" the pointer to the whole a2x_am(:,:) array from Fortran)
   view_2d<DefaultDevice, Real> m_moab_cpl_exports_view_d;
   uview_2d<HostDevice, Real> m_moab_cpl_exports_view_h;
 #endif

@@ -34,13 +34,16 @@ void write(const int seed, const ekat::Comm &comm) {
 
   // Create lat/lon grid
   Units deg(Units::nondimensional(), "deg");
-  auto lat = grid->create_geometry_data("lat", grid->get_2d_scalar_layout(), deg);
-  auto lon = grid->create_geometry_data("lon", grid->get_2d_scalar_layout(), deg);
+  auto lat =
+      grid->create_geometry_data("lat", grid->get_2d_scalar_layout(), deg);
+  auto lon =
+      grid->create_geometry_data("lon", grid->get_2d_scalar_layout(), deg);
   randomize(lat, engine, lat_pdf);
   randomize(lon, engine, lon_pdf);
 
   // Create variable data
-  FieldIdentifier fid("var", grid->get_3d_scalar_layout(true), Units::nondimensional(), "");
+  FieldIdentifier fid("var", grid->get_3d_scalar_layout(true),
+                      Units::nondimensional(), "");
   Field var(fid);
   var.allocate_view();
   randomize(var, engine, RPDF(-1.0, 1.0));
@@ -57,8 +60,8 @@ void write(const int seed, const ekat::Comm &comm) {
 
   scorpio::define_var(filename, "var", {"ncol", "lev"}, "real");
 
-  auto my_col_gids =
-      grid->get_partitioned_dim_gids().get_view<const AbstractGrid::gid_type *, Host>();
+  auto my_col_gids = grid->get_partitioned_dim_gids()
+                         .get_view<const AbstractGrid::gid_type *, Host>();
   std::vector<scorpio::offset_t> my_offsets(my_col_gids.size());
   for (size_t i = 0; i < my_offsets.size(); ++i) {
     my_offsets[i] = my_col_gids[i] - grid->get_global_min_partitioned_dim_gid();
@@ -106,7 +109,8 @@ void read(const int seed, const ekat::Comm &comm) {
   dofs_gids.deep_copy(0);
 
   // Create field to read
-  FieldIdentifier fid("var", grid->get_3d_scalar_layout(true), Units::nondimensional(), "");
+  FieldIdentifier fid("var", grid->get_3d_scalar_layout(true),
+                      Units::nondimensional(), "");
   Field var_f(fid);
   var_f.allocate_view();
 

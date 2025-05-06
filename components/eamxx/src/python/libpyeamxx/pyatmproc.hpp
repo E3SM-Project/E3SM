@@ -36,10 +36,11 @@ struct PyAtmProc {
     const auto &comm = PySession::get().comm;
 
     // Create the atm proc
-    auto &apf = AtmosphereProcessFactory::instance();
-    const auto &ap_type =
-        params.pl.isParameter("type") ? params.pl.get<std::string>("type") : params.pl.name();
-    ap = apf.create(ap_type, comm, params.pl);
+    auto &apf           = AtmosphereProcessFactory::instance();
+    const auto &ap_type = params.pl.isParameter("type")
+                              ? params.pl.get<std::string>("type")
+                              : params.pl.name();
+    ap                  = apf.create(ap_type, comm, params.pl);
 
     // Create the fields
     auto gm = PySession::get().gm;
@@ -73,15 +74,16 @@ struct PyAtmProc {
     auto it = fields.find(name);
 
     auto print_key = [](auto it) { return it.first; };
-    EKAT_REQUIRE_MSG(it != fields.end(), "Error! Field not found among this atm proc fields.\n"
-                                         "  - atm proc name: " +
-                                             ap->name() +
-                                             "\n"
-                                             "  - field name: " +
-                                             name +
-                                             "\n"
-                                             "  - atm proc fields: " +
-                                             ekat::join(fields, print_key, ",") + "\n");
+    EKAT_REQUIRE_MSG(it != fields.end(),
+                     "Error! Field not found among this atm proc fields.\n"
+                     "  - atm proc name: " +
+                         ap->name() +
+                         "\n"
+                         "  - field name: " +
+                         name +
+                         "\n"
+                         "  - atm proc fields: " +
+                         ekat::join(fields, print_key, ",") + "\n");
 
     return it->second;
   }
@@ -123,9 +125,10 @@ struct PyAtmProc {
       }
     }
     if (ic_fields.size() > 0) {
-      const auto &gn = ic_fields[0].get_header().get_identifier().get_grid_name();
-      auto gm        = PySession::get().gm;
-      auto grid      = gm->get_grid(gn);
+      const auto &gn =
+          ic_fields[0].get_header().get_identifier().get_grid_name();
+      auto gm   = PySession::get().gm;
+      auto grid = gm->get_grid(gn);
       AtmosphereInput reader(ic_filename, grid, ic_fields, true);
       reader.read_variables();
     }
@@ -137,11 +140,13 @@ struct PyAtmProc {
   std::vector<std::string> list_fields(std::string ftype) {
     std::vector<std::string> fields_list;
     for (const auto &field_pair : fields) {
-      const auto &field_identifier = field_pair.second.f.get_header().get_identifier();
+      const auto &field_identifier =
+          field_pair.second.f.get_header().get_identifier();
 
       if (ftype == "required" && ap->has_required_field(field_identifier)) {
         fields_list.push_back(field_pair.first);
-      } else if (ftype == "computed" && ap->has_computed_field(field_identifier)) {
+      } else if (ftype == "computed" &&
+                 ap->has_computed_field(field_identifier)) {
         fields_list.push_back(field_pair.first);
       } else if (ftype == "all") {
         fields_list.push_back(field_pair.first);
@@ -152,9 +157,13 @@ struct PyAtmProc {
 
   std::vector<std::string> list_all_fields() { return list_fields("all"); }
 
-  std::vector<std::string> list_required_fields() { return list_fields("required"); }
+  std::vector<std::string> list_required_fields() {
+    return list_fields("required");
+  }
 
-  std::vector<std::string> list_computed_fields() { return list_fields("computed"); }
+  std::vector<std::string> list_computed_fields() {
+    return list_fields("computed");
+  }
 
   void setup_output(const std::string &yaml_file) {
     auto comm = PySession::get().comm;
@@ -171,7 +180,8 @@ struct PyAtmProc {
       fms[it.first]->registration_ends();
     }
     for (auto it : fields) {
-      const auto &gn = it.second.f.get_header().get_identifier().get_grid_name();
+      const auto &gn =
+          it.second.f.get_header().get_identifier().get_grid_name();
       fms.at(gn)->add_field(it.second.f);
     }
 

@@ -6,7 +6,8 @@
 
 namespace scream {
 
-AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
+AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm,
+                                 const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   EKAT_REQUIRE_MSG(params.isParameter("tendency_name"),
                    "Error! AtmBackTendDiag requires 'tendency_name' in its "
@@ -15,7 +16,8 @@ AtmBackTendDiag::AtmBackTendDiag(const ekat::Comm &comm, const ekat::ParameterLi
   m_name = m_params.get<std::string>("tendency_name");
 }
 
-void AtmBackTendDiag::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void AtmBackTendDiag::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &gname = m_params.get<std::string>("grid_name");
   add_field<Required>(m_name, gname);
 }
@@ -27,25 +29,28 @@ void AtmBackTendDiag::initialize_impl(const RunType /*run_type*/) {
 
   // Sanity checks
   const auto &layout = fid.get_layout();
-  EKAT_REQUIRE_MSG(f.data_type() == DataType::RealType,
-                   "Error! AtmBackTendDiag only supports Real data type field.\n"
-                   " - field name: " +
-                       fid.name() +
-                       "\n"
-                       " - field data type: " +
-                       e2str(f.data_type()) + "\n");
+  EKAT_REQUIRE_MSG(
+      f.data_type() == DataType::RealType,
+      "Error! AtmBackTendDiag only supports Real data type field.\n"
+      " - field name: " +
+          fid.name() +
+          "\n"
+          " - field data type: " +
+          e2str(f.data_type()) + "\n");
 
   using namespace ekat::units;
   // The units are the same except per second
   auto diag_units = fid.get_units() / s;
 
   // All good, create the diag output
-  FieldIdentifier d_fid(m_name + "_atm_backtend", layout.clone(), diag_units, gn);
+  FieldIdentifier d_fid(m_name + "_atm_backtend", layout.clone(), diag_units,
+                        gn);
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
   // Let's also create the previous field
-  FieldIdentifier prev_fid(m_name + "_atm_backtend_prev", layout.clone(), diag_units, gn);
+  FieldIdentifier prev_fid(m_name + "_atm_backtend_prev", layout.clone(),
+                           diag_units, gn);
   m_f_prev = Field(prev_fid);
   m_f_prev.allocate_view();
 }

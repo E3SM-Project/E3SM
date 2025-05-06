@@ -45,7 +45,8 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
 
-  KOKKOS_FUNCTION static Scalar calc_lamr(const Scalar &mu_r, const Scalar &alpha) {
+  KOKKOS_FUNCTION static Scalar calc_lamr(const Scalar &mu_r,
+                                          const Scalar &alpha) {
     // Parameters for lower and upper bounds, derived above, multiplied by
     // factors so we go outside of the bounds a bit. Using these, we map alpha
     // in [0,1] -> meaningful lamr.
@@ -53,11 +54,13 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
     return (lamr_lo + alpha * (lamr_hi - lamr_lo)) * (1 + mu_r);
   }
 
-  KOKKOS_FUNCTION static Scalar calc_mu_r(const Scalar &alpha) { return alpha * 10; }
+  KOKKOS_FUNCTION static Scalar calc_mu_r(const Scalar &alpha) {
+    return alpha * 10;
+  }
 
   // Perform the table lookup and interpolation operations for (mu_r, lamr).
-  KOKKOS_FUNCTION static Spack interp(const view_2d_table &table, const Scalar &mu_r,
-                                      const Scalar &lamr) {
+  KOKKOS_FUNCTION static Spack interp(const view_2d_table &table,
+                                      const Scalar &mu_r, const Scalar &lamr) {
     // Init the pack to all the same value, and compute in every pack slot.
     Spack mu_r_p(mu_r), lamr_p(lamr);
     Table3 t3;
@@ -67,14 +70,14 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
 
   void run() {
     // This test doesn't use mu_r_table_vals, as that is not a table3 type. It
-    // doesn't matter whether we use vm_table_vals or vn_table_vals, as the table values
-    // don't matter in what we are testing; we are testing interpolation
-    // procedures that are indepennt of particular table values.
+    // doesn't matter whether we use vm_table_vals or vn_table_vals, as the
+    // table values don't matter in what we are testing; we are testing
+    // interpolation procedures that are indepennt of particular table values.
     view_1d_table mu_r_table_vals;
     view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
     view_dnu_table dnu;
-    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals,
-                                 dnu);
+    Functions::get_global_tables(vn_table_vals, vm_table_vals, revap_table_vals,
+                                 mu_r_table_vals, dnu);
 
     // Estimate two maximum slope magnitudes for two meshes, the second 10x
     // refined w.r.t. the first.
@@ -102,26 +105,30 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
           const auto val   = interp(vm_table_vals, mu_r, lamr);
           return std::log(val[0]);
         };
-        slope = ekat::impl::max(slope, std::abs((eval(i + 1) - eval(i)) / delta));
+        slope =
+            ekat::impl::max(slope, std::abs((eval(i + 1) - eval(i)) / delta));
       };
 
       Scalar max_slope;
-      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope, Kokkos::Max<Scalar>(max_slope));
+      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope,
+                              Kokkos::Max<Scalar>(max_slope));
       Kokkos::fence();
       slopes[refine] = max_slope;
     }
 
     // Now that we have collected slopes as a function of 10x mesh refinement,
     // determine whether the slope estimates are converging. If they are, we can
-    // conclude there are no discontinuities. If they are not, then we are sensing
-    // a discontinuity, which is a bug.
+    // conclude there are no discontinuities. If they are not, then we are
+    // sensing a discontinuity, which is a bug.
     //   In detail, for a 10x mesh refinement, a good slope growth rate is right
     // around 1, and a bad one is is roughly 10. We set the threshold at 1.1.
-    const auto check_growth = [&](const std::string &label, const Scalar &growth) {
+    const auto check_growth = [&](const std::string &label,
+                                  const Scalar &growth) {
       bool bad_growth = growth > 1.1;
       if (bad_growth) {
-        std::cout << "Table3 FAIL: Slopes in the " << label << " direction are " << slopes[0]
-                  << " and " << slopes[1] << ", which grows by factor " << growth
+        std::cout << "Table3 FAIL: Slopes in the " << label << " direction are "
+                  << slopes[0] << " and " << slopes[1]
+                  << ", which grows by factor " << growth
                   << ". Near 1 is good; near 10 is bad.\n";
       }
       REQUIRE(!bad_growth);
@@ -145,11 +152,13 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
           const auto val   = interp(vm_table_vals, mu_r, lamr);
           return std::log(val[0]);
         };
-        slope = ekat::impl::max(slope, std::abs((eval(i + 1) - eval(i)) / delta));
+        slope =
+            ekat::impl::max(slope, std::abs((eval(i + 1) - eval(i)) / delta));
       };
 
       Scalar max_slope;
-      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope, Kokkos::Max<Scalar>(max_slope));
+      Kokkos::parallel_reduce(RangePolicy(0, N), get_max_slope,
+                              Kokkos::Max<Scalar>(max_slope));
       Kokkos::fence();
       slopes[refine] = max_slope;
     }
@@ -164,7 +173,8 @@ struct UnitWrap::UnitTest<D>::TestTable3 : public UnitWrap::UnitTest<D>::Base {
 namespace {
 
 TEST_CASE("p3_tables", "[p3_functions]") {
-  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestTable3;
 
   T t;
   t.run();

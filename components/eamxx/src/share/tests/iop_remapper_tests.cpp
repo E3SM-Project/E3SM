@@ -19,8 +19,9 @@ constexpr int tens_dim1 = 3;
 constexpr int tens_dim2 = 4;
 
 template <typename Engine, typename PDF>
-Field create_field(const std::string &name, const LayoutType lt, const AbstractGrid &grid,
-                   const bool midpoints, Engine &engine, PDF &pdf) {
+Field create_field(const std::string &name, const LayoutType lt,
+                   const AbstractGrid &grid, const bool midpoints,
+                   Engine &engine, PDF &pdf) {
   const auto u   = ekat::units::Units::nondimensional();
   const auto &gn = grid.name();
   Field f;
@@ -32,19 +33,23 @@ Field create_field(const std::string &name, const LayoutType lt, const AbstractG
     f = Field(FieldIdentifier(name, grid.get_2d_vector_layout(vec_dim), u, gn));
     break;
   case LayoutType::Tensor2D:
-    f = Field(FieldIdentifier(name, grid.get_2d_tensor_layout({tens_dim1, tens_dim2}), u, gn));
+    f = Field(FieldIdentifier(
+        name, grid.get_2d_tensor_layout({tens_dim1, tens_dim2}), u, gn));
     break;
   case LayoutType::Scalar3D:
-    f = Field(FieldIdentifier(name, grid.get_3d_scalar_layout(midpoints), u, gn));
+    f = Field(
+        FieldIdentifier(name, grid.get_3d_scalar_layout(midpoints), u, gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   case LayoutType::Vector3D:
-    f = Field(FieldIdentifier(name, grid.get_3d_vector_layout(midpoints, vec_dim), u, gn));
+    f = Field(FieldIdentifier(
+        name, grid.get_3d_vector_layout(midpoints, vec_dim), u, gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   case LayoutType::Tensor3D:
-    f = Field(
-        FieldIdentifier(name, grid.get_3d_tensor_layout(midpoints, {tens_dim1, tens_dim2}), u, gn));
+    f = Field(FieldIdentifier(
+        name, grid.get_3d_tensor_layout(midpoints, {tens_dim1, tens_dim2}), u,
+        gn));
     f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
     break;
   default:
@@ -85,30 +90,39 @@ TEST_CASE("iop_remap") {
   int src_nlcols = src_grid->get_num_local_dofs();
   int tgt_nlcols = tgt_grid->get_num_local_dofs();
 
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, tgt_grid, 0, 0)); // not lat/lon in src
+  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, tgt_grid, 0,
+                                               0)); // not lat/lon in src
 
   auto bad_src = create_point_grid("src", src_ngcols, 10, comm);
   bad_src->create_geometry_data("lat", src_grid->get_3d_scalar_layout(true));
   bad_src->create_geometry_data("lon", src_grid->get_3d_scalar_layout(true));
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(bad_src, tgt_grid, 0, 0)); // lat/lon bad layout
+  REQUIRE_THROWS(std::make_shared<IOPRemapper>(bad_src, tgt_grid, 0,
+                                               0)); // lat/lon bad layout
 
-  auto src_lat = src_grid->create_geometry_data("lat", src_grid->get_2d_scalar_layout());
-  auto src_lon = src_grid->create_geometry_data("lon", src_grid->get_2d_scalar_layout());
+  auto src_lat =
+      src_grid->create_geometry_data("lat", src_grid->get_2d_scalar_layout());
+  auto src_lon =
+      src_grid->create_geometry_data("lon", src_grid->get_2d_scalar_layout());
   randomize(src_lat, engine, rpdf);
   randomize(src_lon, engine, rpdf);
 
   auto se_grid = std::make_shared<SEGrid>("se", 5, 4, 10, comm);
   se_grid->create_geometry_data("lat", se_grid->get_2d_scalar_layout());
   se_grid->create_geometry_data("lon", se_grid->get_2d_scalar_layout());
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, se_grid, 0, 0)); // tgt!=PointGrid
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(se_grid, tgt_grid, 0, 0)); // src!=PointGrid
+  REQUIRE_THROWS(
+      std::make_shared<IOPRemapper>(src_grid, se_grid, 0, 0)); // tgt!=PointGrid
+  REQUIRE_THROWS(
+      std::make_shared<IOPRemapper>(se_grid, tgt_grid, 0, 0)); // src!=PointGrid
 
   auto bad_tgt = tgt_grid->clone("bad_tgt", true);
   bad_tgt->reset_num_vertical_lev(12);
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, bad_tgt, 0, 0)); // nlevs doesn't match
+  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, bad_tgt, 0,
+                                               0)); // nlevs doesn't match
 
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, bad_tgt, 91, 0)); // lat OOB
-  REQUIRE_THROWS(std::make_shared<IOPRemapper>(src_grid, bad_tgt, 0, -1)); // lat OOB
+  REQUIRE_THROWS(
+      std::make_shared<IOPRemapper>(src_grid, bad_tgt, 91, 0)); // lat OOB
+  REQUIRE_THROWS(
+      std::make_shared<IOPRemapper>(src_grid, bad_tgt, 0, -1)); // lat OOB
 
   // Finally a working remapper
   int closest_rank = IPDF(0, comm.size() - 1)(engine);
@@ -128,9 +142,10 @@ TEST_CASE("iop_remap") {
   //     Create fields and register them    //
   // -------------------------------------- //
 
-  auto layouts = {LayoutType::Scalar2D, LayoutType::Vector2D, LayoutType::Tensor2D,
-                  LayoutType::Scalar3D, LayoutType::Scalar3D, LayoutType::Vector3D,
-                  LayoutType::Vector3D, LayoutType::Tensor3D, LayoutType::Tensor3D};
+  auto layouts = {
+      LayoutType::Scalar2D, LayoutType::Vector2D, LayoutType::Tensor2D,
+      LayoutType::Scalar3D, LayoutType::Scalar3D, LayoutType::Vector3D,
+      LayoutType::Vector3D, LayoutType::Tensor3D, LayoutType::Tensor3D};
 
   remap->registration_begins();
 
@@ -166,7 +181,8 @@ TEST_CASE("iop_remap") {
     comm.broadcast(col.get_internal_view_data<Real>(), col_size, closest_rank);
 #else
     col.sync_to_host();
-    comm.broadcast(col.get_internal_view_data<Real, Host>(), col_size, closest_rank);
+    comm.broadcast(col.get_internal_view_data<Real, Host>(), col_size,
+                   closest_rank);
     col.sync_to_dev();
 #endif
 

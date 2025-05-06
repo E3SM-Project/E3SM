@@ -10,10 +10,13 @@ namespace scream {
 // No repair allowed. If we find NaN's, we should crash.
 class FieldNaNCheck : public PropertyCheck {
 public:
-  FieldNaNCheck(const Field &f, const std::shared_ptr<const AbstractGrid> &grid);
+  FieldNaNCheck(const Field &f,
+                const std::shared_ptr<const AbstractGrid> &grid);
 
   // The name of the field check
-  std::string name() const override { return "NaN check for field " + fields().front().name(); }
+  std::string name() const override {
+    return "NaN check for field " + fields().front().name();
+  }
 
   PropertyType type() const override { return PropertyType::PointWise; }
 

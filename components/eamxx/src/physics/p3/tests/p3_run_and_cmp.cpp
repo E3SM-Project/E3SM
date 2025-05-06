@@ -49,11 +49,13 @@ Int compare(const double &tol, const P3Data::Ptr &ref, const P3Data::Ptr &d) {
 }
 
 struct Baseline {
-  Baseline(const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int repeat,
-           const std::string predict_nc, const std::string prescribed_CCN) {
-    // If predict_nc="both", start looping at i_start=0 (false) and end after i_start=1 (true)
-    // otherwise, modify start and end to only loop over case of interest. Test that predict_nc
-    // is only yes, no, or both is done below so not bothering here.
+  Baseline(const Int nsteps, const Real dt, const Int ncol, const Int nlev,
+           const Int repeat, const std::string predict_nc,
+           const std::string prescribed_CCN) {
+    // If predict_nc="both", start looping at i_start=0 (false) and end after
+    // i_start=1 (true) otherwise, modify start and end to only loop over case
+    // of interest. Test that predict_nc is only yes, no, or both is done below
+    // so not bothering here.
     int i_start = 0;
     int i_end   = 2;
     if (predict_nc == "yes") {
@@ -75,9 +77,10 @@ struct Baseline {
 
     for (int i = i_start; i < i_end; ++i) {   // predict_nc is false or true
       for (int j = j_start; j < j_end; ++j) { // prescribed_CCN is false or true
-        //                 initial condit,     repeat, nsteps, ncol, nlev, dt, prescribe or predict
-        //                 nc, prescribe CCN or not
-        params_.push_back({ic::Factory::mixed, repeat, nsteps, ncol, nlev, dt, i > 0, j > 0});
+        //                 initial condit,     repeat, nsteps, ncol, nlev, dt,
+        //                 prescribe or predict nc, prescribe CCN or not
+        params_.push_back(
+            {ic::Factory::mixed, repeat, nsteps, ncol, nlev, dt, i > 0, j > 0});
       }
     }
   }
@@ -97,8 +100,9 @@ struct Baseline {
         P3F::p3_init();
 
         if (ps.repeat > 0 && r == -1) {
-          std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev << ", dt=" << d->dt
-                    << ", ts=" << d->it << ", predict_nc=" << d->do_predict_nc
+          std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
+                    << ", dt=" << d->dt << ", ts=" << d->it
+                    << ", predict_nc=" << d->do_predict_nc
                     << ", prescribed_CCN=" << d->do_prescribed_CCN
                     << ", small_packn=" << SCREAM_SMALL_PACK_SIZE << std::endl;
         }
@@ -125,7 +129,8 @@ struct Baseline {
     return nerr;
   }
 
-  Int run_and_cmp(const std::string &filename, const double &tol, bool no_baseline) {
+  Int run_and_cmp(const std::string &filename, const double &tol,
+                  bool no_baseline) {
     ekat::FILEPtr fid;
     if (!no_baseline) {
       fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
@@ -140,8 +145,8 @@ struct Baseline {
         set_params(ps, *d);
         P3F::p3_init();
         for (int it = 0; it < ps.nsteps; it++) {
-          std::cout << "--- running case # " << case_num << ", timestep # " << it + 1 << " of "
-                    << ps.nsteps << " ---\n"
+          std::cout << "--- running case # " << case_num << ", timestep # "
+                    << it + 1 << " of " << ps.nsteps << " ---\n"
                     << std::flush;
           p3_main_wrap(*d);
         }
@@ -156,8 +161,8 @@ struct Baseline {
           set_params(ps, *d);
           P3F::p3_init();
           for (int it = 0; it < ps.nsteps; it++) {
-            std::cout << "--- checking case # " << case_num << ", timestep # " << it + 1 << " of "
-                      << ps.nsteps << " ---\n"
+            std::cout << "--- checking case # " << case_num << ", timestep # "
+                      << it + 1 << " of " << ps.nsteps << " ---\n"
                       << std::flush;
             read(fid, d_ref);
             p3_main_wrap(*d);
@@ -207,16 +212,19 @@ private:
       const auto &f = fdi.getfield(i);
       int dim, ds[3];
       ekat::read(&dim, 1, fid);
-      EKAT_REQUIRE_MSG(dim == f.dim, "For field " << f.name << " read expected dim " << f.dim
-                                                  << " but got " << dim);
+      EKAT_REQUIRE_MSG(dim == f.dim, "For field "
+                                         << f.name << " read expected dim "
+                                         << f.dim << " but got " << dim);
       ekat::read(ds, dim, fid);
       for (int i = 0; i < dim; ++i)
-        EKAT_REQUIRE_MSG(ds[i] == f.extent[i], "For field " << f.name << " read expected dim " << i
-                                                            << " to have extent " << f.extent[i]
-                                                            << " but got " << ds[i]);
+        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
+                         "For field " << f.name << " read expected dim " << i
+                                      << " to have extent " << f.extent[i]
+                                      << " but got " << ds[i]);
       ekat::read(f.data, f.size, fid);
       // The code below is to force a result difference. This is used by the
-      // scream/scripts internal testing to verify that various DIFFs are detected.
+      // scream/scripts internal testing to verify that various DIFFs are
+      // detected.
 #if defined(SCREAM_FORCE_RUN_DIFF)
       for (decltype(f.size) i = 0; i < f.size; ++i) {
         f.data[i] *= Real(1.2);
@@ -236,32 +244,35 @@ int main(int argc, char **argv) {
   int nerr = 0;
 
   if (argc == 1) {
-    std::cout << argv[0]
-              << " [options] \n"
-                 "Options:\n"
-                 "  -g                  Generate baseline file. Default False.\n"
-                 "  -c                  Compare  baseline file. Default False.\n"
-                 "  -n                  Run without baseline actions. Default True.\n"
-                 "  -b <baseline_path>  Path to directory containing baselines.\n"
-                 "  -t <tol>            Tolerance for relative error. Default 0.\n"
-                 "  -s <steps>          Number of timesteps. Default=6.\n"
-                 "  -dt <seconds>       Length of timestep. Default=300.\n"
-                 "  -i <cols>           Number of columns. Default=3.\n"
-                 "  -k <nlev>           Number of vertical levels. Default=72.\n"
-                 "  -r <repeat>         Number of repetitions, implies timing run (generate + no "
-                 "I/O). Default=0.\n"
-                 "  --predict-nc       yes|no|both. Default=both.\n"
-                 "  --prescribed-ccn   yes|no|both. Default=both.\n";
+    std::cout
+        << argv[0]
+        << " [options] \n"
+           "Options:\n"
+           "  -g                  Generate baseline file. Default False.\n"
+           "  -c                  Compare  baseline file. Default False.\n"
+           "  -n                  Run without baseline actions. Default True.\n"
+           "  -b <baseline_path>  Path to directory containing baselines.\n"
+           "  -t <tol>            Tolerance for relative error. Default 0.\n"
+           "  -s <steps>          Number of timesteps. Default=6.\n"
+           "  -dt <seconds>       Length of timestep. Default=300.\n"
+           "  -i <cols>           Number of columns. Default=3.\n"
+           "  -k <nlev>           Number of vertical levels. Default=72.\n"
+           "  -r <repeat>         Number of repetitions, implies timing run "
+           "(generate + no "
+           "I/O). Default=0.\n"
+           "  --predict-nc       yes|no|both. Default=both.\n"
+           "  --prescribed-ccn   yes|no|both. Default=both.\n";
     return 1;
   }
 
   bool generate = false, no_baseline = true;
-  scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
-  Int timesteps    = 6;
-  Int dt           = 300;
-  Int ncol         = 3;
-  Int nlev         = 72;
-  Int repeat       = 0;
+  scream::Real tol =
+      SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
+  Int timesteps = 6;
+  Int dt        = 300;
+  Int ncol      = 3;
+  Int nlev      = 72;
+  Int repeat    = 0;
   std::string device;
   std::string predict_nc     = "both";
   std::string prescribed_ccn = "both";
@@ -317,25 +328,29 @@ int main(int argc, char **argv) {
       expect_another_arg(i, argc);
       ++i;
       predict_nc = std::string(argv[i]);
-      EKAT_REQUIRE_MSG(predict_nc == "yes" || predict_nc == "no" || predict_nc == "both",
+      EKAT_REQUIRE_MSG(predict_nc == "yes" || predict_nc == "no" ||
+                           predict_nc == "both",
                        "Predict option value must be one of yes|no|both");
     }
     if (ekat::argv_matches(argv[i], "-pc", "--prescribed-ccn")) {
       expect_another_arg(i, argc);
       ++i;
       prescribed_ccn = std::string(argv[i]);
-      EKAT_REQUIRE_MSG(prescribed_ccn == "yes" || prescribed_ccn == "no" ||
-                           prescribed_ccn == "both",
-                       "Prescribed CCN option value must be one of yes|no|both");
+      EKAT_REQUIRE_MSG(
+          prescribed_ccn == "yes" || prescribed_ccn == "no" ||
+              prescribed_ccn == "both",
+          "Prescribed CCN option value must be one of yes|no|both");
     }
   }
 
   // Compute full baseline file name with precision.
-  baseline_fn += "/p3_run_and_cmp.baseline" + std::to_string(sizeof(scream::Real));
+  baseline_fn +=
+      "/p3_run_and_cmp.baseline" + std::to_string(sizeof(scream::Real));
 
   scream::initialize_eamxx_session(argc, argv);
   {
-    Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
+    Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat,
+                 predict_nc, prescribed_ccn);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn);

@@ -119,8 +119,8 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocQwParameters {
     REQUIRE((SDS.qw2_1 > 0 && SDS.qw2_2 > 0));
     REQUIRE((SDS.qw2_2 < qw2_bound_high && SDS.qw2_2 < qw2_bound_high));
     REQUIRE((SDS.sqrtqw2_1 > 0 && SDS.sqrtqw2_2 > 0));
-    REQUIRE(
-        (SDS.sqrtqw2_1 < std::sqrt(qw2_bound_high) && SDS.sqrtqw2_2 < std::sqrt(qw2_bound_high)));
+    REQUIRE((SDS.sqrtqw2_1 < std::sqrt(qw2_bound_high) &&
+             SDS.sqrtqw2_2 < std::sqrt(qw2_bound_high)));
 
     // TEST TWO
     // Run the test two times given idential inputs, except one test
@@ -168,15 +168,15 @@ template <typename D> struct UnitWrap::UnitTest<D>::TestShocQwParameters {
 namespace {
 
 TEST_CASE("shoc_pdf_qw_parameters_property", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocQwParameters;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocQwParameters;
 
   TestStruct::run_property();
 }
 
 TEST_CASE("shoc_pdf_qw_parameters_bfb", "shoc") {
-  using TestStruct =
-      scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocQwParameters;
+  using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestShocQwParameters;
 
   TestStruct::run_bfb();
 }

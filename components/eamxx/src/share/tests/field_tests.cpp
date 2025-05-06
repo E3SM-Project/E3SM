@@ -164,7 +164,8 @@ TEST_CASE("field", "") {
     // The memory spans should be identical
     REQUIRE(v3.impl_map().memory_span() == v4.impl_map().memory_span());
 
-    // Trying to reshape into something that the allocation cannot accommodate should throw
+    // Trying to reshape into something that the allocation cannot accommodate
+    // should throw
     REQUIRE_THROWS(f1.get_view<P16 ***>());
 
     // Can't get non-const data type view from a read-only field
@@ -180,7 +181,8 @@ TEST_CASE("field", "") {
 
     Field f2 = f1;
     REQUIRE(f2.get_header_ptr() == f1.get_header_ptr());
-    REQUIRE(f2.get_internal_view_data<Real>() == f1.get_internal_view_data<Real>());
+    REQUIRE(f2.get_internal_view_data<Real>() ==
+            f1.get_internal_view_data<Real>());
     REQUIRE(f2.is_allocated());
     REQUIRE(views_are_equal(f1, f2));
   }
@@ -235,13 +237,16 @@ TEST_CASE("field", "") {
 
     REQUIRE(f2.is_allocated());
     REQUIRE(&f1.get_header().get_tracking() == &f2.get_header().get_tracking());
-    REQUIRE(&f1.get_header().get_alloc_properties() == &f2.get_header().get_alloc_properties());
+    REQUIRE(&f1.get_header().get_alloc_properties() ==
+            &f2.get_header().get_alloc_properties());
     REQUIRE(f1.get_header().get_identifier().get_layout() ==
             f2.get_header().get_identifier().get_layout());
-    REQUIRE(f1.get_internal_view_data<Real>() == f2.get_internal_view_data<Real>());
+    REQUIRE(f1.get_internal_view_data<Real>() ==
+            f2.get_internal_view_data<Real>());
 
     // Identifiers are separate objects though
-    REQUIRE(&f1.get_header().get_identifier() != &f2.get_header().get_identifier());
+    REQUIRE(&f1.get_header().get_identifier() !=
+            &f2.get_header().get_identifier());
 
     // Check extra data is also shared
     f1.get_header().set_extra_data("foo", 1);
@@ -296,7 +301,8 @@ TEST_CASE("field", "") {
     f0.allocate_view();
     f0.deep_copy(1.5);
     f0.sync_to_host();
-    REQUIRE(reinterpret_cast<Real *>(f0.get_internal_view_data<Real, Host>())[0] == 1.5);
+    REQUIRE(reinterpret_cast<Real *>(
+                f0.get_internal_view_data<Real, Host>())[0] == 1.5);
 
     // rank-3
     std::vector<FieldTag> t1 = {COL, CMP, LEV};
@@ -344,12 +350,14 @@ TEST_CASE("field", "") {
 
   SECTION("rank0_field") {
     // Create 0d field
-    FieldIdentifier fid0("f_0d", FieldLayout({}, {}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid0("f_0d", FieldLayout({}, {}), Units::nondimensional(),
+                         "dummy_grid");
     Field f0(fid0);
     f0.allocate_view();
 
     // Create 1d field
-    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}),
+                         Units::nondimensional(), "dummy_grid");
     Field f1(fid1);
     f1.allocate_view();
 
@@ -387,7 +395,8 @@ TEST_CASE("field_group") {
   constexpr int ndims = 4;
   constexpr int nlevs = 8;
 
-  FID fid("V", FL({COL, CMP, LEV}, {ncols, ndims, nlevs}), Units::nondimensional(), "the_grid");
+  FID fid("V", FL({COL, CMP, LEV}, {ncols, ndims, nlevs}),
+          Units::nondimensional(), "the_grid");
   Field f(fid);
   f.allocate_view();
 
@@ -405,7 +414,8 @@ TEST_CASE("field_group") {
   FieldGroup g(info);
   g.m_monolithic_field = std::make_shared<Field>(f);
   for (int i = 0; i < ndims; ++i) {
-    g.m_individual_fields["G_" + std::to_string(i)] = std::make_shared<Field>(f_i[i]);
+    g.m_individual_fields["G_" + std::to_string(i)] =
+        std::make_shared<Field>(f_i[i]);
   }
 
   // Check const cloning
@@ -418,7 +428,8 @@ TEST_CASE("field_group") {
   for (int i = 0; i < ndims; ++i) {
     const auto &f  = *g.m_individual_fields.at("G_" + std::to_string(i));
     const auto &cf = *cg.m_individual_fields.at("G_" + std::to_string(i));
-    REQUIRE(f.get_internal_view_data<const Real>() == cf.get_internal_view_data<const Real>());
+    REQUIRE(f.get_internal_view_data<const Real>() ==
+            cf.get_internal_view_data<const Real>());
   }
 }
 
@@ -512,12 +523,12 @@ TEST_CASE("field_mgr", "") {
   REQUIRE(f2_2 == field_mgr.get_field(fid2_2.name(), fid2_2.get_grid_name()));
 
   // Try to get invalid fields
-  REQUIRE_THROWS(field_mgr.get_field("bad", "grid1"));    // Not in the field_mgr
-  REQUIRE_THROWS(field_mgr.get_field(bad1));              // Not in field_mgr
+  REQUIRE_THROWS(field_mgr.get_field("bad", "grid1")); // Not in the field_mgr
+  REQUIRE_THROWS(field_mgr.get_field(bad1));           // Not in field_mgr
   REQUIRE_THROWS(field_mgr.get_field("field1", "grid3")); // Wrong grid
 
-  // Check that the groups names are in the header. While at it, make sure that case insensitive
-  // works fine.
+  // Check that the groups names are in the header. While at it, make sure that
+  // case insensitive works fine.
   auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo> &groups,
                       const std::string &name) -> bool {
     for (auto it : groups) {
@@ -527,9 +538,12 @@ TEST_CASE("field_mgr", "") {
     }
     return false;
   };
-  REQUIRE(has_group(f2_1.get_header().get_tracking().get_groups_info(), "gRouP_1"));
-  REQUIRE(has_group(f1_2.get_header().get_tracking().get_groups_info(), "Group_2"));
-  REQUIRE(has_group(f1_2.get_header().get_tracking().get_groups_info(), "Group_1"));
+  REQUIRE(
+      has_group(f2_1.get_header().get_tracking().get_groups_info(), "gRouP_1"));
+  REQUIRE(
+      has_group(f1_2.get_header().get_tracking().get_groups_info(), "Group_2"));
+  REQUIRE(
+      has_group(f1_2.get_header().get_tracking().get_groups_info(), "Group_1"));
 
   // Check that correct grids requested groups
   REQUIRE(field_mgr.has_group("group_1", "grid1"));
@@ -556,7 +570,8 @@ TEST_CASE("field_mgr", "") {
   REQUIRE(f1_2_padding == ekat::PackInfo<Pack2::n>::padding(nlevs2));
 
   // Try to subview a field and set the subfield back in the FM
-  field_mgr.add_field(f2_1.subfield("field2_1_sf", subview_dim, subview_slice, true));
+  field_mgr.add_field(
+      f2_1.subfield("field2_1_sf", subview_dim, subview_slice, true));
   REQUIRE(field_mgr.get_repo("grid1").size() == 3);
 
   auto f2_1_sf = field_mgr.get_field("field2_1_sf", "grid1");
@@ -601,9 +616,12 @@ TEST_CASE("tracers_group", "") {
   field_mgr.register_field(FR{b_id, los{"tracers", "subtracers"}});
   field_mgr.register_field(FR{c_id, los{"tracers", "subtracers"}});
 
-  field_mgr.register_group(GroupRequest("tracers", gn1, MonolithicAlloc::Required));
-  field_mgr.register_group(GroupRequest("tracers", gn2, MonolithicAlloc::Required));
-  field_mgr.register_group(GroupRequest("subtracers", gn1, MonolithicAlloc::Required));
+  field_mgr.register_group(
+      GroupRequest("tracers", gn1, MonolithicAlloc::Required));
+  field_mgr.register_group(
+      GroupRequest("tracers", gn2, MonolithicAlloc::Required));
+  field_mgr.register_group(
+      GroupRequest("subtracers", gn1, MonolithicAlloc::Required));
   // field_mgr.register_group(GroupRequest("subtracers",gn2,MonolithicAlloc::Required));
 
   field_mgr.registration_ends();
@@ -632,7 +650,8 @@ TEST_CASE("tracers_group", "") {
   REQUIRE(tracers2.m_info->m_monolithic_allocation);
   REQUIRE(subtracers.m_info->m_monolithic_allocation);
 
-  // The monolithic field in the tracers group should match the field we get from the field_mgr
+  // The monolithic field in the tracers group should match the field we get
+  // from the field_mgr
   REQUIRE(T1.is_aliasing(*tracers1.m_monolithic_field));
   REQUIRE(T2.is_aliasing(*tracers2.m_monolithic_field));
 
@@ -656,8 +675,10 @@ TEST_CASE("tracers_group", "") {
   REQUIRE((c2_p != nullptr && c2_p.get() == &T2.get_header()));
 
   // Require subtracers monolith is subfield of tracers
-  REQUIRE((subtracers.m_monolithic_field->get_header().get_parent() != nullptr &&
-           subtracers.m_monolithic_field->get_header().get_parent().get() == &T1.get_header()));
+  REQUIRE(
+      (subtracers.m_monolithic_field->get_header().get_parent() != nullptr &&
+       subtracers.m_monolithic_field->get_header().get_parent().get() ==
+           &T1.get_header()));
 
   const auto idx_qv1 = tracers1.m_info->m_subview_idx.at("qv");
   const auto idx_a1  = tracers1.m_info->m_subview_idx.at("a");
@@ -791,7 +812,8 @@ TEST_CASE("update") {
   std::vector<FieldTag> tags = {COL, CMP, LEV};
   std::vector<int> dims      = {ncol, ncmp, nlev};
 
-  FieldIdentifier fid_r("fr", {tags, dims}, kg, "some_grid", DataType::RealType);
+  FieldIdentifier fid_r("fr", {tags, dims}, kg, "some_grid",
+                        DataType::RealType);
   FieldIdentifier fid_i("fi", {tags, dims}, kg, "some_grid", DataType::IntType);
   Field f_real(fid_r);
   Field f_int(fid_i);
@@ -954,9 +976,10 @@ TEST_CASE("update") {
 
 TEST_CASE("sync_subfields") {
   // This test is for previously incorrect behavior, where syncing a subfield
-  // to host/device would deep copy the entire data view (including all entries of
-  // the parent view). Here, if memory space is not shared between host and device,
-  // syncing a subfield to host/device will not sync the data of the other subfields.
+  // to host/device would deep copy the entire data view (including all entries
+  // of the parent view). Here, if memory space is not shared between host and
+  // device, syncing a subfield to host/device will not sync the data of the
+  // other subfields.
 
   using namespace scream;
   using namespace ekat::units;
@@ -969,12 +992,13 @@ TEST_CASE("sync_subfields") {
   constexpr int nlevs = 8;
 
   // Create field with (col, cmp, lev)
-  FID fid("V", FL({COL, CMP, LEV}, {ncols, ndims, nlevs}), Units::nondimensional(), "the_grid",
-          DataType::IntType);
+  FID fid("V", FL({COL, CMP, LEV}, {ncols, ndims, nlevs}),
+          Units::nondimensional(), "the_grid", DataType::IntType);
   Field f(fid);
   f.allocate_view();
 
-  // Store whether mem space for host and device are the same for testing subfield values
+  // Store whether mem space for host and device are the same for testing
+  // subfield values
   const bool shared_mem_space = f.host_and_device_share_memory_space();
 
   // Deep copy all values to ndims on device and host

@@ -8,7 +8,8 @@
 
 namespace scream {
 
-AeroComCld::AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params)
+AeroComCld::AeroComCld(const ekat::Comm &comm,
+                       const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"),
                    "Error! AeroComCld requires 'aero_com_cld_kind' in its "
@@ -21,7 +22,8 @@ AeroComCld::AeroComCld(const ekat::Comm &comm, const ekat::ParameterList &params
                    "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
-void AeroComCld::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void AeroComCld::set_grids(
+    const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto grid             = grids_manager->get_grid("physics");
@@ -78,9 +80,11 @@ void AeroComCld::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   // Self-document the outputs to parse in post-processing
   using stratt_t = std::map<std::string, std::string>;
   auto d         = get_diagnostic();
-  auto &metadata = d.get_header().get_extra_data<stratt_t>("io: string attributes");
+  auto &metadata =
+      d.get_header().get_extra_data<stratt_t>("io: string attributes");
   for (const auto &it : m_index_map) {
-    metadata[it.first] = std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
+    metadata[it.first] =
+        std::to_string(it.second) + " (" + m_units_map[it.first] + ")";
   }
 }
 
@@ -143,7 +147,8 @@ void AeroComCld::compute_diagnostic_impl() {
   auto o_cldfrac_tot   = ekat::subview_1(out, m_index_map["cldfrac_tot"]);
 
   Kokkos::parallel_for(
-      "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_diagnostic_output.name(), policy,
+      KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         // Subview the inputs at icol
         auto tmid_icol = ekat::subview(tmid, icol);
@@ -160,7 +165,8 @@ void AeroComCld::compute_diagnostic_impl() {
 
         // We need dz too
         auto dz_icol = ekat::subview(dz, icol);
-        PF::calculate_dz(team, pden_icol, pmid_icol, tmid_icol, qv_icol, dz_icol);
+        PF::calculate_dz(team, pden_icol, pmid_icol, tmid_icol, qv_icol,
+                         dz_icol);
 
         // Initialize the 1D "clear fraction" as 1 (totally clear)
         auto clr_icol = 1.0;
@@ -179,8 +185,10 @@ void AeroComCld::compute_diagnostic_impl() {
             // probability of this level, where clr_icol is that of
             // the previous level
             auto clr_tmp =
-                clr_icol * (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
-                (1.0 - ekat::impl::min(cld_icol(ilay - 1), Real(1.0 - cldfrac_tot_threshold)));
+                clr_icol *
+                (1.0 - ekat::impl::max(cld_icol(ilay - 1), cld_icol(ilay))) /
+                (1.0 - ekat::impl::min(cld_icol(ilay - 1),
+                                       Real(1.0 - cldfrac_tot_threshold)));
             // Temporary variable for probability "weights"
             auto wts = clr_icol - clr_tmp;
             // Temporary variable for liquid "phase"
@@ -197,8 +205,8 @@ void AeroComCld::compute_diagnostic_impl() {
             /* We need to convert nc from 1/mass to 1/volume first, and
              * from grid-mean to in-cloud, but after that, the
              * calculation follows the general logic */
-            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) / physconst::gravit /
-                        cld_icol(ilay);
+            auto cdnc = nc_icol(ilay) * pden_icol(ilay) / dz_icol(ilay) /
+                        physconst::gravit / cld_icol(ilay);
             o_cdnc(icol) += cdnc * phi * wts;
             o_nc(icol) += nc_icol(ilay) * phi * wts;
             o_ni(icol) += ni_icol(ilay) * (1.0 - phi) * wts;

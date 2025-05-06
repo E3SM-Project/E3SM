@@ -51,7 +51,8 @@ TEST_CASE("scream_ad_test") {
   const auto case_t0_str = ts.get<std::string>("case_t0", run_t0_str);
   const auto case_t0     = util::str_to_time_stamp(case_t0_str);
 
-  // Register all atm procs, grids manager, and diagnostics in the respective factories
+  // Register all atm procs, grids manager, and diagnostics in the respective
+  // factories
   register_dynamics();
   register_physics();
   register_diagnostics();
@@ -69,9 +70,10 @@ TEST_CASE("scream_ad_test") {
   for (int i = 0; i < nsteps; ++i) {
     ad.run(dt);
     if (atm_comm.am_i_root()) {
-      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i + 1 << " completed";
-      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100 * (i + 1) / nsteps
-                << "%]\n";
+      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3)
+                << i + 1 << " completed";
+      std::cout << "       [" << std::setfill(' ') << std::setw(3)
+                << 100 * (i + 1) / nsteps << "%]\n";
     }
   }
   ad.finalize();

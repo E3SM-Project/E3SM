@@ -2,7 +2,8 @@
 
 namespace scream {
 
-template Field::get_strided_view_type<float, Device> Field::get_strided_view<float, Device>() const;
+template Field::get_strided_view_type<float, Device>
+Field::get_strided_view<float, Device>() const;
 template Field::get_strided_view_type<float *, Device>
 Field::get_strided_view<float *, Device>() const;
 template Field::get_strided_view_type<float **, Device>

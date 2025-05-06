@@ -12,10 +12,9 @@ namespace shoc {
  */
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void Functions<S, D>::pblintd_check_pblh(const Int &nlevi, const Int &npbl,
-                                                         const uview_1d<const Spack> &z,
-                                                         const Scalar &ustar, const bool &check,
-                                                         Scalar &pblh) {
+KOKKOS_FUNCTION void Functions<S, D>::pblintd_check_pblh(
+    const Int &nlevi, const Int &npbl, const uview_1d<const Spack> &z,
+    const Scalar &ustar, const bool &check, Scalar &pblh) {
   // PBL height must be greater than some minimum mechanical mixing depth
   // Several investigators have proposed minimum mechanical mixing depth
   // relationships as a function of the local friction velocity, u*.  We

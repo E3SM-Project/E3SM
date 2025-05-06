@@ -7,9 +7,11 @@
 
 namespace scream::mam_coupling {
 template <typename S, typename D>
-std::shared_ptr<AbstractRemapper> srfEmissFunctions<S, D>::create_horiz_remapper(
-    const std::shared_ptr<const AbstractGrid> &model_grid, const std::string &data_file,
-    const std::vector<std::string> &sector_names, const std::string &map_file) {
+std::shared_ptr<AbstractRemapper>
+srfEmissFunctions<S, D>::create_horiz_remapper(
+    const std::shared_ptr<const AbstractGrid> &model_grid,
+    const std::string &data_file, const std::vector<std::string> &sector_names,
+    const std::string &map_file) {
   using namespace ShortFieldTagsNames;
 
   scorpio::register_file(data_file, scorpio::Read);
@@ -19,15 +21,16 @@ std::shared_ptr<AbstractRemapper> srfEmissFunctions<S, D>::create_horiz_remapper
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
   // code)
-  auto horiz_interp_tgt_grid = model_grid->clone("srf_emiss_horiz_interp_tgt_grid", true);
+  auto horiz_interp_tgt_grid =
+      model_grid->clone("srf_emiss_horiz_interp_tgt_grid", true);
 
   const int ncols_model = model_grid->get_num_global_dofs();
   std::shared_ptr<AbstractRemapper> remapper;
   // if the file's grid is same as model's native grid, we identity remapper
   //  (i.e., no interpolation)
   if (ncols_data == ncols_model) {
-    remapper =
-        std::make_shared<IdentityRemapper>(horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
+    remapper = std::make_shared<IdentityRemapper>(
+        horiz_interp_tgt_grid, IdentityRemapper::SrcAliasTgt);
   } else {
     EKAT_REQUIRE_MSG(ncols_data <= ncols_model,
                      "Error! We do not allow to coarsen srfEmiss data to fit "
@@ -35,12 +38,14 @@ std::shared_ptr<AbstractRemapper> srfEmissFunctions<S, D>::create_horiz_remapper
                      "srfEmiss data to be at the same or coarser resolution as "
                      "the model.\n");
     // We must have a valid map file
-    EKAT_REQUIRE_MSG(map_file != "",
-                     "ERROR: srfEmiss data is on a different grid than the model one,\n"
-                     "but srfEmiss_remap_file is missing from srfEmiss parameter "
-                     "list.");
+    EKAT_REQUIRE_MSG(
+        map_file != "",
+        "ERROR: srfEmiss data is on a different grid than the model one,\n"
+        "but srfEmiss_remap_file is missing from srfEmiss parameter "
+        "list.");
 
-    remapper = std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
+    remapper =
+        std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
   }
 
   remapper->registration_begins();
@@ -68,7 +73,8 @@ std::shared_ptr<AbstractRemapper> srfEmissFunctions<S, D>::create_horiz_remapper
 } // create_horiz_remapper
 
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput> srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
+std::shared_ptr<AtmosphereInput>
+srfEmissFunctions<S, D>::create_srfEmiss_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &srfEmiss_data_file) {
   std::vector<Field> field_emiss_sectors;
@@ -76,22 +82,21 @@ std::shared_ptr<AtmosphereInput> srfEmissFunctions<S, D>::create_srfEmiss_data_r
     field_emiss_sectors.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid, field_emiss_sectors, true);
+  return std::make_shared<AtmosphereInput>(srfEmiss_data_file, io_grid,
+                                           field_emiss_sectors, true);
 } // create_srfEmiss_data_reader
 
 template <typename S, typename D>
 template <typename ScalarX, typename ScalarT>
-KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(const ScalarX &x0,
-                                                                      const ScalarX &x1,
-                                                                      const ScalarT &t) {
+KOKKOS_INLINE_FUNCTION ScalarX srfEmissFunctions<S, D>::linear_interp(
+    const ScalarX &x0, const ScalarX &x1, const ScalarT &t) {
   return (1 - t) * x0 + t * x1;
 } // linear_interp
 
 template <typename S, typename D>
-void srfEmissFunctions<S, D>::perform_time_interpolation(const srfEmissTimeState &time_state,
-                                                         const srfEmissInput &data_beg,
-                                                         const srfEmissInput &data_end,
-                                                         const srfEmissOutput &data_out) {
+void srfEmissFunctions<S, D>::perform_time_interpolation(
+    const srfEmissTimeState &time_state, const srfEmissInput &data_beg,
+    const srfEmissInput &data_end, const srfEmissOutput &data_out) {
   // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
   //       IF this ever ceases to be the case, you can interp those too.
 
@@ -111,7 +116,8 @@ void srfEmissFunctions<S, D>::perform_time_interpolation(const srfEmissTimeState
                        std::to_string(t_now) +
                        "\n"
                        "  t_beg  : " +
-                       std::to_string(t_beg) + "\n  delta_t: " + std::to_string(delta_t) + "\n");
+                       std::to_string(t_beg) +
+                       "\n  delta_t: " + std::to_string(delta_t) + "\n");
 
   const int nsectors = data_beg.data.nsectors;
   const int ncols    = data_beg.data.ncols;
@@ -146,18 +152,20 @@ void srfEmissFunctions<S, D>::srfEmiss_main(const srfEmissTimeState &time_state,
                                             const srfEmissOutput &data_out) {
   // Beg/End/Tmp month must have all sizes matching
 
-  EKAT_REQUIRE_MSG(data_end.data.ncols == data_beg.data.ncols,
-                   "Error! srfEmissInput data structs must have the same number of "
-                   "columns/levels.\n");
+  EKAT_REQUIRE_MSG(
+      data_end.data.ncols == data_beg.data.ncols,
+      "Error! srfEmissInput data structs must have the same number of "
+      "columns/levels.\n");
 
   // Horiz interpolation can be expensive, and does not depend on the particular
   // time of the month, so it can be done ONCE per month, *outside*
   // srfEmiss_main (when updating the beg/end states, reading them from file).
-  EKAT_REQUIRE_MSG(data_end.data.ncols == data_out.ncols,
-                   "Error! Horizontal interpolation is performed *before* "
-                   "calling srfEmiss_main,\n"
-                   "       srfEmissInput and srfEmissOutput data structs must have the "
-                   "same number columns.\n");
+  EKAT_REQUIRE_MSG(
+      data_end.data.ncols == data_out.ncols,
+      "Error! Horizontal interpolation is performed *before* "
+      "calling srfEmiss_main,\n"
+      "       srfEmissInput and srfEmissOutput data structs must have the "
+      "same number columns.\n");
 
   // Step 1. Perform time interpolation
   perform_time_interpolation(time_state, data_beg, data_end, data_out);
@@ -191,8 +199,10 @@ void srfEmissFunctions<S, D>::update_srfEmiss_data_from_file(
 
   // Read fields from the file
   for (int i = 0; i < srfEmiss_horiz_interp.get_num_fields(); ++i) {
-    auto sector      = srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
-    const auto emiss = Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
+    auto sector =
+        srfEmiss_horiz_interp.get_tgt_field(i).get_view<const Real *>();
+    const auto emiss =
+        Kokkos::subview(srfEmiss_input.data.emiss_sectors, i, Kokkos::ALL());
     Kokkos::deep_copy(emiss, sector);
   }
 
@@ -229,22 +239,25 @@ void srfEmissFunctions<S, D>::update_srfEmiss_timestate(
     //       to be assigned.  A timestep greater than a month is very unlikely
     //       so we will proceed.
     int next_month = (time_state.current_month + 1) % 12;
-    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month, srfEmiss_horiz_interp,
-                                   srfEmiss_end);
+    update_srfEmiss_data_from_file(scorpio_reader, ts, next_month,
+                                   srfEmiss_horiz_interp, srfEmiss_end);
   }
 
 } // END updata_srfEmiss_timestate
 
 template <typename S, typename D>
 void srfEmissFunctions<S, D>::init_srf_emiss_objects(
-    const int ncol, const std::shared_ptr<const AbstractGrid> &grid, const std::string &data_file,
-    const std::vector<std::string> &sectors, const std::string &srf_map_file,
+    const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file, const std::vector<std::string> &sectors,
+    const std::string &srf_map_file,
     // output
-    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp, srfEmissInput &SrfEmissData_start,
-    srfEmissInput &SrfEmissData_end, srfEmissOutput &SrfEmissData_out,
+    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+    srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+    srfEmissOutput &SrfEmissData_out,
     std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
   // Init horizontal remap
-  SrfEmissHorizInterp = create_horiz_remapper(grid, data_file, sectors, srf_map_file);
+  SrfEmissHorizInterp =
+      create_horiz_remapper(grid, data_file, sectors, srf_map_file);
 
   // Initialize the size of start/end/out data structures
   SrfEmissData_start = srfEmissInput(ncol, sectors.size());
@@ -252,7 +265,8 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
   SrfEmissData_out.init(ncol, 1, true);
 
   // Create reader (an AtmosphereInput object)
-  SrfEmissDataReader = create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
+  SrfEmissDataReader =
+      create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
 } // init_srf_emiss_objects
 } // namespace scream::mam_coupling
 

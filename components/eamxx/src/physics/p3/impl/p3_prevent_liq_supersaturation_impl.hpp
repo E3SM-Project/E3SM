@@ -1,7 +1,7 @@
 #ifndef P3_PREVENT_LIQ_SUPERSATURATION_IMPL_HPP
 #define P3_PREVENT_LIQ_SUPERSATURATION_IMPL_HPP
 
-#include "p3_functions.hpp"                    // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 
@@ -13,13 +13,12 @@ namespace p3 {
 // versus sublimational heating in the psychrometric correction.
 
 template <typename S, typename D>
-KOKKOS_FUNCTION void
-Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_atm, const Spack &qv,
-                                             const Scalar &dt, const Spack &qv2qi_vapdep_tend,
-                                             const Spack &qinuc, Spack &qi2qv_sublim_tend,
-                                             Spack &qr2qv_evap_tend, const Smask &context)
-// Note: context masks cells which are just padding for packs or which don't have any condensate
-// worth performing calculations on.
+KOKKOS_FUNCTION void Functions<S, D>::prevent_liq_supersaturation(
+    const Spack &pres, const Spack &t_atm, const Spack &qv, const Scalar &dt,
+    const Spack &qv2qi_vapdep_tend, const Spack &qinuc,
+    Spack &qi2qv_sublim_tend, Spack &qr2qv_evap_tend, const Smask &context)
+// Note: context masks cells which are just padding for packs or which don't
+// have any condensate worth performing calculations on.
 {
   using physics = scream::physics::Functions<Scalar, Device>;
 
@@ -33,7 +32,8 @@ Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_a
 
   qv_sources.set(context, qi2qv_sublim_tend + qr2qv_evap_tend);
   const auto has_sources =
-      (qv_sources >= qsmall && context); // if nothing to rescale, no point in calculations.
+      (qv_sources >= qsmall &&
+       context); // if nothing to rescale, no point in calculations.
 
   if (not has_sources.any()) {
     return;
@@ -43,39 +43,43 @@ Functions<S, D>::prevent_liq_supersaturation(const Spack &pres, const Spack &t_a
 
   // Actual qv and T after microphys step
   qv_endstep.set(has_sources, qv - qv_sinks * dt + qv_sources * dt);
-  T_endstep.set(has_sources, t_atm + ((qv_sinks - qi2qv_sublim_tend) * (latvap + latice) * inv_cp -
+  T_endstep.set(has_sources, t_atm + ((qv_sinks - qi2qv_sublim_tend) *
+                                          (latvap + latice) * inv_cp -
                                       qr2qv_evap_tend * latvap * inv_cp) *
                                          dt);
 
   // qv we would have at end of step if we were saturated with respect to liquid
   const auto qsl = physics::qv_sat_dry(
       T_endstep, pres, false, has_sources, physics::MurphyKoop,
-      "p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to ice
+      "p3::prevent_liq_supersaturation"); //"false" means NOT sat w/ respect to
+                                          //ice
 
   // The balance we seek is:
-  //  qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to conservation)
-  //  where the T correction for conservation is:
+  //  qv-qv_sinks*dt+qv_sources*frac*dt=qsl+dqsl_dT*(T correction due to
+  //  conservation) where the T correction for conservation is:
   //  dt*[(latvap+latice)/cp*(qi2qv_sublim_tend-frac*qi2qv_sublim_tend)
   //      +latvap/cp*(qr2qv_evap_tend  -frac*qr2qv_evap_tend)]
-  //  =(1-frac)*dt/cp*((latvap+latice)*qi2qv_sublim_tend + latvap*qr2qv_evap_tend).
-  //  Note T correction is positive because frac *reduces* evaporative cooling. Note as well that
-  //  dqsl_dt comes from linearization of qsl around the end-of-step T computed before temperature
-  //  correction. dqsl_dt should be computed with respect to *liquid* even though frac also adjusts
-  //  sublimation because we want to be saturated with respect to liquid at the end of the step.
-  //  dqsl_dt=latvap*qsl/rv*T^2 following Clausius Clapeyron. Combining and solving for
-  //  frac yields:
+  //  =(1-frac)*dt/cp*((latvap+latice)*qi2qv_sublim_tend +
+  //  latvap*qr2qv_evap_tend). Note T correction is positive because frac
+  //  *reduces* evaporative cooling. Note as well that dqsl_dt comes from
+  //  linearization of qsl around the end-of-step T computed before temperature
+  //  correction. dqsl_dt should be computed with respect to *liquid* even
+  //  though frac also adjusts sublimation because we want to be saturated with
+  //  respect to liquid at the end of the step. dqsl_dt=latvap*qsl/rv*T^2
+  //  following Clausius Clapeyron. Combining and solving for frac yields:
 
-  A.set(has_sources, latvap * qsl * dt * inv_cp / (rv * T_endstep * T_endstep) *
-                         ((latvap + latice) * qi2qv_sublim_tend + latvap * qr2qv_evap_tend));
+  A.set(has_sources,
+        latvap * qsl * dt * inv_cp / (rv * T_endstep * T_endstep) *
+            ((latvap + latice) * qi2qv_sublim_tend + latvap * qr2qv_evap_tend));
 
   frac.set(has_sources, (qsl - qv + qv_sinks * dt + A) / (qv_sources * dt + A));
 
-  // The only way frac<0 is if qv-qv_sinks*dt is already greater than qsl. In this case
-  // the best we can do is zero out qv_sources.
+  // The only way frac<0 is if qv-qv_sinks*dt is already greater than qsl. In
+  // this case the best we can do is zero out qv_sources.
   frac.set(has_sources, max(0, frac));
 
-  // The only way frac>1 is if qv-qv_sinks*dt+qv_sources*dt < qsl, in which case we shouldn't
-  // limit anyways so set frac to 1:
+  // The only way frac>1 is if qv-qv_sinks*dt+qv_sources*dt < qsl, in which case
+  // we shouldn't limit anyways so set frac to 1:
   frac.set(has_sources, min(1, frac));
 
   qi2qv_sublim_tend.set(has_sources, frac * qi2qv_sublim_tend);

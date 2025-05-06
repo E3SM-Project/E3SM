@@ -67,9 +67,10 @@ void flip_vertically(FortranData &d) {
 // Reference elevations for data interpolation (bottom-to-top).
 // (If this looks weird, it's because I'm trying to get bit-for-bit
 //  agreement with scream-docs/shoc-port/shocintr.py.)
-const std::array<Real, 5> z_ref     = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
-const std::array<Real, 5> qw_ref    = {1e-3 * 17, 1e-3 * 16.3, 1e-3 * 10.7, 1e-3 * 4.2, 1e-3 * 3};
-const std::array<Real, 5> ql_ref    = {0.0, 1e-3 * 5, 1e-3 * 7., 1e-3 * 6., 0.0};
+const std::array<Real, 5> z_ref  = {0.0, 520.0, 1480.0, 2000.0, 3000.0};
+const std::array<Real, 5> qw_ref = {1e-3 * 17, 1e-3 * 16.3, 1e-3 * 10.7,
+                                    1e-3 * 4.2, 1e-3 * 3};
+const std::array<Real, 5> ql_ref = {0.0, 1e-3 * 5, 1e-3 * 7., 1e-3 * 6., 0.0};
 const std::array<Real, 5> theta_ref = {299.7, 298.7, 302.4, 308.2, 312.85};
 
 // Wind speed interpolation data.
@@ -90,8 +91,8 @@ Real interpolate_data(const std::array<Real, N> &ref_elevations,
   if (index == 0)
     return ref_data[0];
   else if (index < (Int)N) {
-    const Real a =
-        (z - ref_elevations[index - 1]) / (ref_elevations[index] - ref_elevations[index - 1]);
+    const Real a = (z - ref_elevations[index - 1]) /
+                   (ref_elevations[index] - ref_elevations[index - 1]);
     return (1.0 - a) * ref_data[index - 1] + a * ref_data[index];
   } else {
     // Don't extrapolate off the end of the table.
@@ -127,7 +128,8 @@ void compute_column_pressure(Int col, Int nlev, const Array2 &z, Array2 &pres) {
 FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
   using consts = scream::physics::Constants<Real>;
 
-  const auto dp = std::make_shared<FortranData>(shcol, nlev, nlev + 1, num_qtracers);
+  const auto dp =
+      std::make_shared<FortranData>(shcol, nlev, nlev + 1, num_qtracers);
 
   auto &d = *dp;
 
@@ -190,10 +192,11 @@ FortranData::Ptr make_standard(const Int shcol, Int nlev, Int num_qtracers) {
 
     // Compute pressure differences and host_dse * exner.
     for (Int k = 0; k < nlev; ++k) {
-      d.pdel(i, k)      = std::abs(d.presi(i, k + 1) - d.presi(i, k));
-      d.inv_exner(i, k) = 1 / pow(d.pres(i, k) / consts::P0, consts::Rair / consts::Cpair);
-      d.host_dse(i, k) =
-          consts::Cpair * d.thv(i, k) / d.inv_exner(i, k) + consts::gravit * d.zt_grid(i, k);
+      d.pdel(i, k) = std::abs(d.presi(i, k + 1) - d.presi(i, k));
+      d.inv_exner(i, k) =
+          1 / pow(d.pres(i, k) / consts::P0, consts::Rair / consts::Cpair);
+      d.host_dse(i, k) = consts::Cpair * d.thv(i, k) / d.inv_exner(i, k) +
+                         consts::gravit * d.zt_grid(i, k);
     }
 
     // Zero the other input fields.

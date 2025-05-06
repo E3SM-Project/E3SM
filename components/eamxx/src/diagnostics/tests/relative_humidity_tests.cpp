@@ -19,7 +19,8 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
+                                        const int nlevs) {
 
   const int num_global_cols = ncols * comm.size();
 
@@ -50,8 +51,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 
   const int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs =
-      packsize * 2 + 1; // Number of levels to use for tests, make sure the last pack can also have
-                        // some empty slots (packsize>1).
+      packsize * 2 + 1; // Number of levels to use for tests, make sure the last
+                        // pack can also have some empty slots (packsize>1).
   const int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
@@ -62,12 +63,15 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
   auto gm         = create_gm(comm, ncols, num_levs);
 
   // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
+  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(
+      ncols, num_mid_packs);
 
   // Input (randomized) views, device
-  view_1d temperature("temperature", num_mid_packs), pressure("pressure", num_mid_packs),
+  view_1d temperature("temperature", num_mid_packs),
+      pressure("pressure", num_mid_packs),
       pseudo_density("pseudo_density", num_mid_packs),
-      pseudo_density_dry("pseudo_density_dry", num_mid_packs), qv("qv", num_mid_packs);
+      pseudo_density_dry("pseudo_density_dry", num_mid_packs),
+      qv("qv", num_mid_packs);
 
   auto dview_as_real = [&](const view_1d &v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real *>(v.data()), v.size() * packsize);
@@ -137,7 +141,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
       // init device arrays as random except for dpdry
       ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
       ekat::genRandArray(dview_as_real(pressure), engine, pdf_pres);
-      ekat::genRandArray(dview_as_real(pseudo_density), engine, pdf_pseudo_density);
+      ekat::genRandArray(dview_as_real(pseudo_density), engine,
+                         pdf_pseudo_density);
       ekat::genRandArray(dview_as_real(qv), engine, pdf_qv);
 
       Kokkos::deep_copy(T_sub, temperature);
@@ -161,14 +166,18 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
           const auto &dpdry_sub = ekat::subview(dpdry_v, icol);
           const auto &qv_sub    = ekat::subview(qv_v, icol);
 
-          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_mid_packs), [&](const Int &jpack) {
-            dpdry_sub(jpack) = dpwet_sub(jpack) - dpwet_sub(jpack) * qv_sub(jpack);
-            auto qv_sat_l    = physics::qv_sat_dry(T_mid_v(icol, jpack), p_dry_mid_v(icol, jpack),
-                                                   true, range_mask);
-            qv_sat_l *= dpdry_v(icol, jpack);
-            qv_sat_l /= dpwet_v(icol, jpack);
-            rh_v(icol, jpack) = qv_v(icol, jpack) / qv_sat_l;
-          });
+          Kokkos::parallel_for(
+              Kokkos::TeamVectorRange(team, num_mid_packs),
+              [&](const Int &jpack) {
+                dpdry_sub(jpack) =
+                    dpwet_sub(jpack) - dpwet_sub(jpack) * qv_sub(jpack);
+                auto qv_sat_l = physics::qv_sat_dry(T_mid_v(icol, jpack),
+                                                    p_dry_mid_v(icol, jpack),
+                                                    true, range_mask);
+                qv_sat_l *= dpdry_v(icol, jpack);
+                qv_sat_l /= dpwet_v(icol, jpack);
+                rh_v(icol, jpack) = qv_v(icol, jpack) / qv_sat_l;
+              });
           team.team_barrier();
         });
     Kokkos::fence();
@@ -190,7 +199,8 @@ template <typename DeviceT> void run(std::mt19937_64 &engine) {
 } // run()
 
 TEST_CASE("relative_humidity_test", "relative_humidity_test]") {
-  // Run tests for both Real and Pack, and for (potentially) different pack sizes
+  // Run tests for both Real and Pack, and for (potentially) different pack
+  // sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
 

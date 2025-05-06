@@ -10,9 +10,10 @@ namespace scream {
 
 // --------------- HorizRemapperData ---------------- //
 
-void HorizRemapperData::build(const std::string &map_file,
-                              const std::shared_ptr<const AbstractGrid> &fine_grid_in,
-                              const ekat::Comm &comm_in, const InterpType type_in) {
+void HorizRemapperData::build(
+    const std::string &map_file,
+    const std::shared_ptr<const AbstractGrid> &fine_grid_in,
+    const ekat::Comm &comm_in, const InterpType type_in) {
   comm      = comm_in;
   fine_grid = fine_grid_in;
   type      = type_in;
@@ -27,7 +28,8 @@ void HorizRemapperData::build(const std::string &map_file,
   create_crs_matrix_structures(my_triplets);
 }
 
-auto HorizRemapperData::get_my_triplets(const std::string &map_file) const -> std::vector<Triplet> {
+auto HorizRemapperData::get_my_triplets(const std::string &map_file) const
+    -> std::vector<Triplet> {
   using gid_type = AbstractGrid::gid_type;
   using namespace ShortFieldTagsNames;
 
@@ -43,8 +45,10 @@ auto HorizRemapperData::get_my_triplets(const std::string &map_file) const -> st
   int nlweights = scorpio::get_dimlen_local(map_file, "n_s");
 
   // 1.1 Read a chunk of triplets col indices
-  // NOTE: add 1 so that we don't pass nullptr to scorpio read routines (which would trigger
-  //       a runtime error). Don't worry though: we never access the last entry of these vectors
+  // NOTE: add 1 so that we don't pass nullptr to scorpio read routines (which
+  // would trigger
+  //       a runtime error). Don't worry though: we never access the last entry
+  //       of these vectors
   std::vector<gid_type> cols(nlweights + 1, -1);
   std::vector<gid_type> rows(nlweights + 1, -1);
   std::vector<Real> S(nlweights + 1, 0);
@@ -55,43 +59,47 @@ auto HorizRemapperData::get_my_triplets(const std::string &map_file) const -> st
   const int n_a        = scorpio::get_dimlen(map_file, "n_a");
   const int n_b        = scorpio::get_dimlen(map_file, "n_b");
   const int ncols_fine = fine_grid->get_num_global_dofs();
-  EKAT_REQUIRE_MSG(n_a == ncols_fine or n_b == ncols_fine,
-                   "Error! The input map seems incompatible with the remapper fine grid.\n"
-                   " - map file: " +
-                       map_file +
-                       "\n"
-                       " - map file n_a: " +
-                       std::to_string(n_a) +
-                       "\n"
-                       " - map file n_b: " +
-                       std::to_string(n_b) +
-                       "\n"
-                       " - fine grid ncols: " +
-                       std::to_string(ncols_fine) + "\n");
+  EKAT_REQUIRE_MSG(
+      n_a == ncols_fine or n_b == ncols_fine,
+      "Error! The input map seems incompatible with the remapper fine grid.\n"
+      " - map file: " +
+          map_file +
+          "\n"
+          " - map file n_a: " +
+          std::to_string(n_a) +
+          "\n"
+          " - map file n_b: " +
+          std::to_string(n_b) +
+          "\n"
+          " - fine grid ncols: " +
+          std::to_string(ncols_fine) + "\n");
   const bool map_is_coarsening = n_a == ncols_fine;
-  EKAT_REQUIRE_MSG(map_is_coarsening == (type == InterpType::Coarsen),
-                   "Error! The input map seems incompatible with the remapper type.\n"
-                   " - map file: " +
-                       map_file +
-                       "\n"
-                       " - map file n_a: " +
-                       std::to_string(n_a) +
-                       "\n"
-                       " - map file n_b: " +
-                       std::to_string(n_b) +
-                       "\n"
-                       " - fine grid ncols: " +
-                       std::to_string(ncols_fine) +
-                       "\n"
-                       " - remapper type: " +
-                       std::string(type == InterpType::Refine ? "refine" : "coarsen") + "\n");
+  EKAT_REQUIRE_MSG(
+      map_is_coarsening == (type == InterpType::Coarsen),
+      "Error! The input map seems incompatible with the remapper type.\n"
+      " - map file: " +
+          map_file +
+          "\n"
+          " - map file n_a: " +
+          std::to_string(n_a) +
+          "\n"
+          " - map file n_b: " +
+          std::to_string(n_b) +
+          "\n"
+          " - fine grid ncols: " +
+          std::to_string(ncols_fine) +
+          "\n"
+          " - remapper type: " +
+          std::string(type == InterpType::Refine ? "refine" : "coarsen") +
+          "\n");
 
   scorpio::read_var(map_file, "col", cols.data());
   scorpio::read_var(map_file, "row", rows.data());
   scorpio::read_var(map_file, "S", S.data());
 
   // Previously, we added 1 to their length, to avoid nullptr in scorpio::read.
-  // However, we later do range loops on these vectors, so resize them back to nlweights
+  // However, we later do range loops on these vectors, so resize them back to
+  // nlweights
   cols.resize(nlweights);
   rows.resize(nlweights);
   S.resize(nlweights);
@@ -125,7 +133,8 @@ auto HorizRemapperData::get_my_triplets(const std::string &map_file) const -> st
     id -= col_offset;
   }
 
-  // Create a grid based on the row gids I read in (may be duplicated across ranks)
+  // Create a grid based on the row gids I read in (may be duplicated across
+  // ranks)
   std::vector<gid_type> unique_gids;
   const auto &gids = type == InterpType::Refine ? rows : cols;
   for (auto gid : gids) {
@@ -133,7 +142,8 @@ auto HorizRemapperData::get_my_triplets(const std::string &map_file) const -> st
       unique_gids.push_back(gid);
     }
   }
-  auto io_grid        = std::make_shared<PointGrid>("helper", unique_gids.size(), 0, comm);
+  auto io_grid =
+      std::make_shared<PointGrid>("helper", unique_gids.size(), 0, comm);
   auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type *, Host>();
   int k               = 0;
   for (auto gid : unique_gids) {
@@ -169,13 +179,15 @@ auto HorizRemapperData::get_my_triplets(const std::string &map_file) const -> st
   std::vector<Triplet> my_triplets;
   for (auto &it : my_triplets_map) {
     my_triplets.reserve(my_triplets.size() + it.second.size());
-    std::move(it.second.begin(), it.second.end(), std::back_inserter(my_triplets));
+    std::move(it.second.begin(), it.second.end(),
+              std::back_inserter(my_triplets));
   }
 
   return my_triplets;
 }
 
-void HorizRemapperData::create_coarse_grids(const std::vector<Triplet> &triplets) {
+void HorizRemapperData::create_coarse_grids(
+    const std::vector<Triplet> &triplets) {
   // Gather overlapped coarse grid gids (rows or cols, depending on type)
   std::map<gid_type, int> ov_gid2lid;
   bool pickRow = type == InterpType::Coarsen;
@@ -186,8 +198,10 @@ void HorizRemapperData::create_coarse_grids(const std::vector<Triplet> &triplets
 
   // Use a temp and then assing, b/c grid_ptr_type is a pointer to const,
   // so you can't modify gids using that pointer
-  ov_coarse_grid        = std::make_shared<PointGrid>("ov_coarse_grid", num_ov_gids, 0, comm);
-  auto ov_coarse_gids_h = ov_coarse_grid->get_dofs_gids().get_view<gid_type *, Host>();
+  ov_coarse_grid =
+      std::make_shared<PointGrid>("ov_coarse_grid", num_ov_gids, 0, comm);
+  auto ov_coarse_gids_h =
+      ov_coarse_grid->get_dofs_gids().get_view<gid_type *, Host>();
   for (const auto &it : ov_gid2lid) {
     ov_coarse_gids_h[it.second] = it.first;
   }
@@ -198,15 +212,17 @@ void HorizRemapperData::create_coarse_grids(const std::vector<Triplet> &triplets
   ov_coarse_grid->get_dofs_gids().sync_to_dev();
 
   // Create the unique coarse grid
-  auto coarse_gids   = ov_coarse_grid->get_unique_gids();
-  int num_gids       = coarse_gids.size();
-  coarse_grid        = std::make_shared<PointGrid>("coarse_grid", num_gids, 0, comm);
-  auto coarse_gids_h = coarse_grid->get_dofs_gids().get_view<gid_type *, Host>();
+  auto coarse_gids = ov_coarse_grid->get_unique_gids();
+  int num_gids     = coarse_gids.size();
+  coarse_grid = std::make_shared<PointGrid>("coarse_grid", num_gids, 0, comm);
+  auto coarse_gids_h =
+      coarse_grid->get_dofs_gids().get_view<gid_type *, Host>();
   std::copy(coarse_gids.begin(), coarse_gids.end(), coarse_gids_h.data());
   coarse_grid->get_dofs_gids().sync_to_dev();
 }
 
-void HorizRemapperData::create_crs_matrix_structures(std::vector<Triplet> &triplets) {
+void HorizRemapperData::create_crs_matrix_structures(
+    std::vector<Triplet> &triplets) {
   // Get row/col data depending on interp type
   bool refine        = type == InterpType::Refine;
   auto row_grid      = refine ? fine_grid : ov_coarse_grid;
@@ -224,7 +240,8 @@ void HorizRemapperData::create_crs_matrix_structures(std::vector<Triplet> &tripl
     auto rhs_lrow = row_gid2lid.at(rhs.row);
     auto lhs_lcol = col_gid2lid.at(lhs.col);
     auto rhs_lcol = col_gid2lid.at(rhs.col);
-    return lhs_lrow < rhs_lrow or (lhs_lrow == rhs_lrow and lhs_lcol < rhs_lcol);
+    return lhs_lrow < rhs_lrow or
+           (lhs_lrow == rhs_lrow and lhs_lcol < rhs_lcol);
   };
   std::sort(triplets.begin(), triplets.end(), compare);
 
@@ -251,7 +268,8 @@ void HorizRemapperData::create_crs_matrix_structures(std::vector<Triplet> &tripl
   for (int i = 0; i < nnz; ++i) {
     ++row_counts[row_gid2lid.at(triplets[i].row)];
   }
-  std::partial_sum(row_counts.begin(), row_counts.end(), row_offsets_h.data() + 1);
+  std::partial_sum(row_counts.begin(), row_counts.end(),
+                   row_offsets_h.data() + 1);
   EKAT_REQUIRE_MSG(row_offsets_h(num_rows) == nnz,
                    "Error! Something went wrong while computing row offsets.\n"
                    "  - local nnz       : " +

@@ -13,7 +13,8 @@ namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestIceSupersatConservation
+    : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb() {
     constexpr Scalar latvap = C::LatVap;
@@ -24,7 +25,8 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
     IceSupersatConservationData baseline_data[max_pack_size];
 
     // Generate random input data
-    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    // Alternatively, you can use the baseline_data construtors/initializer
+    // lists to hardcode data
     for (auto &d : baseline_data) {
       d.randomize(engine);
       d.dt = baseline_data[0].dt; // hold this fixed, it is not packed data
@@ -33,11 +35,13 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
       d.latent_heat_sublim = latvap + latice;
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so
-    // that inout data is in original state
-    view_1d<IceSupersatConservationData> cxx_device("cxx_device", max_pack_size);
+    // Create copies of data for use by cxx and sync it to device. Needs to
+    // happen before reads so that inout data is in original state
+    view_1d<IceSupersatConservationData> cxx_device("cxx_device",
+                                                    max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size,
+              cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
     // Read baseline data
@@ -47,14 +51,15 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
       }
     }
 
-    // Get data from cxx. Run ice_supersat_conservation from a kernel and copy results back to host
+    // Get data from cxx. Run ice_supersat_conservation from a kernel and copy
+    // results back to host
     Kokkos::parallel_for(
         num_test_itrs, KOKKOS_LAMBDA(const Int &i) {
           const Int offset = i * Spack::n;
 
           // Init pack inputs
-          Spack cld_frac_i, qidep, qinuc, qinuc_cnt, qv, qv_sat_i, t_atm, qi2qv_sublim_tend,
-              qr2qv_evap_tend;
+          Spack cld_frac_i, qidep, qinuc, qinuc_cnt, qv, qv_sat_i, t_atm,
+              qi2qv_sublim_tend, qr2qv_evap_tend;
           Smask context;
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
             cld_frac_i[s]        = cxx_device(vs).cld_frac_i;
@@ -69,9 +74,10 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
             context.set(s, cxx_device(vs).context);
           }
           const bool use_hetfrz_classnuc = false;
-          Functions::ice_supersat_conservation(qidep, qinuc, qinuc_cnt, cld_frac_i, qv, qv_sat_i,
-                                               t_atm, cxx_device(offset).dt, qi2qv_sublim_tend,
-                                               qr2qv_evap_tend, use_hetfrz_classnuc, context);
+          Functions::ice_supersat_conservation(
+              qidep, qinuc, qinuc_cnt, cld_frac_i, qv, qv_sat_i, t_atm,
+              cxx_device(offset).dt, qi2qv_sublim_tend, qr2qv_evap_tend,
+              use_hetfrz_classnuc, context);
 
           // Copy spacks back into cxx_device view
           for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -105,8 +111,8 @@ struct UnitWrap::UnitTest<D>::TestIceSupersatConservation : public UnitWrap::Uni
 namespace {
 
 TEST_CASE("ice_supersat_conservation_bfb", "[p3]") {
-  using T =
-      scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceSupersatConservation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<
+      scream::DefaultDevice>::TestIceSupersatConservation;
 
   T t;
   t.run_bfb();

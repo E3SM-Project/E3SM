@@ -26,7 +26,8 @@ TEST_CASE("create_diag") {
     auto d3 = create_diagnostic("BlaH_123_at_lev_10", grid);
     REQUIRE(std::dynamic_pointer_cast<FieldAtLevel>(d3) != nullptr);
 
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_modeltop", grid)); // misspelled
+    REQUIRE_THROWS(
+        create_diagnostic("BlaH_123_at_modeltop", grid)); // misspelled
 
     // FieldAtPressureLevel
     auto d4 = create_diagnostic("BlaH_123_at_10mb", grid);
@@ -36,7 +37,8 @@ TEST_CASE("create_diag") {
     auto d6 = create_diagnostic("BlaH_123_at_10Pa", grid);
     REQUIRE(std::dynamic_pointer_cast<FieldAtPressureLevel>(d6) != nullptr);
 
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_400KPa", grid)); // invalid units
+    REQUIRE_THROWS(
+        create_diagnostic("BlaH_123_at_400KPa", grid)); // invalid units
 
     // FieldAtHeight
     auto d7 = create_diagnostic("BlaH_123_at_10m_above_sealevel", grid);
@@ -44,10 +46,12 @@ TEST_CASE("create_diag") {
     auto d8 = create_diagnostic("BlaH_123_at_10m_above_surface", grid);
     REQUIRE(std::dynamic_pointer_cast<FieldAtHeight>(d8) != nullptr);
 
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_10.5m", grid));              // missing _above_X
-    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1km_above_sealevel", grid)); // invalid units
     REQUIRE_THROWS(
-        create_diagnostic("BlaH_123_at_1m_above_the_surface", grid)); // invalid reference
+        create_diagnostic("BlaH_123_at_10.5m", grid)); // missing _above_X
+    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1km_above_sealevel",
+                                     grid)); // invalid units
+    REQUIRE_THROWS(create_diagnostic("BlaH_123_at_1m_above_the_surface",
+                                     grid)); // invalid reference
   }
 
   SECTION("precip_mass_flux") {
@@ -111,7 +115,8 @@ TEST_CASE("create_diag") {
   SECTION("vapor_flux") {
     auto d1 = create_diagnostic("MeridionalVapFlux", grid);
     REQUIRE(std::dynamic_pointer_cast<VaporFluxDiagnostic>(d1) != nullptr);
-    REQUIRE(d1->get_params().get<std::string>("wind_component") == "Meridional");
+    REQUIRE(d1->get_params().get<std::string>("wind_component") ==
+            "Meridional");
 
     auto d2 = create_diagnostic("ZonalVapFlux", grid);
     REQUIRE(std::dynamic_pointer_cast<VaporFluxDiagnostic>(d2) != nullptr);
@@ -126,11 +131,13 @@ TEST_CASE("create_diag") {
 
   SECTION("pot_temp") {
     auto d1 = create_diagnostic("LiqPotentialTemperature", grid);
-    REQUIRE(std::dynamic_pointer_cast<PotentialTemperatureDiagnostic>(d1) != nullptr);
+    REQUIRE(std::dynamic_pointer_cast<PotentialTemperatureDiagnostic>(d1) !=
+            nullptr);
     REQUIRE(d1->get_params().get<std::string>("temperature_kind") == "Liq");
 
     auto d2 = create_diagnostic("PotentialTemperature", grid);
-    REQUIRE(std::dynamic_pointer_cast<PotentialTemperatureDiagnostic>(d2) != nullptr);
+    REQUIRE(std::dynamic_pointer_cast<PotentialTemperatureDiagnostic>(d2) !=
+            nullptr);
     REQUIRE(d2->get_params().get<std::string>("temperature_kind") == "Tot");
   }
 

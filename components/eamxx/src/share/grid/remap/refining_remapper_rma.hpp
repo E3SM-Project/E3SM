@@ -45,7 +45,8 @@ namespace scream {
 
 class RefiningRemapperRMA : public HorizInterpRemapperBase {
 public:
-  RefiningRemapperRMA(const grid_ptr_type &tgt_grid, const std::string &map_file);
+  RefiningRemapperRMA(const grid_ptr_type &tgt_grid,
+                      const std::string &map_file);
 
   ~RefiningRemapperRMA();
 
@@ -54,17 +55,17 @@ protected:
 
   void setup_mpi_data_structures() override;
 
-  // This class uses itself to remap src grid geo data to the tgt grid. But in order
-  // to not pollute the remapper for later use, we must be able to clean it up after
-  // remapping all the geo data.
+  // This class uses itself to remap src grid geo data to the tgt grid. But in
+  // order to not pollute the remapper for later use, we must be able to clean
+  // it up after remapping all the geo data.
   void clean_up();
 
   // Wrap a pointer in an MPI_Win
   template <typename T> MPI_Win get_mpi_window(T *v, int n) const {
     MPI_Win win;
-    check_mpi_call(
-        MPI_Win_create(v, n * sizeof(T), sizeof(T), MPI_INFO_NULL, m_comm.mpi_comm(), &win),
-        "MPI_Win_create");
+    check_mpi_call(MPI_Win_create(v, n * sizeof(T), sizeof(T), MPI_INFO_NULL,
+                                  m_comm.mpi_comm(), &win),
+                   "MPI_Win_create");
     return win;
   }
 
@@ -84,9 +85,11 @@ protected:
   // Column info for each field.
   // Notes:
   //  - for subfields, col_stride!=col_size, otherwise they match
-  //  - col_offset!=0 only for subfield that are not the 0-th entry along subf dim.
+  //  - col_offset!=0 only for subfield that are not the 0-th entry along subf
+  //  dim.
   //  - in general, col_data = col_stride*icol+col_offset.
-  //  - strides/offsets  are *only* for m_src_fields (ov_src are contiguous, and tgt are only
+  //  - strides/offsets  are *only* for m_src_fields (ov_src are contiguous, and
+  //  tgt are only
   //    accessed via get_view).
   std::vector<int> m_col_size;
   std::vector<int> m_col_stride;
