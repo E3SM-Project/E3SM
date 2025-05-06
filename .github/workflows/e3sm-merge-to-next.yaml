@@ -1,0 +1,200 @@
+name: merge-to-next
+
+on:
+  pull_request:
+    types: [labeled]
+    branches: [master]
+
+env:
+  # This is the ONLY label that makes this action perform the merge
+  LABEL_NAME: "CI: merge-to-next"
+
+permissions:
+  pull-requests: write  # To unset label if set by a non-authorized user
+  contents: write       # To push to origin after merging
+
+jobs:
+  merge-to-next:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print who triggered the workflow
+        run: |
+          echo "The workflow was triggered by: ${{ github.actor }}"
+          echo "remove_label=no" >> $GITHUB_ENV
+          echo "proceed=yes" >> $GITHUB_ENV
+          echo "success=yes" >> $GITHUB_ENV
+      - name: Check label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Check which label was set
+            const label = context.payload.label.name; // Get the name of the label that was added
+            if (label !== process.env.LABEL_NAME ) {
+              console.log(`Label '${label}' does not match '${process.env.LABEL_NAME}'. Nothing to do.`);
+              core.exportVariable('proceed', 'no');
+              return; // Early return
+            } else {
+              console.log(`Label '${label}' matches '${process.env.LABEL_NAME}'. Will proceed.`);
+            }
+
+      - name: Check actor team
+        if: ${{ env.proceed == 'yes' }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.ORG_READ_ACCESS_TOKEN }}
+          script: |
+
+            // Check if user can merge to next (i.e., the user is an integrator)
+            const teamName = 'e3sm-integrators';
+            const org = context.repo.owner;
+
+            try {
+              const { data: membership } = await github.rest.teams.getMembershipForUserInOrg({
+                org,
+                team_slug: teamName,
+                username: context.actor
+              });
+
+              if (membership.state === 'active') {
+                console.log(`${context.actor} is a member of the team "${teamName}". Will proceed.`);
+              } else {
+                console.log(`${context.actor} is NOT a member of the team "${teamName}".`);
+                console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+                core.exportVariable('proceed', 'no');
+                core.exportVariable('remove_label', 'yes');
+                core.exportVariable('success', 'no');
+              }
+            } catch (error) {
+              if (error.status === 404) {
+                console.log(`${context.actor} is NOT a member of the team "${teamName}".`);
+                console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+                core.exportVariable('proceed', 'no');
+                core.exportVariable('remove_label', 'yes');
+                core.exportVariable('success', 'no');
+              } else {
+                console.error(`Error checking membership: ${error.message}`);
+                console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+                core.exportVariable('proceed', 'no');
+                core.exportVariable('remove_label', 'yes');
+                core.exportVariable('success', 'no');
+              }
+            }
+
+      - name: Check mergeability
+        if: ${{ env.proceed == 'yes' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Get the pull request details
+            const prNumber = context.payload.pull_request.number; // Get the PR number
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            // Check if the pull request is mergeable (no conflicts and not a draft)
+            if (pullRequest.mergeable_state!=='clean') {
+              console.log(`The pull request is not mergeable (mergeable_state=${pullRequest.mergeable_state})`);
+              console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+              core.exportVariable('proceed', 'no');
+              core.exportVariable('remove_label', 'yes');
+              core.exportVariable('success', 'no');
+              return;
+            } else {
+              console.log(`The pull request is mergeable. Will proceed.`);
+            }
+
+            // Check that there is at least one approval and NO requests for changes
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            let hasApproval = false;
+            let hasRequestChanges = false;
+            for (const review of reviews.data) {
+              if (review.state === 'APPROVED') {
+                hasApproval = true;
+              }
+              if (review.state === 'CHANGES_REQUESTED') {
+                hasRequestChanges = true;
+              }
+            }
+            if (hasApproval && !hasRequestChanges) {
+              console.log(`The pull request has at least one approval and no request changes. Will proceed.`);
+            } else if (hasRequestChanges) {
+              console.log(`The pull request has request changes. Will not merge.`);
+              console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+              core.exportVariable('proceed', 'no');
+              core.exportVariable('remove_label', 'yes');
+              core.exportVariable('success', 'no');
+              return;
+            } else {
+              console.log(`The pull request does not have any approvals. Will not merge.`);
+              console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+              core.exportVariable('proceed', 'no');
+              core.exportVariable('remove_label', 'yes');
+              core.exportVariable('success', 'no');
+              return;
+            }
+      - name: Remove label
+        if: ${{ env.remove_label == 'yes' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number; // Get the PR number
+
+            try {
+              // Remove the label from the pull request
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: process.env.LABEL_NAME
+              });
+              console.log(`Label '${process.env.LABEL_NAME}' has been removed from pull request #${prNumber}.`);
+            } catch (error) {
+              console.log(`Failed to remove label '${process.env.LABEL_NAME}' from pull request #${prNumber}: ${error.message}`);
+              core.exportVariable('proceed', 'no');
+              core.exportVariable('success', 'no');
+            }
+      - name: Perform merge
+        if: ${{ env.proceed == 'yes' }}
+        run: |
+          # Variables
+          PR_NUMBER=${{ github.event.pull_request.number }} # Get the PR number
+          # TARGET_BRANCH="next"
+          TARGET_BRANCH="bartgol/mock-next"
+
+          # Extract necessary information
+          BRANCH=${{ github.head_ref }}
+          AUTHOR=${{ github.event.pull_request.user.login }}
+          LABELS=${{ github.event.pull_request.labels }}
+          BODY=${{ github.event.pull_request.body }}
+          BODY_LINES=($(echo "$BODY" | tr '\n' '\n')) # Split body into lines
+          BODY_HEADER=$(printf "%s\n" "${BODY_LINES[@]}" | awk '/---/{exit}1') # Get body until separator
+
+          # Prepare commit message
+
+          COMMIT_TITLE="Merge branch '$BRANCH' into $TARGET_BRANCH (PR #$PR_NUMBER)"
+          COMMIT_BODY="PR Author: $AUTHOR\nPR Labels: $LABELS\n\n$BODY_HEADER"
+
+          # Set git credentials
+          git config --local user.name "E3SM-Bot"
+          git config --local user.email "e3sm-bot@nowhere.com"
+
+          # Checkout the target branch
+          git checkout $TARGET_BRANCH
+
+          # Merge the pull request's source branch into the target branch
+          git merge "$BRANCH" -m "$COMMIT_TITLE" -m "$COMMIT_BODY"
+
+          # Push to the remote
+          git push origin $TARGET_BRANCH
+
+      - name: Final check
+        if: ${{ env.success == 'no' }}
+        run: |
+          echo "Something went wrong."
+          exit 1
