@@ -3979,19 +3979,19 @@
 		/>
                 <var name="nAccumulatedfwFlux" type="integer" dimensions="Time"
                          description="Number of accumulations in time averaging of surface water fluxes"
-                         packages="scaledDISMFPKG"
+                         packages="scaledSFWFPKG"
                 />
                 <var name="avgprecFlux" type="real" dimensions="Time" units="kg s^-1"
                          description="The daily mean, area integrated value of precipitation flux (rain+snow)."
-                         packages="scaledDISMFPKG"
+                         packages="scaledSFWFPKG"
 		/>
                 <var name="avgfwFlux" type="real" dimensions="Time" units="kg s^-1"
                          description="The daily mean, area integrated value of freshwater flux (ssh inferred)."
-                         packages="scaledDISMFPKG"
+                         packages="scaledSFWFPKG"
 		/>
                 <var name="avgsalFlux" type="real" dimensions="Time" units="kg s^-1"
                          description="The daily mean, area integrated value of salinity flux (salinity inferred)."
-                         packages="scaledDISMFPKG"
+                         packages="scaledSFWFPKG"
                 />
                 <var name="totalAccumulatedprecFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
                          description="The history of accumulated total precipitation fluxes(rain+snow), used to compute a running mean."
@@ -4009,7 +4009,7 @@
                          description="The number of valid days used for computing the surface water balance."
                          packages="scaledSFWFPKG"
                 />
-                <var name="SFWFScalingFactor" type="real" dimensions="Time" units="kg s^-1"
+                <var name="SFWFScalingFactor" type="real" dimensions="Time" units="fractional"
                          description="The scaling factor of surface freshwater flux, derived over the nValidTotalfwFluxHistory valid entries"
                          packages="scaledSFWFPKG"
                 />
