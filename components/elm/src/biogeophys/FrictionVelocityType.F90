@@ -53,9 +53,9 @@ module FrictionVelocityType
      real(r8), pointer :: uaf_patch        (:)   ! patch canopy air wind speed [m/s]
      real(r8), pointer :: taf_patch        (:)   ! patch canopy air temperature [K]
      real(r8), pointer :: qaf_patch        (:)   ! patch canopy specific humidity [kg/kg]
-     real(r8), pointer :: obu_patch        (:)   ! patch Obukhov length [m]
+     real(r8), pointer :: obu_patch        (:)   ! patch Obukhov length scale [m]
      real(r8), pointer :: zeta_patch       (:)   ! patch dimensionless stability parameter
-     real(r8), pointer :: vpd_patch        (:)   ! patch vapour pressure deficit [Pa]
+     real(r8), pointer :: vpd_patch        (:)   ! patch vapour pressure deficit [kPa]
      
    contains
 
@@ -289,7 +289,7 @@ contains
 
     this%obu_patch(begp:endp) = spval
     call hist_addfld1d (fname='OBU', units='m', &
-         avgflag='A', long_name='Obukhov length', &
+         avgflag='A', long_name='Obukhov length scale', &
          ptr_patch=this%obu_patch, default='inactive')
 
     this%zeta_patch(begp:endp) = spval
@@ -298,7 +298,7 @@ contains
          ptr_patch=this%zeta_patch, default='inactive')
 
     this%vpd_patch(begp:endp) = spval
-    call hist_addfld1d (fname='VPD', units='Pa', &
+    call hist_addfld1d (fname='VPD', units='kPa', &
          avgflag='A', long_name='vapour pressure deficit', &
          ptr_patch=this%vpd_patch, default='inactive')
 
