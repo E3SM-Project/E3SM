@@ -67,13 +67,10 @@ module ocn_scaled_sfwf
     logical :: scaledSFWFOn
     character (len=*), parameter :: alarmID = 'scaledSFWFUpdateAlarm'
 
-<<<<<<< HEAD
     real (kind=RKIND) :: earthArea ! surface area of earth (m2)
 
     real(kind=RKIND) :: rhow, areaCellGlobal, volumeCellGlobal
 
-=======
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 !***********************************************************************
 
 contains
@@ -81,29 +78,17 @@ contains
 
 !***********************************************************************
 !
-<<<<<<< HEAD
 !  routine ocn_scaled_sfwf_init
-=======
-!  routine ocn_init_scaled_sfwf
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 !
 !> \brief   Initialize scaling of data freshwater fluxes
 !> \author Shixuan Zhang 
 !> \date   May 2025
 !> \details
-<<<<<<< HEAD
 !>  Set alarms needed to compute yearly and running means of water fluxes 
 !
 !-----------------------------------------------------------------------
 
     subroutine ocn_scaled_sfwf_init(domain)!{{{
-=======
-!>  Set alarms needed to compute daily and running means of water fluxes 
-!
-!-----------------------------------------------------------------------
-
-    subroutine ocn_init_scaled_sfwf(domain)!{{{
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
         type (domain_type), intent(inout) :: domain
 
@@ -113,20 +98,15 @@ contains
 
         integer :: err_tmp
 
-<<<<<<< HEAD
         character(len=19) :: timeString
 
         if (config_use_precip_scaling) then
-=======
-        if (config_sfwf_balance) then
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
             scaledSFWFOn = .true.
         else
             scaledSFWFOn = .false.
             return
         endif
 
-<<<<<<< HEAD
         if (trim(config_precip_scaling_mode) /= 'time-dependent' .and.  &
             trim(config_precip_scaling_mode) /= 'constant') then
             call mpas_log_write('scaledSFWFOn = .true. requires config_precip_scaling_mode = time-dependent or constant', &
@@ -160,24 +140,6 @@ contains
 
 
     end subroutine ocn_scaled_sfwf_init!}}}
-=======
-        if (config_sfwf_balance_type < 0) then
-            call mpas_log_write('scaledSFWFOn = .true. requires config_sfwf_balance_type >= 0', &
-                                mpas_LOG_CRIT)
-        endif
-
-        ! Setup Alarm for updating of scaled SFWF
-        alarmTime = mpas_get_clock_time(domain % clock, &
-                                        mpas_START_TIME, &
-                                        ierr=err_tmp)
-        call mpas_set_timeInterval(alarmTimeStep, &
-                                   timeString='0000-00-01_00:00:00', &
-                                   ierr=err_tmp)
-        call mpas_add_clock_alarm(domain % clock, alarmID, alarmTime + alarmTimeStep, &
-                                  alarmTimeInterval=alarmTimeStep, ierr=err_tmp)
-
-    end subroutine ocn_init_scaled_sfwf!}}}
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
 
 !***********************************************************************
@@ -188,18 +150,12 @@ contains
 !> \author Shixuan Zhang 
 !> \date   May 2025
 !> \details
-<<<<<<< HEAD
 !>  Accumulate yearly mean of surface freshwater fluxes. 
 !>  If we are at the end of a year, used it to derive a factor to scale 
-=======
-!>  Accumulate daily mean of surface freshwater fluxes. 
-!>  If we are at the end of a day, used it to derive a factor to scale 
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 !>  down/up precipitation fluxes and maintain freshwater balance.  
 !
 !-----------------------------------------------------------------------
 
-<<<<<<< HEAD
     subroutine ocn_update_scaling_factor(domain,timeLevel)!{{{
 
        type (domain_type), intent(inout) :: domain
@@ -328,34 +284,6 @@ contains
         end if
 
     end subroutine compute_mass_from_ssh!}}}
-=======
-    subroutine ocn_update_scaling_factor(domain)!{{{
-
-        type (domain_type), intent(inout) :: domain
-
-        integer :: err_tmp
-
-        if (.not. scaledSFWFOn) then
-            return
-        end if
-
-        ! since the current clock time is for the end of the accumulation
-        ! intereval, first, accumulate the daily mean
-        call accumulate_mean_fw_fluxes(domain)
-
-       ! then, compute update the history and running mean if we are at the
-       ! end of a day
-       if(mpas_is_alarm_ringing(domain % clock, alarmID, ierr=err_tmp)) then
-#ifdef mpas_DEBUG
-            call mpas_log_write('       Computing Scaling Factor For SFWF')
-#endif
-            call update_scaling_factor(domain)
-            call mpas_reset_clock_alarm(domain % clock, alarmID, ierr=err_tmp)
-        endif
-
-    end subroutine ocn_update_scaling_factor!}}}
-
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
 !***********************************************************************
 !
@@ -366,7 +294,6 @@ contains
 !> \date   May 2025
 !> \details
 !>  Accumulate current surface freshwater and precipitation fluxes 
-<<<<<<< HEAD
 !>  into the yearly mean value
 !
 !-----------------------------------------------------------------------
@@ -377,21 +304,10 @@ contains
 
         integer, intent(in) :: timeLevel
 
-=======
-!>  into the daily mean value
-!
-!-----------------------------------------------------------------------
-
-    subroutine accumulate_mean_fw_fluxes(domain)!{{{
-
-        type (domain_type), intent(inout) :: domain
-
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
         type (block_type), pointer :: block_ptr
 
         type (mpas_pool_type), pointer ::  & 
                 forcingPool, & 
-<<<<<<< HEAD
                 meshPool
 
         real(kind=RKIND), dimension(:), pointer :: &
@@ -414,58 +330,6 @@ contains
              localArrayForPrecSum
 
         integer :: iCell, k
-=======
-                statePool, &
-                tracersPool, &
-                meshPool
-
-        type (MPAS_timeInterval_type) :: &
-                timeStepESMF
-
-        real(kind=RKIND), dimension(:), pointer :: &
-                areaCell, &
-                rainFlux, &
-                snowFlux, &
-                sshOld, &
-                sshNew
-
-        real(kind=RKIND), dimension(:,:,:), pointer :: &
-                activeTracersNew, &
-                activeTracersOld
-  
-        integer, dimension(:), pointer :: & 
-                minLevelCell, & 
-                maxLevelCell
-
-        real (kind=RKIND), pointer :: &
-                avgprecFlux,  &
-                avgfwFlux, &
-                avgsalFlux
-
-        integer, pointer :: & 
-                nCellsSolve, & 
-                nVertLevels, &
-                indexSalinity, &
-                nAccumulated
-
-        real (kind=RKIND) :: & 
-                precFlux, & 
-                fwFlux, &
-                salFlux
-
-        real(kind=RKIND) :: dt
-
-        real (kind=RKIND), dimension(:), allocatable :: & 
-             localArrayForPrecSum, &
-             localArrayForSSHSum, &
-             localArrayForSalinitySum
-
-        integer :: &
-             iCell, &
-             k
-
-        call mpas_get_timeInterval(timeStepESMF, dt=dt)
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
         block_ptr => domain % blocklist
 
@@ -473,15 +337,10 @@ contains
 
         ! independent of blocks
         call mpas_pool_get_array(forcingPool, 'avgprecFlux', avgprecFlux)
-<<<<<<< HEAD
-=======
-        call mpas_pool_get_array(forcingPool, 'avgfwFlux', avgfwFlux)
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
         call mpas_pool_get_dimension(forcingPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedfwFlux', nAccumulated)
 
-<<<<<<< HEAD
         if ( nAccumulated == 0 ) then 
            call mpas_pool_get_array(forcingPool, "SSHinitial", SSHinitial)
            call compute_mass_from_ssh(domain,timeLevel,SSHinitial)
@@ -503,56 +362,16 @@ contains
            allocate(localArrayForPrecSum(nCellsSolve))
 
            localArrayForPrecSum(:) = 0.0_RKIND
-=======
-        do while (associated(block_ptr))
-
-           call mpas_pool_get_dimension(block_ptr % dimensions, "nCellsSolve", nCellsSolve)
-           call mpas_pool_get_subpool(block_ptr % structs, "mesh", meshPool)
-           call mpas_pool_get_subpool(block_ptr % structs, "forcing", forcingPool)
-           call mpas_pool_get_subpool(block_ptr % structs, "state", statePool)
-
-           call mpas_pool_get_array(meshPool, "areaCell", areaCell)
-           call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
-           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
-           call mpas_pool_get_array(statePool, "layerThickness", layerThickness, 1)
-           call mpas_pool_get_array(statePool, 'ssh', sshNew, 2)
-           call mpas_pool_get_array(statePool, 'ssh', sshOld, 1)
-
-           call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-           call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
-           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2) 
-           call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersOld, 1) 
-
-           call mpas_pool_get_array(forcingPool, 'rainFlux',               rainFlux)
-           call mpas_pool_get_array(forcingPool, 'snowFlux',               snowFlux)
-
-           call mpas_pool_get_array(forcingPool, 'avgprecFlux', avgprecFlux)
-           call mpas_pool_get_array(forcingPool, 'avgfwFlux', avgfwFlux)
-
-           call mpas_pool_get_array(forcingPool, 'nAccumulatedfwFlux', nAccumulated)
-
-           allocate(localArrayForPrecSum(nCellsSolve))
-           allocate(localArrayForSSHSum(nCellsSolve))
-           localArrayForPrecSum(:) = 0.0_RKIND
-           localArrayForSSHSum(:) = 0.0_RKIND
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
            !precipitation flux and ssh 
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell=1,nCellsSolve
-<<<<<<< HEAD
                localArrayForPrecSum(iCell) = (rainFlux(iCell) + snowFlux(iCell)) * areaCell(iCell) ! unit: kg/s
-=======
-               localArrayForPrecSum(iCell) = (rainFlux(iCell)+snowFlux(iCell)) * areaCell(iCell) ! unit: kg/s
-               localArrayForSSHSum(iCell) = (sshNew(iCell)-sshOld(iCell))* areaCell(iCell) * rho_fw / dt ! unit: kg/s
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
            enddo
            !$omp end do
            !$omp end parallel
 
-<<<<<<< HEAD
            block_ptr => block_ptr % next
         end do ! block_ptr
 
@@ -561,55 +380,14 @@ contains
         avgprecFlux = (avgprecFlux * nAccumulated + precFlux) / ( nAccumulated + 1 )
 
         deallocate (localArrayForPrecSum)
-=======
-           allocate(localArraySalinitySum(nCellsSolve))
-           localArraySalinitySum(:) = 0.0_RKIND
-           
-           !salinity flux
-           !convert to 
-           !$omp parallel
-           !$omp do schedule(runtime) private(k)
-           do iCell = 1,nCells
-             do k = minLevelCell(iCell), maxLevelCell(iCell)
-                localArraySalinitySum(iCell) = localArraySalinitySum(iCell) - & 
-                     areaCell(iCell) * layerThickness(k,iCell) * & ! cell volume
-                     (activeTracersNew(indexSalinity,k,iCell) - activeTracersOld(indexSalinity,k,iCell)) * & ! * ! cell salinity
-                     rho_fw * 1.e3_RKIND / ocn_ref_salinity / dt ! F = - rho * h * 1/S * dS/dt 
-             end do
-           end do
-           !$omp end do
-           !$omp end parallel
-
-            block_ptr => block_ptr % next
-        end do ! block_ptr
-
-        precFlux = mpas_global_sum(localArrayForPrecSum, domain % dminfo % comm)
-        fwFlux = mpas_global_sum(localArrayForSSHSum, domain % dminfo % comm)
-        salFlux = mpas_global_sum(localArraySalinitySum, domain % dminfo % comm)
-
-        deallocate (localArrayForPrecSum)
-        deallocate (localArrayForSSHSum)
-        deallocate (localArraySalinitySum)
-
-        avgprecFlux = (avgprecFlux * nAccumulated + precFlux) / ( nAccumulated + 1 )
-        avgfwFlux = (avgfwFlux * nAccumulated + fwFlux) / ( nAccumulated + 1 )
-        avgsalFlux = (avgsalFlux * nAccumulated + salFlux) / ( nAccumulated + 1 )
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
         nAccumulated = nAccumulated + 1
 
     end subroutine accumulate_mean_fw_fluxes!}}}
 
-<<<<<<< HEAD
 !***********************************************************************
 !
 !  routine compute_scaling_factor
-=======
-
-!***********************************************************************
-!
-!  routine update_scaling_factor
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 !
 !> \brief  Update scaling factors for data freshwater fluxes 
 !> \author Shixuan Zhang 
@@ -620,7 +398,6 @@ contains
 !
 !-----------------------------------------------------------------------
 
-<<<<<<< HEAD
     subroutine compute_scaling_factor(domain,timeLevel)!{{{
 
         type (domain_type), intent(inout) :: domain
@@ -639,35 +416,16 @@ contains
                 avgfwFlux, &
                 SSHinitial, &
                 SSHfinal, & 
-=======
-    subroutine update_scaling_factor(domain)!{{{
-
-        type (domain_type), intent(inout) :: domain
-
-        type (block_type), pointer :: block_ptr
-        type (mpas_pool_type), pointer :: forcingPool
-
-        real (kind=RKIND), pointer :: & 
-                avgprecFlux, & 
-                avgfwFlux, & 
-                avgsalFlux, & 
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
                 SFWFScalingFactor
 
         real (kind=RKIND), dimension(:), pointer :: & 
                 totalAccumulatedprecFluxHistory, &
-<<<<<<< HEAD
                 totalAccumulatedfwFluxHistory
-=======
-                totalAccumulatedfwFluxHistory, &
-                totalAccumulatedsalFluxHistory
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
         integer, pointer :: nValidHistory, nAccumulated
 
         real (kind=RKIND), dimension(:), allocatable :: &
                 tmpprecHistory, &
-<<<<<<< HEAD
                 tmpfwHistory
 
         real (kind=RKIND) :: previousprecFlux, previousfwFlux
@@ -683,23 +441,12 @@ contains
         call mpas_get_timeInterval(timeStepESMF, dt=dt)
 
         ! independent of blocks
-=======
-                tmpfwHistory, &
-                tmpsalHistory 
-
-        real (kind=RKIND) :: timeInterval
-        real (kind=RKIND) :: previousprecFlux, previousfwFlux, previoussalFlux
-        real (kind=RKIND) :: precFluxMean, fwFluxMean, salFluxMean
-        integer :: nHistory
-
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
         block_ptr => domain % blocklist
         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedfwFlux', nAccumulated)
         call mpas_pool_get_array(forcingPool, 'nValidTotalfwFluxHistory', nValidHistory)
         call mpas_pool_get_array(forcingPool, 'avgprecFlux', avgprecFlux)
         call mpas_pool_get_array(forcingPool, 'avgfwFlux', avgfwFlux)
-<<<<<<< HEAD
         call mpas_pool_get_array(forcingPool, 'totalAccumulatedprecFluxHistory', totalAccumulatedprecFluxHistory)
         call mpas_pool_get_array(forcingPool, 'totalAccumulatedfwFluxHistory', totalAccumulatedfwFluxHistory)
         call mpas_pool_get_array(forcingPool, 'SFWFScalingFactor', SFWFScalingFactor)
@@ -799,64 +546,5 @@ contains
         end if 
 
     end subroutine compute_scaling_factor!}}}
-=======
-        call mpas_pool_get_array(forcingPool, 'avgsalFlux', avgsalFlux)
-        call mpas_pool_get_array(forcingPool, 'totalAccumulatedprecFluxHistory', totalAccumulatedprecFluxHistory)
-        call mpas_pool_get_array(forcingPool, 'totalAccumulatedfwFluxHistory', totalAccumulatedfwFluxHistory)
-        call mpas_pool_get_array(forcingPool, 'totalAccumulatedsalFluxHistory', totalAccumulatedsalFluxHistory)
-        call mpas_pool_get_array(forcingPool, 'SFWFScalingFactor', SFWFScalingFactor)
-
-        nHistory = config_sfwf_history_days 
-
-        previousprecFlux = totalAccumulatedprecFluxHistory(nValidHistory)
-        previousfwFlux = totalAccumulatedfwFluxHistory(nValidHistory)
-        previoussalFlux = totalAccumulatedsalFluxHistory(nValidHistory)
-
-        if (nValidHistory == 0) then
-            ! here followed the module mpas_ocn_scaled_dismf.F
-            nValidHistory = 1
-        end if
-
-        if (nValidHistory == nHistory) then
-            ! we need to shift the history, since it's full
-            allocate(tmpprecHistory(nHistory))
-            allocate(tmpfwHistory(nHistory))
-            allocate(tmpsalHistory(nHistory))
-            tmpprecHistory(:) = totalAccumulatedprecFluxHistory(:)
-            tmpfwHistory(:) = totalAccumulatedfwFluxHistory(:)
-            tmpsalHistory(:) = totalAccumulatedsalFluxHistory(:)
-            totalAccumulatedprecFluxHistory(1:nHistory - 1) = tmpprecHistory(2:nHistory)
-            totalAccumulatedfwFluxHistory(1:nHistory - 1) = tmpfwHistory(2:nHistory)
-            totalAccumulatedsalFluxHistory(1:nHistory - 1) = tmpsalHistory(2:nHistory)
-        else
-            ! the history isn't full yet, so we just add to the end
-            nValidHistory = nValidHistory + 1
-        end if
-
-        ! add the new total, the previous total plus the new daily average
-        totalAccumulatedprecFluxHistory(nValidHistory) = previousprecFlux + SHR_CONST_CDAY * avgprecFlux
-        totalAccumulatedfwFluxHistory(nValidHistory) = previousfwFlux + SHR_CONST_CDAY * avgfwFlux
-        totalAccumulatedsalFluxHistory(nValidHistory) = previoussalFlux + SHR_CONST_CDAY * avgsalFlux
-
-        timeInterval = SHR_CONST_CDAY * (nValidHistory - 1)
-        ! the running mean is the difference between the newest and oldest
-        ! totals divided by the time between them
-        precFluxMean = (totalAccumulatedprecFluxHistory(nValidHistory) - totalAccumulatedprecFluxHistory(1)) &
-                       / timeInterval
-        fwFluxMean = (totalAccumulatedfwFluxHistory(nValidHistory) - totalAccumulatedfwFluxHistory(1)) &
-                      / timeInterval
-        salFluxMean = (totalAccumulatedsalFluxHistory(nValidHistory) - totalAccumulatedsalFluxHistory(1)) &
-                      / timeInterval
-
-        SFWFScalingFactor = SFWFScalingFactor - (fwFluxMean + salFluxMean) / precFluxMean
-
-        ! reset daily averaging of the precipitation and freshwater fluxes 
-        nAccumulated = 0
-        avgprecFlux = 0.0_RKIND 
-        avgfwFlux = 0.0_RKIND
-        avgsalFlux = 0.0_RKIND
-
-    end subroutine update_scaling_factor!}}}
->>>>>>> f16cc1705a (Code change to dynamically compute a scaling factor for the fresh water flux)
 
 end module ocn_scaled_sfwf
