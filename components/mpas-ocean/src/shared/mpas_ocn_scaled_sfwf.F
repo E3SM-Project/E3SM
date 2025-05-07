@@ -239,6 +239,7 @@ contains
         ! independent of blocks
         call mpas_pool_get_array(forcingPool, 'avgprecFlux', avgprecFlux)
         call mpas_pool_get_array(forcingPool, 'avgfwFlux', avgfwFlux)
+        call mpas_pool_get_array(forcingPool, 'avgsalFlux', avgsalFlux)
 
         call mpas_pool_get_dimension(forcingPool, 'nCellsSolve', nCellsSolve)
         call mpas_pool_get_array(forcingPool, 'nAccumulatedfwFlux', nAccumulated)
@@ -268,6 +269,7 @@ contains
 
            call mpas_pool_get_array(forcingPool, 'avgprecFlux', avgprecFlux)
            call mpas_pool_get_array(forcingPool, 'avgfwFlux', avgfwFlux)
+           call mpas_pool_get_array(forcingPool, 'avgsalFlux', avgsalFlux)
 
            call mpas_pool_get_array(forcingPool, 'nAccumulatedfwFlux', nAccumulated)
 
