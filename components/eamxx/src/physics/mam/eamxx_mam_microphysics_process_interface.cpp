@@ -189,7 +189,7 @@ void MAMMicrophysics::set_grids(
 
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
-  add_field<Computed>("extfrc", scalar3d_extcnt, kg / m3 / s, grid_name);
+  add_field<Computed>("mam4_external_forcing", scalar3d_extcnt, kg / m3 / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -938,16 +938,18 @@ void MAMMicrophysics::run_impl(const double dt) {
       });  // parallel_for for the column loop
   Kokkos::fence();
 
-  auto extfrc_fm = get_field_out("extfrc").get_view<Real***>();
+  auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
   // Avogadro's number [molecules/mol]
   const Real Avogadro = haero::Constants::avogadro;
   // Mapping from external forcing species index to physics constituent index
   // NOTE: These indices should match the species in extfrc_lst
   // TODO: getting rid of hard-coded indices
-  const int extfrc_pcnst_index[extcnt] = {3, 6, 14, 27, 28, 13, 18, 30, 5};
-
-  auto molar_mass_g_per_mol_tmp = mam4::gas_chemistry::adv_mass;
+  Kokkos::Array<int, extcnt> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
+  Kokkos::Array<Real, gas_pcnst> molar_mass_g_per_mol_tmp;
+  for (int i = 0; i < gas_pcnst; ++i) {
+    molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
+  }
 
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
@@ -956,10 +958,10 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
-      auto molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
-      
+      const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
+      // Modify units to MKS units: [molec/cm3/s] to [kg/m3/s]
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
-      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;  // transpose [ncol][nlev][extcnt] -> [ncol][extcnt][nlev]
+      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
   });
 
   // postprocess output
