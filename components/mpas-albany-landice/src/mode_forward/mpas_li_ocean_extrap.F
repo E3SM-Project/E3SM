@@ -436,16 +436,8 @@ contains
             oceanTemperature(:,:) = oceanField(1,:,:)
             oceanSalinity(:,:) = oceanField(2,:,:)
 
-            call recalculate_thermal_forcing(domain, err)
+            call calculate_thermal_forcing(domain, err)
 
-            ! Ensure zero thermal forcing where temp and salt are zero
-            do iCell = 1, nCells
-               do iLayer = 1, nISMIP6OceanLayers
-                  if ( (oceanTemperature(iLayer,iCell) == 0.0_RKIND) .and. (oceanSalinity(iLayer,iCell) == 0.0_RKIND) ) then
-                     ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
-                  endif
-               enddo
-            enddo
          else 
             ismip6shelfMelt_3dThermalForcing(:,:) = oceanField(1,:,:)
          endif
@@ -775,19 +767,19 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine recalculate_thermal_forcing
+!  !  routine calculate_thermal_forcing
 !
-!> \brief recalculate thermal forcing from extrapolated temp/salt
+!> \brief calculates thermal forcing from temp/salt
 !> \author Alex Hager
 !> \date   September 2024
 !> \details
-!> Use extrapolated temperature and salt to recalculate thermal forcing 
-!> throughout the extrapolated region. If config_TF_iceberg_melt is true,
-!> then ocean temperature in the upper water column will first be 
-!> artificially cooled to immitate iceberg melt-driven cooling.
+!> Use temperature and salinity to calculate thermal forcing. 
+!> If config_TF_iceberg_melt is true, then ocean temperature 
+!> in the upper water column will first be artificially cooled 
+!> to immitate iceberg melt-driven cooling.
 !-----------------------------------------------------------------------
 
-   subroutine recalculate_thermal_forcing(domain, err)
+   subroutine calculate_thermal_forcing(domain, err)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -898,13 +890,20 @@ contains
                ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = oceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
             enddo
         endif
+      
+        ! Ensure no TF where no T/S
+        do iLayer = 1, nISMIP6OceanLayers
+           if ( (oceanTemperature(iLayer,iCell) == 0.0_RKIND) .and. (oceanSalinity(iLayer,iCell) == 0.0_RKIND) ) then
+              ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
+           endif
+        enddo
       enddo
       
       deallocate(freezingTemperature)
 
       block => block % next
       enddo
-   end subroutine recalculate_thermal_forcing
+   end subroutine calculate_thermal_forcing
 end module li_ocean_extrap
 
 
