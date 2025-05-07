@@ -944,8 +944,8 @@
 			<var name="growOceanMaskHoriz" packages="extrapOceanData" />
                         <var name="seedOceanMaskHoriz" packages="extrapOceanData" />
                         <var name="icebergFjordMask" packages="extrapOceanData"/>
-                        <var name="MPAS_3dOceanTemperature" packages="extrapOceanData"/>
-                        <var name="MPAS_3dOceanSalinity" packages="extrapOceanData"/>
+                        <var name="oceanTemperature" packages="extrapOceanData"/>
+                        <var name="oceanSalinity" packages="extrapOceanData"/>
 		</stream>
 
 
@@ -1723,10 +1723,10 @@ is the value of that variable from the *previous* time level!
                 <var name="growOceanMaskHoriz" type="integer" dimensions="nCells Time" units="none"
                      description="growmask for horizontal floodfill used to determine the over-extrapolaton region into grounded ice.  It is initialized as cells where bedTopography is below sea level and represents all the cells that seedOceanMaskHoriz could fill into.  The only purpose is for calculating availOceanMask."
                 />
-                <var name="MPAS_3dOceanTemperature" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
+                <var name="oceanTemperature" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                         description="MPAS-Ocean potential temperature to be extrapolated to all grounding lines if config_recalcuate_thermal_forcing is true."
                 />
-                <var name="MPAS_3dOceanSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
+                <var name="oceanSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
                         description="MPAS-Ocean salinity to be extrapolated to all grounding lines if config_recalcuate_thermal_forcing is true."
                 />
                 <var name="icebergFjordMask" type="integer" dimensions="nCells Time" units="none" default_value="0"
