@@ -116,8 +116,8 @@
 		<dim name="nRemovedIceRunoffHistory" definition="namelist:config_ais_ice_runoff_history_days"
 			 description="The number of days stored in the history of removed ice runoff."
 		/>
-                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_sfwf_history_days"
-                         description="The number of days stored in the history of surface freshwater fluxes."
+                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_sfwf_history_years"
+                         description="The number of years stored in the history of surface freshwater fluxes."
                 />
 	</dims>
 
@@ -758,8 +758,8 @@
 					description="Factors applied on precipitation flux to adjust freshwater conservation in ocean model."
                        		 	possible_values="Any positive integer"
                 />
-                <nml_option name="config_sfwf_history_days" type="integer" default_value="366" units="days"
-                       			description="The number of days over one or multiple years. The default is 366 days (1 years + 1day)."
+                <nml_option name="config_sfwf_history_years" type="integer" default_value="1" units="years"
+                       			description="The number of years. The default is 1 year."
                        			possible_values="Any positive integer"
                 />
 	</nml_record>
