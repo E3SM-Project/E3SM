@@ -815,6 +815,12 @@ if ($OCN_ISMF eq 'coupled') {
 	add_default($nl, 'config_frazil_under_land_ice');
 }
 
+############################
+# Namelist group: land_ice #
+############################
+
+add_default($nl, 'config_land_ice_rho_ocean');
+
 ###################################
 # Namelist group: land_ice_fluxes #
 ###################################
@@ -1866,6 +1872,7 @@ my @groups = qw(run_modes
                 self_attraction_loading
                 tidal_potential_forcing
                 frazil_ice
+                land_ice
                 land_ice_fluxes
                 advection
                 bottom_drag
