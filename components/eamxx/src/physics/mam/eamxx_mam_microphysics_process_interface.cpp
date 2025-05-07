@@ -182,6 +182,15 @@ void MAMMicrophysics::set_grids(
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
                      grid_name);
 
+  // Number of externally forced chemical species
+  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+
+  FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
+
+  // Register computed fields for external forcing
+  // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
+  add_field<Computed>("mam4_external_forcing", scalar3d_extcnt, kg / m3 / s, grid_name);
+
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
   {
@@ -454,6 +463,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
+  
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -534,7 +544,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
         ElevatedEmissionsDataReader_[i], curr_month,
         *ElevatedEmissionsHorizInterp_[i], elevated_emis_data_[i]);
   }
+
   // //
+
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
   acos_cosine_zenith_      = view_1d("device_acos(cosine_zenith)", ncol_);
 
@@ -925,6 +937,32 @@ void MAMMicrophysics::run_impl(const double dt) {
 
       });  // parallel_for for the column loop
   Kokkos::fence();
+
+  auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
+
+  // Avogadro's number [molecules/mol]
+  const Real Avogadro = haero::Constants::avogadro;
+  // Mapping from external forcing species index to physics constituent index
+  // NOTE: These indices should match the species in extfrc_lst
+  // TODO: getting rid of hard-coded indices
+  Kokkos::Array<int, extcnt> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
+  Kokkos::Array<Real, gas_pcnst> molar_mass_g_per_mol_tmp;
+  for (int i = 0; i < gas_pcnst; ++i) {
+    molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
+  }
+
+  // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
+  // to output layout [ncol][extcnt][nlev]
+  // This aligns with expected field storage in the EAMxx infrastructure.
+  Kokkos::parallel_for("transpose_extfrc", 
+    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
+    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+      const int pcnst_idx = extfrc_pcnst_index[j];
+      const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
+      // Modify units to MKS units: [molec/cm3/s] to [kg/m3/s]
+      // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
+      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
+  });
 
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
