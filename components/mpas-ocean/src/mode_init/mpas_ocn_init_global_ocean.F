@@ -973,7 +973,7 @@ contains
        real(kind=RKIND) :: rho_floatation
 
        iErr = 0
-       rho_floatation = config_land_ice_flux_rho_ocean
+       rho_floatation = config_land_ice_rho_ocean
 
        ! Iteratively smooth land ice topography variables
        if (config_global_ocean_topography_smooth_weight > 0) then

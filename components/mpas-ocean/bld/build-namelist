@@ -815,6 +815,12 @@ if ($OCN_ISMF eq 'coupled') {
 	add_default($nl, 'config_frazil_under_land_ice');
 }
 
+############################
+# Namelist group: land_ice #
+############################
+
+add_default($nl, 'config_land_ice_rho_ocean');
+
 ###################################
 # Namelist group: land_ice_fluxes #
 ###################################

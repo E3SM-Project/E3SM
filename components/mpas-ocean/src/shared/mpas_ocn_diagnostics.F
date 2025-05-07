@@ -4684,7 +4684,7 @@ contains
          landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
       endif
 
-      rho_floatation = config_land_ice_flux_rho_ocean
+      rho_floatation = config_land_ice_rho_ocean
 
       if (trim(config_thickness_drag_type) == 'centered') then
          thickEdgeDragChoice = thickEdgeDragCenter

@@ -71,7 +71,7 @@ contains
     !  call init_****_forcing(domain)
     !endif
 
-    rho_floatation = config_land_ice_flux_rho_ocean
+    rho_floatation = config_land_ice_rho_ocean
 
   end subroutine ocn_time_varying_forcing_init!}}}
 
