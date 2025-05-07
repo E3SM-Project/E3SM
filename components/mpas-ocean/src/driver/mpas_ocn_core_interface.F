@@ -142,6 +142,7 @@ module ocn_core_interface
       logical, pointer :: activeWavePKGActive
       logical, pointer :: subgridWetDryPKGActive
       logical, pointer :: scaledDISMFPKGActive
+      logical, pointer :: scaledSFWFPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -178,6 +179,10 @@ module ocn_core_interface
       logical, pointer :: config_use_active_wave
       logical, pointer :: config_use_subgrid_wetting_drying
       logical, pointer :: config_scale_dismf_by_removed_ice_runoff
+
+      ! freshwater balance adjustment 
+      logical, pointer :: config_sfwf_balance
+      integer, pointer :: config_sfwf_balance_type
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
@@ -472,6 +477,16 @@ module ocn_core_interface
                                 config_scale_dismf_by_removed_ice_runoff)
       if (config_scale_dismf_by_removed_ice_runoff) then
          scaledDISMFPKGActive = .true.
+      end if
+
+      !
+      ! test for scaling precipitation fluxes to ensure a balance of fresh water
+      !
+      call mpas_pool_get_package(packagePool, 'scaledSFWFPKGActive', scaledSFWFPKGActive)
+      call mpas_pool_get_config(configPool, 'config_sfwf_balance', config_sfwf_balance)
+      call mpas_pool_get_config(configPool, 'config_sfwf_balance_type', config_sfwf_balance_type)
+      if (config_sfwf_balance .and. (config_sfwf_balance_type > 0) ) then
+         scaledSFWFPKGActive = .true.
       end if
 
       !
