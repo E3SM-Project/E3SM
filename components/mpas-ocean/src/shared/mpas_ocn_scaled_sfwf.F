@@ -76,7 +76,7 @@ contains
 !> \author Shixuan Zhang 
 !> \date   May 2025
 !> \details
-!>  Set alarms needed to compute daily and running means of water fluxes 
+!>  Set alarms needed to compute yearly and running means of water fluxes 
 !
 !-----------------------------------------------------------------------
 
@@ -90,15 +90,15 @@ contains
 
         integer :: err_tmp
 
-        if (config_sfwf_balance) then
+        if (config_sfwf_balance .and. config_sfwf_balance_type > 0) then
             scaledSFWFOn = .true.
         else
             scaledSFWFOn = .false.
             return
         endif
 
-        if (config_sfwf_balance_type < 0) then
-            call mpas_log_write('scaledSFWFOn = .true. requires config_sfwf_balance_type >= 0', &
+        if (config_sfwf_history_years < 1) then
+            call mpas_log_write('scaledSFWFOn = .true. requires config_sfwf_history_years >= 1', &
                                 mpas_LOG_CRIT)
         endif
 
@@ -107,7 +107,7 @@ contains
                                         mpas_START_TIME, &
                                         ierr=err_tmp)
         call mpas_set_timeInterval(alarmTimeStep, &
-                                   timeString='0000-00-01_00:00:00', &
+                                   timeString='0001-00-00_00:00:00', &
                                    ierr=err_tmp)
         call mpas_add_clock_alarm(domain % clock, alarmID, alarmTime + alarmTimeStep, &
                                   alarmTimeInterval=alarmTimeStep, ierr=err_tmp)
@@ -123,8 +123,8 @@ contains
 !> \author Shixuan Zhang 
 !> \date   May 2025
 !> \details
-!>  Accumulate daily mean of surface freshwater fluxes. 
-!>  If we are at the end of a day, used it to derive a factor to scale 
+!>  Accumulate yearly mean of surface freshwater fluxes. 
+!>  If we are at the end of a year, used it to derive a factor to scale 
 !>  down/up precipitation fluxes and maintain freshwater balance.  
 !
 !-----------------------------------------------------------------------
@@ -140,11 +140,11 @@ contains
         end if
 
         ! since the current clock time is for the end of the accumulation
-        ! intereval, first, accumulate the daily mean
+        ! intereval, first, accumulate the yearly mean
         call accumulate_mean_fw_fluxes(domain)
 
        ! then, compute update the history and running mean if we are at the
-       ! end of a day
+       ! end of a year
        if(mpas_is_alarm_ringing(domain % clock, alarmID, ierr=err_tmp)) then
 #ifdef mpas_DEBUG
             call mpas_log_write('       Computing Scaling Factor For SFWF')
@@ -165,7 +165,7 @@ contains
 !> \date   May 2025
 !> \details
 !>  Accumulate current surface freshwater and precipitation fluxes 
-!>  into the daily mean value
+!>  into the yearly mean value
 !
 !-----------------------------------------------------------------------
 
@@ -364,7 +364,6 @@ contains
                 tmpfwHistory, &
                 tmpsalHistory 
 
-        real (kind=RKIND) :: timeInterval
         real (kind=RKIND) :: previousprecFlux, previousfwFlux, previoussalFlux
         real (kind=RKIND) :: precFluxMean, fwFluxMean, salFluxMean
         integer :: nHistory
@@ -381,7 +380,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'totalAccumulatedsalFluxHistory', totalAccumulatedsalFluxHistory)
         call mpas_pool_get_array(forcingPool, 'SFWFScalingFactor', SFWFScalingFactor)
 
-        nHistory = config_sfwf_history_days 
+        nHistory = config_sfwf_history_years
 
         previousprecFlux = totalAccumulatedprecFluxHistory(nValidHistory)
         previousfwFlux = totalAccumulatedfwFluxHistory(nValidHistory)
@@ -389,43 +388,45 @@ contains
 
         if (nValidHistory == 0) then
             ! here followed the module mpas_ocn_scaled_dismf.F
+            ! we keep zero as the first entry in totalAccumulated fluxes 
             nValidHistory = 1
         end if
 
-        if (nValidHistory == nHistory) then
-            ! we need to shift the history, since it's full
-            allocate(tmpprecHistory(nHistory))
-            allocate(tmpfwHistory(nHistory))
-            allocate(tmpsalHistory(nHistory))
-            tmpprecHistory(:) = totalAccumulatedprecFluxHistory(:)
-            tmpfwHistory(:) = totalAccumulatedfwFluxHistory(:)
-            tmpsalHistory(:) = totalAccumulatedsalFluxHistory(:)
-            totalAccumulatedprecFluxHistory(1:nHistory - 1) = tmpprecHistory(2:nHistory)
-            totalAccumulatedfwFluxHistory(1:nHistory - 1) = tmpfwHistory(2:nHistory)
-            totalAccumulatedsalFluxHistory(1:nHistory - 1) = tmpsalHistory(2:nHistory)
-        else
-            ! the history isn't full yet, so we just add to the end
-            nValidHistory = nValidHistory + 1
+        if (nHistory > 1) then 
+            if (nValidHistory == nHistory) then
+                ! we need to shift the history, since it's full
+                allocate(tmpprecHistory(nHistory))
+                allocate(tmpfwHistory(nHistory))
+                allocate(tmpsalHistory(nHistory))
+                tmpprecHistory(:) = totalAccumulatedprecFluxHistory(:)
+                tmpfwHistory(:) = totalAccumulatedfwFluxHistory(:)
+                tmpsalHistory(:) = totalAccumulatedsalFluxHistory(:)
+                totalAccumulatedprecFluxHistory(1:nHistory - 1) = tmpprecHistory(2:nHistory)
+                totalAccumulatedfwFluxHistory(1:nHistory - 1) = tmpfwHistory(2:nHistory)
+                totalAccumulatedsalFluxHistory(1:nHistory - 1) = tmpsalHistory(2:nHistory)
+            else
+                ! the history isn't full yet, so we just add to the end
+                nValidHistory = nValidHistory + 1
+            end if
+            ! add the new total, the previous total plus the new yearly average
+            totalAccumulatedprecFluxHistory(nValidHistory) = previousprecFlux + avgprecFlux
+            totalAccumulatedfwFluxHistory(nValidHistory) = previousfwFlux + avgfwFlux
+            totalAccumulatedsalFluxHistory(nValidHistory) = previoussalFlux + avgsalFlux
+        else 
+            totalAccumulatedprecFluxHistory(nValidHistory) = avgprecFlux
+            totalAccumulatedfwFluxHistory(nValidHistory) = avgfwFlux
+            totalAccumulatedsalFluxHistory(nValidHistory) = avgsalFlux
         end if
 
-        ! add the new total, the previous total plus the new daily average
-        totalAccumulatedprecFluxHistory(nValidHistory) = previousprecFlux + SHR_CONST_CDAY * avgprecFlux
-        totalAccumulatedfwFluxHistory(nValidHistory) = previousfwFlux + SHR_CONST_CDAY * avgfwFlux
-        totalAccumulatedsalFluxHistory(nValidHistory) = previoussalFlux + SHR_CONST_CDAY * avgsalFlux
-
-        timeInterval = SHR_CONST_CDAY * (nValidHistory - 1)
-        ! the running mean is the difference between the newest and oldest
-        ! totals divided by the time between them
-        precFluxMean = (totalAccumulatedprecFluxHistory(nValidHistory) - totalAccumulatedprecFluxHistory(1)) &
-                       / timeInterval
-        fwFluxMean = (totalAccumulatedfwFluxHistory(nValidHistory) - totalAccumulatedfwFluxHistory(1)) &
-                      / timeInterval
-        salFluxMean = (totalAccumulatedsalFluxHistory(nValidHistory) - totalAccumulatedsalFluxHistory(1)) &
-                      / timeInterval
+        ! Scaling factors are ratio of (freshwater flux + salinity flux) to precipitation flux 
+        ! Therefore is independent of the time invervals for the accumulated fluxes 
+        precFluxMean = totalAccumulatedprecFluxHistory(nValidHistory) 
+        fwFluxMean = totalAccumulatedfwFluxHistory(nValidHistory) 
+        salFluxMean = totalAccumulatedsalFluxHistory(nValidHistory) 
 
         SFWFScalingFactor = SFWFScalingFactor - (fwFluxMean + salFluxMean) / precFluxMean
 
-        ! reset daily averaging of the precipitation and freshwater fluxes 
+        ! reset yearly averaging of the precipitation and freshwater fluxes 
         nAccumulated = 0
         avgprecFlux = 0.0_RKIND 
         avgfwFlux = 0.0_RKIND
