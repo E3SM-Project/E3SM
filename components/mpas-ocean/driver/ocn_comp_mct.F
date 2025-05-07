@@ -2155,7 +2155,6 @@ contains
    logical, pointer :: config_sfwf_balance
    integer, pointer :: config_sfwf_balance_type
    real (kind=RKIND), pointer :: config_precip_factor
-   real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
 
 !-----------------------------------------------------------------------
 !
@@ -2191,17 +2190,13 @@ contains
 
    !configuration for freshwater balance constrains 
    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
+   call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
+   call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
    if (config_sfwf_balance) then
-      call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
       if (config_sfwf_balance_type == 0 ) then
-        call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
-        precFactor = config_precip_factor
+          precFactor = config_precip_factor
       else 
-        ! independent of space so should be no need to loop over blocks
-        block_ptr => domain % blocklist
-        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-        call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
-        precFactor = SFWFScalingFactor
+          call seq_infodata_GetData(infodata, precip_fact=precFactor)
       end if
    else
       precFactor = 1.0_RKIND 
