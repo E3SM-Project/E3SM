@@ -1286,9 +1286,9 @@ Valid values: any non-negative value, no scaling if if set to 1.0
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_sfwf_history_days" type="integer"
+<entry id="config_sfwf_history_years" type="integer"
         category="sfwf_forcing" group="sfwf_forcing">
-The number of days over for which the history span of water conservation is computed. The default is 365 days (1 years).
+The number of years over for which the history span of water balance is computed. The default is 1 year.
 
 Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
