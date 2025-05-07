@@ -240,7 +240,7 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 add_default($nl, 'config_sfwf_balance');
 add_default($nl, 'config_sfwf_balance_type');
 add_default($nl, 'config_precip_factor');
-add_default($nl, 'config_sfwf_history_days');
+add_default($nl, 'config_sfwf_history_years');
 
 ############################
 # Namelist group: coupling #
