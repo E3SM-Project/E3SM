@@ -138,7 +138,7 @@ void Cosp::run_impl (const double dt)
   // Make sure cosp frequency is multiple of rad frequency?
 
   // Compare frequency in steps with current timestep
-  auto update_cosp = cosp_do(cosp_freq_in_steps, end_of_step_ts().get_num_steps());
+  auto update_cosp = cosp_do(cosp_freq_in_steps, start_of_step_ts().get_num_steps());
 
   // Call COSP wrapper routines
   if (update_cosp) {
