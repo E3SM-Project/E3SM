@@ -507,9 +507,8 @@ contains
       integer, dimension(:), pointer :: indexToCellID
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter, iField
-      integer :: localLoopCount
+      integer :: localLoopCount, nFields, newMaskCountTotal
       integer :: nValidNeighb, newValidCount, newMaskCountLocalAccum, newMaskCountGlobal
-      integer :: newMaskCountTotal
       logical, pointer :: config_recalculate_thermal_forcing
       real (kind=RKIND), dimension(:,:,:), allocatable :: oceanFieldOld
       real (kind=RKIND), dimension(:), allocatable :: fieldSum
@@ -538,9 +537,16 @@ contains
       ! perform horizontal extrapolation until the validOceanMask is unchanged
       allocate(validOceanMaskOld(nISMIP6OceanLayers,nCells+1))
       allocate(oceanFieldOld(2,nISMIP6OceanLayers,nCells+1))
-      allocate(fieldSum(2))
       validOceanMaskOld(:,:) = validOceanMask(:,:)
       oceanFieldOld(:,:,:) = oceanField(:,:,:)
+
+      if (.not. config_recalculate_thermal_forcing) then
+         nFields = 1
+      else
+         nFields = 2
+      endif
+
+      allocate(fieldSum(nFields))
 
       ! initialize the local loop and count for validOceanMask
       localLoopCount = 0
@@ -561,7 +567,7 @@ contains
                      jCell = cellsOnCell(iNeighbor, iCell)
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
                          
-                        do iField = 1, 2  
+                        do iField = 1, nFields  
                            if ( oceanFieldOld(iField,iLayer,jCell) > 1.0e6_RKIND) then
                               ! raise error if an invalid ocean data value is used
                               call mpas_log_write("ocean data value used for extrapolation is invalid" // &
@@ -570,11 +576,6 @@ contains
                               err = ior(err,1)
                            else
                               fieldSum(iField) = fieldSum(iField) + (oceanFieldOld(iField,iLayer,jCell) * areaCell(jCell))
-                           endif
-
-                           if (.not. config_recalculate_thermal_forcing) then
-                              ! Don't repeat loop if only extrapolating thermal forcing
-                              exit 
                            endif
                         enddo
 
@@ -592,7 +593,7 @@ contains
                      weightCellLocal = weightCell
                   endif
 
-                  do iField = 1, 2
+                  do iField = 1, nFields
                      ! perform area-weighted averaging of ocean fields
                      if ( nValidNeighb == 0 ) then
                         oceanField(iField,iLayer,iCell) = oceanFieldOld(iField,iLayer,iCell)
@@ -601,11 +602,6 @@ contains
                            & ((1.0_RKIND - weightCellLocal) * (fieldSum(iField) / nValidNeighb)) ) / &
                                             & ( weightCellLocal * areaCell(iCell) + &
                                             & (1.0_RKIND - weightCellLocal) * (areaSum / nValidNeighb) )
-                     endif
-
-                     if (.not. config_recalculate_thermal_forcing) then
-                        ! Don't repeat loop if only extrapolating thermal forcing
-                        exit 
                      endif
                   enddo
 
@@ -690,7 +686,7 @@ contains
       integer, dimension(:), pointer :: indexToCellID
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter, iField
-      integer :: localLoopCount, newMaskCountLocalAccum
+      integer :: nFields, localLoopCount, newMaskCountLocalAccum
       logical, pointer :: config_recalculate_thermal_forcing
 
       err = 0
@@ -713,6 +709,12 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
 
+      if (.not. config_recalculate_thermal_forcing) then
+         nFields = 1
+      else
+         nFields = 2
+      endif
+
       ! initialize the local loop and count for validOceanMask
       newMaskCountGlobal = 0
       newMaskCountLocalAccum = 0
@@ -723,7 +725,7 @@ contains
 
             if ( (validOceanMask(iLayer,iCell) == 0) .and. (validOceanMask(iLayer-1,iCell) == 1) &
                     .and. (availOceanMask(iLayer-1,iCell) == 1) ) then
-                  do iField = 1, 2
+                  do iField = 1, nFields
                      if (oceanField(iField,iLayer-1,iCell) > 1.0e6_RKIND) then
                         ! raise error if an invalid ocean data value is used
                         call mpas_log_write("ocean data value used for extrapolation is invalid" // &
@@ -834,17 +836,17 @@ contains
 
       allocate(freezingTemperature(nISMIP6OceanLayers))
      
+      ! Main difference between TF parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
       do iCell = 1, nCells
-        !Main difference between these parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
-        !Difference between '...melt' and '...retreat' parameterizations happens in main body of mpas_li_ocean_extrap.F
-        if (config_TF_iceberg_melt == 'off') then
+         if (config_TF_iceberg_melt == 'off') then
 
             ! From Jenkins 2011 and Slater 2020
             do iLayer = 1, nISMIP6OceanLayers
                 ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = oceanTemperature(iLayer,iCell) - (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
             enddo
-
-        elseif ( (config_TF_iceberg_melt == 'on') .or. ( (config_TF_iceberg_melt == 'mask') .and. (icebergFjordMask(iCell) == 1)) ) then
+      
+         elseif ( (config_TF_iceberg_melt == 'on') .or. ( (config_TF_iceberg_melt == 'mask') .and. (icebergFjordMask(iCell) == 1)) ) then
+      
             ! Alter 3d profile following the iceberg Parameterization from Hager 2023 for fjord where icebergs are prevalent
             ! find cell just above config_TF_iceberg_depth
             icebergCellVertID = 0
@@ -889,14 +891,14 @@ contains
             do iLayer = 1, nISMIP6OceanLayers
                ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = oceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
             enddo
-        endif
+         endif
+      enddo
       
-        ! Ensure no TF where no T/S
-        do iLayer = 1, nISMIP6OceanLayers
-           if ( (oceanTemperature(iLayer,iCell) == 0.0_RKIND) .and. (oceanSalinity(iLayer,iCell) == 0.0_RKIND) ) then
-              ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
-           endif
-        enddo
+      ! Ensure no TF where no T/S
+      do iLayer = 1, nISMIP6OceanLayers
+         if ( (oceanTemperature(iLayer,iCell) == 0.0_RKIND) .and. (oceanSalinity(iLayer,iCell) == 0.0_RKIND) ) then
+            ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
+         endif
       enddo
       
       deallocate(freezingTemperature)
