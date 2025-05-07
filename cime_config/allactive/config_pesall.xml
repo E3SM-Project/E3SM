@@ -1732,28 +1732,28 @@
   <grid name="a%ne30np4">
     <mach name="pm-gpu|muller-gpu|alvarez-gpu">
       <pes compset="any" pesize="any">
-        <comment>"pm-gpu ne30np4 and ne30np4.pg2  2 nodes, 4x16"</comment>
+        <comment>default pm-gpu ne30np4 and ne30np4.pg2  1 node 4x1 (16 threads in lnd/ice/ocn/rof)</comment>
         <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_glc>-2</ntasks_glc>
-          <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
         </ntasks>
         <nthrds>
-          <nthrds_atm>16</nthrds_atm>
+          <nthrds_atm>1</nthrds_atm>
           <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>8</nthrds_rof>
-          <nthrds_ice>8</nthrds_ice>
-          <nthrds_ocn>8</nthrds_ocn>
-          <nthrds_cpl>8</nthrds_cpl>
+          <nthrds_rof>16</nthrds_rof>
+          <nthrds_ice>16</nthrds_ice>
+          <nthrds_ocn>16</nthrds_ocn>
+          <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
       </pes>
       <pes compset=".*2010_SCREAM_ELM.*MPASSI_MPASO.*" pesize="any">
-        <comment>"pm-gpu ne30 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 4 nodes, 4x16"</comment>
+        <comment>pm-gpu ne30 for fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 4 nodes, 4x16</comment>
         <ntasks>
           <ntasks_atm>-4</ntasks_atm>
           <ntasks_lnd>-4</ntasks_lnd>
@@ -1770,44 +1770,6 @@
           <nthrds_rof>1</nthrds_rof>
           <nthrds_ice>16</nthrds_ice>
           <nthrds_ocn>16</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
-      <pes compset="any" pesize="any">
-        <comment>"pm-cpu ne30np4 and ne30np4.pg2 2 nodes, stacked, 1 thread, 128x1"</comment>
-        <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_glc>-2</ntasks_glc>
-          <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>-2</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
-    <mach name="frontier">
-      <pes compset="any" pesize="any">
-        <comment>"frontier ne30np4 and ne30np4.pg2"</comment>
-        <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_glc>-2</ntasks_glc>
-          <ntasks_wav>-2</ntasks_wav>
-          <ntasks_cpl>-2</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>7</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
       </pes>
@@ -2429,53 +2391,6 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="frontier">
-      <pes compset="any" pesize="any">
-        <MAX_MPITASKS_PER_NODE>8</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>-6</ntasks_atm>
-          <ntasks_lnd>-6</ntasks_lnd>
-          <ntasks_rof>-6</ntasks_rof>
-          <ntasks_ice>-6</ntasks_ice>
-          <ntasks_ocn>-6</ntasks_ocn>
-          <ntasks_glc>-6</ntasks_glc>
-          <ntasks_wav>-6</ntasks_wav>
-          <ntasks_cpl>-6</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>7</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
-      <pes compset="any" pesize="any">
-        <comment>pm-gpu conus 2 nodes, 4x1 except 16 threads in LND</comment>
-        <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
-        <MAX_TASKS_PER_NODE>16</MAX_TASKS_PER_NODE>
-        <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_cpl>-2</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>16</nthrds_lnd>
-          <nthrds_rof>1</nthrds_rof>
-          <nthrds_ice>1</nthrds_ice>
-          <nthrds_ocn>1</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
     <mach name="ruby">
       <pes compset="any" pesize="any">
         <ntasks>
@@ -2618,7 +2533,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis20km_w%null_z%null_m%IcoswISC30E3r5">
-    <mach name="chrysalis|pm-cpu|muller-cpu|alvarez-cpu">
+    <mach name="chrysalis">
       <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
         <comment>GIS 20km (low-res) testing config</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -2652,6 +2567,25 @@
           <rootpe_glc>0</rootpe_glc>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg2_l%r05_oi%IcoswISC30E3r5_r%r05_g%mpas.gis.+km_w%null_z%null_m%IcoswISC30E3r5">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
+      <pes compset="1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV" pesize="any">
+        <!-- SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.pm-cpu_gnu.allactive-gis20km -->
+        <!-- 1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV_SIAC_SESP -->
+        <comment>pm-cpu: GIS 20 or 40km (low-res) testing config, 2 nodes, 128x1</comment>
+        <ntasks>
+          <ntasks_atm>256</ntasks_atm>
+          <ntasks_lnd>256</ntasks_lnd>
+          <ntasks_rof>256</ntasks_rof>
+          <ntasks_ice>256</ntasks_ice>
+          <ntasks_ocn>256</ntasks_ocn>
+          <ntasks_glc>256</ntasks_glc>
+          <ntasks_wav>256</ntasks_wav>
+          <ntasks_cpl>256</ntasks_cpl>
+        </ntasks>
       </pes>
     </mach>
   </grid>
