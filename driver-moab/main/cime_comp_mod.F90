@@ -437,6 +437,7 @@ module cime_comp_mod
   logical :: do_hist_a2x3hr          ! create aux files: a2x 3hr states
   logical :: do_hist_a2x1hri         ! create aux files: a2x 1hr instantaneous
   logical :: do_hist_a2x1hr          ! create aux files: a2x 1hr
+  logical :: do_hist_z2x             ! create aux files: z2x
   integer :: budget_inst             ! instantaneous budget flag
   integer :: budget_daily            ! daily budget flag
   integer :: budget_month            ! monthly budget flag
@@ -918,6 +919,7 @@ contains
          histaux_l2x=do_hist_l2x                   , &
          histaux_l2x1yrg=do_hist_l2x1yrg           , &
          histaux_r2x=do_hist_r2x                   , &
+         histaux_z2x=do_hist_z2x                   , &
          run_barriers=run_barriers                 , &
          mct_usealltoall=mct_usealltoall           , &
          mct_usevector=mct_usevector               , &
@@ -3794,6 +3796,15 @@ contains
                 call seq_hist_writeaux(infodata, EClock_d, lnd(eli), flow='c2x', &
                      aname='l2x'//trim(suffix), dname='doml', &
                      nx=lnd_nx, ny=lnd_ny, nt=ncpl)
+             enddo
+          endif
+
+          if (do_hist_z2x) then
+             do ezi = 1,num_inst_iac
+                suffix =  component_get_suffix(iac(ezi))
+                call seq_hist_writeaux(infodata, EClock_d, iac(ezi), flow='c2x', &
+                     aname='z2x'//trim(suffix), dname='domz', &
+                     nx=iac_nx, ny=iac_ny, nt=ncpl)
              enddo
           endif
           call t_drvstopf  ('CPL:HISTORY',cplrun=.true.)
