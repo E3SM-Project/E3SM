@@ -35,6 +35,10 @@ def _convert_adios_to_nc(case):
     adios_conv_tool_args = "--idir=" + rundir
     adios_conv_tool_cmd = adios_conv_tool_exe + " " + adios_conv_tool_args
 
+    adios_conv_tool_extra_args = os.environ.get('SPIO_ADIOSBP2NC_CONVERSION_TOOL_EXTRA_ARGS', '')
+    if adios_conv_tool_extra_args.strip():
+      adios_conv_tool_cmd += " " + adios_conv_tool_extra_args.strip()
+
     # Replace logfile name, "e3sm.log.*" with "e3sm_adios_post_io.log.*"
     # The logfile name is part of the run command suffix
     adios_conv_tool_cmd_suffix = env_mach_specific.get_value("run_misc_suffix")

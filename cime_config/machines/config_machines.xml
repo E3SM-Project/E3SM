@@ -2114,6 +2114,7 @@
     </environment_variables>
     <!--environment_variables>
       <env name="SPIO_ENABLE_ADIOSBP2NC_CONVERSION">1</env>
+      <env name="SPIO_ADIOSBP2NC_CONVERSION_TOOL_EXTRA_ARGS">\-\-rm-bp-file-after-conv="(.*)(.eam.)(.*)"</env>
     </environment_variables-->
   </machine>
 
