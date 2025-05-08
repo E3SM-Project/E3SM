@@ -1463,6 +1463,8 @@ contains
 
        call canopystate_vars%UpdateAccVars(bounds_proc)
 
+       call energyflux_vars%UpdateAccVars(bounds_proc)
+
        if (crop_prog) then
           call crop_vars%UpdateAccVars(bounds_proc, temperature_vars)
        end if
