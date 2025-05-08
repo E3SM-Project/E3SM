@@ -110,7 +110,7 @@ contains
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter, err_tmp
-      integer :: GlobalLoopCount, newMaskCountGlobal
+      integer :: GlobalLoopCount, newMaskCountGlobal, inlandSea, oceanOnLand
       type (field1dInteger), pointer :: seedMaskField
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: seedMask, growMask, connectedMarineMask, altConnectedMarineMask
@@ -276,21 +276,23 @@ contains
          call mpas_timer_stop("halo updates")
          
          ! alter orig3dOceanMask if necessary to avoid errors
+         inlandSea = 0
+         oceanOnLand = 0
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
-               if (config_recalculate_thermal_forcing) then
-                  do iLayer = 1, nISMIP6OceanLayers 
-                     ! for ice-dammed inland seas, assume default salinity, and back-calculate sea temperature to ensure zero thermal forcing
-                     oceanSalinity(iLayer,iCell) = default_salinity
-                     oceanTemperature(iLayer,iCell) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
-                  enddo
-               endif
-               
-               ismip6shelfMelt_3dThermalForcing(:,iCell) = 0.0_RKIND
-               orig3dOceanMask(:,iCell) = 1
-               connectedMarineMask(iCell) = 0
-
-               call mpas_log_write("WARNING: orig3dOceanMask altered to include ice-dammed inland seas.")
+               do iLayer = 1, nISMIP6OceanLayers 
+                  if (orig3dOceanMask(iLayer,iCell) /= 1) then
+                     if (config_recalculate_thermal_forcing) then
+                        ! for ice-dammed inland seas, assume default salinity, and back-calculate sea temperature to ensure zero thermal forcing
+                        oceanSalinity(iLayer,iCell) = default_salinity
+                        oceanTemperature(iLayer,iCell) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+                     endif
+                     ismip6shelfMelt_3dThermalForcing(:,iCell) = 0.0_RKIND
+                     orig3dOceanMask(:,iCell) = 1
+                     inlandSea = 1
+                     connectedMarineMask(iCell) = 0
+                  endif
+               enddo
             endif
             ! Ensure MPAS ocean cells have not been interpolated onto non-ocean cells on the MALI mesh
             do iLayer = 1, nISMIP6OceanLayers
@@ -303,10 +305,17 @@ contains
                       oceanTemperature(iLayer,iCell) = 0.0_RKIND
                       oceanSalinity(iLayer,iCell) = 0.0_RKIND
                    endif
-                   call mpas_log_write("WARNING: non-ocean cells removed from orig3dOceanMask")
+                   oceanOnLand = 1
                endif
             enddo
          enddo
+         
+         if (inlandSea == 1) then
+            call mpas_log_write("orig3dOceanMask altered to include ice-dammed inland seas", MPAS_LOG_WARN)
+         endif
+         if (oceanOnLand == 1) then
+            call mpas_log_write("Non-ocean cells removed from orig3dOceanMask", MPAS_LOG_WARN)
+         endif
 
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
