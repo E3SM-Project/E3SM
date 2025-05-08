@@ -23,6 +23,11 @@
     <alias>F2010-WW3</alias>
     <lname>2010_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_WW3%sp36x36</lname>
   </compset>
+  
+  <compset>
+    <alias>F20TR-WW3</alias>
+    <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_WW3%sp36x36</lname>
+  </compset>
 
   <compset>
     <alias>DTESTM-JRA1p5-WW3</alias>
