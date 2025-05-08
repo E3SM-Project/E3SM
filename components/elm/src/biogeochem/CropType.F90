@@ -318,19 +318,15 @@ contains
     type(file_desc_t)  :: ncid
     character(len=256) :: locfn
     real(r8), pointer  :: conservag2d       (:,:)      ! read in 
-    real(r8), pointer  :: tilleffic2d       (:,:)      ! read in
 
     character(len=*), parameter :: subname = 'InitCold'
     if (use_crop) then
        allocate(conservag2d(bounds%begg:bounds%endg,max_topounits))
-       allocate(tilleffic2d(bounds%begg:bounds%endg,max_topounits))
 
        call getfil (fsurdat, locfn, 0)
        call ncd_pio_openfile (ncid, locfn, 0)
        call ncd_io(ncid=ncid, varname='Tillage', flag='read', data=conservag2d, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) conservag2d(:,:) = 0._r8
-       call ncd_io(ncid=ncid, varname='Tillage_Effic', flag='read', data=tilleffic2d, dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) tilleffic2d(:,:) = 0.95_r8
        call ncd_pio_closefile(ncid) 
 
        do p= bounds%begp,bounds%endp
@@ -346,11 +342,11 @@ contains
              this%fertnitro_patch(p)  = fert_cft(g,ti,m)
              this%fertphosp_patch(p)  = fert_p_cft(g,ti,m)
              this%conservag_patch(p)  = conservag2d(g,ti)
-             this%tilleffic_patch(p)  = tilleffic2d(g,ti)
+             this%tilleffic_patch(p)  = 0.95_r8 * (1.0_r8 - this%conservag_patch(p)) 
           end if
        end do
 
-       deallocate(conservag2d, tilleffic2d)
+       deallocate(conservag2d)
     end if
 
   end subroutine InitCold
