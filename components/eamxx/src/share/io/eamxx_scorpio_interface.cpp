@@ -1415,7 +1415,7 @@ T get_attribute (const std::string& filename,
   err = PIOc_inq_atttype(pf.file->ncid,varid,attname.c_str(),&att_type);
   check_scorpio_noerr(err,filename,"attribute",attname,"get_attribute","inq_atttype");
 
-  T val;
+  T val = {};
   if (att_type!=nctype(get_dtype<T>())) {
 
     if (att_type==PIO_INT) {

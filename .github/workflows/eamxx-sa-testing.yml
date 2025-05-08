@@ -31,6 +31,7 @@ on:
         options:
           - gcc-openmp
           - gcc-cuda
+          - gcc-hip
           - all
       bless:
         description: 'Generate baselines'
@@ -161,3 +162,60 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
           ekat: ${{ env.ekat }}
+  gcc-hip:
+    if: |
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'gcc-hip' ||
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
+    runs-on:  [self-hosted, ghci-snl-hip, hip, gcc]
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          # - build_type: sp    NEED TO CHECK WHY DEBUG BUILDS FAIL
+          #   SK: OFF
+          # - build_type: dbg
+          #   SK: ON
+          - build_type: opt
+            SK: OFF
+    name: gcc-hip / ${{ matrix.test.build_type }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Ensure CACTS is installed
+        run: |
+          python3 -m pip install --user --upgrade --trusted-host pypi.org cacts
+      - name: Run tests
+        run: |
+          cmd="cacts -m ghci-snl-hip -t ${{ matrix.test.build_type }} -b auto -r ./components/eamxx"
+          if [[ "${{ env.generate }}" == "true" ]]; then
+            cmd+=" -g"
+          fi
+          if [[ "${{ env.submit }}" == "true" ]]; then
+            cmd+=" -s"
+          fi
+          if [[ "${{ env.ekat }}" == "true" ]]; then
+            cmd+=" -c EKAT_ENABLE_TESTS=ON"
+          fi
+          echo "CACTS call: $cmd"
+          $cmd
+      - name: Upload files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-files-${{ matrix.test.build_type }}-ghci-snl-hip
+          path: |
+            components/eamxx/ctest-build/*/Testing/Temporary/Last*.log
+            components/eamxx/ctest-build/*/ctest_resource_file.json
+            components/eamxx/ctest-build/*/ctest_script.cmake
+            components/eamxx/ctest-build/*/CMakeCache.txt
