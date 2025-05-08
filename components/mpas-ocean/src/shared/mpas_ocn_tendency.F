@@ -351,6 +351,9 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
          activeTracers
 
+      real (kind=RKIND):: hCrit, hRampMin
+      real (kind=RKIND), parameter:: hRampCoef = 4.0_RKIND
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -500,6 +503,12 @@ contains
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
 
+
+      hCrit = config_drying_min_cell_height + &
+                              config_drying_safety_height
+
+      hRampMin = config_zero_drying_velocity_ramp_hmin
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) &
       !$acc    present(tendVel, wettingVelocityFactor)
@@ -516,6 +525,22 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      do iEdge = 1,nEdgesAll
+        if ( config_use_wetting_drying .AND. & 
+                config_use_subgrid_wetting_drying ) then
+           k = 1 ;    
+           if ( layerThickEdgeFlux(k,iEdge) <= hCrit ) then
+             tendVel(k,iEdge) = 0.0_RKIND ;     
+           elseif ( (layerThickEdgeFlux(k,iEdge) > hCrit) .and. &
+             (layerThickEdgeFlux(k,iEdge) <= config_zero_drying_velocity_ramp_hmax) ) then
+             ! Following O'Dea et al. (2021), if total upwinded wct is less than
+             ! 2*critical thickness, apply damping at each edge
+             tendVel(k, iEdge) = tendVel(k,iEdge)* &
+                    tanh(hRampCoef*(layerThickEdgeFlux(k,iEdge) - hRampMin)/hRampMin)
+            end if
+        endif
+      enddo
 
       !*** Transfer any needed data back to host and delete inputs
       !$acc exit data &

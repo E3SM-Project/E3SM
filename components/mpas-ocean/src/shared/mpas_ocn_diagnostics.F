@@ -839,9 +839,10 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity,  &!< [in] transport
          layerThickness,  &!< [in] layer thickness at cell center
          restingThickness  !< [in] initial layer thickness at cell center
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         normalVelocity    !< [in] transport
       real (kind=RKIND), dimension(:), intent(in) :: &
          ssh               !< [in] sea surface height at cell center
 
