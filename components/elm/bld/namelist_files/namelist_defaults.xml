@@ -248,7 +248,7 @@ lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr2015_c220914.nc</fsurda
 
 <!-- ne0np4_EAIsland8x32v1.pg2 -->
 <fsurdat hgrid="ne0np4_EAIsland8x32v1.pg2"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/placeholder.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne0np4_EAIsland8x32v1.pg2_simyr2010_c250508.nc</fsurdat>
 <fsurdat hgrid="ne0np4_EAIsland8x32v1.pg2"   sim_year="2015" use_crop=".false." >
 lnd/clm2/surfdata_map/placeholder.nc</fsurdat>
 
