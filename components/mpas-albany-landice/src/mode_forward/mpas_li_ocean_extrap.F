@@ -28,6 +28,7 @@ module li_ocean_extrap
    use mpas_log
    use li_mask
    use li_setup
+   use li_constants
 
    implicit none
    private
@@ -50,9 +51,6 @@ module li_ocean_extrap
    real (kind=RKIND), parameter :: gamma1 = -5.7E-2
    real (kind=RKIND), parameter :: gamma2 = 8.8E-2
    real (kind=RKIND), parameter :: gamma3 = 7.61E-4
-
-   real (kind=RKIND), parameter :: cp = 3974 !specific heat (J/kg), using value from Cowton 2015
-   real (kind=RKIND), parameter :: L = 3.34E5 !latent heat of melting
 
    real (kind=RKIND), parameter :: default_salinity = 32.0
 !***********************************************************************
@@ -869,7 +867,7 @@ contains
                   gadeSlope = 0.0_RKIND
                else
                   inverseSalt = (1.0_RKIND / oceanSalinity(iLayer,iCell)) 
-                  phaseChange = L/cp 
+                  phaseChange = latent_heat_ice/cp_ice 
                   tempDiff = (freezingTemperature(iLayer) - oceanTemperature(iLayer,iCell))
 
                   gadeSlope = inverseSalt * (phaseChange - tempDiff)
