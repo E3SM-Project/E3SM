@@ -4,6 +4,7 @@ module zm_conv_util
    !----------------------------------------------------------------------------
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use cam_abortutils,   only: endrun
+   use zm_conv_types,    only: zm_const_t
 
    public :: entropy       ! calculate entropy
    public :: ientropy      ! invert entropy equation to get temperature and saturated vapor mixing ratio
@@ -13,19 +14,18 @@ module zm_conv_util
 contains
 !===================================================================================================
 
-real(r8) function entropy(TK, p, qtot)
+real(r8) function entropy(TK, p, qtot, zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: function to calculate entropy following:
    ! 
    !    Raymond, D. J., and A. M. Blyth, 1992: Extension of the Stochastic Mixing
    !       Model to Cumulonimbus Clouds. J. Atmos. Sci., 49, 1968–1983
    !----------------------------------------------------------------------------
-   use physconst, only: cpair, tmelt, rh2o, rair, epsilo, cpliq, cpwv, latvap
-   !----------------------------------------------------------------------------
    ! Arguments
-   real(r8), intent(in) :: TK    ! temperature              [K]
-   real(r8), intent(in) :: p     ! pressure                 [mb]
-   real(r8), intent(in) :: qtot  ! total water mixing ratio [kg/kg]
+   real(r8),         intent(in) :: TK        ! temperature              [K]
+   real(r8),         intent(in) :: p         ! pressure                 [mb]
+   real(r8),         intent(in) :: qtot      ! total water mixing ratio [kg/kg]
+   type(zm_const_t), intent(in) :: zm_const  ! derived type to hold ZM constants
    !----------------------------------------------------------------------------
    ! Local variables
    real(r8) :: qv    ! water vapor mixing ratio
@@ -37,21 +37,24 @@ real(r8) function entropy(TK, p, qtot)
    !----------------------------------------------------------------------------
 
    ! Calculate latent heat of vaporization - note T is converted to centigrade
-   L = latvap - (cpliq - cpwv)*(TK-tmelt)
+   L = zm_const%latvap - (zm_const%cpliq - zm_const%cpwv)*(TK-zm_const%tfreez)
 
    ! Use saturation mixing ratio to partition qtot into vapor part only
    call qsat_hPa(TK, p, est, qst)
    qv = min(qtot,qst)
-   e = qv*p / (epsilo+qv)
+   e = qv*p / (zm_const%epsilo+qv)
 
    ! calculate entropy per unit mass of dry air - Eq. 1
-   entropy = (cpair + qtot*cpliq)*log( TK/tmelt) - rair*log( (p-e)/pref )  + L*qv/TK - qv*rh2o*log(qv/qst)
+   entropy = (  zm_const%cpair &
+              + qtot*zm_const%cpliq)*log(TK/zm_const%tfreez) &
+              - zm_const%rdair*log( (p-e)/pref &
+             ) + L*qv/TK - qv*zm_const%rh2o*log(qv/qst)
 
 end function entropy
 
 !===================================================================================================
 
-subroutine ientropy(rcall, icol, lchnk, s, p, qt, T, qst, Tfg)
+subroutine ientropy(rcall, s, p, qt, T, qst, Tfg, zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: invert the entropy equation to return temperature and saturated
    ! vapor mixing ratio following Richard Brent's method::
@@ -59,18 +62,15 @@ subroutine ientropy(rcall, icol, lchnk, s, p, qt, T, qst, Tfg)
    !    Brent, R. P. Ch. 3-4 in Algorithms for Minimization Without Derivatives.
    !       Englewood Cliffs, NJ: Prentice-Hall, 1973.
    !----------------------------------------------------------------------------
-   use phys_grid, only: get_rlon_p, get_rlat_p
-   !----------------------------------------------------------------------------
    ! Arguments
-   integer,  intent(in)  :: icol    ! column index
-   integer,  intent(in)  :: lchnk   ! chunk index
-   integer,  intent(in)  :: rcall   ! call index
-   real(r8), intent(in)  :: s       ! entropy                           [J/kg]
-   real(r8), intent(in)  :: p       ! pressure                          [mb]
-   real(r8), intent(in)  :: qt      ! total water mixing ratio          [kg/kg]
-   real(r8), intent(in)  :: Tfg     ! input temperature for first guess [K]
-   real(r8), intent(out) :: qst     ! saturation vapor mixing ratio     [kg/kg]
-   real(r8), intent(out) :: T       ! temperature                       [k]
+   integer,          intent(in)  :: rcall   ! call index
+   real(r8),         intent(in)  :: s       ! entropy                           [J/kg]
+   real(r8),         intent(in)  :: p       ! pressure                          [mb]
+   real(r8),         intent(in)  :: qt      ! total water mixing ratio          [kg/kg]
+   real(r8),         intent(in)  :: Tfg     ! input temperature for first guess [K]
+   real(r8),         intent(out) :: qst     ! saturation vapor mixing ratio     [kg/kg]
+   real(r8),         intent(out) :: T       ! temperature                       [k]
+   type(zm_const_t), intent(in)  :: zm_const  ! derived type to hold ZM constants
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i           ! loop iterator
@@ -90,8 +90,8 @@ subroutine ientropy(rcall, icol, lchnk, s, p, qt, T, qst, Tfg)
    a = Tfg-10         ! low bracket
    b = Tfg+10         ! high bracket
 
-   fa = entropy(a, p, qt) - s
-   fb = entropy(b, p, qt) - s
+   fa = entropy(a, p, qt, zm_const) - s
+   fb = entropy(b, p, qt, zm_const) - s
 
    c = b
    fc = fb
@@ -150,7 +150,7 @@ subroutine ientropy(rcall, icol, lchnk, s, p, qt, T, qst, Tfg)
       fa = fb
       b = b + merge( d, sign(tolerance,xm), abs(d)>tolerance )
 
-      fb = entropy(b, p, qt) - s
+      fb = entropy(b, p, qt, zm_const) - s
 
    end do converge
 
@@ -158,13 +158,14 @@ subroutine ientropy(rcall, icol, lchnk, s, p, qt, T, qst, Tfg)
    call qsat_hPa(T, p, est, qst)
 
    if (.not. converged) then
-      this_lat = get_rlat_p(lchnk, icol)*57.296_r8
-      this_lon = get_rlon_p(lchnk, icol)*57.296_r8
       write(iulog,*) '*** ZM_CONV: IENTROPY: Failed and about to exit, info follows ****'
-      write(iulog,100) 'ZM_CONV: IENTROPY. Details: call#,lchnk,icol= ',rcall,lchnk,icol, &
-                       ' lat: ',this_lat,' lon: ',this_lon, &
-                       ' P(mb)= ', p, ' Tfg(K)= ', Tfg, ' qt(g/kg) = ', 1000._r8*qt, &
-                       ' qst(g/kg) = ', 1000._r8*qst,', s(J/kg) = ',s
+      write(iulog,100) 'ZM_CONV: IENTROPY Details:', &
+                       ' call#: ',rcall, &
+                       ' P(mb): ',p, &
+                       ' Tfg(K): ', Tfg, &
+                       ' qt(g/kg): ', 1000._r8*qt, &
+                       ' qst(g/kg): ', 1000._r8*qst,&
+                       ' s(J/kg): ',s
      call endrun('**** ZM_CONV IENTROPY: Tmix did not converge ****')
   end if
 
