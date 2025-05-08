@@ -178,7 +178,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(in) :: ssh
-      real (kind=RKIND), dimension(:,:), intent(in) :: normalVelocity
+      real (kind=RKIND), dimension(:,:), intent(inout) :: normalVelocity
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
 
       !-----------------------------------------------------------------
@@ -195,7 +195,7 @@ contains
       integer :: cell1, cell2
       real (kind=RKIND) :: sshMean
       real(kind=RKIND):: eps = 1.0e-10_RKIND
-      logical, save:: first = .true. ; 
+      real (kind=RKIND) :: hCrit
 
       do iEdge = 1, nEdgesAll
 
@@ -216,10 +216,6 @@ contains
               end if
            end do
  
-           if ( first ) then
-              write(*,*), "Info: use regular Layer Edge thickness " ;  
-              first = .false. ;
-           end if
          else
            ! in subgrid zone !     
            cell1 = cellsOnEdge(1,iEdge)
@@ -256,6 +252,14 @@ contains
                                        layerThickness(1,cell2) )
          end if
       end do
+
+
+      hCrit = (config_drying_min_cell_height + config_drying_safety_height)
+      do iEdge = 1, nEdgesAll
+        if ( layerThickEdgeFlux(1,iEdge) < hCrit ) then
+            normalVelocity(1,iEdge) = 0.0_RKIND
+        endif             
+      enddo     
 
    end subroutine ocn_subgrid_layerThickEdgeFlux_upwind!}}}
 
