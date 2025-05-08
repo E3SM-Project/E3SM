@@ -288,7 +288,7 @@ module ocn_analysis_mode
         seaIcePressure, atmosphericPressure
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft
+        frazilSurfacePressure, landIcePressure
 
       real (kind=RKIND), dimension(:), pointer :: &
         layerThickness, normalVelocity
@@ -325,7 +325,6 @@ module ocn_analysis_mode
 
          if (landIcePressureOn) then 
             call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-            call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          endif
 
          call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)

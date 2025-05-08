@@ -958,13 +958,11 @@ contains
                                          statePool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
-       real (kind=RKIND), dimension(:), pointer :: landIceDraftObserved, &
-                                                   landIcePressureObserved, &
+       real (kind=RKIND), dimension(:), pointer :: landIcePressureObserved, &
                                                    landIceFracObserved, &
                                                    landIceFloatingFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: landIceDraft, &
-                                                   landIcePressure, &
+       real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
                                                    landIceFraction, &
                                                    landIceFloatingFraction
 
@@ -972,15 +970,13 @@ contains
        integer, dimension(:), pointer :: maxLevelCell, landIceMask, landIceFloatingMask
 
        integer :: iCell
+       real(kind=RKIND) :: rho_floatation
 
        iErr = 0
+       rho_floatation = config_land_ice_rho_ocean
 
        ! Iteratively smooth land ice topography variables
        if (config_global_ocean_topography_smooth_weight > 0) then
-          call ocn_init_smooth_field(domain, 'landIceDraftObserved', 'landIceInit', &
-                                     config_global_ocean_topography_smooth_iterations, &
-                                     config_global_ocean_topography_smooth_weight)
-
           call ocn_init_smooth_field(domain, 'landIcePressureObserved', 'landIceInit', &
                                      config_global_ocean_topography_smooth_iterations, &
                                      config_global_ocean_topography_smooth_weight)
@@ -1004,13 +1000,11 @@ contains
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-          call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIcePressureObserved', landIcePressureObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFloatingFracObserved', landIceFloatingFracObserved)
           call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
           call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
-          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
           call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
@@ -1033,11 +1027,11 @@ contains
              landIceFraction(iCell) = landIceFracObserved(iCell)
              landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
 
-             landIceDraft(iCell) = landIceDraftObserved(iCell)
              landIcePressure(iCell) = landIcePressureObserved(iCell)
              if (landIcePressure(iCell) > 0.0_RKIND) then
                 sshAdjustmentMask(iCell) = 1
              end if
+             landIceDraft(iCell) = -landIcePressure(iCell) / (rho_floatation * gravity)
           end do
 
           block_ptr => block_ptr % next

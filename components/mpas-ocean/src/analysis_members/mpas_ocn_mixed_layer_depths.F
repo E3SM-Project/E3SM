@@ -174,7 +174,7 @@ contains
 !      real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:,:), allocatable :: pressureAdjustedForLandIce 
 
-      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraft
+      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD
       real (kind=RKIND), dimension(:), pointer :: dGradientMLD, landIcePressure
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: interp_local
@@ -212,7 +212,6 @@ contains
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 

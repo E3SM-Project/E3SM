@@ -87,6 +87,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
    real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientSubglacialRunoff
 
+   real (kind=RKIND), dimension(:), pointer :: landIceDraft
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: velocityTidalRMS
 
@@ -355,6 +356,7 @@ contains
       ! Retrieve pointers for configurations where land_ice_flux_mode is enabled
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
+         call mpas_pool_get_array(diagnosticsPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
          call mpas_pool_get_dimension(diagnosticsPool, &
                    'index_landIceBoundaryLayerTemperature', indexBLTPtr)
@@ -751,6 +753,7 @@ contains
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity,         &
+         !$acc                   landIceDraft,                    &
          !$acc                   velocityTidalRMS)
       end if
       if (config_use_topographic_wave_drag) then
@@ -1010,6 +1013,7 @@ contains
          !$acc                   topDragMag,                      &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
+         !$acc                   landIceDraft,                    &
          !$acc                   landIceFrictionVelocity,         &
          !$acc                   velocityTidalRMS)
       end if
@@ -1239,6 +1243,7 @@ contains
                  landIceBoundaryLayerTracers,     &
                  landIceTracerTransferVelocities, &
                  landIceFrictionVelocity,         &
+                 landIceDraft,                    &
                  velocityTidalRMS)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then

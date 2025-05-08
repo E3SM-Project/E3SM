@@ -376,7 +376,7 @@ module ocn_time_integration_si
         seaIcePressure, atmosphericPressure
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft
+        frazilSurfacePressure, landIcePressure
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
 
@@ -703,7 +703,6 @@ module ocn_time_integration_si
 
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
 
 #ifdef MPAS_OPENACC
@@ -2203,7 +2202,6 @@ module ocn_time_integration_si
             endif
             if (landIcePressureOn) then
                !$acc enter data copyin(landIcePressure)
-               !$acc enter data copyin(landIceDraft)
             endif
             if (config_use_freq_filtered_thickness) then
                !$acc enter data copyin(highFreqThicknessNew)
@@ -2773,7 +2771,6 @@ module ocn_time_integration_si
             !$acc update host(montgomeryPotential, pressure)
             if (landIcePressureOn) then
                !$acc exit data delete(landIcePressure)
-               !$acc exit data delete(landIceDraft)
             endif
             if (config_use_freq_filtered_thickness) then
                !$acc exit data copyout(highFreqThicknessNew)
@@ -2840,7 +2837,6 @@ module ocn_time_integration_si
       endif
       if (landIcePressureOn) then
          !$acc enter data copyin(landIcePressure)
-         !$acc enter data copyin(landIceDraft)
       endif
 #endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, &
@@ -2889,7 +2885,6 @@ module ocn_time_integration_si
       endif
       if (landIcePressureOn) then
          !$acc exit data delete(landIcePressure)
-         !$acc exit data delete(landIceDraft)
       endif
       !$acc exit data delete(layerThicknessNew, normalVelocityNew)
 #endif
@@ -2989,7 +2984,6 @@ module ocn_time_integration_si
       endif
       if (landIcePressureOn) then
          !$acc enter data copyin(landIcePressure)
-         !$acc enter data copyin(landIceDraft)
       endif
 #endif
 
@@ -3111,7 +3105,6 @@ module ocn_time_integration_si
       endif
       if (landIcePressureOn) then
          !$acc exit data delete(landIcePressure)
-         !$acc exit data delete(landIceDraft)
       endif
       !$acc exit data copyout(layerThicknessNew, normalVelocityNew)
       !$acc update host(density, potentialDensity, displacedDensity)

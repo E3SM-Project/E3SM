@@ -196,7 +196,7 @@ module ocn_time_integration_rk4
         seaIcePressure, atmosphericPressure
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft
+        frazilSurfacePressure, landIcePressure
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersCur, activeTracersNew
 
@@ -731,7 +731,6 @@ module ocn_time_integration_rk4
 
          if (landIcePressureOn) then
             call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-            call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          endif
 
 #ifdef MPAS_OPENACC
@@ -752,7 +751,6 @@ module ocn_time_integration_rk4
          endif
          if (landIcePressureOn) then
             !$acc enter data copyin(landIcePressure)
-            !$acc enter data copyin(landIceDraft)
          endif
 #endif
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
@@ -790,7 +788,6 @@ module ocn_time_integration_rk4
          endif
          if (landIcePressureOn) then
             !$acc exit data delete(landIcePressure)
-            !$acc exit data delete(landIceDraft)
          endif
          !$acc exit data delete(layerThicknessNew, normalVelocityNew)
          !$acc update host(density, potentialDensity, displacedDensity)
@@ -1193,7 +1190,7 @@ module ocn_time_integration_rk4
         seaIcePressure, atmosphericPressure
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft
+        frazilSurfacePressure, landIcePressure
 
       real (kind=RKIND), dimension(:), pointer :: sshCur
 
@@ -1331,7 +1328,6 @@ module ocn_time_integration_rk4
 
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
 
 #ifdef MPAS_OPENACC
@@ -1352,7 +1348,6 @@ module ocn_time_integration_rk4
       endif
       if (landIcePressureOn) then
          !$acc enter data copyin(landIcePressure)
-         !$acc enter data copyin(landIceDraft)
       endif
 #endif
       call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 1)
@@ -1385,7 +1380,6 @@ module ocn_time_integration_rk4
       endif
       if (landIcePressureOn) then
          !$acc exit data delete(landIcePressure)
-         !$acc exit data delete(landIceDraft)
       endif
       !$acc exit data delete(layerThicknessCur, normalVelocityCur)
       !$acc update host(density, potentialDensity, displacedDensity)
@@ -1581,7 +1575,7 @@ module ocn_time_integration_rk4
         seaIcePressure, atmosphericPressure
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft
+        frazilSurfacePressure, landIcePressure
 
       real (kind=RKIND), dimension(:), pointer :: sshNew
 
@@ -1616,7 +1610,6 @@ module ocn_time_integration_rk4
 
       if (landIcePressureOn) then
           call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
 
       call mpas_pool_begin_iteration(tracersPool)
@@ -1656,7 +1649,6 @@ module ocn_time_integration_rk4
       endif
       if (landIcePressureOn) then
          !$acc enter data copyin(landIcePressure)
-         !$acc enter data copyin(landIceDraft)
       endif
 #endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, verticalMeshPool, scratchPool, tracersPool, 2)
@@ -1691,7 +1683,6 @@ module ocn_time_integration_rk4
       endif
       if (landIcePressureOn) then
          !$acc exit data delete(landIcePressure)
-         !$acc exit data delete(landIceDraft)
       endif
       !$acc exit data delete (layerThicknessNew, normalVelocityNew)
       !$acc update host(density, potentialDensity, displacedDensity)
