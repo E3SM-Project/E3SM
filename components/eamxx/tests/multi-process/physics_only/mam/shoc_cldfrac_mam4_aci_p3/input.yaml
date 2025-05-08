@@ -32,6 +32,7 @@ atmosphere_processes:
       c_diag_3rd_mom: 7.0
       coeff_kh: 0.1
       coeff_km: 0.1
+      shoc_1p5tke: false
     mam4_aci:
       wsubmin: 0.001
       top_level_mam4xx: 6
