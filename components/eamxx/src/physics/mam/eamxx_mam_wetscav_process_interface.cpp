@@ -53,8 +53,8 @@ void MAMWetscav::set_grids(
       true, nmodes, mam_coupling::num_modes_tag_name());
 
   // layout for 2D (ncol, pcnst)
-  FieldLayout scalar2d_pconst =
-      grid_->get_2d_vector_layout(pcnst, "num_phys_constants");
+  FieldLayout scalar2d_pcnst =
+      grid_->get_2d_vector_layout(pcnst, "num_phys_constituents");
 
   // --------------------------------------------------------------------------
   // These variables are "required" or pure inputs for the process
@@ -160,10 +160,10 @@ void MAMWetscav::set_grids(
   add_field<Computed>("fracis", scalar3d_mid, nondim, grid_name);
 
   // Aerosol wet deposition (interstitial) [kg/m2/s]
-  add_field<Computed>("aerdepwetis", scalar2d_pconst, kg / m2 / s, grid_name);
+  add_field<Computed>("aerdepwetis", scalar2d_pcnst, kg / m2 / s, grid_name);
 
   // Aerosol wet deposition (cloud water) [kg/m2/s]
-  add_field<Computed>("aerdepwetcw", scalar2d_pconst, kg / m2 / s, grid_name);
+  add_field<Computed>("aerdepwetcw", scalar2d_pcnst, kg / m2 / s, grid_name);
 }
 
 // ================================================================
