@@ -55,11 +55,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
   diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
   diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
-<<<<<<< HEAD
   diag_factory.register_product("VertContractDiag",&create_atmosphere_diagnostic<VertContractDiag>);
-=======
   diag_factory.register_product("ZonalAvgDiag",&create_atmosphere_diagnostic<ZonalAvgDiag>);
->>>>>>> be844e83c7 (initial work on zonal diagnostic for EAMxx)
 }
 
 } // namespace scream

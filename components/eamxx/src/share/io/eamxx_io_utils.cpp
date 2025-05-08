@@ -210,6 +210,7 @@ create_diagnostic (const std::string& diag_field_name,
       // note that the 4th match is (dp|dz)_weighted, while the 5th is (dp|dz)
       params.set<std::string>("weighting_method", matches[5].str());
     }
+  }
   else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
     diag_name = "ZonalAvgDiag";
     // Set the grid_name
