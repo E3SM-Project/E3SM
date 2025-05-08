@@ -939,10 +939,6 @@
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
 		        <!-- these variables are just for the ocean thermal forcing re-extrapolation scheme -->
                         <var name="orig3dOceanMask" packages="extrapOceanData" />
-			<var name="validOceanMask" packages="extrapOceanData" />
-			<var name="availOceanMask" packages="extrapOceanData" />
-			<var name="growOceanMaskHoriz" packages="extrapOceanData" />
-                        <var name="seedOceanMaskHoriz" packages="extrapOceanData" />
                         <var name="icebergFjordMask" packages="extrapOceanData"/>
                         <var name="oceanTemperature" packages="extrapOceanData"/>
                         <var name="oceanSalinity" packages="extrapOceanData"/>
