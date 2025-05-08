@@ -198,7 +198,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
-  add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
   add_field<Computed>("cldmed"        , scalar2d, nondim, grid_name);
@@ -218,6 +217,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("cdnc_at_cldtop", scalar2d, 1 / (m * m * m), grid_name);
   add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d, micron, grid_name);
   add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d, micron, grid_name);
+
+  // This field is needed for restart
+  Field rad_heating_pdel (FieldIdentifier("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name));
+  rad_heating_pdel.allocate_view();
+  add_internal_field(rad_heating_pdel);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -597,7 +601,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_lw_clrsky_flux_dn = get_field_out("LW_clrsky_flux_dn").get_view<Real**>();
   auto d_lw_clnsky_flux_up = get_field_out("LW_clnsky_flux_up").get_view<Real**>();
   auto d_lw_clnsky_flux_dn = get_field_out("LW_clnsky_flux_dn").get_view<Real**>();
-  auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
+  auto d_rad_heating_pdel = get_internal_field("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
   auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
