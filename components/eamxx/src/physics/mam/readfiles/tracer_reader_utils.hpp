@@ -54,6 +54,7 @@ inline void compute_p_src_zonal_files(const view_1d &levs,
 // inside the parallel_for.
 // This struct will be used in init while reading nc files.
 // The MAM4xx version will be used instead of parallel_for that loops over cols.
+constexpr int MAX_SECTION_NUM_FORCING=4;
 struct ForcingHelper {
   // This index is in Fortran format. i.e. starts in 1
   int frc_ndx;
@@ -61,8 +62,8 @@ struct ForcingHelper {
   bool file_alt_data;
   // number of sectors per forcing
   int nsectors;
-  // offset in output vector from reader
-  int offset;
+  // data of views
+  view_2d fields[MAX_SECTION_NUM_FORCING];
 };
 
 enum TracerFileType {
@@ -88,7 +89,6 @@ enum TracerDataIndex { BEG = 0, END = 1, OUT = 2 };
  Therefore, if a file contains more than this number, it is acceptable to
  increase this limit. Currently, Linoz files have 8 fields. */
 constexpr int MAX_NVARS_TRACER                  = 10;
-constexpr int MAX_NUM_ELEVATED_EMISSIONS_FIELDS = 25;
 
 // Linoz structures to help manage all of the variables:
 struct TracerTimeState {
