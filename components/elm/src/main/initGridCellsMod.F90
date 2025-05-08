@@ -237,7 +237,9 @@ contains
        ! By putting this check within the loop over clumps, we ensure that (for example)
        ! if a clump is responsible for landunit L, then that same clump is also
        ! responsible for all columns and pfts in L.
+       !$OMP CRITICAL
        call elm_ptrs_check(bounds_clump)
+       !$OMP END CRITICAL
 
        ! Set veg_pp%wtlunit, veg_pp%wtgcell and col_pp%wtgcell
        call compute_higher_order_weights(bounds_clump)
