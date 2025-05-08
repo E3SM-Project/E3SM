@@ -16,18 +16,26 @@ module thread_mod
   implicit none
   private
 
-  integer, public :: NThreads   ! total number of threads
+#ifdef MODEL_CESM
+  integer, public, pointer :: NThreads   ! total number of threads
+                                         ! standalone HOMME: from namelist
+                                         ! in CAM: set by driver
+  integer, public, pointer :: hthreads   ! computed based on nthreads, vthreads,nelemd
+  integer, public, pointer :: vthreads   ! not used unless set in namelist
+#else
+ integer, public :: NThreads   ! total number of threads
                                 ! standalone HOMME: from namelist
                                 ! in CAM: set by driver
   integer, public :: hthreads   ! computed based on nthreads, vthreads,nelemd
   integer, public :: vthreads = 1   ! not used unless set in namelist
-
+#endif
   public :: omp_get_thread_num
   public :: omp_in_parallel
   public :: omp_set_num_threads
   public :: omp_get_max_threads
   public :: omp_get_num_threads
   public :: omp_get_nested
+
 #ifndef _OPENMP
 contains
 

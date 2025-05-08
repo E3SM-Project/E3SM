@@ -17,7 +17,6 @@ module physical_constants
     rearth,               &
     omega,                &
     Rgas => rair,         &
-    cpair,                &
     p0 => pstd,           &
     MWDAIR => mwdry,      &
     Rwater_vapor => rh2o, &
@@ -26,6 +25,7 @@ module physical_constants
     Rd_on_Rv => epsilo,   &
     Cpd_on_Cpv,           &
     rrearth => ra
+  use shr_const_mod, only: shr_const_cpdair
 #endif
   ! -----------------------------
   implicit none
@@ -41,7 +41,7 @@ module physical_constants
   public                                   :: g                         ! m s^-2
   public                                   :: omega                     ! s^-1
   public                                   :: Rgas
-  real (kind=real_kind), public, parameter :: Cp           = cpair
+  real (kind=real_kind), public, parameter :: Cp = shr_const_cpdair     ! cpair from the "physconst" module in CAM is not a constant
   public                                   :: p0                        ! Pa
   public                                   :: MWDAIR
   public                                   :: Rwater_vapor
