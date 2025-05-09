@@ -6,7 +6,9 @@ RM = rm
 .SUFFIXES: .F90 .o
 
 # Set the compiler
-FC := gfortran
+ifeq ($(FC),$(null))
+    FC = gfortran
+endif
 
 # Set NetCDF library and include directories
 LIB_NETCDF := $(shell nf-config --prefix)/lib
