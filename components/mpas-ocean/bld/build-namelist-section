@@ -241,6 +241,8 @@ add_default($nl, 'config_sfwf_balance');
 add_default($nl, 'config_sfwf_balance_type');
 add_default($nl, 'config_precip_factor');
 add_default($nl, 'config_sfwf_history_years');
+add_default($nl, 'config_sfwf_use_prev_factor');
+add_default($nl, 'config_sfwf_balance_write_to_logfile');
 
 ############################
 # Namelist group: coupling #
