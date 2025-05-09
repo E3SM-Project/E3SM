@@ -1312,9 +1312,6 @@ contains
         ! update scaled data ice-shelf melt fluxes based on remove ice runoff
         call ocn_update_scaled_dismf(domain)
 
-        ! update scalling factors for freshwater fluxes 
-        call ocn_update_scaling_factor(domain)
-
          if (debugOn) call mpas_log_write('   Computing analysis members')
          call ocn_analysis_compute(domain_ptr, ierr)
          if (iam==0.and.debugOn) then

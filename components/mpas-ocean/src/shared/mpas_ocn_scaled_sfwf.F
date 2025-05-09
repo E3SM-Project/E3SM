@@ -31,6 +31,9 @@ module ocn_scaled_sfwf
     use ocn_config
     use ocn_mesh
 
+    use shr_kind_mod, only: & 
+        SHR_KIND_R8
+
     use shr_const_mod
 
     use ocn_constants, only: & 
