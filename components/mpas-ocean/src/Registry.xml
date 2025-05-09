@@ -121,7 +121,7 @@
 		/>
                 <dim name="nAccumulatedSFWFHistory" definition="namelist:config_sfwf_history_years"
                          description="The number of years stored in the history of surface freshwater fluxes."
-                />
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -754,7 +754,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_sgr_temperature_prescribed" type="real" default_value="0.0" units="C"
-			        description="Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true."
+			                description="Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true."
 					possible_values="Any real number."
 		/>
 		<nml_option name="config_sgr_salinity_prescribed" type="real" default_value="0.0" units="1.e-3"
@@ -764,20 +764,28 @@
         </nml_record>
 	<nml_record name="sfwf_forcing" mode="init;forward">
                 <nml_option name="config_sfwf_balance" type="logical" default_value=".false."
-                                        description="If true, precipitation fluxes from data atmosphere was adjusted to constrain the freshwater conservation. To be used with data precipitation (rain+snow) fluxes coming from the atmospehre model and runoff fluxes coming from the land model."
+			                description="If enabled, precipitation fluxes from the data atmosphere are adjusted to ensure freshwater balance in the ocean model."
 					possible_values=".true. or .false."
                 />
-	        <nml_option name="config_sfwf_balance_type" type="integer" default_value="0"
-                        		description="The option for the water conservation scheme. The default is 0 that used a fixed factor on the precipitation fluxes from namelist. option 1 used the dynamical factor calculated with the surface freshwater balance relationship" 
-                        		possible_values="Any positive integer"
+	        <nml_option name="config_sfwf_balance_type" type="integer" default_value="-99"
+			                description="Option to compute scaling factors to ensure freshwater balance in the ocean model."
+                        		possible_values="0 or 1"
                 />
                 <nml_option name="config_precip_factor" type="real" default_value="1.0" units="unitless"
-					description="Factors applied on precipitation flux to adjust freshwater conservation in ocean model."
-                       		 	possible_values="Any positive integer"
+					description="First guess scaling factors applied on precipitation flux to adjust freshwater balance in ocean model."
+					possible_values="Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0"
                 />
                 <nml_option name="config_sfwf_history_years" type="integer" default_value="1" units="years"
-                       			description="The number of years. The default is 1 year."
-                       			possible_values="Any positive integer"
+			                description="The number of years over for which the history span of water balance is computed."
+                       			possible_values="Must be a positive integer greater than or equal to 1."
+		/>
+                <nml_option name="config_sfwf_use_prev_factor" type="logical" default_value=".false."
+			                description="Logical flag determining whether the newly calculated SFWF factor should use values from the previous timestep."
+			               possible_values=".true. or .false."
+                />
+                <nml_option name="config_sfwf_balance_write_to_logfile" type="logical" default_value=".false."
+		                       description="Logical flag determining if the freshwater balance adjustment information is written to the log file."
+                                       possible_values=".true. or .false."
                 />
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
@@ -2147,10 +2155,8 @@
 	    <var name="nAccumulatedfwFlux" packages="scaledSFWFPKG"/>
 	    <var name="avgprecFlux" packages="scaledSFWFPKG"/>
 	    <var name="avgfwFlux" packages="scaledSFWFPKG"/>
-            <var name="avgsalFlux" packages="scaledSFWFPKG"/>
 	    <var name="totalAccumulatedprecFluxHistory" packages="scaledSFWFPKG"/>
 	    <var name="totalAccumulatedfwFluxHistory" packages="scaledSFWFPKG"/>
-            <var name="totalAccumulatedsalFluxHistory" packages="scaledSFWFPKG"/>
             <var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
 	    <var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
 		</stream>
@@ -3977,20 +3983,25 @@
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
+                <!-- Additional fields required for computing scaling factors to maintain water balance -->
                 <var name="nAccumulatedfwFlux" type="integer" dimensions="Time"
                          description="Number of accumulations in time averaging of surface water fluxes"
                          packages="scaledSFWFPKG"
                 />
                 <var name="avgprecFlux" type="real" dimensions="Time" units="kg s^-1"
-                         description="The daily mean, area integrated value of precipitation flux (rain+snow)."
+                         description="The yearly mean, area integrated value of precipitation flux (rain+snow)."
                          packages="scaledSFWFPKG"
 		/>
                 <var name="avgfwFlux" type="real" dimensions="Time" units="kg s^-1"
-                         description="The daily mean, area integrated value of freshwater flux (ssh inferred)."
+                         description="The yearly mean, area integrated value of freshwater flux (ssh inferred)."
                          packages="scaledSFWFPKG"
 		/>
-                <var name="avgsalFlux" type="real" dimensions="Time" units="kg s^-1"
-                         description="The daily mean, area integrated value of salinity flux (salinity inferred)."
+                <var name="SSHinitial" type="real" dimensions="Time" units="kg"
+			 description="The total water mass inferred from sea surface height anomalies at the beginning of a year."
+                         packages="scaledSFWFPKG"
+		/>
+                <var name="SSHfinal" type="real" dimensions="Time" units="kg"
+			 description="The total water mass inferred from sea surface height anomalies at the end of a year."
                          packages="scaledSFWFPKG"
                 />
                 <var name="totalAccumulatedprecFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
@@ -4001,10 +4012,6 @@
                          description="The history of accumulated freshwater fluxes, used to compute a running mean."
                          packages="scaledSFWFPKG"
 		/>
-                <var name="totalAccumulatedsalFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
-                         description="The history of accumulated salinity fluxes, used to compute a running mean."
-                         packages="scaledSFWFPKG"
-                />
                 <var name="nValidTotalfwFluxHistory" type="integer" dimensions="Time"
                          description="The number of valid days used for computing the surface water balance."
                          packages="scaledSFWFPKG"
