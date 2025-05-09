@@ -1260,19 +1260,19 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<!--sfwf balance -->
+<!--sfwf forcing -->
 
 <entry id="config_sfwf_balance" type="logical"
-        category="sfwf_forcing" group="sfwf_forcing">
-If true, precipitation fluxes from data atmosphere was adjusted to constrain the freshwater conservation. To be used with data precipitation (rain+snow) fluxes coming from the atmospehre model and runoff fluxes coming from the land model.
+	category="sfwf_forcing" group="sfwf_forcing">
+If true, precipitation fluxes from the data atmosphere are adjusted to ensure freshwater balance in the ocean model. This option should be used when the ocean model is driven by a data atmosphere with semi-prescribed precipitation (rain + snow) fluxes.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_sfwf_balance_type" type="integer"
-        category="sfwf_forcing" group="sfwf_forcing">
-The option for the water conservation scheme. The default is 0 that used a fixed factor applied on the precipitation fluxes. option 1 used the dynamical factor calculated with the annual mean and global mean precipitation (rain + snow), runoff and evaporation fluxes over ocean using data spanned for 1-year. 
+	category="sfwf_forcing" group="sfwf_forcing">
+Option to compute scaling factors to ensure freshwater balance in the ocean model. The default (0) uses a prescribed constant factor applied to precipitation fluxes. Option 1 enables a dynamic scaling factor, computed using annual global mean precipitation (rain + snow) and sea surface height changes over one-year or multi-year period.
 
 Valid values: 0 or 1 
 Default: Defined in namelist_defaults.xml
@@ -1280,20 +1280,35 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_precip_factor" type="real"
         category="sfwf_forcing" group="sfwf_forcing">
-Factors applied on precipitation flux to adjust freshwater conservation in ocean model. 
+Initial guess scaling factors applied to precipitation fluxes to adjust the freshwater balance in the ocean model.
 
-Valid values: any non-negative value, no scaling if if set to 1.0
+Valid values: any non-negative number between 0 and 1.0. A value of 1.0 means no scaling is applied.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_sfwf_history_years" type="integer"
         category="sfwf_forcing" group="sfwf_forcing">
-The number of years over for which the history span of water balance is computed. The default is 1 year.
+The number of years over which the water balance history is computed. The default is 1 year.
 
-Valid values: Any positive integer
+Valid values: must be a positive integer greater than or equal to 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_sfwf_use_prev_factor" type="logical"
+        category="sfwf_forcing" group="sfwf_forcing">
+Logical flag determining whether the newly calculated SFWF factor should use values from the previous timestep.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_sfwf_balance_write_to_logfile" type="logical"
+        category="sfwf_forcing" group="sfwf_forcing">
+Logical flag indicating whether freshwater balance adjustment information is written to the log file.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- coupling -->
 
