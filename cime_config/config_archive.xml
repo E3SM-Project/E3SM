@@ -30,6 +30,10 @@
     <rest_file_extension>rhist\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
     <!-- The following matches "hi.AVGTYPE.FREQUNITS_xFREQ.TIMESTAMP.nc"-->
     <hist_file_extension>.*\.h\.(?!rhist\.).*\.nc$</hist_file_extension>
+    <rpointer>
+      <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
+      <rpointer_content>$CASE.scream$NINST_STRING.r.$DATENAME.nc </rpointer_content>
+    </rpointer>
   </comp_archive_spec>
 
   <comp_archive_spec compname="elm" compclass="lnd">
