@@ -1847,6 +1847,10 @@
 			description="Use data iceberg meltwater forcing"
 			possible_values="true or false"
 		/>
+		<nml_option name="config_iceberg_temperature" type="real" default_value="-4.0" units="C"
+			description="Initial temperature of icebergs."
+			possible_values="Any real number."
+		/>
 		<nml_option name="config_scale_dib_by_removed_ice_runoff" type="logical" default_value="false"
 			description="Whether to scale data iceberg fluxes by the running mean of removed ice runoff"
 			possible_values="true or false"
