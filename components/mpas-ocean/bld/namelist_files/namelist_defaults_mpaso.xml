@@ -377,7 +377,7 @@
 <config_sfwf_balance_type>-99</config_sfwf_balance_type>
 <config_precip_factor>1.0</config_precip_factor>
 <config_sfwf_history_years>1</config_sfwf_history_years>
-<config_sfwf_use_prev_factor>.false.</config_sfwf_use_prev_factor>
+<config_sfwf_use_prev_factor>.true.</config_sfwf_use_prev_factor>
 <config_sfwf_balance_write_to_logfile>.false.</config_sfwf_balance_write_to_logfile>
 
 <!-- coupling -->
