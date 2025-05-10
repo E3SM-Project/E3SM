@@ -92,6 +92,14 @@ jobs:
               console.log(`The pull request is mergeable. Will proceed.`);
             }
 
+            // Get the last commit of the pull request (so we can check the approvals came AFTER the last commmit)
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const lastCommit = commits.data[commits.data.length - 1];
+
             // Check that there is at least one approval and NO requests for changes
             const reviews = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
@@ -101,7 +109,7 @@ jobs:
             let hasApproval = false;
             let hasRequestChanges = false;
             for (const review of reviews.data) {
-              if (review.state === 'APPROVED') {
+              if (review.state === 'APPROVED' && new Date(review.submitted_at) > new Date(lastCommit.commit.author.date)) {
                 hasApproval = true;
               }
               if (review.state === 'CHANGES_REQUESTED') {
@@ -116,7 +124,7 @@ jobs:
               core.exportVariable('proceed', 'no');
               return;
             } else {
-              console.log(`The pull request does not have any approvals. Will not merge.`);
+              console.log(`The pull request does not have any approvals (or approvals are older than the last commit). Will not merge.`);
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
               return;
