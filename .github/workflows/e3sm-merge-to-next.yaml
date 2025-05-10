@@ -14,7 +14,9 @@ permissions:
   contents: write       # To push to origin after merging
 
 jobs:
-  merge-to-next:
+  checks:
+    outputs:
+      do_merge: ${{ steps.set_outputs.outputs.result }}
     runs-on: ubuntu-latest
     steps:
       - name: Print who triggered the workflow
@@ -157,8 +159,32 @@ jobs:
               console.log(`Failed to remove label '${process.env.LABEL_NAME}' from pull request #${prNumber}: ${error.message}`);
               core.exportVariable('proceed', 'no');
             }
+      - name: Set outputs
+        id: set_outputs
+        run: |
+          if [[ "${EVENT_LABEL_NAME}" == "${MERGE_LABEL_NAME}" ]]; then
+            if [[ "${PROCEED}" == "no" ]]; then
+              echo "Label '${EVENT_LABEL_NAME}' was set, but the PR is not mergeable. The PR will NOT be merged."
+              echo "do_merge=no" >> $GITHUB_OUTPUT
+              exit 1
+            else
+              echo "Label '${EVENT_LABEL_NAME}' was set, and the PR is mergeable. The PR will be merged."
+              echo "do_merge=yes" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Label '${EVENT_LABEL_NAME}' does not match the merge label '${MERGE_LABEL_NAME}'. The PR will NOT be merged"
+            echo "do_merge=no" >> $GITHUB_OUTPUT
+          fi
+        env:
+          EVENT_LABEL_NAME: ${{ github.event.label.name }}
+          MERGE_LABEL_NAME: ${{ env.LABEL_NAME }}
+          PROCEED: ${{ env.proceed }}
+  merge:
+    runs-on: ubuntu-latest
+    needs: checks
+    if: ${{ needs.checks.outputs.do_merge == 'yes' }}
+    steps:
       - name: Perform merge
-        if: ${{ env.proceed == 'yes' }}
         run: |
           # Variables
           PR_NUMBER=${{ github.event.pull_request.number }} # Get the PR number
