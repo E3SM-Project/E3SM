@@ -140,7 +140,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
   std::regex vert_contract ("([A-Za-z0-9_]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
-  std::regex zonal_avg ("([A-Za-z0-9_]+)_zonal_avg$");
+  std::regex zonal_avg (R"(([A-Za-z0-9_]+)_zonal_avg(_(\d+(\.\d+)?)_bins)$)");
 
   std::string diag_name;
   std::smatch matches;
@@ -213,11 +213,13 @@ create_diagnostic (const std::string& diag_field_name,
   }
   else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
     diag_name = "ZonalAvgDiag";
-    // Set the grid_name
-    params.set("grid_name",grid->name());
-    params.set<std::string>("field_name",matches[1].str());
-    // TODO: support user specified number of bins?
-    params.set<std::string>("number_of_zonal_bins","180");
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    std::string number_of_zonal_bins("180");
+    if (matches[2].matched) {
+      number_of_zonal_bins = matches[5].str();
+    }
+    params.set<std::string>("number_of_zonal_bins", number_of_zonal_bins);
   }
   else
   {
