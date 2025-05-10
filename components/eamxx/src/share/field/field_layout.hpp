@@ -132,6 +132,8 @@ public:
   FieldLayout& strip_dim (const int idim);
   FieldLayout& append_dim (const FieldTag t, const int extent);
   FieldLayout& append_dim (const FieldTag t, const int extent, const std::string& name);
+  FieldLayout& prepend_dim (const FieldTag t, const int extent);
+  FieldLayout& prepend_dim (const FieldTag t, const int extent, const std::string& name);
   FieldLayout& rename_dim (const int idim, const std::string& n);
   FieldLayout& rename_dim (const FieldTag tag, const std::string& n, const bool throw_if_not_found = true);
   FieldLayout& reset_dim (const int idim, const int extent);
@@ -153,6 +155,9 @@ public:
 protected:
   void compute_type ();
   void set_extents ();
+  void add_dim (const FieldTag t, const int extent, const std::string& name,
+    bool prepend_instead_of_append = false);
+
 
   int                       m_rank;
   std::vector<FieldTag>     m_tags;
@@ -214,7 +219,7 @@ inline long long FieldLayout::size () const {
   return prod;
 }
 
-inline FieldTag FieldLayout::tag (const int idim) const { 
+inline FieldTag FieldLayout::tag (const int idim) const {
   EKAT_REQUIRE_MSG (idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   return m_tags[idim];
 }

@@ -790,7 +790,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
 
     // If t==CMP, and the name stored in the layout is the default ("dim"),
     // we append also the extent, to allow different vector dims in the file
-    tag_name += tag_name=="dim" ? std::to_string(dims[i]) : "";
+    tag_name += tags[i] == CMP ? std::to_string(dims[i]) : "";
 
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
     int dim_len = is_partitioned
@@ -873,6 +873,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
 
   // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
   // We don't need to track average counts for files that are not tracking the time dim
+  using namespace ShortFieldTagsNames;
   const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto size = layout.size();
   const auto tags = layout.tags();
@@ -886,7 +887,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
 
       // If t==CMP, and the name stored in the layout is the default ("dim"),
       // we append also the extent, to allow different vector dims in the file
-      tag_name += tag_name=="dim" ? std::to_string(layout.dim(i)) : "";
+      tag_name += t==CMP ? std::to_string(layout.dim(i)) : "";
 
       avg_cnt_name += "_" + tag_name;
     }
@@ -951,7 +952,7 @@ register_variables(const std::string& filename,
       auto tag_name = m_io_grid->has_special_tag_name(t)
                     ? m_io_grid->get_special_tag_name(t)
                     : layout.names()[i];
-      if (tag_name=="dim") {
+      if (t==CMP) {
         tag_name += std::to_string(layout.dim(i));
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
