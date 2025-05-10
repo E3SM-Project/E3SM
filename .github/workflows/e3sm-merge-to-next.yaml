@@ -22,7 +22,6 @@ jobs:
           echo "The workflow was triggered by: ${{ github.actor }}"
           echo "remove_label=no" >> $GITHUB_ENV
           echo "proceed=yes" >> $GITHUB_ENV
-          echo "success=yes" >> $GITHUB_ENV
       - name: Check label
         uses: actions/github-script@v6
         with:
@@ -62,7 +61,6 @@ jobs:
                 console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
                 core.exportVariable('proceed', 'no');
                 core.exportVariable('remove_label', 'yes');
-                core.exportVariable('success', 'no');
               }
             } catch (error) {
               if (error.status === 404) {
@@ -70,13 +68,11 @@ jobs:
                 console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
                 core.exportVariable('proceed', 'no');
                 core.exportVariable('remove_label', 'yes');
-                core.exportVariable('success', 'no');
               } else {
                 console.error(`Error checking membership: ${error.message}`);
                 console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
                 core.exportVariable('proceed', 'no');
                 core.exportVariable('remove_label', 'yes');
-                core.exportVariable('success', 'no');
               }
             }
 
@@ -99,7 +95,6 @@ jobs:
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
               core.exportVariable('remove_label', 'yes');
-              core.exportVariable('success', 'no');
               return;
             } else {
               console.log(`The pull request is mergeable. Will proceed.`);
@@ -128,14 +123,12 @@ jobs:
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
               core.exportVariable('remove_label', 'yes');
-              core.exportVariable('success', 'no');
               return;
             } else {
               console.log(`The pull request does not have any approvals. Will not merge.`);
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
               core.exportVariable('remove_label', 'yes');
-              core.exportVariable('success', 'no');
               return;
             }
       - name: Remove label
@@ -157,7 +150,6 @@ jobs:
             } catch (error) {
               console.log(`Failed to remove label '${process.env.LABEL_NAME}' from pull request #${prNumber}: ${error.message}`);
               core.exportVariable('proceed', 'no');
-              core.exportVariable('success', 'no');
             }
       - name: Perform merge
         if: ${{ env.proceed == 'yes' }}
@@ -192,9 +184,3 @@ jobs:
 
           # Push to the remote
           git push origin $TARGET_BRANCH
-
-      - name: Final check
-        if: ${{ env.success == 'no' }}
-        run: |
-          echo "Something went wrong."
-          exit 1
