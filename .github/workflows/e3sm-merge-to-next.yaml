@@ -83,8 +83,13 @@ jobs:
             });
 
             // Check if the pull request is mergeable (no conflicts and not a draft)
-            if (pullRequest.mergeable_state!=='clean') {
-              console.log(`The pull request is not mergeable (mergeable_state=${pullRequest.mergeable_state})`);
+            if (!pullRequest.mergeable) {
+              console.log(`The pull request is not mergeable`);
+              console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
+              core.exportVariable('proceed', 'no');
+              return;
+            } else if (context.payload.pull_request.draft) {
+              console.log(`The pull request is marked as draft, so it will not be merged.`);
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
               return;
