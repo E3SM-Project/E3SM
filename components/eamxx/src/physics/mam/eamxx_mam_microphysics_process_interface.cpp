@@ -463,7 +463,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
-  
+
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -954,9 +954,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
-  Kokkos::parallel_for("transpose_extfrc", 
-    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
-    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+  Kokkos::parallel_for("transpose_extfrc", ncol * extcnt * nlev,
+    KOKKOS_LAMBDA(const int linear_index) {
+      const int k = linear_index / (ncol * extcnt);
+      const int j = (linear_index / ncol) % extcnt;
+      const int i = linear_index % ncol;
       const int pcnst_idx = extfrc_pcnst_index[j];
       const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
       // Modify units to MKS units: [molec/cm3/s] to [kg/m3/s]
