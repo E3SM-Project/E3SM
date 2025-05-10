@@ -4,18 +4,22 @@
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
 namespace scream {
-// TODO: Update this comment
 /*
- * This diagnostic will calculate the area-weighted average of a field
- * across the COL tag dimension, producing an N-1 dimensional field
- * that is area-weighted average of the input field.
+ * This diagnostic will calculate area-weighted zonal averages of a field across
+ * the COL tag dimension producing an N dimensional field, where the COL tag
+ * dimension is replaced by a CMP tag dimension named "bin" that indicates which
+ * zonal band the average value corresponds to.
  */
 
 class ZonalAvgDiag : public AtmosphereDiagnostic {
 
-  // TODO: comment this, noting it's a utility function that could exist elsewhere
-  //       also note the assumptions that field is arranged column first and
-  //       result is arranged "bin" first
+  // Utility to compute the contraction of a field along its column dimension.
+  // This is equivalent to f_out = einsum('i,i...k->...k', weight, f_in).
+  // The implementation is such that:
+  // - all Field objects must be allocated
+  // - the first dimension for field, weight, and lat is for the columns (COL)
+  // - the first dimension for result is for the zonal bins (CMP,"bin")
+  // - field and result must be the same dimension, up to 3
   static void compute_zonal_sum(const Field &result, const Field &field,
     const Field &weight, const Field &lat, const ekat::Comm *comm = nullptr);
 

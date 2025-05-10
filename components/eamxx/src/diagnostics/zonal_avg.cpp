@@ -125,7 +125,6 @@ void ZonalAvgDiag::set_grids(
 }
 
 void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
-  // TODO: auto everything
   using FieldIdentifier = FieldHeader::identifier_type;
   using FieldLayout = FieldIdentifier::layout_type;
   using ShortFieldTagsNames::COL, ShortFieldTagsNames::CMP,
