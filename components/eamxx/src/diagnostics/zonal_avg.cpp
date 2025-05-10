@@ -103,11 +103,8 @@ ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   const auto &field_name = m_params.get<std::string>("field_name");
-  m_diag_name = field_name + "_zonal_avg";
-
-  auto num_bins_value  = params.get<std::string>("number_of_zonal_bins");
-
-  m_bin_dim_name = "bin" + num_bins_value;
+  const auto &num_bins_value = params.get<std::string>("number_of_zonal_bins");
+  m_diag_name = field_name + "_zonal_avg_with_" + num_bins_value + "_bins";
   m_num_zonal_bins = std::stoi(num_bins_value);
 }
 
@@ -115,10 +112,9 @@ void ZonalAvgDiag::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   const auto &field_name = m_params.get<std::string>("field_name");
   const auto &grid_name = m_params.get<std::string>("grid_name");
-  const GridsManager::grid_ptr_type grid = grids_manager->get_grid("Physics");
 
   add_field<Required>(field_name, grid_name);
-
+  const GridsManager::grid_ptr_type grid = grids_manager->get_grid(grid_name);
   m_lat = grid->get_geometry_data("lat");
   // area will be scaled in initialize_impl
   m_scaled_area = grid->get_geometry_data("area").clone();
@@ -145,7 +141,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   FieldLayout diagnostic_layout =
     field_layout.clone().strip_dim(COL).prepend_dim({CMP}, {m_num_zonal_bins},
-      {m_bin_dim_name});
+      {"bin"});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
     field_id.get_units(), field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
@@ -153,7 +149,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   // allocate zonal area
   const FieldIdentifier &area_id = m_scaled_area.get_header().get_identifier();
-  FieldLayout zonal_area_layout({CMP}, {m_num_zonal_bins}, {m_bin_dim_name});
+  FieldLayout zonal_area_layout({CMP}, {m_num_zonal_bins}, {"bin"});
   FieldIdentifier zonal_area_id("zonal area", zonal_area_layout,
     area_id.get_units(), area_id.get_grid_name());
   Field zonal_area(zonal_area_id);

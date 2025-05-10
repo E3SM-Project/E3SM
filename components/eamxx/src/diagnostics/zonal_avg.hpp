@@ -44,7 +44,6 @@ class ZonalAvgDiag : public AtmosphereDiagnostic {
   void initialize_impl(const RunType /*run_type*/);
 
   std::string m_diag_name;
-  std::string m_bin_dim_name;
   int m_num_zonal_bins;
 
   Field m_lat;
