@@ -20,7 +20,6 @@ jobs:
       - name: Print who triggered the workflow
         run: |
           echo "The workflow was triggered by: ${{ github.actor }}"
-          echo "remove_label=no" >> $GITHUB_ENV
           echo "proceed=yes" >> $GITHUB_ENV
       - name: Check label
         uses: actions/github-script@v6
@@ -31,7 +30,6 @@ jobs:
             if (label !== process.env.LABEL_NAME ) {
               console.log(`Label '${label}' does not match '${process.env.LABEL_NAME}'. Nothing to do.`);
               core.exportVariable('proceed', 'no');
-              return; // Early return
             } else {
               console.log(`Label '${label}' matches '${process.env.LABEL_NAME}'. Will proceed.`);
             }
@@ -60,20 +58,15 @@ jobs:
                 console.log(`${context.actor} is NOT a member of the team "${teamName}".`);
                 console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
                 core.exportVariable('proceed', 'no');
-                core.exportVariable('remove_label', 'yes');
               }
             } catch (error) {
               if (error.status === 404) {
                 console.log(`${context.actor} is NOT a member of the team "${teamName}".`);
-                console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
-                core.exportVariable('proceed', 'no');
-                core.exportVariable('remove_label', 'yes');
               } else {
                 console.error(`Error checking membership: ${error.message}`);
-                console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
-                core.exportVariable('proceed', 'no');
-                core.exportVariable('remove_label', 'yes');
               }
+              core.exportVariable('proceed', 'no');
+              console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
             }
 
       - name: Check mergeability
@@ -94,7 +87,6 @@ jobs:
               console.log(`The pull request is not mergeable (mergeable_state=${pullRequest.mergeable_state})`);
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
-              core.exportVariable('remove_label', 'yes');
               return;
             } else {
               console.log(`The pull request is mergeable. Will proceed.`);
@@ -122,20 +114,21 @@ jobs:
               console.log(`The pull request has request changes. Will not merge.`);
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
-              core.exportVariable('remove_label', 'yes');
               return;
             } else {
               console.log(`The pull request does not have any approvals. Will not merge.`);
               console.log(`The label ${process.env.LABEL_NAME} will be removed.`);
               core.exportVariable('proceed', 'no');
-              core.exportVariable('remove_label', 'yes');
               return;
             }
       - name: Remove label
-        if: ${{ env.remove_label == 'yes' }}
         uses: actions/github-script@v6
         with:
           script: |
+            const label = context.payload.label.name; // Get the name of the label that was added
+            if (label !== process.env.LABEL_NAME ) {
+              return;
+            }
             const prNumber = context.payload.pull_request.number; // Get the PR number
 
             try {
