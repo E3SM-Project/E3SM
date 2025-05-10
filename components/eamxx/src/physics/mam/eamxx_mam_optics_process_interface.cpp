@@ -52,7 +52,7 @@ void MAMOptics::set_grids(
   FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
   add_tracers_wet_atm();
   add_fields_dry_atm();
-    
+
   // cloud liquid number mixing ratio [1/kg]
   add_tracer<Required>("nc", grid_, n_unit);
 
@@ -443,11 +443,14 @@ void MAMOptics::run_impl(const double dt) {
   Kokkos::fence();
 
   // nswbands loop is using rrtmg indexing.
+  const int ncol = ncol_;
+  const int nswbands = nswbands_;
   Kokkos::parallel_for(
-      "copying data from mam4xx to eamxx",
-      Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0},
-                                             {ncol_, nswbands_, nlev_}),
-      KOKKOS_LAMBDA(const int icol, const int iswband, const int kk) {
+      "copying data from mam4xx to eamxx", ncol_*nswbands_*nlev_,
+      KOKKOS_LAMBDA(const int linear_index) {
+        const int kk = linear_index / (ncol * nswbands);
+        const int iswband = (linear_index / ncol) % nswbands;
+        const int icol = linear_index % ncol;
         // Extract single scattering albedo from the product-defined fields
         if(tau_sw(icol, iswband, kk + 1) > zero) {
           aero_ssa_sw_eamxx(icol, get_idx_rrtmgp_from_rrtmg_swbands(iswband),
