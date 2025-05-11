@@ -843,9 +843,21 @@ contains
        ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
 
-       ! initialize scaled data freshwater fluxes based on water balance relationship 
+       ! Initialize the freshwater flux scaling scheme based on the ocean water balance relationship
        call ocn_init_scaled_sfwf(domain)
-
+       ! Ensure the first guess is initialized to enable dynamic adjustment of the precipitation scaling factor
+       call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
+       if (config_sfwf_balance) then
+          call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
+          if (config_sfwf_balance_type > 0) then
+            call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
+            ! independent of space so should be no need to loop over blocks
+            block_ptr => domain % blocklist
+            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+            call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+            SFWFScalingFactor = config_precip_factor
+          end if
+       end if
     end if
 
 !-----------------------------------------------------------------------
@@ -937,13 +949,10 @@ contains
     if (config_sfwf_balance) then 
        call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
        if (config_sfwf_balance_type > 0) then
-         call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
          ! independent of space so should be no need to loop over blocks
          block_ptr => domain % blocklist
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
          call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
-         ! initialize the scaling factor  as config_precip_factor
-         SFWFScalingFactor = config_precip_factor 
          call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
        end if 
     end if 
@@ -2193,10 +2202,10 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
    call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
    if (config_sfwf_balance) then
-      if (config_sfwf_balance_type == 0 ) then
-          precFactor = config_precip_factor
+      if (config_sfwf_balance_type > 0 ) then
+         call seq_infodata_GetData(infodata, precip_fact=precFactor)
       else 
-          call seq_infodata_GetData(infodata, precip_fact=precFactor)
+         precFactor = config_precip_factor
       end if
    else
       precFactor = 1.0_RKIND 
