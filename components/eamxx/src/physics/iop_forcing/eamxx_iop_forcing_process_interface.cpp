@@ -198,7 +198,7 @@ advance_iop_subsidence(const MemberType& team,
   Real* dp  = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
 
   auto solve_field = [&](auto& field_view, auto& s_field) {
-    for (int k = 0; k < nlevs; ++k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
       Real dp_val = s_ref_p_del(k) + 1e-4;
       Real omega_dn = s_omega_int(k);
       Real omega_up = s_omega_int(k + 1);
@@ -209,7 +209,9 @@ advance_iop_subsidence(const MemberType& team,
       c[k] = -coeff_up;
       b[k] = 1.0 + coeff_dn + coeff_up;
       rhs[k] = s_field(k);
-    }
+    });
+    team.team_barrier();
+
     a[0] = 0.0;
     c[nlevs - 1] = 0.0;
 
@@ -224,13 +226,17 @@ advance_iop_subsidence(const MemberType& team,
     for (int i = nlevs - 2; i >= 0; --i) {
       sol[i] = dp[i] - cp[i] * sol[i + 1];
     }
+    team.team_barrier();
 
-    for (int k = 0; k < nlev_packs; ++k) {
+    EKAT_KERNEL_REQUIRE_MSG(nlevs <= nlev_packs * pack_size,
+      "advance_iop_subsidence: nlevs exceeds size of Pack-based storage");
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       for (int i = 0; i < pack_size; ++i) {
         int idx = k * pack_size + i;
         if (idx < nlevs) field_view(k)[i] = sol[idx];
       }
-    }
+    });
   };
 
   solve_field(T, s_T);
@@ -242,8 +248,6 @@ advance_iop_subsidence(const MemberType& team,
     solve_field(qm, sqm);
   }
 }
-
-
 
 // =========================================================================================
 KOKKOS_FUNCTION
