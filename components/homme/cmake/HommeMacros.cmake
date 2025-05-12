@@ -114,7 +114,7 @@ macro(createTestExec execName execType macroNP macroNC
   ADD_EXECUTABLE(${execName} ${EXEC_SOURCES})
   # For SYCL builds it is suggested to use CXX linker with `-fortlib`
   # for mixed-language setups
-  IF(SYCL_BUILD)
+  IF(Kokkos_ENABLE_SYCL)
     SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE CXX)
   ELSE()
     SET_TARGET_PROPERTIES(${execName} PROPERTIES LINKER_LANGUAGE Fortran)
