@@ -185,17 +185,20 @@ advance_iop_subsidence(const MemberType& team,
     omega_int(k).set(range_pack >= 1 && range_pack <= nlevs - 1, 
                      weight * omega_k + (1 - weight) * omega_km1);
   });
-  s_omega_int(0) = 0.0;
-  s_omega_int(nlevs) = 0.0;
+  omega_int(0)[0] = 0.0;
+  omega_int(nlevs / pack_size)[nlevs % pack_size] = 0.0;
+
 
   // Allocate and populate temporary Real arrays for tridiagonal solver
-  Real* a   = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
-  Real* b   = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
-  Real* c   = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
-  Real* rhs = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
-  Real* sol = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
-  Real* cp  = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
-  Real* dp  = static_cast<Real*>(team.team_shmem().get_shmem(sizeof(Real) * nlevs));
+  Real* shmem_ptr = static_cast<Real*>(team.team_shmem().get_shmem(7 * nlevs * sizeof(Real)));
+
+  Real* a   = shmem_ptr + 0 * nlevs;
+  Real* b   = shmem_ptr + 1 * nlevs;
+  Real* c   = shmem_ptr + 2 * nlevs;
+  Real* rhs = shmem_ptr + 3 * nlevs;
+  Real* sol = shmem_ptr + 4 * nlevs;
+  Real* cp  = shmem_ptr + 5 * nlevs;
+  Real* dp  = shmem_ptr + 6 * nlevs;
 
   auto solve_field = [&](auto& field_view, auto& s_field) {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
