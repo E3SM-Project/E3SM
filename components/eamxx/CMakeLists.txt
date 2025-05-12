@@ -219,7 +219,8 @@ endif()
 # and then adding to eamxx_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
-set(SCREAM_RRTMGP_ENABLE_KOKKOS TRUE)
+# This can be removed once rrtmgp is kokkos-only.
+add_definitions("-DRRTMGP_ENABLE_KOKKOS")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
