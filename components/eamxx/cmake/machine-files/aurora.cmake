@@ -11,5 +11,5 @@ set(EKAT_MPI_THREAD_FLAG "-d" CACHE STRING "")
 SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
 SET(SYCL_LINK_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\"")
 
-set(CMAKE_CXX_FLAGS  " --intel -mlong-double-64 ${SYCL_COMPILE_FLAGS}" CACHE STRING "" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS  " -lifcore --intel -lsycl -mlong-double-64 ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS  " --intel -mlong-double-64 -gline-tables-only -fdebug-info-for-profiling ${SYCL_COMPILE_FLAGS}" CACHE STRING "" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS  " -lifcore --intel -lsycl -mlong-double-64 -gline-tables-only -fdebug-info-for-profiling ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "" FORCE)
