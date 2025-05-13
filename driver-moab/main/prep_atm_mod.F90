@@ -127,7 +127,7 @@ contains
 
    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
    iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
-   iMOAB_DefineTagStorage, iMOAB_ComputeCoverageMesh
+   iMOAB_DefineTagStorage, iMOAB_MigrateMapMesh
    !---------------------------------------------------------------
    ! Description
    ! Initialize module attribute vectors and  mappers
@@ -275,6 +275,7 @@ contains
             mapper_So2a%src_context = ocn(1)%cplcompid
             mapper_So2a%weight_identifier = wgtIdo2a
             mapper_So2a%mbname = 'mapper_So2a'
+            mapper_So2a%intx_context = idintx
 
             ! Since we are projecting fields from OCN to ATM-PHY grid, we need to define
             ! OCN o2x fields to ATM-PHY grid (or ATM-DYN (spectral) ) on coupler side
@@ -294,14 +295,6 @@ contains
 
             if (.not. samegrid_ao) then ! most cases
 
-               ! compute the OCN coverage mesh here on coupler pes
-               ! OCN mesh was redistributed to cover target (ATM) partition
-               ierr = iMOAB_ComputeCoverageMesh( mboxid, mbaxid, mbintxoa )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' cannot compute source OCN coverage mesh for ATM'
-                  call shr_sys_abort(subname//' ERROR in computing OCN-ATM coverage')
-               endif
-
                if (compute_maps_online_o2a) then
                   if (iamroot_CPLID) then
                      write(logunit,*) '....Computing weights'
@@ -316,36 +309,29 @@ contains
                   endif
 
 #ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 3) then
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing OCN-ATM intersection file '
-                     call shr_sys_abort(subname//' ERROR in writing OCN-ATM intersection file ')
+                  wopts = C_NULL_CHAR
+                  call shr_mpi_commrank( mpicom_CPLID, rank )
+                  if (rank .lt. 3) then
+                     write(lnum,"(I0.2)")rank !
+                     outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                     ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in writing OCN-ATM intersection file '
+                        call shr_sys_abort(subname//' ERROR in writing OCN-ATM intersection file ')
+                     endif
                   endif
-               endif
 ! endif for MOABDEBUG
 #endif
-               endif  ! if .not.loadmapsfromdisk
-
-               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-               ! ocean for the intx ocean-atm context (coverage)
-               type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-               type2 = 3;
-               ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          ocn(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
-               endif
-
-               ! now take care of the mapper
-               mapper_So2a%intx_context = idintx
-
-               if (compute_maps_online_o2a) then
+                  ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+                  ! ocean for the intx ocean-atm context (coverage)
+                  type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+                  type2 = 3;
+                  ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             ocn(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+                  endif
 
                   if (atm_pg_active) then
                      dm2 = "fv"//C_NULL_CHAR
@@ -383,10 +369,19 @@ contains
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
                         wgtIdo2a, 'mapper_So2a MOAB init', esmf_map_flag)
+                  ! need to call migrate map mesh, which will compute the cov mesh and
+                  !  comm graph too for coverage mesh
+                  context_id = idintx ! intx id
+                  ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
+                     mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                     call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+                  endif
+
                endif
 
             else ! samegrid_ao = TRUE
@@ -543,7 +538,6 @@ contains
             'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
             'mapper_Si2a initialization',esmf_map_flag, no_match)
             ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
-
 #ifdef HAVE_MOAB
          ! Call moab intx only if ATM and ICE are init in moab coupler
          if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
@@ -551,7 +545,6 @@ contains
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing MOAB mapper_Si2a'
             endif
-
             appname = "ICE_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ice and atm mesh
             idintx = 100*ice(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
@@ -560,15 +553,7 @@ contains
               write(logunit,*) subname,' error in registering ice atm intx'
               call shr_sys_abort(subname//' ERROR in registering ice atm intx')
             endif
-
-            ! compute the ATM coverage mesh here on coupler pes
-            ! ATM mesh was redistributed to cover target (OCN) partition
-            ierr = iMOAB_ComputeCoverageMesh( mbixid, mbaxid, mbintxia )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' cannot compute source ICE coverage mesh for ATM'
-               call shr_sys_abort(subname//' ERROR in computing ICE-ATM coverage')
-            endif
-
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
             if (compute_maps_online_i2a) then
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mbixid, mbaxid, mbintxia )
                if (ierr .ne. 0) then
@@ -578,19 +563,29 @@ contains
                if (iamroot_CPLID) then
                   write(logunit,*) 'iMOAB intersection between ice and atm with id:', idintx
                endif
-            endif
-
-            ! we also need to compute the comm graph for the second hop, from the ice on coupler to the
-            ! ice for the intx ice-atm context (coverage)
-            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-
-            type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
-            type2 = 3;
-            ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                        ice(1)%cplcompid, idintx)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
+               ! we also need to compute the comm graph for the second hop, from the ice on coupler to the
+               ! ice for the intx ice-atm context (coverage)
+#ifdef MOABDEBUG
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+               if (rank .lt. 3 ) then
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_ia_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxia, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing intx file ice-atm '
+                     call shr_sys_abort(subname//' ERROR in writing intx file ice-atm ')
+                  endif
+               endif
+#endif
+               type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             ice(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
+               endif
             endif
             ! now take care of the mapper
             mapper_Si2a%src_mbid = mbixid
@@ -600,7 +595,6 @@ contains
             mapper_Si2a%intx_context = idintx
             mapper_Si2a%weight_identifier = wgtIdi2a
             mapper_Si2a%mbname = 'mapper_Si2a'
-
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                if (atm_pg_active) then
@@ -643,22 +637,17 @@ contains
                call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
                      'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
                      wgtIdi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+               context_id = idintx ! intx id
+               ierr = iMOAB_MigrateMapMesh (mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
+                     mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+               endif
+
             endif
 
-#ifdef MOABDEBUG
-            wopts = C_NULL_CHAR
-            call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 3 .and. compute_maps_online_i2a) then
-               write(lnum,"(I0.2)")rank !
-               outfile = 'intx_ia_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-               ierr = iMOAB_WriteMesh(mbintxia, outfile, wopts) ! write local intx file
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in writing intx file ice-atm '
-                  call shr_sys_abort(subname//' ERROR in writing intx file ice-atm ')
-               endif
-            endif
-! endif for MOABDEBUG
-#endif
+
          endif ! if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
 ! endif for HAVE_MOAB
 #endif
@@ -750,15 +739,7 @@ contains
             mapper_Fl2a%mbname = 'mapper_Fl2a'
 
             if (.not. samegrid_al) then ! tri grid case
-
-               ! compute the LND coverage mesh here on coupler pes
-               ! LND mesh was redistributed to cover target (ATM) partition
-               ierr = iMOAB_ComputeCoverageMesh( mblxid, mbaxid, mbintxla )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' cannot compute source LND coverage mesh for ATM'
-                  call shr_sys_abort(subname//' ERROR in computing LND-ATM coverage')
-               endif
-
+               call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
                if (compute_maps_online_l2a) then
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB intersection between LND and ATM with id:', idintx
@@ -768,37 +749,30 @@ contains
                      write(logunit,*) subname,' error in computing intersection between LND and ATM'
                      call shr_sys_abort(subname//' ERROR in computing intersection between LND and ATM')
                   endif
-               endif
-#ifdef MOABDEBUG
-               ! write intx only if true intx file:
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-                  if (rank .lt. 5 .and. compute_maps_online_l2a) then ! write only a few intx files
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_la'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxla, outfile, wopts) ! write local intx file
+                  ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the
+                  ! lnd for the intx lnd-atm context (coverage)
+                  type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
+                  type2 = 3;
+                  ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             lnd(1)%cplcompid, idintx)
                   if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing intx file land atm '
-                     call shr_sys_abort(subname//' ERROR in writing intx file ')
+                     write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
                   endif
-               endif
+#ifdef MOABDEBUG
+                  ! write intx only if true intx file:
+                  wopts = C_NULL_CHAR
+                  call shr_mpi_commrank( mpicom_CPLID, rank )
+                     if (rank .lt. 5 .and. compute_maps_online_l2a) then ! write only a few intx files
+                     write(lnum,"(I0.2)")rank !
+                     outfile = 'intx_la'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                     ierr = iMOAB_WriteMesh(mbintxla, outfile, wopts) ! write local intx file
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in writing intx file land atm '
+                        call shr_sys_abort(subname//' ERROR in writing intx file ')
+                     endif
+                  endif
 #endif
-
-               ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the
-               ! lnd for the intx lnd-atm context (coverage)
-               call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
-
-               type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
-               type2 = 3;
-               ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          lnd(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
-               endif
-
-               if (compute_maps_online_l2a) then
-
                   ! need to compute weigths
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
@@ -839,6 +813,15 @@ contains
                   call moab_map_init_rcfile(mblxid, mbaxid, mbintxla, type1, &
                         'seq_maps.rc', 'lnd2atm_fmapname:', 'lnd2atm_fmaptype:', samegrid_al, &
                         wgtIdl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
+
+                  context_id = idintx ! intx id
+                  ierr = iMOAB_MigrateMapMesh (mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, &
+                     mpigrp_CPLID, type1, lnd(1)%cplcompid, context_id)
+
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in migrating lnd mesh for map lnd c2 atm '
+                     call shr_sys_abort(subname//' ERROR in migrating lnd mesh for map lnd c2 atm  ')
+                  endif
                endif
 
             else  ! the same mesh , atm and lnd use the same dofs, but restricted

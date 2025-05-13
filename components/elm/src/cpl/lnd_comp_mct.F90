@@ -1076,6 +1076,7 @@ contains
        l2x_lm(i,index_l2x_Sl_tref)     =  lnd2atm_vars%t_ref2m_grc(g)
        l2x_lm(i,index_l2x_Sl_qref)     =  lnd2atm_vars%q_ref2m_grc(g)
        l2x_lm(i,index_l2x_Sl_u10)      =  lnd2atm_vars%u_ref10m_grc(g)
+       l2x_lm(i,index_l2x_Sl_u10withgusts)=lnd2atm_vars%u_ref10m_with_gusts_grc(g) ! see commit 5813d4103
        l2x_lm(i,index_l2x_Fall_taux)   = -lnd2atm_vars%taux_grc(g)
        l2x_lm(i,index_l2x_Fall_tauy)   = -lnd2atm_vars%tauy_grc(g)
        l2x_lm(i,index_l2x_Fall_lat)    = -lnd2atm_vars%eflx_lh_tot_grc(g)
@@ -1339,7 +1340,7 @@ contains
 #endif
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices 
-    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm(1,1) )
+    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm )
     if ( ierr > 0) then
       call endrun('Error: fail to get seq_flds_x2l_fields for land moab instance on component')
     endif
