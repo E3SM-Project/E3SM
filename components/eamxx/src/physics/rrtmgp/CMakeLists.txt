@@ -11,6 +11,9 @@ set(EAM_RRTMGP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp)
 # NOTE: The external RRTMGP build needs some fixes to work with CUDA in a library build, so for now we will build these ourselves
 add_library(rrtmgp INTERFACE)
 target_compile_definitions(rrtmgp INTERFACE EAMXX_HAS_RRTMGP)
+if (Kokkos_ENABLE_CUDA)
+  target_compile_options(rrtmgp INTERFACE $<$<COMPILE_LANGUAGE:CXX>:--expt-relaxed-constexpr>)
+endif()
 
 if (NOT TARGET Kokkos::kokkos)
   find_package(Kokkos REQUIRED)
