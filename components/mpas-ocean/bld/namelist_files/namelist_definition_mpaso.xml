@@ -1294,14 +1294,6 @@ Valid values: must be a positive integer greater than or equal to 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_sfwf_use_prev_factor" type="logical"
-        category="sfwf_forcing" group="sfwf_forcing">
-Logical flag determining whether the newly calculated SFWF factor should use values from the previous timestep.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_sfwf_balance_write_to_logfile" type="logical"
         category="sfwf_forcing" group="sfwf_forcing">
 Logical flag indicating whether freshwater balance adjustment information is written to the log file.

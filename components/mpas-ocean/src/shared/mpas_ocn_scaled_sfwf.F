@@ -498,11 +498,7 @@ contains
         precFluxMean = sum(totalAccumulatedprecFluxHistory(1:nHistory)) / nHistory
         fwFluxMean = sum(totalAccumulatedfwFluxHistory(1:nHistory)) / nHistory 
 
-        if (config_sfwf_use_prev_factor) then 
-           SFWFScalingFactor = SFWFScalingFactor - fwFluxMean / precFluxMean
-        else
-           SFWFScalingFactor = 1.0_RKIND - fwFluxMean / precFluxMean 
-        end if 
+        SFWFScalingFactor = SFWFScalingFactor - fwFluxMean / precFluxMean
 
         ! reset yearly averaging of the precipitation and freshwater fluxes 
         nAccumulated = 0
