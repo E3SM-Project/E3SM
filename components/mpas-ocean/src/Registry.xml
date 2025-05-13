@@ -762,10 +762,6 @@
 			                description="The number of years over for which the history span of water balance is computed."
                        			possible_values="Must be a positive integer greater than or equal to 1."
 		/>
-                <nml_option name="config_sfwf_use_prev_factor" type="logical" default_value=".false."
-			                description="Logical flag determining whether the newly calculated SFWF factor should use values from the previous timestep."
-			               possible_values=".true. or .false."
-                />
                 <nml_option name="config_sfwf_balance_write_to_logfile" type="logical" default_value=".false."
 		                       description="Logical flag determining if the freshwater balance adjustment information is written to the log file."
                                        possible_values=".true. or .false."
