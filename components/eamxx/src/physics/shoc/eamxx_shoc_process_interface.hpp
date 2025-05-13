@@ -161,7 +161,7 @@ public:
     } // operator
 
     // Local variables
-    int ncol, nlev, num_qtracers;
+    int ncol, nlev;
     Real z_surf;
     view_2d_const  T_mid;
     view_2d_const  p_mid;
@@ -201,7 +201,7 @@ public:
     view_2d        cldfrac_liq_prev;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+    void set_variables(const int ncol_, const int nlev_,
                        const Real z_surf_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
@@ -219,7 +219,6 @@ public:
     {
       ncol = ncol_;
       nlev = nlev_;
-      num_qtracers = num_qtracers_;
       z_surf = z_surf_;
       // IN
       T_mid = T_mid_;
@@ -315,7 +314,7 @@ public:
     } // operator
 
     // Local variables
-    int ncol, nlev, num_qtracers;
+    int ncol, nlev;
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const tke_copy, qc_copy, qw;
@@ -335,7 +334,7 @@ public:
     view_1d heat_flux;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+    void set_variables(const int ncol_, const int nlev_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d_strided& qtracers_, const view_2d_const& qc2_,
@@ -344,7 +343,6 @@ public:
     {
       ncol = ncol_;
       nlev = nlev_;
-      num_qtracers = num_qtracers_;
       rrho = rrho_;
       qv = qv_;
       qw = qw_;

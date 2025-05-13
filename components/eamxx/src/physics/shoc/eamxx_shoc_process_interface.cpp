@@ -315,7 +315,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,z_surf,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -392,7 +392,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.dz_zi = m_buffer.dz_zi;
 #endif
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
