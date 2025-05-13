@@ -484,6 +484,9 @@ void SHOCMacrophysics::run_impl (const double dt)
                        shoc_preprocess);
   Kokkos::fence();
 
+  auto wtracer_sfc = shoc_preprocess.wtracer_sfc;
+  Kokkos::deep_copy(wtracer_sfc, 0);
+
   if (m_params.get<bool>("apply_tms", false)) {
     apply_turbulent_mountain_stress();
   }

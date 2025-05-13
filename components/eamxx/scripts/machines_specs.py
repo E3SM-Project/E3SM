@@ -230,6 +230,25 @@ class Weaver(Machine):
         cls.gpu_arch = "cuda"
 
 ###############################################################################
+class Lychee(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("lychee")
+
+        cls.env_setup = ["source /projects/sems/install/rhel9-x86_64/sems/lmod/lmod/8.7.24/gcc/11.4.1/base/lnirq74/lmod/lmod/init/sh",
+                         "module purge",
+                         "module load sems-gcc/12.3.0 sems-cuda/12.6.2 sems-cmake/3.30.5 sems-openmpi/4.1.6 sems-netlib-lapack/3.11.0 sems-netcdf-c/4.9.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3",
+                         "export HDF5_USE_FILE_LOCKING=FALSE"
+                         ]
+        cls.baselines_dir = "/home/projects/e3sm/eamxx/baselines"
+        #cls.batch = "bsub -I -q rhel8 -n 4 -gpu num=4"
+
+        cls.num_run_res = 4 # four gpus
+        cls.gpu_arch = "cuda"
+
+###############################################################################
 class Compy(Machine):
 ###############################################################################
     concrete = True

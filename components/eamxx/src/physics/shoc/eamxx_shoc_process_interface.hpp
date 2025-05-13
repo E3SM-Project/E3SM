@@ -158,11 +158,6 @@ public:
       wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
       upwp_sfc(i) = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i) = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
-
-      const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracer_packs), [&] (const Int& q) {
-        wtracer_sfc(i,q) = 0;
-      });
     } // operator
 
     // Local variables
