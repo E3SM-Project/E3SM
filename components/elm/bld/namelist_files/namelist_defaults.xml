@@ -249,8 +249,8 @@ lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr2015_c220914.nc</fsurda
 <!-- ne0np4_EAIsland8x32v1.pg2 -->
 <fsurdat hgrid="ne0np4_EAIsland8x32v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_EAIsland8x32v1.pg2_simyr2010_c250508.nc</fsurdat>
-<fsurdat hgrid="ne0np4_EAIsland8x32v1.pg2"   sim_year="2015" use_crop=".false." >
-lnd/clm2/surfdata_map/placeholder.nc</fsurdat>
+<fsurdat hgrid="ne0np4_EAIsland8x32v1.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0np4_EAIsland8x32v1.pg2_simyr1850_c250514.nc</fsurdat>
 
 <!-- ne0np4_northamericax4v1.pg2 -->
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="1850" use_crop=".false." >
@@ -616,8 +616,8 @@ lnd/clm2/surfdata_map/surfdata_conusx4v1_simyr2000_c160503.nc</fsurdat>
  use_crop=".false." >lnd/clm2/surfdata_map/surfdata.pftdyn_ne30np4_rcp2.6_simyr1850-2100_c130524.nc</flanduse_timeseries>
 
 <!-- ne0np4_EAIsland8x32v1.pg2 future projection -->
-<flanduse_timeseries hgrid="ne0np4_EAIsland8x32v1.pg2" sim_year_range="2015-2100"
- use_crop=".false."  >lnd/clm2/surfdata_map/placeholder.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne0np4_EAIsland8x32v1.pg2"  rcp="4.5" sim_year_range="2015-2100"
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne0np4_EAIsland8x32v1.pg2_rcp4.5_simyr1850-2100_c250514.nc</flanduse_timeseries>
 
 <!-- Land Use Harmonization unified timeseries data sets for dynamic FATES land use change -->
 <fluh_timeseries hgrid="4x5" sim_year_range="1850-2015" use_fates=".true."
