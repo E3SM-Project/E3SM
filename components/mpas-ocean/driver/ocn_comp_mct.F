@@ -246,6 +246,8 @@ contains
     ! freshwater balance adjustment 
     logical, pointer :: config_use_precip_scaling
     character (len=StrKIND), pointer :: config_precip_scaling_mode
+    real (kind=RKIND), pointer :: config_precip_scaling_initial_factor
+    real (kind=RKIND), pointer :: config_precip_scaling_constant_factor
     real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
     real(kind=RKIND), pointer :: scalingFactor
 
@@ -1091,7 +1093,9 @@ contains
 
       ! freshwater balance adjustment 
       logical, pointer :: config_use_precip_scaling
+      character (len=StrKIND), pointer :: config_precip_scaling_mode
       real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+      real (kind=RKIND), pointer :: config_precip_scaling_constant_factor
 
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
