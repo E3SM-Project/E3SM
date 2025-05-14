@@ -3,6 +3,7 @@ module phys_grid_mod
   use iso_c_binding, only: c_int, c_double
   use parallel_mod,  only: abortmp, MPIinteger_t, MPIreal_t
   use kinds,         only: iulog
+  use mpi
 
   implicit none
   private
@@ -55,8 +56,6 @@ module phys_grid_mod
 
   type(pg_specs_t), target :: pg_specs (pgN_min:pgN_max)
 
-! To get MPI_IN_PLACE and MPI_DATATYPE_NULL
-#include <mpif.h>
   ! Note: in this module, we often use MPI_IN_PLACE,0,MPI_DATATYPE_NULL
   !       for the src array specs in Allgatherv calls. These special values 
   !       inform MPI that src array is aliasing the dst one, so MPI will
