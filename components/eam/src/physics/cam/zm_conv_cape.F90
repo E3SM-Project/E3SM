@@ -2,7 +2,11 @@ module zm_conv_cape
    !----------------------------------------------------------------------------
    ! Purpose: CAPE calculation methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8
+#else
    use shr_kind_mod,     only: r8=>shr_kind_r8
+#endif
    use cam_abortutils,   only: endrun
    use zm_conv_util,     only: entropy, ientropy, qsat_hPa
    use zm_conv_types,    only: zm_const_t, zm_param_t

@@ -20,7 +20,7 @@ module zm_conv_intr
    use ndrop_bam,             only: ndrop_bam_init
    use zm_conv,               only: zm_conv_evap, zm_convr
    use zm_transport,          only: zm_transport_tracer, zm_transport_momentum
-   use zm_aero,               only: zm_aero_t
+   use zm_aero_type,          only: zm_aero_t
    use zm_microphysics_state, only: zm_microp_st
 
    implicit none
@@ -247,7 +247,7 @@ subroutine zm_conv_init(pref_edge)
    use phys_control,            only: phys_deepconv_pbl, phys_getopts
    use physics_buffer,          only: pbuf_get_index
    use rad_constituents,        only: rad_cnst_get_info
-   use zm_conv,                 only: zm_param
+   use zm_conv,                 only: zm_const, zm_param
    use zm_conv_types,           only: zm_const_print, zm_param_print
    use zm_conv_mcsp,            only: zm_conv_mcsp_init
    use zm_microphysics,         only: zm_mphyi
@@ -309,15 +309,6 @@ subroutine zm_conv_init(pref_edge)
    call addfld('ZMICUD',       (/ 'lev'/), 'A', 'm/s',      'ZM in-cloud U downdrafts')
    call addfld('ZMICVU',       (/ 'lev'/), 'A', 'm/s',      'ZM in-cloud V updrafts')
    call addfld('ZMICVD',       (/ 'lev'/), 'A', 'm/s',      'ZM in-cloud V downdrafts')
-
-   if (MCSP) then 
-      call addfld('MCSP_DT',   (/ 'lev'/), 'A', 'K/s',      'MCSP T tendency')
-      call addfld('MCSP_freq', horiz_only, 'A', '1',        'MCSP frequency of activation')
-      call addfld('MCSP_DU',   (/ 'lev'/), 'A', 'm/s/day',  'MCSP U tendency')
-      call addfld('MCSP_DV',   (/ 'lev'/), 'A', 'm/s/day',  'MCSP V tendency')
-      call addfld('MCSP_shear',horiz_only, 'A', 'm/s',      'MCSP vertical zonal wind shear')
-      call addfld('ZM_depth',  horiz_only, 'A', 'Pa',       'ZM convection depth')
-   end if
 
    call phys_getopts( history_budget_out = history_budget, &
                       history_budget_histfile_num_out = history_budget_histfile_num, &
@@ -477,6 +468,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    integer :: ncol                     ! number of atmospheric columns
    integer :: itim_old                 ! for physics buffer fields
    logical :: lq(pcnst)                ! flags for ptend initialization
+   logical :: is_first_step_loc
 
    real(r8), dimension(pcols,pver) :: ftem            ! Temporary workspace for outfld variables
    real(r8), dimension(pcols,pver) :: ntprprd         ! evap outfld: net precip production in layer
@@ -638,9 +630,12 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       end if
    end if
 
+   is_first_step_loc = is_first_step()
+
    ! Call the primary Zhang-McFarlane convection parameterization
    call t_startf ('zm_convr')
-   call zm_convr( lchnk, ncol, state%t, state%q(:,:,1), prec, jctop, jcbot, &
+   call zm_convr( lchnk, ncol, is_first_step_loc, &
+                  state%t, state%q(:,:,1), prec, jctop, jcbot, &
                   pblh, state%zm, state%phis, state%zi, ptend_loc%q(:,:,1), &
                   ptend_loc%s, state%pmid, state%pint, state%pdel, state%omega, &
                   0.5*ztodt, mcon, cme, cape, tpert, dlf, pflx, zdu, rprd, mu, md, du, eu, ed, &

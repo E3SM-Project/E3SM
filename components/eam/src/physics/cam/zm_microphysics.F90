@@ -18,7 +18,7 @@ module  zm_microphysics
    use cam_logfile,            only: iulog
    use cam_abortutils,         only: endrun
    use zm_microphysics_state,  only: zm_microp_st
-   use zm_aero,                only: zm_aero_t
+   use zm_aero_type,           only: zm_aero_t
 #ifndef HAVE_ERF_INTRINSICS
    use shr_spfn_mod,           only: erf => shr_spfn_erf
 #endif
