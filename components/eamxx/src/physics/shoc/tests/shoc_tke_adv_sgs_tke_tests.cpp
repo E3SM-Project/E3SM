@@ -253,10 +253,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
 
     AdvSgsTkeData baseline_data[] = {
       //            shcol, nlev
-      AdvSgsTkeData(10, 71, 72, 2),
-      AdvSgsTkeData(10, 12, 13, 2),
-      AdvSgsTkeData(7,  16, 17, 2),
-      AdvSgsTkeData(2,   7, 8,  2)
+      AdvSgsTkeData(10, 71, 72, false),
+      AdvSgsTkeData(10, 12, 13, false),
+      AdvSgsTkeData(7,  16, 17, false),
+      AdvSgsTkeData(2,   7, 8,  false)
     };
 
     // Generate random input data

@@ -266,10 +266,10 @@ struct UnitWrap::UnitTest<D>::TestShocLength : public UnitWrap::UnitTest<D>::Bas
 
     ShocLengthData SDS_baseline[] = {
       //        shcol, nlev, nlevi
-      ShocLengthData(12, 71, 72, 2),
-      ShocLengthData(10, 12, 13, 2),
-      ShocLengthData(7,  16, 17, 2),
-      ShocLengthData(2, 7, 8, 2),
+      ShocLengthData(12, 71, 72, false),
+      ShocLengthData(10, 12, 13, false),
+      ShocLengthData(7,  16, 17, false),
+      ShocLengthData(2, 7, 8, false),
     };
 
     // Generate random input data

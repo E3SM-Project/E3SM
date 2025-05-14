@@ -176,10 +176,10 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
 
     ComputeShocMixShocLengthData SDS_baseline[] = {
       //               shcol, nlev
-      ComputeShocMixShocLengthData(10, 71, 2),
-      ComputeShocMixShocLengthData(10, 12, 2),
-      ComputeShocMixShocLengthData(7,  16, 2),
-      ComputeShocMixShocLengthData(2, 7, 2)
+      ComputeShocMixShocLengthData(10, 71, false),
+      ComputeShocMixShocLengthData(10, 12, false),
+      ComputeShocMixShocLengthData(7,  16, false),
+      ComputeShocMixShocLengthData(2, 7, false)
     };
 
     // Generate random input data

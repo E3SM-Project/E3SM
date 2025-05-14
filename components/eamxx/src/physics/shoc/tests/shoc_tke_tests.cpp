@@ -333,10 +333,10 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     auto engine = Base::get_engine();
 
     ShocTkeData baseline_data[] = {
-      ShocTkeData(10, 71, 72, 300, 2),
-      ShocTkeData(10, 12, 13, 100, 2),
-      ShocTkeData(7,  16, 17, 50, 2),
-      ShocTkeData(2, 7, 8, 5, 2),
+      ShocTkeData(10, 71, 72, 300, false),
+      ShocTkeData(10, 12, 13, 100, false),
+      ShocTkeData(7,  16, 17, 50, false),
+      ShocTkeData(2, 7, 8, 5, false),
     };
 
     // Generate random input data
