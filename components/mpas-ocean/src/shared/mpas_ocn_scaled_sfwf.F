@@ -107,20 +107,26 @@ contains
 
         character(len=19) :: timeString
 
-        if (config_sfwf_balance .and. config_sfwf_balance_type > 0) then
+        if (config_use_precip_scaling) then
             scaledSFWFOn = .true.
         else
             scaledSFWFOn = .false.
             return
         endif
 
-        if (config_sfwf_history_years < 1) then
-            call mpas_log_write('scaledSFWFOn = .true. requires config_sfwf_history_years >= 1', &
+        if (trim(config_precip_scaling_mode) /= 'time-dependent' .and.  &
+            trim(config_precip_scaling_mode) /= 'constant') then
+            call mpas_log_write('scaledSFWFOn = .true. requires config_precip_scaling_mode = time-dependent or constant', &
+                                mpas_LOG_CRIT)
+        end if
+
+        if (config_precip_scaling_history_years < 1) then
+            call mpas_log_write('scaledSFWFOn = .true. requires config_precip_scaling_history_years >= 1', &
                                 mpas_LOG_CRIT)
         endif
         
-        ! Setup time interval string based on config_sfwf_history_years (treated as "years")
-        write(timeString, '( I4.4,"-00-00_00:00:00" )') config_sfwf_history_years
+        ! Setup time interval string based on config_precip_scaling_history_years (treated as "years")
+        write(timeString, '( I4.4,"-00-00_00:00:00" )') config_precip_scaling_history_years
 
         ! Setup Alarm for updating of scaling factors for precipitation flux
         alarmTime = mpas_get_clock_time(domain % clock, &
@@ -170,6 +176,10 @@ contains
        if (.not. scaledSFWFOn) then
            return
        end if
+
+       if (trim(config_precip_scaling_mode) == 'constant') then
+           return
+       end if 
 
        if ( present(timeLevel) ) then
           timeLevelLocal = timeLevel
@@ -270,7 +280,7 @@ contains
         !-------------------------------------------------------------
         ! Output to log file
         !-------------------------------------------------------------
-        if (config_sfwf_balance_write_to_logfile) then
+        if (config_precip_scaling_write_to_logfile) then
             A = earthAreaE3SM
             c = 1._RKIND / A 
             call mpas_log_write('----------------------------------------------------------')
@@ -456,7 +466,7 @@ contains
         call mpas_pool_get_array(forcingPool, "SSHfinal", SSHfinal)
         call compute_ssh_mass(domain,timeLevel,SSHfinal)
 
-        nHistory = config_sfwf_history_years
+        nHistory = config_precip_scaling_history_years
         dtAvg = dt * nAccumulated
 
         avgfwFlux = (SSHfinal - SSHinitial) / dtAvg ! unit: kg / s 
@@ -507,7 +517,7 @@ contains
         !-------------------------------------------------------------
         ! Output to log file
         !-------------------------------------------------------------
-        if (config_sfwf_balance_write_to_logfile) then
+        if (config_precip_scaling_write_to_logfile) then
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write('WATER CONSERVATION CHECK')
             A = earthAreaE3SM
