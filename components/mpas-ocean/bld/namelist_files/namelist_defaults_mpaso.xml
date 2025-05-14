@@ -372,12 +372,13 @@
 <config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>
 <config_sgr_salinity_prescribed>0.0</config_sgr_salinity_prescribed>
 
-<!-- sfwf_forcing --> 
-<config_sfwf_balance>.false.</config_sfwf_balance>
-<config_sfwf_balance_type>-99</config_sfwf_balance_type>
-<config_precip_factor>1.0</config_precip_factor>
-<config_sfwf_history_years>1</config_sfwf_history_years>
-<config_sfwf_balance_write_to_logfile>.false.</config_sfwf_balance_write_to_logfile>
+<!-- precip_scaling --> 
+<config_use_precip_scaling>.false.</config_use_precip_scaling>
+<config_precip_scaling_mode>'off'</config_precip_scaling_mode>
+<config_precip_scaling_constant_factor>1.0</config_precip_scaling_constant_factor>
+<config_precip_scaling_initial_factor>1.0</config_precip_scaling_initial_factor>
+<config_precip_scaling_history_years>1</config_precip_scaling_history_years>
+<config_precip_scaling_write_to_logfile>.false.</config_precip_scaling_write_to_logfile>
 
 <!-- coupling -->
 <config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>

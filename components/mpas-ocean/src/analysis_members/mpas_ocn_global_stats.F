@@ -1395,7 +1395,7 @@ contains
          gsRunningMeanRemovedIceRunoff = runningMeanRemovedIceRunoff
       end if
 
-      if (config_sfwf_balance) then
+      if (config_use_precip_scaling) then
          block => domain % blocklist
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_array(globalStatsAMPool, 'gsSFWFScalingFactor', gsSFWFScalingFactor)

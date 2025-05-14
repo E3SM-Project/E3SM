@@ -15,7 +15,7 @@ my @groups = qw(run_modes
                 wave_coupling
                 gotm
                 forcing
-                sfwf_forcing
+                precip_scaling
                 coupling
                 shortwaveradiation
                 self_attraction_loading
