@@ -239,9 +239,10 @@ contains
        runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
     ! freshwater balance adjustment 
-    logical, pointer :: config_sfwf_balance
-    integer, pointer :: config_sfwf_balance_type
-    real (kind=RKIND), pointer :: config_precip_factor
+    logical, pointer :: config_use_precip_scaling
+    character (len=StrKIND), pointer :: config_precip_scaling_mode
+    real (kind=RKIND), pointer :: config_precip_scaling_initial_factor
+    real (kind=RKIND), pointer :: config_precip_scaling_constant_factor
     real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
 
 #ifdef HAVE_MOAB
@@ -846,16 +847,16 @@ contains
        ! Initialize the freshwater flux scaling scheme based on the ocean water balance relationship
        call ocn_init_scaled_sfwf(domain)
        ! Ensure the first guess is initialized to enable dynamic adjustment of the precipitation scaling factor
-       call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
-       if (config_sfwf_balance) then
-          call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
-          if (config_sfwf_balance_type > 0) then
-            call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
+       call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+       if (config_use_precip_scaling) then
+          call mpas_pool_get_config(domain % configs, 'config_precip_scaling_mode', config_precip_scaling_mode)
+          if (trim(config_precip_scaling_mode) == 'time-dependent') then 
+            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_initial_factor', config_precip_scaling_initial_factor)
             ! independent of space so should be no need to loop over blocks
             block_ptr => domain % blocklist
             call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
             call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
-            SFWFScalingFactor = config_precip_factor
+            SFWFScalingFactor = config_precip_scaling_initial_factor
           end if
        end if
     end if
@@ -945,15 +946,18 @@ contains
     ierr = ior(ierr, ierr_local)
 
     !configuration for freshwater conservation
-    call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
-    if (config_sfwf_balance) then 
-       call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
-       if (config_sfwf_balance_type > 0) then
+    call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+    if (config_use_precip_scaling) then 
+       call mpas_pool_get_config(domain % configs, 'config_precip_scaling_mode', config_precip_scaling_mode)
+       if (trim(config_precip_scaling_mode) == 'time-dependent') then 
          ! independent of space so should be no need to loop over blocks
          block_ptr => domain % blocklist
          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
          call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
          call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
+       else if (trim(config_precip_scaling_mode) == 'constant') then
+         call mpas_pool_get_config(domain % configs, 'config_precip_scaling_constant_factor', config_precip_scaling_constant_factor)
+         call seq_infodata_PutData(infodata, precip_fact=config_precip_scaling_constant_factor)
        end if 
     end if 
 
@@ -1081,9 +1085,10 @@ contains
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
       ! freshwater balance adjustment 
-      logical, pointer :: config_sfwf_balance
-      integer, pointer :: config_sfwf_balance_type
+      logical, pointer :: config_use_precip_scaling
+      character (len=StrKIND), pointer :: config_precip_scaling_mode
       real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+      real (kind=RKIND), pointer :: config_precip_scaling_constant_factor
 
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
@@ -1407,15 +1412,18 @@ contains
       end if
 
       !configuration for freshwater conservation
-      call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
-      if (config_sfwf_balance) then
-         call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
-         if (config_sfwf_balance_type > 0) then
+      call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+      if (config_use_precip_scaling) then
+         call mpas_pool_get_config(domain % configs, 'config_precip_scaling_mode', config_precip_scaling_mode)
+         if (trim(config_precip_scaling_mode)  == 'time-dependent') then
            ! independent of space so should be no need to loop over blocks
            block_ptr => domain % blocklist
            call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
            call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
            call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
+         else if (trim(config_precip_scaling_mode)  == 'constant') then
+           call mpas_pool_get_config(domain % configs,'config_precip_scaling_constant_factor',config_precip_scaling_constant_factor) 
+           call seq_infodata_PutData(infodata, precip_fact=config_precip_scaling_constant_factor)
          end if
       end if
 
@@ -2161,9 +2169,7 @@ contains
    real (kind=RKIND) :: riverFactor
 
    ! freshwater balance adjustment 
-   logical, pointer :: config_sfwf_balance
-   integer, pointer :: config_sfwf_balance_type
-   real (kind=RKIND), pointer :: config_precip_factor
+   logical, pointer :: config_use_precip_scaling
 
 !-----------------------------------------------------------------------
 !
@@ -2197,18 +2203,12 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
    call mpas_pool_get_config(domain % configs, 'config_eddy_killing_correction_enable', config_eddy_killing_correction_enable)
 
-   !configuration for freshwater balance constrains 
-   call mpas_pool_get_config(domain % configs, 'config_sfwf_balance', config_sfwf_balance)
-   call mpas_pool_get_config(domain % configs, 'config_sfwf_balance_type', config_sfwf_balance_type)
-   call mpas_pool_get_config(domain % configs, 'config_precip_factor', config_precip_factor)
-   if (config_sfwf_balance) then
-      if (config_sfwf_balance_type > 0 ) then
-         call seq_infodata_GetData(infodata, precip_fact=precFactor)
-      else 
-         precFactor = config_precip_factor
-      end if
-   else
-      precFactor = 1.0_RKIND 
+   precFactor = 1.0_RKIND  ! Default to no scaling
+   !configuration for freshwater balance constrains
+   call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+   if (config_use_precip_scaling) then
+      !extract scaling factors 
+      call seq_infodata_GetData(infodata, precip_fact=precFactor)
    end if
 
    n = 0
