@@ -69,13 +69,13 @@ end subroutine gw_convect_init
 
 !==========================================================================
 
-subroutine gw_project_winds(ncol, ngwv, u, v, xv, yv, ubm, ubi)
+subroutine gw_convect_project_winds(ncol, u, v, xv, yv, ubm, ubi)
 
   use gw_utils, only: get_unit_vector, dot_2d, midpoint_interp
 
   !------------------------------Arguments--------------------------------
   ! Column and gravity wave spectrum dimensions.
-  integer, intent(in) :: ncol, ngwv
+  integer, intent(in) :: ncol
 
   ! Midpoint zonal/meridional winds.
   real(r8), intent(in) :: u(ncol,pver), v(ncol,pver)
@@ -111,11 +111,11 @@ subroutine gw_project_winds(ncol, ngwv, u, v, xv, yv, ubm, ubi)
 
   ubi(:,1:pver-1) = midpoint_interp(ubm)
 
-end subroutine gw_project_winds
+end subroutine gw_convect_project_winds
 
 !==========================================================================
 
-subroutine gw_heating_depth(ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_factor, &
+subroutine gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor, &
      use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0)
 
   !-----------------------------------------------------------------------
@@ -127,7 +127,7 @@ subroutine gw_heating_depth(ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_
 
   !------------------------------Arguments--------------------------------
   ! Column and gravity wave spectrum dimensions.
-  integer, intent(in) :: ncol, ngwv
+  integer, intent(in) :: ncol
 
   ! Heating conversion factor
   real(r8), intent(in) :: maxq0_conversion_factor
@@ -241,14 +241,14 @@ end subroutine gw_heating_depth
 
 !==========================================================================
 
-subroutine gw_storm_speed(ncol, ngwv, storm_speed_min, ubm, mini, maxi, &
+subroutine gw_storm_speed(ncol, storm_speed_min, ubm, mini, maxi, &
      storm_speed, uh, Umin, Umax)
 
   use gw_common, only: dc
 
   !------------------------------Arguments--------------------------------
   ! Column and gravity wave spectrum dimensions.
-  integer, intent(in) :: ncol, ngwv
+  integer, intent(in) :: ncol
 
   ! minimum convective storm speed
   real(r8), intent(in) :: storm_speed_min
@@ -270,7 +270,7 @@ subroutine gw_storm_speed(ncol, ngwv, storm_speed_min, ubm, mini, maxi, &
 
   !---------------------------Local Storage-------------------------------
   ! Column and level indices.
-  integer :: i, k
+  integer :: k
 
   storm_speed = int(sign(max(abs(ubm(:,k_src_wind))-storm_speed_min, 0._r8), ubm(:,k_src_wind)))
 
@@ -301,7 +301,7 @@ end subroutine gw_storm_speed
 
 !==========================================================================
 
-subroutine gw_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, &
+subroutine gw_convect_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, &
      maxq0, Umin, Umax, tau)
 
   use gw_common, only: dc
@@ -409,7 +409,7 @@ subroutine gw_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt,
 
   enddo
 
-end subroutine gw_gw_sources
+end subroutine gw_convect_gw_sources
 
 subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
      zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
@@ -476,9 +476,6 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   real(r8), intent(out) :: hdepth(ncol), maxq0_out(ncol)
 
   !---------------------------Local Storage-------------------------------
-  ! Column and level indices.
-  integer :: i, k
-
   ! Maximum heating rate.
   real(r8) :: maxq0(ncol)
 
@@ -507,7 +504,7 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   ! Determine source layer wind and unit vectors, then project winds.
   !------------------------------------------------------------------------
 
-  call gw_project_winds(ncol, ngwv, u, v, xv, yv, ubm, ubi)
+  call gw_convect_project_winds(ncol, u, v, xv, yv, ubm, ubi)
 
   !-----------------------------------------------------------------------
   ! Calculate heating depth.
@@ -515,20 +512,20 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   ! Heating depth is defined as the first height range from the bottom in
   ! which heating rate is continuously positive.
   !-----------------------------------------------------------------------
-  call gw_heating_depth(ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_factor, &
+  call gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor, &
        use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0)
 
   !-----------------------------------------------------------------------
   ! Taking ubm at assumed source level to be the storm speed,
   ! find the cell speed where the storm speed is > storm_speed_min
     !-----------------------------------------------------------------------
-  call gw_storm_speed(ncol, ngwv, storm_speed_min, ubm, mini, maxi, &
+  call gw_storm_speed(ncol, storm_speed_min, ubm, mini, maxi, &
        storm_speed, uh, Umin, Umax)
 
   !-----------------------------------------------------------------------
   ! Gravity wave sources
   !-----------------------------------------------------------------------
-  call gw_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, &
+  call gw_convect_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, &
        maxq0, Umin, Umax, tau)
 
   ! Output the source level.

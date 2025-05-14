@@ -87,9 +87,94 @@ subroutine gw_front_init(taubgnd, frontgfc_in, kfront_in, errstring)
 end subroutine gw_front_init
 
 !==========================================================================
+subroutine gw_front_project_winds(ncol, kbot, u, v, xv, yv, ubm, ubi)
+
+  use gw_utils, only: get_unit_vector, dot_2d, midpoint_interp
+
+  !------------------------------Arguments--------------------------------
+  ! Column and gravity wave spectrum dimensions.
+  integer, intent(in) :: ncol
+
+  ! Index of source interface.
+  integer, intent(in) :: kbot
+
+  ! Midpoint zonal/meridional winds.
+  real(r8), intent(in) :: u(ncol,pver), v(ncol,pver)
+
+  ! Unit vectors of source wind (zonal and meridional components).
+  real(r8), intent(out) :: xv(ncol), yv(ncol)
+
+  ! Projection of wind at midpoints and interfaces.
+  real(r8), intent(out) :: ubm(ncol,pver), ubi(ncol,0:pver)
+
+  !---------------------------Local Storage-------------------------------
+  ! Column and wavenumber indices.
+  integer :: k
+
+  ! Zonal/meridional wind averaged over source region.
+  real(r8) :: usrc(ncol), vsrc(ncol)
+
+  ! Just use the source level interface values for the source wind speed
+  ! and direction (unit vector).
+  usrc = 0.5_r8*(u(:,kbot+1)+u(:,kbot))
+  vsrc = 0.5_r8*(v(:,kbot+1)+v(:,kbot))
+
+  ! Get the unit vector components and magnitude at the surface.
+  call get_unit_vector(usrc, vsrc, xv, yv, ubi(:,kbot))
+
+  ! Project the local wind at midpoints onto the source wind.
+  do k = 1, kbot
+     ubm(:,k) = dot_2d(u(:,k), v(:,k), xv, yv)
+  end do
+
+  ! Compute the interface wind projection by averaging the midpoint winds.
+  ! Use the top level wind at the top interface.
+  ubi(:,0) = ubm(:,1)
+
+  ubi(:,1:kbot-1) = midpoint_interp(ubm(:,1:kbot))
+
+end subroutine gw_front_project_winds
+
+!==========================================================================
+subroutine gw_front_gw_sources(ncol, ngwv, kbot, frontgf, tau)
+  !------------------------------Arguments--------------------------------
+  ! Column and gravity wave spectrum dimensions.
+  integer, intent(in) :: ncol, ngwv
+
+  ! Index of source interface.
+  integer, intent(in) :: kbot
+
+  ! Frontogenesis function.
+  real(r8), intent(in) :: frontgf(:,:)
+
+  ! Wave Reynolds stress.
+  real(r8), intent(out) :: tau(ncol,-pgwv:pgwv,0:pver)
+
+  !---------------------------Local Storage-------------------------------
+  ! Column and wavenumber indices.
+  integer :: l
+
+  ! Whether or not to launch waves in this column.
+  logical(btype) :: launch_wave(ncol)
+
+  tau = 0._r8
+
+  ! GW generation depends on frontogenesis at specified level (may be below
+  ! actual source level).
+  launch_wave = (frontgf(:ncol,kfront) > frontgfc)
+
+  do l = 0, ngwv
+     where (launch_wave)
+        tau(:,l,kbot) = fav(l)
+        tau(:,-l,kbot) = fav(l)
+     end where
+  end do
+
+end subroutine gw_front_gw_sources
+
+!==========================================================================
 subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
      src_level, tend_level, tau, ubm, ubi, xv, yv, c)
-  use gw_utils, only: get_unit_vector, dot_2d, midpoint_interp
   !-----------------------------------------------------------------------
   ! Driver for multiple gravity wave drag parameterization.
   !
@@ -123,57 +208,18 @@ subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
   ! Phase speeds.
   real(r8), intent(out) :: c(ncol,-pgwv:pgwv)
 
-  !---------------------------Local Storage-------------------------------
-  ! Column and wavenumber indices.
-  integer :: k, l
-
-  ! Whether or not to launch waves in this column.
-  logical(btype) :: launch_wave(ncol)
-
-  ! Zonal/meridional wind averaged over source region.
-  real(r8) :: usrc(ncol), vsrc(ncol)
-
   !------------------------------------------------------------------------
   ! Determine the source layer wind and unit vectors, then project winds.
   !------------------------------------------------------------------------
-
-  ! Just use the source level interface values for the source wind speed
-  ! and direction (unit vector).
-  src_level = kbot
-  tend_level = kbot
-  usrc = 0.5_r8*(u(:,kbot+1)+u(:,kbot))
-  vsrc = 0.5_r8*(v(:,kbot+1)+v(:,kbot))
-
-  ! Get the unit vector components and magnitude at the surface.
-  call get_unit_vector(usrc, vsrc, xv, yv, ubi(:,kbot))
-
-  ! Project the local wind at midpoints onto the source wind.
-  do k = 1, kbot
-     ubm(:,k) = dot_2d(u(:,k), v(:,k), xv, yv)
-  end do
-
-  ! Compute the interface wind projection by averaging the midpoint winds.
-  ! Use the top level wind at the top interface.
-  ubi(:,0) = ubm(:,1)
-
-  ubi(:,1:kbot-1) = midpoint_interp(ubm(:,1:kbot))
+  call gw_front_project_winds(ncol, kbot, u, v, xv, yv, ubm, ubi)
 
   !-----------------------------------------------------------------------
   ! Gravity wave sources
   !-----------------------------------------------------------------------
+  call gw_front_gw_sources(ncol, ngwv, kbot, frontgf, tau)
 
-  tau = 0._r8
-
-  ! GW generation depends on frontogenesis at specified level (may be below
-  ! actual source level).
-  launch_wave = (frontgf(:ncol,kfront) > frontgfc)
-
-  do l = 0, ngwv
-     where (launch_wave)
-        tau(:,l,kbot) = fav(l)
-        tau(:,-l,kbot) = fav(l)
-     end where
-  end do
+  src_level = kbot
+  tend_level = kbot
 
   ! Set phase speeds as reference speeds plus the wind speed at the source
   ! level.
