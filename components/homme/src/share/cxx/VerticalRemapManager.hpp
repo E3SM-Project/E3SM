@@ -11,9 +11,9 @@
 
 namespace Homme {
 
-class FunctorsBuffersManager;
+struct FunctorsBuffersManager;
 
-namespace Remap { class Remapper; }
+namespace Remap { struct Remapper; }
 
 struct VerticalRemapManager {
   VerticalRemapManager(const bool remap_tracers=true);

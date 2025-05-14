@@ -12,10 +12,11 @@
 
 namespace Homme {
 
-class FunctorsBuffersManager;
-class DirkFunctorImpl;
 class Elements;
 class HybridVCoord;
+
+struct FunctorsBuffersManager;
+struct DirkFunctorImpl;
 
 class DirkFunctor {
 public:

@@ -19,8 +19,9 @@ namespace Homme
 {
 
 class HyperviscosityFunctorImpl;
+
 struct FunctorsBuffersManager;
-class SimulationParams;
+struct SimulationParams;
 
 class HyperviscosityFunctor
 {
