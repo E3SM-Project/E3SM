@@ -119,7 +119,7 @@
 		<dim name="nGlcZLevels" definition="namelist:config_n_glc_z_levels"
                         description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling"
 		/>
-                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_sfwf_history_years"
+                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_precip_scaling_history_years"
                          description="The number of years stored in the history of surface freshwater fluxes."
 		/>
 	</dims>
@@ -762,26 +762,30 @@
 					possible_values="Any positive real number"
                 />
         </nml_record>
-	<nml_record name="sfwf_forcing" mode="init;forward">
-                <nml_option name="config_sfwf_balance" type="logical" default_value=".false."
-			                description="If enabled, precipitation fluxes from the data atmosphere are adjusted to ensure freshwater balance in the ocean model."
+	<nml_record name="precip_scaling" mode="init;forward">
+                <nml_option name="config_use_precip_scaling" type="logical" default_value=".false."
+			                description="If enabled, precipitation fluxes from the data atmosphere are scalled to ensure freshwater balance in the ocean model."
 					possible_values=".true. or .false."
                 />
-	        <nml_option name="config_sfwf_balance_type" type="integer" default_value="-99"
-			                description="Option to compute scaling factors to ensure freshwater balance in the ocean model."
-                        		possible_values="0 or 1"
+	        <nml_option name="config_precip_scaling_mode" type="character" default_value="constant"
+			                description="Option for precipitation scaling to ensure freshwater balance in the ocean model."
+                        		possible_values="'constant' or 'time-dependent'"
+		/>
+                <nml_option name="config_precip_scaling_initial_factor" type="real" default_value="1.0" units="unitless"
+                                        description="Initial guess scaling factor on precipitation for config_precip_scaling_mode = 'time-dependent'."
+                                        possible_values="Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0"
                 />
-                <nml_option name="config_precip_factor" type="real" default_value="1.0" units="unitless"
-					description="First guess scaling factors applied on precipitation flux to adjust freshwater balance in ocean model."
+                <nml_option name="config_precip_scaling_constant_factor" type="real" default_value="1.0" units="unitless"
+					description="Prescribed constant scaling factor on precipitation for config_precip_scaling_mode = 'constant'." 
 					possible_values="Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0"
                 />
-                <nml_option name="config_sfwf_history_years" type="integer" default_value="1" units="years"
-			                description="The number of years over for which the history span of water balance is computed."
+                <nml_option name="config_precip_scaling_history_years" type="integer" default_value="1" units="years"
+			                description="The number of years over for which the history span of precipitational scaling factor is computed."
                        			possible_values="Must be a positive integer greater than or equal to 1."
 		/>
-                <nml_option name="config_sfwf_balance_write_to_logfile" type="logical" default_value=".false."
-		                       description="Logical flag determining if the freshwater balance adjustment information is written to the log file."
-                                       possible_values=".true. or .false."
+                <nml_option name="config_precip_scaling_write_to_logfile" type="logical" default_value=".false."
+			                description="Logical flag indicating whether precipitation flux scaling information is written to the log file."
+                                        possible_values=".true. or .false."
                 />
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
