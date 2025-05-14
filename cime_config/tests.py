@@ -715,7 +715,7 @@ _TESTS = {
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
             )
     },
 
@@ -797,25 +797,40 @@ _TESTS = {
     "e3sm_eamxx_mam4xx_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aci",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aero_microphysics",
-            "SMS_D_Ln5.ne30pg2_oECv3.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-remap_emiss_ne4_ne30",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aero_microphysics",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
+            "REP_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
+        )
+    },
+
+    "e3sm_eamxx_mam4xx_lowres_debug" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
+            "SMS_D_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
         )
     },
 
     "e3sm_eamxx_mam4xx_long_runtime" : {
         "time"  : "03:00:00",
         "tests" : (
-            "SMS_D_Lm2.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
-            "SMS_Ly1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
+            "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
+            "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
         )
     },
 
