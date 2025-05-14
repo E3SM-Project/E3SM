@@ -237,11 +237,12 @@ add_default($nl, 'config_sgr_salinity_prescribed');
 ###############################
 # Namelist group: sfwf_forcing#
 ###############################
-add_default($nl, 'config_sfwf_balance');
-add_default($nl, 'config_sfwf_balance_type');
-add_default($nl, 'config_precip_factor');
-add_default($nl, 'config_sfwf_history_years');
-add_default($nl, 'config_sfwf_balance_write_to_logfile');
+add_default($nl, 'config_use_precip_scaling');
+add_default($nl, 'config_precip_scaling_mode');
+add_default($nl, 'config_precip_scaling_constant_factor');
+add_default($nl, 'config_precip_scaling_initial_factor');
+add_default($nl, 'config_precip_scaling_history_years');
+add_default($nl, 'config_precip_scaling_write_to_logfile');
 
 ############################
 # Namelist group: coupling #
