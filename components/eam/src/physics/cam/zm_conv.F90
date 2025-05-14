@@ -254,14 +254,6 @@ subroutine zmconv_readnl(nlfile)
 
    call zm_param_mpi_broadcast(zm_param)
 
-<<<<<<< HEAD
-   call mpibcast(MCSP_enabled,      1, mpilog, 0, mpicom)
-   call mpibcast(MCSP_t_coeff,      1, mpir8,  0, mpicom)
-   call mpibcast(MCSP_q_coeff,      1, mpir8,  0, mpicom)
-   call mpibcast(MCSP_u_coeff,      1, mpir8,  0, mpicom)
-   call mpibcast(MCSP_v_coeff,      1, mpir8,  0, mpicom)
-=======
->>>>>>> 0fb18de58c (update zmconv_readnl)
 #endif
 
 end subroutine zmconv_readnl
