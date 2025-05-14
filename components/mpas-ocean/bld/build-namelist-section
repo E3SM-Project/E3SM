@@ -234,9 +234,9 @@ add_default($nl, 'config_use_sgr_opt_salt_prescribed');
 add_default($nl, 'config_sgr_temperature_prescribed');
 add_default($nl, 'config_sgr_salinity_prescribed');
 
-###############################
-# Namelist group: sfwf_forcing#
-###############################
+#################################
+# Namelist group: precip_scaling#
+#################################
 add_default($nl, 'config_use_precip_scaling');
 add_default($nl, 'config_precip_scaling_mode');
 add_default($nl, 'config_precip_scaling_constant_factor');
