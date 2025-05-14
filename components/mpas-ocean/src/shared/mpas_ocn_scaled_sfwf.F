@@ -173,6 +173,10 @@ contains
            return
        end if
 
+       if (trim(config_precip_scaling_mode) == 'constant') then
+           return
+       end if 
+
        if ( present(timeLevel) ) then
           timeLevelLocal = timeLevel
        else
