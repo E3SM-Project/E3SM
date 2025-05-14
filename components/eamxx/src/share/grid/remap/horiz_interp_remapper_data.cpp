@@ -98,13 +98,9 @@ get_my_triplets (const std::string& map_file) const
   }
 
   // Create a grid based on the row gids I read in (may be duplicated across ranks)
-  std::vector<gid_type> unique_gids;
   const auto& gids = type==InterpType::Refine ? rows : cols;
-  for (auto gid : gids) {
-    if (not ekat::contains(unique_gids,gid)) {
-      unique_gids.push_back(gid);
-    }
-  }
+  std::set<gid_type> temp (gids.begin(),gids.end());
+  std::vector<gid_type> unique_gids (temp.begin(),temp.end());
   auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,comm);
   auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type*,Host>();
   int k = 0;
