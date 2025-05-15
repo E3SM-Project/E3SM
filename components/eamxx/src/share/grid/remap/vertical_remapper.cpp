@@ -7,8 +7,8 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <ekat_units.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
 #include <ekat_pack_kokkos.hpp>
 
@@ -479,9 +479,9 @@ void VerticalRemapper::
 setup_lin_interp (const ekat::LinInterp<Real,Packsize>& lin_interp,
                   const Field& p_src, const Field& p_tgt) const
 {
-  using LI_t = ekat::LinInterp<Real,Packsize>;
-  using ESU = ekat::ExeSpaceUtils<DefaultDevice::execution_space>;
-  using PackT = ekat::Pack<Real,Packsize>;
+  using LI_t   = ekat::LinInterp<Real,Packsize>;
+  using TPF    = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+  using PackT  = ekat::Pack<Real,Packsize>;
   using view2d = typename KokkosTypes<DefaultDevice>::view<const PackT**>;
   using view1d = typename KokkosTypes<DefaultDevice>::view<const PackT*>;
 
@@ -516,7 +516,7 @@ setup_lin_interp (const ekat::LinInterp<Real,Packsize>& lin_interp,
   const int ncols = m_src_grid->get_num_local_dofs();
   const int nlevs_tgt = m_tgt_grid->get_num_vertical_levels();
   const int npacks_tgt = ekat::PackInfo<Packsize>::num_packs(nlevs_tgt);
-  auto policy = ESU::get_default_team_policy(ncols,npacks_tgt);
+  auto policy = TPF::get_default_team_policy(ncols,npacks_tgt);
   Kokkos::parallel_for("VerticalRemapper::interp_setup",policy,lambda);
   Kokkos::fence();
 }
@@ -529,9 +529,9 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
 {
   // Note: if Packsize==1, we grab packs of size 1, which are for sure
   //       compatible with the allocation
-  using LI_t = ekat::LinInterp<Real,Packsize>;
-  using PackT = ekat::Pack<Real,Packsize>;
-  using ESU = ekat::ExeSpaceUtils<DefaultDevice::execution_space>;
+  using LI_t   = ekat::LinInterp<Real,Packsize>;
+  using PackT  = ekat::Pack<Real,Packsize>;
+  using TPF    = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   using view2d = typename KokkosTypes<DefaultDevice>::view<const PackT**>;
   using view1d = typename KokkosTypes<DefaultDevice>::view<const PackT*>;
@@ -562,7 +562,7 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
     {
       auto f_src_v = f_src.get_view<const PackT**>();
       auto f_tgt_v = f_tgt.get_view<      PackT**>();
-      auto policy = ESU::get_default_team_policy(ncols,npacks_tgt);
+      auto policy = TPF::get_default_team_policy(ncols,npacks_tgt);
       auto lambda = KOKKOS_LAMBDA(typename LI_t::MemberType const& team)
       {
         const int icol = team.league_rank();
@@ -587,7 +587,7 @@ apply_vertical_interpolation(const ekat::LinInterp<Real,Packsize>& lin_interp,
       auto f_src_v = f_src.get_view<const PackT***>();
       auto f_tgt_v = f_tgt.get_view<      PackT***>();
       const int ncomps = f_tgt_l.get_vector_dim();
-      auto policy = ESU::get_default_team_policy(ncols*ncomps,npacks_tgt);
+      auto policy = TPF::get_default_team_policy(ncols*ncomps,npacks_tgt);
 
       auto lambda = KOKKOS_LAMBDA(typename LI_t::MemberType const& team)
       {
@@ -624,7 +624,7 @@ extrapolate (const Field& f_src,
              const Field& p_tgt,
              const Real mask_val) const
 {
-  using ESU = ekat::ExeSpaceUtils<DefaultDevice::execution_space>;
+  using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   using view2d = typename KokkosTypes<DefaultDevice>::view<const Real**>;
   using view1d = typename KokkosTypes<DefaultDevice>::view<const Real*>;
@@ -659,7 +659,7 @@ extrapolate (const Field& f_src,
     {
       auto f_src_v = f_src.get_view<const Real**>();
       auto f_tgt_v = f_tgt.get_view<      Real**>();
-      auto policy = ESU::get_default_team_policy(ncols,nlevs_tgt);
+      auto policy = TPF::get_default_team_policy(ncols,nlevs_tgt);
 
       using MemberType = typename decltype(policy)::member_type;
       auto lambda = KOKKOS_LAMBDA(const MemberType& team)
@@ -710,7 +710,7 @@ extrapolate (const Field& f_src,
       auto f_src_v = f_src.get_view<const Real***>();
       auto f_tgt_v = f_tgt.get_view<      Real***>();
       const int ncomps = f_tgt_l.get_vector_dim();
-      auto policy = ESU::get_default_team_policy(ncols*ncomps,nlevs_tgt);
+      auto policy = TPF::get_default_team_policy(ncols*ncomps,nlevs_tgt);
 
       using MemberType = typename decltype(policy)::member_type;
       auto lambda = KOKKOS_LAMBDA(const MemberType& team)

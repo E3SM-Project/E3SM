@@ -3,6 +3,8 @@
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
+#include <ekat_reduction_utils.hpp>
+
 namespace scream {
 namespace shoc {
 
@@ -17,13 +19,13 @@ void Functions<S,D>
   const uview_1d<const Spack>& brunt,
   Scalar&                      brunt_int)
 {
+  using RU = ekat::ReductionUtils<typename KT::ExeSpace>;
+
   //Lower troposphere pressure [Pa]
   static constexpr Scalar troppres = 80000;
 
-  using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
-
-  brunt_int = ExeSpaceUtils::view_reduction(team,0,nlev,
-                                            [&] (const int k) -> Spack {
+  brunt_int = RU::view_reduction(team,0,nlev,
+                                 [&] (const int k) -> Spack {
 
     //calculate only when pressure is > troposphere pressure
     auto press_gt_troppress = (pres(k) > troppres);
@@ -32,8 +34,7 @@ void Functions<S,D>
     return_val.set(press_gt_troppress, dz_zt(k) * brunt(k));// compute brunt_int for each column
 
     return return_val ;
-
-    });
+  });
 }
 
 } // namespace shoc
