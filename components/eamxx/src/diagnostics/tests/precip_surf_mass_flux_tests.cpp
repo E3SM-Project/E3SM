@@ -8,7 +8,7 @@
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_view_utils.hpp>
 
 namespace scream {
 
