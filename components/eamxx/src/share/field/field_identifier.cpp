@@ -1,5 +1,6 @@
 #include "share/field/field_identifier.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+
+#include <ekat_string_utils.hpp>
 
 namespace scream
 {

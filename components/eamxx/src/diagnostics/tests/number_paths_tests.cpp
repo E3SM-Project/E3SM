@@ -2,7 +2,6 @@
 
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/field/field_utils.hpp"

@@ -2,7 +2,8 @@
 #define CLD_FRACTION_MAIN_IMPL_HPP
 
 #include "physics/cld_fraction/cld_fraction_functions.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
 
 namespace scream {
 namespace cld_fraction {

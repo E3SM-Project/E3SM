@@ -1,16 +1,11 @@
 #include "catch2/catch.hpp"
 
 #include "p3_unit_tests_common.hpp"
-
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 #include "p3_data.hpp"
-#include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
+#include "share/eamxx_types.hpp"
 
 #include <thread>
 #include <array>

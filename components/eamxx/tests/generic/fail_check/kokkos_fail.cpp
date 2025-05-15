@@ -1,5 +1,5 @@
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_kokkos_types.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <catch2/catch.hpp>
 

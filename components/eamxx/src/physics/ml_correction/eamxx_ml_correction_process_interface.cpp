@@ -1,6 +1,6 @@
 #include "eamxx_ml_correction_process_interface.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 #include "share/field/field_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"

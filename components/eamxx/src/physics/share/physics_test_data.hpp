@@ -1,13 +1,13 @@
 #ifndef SCREAM_PHYSICS_TEST_DATA_HPP
 #define SCREAM_PHYSICS_TEST_DATA_HPP
 
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "share/util/eamxx_setup_random_test.hpp"
+#include <ekat_math_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_file_utils.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <random>
 #include <vector>

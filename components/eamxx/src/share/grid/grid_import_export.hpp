@@ -5,7 +5,8 @@
 #include "share/eamxx_types.hpp"       // For KokkosTypes
 #include "share/util/eamxx_utils.hpp"  // For check_mpi_call
 
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_comm.hpp>
+
 #include <mpi.h> // We do some direct MPI calls
 #include <memory>
 #include <map>

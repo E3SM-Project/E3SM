@@ -1,8 +1,8 @@
 #include "eamxx_trcmix.hpp"
 #include "physics_constants.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_math_utils.hpp>
 
 #include <cmath>
 
