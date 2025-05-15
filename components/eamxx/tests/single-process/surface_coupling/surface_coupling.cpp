@@ -12,6 +12,7 @@
 
 #include <ekat_yaml.hpp>
 #include <ekat_view_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 #include <iomanip>
 
@@ -303,8 +304,10 @@ void test_exports(const FieldManager& fm,
                   const int dt,
                   const bool called_directly_after_init = false)
 {
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using PC = physics::Constants<Real>;
+  using PF       = PhysicsFunctions<DefaultDevice>;
+  using PC       = physics::Constants<Real>;
+  using ExeSpace = typename KokkosTypes<DefaultDevice>::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   // Some computed fields rely on calculations that are done in the AD.
   // Recompute here and verify that they were exported correctly.
@@ -331,8 +334,7 @@ void test_exports(const FieldManager& fm,
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_rainl("Faxa_rainl", ncols);
   KokkosTypes<DefaultDevice>::view_1d<Real> Faxa_snowl("Faxa_snowl", ncols);
 
-  const auto setup_policy =
-      ekat::ExeSpaceUtils<KokkosTypes<DefaultDevice>::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
+  const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(ncols, nlevs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KokkosTypes<DefaultDevice>::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 
