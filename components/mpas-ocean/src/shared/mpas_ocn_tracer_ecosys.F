@@ -792,7 +792,7 @@ contains
 
       integer :: iCell, iLevel, numColumns, column, autotroph, n
 
-      real (kind=RKIND), parameter :: marbl_to_mpas_units = 10.0  ! nmol/cm2/s to mmol/m2/s
+      real (kind=RKIND), parameter :: marbl_to_mpas_units = 0.01_RKIND  ! nmol/cm2/s to mmol/m2/s
 
       err = 0
 
