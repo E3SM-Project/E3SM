@@ -395,7 +395,7 @@ setup_horiz_remappers (const RemapData& data)
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
   if (data.has_iop) {
-    EKAT_REQUIRE_MSG (not ekat::is_invalid(data.iop_lat) and not ekat::is_invalid(data.iop_lon),
+    EKAT_REQUIRE_MSG (not Kokkos::isnan(data.iop_lat) and not Kokkos::isnan(data.iop_lon),
         "Error! At least one between iop_lat and iop_lon appears to be valid in RemapData.\n"
         "  - iop_lat: " << data.iop_lat << "\n"
         "  - iop_lon: " << data.iop_lon << "\n");
