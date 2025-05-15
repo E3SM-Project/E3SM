@@ -2,14 +2,19 @@
 #include "eamxx_session.hpp"
 #include "eamxx_types.hpp"
 
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_kokkos_session.hpp>
+#include <ekat_arch.hpp>
+#include <ekat_fpe.hpp>
+#include <ekat_assert.hpp>
 
 namespace scream {
 
 std::string eamxx_config_string() {
   std::string config = "\n-------- EKAT CONFIGS --------\n\n";
-  config += ekat::ekat_config_string();
+  config += ekat::active_avx_string ();
+  config += ekat::compiler_id_string ();
+  config += ekat::fpe_config_string ();
+  config += ekat::kokkos_config_string();
   config += "\n-------- SCREAM CONFIGS --------\n\n";
   config += " sizeof(Real) = " + std::to_string(sizeof(Real)) + "\n";
   config += " default pack size = " + std::to_string(SCREAM_PACK_SIZE) + "\n";
