@@ -4,7 +4,7 @@
 #include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
 #include <numeric>
 
@@ -132,7 +132,7 @@ local_mat_vec (const Field& x, const Field& y) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
@@ -173,7 +173,7 @@ local_mat_vec (const Field& x, const Field& y) const
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
-      auto policy = ESU::get_default_team_policy(nrows,dim1);
+      auto policy = TPF::get_default_team_policy(nrows,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -196,7 +196,7 @@ local_mat_vec (const Field& x, const Field& y) const
       auto y_view = y.get_view<      Pack***>();
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
-      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);
+      auto policy = TPF::get_default_team_policy(nrows,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -222,7 +222,7 @@ local_mat_vec (const Field& x, const Field& y) const
       const int dim1 = src_layout.dim(1);
       const int dim2 = src_layout.dim(2);
       const int dim3 = PackInfo::num_packs(src_layout.dim(3));
-      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2*dim3);
+      auto policy = TPF::get_default_team_policy(nrows,dim1*dim2*dim3);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();

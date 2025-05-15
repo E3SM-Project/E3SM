@@ -4,6 +4,8 @@
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 VertContractDiag::VertContractDiag(const ekat::Comm &comm,
@@ -157,11 +159,11 @@ void VertContractDiag::compute_diagnostic_impl() {
     // m_weighting.update(get_field_in("dz"), 1.0, 0.0);
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;
-    using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+    using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
     using PF = scream::PhysicsFunctions<DefaultDevice>;
     const int ncols = m_weighting.get_header().get_identifier().get_layout().dim(0);
     const int nlevs = m_weighting.get_header().get_identifier().get_layout().dim(1);
-    const auto policy = ESU::get_default_team_policy(ncols, nlevs);
+    const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
     auto dz_v = m_weighting.get_view<Real**>();
     auto dp_v = get_field_in("pseudo_density").get_view<const Real**>();

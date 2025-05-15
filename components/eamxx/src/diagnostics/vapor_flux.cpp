@@ -1,7 +1,7 @@
 #include "diagnostics/vapor_flux.hpp"
 #include "physics/share/physics_constants.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -56,7 +56,7 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr Real g = PC::gravit;
 
@@ -66,7 +66,7 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
   const auto wind  = get_field_in("horiz_winds").get_component(m_component).get_view<const Real**>();
 
   const auto num_levs = m_num_levs;
-  const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for("Compute " + m_name, policy,
                        KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();

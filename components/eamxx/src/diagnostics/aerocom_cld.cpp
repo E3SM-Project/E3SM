@@ -1,10 +1,10 @@
 #include "diagnostics/aerocom_cld.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <string>
-
 #include "diagnostics/aerocom_cld_util.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <string>
 
 namespace scream {
 
@@ -98,7 +98,7 @@ void AeroComCld::compute_diagnostic_impl() {
    */
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   using PF = scream::PhysicsFunctions<DefaultDevice>;
 
@@ -124,7 +124,7 @@ void AeroComCld::compute_diagnostic_impl() {
   auto q_threshold           = q_thresh_set();
   auto cldfrac_tot_threshold = cldfrac_tot_thresh_set();
 
-  const auto policy = ESU::get_default_team_policy(m_ncols, m_nlevs);
+  const auto policy = TPF::get_default_team_policy(m_ncols, m_nlevs);
 
   const auto out = m_diagnostic_output.get_view<Real **>();
 

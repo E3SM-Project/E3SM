@@ -2,6 +2,9 @@
 #include "physics/share/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_reduction_utils.hpp>
+
 #include <iomanip>
 
 namespace scream
@@ -52,6 +55,8 @@ MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>&
 
 void MassAndEnergyColumnConservationCheck::compute_current_mass ()
 {
+  using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+
   auto mass = m_current_mass;
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
@@ -62,7 +67,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
   const auto qi = m_fields.at("qi").get_view<const Real**>();
   const auto qr = m_fields.at("qr").get_view<const Real**>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
@@ -78,6 +83,8 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
 
 void MassAndEnergyColumnConservationCheck::compute_current_energy ()
 {
+  using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+
   auto energy = m_current_energy;
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
@@ -91,7 +98,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy ()
   const auto ps = m_fields.at("ps").get_view<const Real*>();
   const auto phis = m_fields.at("phis").get_view<const Real*>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
@@ -140,7 +147,8 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   maxloc_value_t maxloc_energy;
 
   // Mass error calculation
-  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
+  using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA (const KT::MemberType& team,
                                                  maxloc_value_t&       result) {
     const int i = team.league_rank();
@@ -289,11 +297,12 @@ compute_total_mass_on_column (const KT::MemberType&       team,
                               const uview_1d<const Real>& qr)
 {
   using PC = scream::physics::Constants<Real>;
+  using RU = ekat::ReductionUtils<DefaultDevice::execution_space>;
 
   const Real gravit = PC::gravit;
 
-  return ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs,
-                                              [&] (const int lev, Real& local_mass) {
+  return RU::parallel_reduce<Real>(team, 0, nlevs,
+                                   [&] (const int lev, Real& local_mass) {
     local_mass += (qv(lev)+
                    qc(lev)+
                    qi(lev)+
@@ -326,14 +335,16 @@ compute_total_energy_on_column (const KT::MemberType&       team,
                                 const Real                  phis)
 {
   using PC = scream::physics::Constants<Real>;
+  using RU = ekat::ReductionUtils<DefaultDevice::execution_space>;
+
   const Real LatVap = PC::LatVap;
   const Real LatIce = PC::LatIce;
   const Real gravit = PC::gravit;
   const Real Cpair  = PC::Cpair;
 
   Real total_energy =
-    ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs,
-                                         [&] (const int lev, Real& local_energy) {
+    RU::parallel_reduce<Real>(team, 0, nlevs,
+                              [&] (const int lev, Real& local_energy) {
     const auto u2 = horiz_winds(0,lev)*horiz_winds(0,lev);
     const auto v2 = horiz_winds(1,lev)*horiz_winds(1,lev);
 

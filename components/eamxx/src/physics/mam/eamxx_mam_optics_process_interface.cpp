@@ -5,6 +5,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
 
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
 
 namespace scream {
@@ -322,13 +323,13 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   constexpr Real zero = 0.0;
   constexpr Real one  = 1.0;
 
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

@@ -3,6 +3,8 @@
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
+#include <ekat_reduction_utils.hpp>
+
 namespace scream {
 namespace shoc {
 
@@ -23,7 +25,8 @@ void Functions<S,D>
   Scalar&                      wv_int,
   Scalar&                      wl_int)
 {
-  using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using RU = ekat::ReductionUtils<typename KT::ExeSpace>;
+
   const auto ggr = C::gravit;
 
   // The team_barriers protect what we think is unexpected behavior in
@@ -39,28 +42,28 @@ void Functions<S,D>
   // Kokkos::parallel_reduce calls acting on doubles and saw the same results.
 
   // Compute se_int
-  se_int = ExeSpaceUtils::view_reduction(team,0,nlev,
+  se_int = RU::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return host_dse(k)*pdel(k)/ggr;
   });
   team.team_barrier();
 
   // Compute ke_int
-  ke_int = ExeSpaceUtils::view_reduction(team,0,nlev,
+  ke_int = RU::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
   });
   team.team_barrier();
 
   // Compute wv_int
-  wv_int = ExeSpaceUtils::view_reduction(team,0,nlev,
+  wv_int = RU::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return (rtm(k)-rcm(k))*pdel(k)/ggr;
   });
   team.team_barrier();
 
   // Compute wl_int
-  wl_int = ExeSpaceUtils::view_reduction(team,0,nlev,
+  wl_int = RU::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return rcm(k)*pdel(k)/ggr;
   });

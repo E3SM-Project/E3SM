@@ -5,7 +5,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_pack_utils.hpp>
 
 #include <numeric>
@@ -164,7 +164,7 @@ void RefiningRemapperP2P::pack_and_send ()
 {
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr auto COL = ShortFieldTagsNames::COL;
 
@@ -204,7 +204,7 @@ void RefiningRemapperP2P::pack_and_send ()
       {
         const auto v = f.get_view<const Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_exports,dim1);
+        auto policy = TPF::get_default_team_policy(num_exports,dim1);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
           const int iexp = team.league_rank();
           const int icol = export_lids(iexp);
@@ -229,7 +229,7 @@ void RefiningRemapperP2P::pack_and_send ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int f_col_size = dim1*dim2;
-        auto policy = ESU::get_default_team_policy(num_exports,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_exports,dim1*dim2);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
           const int iexp = team.league_rank();
           const int icol = export_lids(iexp);
@@ -257,7 +257,7 @@ void RefiningRemapperP2P::pack_and_send ()
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
         const int f_col_size = dim1*dim2*dim3;
-        auto policy = ESU::get_default_team_policy(num_exports,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_exports,dim1*dim2*dim3);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
           const int iexp = team.league_rank();
           const int icol = export_lids(iexp);
@@ -314,7 +314,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
 
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr auto COL = ShortFieldTagsNames::COL;
 
@@ -354,7 +354,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
       {
         auto v = f.get_view<Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_imports,dim1);
+        auto policy = TPF::get_default_team_policy(num_imports,dim1);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
           const int idx  = team.league_rank();
           const int pid  = import_pids(idx);
@@ -379,7 +379,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int f_col_size = dim1*dim2;
-        auto policy = ESU::get_default_team_policy(num_imports,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_imports,dim1*dim2);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
           const int idx  = team.league_rank();
           const int pid  = import_pids(idx);
@@ -407,7 +407,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
         const int f_col_size = dim1*dim2*dim3;
-        auto policy = ESU::get_default_team_policy(num_imports,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_imports,dim1*dim2*dim3);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
           const int idx  = team.league_rank();
           const int pid  = import_pids(idx);
