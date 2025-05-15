@@ -518,7 +518,7 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   !-----------------------------------------------------------------------
   ! Taking ubm at assumed source level to be the storm speed,
   ! find the cell speed where the storm speed is > storm_speed_min
-    !-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   call gw_storm_speed(ncol, storm_speed_min, ubm, mini, maxi, &
        storm_speed, uh, Umin, Umax)
 
