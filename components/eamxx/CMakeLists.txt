@@ -68,7 +68,7 @@ else()
 endif()
 
 ####################################################################
-#                  Kokkos/YAKL-related settings                    #
+#                  Kokkos related settings                         #
 ####################################################################
 
 if (Kokkos_ENABLE_CUDA)
@@ -95,16 +95,12 @@ endif()
 option (Kokkos_ENABLE_SERIAL "" ON)
 
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
-set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
-set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
-set (SYCL_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_CUDA)
   # Add CUDA as a language for CUDA builds
   enable_language(CUDA)
   set (EAMXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
-  set (CUDA_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
 # Determine if this is a HIP build.
@@ -112,14 +108,12 @@ if (Kokkos_ENABLE_HIP)
   # Add CUDA as a language for CUDA builds
   enable_language(HIP)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
-  set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
 # Determine if this is a sycl build.
 if (Kokkos_ENABLE_SYCL)
   #enable_language(SYCL)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
-  set (SYCL_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
 if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
@@ -220,17 +214,8 @@ endif()
 # and then adding to eamxx_config.h:
 #     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
 option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
-
-option(SCREAM_RRTMGP_ENABLE_YAKL "Use YAKL under rrtmgp" FALSE)
-option(SCREAM_RRTMGP_ENABLE_KOKKOS "Use Kokkos under rrtmgp" TRUE)
-if (SCREAM_RRTMGP_ENABLE_YAKL)
-  add_definitions("-DRRTMGP_ENABLE_YAKL")
-endif()
-
-if (SCREAM_RRTMGP_ENABLE_KOKKOS)
-  add_definitions("-DRRTMGP_ENABLE_KOKKOS")
-endif()
-
+# This can be removed once rrtmgp is kokkos-only.
+add_definitions("-DRRTMGP_ENABLE_KOKKOS")
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
@@ -618,8 +603,6 @@ function (print_var var)
 endfunction ()
 
 print_var(EAMXX_ENABLE_GPU)
-print_var(CUDA_BUILD)
-print_var(HIP_BUILD)
 print_var(SCREAM_MACHINE)
 print_var(SCREAM_DYNAMICS_DYCORE)
 print_var(SCREAM_DOUBLE_PRECISION)
