@@ -81,14 +81,14 @@ set(SCREAM_CUT_TEST_MV_ARGS ${CUT_TEST_MV_ARGS})
 #
 
 # Scream always excludes the ekat test session since it has its own
-list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS EXCLUDE_TEST_SESSION)
+list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS USER_DEFINED_TEST_SESSION)
 
 ###############################################################################
 function(CreateUnitTestExec exec_name test_srcs)
 ###############################################################################
   # Call Ekat function, with a couple of extra params
   EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
-    EXCLUDE_TEST_SESSION LIBS scream_share scream_test_support)
+    USER_DEFINED_TEST_SESSION LIBS scream_share scream_test_support)
 endfunction(CreateUnitTestExec)
 
 ###############################################################################
