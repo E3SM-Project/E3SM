@@ -2332,8 +2332,8 @@ test_flag = .false.
       nBenthicCells = 0
       indexToBenthosCells(:) = 0
       do iCell = 1, nCellsSolve
-         if (bottomDepth(iCell) .le. 400.0_RKIND .and. latCell(iCell) .ge. 50.0_RKIND*deg_to_rad) then
-!         if (bottomDepth(iCell) .le. 400.0_RKIND) then
+!         if (bottomDepth(iCell) .le. 400.0_RKIND .and. latCell(iCell) .ge. 50.0_RKIND*deg_to_rad) then
+         if (bottomDepth(iCell) .le. 400.0_RKIND) then
             nBenthicCells = nBenthicCells + 1
             indexToBenthosCells(nBenthicCells) = iCell
             call mpas_log_write('nBenthicCells: $i',MPAS_LOG_ERR,intArgs=(/nBenthicCells/))
