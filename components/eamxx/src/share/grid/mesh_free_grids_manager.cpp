@@ -159,12 +159,13 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     auto lev  = grid->create_geometry_data("lev" ,  layout_mid, units);
     auto ilev = grid->create_geometry_data("ilev" , layout_int, units);
 
-    lat.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    lon.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    hyam.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    hybm.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    lev.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    ilev.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    const auto invalid = ekat::invalid<Real>();
+    lat.deep_copy(invalid);;
+    lon.deep_copy(invalid);
+    hyam.deep_copy(invalid);
+    hybm.deep_copy(invalid);
+    lev.deep_copy(invalid);
+    ilev.deep_copy(invalid);
     lat.sync_to_dev();
     lon.sync_to_dev();
     hyam.sync_to_dev();

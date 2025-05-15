@@ -337,21 +337,21 @@ deep_copy (const ST value) {
     case DataType::IntType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,false,int>(value,*this); // 2nd arg unused
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,false,float>(value,*this); // 2nd arg unused
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,false,double>(value,*this); // 2nd arg unused
       break;
@@ -372,21 +372,21 @@ deep_copy (const ST value, const Field& mask)
     case DataType::IntType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,true,int>(value,mask);
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,true,float>(value,mask);
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,true,double>(value,mask);
       break;
