@@ -115,7 +115,7 @@ def main():
                       'lon'   :'grid_center_lon',\
                       'cv_lat':'grid_corner_lat',\
                       'cv_lon':'grid_corner_lon',\
-                    })
+                    }).isel(grid_corners=slice(0,num_corners))
 
   ds_out['grid_area'] = ds_out['grid_area'].assign_attrs(units='radians^2')
   ds_out['grid_area'] = ds_out['grid_area'].assign_attrs(long_name='area weights')
@@ -170,10 +170,10 @@ def main():
 
       print(verbose_indent+(' '*4)+f'Modified corner indices:')
       print_corners( ds_out.grid_corner_lat[i,:].values, ds_out.grid_corner_lon[i,:].values, num_corners )
-
   #-----------------------------------------------------------------------------
-  # add imask to output datasest
+  # add imask and grid_dims to output datasest
   ds_out['grid_imask'] = xr.ones_like(ds_out['grid_size'],dtype=int)
+  ds_out['grid_dims'] = xr.DataArray([len(ds_out['grid_imask'])],dims=['grid_rank'])
 
   #-----------------------------------------------------------------------------
   # add global attributes
