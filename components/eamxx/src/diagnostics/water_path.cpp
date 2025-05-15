@@ -1,7 +1,7 @@
 #include "diagnostics/water_path.hpp"
 #include "physics/share/physics_constants.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -62,7 +62,7 @@ void WaterPathDiagnostic::compute_diagnostic_impl()
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr Real g = PC::gravit;
 
@@ -71,7 +71,7 @@ void WaterPathDiagnostic::compute_diagnostic_impl()
   const auto rho    = get_field_in("pseudo_density").get_view<const Real**>();
 
   const auto num_levs = m_num_levs;
-  const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for("Compute " + m_kind + name(), policy,
                        KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();

@@ -463,7 +463,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
   // Compute workspace manager size to check used memory vs. requested memory
   // (if needed)
   const auto policy      =
-  ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  ekat::TeamPolicyFactory<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs,
