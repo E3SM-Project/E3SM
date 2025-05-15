@@ -305,7 +305,6 @@ void MAMMicrophysics::set_grids(
       elevated_emis_data_.push_back(data_tracer);
     }  // var_name elevated emissions
     int i               = 0;
-    int offset_emis_ver = 0;
     for(const auto &var_name : extfrc_lst_) {
       const auto file_name = elevated_emis_file_name_[var_name];
       const auto var_names = elevated_emis_var_names_[var_name];
@@ -325,19 +324,17 @@ void MAMMicrophysics::set_grids(
       elevated_emis_data_[i].init(num_cols_io_emis, num_levs_io_emis, nvars);
       elevated_emis_data_[i].allocate_temporary_views();
       forcings_[i].file_alt_data = elevated_emis_data_[i].has_altitude_;
+      EKAT_REQUIRE_MSG(
+        nvars <= int(mam_coupling::MAX_SECTION_NUM_FORCING),
+        "Error! Number of sections is bigger than "
+        "MAX_SECTION_NUM_FORCING. Increase the "
+        "MAX_SECTION_NUM_FORCING in tracer_reader_utils.hpp \n");
       for(int isp = 0; isp < nvars; ++isp) {
-        forcings_[i].offset = offset_emis_ver;
-        elevated_emis_output_[isp + offset_emis_ver] =
+        forcings_[i].fields[isp] =
             view_2d("elevated_emis_output_", ncol_, nlev_);
       }
-      offset_emis_ver += nvars;
       ++i;
     }  // end i
-    EKAT_REQUIRE_MSG(
-        offset_emis_ver <= int(mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS),
-        "Error! Number of fields is bigger than "
-        "MAX_NUM_ELEVATED_EMISSIONS_FIELDS. Increase the "
-        "MAX_NUM_ELEVATED_EMISSIONS_FIELDS in tracer_reader_utils.hpp \n");
 
   }  // Tracer external forcing data
 
@@ -675,20 +672,16 @@ void MAMMicrophysics::run_impl(const double dt) {
       linoz_output);                     // out
   Kokkos::fence();
 
-  elevated_emiss_time_state_.t_now = ts.frac_of_year_in_days();
+
   int i                            = 0;
   for(const auto &var_name : extfrc_lst_) {
+    elevated_emiss_time_state_[i].t_now = ts.frac_of_year_in_days();
     const auto file_name = elevated_emis_file_name_[var_name];
     const auto var_names = elevated_emis_var_names_[var_name];
-    const int nsectors   = int(var_names.size());
-    view_2d elevated_emis_output[nsectors];
-    for(int isp = 0; isp < nsectors; ++isp) {
-      elevated_emis_output[isp] =
-          elevated_emis_output_[isp + forcings_[i].offset];
-    }
+    auto& elevated_emis_output= forcings_[i].fields;
     scream::mam_coupling::advance_tracer_data(
         ElevatedEmissionsDataReader_[i], *ElevatedEmissionsHorizInterp_[i], ts,
-        elevated_emiss_time_state_, elevated_emis_data_[i], dry_atm_.p_mid,
+        elevated_emiss_time_state_[i], elevated_emis_data_[i], dry_atm_.p_mid,
         dry_atm_.z_iface, elevated_emis_output);
     i++;
     Kokkos::fence();
@@ -763,7 +756,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-  const auto &elevated_emis_output = elevated_emis_output_;
   const auto &extfrc               = extfrc_;
   const auto &forcings             = forcings_;
   constexpr int extcnt             = mam4::gas_chemistry::extcnt;
@@ -828,7 +820,7 @@ void MAMMicrophysics::run_impl(const double dt) {
           // We may need to move this line where we read files.
           forcings_in[i].file_alt_data = file_alt_data;
           for(int isec = 0; isec < forcings[i].nsectors; ++isec) {
-            const auto field = elevated_emis_output[isec + forcings[i].offset];
+            const auto& field = forcings[i].fields[isec];
             forcings_in[i].fields_data[isec] = ekat::subview(field, icol);
           }
         }  // extcnt for loop
