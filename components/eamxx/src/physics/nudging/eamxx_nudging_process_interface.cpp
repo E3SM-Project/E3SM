@@ -552,7 +552,7 @@ Field Nudging::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
   return m_helper_fields[name];

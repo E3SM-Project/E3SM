@@ -3,6 +3,8 @@
 #include "share/field/field_utils.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
+#include <ekat_math_utils.hpp>
+
 namespace scream
 {
 // =========================================================================================
@@ -111,7 +113,7 @@ void IOPForcing::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
 }
