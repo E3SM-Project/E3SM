@@ -521,14 +521,15 @@ module ocn_time_integration_benthos
       haloDecrement = mod(config_num_halos, neededHalos)
 
       !*** Determine the time integration type and set associated masks
+      ! benthos spinup uses split_explicit
 
-      select case (trim(config_time_integrator))
+      !select case (trim(config_time_integrator))
 
-      case ('unsplit_explicit')
-         unsplit   = .true.
-         splitFact = 0.0_RKIND
+      !case ('unsplit_explicit')
+      !   unsplit   = .true.
+      !   splitFact = 0.0_RKIND
 
-      case ('split_explicit')
+      !case ('split_explicit')
          unsplit   = .false.
          splitFact = 1.0_RKIND
          call mpas_log_write( '*******************************************************************************')
@@ -536,11 +537,11 @@ module ocn_time_integration_benthos
             intArgs=(/ nBtrSubcycles /) )
          call mpas_log_write( '*******************************************************************************')
 
-      case default
-         call mpas_log_write('Incorrect choice config_time_integrator',&
-                             MPAS_LOG_CRIT)
+      !case default
+      !   call mpas_log_write('Incorrect choice config_time_integrator',&
+      !                       MPAS_LOG_CRIT)
 
-      end select
+      !end select
 
       !*** set number of baroclinic iterations on each outer
       !*** time step iteration (number can be different on the
@@ -586,15 +587,15 @@ module ocn_time_integration_benthos
 
          !*** Compute barotropic velocity at first timestep
          !*** This is only done upon start-up.
-         if (unsplit) then
+         !if (unsplit) then
 
-            do iEdge = 1, nEdgesAll
-               normalBarotropicVelocity(  iEdge) = 0.0_RKIND
-               normalBaroclinicVelocity(:,iEdge) = &
-                         normalVelocity(:,iEdge)
-            end do
+         !   do iEdge = 1, nEdgesAll
+         !      normalBarotropicVelocity(  iEdge) = 0.0_RKIND
+         !      normalBaroclinicVelocity(:,iEdge) = &
+         !                normalVelocity(:,iEdge)
+         !   end do
 
-         else ! split explicit
+         !else ! split explicit
 
             if (config_filter_btr_mode) then
                do iCell = 1, nCells
@@ -661,7 +662,7 @@ module ocn_time_integration_benthos
 
             endif
 
-         endif ! split explicit
+         !endif ! split explicit
 
       end if ! not restart
 

@@ -506,7 +506,7 @@ contains
             benthos_input%oceanDustFlux(column) = oceanBenthosDustFlux(iCell)
          else
             benthos_input%oceanBottomDensity(column) = density(maxLevel,iCell)
-            benthos_input%oceanBottomPressure(column) =  pressure(maxLevel,iCell)
+            benthos_input%oceanBottomPressure(column) =  pressure(maxLevel,iCell) !N/m2
             benthos_input%oceanBottomTemperature(column) = activeTracers(indexTemperature, maxLevel, iCell)
             benthos_input%oceanBottomSalinity(column) = activeTracers(indexSalinity, maxLevel, iCell)
             benthos_input%oceanBottomManganese(column) = 4.0e-3_RKIND !Middag 2011 (3-5 nM Barents and Laptev)
@@ -524,10 +524,12 @@ contains
                benthos_input%oceanBottomDIC(column) = max(0.0_RKIND,ecosysTracers(ecosysBenthosIndices%dic_ind, maxLevel, iCell))
                benthos_input%oceanBottomAlkalinity(column) = max(0.0_RKIND,ecosysTracers(ecosysBenthosIndices%alk_ind, maxLevel, iCell))
                benthos_input%oceanPOCFlux(column) = max(0.0_RKIND,benthos_pocToSed(maxLevel,iCell)) ! units are mmolC/m3 m/s
+               benthos_input%oceanPOPFlux(column) = max(0.0_RKIND,benthos_popToSed(maxLevel,iCell)) ! units are mmolP/m3 m/s
+               benthos_input%oceanPONFlux(column) = max(0.0_RKIND,benthos_ponToSed(maxLevel,iCell)) ! units are mmolN/m3 m/s
                benthos_input%oceanParticulateIronFlux(column) = max(0.0_RKIND,benthos_pfeToSed(maxLevel,iCell)) ! units are mmolFe/m3 m/s
                benthos_input%oceanCalciteFlux(column) = max(0.0_RKIND,benthos_calcToSed(maxLevel,iCell)) ! units are mmolC/m3 m/s
-               benthos_input%oceanBiogenicSilicaFlux(column) = 0.0_RKIND
-               benthos_input%oceanDustFlux(column) = 0.0_RKIND
+               benthos_input%oceanBiogenicSilicaFlux(column) = max(0.0_RKIND,benthos_bsiToSed(maxLevel,iCell)) !0.0_RKIND
+               benthos_input%oceanDustFlux(column) =  max(0.0_RKIND,benthos_dustToSed(maxLevel,iCell)) !0.0_RKIND
             else
                benthos_input%oceanBottomSilicate(column) = 0.0_RKIND
                benthos_input%oceanBottomPhosphate(column) = 0.0_RKIND
@@ -541,8 +543,8 @@ contains
                benthos_input%oceanPOCFlux(column) = 0.0_RKIND
                benthos_input%oceanParticulateIronFlux(column) = 0.0_RKIND
                benthos_input%oceanCalciteFlux(column) = 0.0_RKIND
-               !benthos_input%oceanPONFlux(column) = 0.0_RKIND
-               !benthos_input%oceanPOPFlux(column) = 0.0_RKIND
+               benthos_input%oceanPONFlux(column) = 0.0_RKIND
+               benthos_input%oceanPOPFlux(column) = 0.0_RKIND
             endif !
          endif  ! benthos_monthly_forcing
          benthos_input%deepStorage(column,benthos_indices%poca_ind) = benthosTracersStorage(benthosIndices%poca_ind,iCell)
@@ -599,8 +601,12 @@ contains
                call mpas_log_write('benthos_input%oceanBottomAlkalinity(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanBottomAlkalinity(column)/))
                call mpas_log_write('benthos_input%oceanBottomManganese(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanBottomManganese(column)/))
                call mpas_log_write('benthos_input%oceanPOCFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanPOCFlux(column)/))
+               call mpas_log_write('benthos_input%oceanPONFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanPONFlux(column)/))
+               call mpas_log_write('benthos_input%oceanPOPFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanPOPFlux(column)/))
                call mpas_log_write('benthos_input%oceanParticulateIronFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanParticulateIronFlux(column)/))
                call mpas_log_write('benthos_input%oceanCalciteFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanCalciteFlux(column)/))
+               call mpas_log_write('benthos_input%oceanBiogenicSilicaFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanBiogenicSilicaFlux(column)/))
+               call mpas_log_write('benthos_input%oceanDustFlux(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanDustFlux(column)/))
                do iTracer=1,nBenthicTracers
                   if (minval(benthosTracers(iTracer,:,iCell)) .lt. 0.0_RKIND) then
                      call mpas_log_write('iTracer: $i',MPAS_LOG_ERR,intArgs=(/iTracer/))
@@ -611,6 +617,8 @@ contains
                      end do
                   end if
                end do
+               err = 1
+               return
          end if
 
          do iLevel=1,nBenthicVertLevels+1
@@ -2289,7 +2297,7 @@ test_flag = .false.
          config_do_restart, &
          .false.)
 
-     end if
+     end if !config_use_benthos_monthly_terra_forcing
 
    ! TracerType: 1 for solutes, 0 for solids
 
@@ -2458,7 +2466,7 @@ test_flag = .false.
                end do ! iBenthicTracers
             end if  ! step function
          end do                 ! iCell
-         endif
+         endif                  ! config_use_benthos_monthly_forcing
       end if                    ! .not. config_do_restart_benthos
 
       !NJ-TEST: VERIFIED
@@ -2682,7 +2690,7 @@ test_flag = .false.
            oceanBottomBenthosDensity(iCell) = max(1020.0_RKIND,oceanBottomBenthosDensityData(iCell))
            oceanBottomBenthosTemperature(iCell) = oceanBottomBenthosTemperatureData(iCell)
            oceanBottomBenthosSalinity(iCell) = max(30.0_RKIND,oceanBottomBenthosSalinityData(iCell))
-           oceanBottomBenthosPressure(iCell) = max(101300.0_RKIND,oceanBottomBenthosPressureData(iCell))
+           oceanBottomBenthosPressure(iCell) = max(1013000.0_RKIND,oceanBottomBenthosPressureData(iCell))
            oceanBottomBenthosMn(iCell) = 4.0e-3_RKIND !Middag 2011 (3-5 nM Barents and Laptev)
            !Colombo 2020 (CAA 3-9 nM; Chukchi Shelf 3-15 nM)
            !(Klunder et al., 2012a; Kondo et al., 2016; Vieira et al., 2019)

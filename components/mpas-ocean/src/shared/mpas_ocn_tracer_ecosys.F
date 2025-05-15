@@ -792,6 +792,8 @@ contains
 
       integer :: iCell, iLevel, numColumns, column, autotroph, n
 
+      real (kind=RKIND), parameter :: marbl_to_mpas_units = 10.0  ! nmol/cm2/s to mmol/m2/s
+
       err = 0
 
       call mpas_timer_start("ecosys source-sink")
@@ -967,12 +969,12 @@ contains
       ! for use in the benthos submodule 
 
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthosTracers', config_use_benthosTracers)               
-      if (config_use_benthosTracers) then
+      if (config_use_benthosTracers) then  ! mmol C / m2 / s  or P/Si/N/Fe   and kg /m2/ s for dust
          call mpas_pool_get_subpool(forcingPool, 'ecosysBenthosForcing', ecosysBenthosForcing)                    
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_calcToSed', benthos_calcToSed)                   
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_pocToSed)                     
-         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_ponToSed)                     
-         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pocToSed', benthos_popToSed)                     
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_ponToSed', benthos_ponToSed)                     
+         call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_popToSed', benthos_popToSed)                     
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_pfeToSed', benthos_pfeToSed)
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_bsiToSed', benthos_bsiToSed)
          call mpas_pool_get_array(ecosysBenthosForcing, 'benthos_dustToSed', benthos_dustToSed)
@@ -1062,34 +1064,34 @@ contains
             ! Benthos Forcing Fields                                                                              
             !
 
-            if (config_use_benthosTracers) then
-               benthos_calcToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_calcToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_calcToSed_allocatedInMARBL)
+            if (config_use_benthosTracers) then   ! Marbl fluxes nmol /cm2/s or g/cm2/s for dust
+               benthos_calcToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_calcToSed_indexInMARBL)%field_2d(column),  &
+                  ecosysMissingValue, ecosys_diag_calcToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
-               benthos_pocToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_pocToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_pocToSed_allocatedInMARBL)
+               benthos_pocToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_pocToSed_indexInMARBL)%field_2d(column),  &
+                  ecosysMissingValue, ecosys_diag_pocToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
-               benthos_pfeToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_pfeToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_pfeToSed_allocatedInMARBL)
+               benthos_pfeToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_pfeToSed_indexInMARBL)%field_2d(column),  &
+                  ecosysMissingValue, ecosys_diag_pfeToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
-               benthos_ponToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_ponToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)
+               benthos_ponToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_ponToSed_indexInMARBL)%field_2d(column),  &
+                  ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
-               benthos_popToSed(iLevel,iCell) =  merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_popToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)
+               benthos_popToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                  diags(ecosys_diag_popToSed_indexInMARBL)%field_2d(column),  &
+                  ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
-               benthos_bsiToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_bsiToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_bsiToSed_allocatedInMARBL)
+               benthos_bsiToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_bsiToSed_indexInMARBL)%field_2d(column),  &
+                ecosysMissingValue, ecosys_diag_bsiToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
-               benthos_dustToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_dustToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)
+               benthos_dustToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_dustToSed_indexInMARBL)%field_2d(column),  &
+                ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)*marbl_to_mpas_units)
 
             endif  !  config_ecosysTracers_diagnostic_fields_level3
 

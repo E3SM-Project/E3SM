@@ -34,7 +34,6 @@ module ocn_time_integration_split
    use ocn_config
    use ocn_mesh
    use ocn_tendency
-   use ocn_tendency_benthos
    use ocn_diagnostics_variables
    use ocn_diagnostics
    use ocn_gm
@@ -1859,14 +1858,6 @@ module ocn_time_integration_split
                                                 normalVelocityCur, 1)
          call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
                                                    activeTracersTend)
-
-         if (config_use_benthosTracers .and. .not. activeTracersOnly) then
-            call mpas_timer_start('se benthos tracer tend')
-            call ocn_tend_benthos(tendPool, statePool, forcingPool, &
-                              meshPool, swForcingPool, diagnosticsPool, &
-                              dt, activeTracersOnly, 2)
-            call mpas_timer_stop('se benthos tracer tend')
-         endif
 
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessNew, normalVelocityNew)

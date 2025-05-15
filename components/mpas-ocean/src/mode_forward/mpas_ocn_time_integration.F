@@ -75,7 +75,7 @@ module ocn_time_integration
        timeIntLTS              = 5, &! local time-stepping
        timeIntFBLTS            = 6, &! forward-backward lts
        timeIntSplitExplicitAB2 = 7, &! split-explicit AB2 baroclinic
-       timeIntBenthos          = 8
+       timeIntBenthos          = 8   ! benthic integration only
 
 !***********************************************************************
 
@@ -219,16 +219,14 @@ module ocn_time_integration
       ! Set enum for choice of time integrator to avoid character
       ! comparisons later and call relevant init routine
 
+      if (config_do_benthos_spinup) then
+          timeIntegratorChoice = timeIntBenthos
+          call ocn_time_integration_benthos_init(domain)
+      else
       select case (trim(config_time_integrator))
       case ('split_explicit')
-         if (config_do_benthos_spinup) then
-            timeIntegratorChoice = timeIntBenthos
-            call ocn_time_integration_benthos_init(domain)
-         else
             timeIntegratorChoice = timeIntSplitExplicit
             call ocn_time_integration_split_init(domain)
-         endif
-
       case ('unsplit_explicit')
          timeIntegratorChoice = timeIntUnsplitExplicit
          call ocn_time_integration_split_init(domain)
@@ -265,7 +263,7 @@ module ocn_time_integration
                  'split_explicit_ab2', MPAS_LOG_ERR)
 
       end select
-
+      end if
    !--------------------------------------------------------------------
 
    end subroutine ocn_timestep_init!}}}

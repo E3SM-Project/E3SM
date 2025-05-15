@@ -1434,7 +1434,6 @@ contains
          ! initialize benthos tracer tendencies to zero.
          !
 
-
          !$omp parallel
          !$omp do schedule(runtime) private(k,n)
          do iCell = 1, nCellsAll

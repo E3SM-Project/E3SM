@@ -44,6 +44,9 @@
 !  module variables
 !-----------------------------------------------------------------------
 
+   real (Kind=benthos_r8), public :: &
+      surfaceSedimentDensity
+
    integer (KIND=benthos_i4), public, parameter :: &
       benthos_tracer_cnt = 35, &
       element_tracer_cnt = 7
@@ -547,72 +550,72 @@ contains
    elementRatios(:,:) = c0_benthos
 
    ! carbon (mmol/ m^3), solid units  (mmol/kg)
-   elementRatios(poca_ind,1) = c1_benthos*sediment_density
-   elementRatios(pocb_ind,1) = c1_benthos*sediment_density
-   elementRatios(pocc_ind,1) = c1_benthos*sediment_density
+   elementRatios(poca_ind,1) = c1_benthos*particle_density
+   elementRatios(pocb_ind,1) = c1_benthos*particle_density
+   elementRatios(pocc_ind,1) = c1_benthos*particle_density
    elementRatios(dic_ind,1) = c1_benthos
    !elementRatios(co3_ind,1) = c1_benthos
    !elementRatios(co2_ind,1) = c1_benthos
    !elementRatios(hco3_ind,1) = c1_benthos
-   elementRatios(caco3a_ind,1) = c1_benthos*sediment_density
-   elementRatios(caco3b_ind,1) = c1_benthos*sediment_density
-   elementRatios(camgco3_ind,1) = c1_benthos*sediment_density
+   elementRatios(caco3a_ind,1) = c1_benthos*particle_density
+   elementRatios(caco3b_ind,1) = c1_benthos*particle_density
+   elementRatios(camgco3_ind,1) = c1_benthos*particle_density
    elementRatios(ch4_ind,1) = c1_benthos
 
   ! oxygen (mmol/m^3)
-   elementRatios(poca_ind,2) = c1_benthos*sediment_density
-   elementRatios(pocb_ind,2) = c1_benthos*sediment_density
-   elementRatios(pocc_ind,2) = c1_benthos*sediment_density
-   elementRatios(popa_ind,2) = 4.0_benthos_r8*sediment_density
-   elementRatios(popb_ind,2) = 4.0_benthos_r8*sediment_density
-   elementRatios(popc_ind,2) = 4.0_benthos_r8*sediment_density
+   elementRatios(poca_ind,2) = c1_benthos*particle_density
+   elementRatios(pocb_ind,2) = c1_benthos*particle_density
+   elementRatios(pocc_ind,2) = c1_benthos*particle_density
+   elementRatios(popa_ind,2) = 4.0_benthos_r8*particle_density
+   elementRatios(popb_ind,2) = 4.0_benthos_r8*particle_density
+   elementRatios(popc_ind,2) = 4.0_benthos_r8*particle_density
    elementRatios(o2_ind,2) = c2_benthos
    elementRatios(h2po4_ind,2) = 4.0_benthos_r8
    elementRatios(co2_ind,2) = c2_benthos
    elementRatios(no3_ind,2) = 3.0_benthos_r8
-   elementRatios(mno2a_ind,2) = c2_benthos*sediment_density
-   elementRatios(mno2b_ind,2) = c2_benthos*sediment_density
-   elementRatios(feoh3a_ind,2) = 3.0_benthos_r8*sediment_density
-   elementRatios(feoh3b_ind,2) = 3.0_benthos_r8*sediment_density
+   elementRatios(mno2a_ind,2) = c2_benthos*particle_density
+   elementRatios(mno2b_ind,2) = c2_benthos*particle_density
+   elementRatios(feoh3a_ind,2) = 3.0_benthos_r8*particle_density
+   elementRatios(feoh3b_ind,2) = 3.0_benthos_r8*particle_density
    elementRatios(so4_ind,2) = 4.0_benthos_r8
    elementRatios(hco3_ind,2) = 3.0_benthos_r8
-   elementRatios(caco3a_ind,2) = 3.0*sediment_density
-   elementRatios(caco3b_ind,2) = 3.0*sediment_density
+   elementRatios(caco3a_ind,2) = 3.0*particle_density
+   elementRatios(caco3b_ind,2) = 3.0*particle_density
    elementRatios(co3_ind,2) = 3.0_benthos_r8
 
   ! nitrogen (mmol/m^3)
    elementRatios(nh4_ind,3)  = c1_benthos
-   elementRatios(pona_ind,3) = c1_benthos*sediment_density
-   elementRatios(ponb_ind,3) = c1_benthos*sediment_density
-   elementRatios(ponc_ind,3) = c1_benthos*sediment_density
+   elementRatios(pona_ind,3) = c1_benthos*particle_density
+   elementRatios(ponb_ind,3) = c1_benthos*particle_density
+   elementRatios(ponc_ind,3) = c1_benthos*particle_density
    elementRatios(no3_ind,3)  = c1_benthos
 
 ! phosphorus (mmol/m^3)
-   elementRatios(popa_ind,4)  = c1_benthos*sediment_density
-   elementRatios(popb_ind,4)  = c1_benthos*sediment_density
-   elementRatios(popc_ind,4)  = c1_benthos*sediment_density
+   elementRatios(popa_ind,4)  = c1_benthos*particle_density
+   elementRatios(popb_ind,4)  = c1_benthos*particle_density
+   elementRatios(popc_ind,4)  = c1_benthos*particle_density
    elementRatios(h2po4_ind,4) = c1_benthos
-   elementRatios(fepa_ind,4)  = c1_benthos*sediment_density
-   elementRatios(fepb_ind,4)  = c1_benthos*sediment_density
+   elementRatios(fepa_ind,4)  = c1_benthos*particle_density
+   elementRatios(fepb_ind,4)  = c1_benthos*particle_density
 
 ! sulfur (mmol/m3)
    elementRatios(so4_ind,5)  = c1_benthos
    elementRatios(h2s_ind,5)  = c1_benthos
-   elementRatios(fes_ind,5)  = c1_benthos*sediment_density
-   elementRatios(fes2_ind,5) = c2_benthos*sediment_density
-   elementRatios(s_ind,5)    = c1_benthos*sediment_density
+   elementRatios(fes_ind,5)  = c1_benthos*particle_density
+   elementRatios(fes2_ind,5) = c2_benthos*particle_density
+   elementRatios(s_ind,5)    = c1_benthos*particle_density
 
 ! manganese (mmol/m^3)
-   elementRatios(mno2a_ind,6) = c1_benthos*sediment_density
-   elementRatios(mno2b_ind,6) = c1_benthos*sediment_density
+   elementRatios(mno2a_ind,6) = c1_benthos*particle_density
+   elementRatios(mno2b_ind,6) = c1_benthos*particle_density
    elementRatios(mn_ind,6)    = c1_benthos
 
    ! iron (mmol/m3)
-   elementRatios(feoh3a_ind,7) = c1_benthos*sediment_density
-   elementRatios(feoh3b_ind,7) = c1_benthos*sediment_density
+   elementRatios(feoh3a_ind,7) = c1_benthos*particle_density
+   elementRatios(feoh3b_ind,7) = c1_benthos*particle_density
    elementRatios(fe_ind,7)     = c1_benthos
-   elementRatios(fes_ind,7)    = c1_benthos*sediment_density
-   elementRatios(fes2_ind,7)   = c1_benthos*sediment_density
+   elementRatios(fes_ind,7)    = c1_benthos*particle_density
+   elementRatios(fes2_ind,7)   = c1_benthos*particle_density
 
    ! define the tracers which are solved in the vertical transport
    transport_index(:) = 0
@@ -730,8 +733,8 @@ contains
       end do
 
    else
-      benthosPorosityI(:) = p5_benthos
-      benthosPorosity(:)  = p5_benthos
+      benthosPorosityI(:) = 0.7_benthos_r8 !p5_benthos
+      benthosPorosity(:)  = 0.7_benthos_r8 !p5_benthos
    endif
 
    ! Define  solid porosity
@@ -1227,9 +1230,9 @@ contains
    end do
 
    ! SINK TERMS: Rates are in mmol/m3/s
-   carbonateSinkStoich(caco3a_ind,1)  = c1_benthos/sediment_density
-   carbonateSinkStoich(caco3b_ind,2)  = c1_benthos/sediment_density
-   carbonateSinkStoich(camgco3_ind,3) = c1_benthos/sediment_density
+   carbonateSinkStoich(caco3a_ind,1)  = c1_benthos/particle_density
+   carbonateSinkStoich(caco3b_ind,2)  = c1_benthos/particle_density
+   carbonateSinkStoich(camgco3_ind,3) = c1_benthos/particle_density
 
    ! SOURCE TERMS
    carbonateSourceStoich(co3_ind,:) = c1_benthos
@@ -1335,11 +1338,11 @@ contains
 
    !s4
    secondarySinkStoich(o2_ind,4) = c1_benthos
-   secondarySinkStoich(fes_ind,4) = p5_benthos/sediment_density
+   secondarySinkStoich(fes_ind,4) = p5_benthos/particle_density
 
    !s5
    secondarySinkStoich(o2_ind,5) = c1_benthos
-   secondarySinkStoich(fes2_ind,5) = c2_benthos/7.0_benthos_r8/sediment_density
+   secondarySinkStoich(fes2_ind,5) = c2_benthos/7.0_benthos_r8/particle_density
    secondarySinkStoich(alk_ind,5) = 4.0_benthos_r8/7.0_benthos_r8
 
    !s6
@@ -1354,7 +1357,7 @@ contains
    secondarySinkStoich(ch4_ind,7) = c1_benthos
 
    !s8 and s9
-   secondarySinkStoich(mno2a_ind,8) = c1_benthos/sediment_density
+   secondarySinkStoich(mno2a_ind,8) = c1_benthos/particle_density
    secondarySinkStoich(fe_ind,8) = c2_benthos
    secondarySinkStoich(fe_ind,9) = c2_benthos
    secondarySinkStoich(h2po4_ind,8) = c2_benthos*ironBoundPFraction
@@ -1362,15 +1365,15 @@ contains
    !secondarySinkStoich(hco3_ind,8:9) = c2_benthos
    secondarySinkStoich(dic_ind,8) = c2_benthos
    secondarySinkStoich(dic_ind,9) = c2_benthos
-   secondarySinkStoich(mno2b_ind,9) = c1_benthos/sediment_density
+   secondarySinkStoich(mno2b_ind,9) = c1_benthos/particle_density
    secondarySinkStoich(alk_ind,8) = c2_benthos
    secondarySinkStoich(alk_ind,9) = c2_benthos
 
    !s10 and s11
    secondarySinkStoich(h2s_ind,10) = c1_benthos
    secondarySinkStoich(h2s_ind,11) = c1_benthos
-   secondarySinkStoich(mno2a_ind,10) = c1_benthos/sediment_density
-   secondarySinkStoich(mno2b_ind,11) = c1_benthos/sediment_density
+   secondarySinkStoich(mno2a_ind,10) = c1_benthos/particle_density
+   secondarySinkStoich(mno2b_ind,11) = c1_benthos/particle_density
    !secondarySinkStoich(co2_ind,10:11) = c2_benthos
    secondarySinkStoich(dic_ind,10) = c2_benthos
    secondarySinkStoich(dic_ind,11) = c2_benthos
@@ -1381,10 +1384,10 @@ contains
    !econdarySinkStoich(co2_ind,12:13) = c2_benthos
    secondarySinkStoich(dic_ind,12) = c2_benthos
    secondarySinkStoich(dic_ind,13) = c2_benthos
-   secondarySinkStoich(feoh3a_ind,12) = c1_benthos/sediment_density
-   secondarySinkStoich(feoh3b_ind,13) = c1_benthos/sediment_density
-   secondarySinkStoich(fepa_ind,12) = c1_benthos*ironBoundPFraction/sediment_density
-   secondarySinkStoich(fepb_ind,13) = c1_benthos*ironBoundPFraction/sediment_density
+   secondarySinkStoich(feoh3a_ind,12) = c1_benthos/particle_density
+   secondarySinkStoich(feoh3b_ind,13) = c1_benthos/particle_density
+   secondarySinkStoich(fepa_ind,12) = c1_benthos*ironBoundPFraction/particle_density
+   secondarySinkStoich(fepb_ind,13) = c1_benthos*ironBoundPFraction/particle_density
    secondarySinkStoich(alk_ind,12) = 6.0_benthos_r8*ironBoundPFraction
    secondarySinkStoich(alk_ind,13) = 6.0_benthos_r8*ironBoundPFraction
 
@@ -1400,7 +1403,7 @@ contains
    secondarySinkStoich(dic_ind,15) = c1_benthos
 
    !s16
-   secondarySinkStoich(s_ind,16) = c1_benthos/sediment_density
+   secondarySinkStoich(s_ind,16) = c1_benthos/particle_density
 
    !s17
    secondarySinkStoich(fes_ind,17) = c1_benthos
@@ -1420,13 +1423,13 @@ contains
    secondarySourceStoich(dic_ind,1) = c1_benthos
 
    !s2
-   secondarySourceStoich(mno2a_ind,2) = c2_benthos/sediment_density
+   secondarySourceStoich(mno2a_ind,2) = c2_benthos/particle_density
    !secondarySourceStoich(co2_ind,2) = 4.0_benthos_r8
    secondarySourceStoich(dic_ind,2) = 4.0_benthos_r8
 
    !s3
-   secondarySourceStoich(feoh3a_ind,3) = 4.0_benthos_r8/sediment_density
-   secondarySourceStoich(fepa_ind,3) = 4.0_benthos_r8/sediment_density*ironBoundPFraction
+   secondarySourceStoich(feoh3a_ind,3) = 4.0_benthos_r8/particle_density
+   secondarySourceStoich(fepa_ind,3) = 4.0_benthos_r8/particle_density*ironBoundPFraction
    !secondarySourceStoich(co2_ind,3) = 8.0_benthos_r8
    secondarySourceStoich(dic_ind,3) = 8.0_benthos_r8
    secondarySourceStoich(alk_ind,3) = 24.0_benthos_r8*ironBoundPFraction
@@ -1450,16 +1453,16 @@ contains
    secondarySourceStoich(alk_ind,7) = 4.0_benthos_r8
 
    !s8
-   secondarySourceStoich(feoh3a_ind,8) = c2_benthos/sediment_density
-   secondarySourceStoich(fepa_ind,8) = c2_benthos/sediment_density*ironBoundPFraction
+   secondarySourceStoich(feoh3a_ind,8) = c2_benthos/particle_density
+   secondarySourceStoich(fepa_ind,8) = c2_benthos/particle_density*ironBoundPFraction
    secondarySourceStoich(mn_ind,8) = c1_benthos
    !secondarySourceStoich(co2_ind,8) = c2_benthos
    secondarySourceStoich(dic_ind,8) = c2_benthos
    secondarySourceStoich(alk_ind,8) = 12.0_benthos_r8*ironBoundPFraction
 
    !s9
-   secondarySourceStoich(feoh3a_ind,9) = c2_benthos/sediment_density
-   secondarySourceStoich(fepa_ind,9) = c2_benthos/sediment_density*ironBoundPFraction
+   secondarySourceStoich(feoh3a_ind,9) = c2_benthos/particle_density
+   secondarySourceStoich(fepa_ind,9) = c2_benthos/particle_density*ironBoundPFraction
    secondarySourceStoich(mn_ind,9) = c1_benthos
    !secondarySourceStoich(co2_ind,9) = c2_benthos
    secondarySourceStoich(dic_ind,9) = c2_benthos
@@ -1467,14 +1470,14 @@ contains
 
    !s10
    secondarySourceStoich(mn_ind,10) = c1_benthos
-   secondarySourceStoich(s_ind,10) = c1_benthos/sediment_density
+   secondarySourceStoich(s_ind,10) = c1_benthos/particle_density
    !secondarySourceStoich(hco3_ind,10) = c2_benthos
    secondarySourceStoich(dic_ind,10) = c2_benthos
    secondarySourceStoich(alk_ind,10) = c2_benthos
 
    !s11
    secondarySourceStoich(mn_ind,11) = c1_benthos
-   secondarySourceStoich(s_ind,11) = c1_benthos/sediment_density
+   secondarySourceStoich(s_ind,11) = c1_benthos/particle_density
    !secondarySourceStoich(hco3_ind,11) = c2_benthos
    secondarySourceStoich(dic_ind,11) = c2_benthos
    secondarySourceStoich(alk_ind,11) = c2_benthos
@@ -1482,19 +1485,19 @@ contains
    !s12
    secondarySourceStoich(fe_ind,12) = c1_benthos
    secondarySourceStoich(h2po4_ind,12) = ironBoundPFraction
-   secondarySourceStoich(s_ind,12) = p5_benthos/sediment_density
+   secondarySourceStoich(s_ind,12) = p5_benthos/particle_density
    !secondarySourceStoich(hco3_ind,12) = c2_benthos
    secondarySourceStoich(dic_ind,12) = c2_benthos
 
    !s13
    secondarySourceStoich(fe_ind,13) = c1_benthos
    secondarySourceStoich(h2po4_ind,13) = ironBoundPFraction
-   secondarySourceStoich(s_ind,13) = p5_benthos/sediment_density
+   secondarySourceStoich(s_ind,13) = p5_benthos/particle_density
    !secondarySourceStoich(hco3_ind,13) = c2_benthos
    secondarySourceStoich(dic_ind,13) = c2_benthos
 
    !s14
-   secondarySourceStoich(fes_ind,14) = c1_benthos/sediment_density
+   secondarySourceStoich(fes_ind,14) = c1_benthos/particle_density
 
    !s15
    !secondarySourceStoich(hco3_ind,15) = c2_benthos
@@ -1653,7 +1656,7 @@ contains
        oceanBottomManganese, &
        oceanBottomDIC, &
        oceanBottomAlkalinity, &
-       oceanPOCFlux, &
+       oceanPOCFlux, & ! mmolC m-2 s-1
        oceanPOPFlux, &
        oceanPONFlux, &
        oceanParticulateIronFlux, &
@@ -1709,24 +1712,30 @@ contains
 !-----------------------------------------------------------------------
 !EOC
 
-  ! pocFluxRate = pocFluxRate_o/sediment_density
+  ! pocFluxRate = pocFluxRate_o/particle_density
 
    if (useOceanBottomState .or. config_use_benthos_monthly_forcing) then
-      pocFluxRate = (oceanPOCFlux+terraPOCFlux)/sediment_density/benthosSolidPorosityTop
-      ponFluxRate = pocFluxRate/CtoP*NtoP
-      popFluxRate = pocFluxRate/CtoP
-      ocean_feoh3aFlux = oceanParticulateIronFlux/sediment_density/benthosSolidPorosityTop
-      ocean_caco3Flux = oceanCalciteFlux/sediment_density/benthosSolidPorosityTop
+      pocFluxRate = (oceanPOCFlux+terraPOCFlux)/particle_density/benthosSolidPorosityTop
+      if (useBGCSinkingFlux) then
+         ponFluxRate = (oceanPONFlux + terraPOCFlux/CtoP*NtoP)/particle_density/benthosSolidPorosityTop
+         popFluxRate = (oceanPOPFlux + terraPOCFlux/CtoP)/particle_density/benthosSolidPorosityTop
+      else
+         ponFluxRate = pocFluxRate/CtoP*NtoP
+         popFluxRate = pocFluxRate/CtoP
+      endif
+      ocean_feoh3aFlux = oceanParticulateIronFlux/particle_density/benthosSolidPorosityTop
+      ocean_caco3Flux = oceanCalciteFlux/particle_density/benthosSolidPorosityTop
+      ! kg m-2 s-1
       fluxSed_forcing = (oceanPOCFlux + terraPOCFlux) * kg_per_mg * gC_per_molC * mass_per_massPOC &
          + oceanBiogenicSilicaFlux * kg_per_mg * gSi_per_molSi * massOpal_per_massbSi &
          + oceanDustFlux + lithogenicFlux &
          + oceanCalciteFlux * kg_per_mg * mass_per_molPIC
    else
-      pocFluxRate = 6000.0_benthos_r8/sediment_density/sec_per_year
+      pocFluxRate = 6000.0_benthos_r8/particle_density/sec_per_year
       ponFluxRate = pocFluxRate/CtoP*NtoP
       popFluxRate = pocFluxRate/CtoP
-      ocean_feoh3aFlux = 57.7_benthos_r8/sec_per_year/sediment_density
-      ocean_caco3Flux = 1000.0_benthos_r8 / sec_per_year/sediment_density
+      ocean_feoh3aFlux = 57.7_benthos_r8/sec_per_year/particle_density
+      ocean_caco3Flux = 1000.0_benthos_r8 / sec_per_year/particle_density
       oceanBottomSilicate = 11.0_benthos_r8
       fluxSed_forcing = c0_benthos
    end if
@@ -1750,7 +1759,9 @@ contains
       fluxSed = c0_benthos
    end if
 
-   dhtop = fluxSed/sediment_density/benthosSolidPorosityTop * dt
+   surfaceSedimentDensity = particle_density * benthosSolidPorosityTop + bottom_water_density * &
+         (1.-benthosSolidPorosityTop)
+   dhtop = fluxSed/surfaceSedimentDensity * dt   !sediment_density/benthosSolidPorosityTop * dt
    vel = dhtop/benthosDepth/dt
 
    do iTracers = 1,nBenthicTracers
@@ -1774,13 +1785,13 @@ contains
       end if
       oceanSedFlux(pocb_ind) = pocFluxRate*fracLessReactive ! 15% moderately reactive
       oceanSedFlux(pocc_ind) = pocFluxRate*fracRefractory   ! 34% nonreactive
-      oceanSedFlux(popa_ind) = oceanSedFlux(poca_ind)/CtoP  !pocFluxRate/popFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
-      oceanSedFlux(popb_ind) = oceanSedFlux(pocb_ind)/CtoP_r !popFluxRate*fracLessReactive ! 15% moderately reactive
-      oceanSedFlux(popc_ind) = oceanSedFlux(pocc_ind)/CtoP_r !popFluxRate*fracRefractory ! 34% nonreactive
-      oceanSedFlux(pona_ind) = oceanSedFlux(popa_ind)*NtoP   !ponFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
-      oceanSedFlux(ponb_ind) = oceanSedFlux(popb_ind)*NtoP_r !ponFluxRate*fracLessReactive ! 15% moderately reactive
-      oceanSedFlux(ponc_ind) = oceanSedFlux(popc_ind)*NtoP_r !ponFluxRate*fracRefractory ! 34% nonreactive
-      oceanSedFlux(mno2a_ind) = 0.03_benthos_r8/sec_per_year/sediment_density !mmol/m2/y to mmol (m/kg)/s
+      oceanSedFlux(popa_ind) = popFluxRate*fracHighlyReactive !oceanSedFlux(poca_ind)/CtoP  !pocFluxRate/popFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
+      oceanSedFlux(popb_ind) = popFluxRate*fracLessReactive  !oceanSedFlux(pocb_ind)/CtoP_r !popFluxRate*fracLessReactive ! 15% moderately reactive
+      oceanSedFlux(popc_ind) = popFluxRate*fracRefractory !oceanSedFlux(pocc_ind)/CtoP_r !popFluxRate*fracRefractory ! 34% nonreactive
+      oceanSedFlux(pona_ind) = ponFluxRate*fracHighlyReactive !oceanSedFlux(popa_ind)*NtoP   !ponFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
+      oceanSedFlux(ponb_ind) = ponFluxRate*fracLessReactive !oceanSedFlux(popb_ind)*NtoP_r !ponFluxRate*fracLessReactive ! 15% moderately reactive
+      oceanSedFlux(ponc_ind) = ponFluxRate*fracRefractory !oceanSedFlux(popc_ind)*NtoP_r !ponFluxRate*fracRefractory ! 34% nonreactive
+      oceanSedFlux(mno2a_ind) = 0.03_benthos_r8/sec_per_year/particle_density !mmol/m2/y to mmol (m/kg)/s
       oceanSedFlux(mno2b_ind) = c0_benthos
       oceanSedFlux(feoh3a_ind) = ocean_feoh3aFlux
       oceanSedFlux(feoh3b_ind) = c0_benthos
@@ -1839,15 +1850,15 @@ contains
    if (useBGCSinkingFlux) then
       ! use secondary equation 2 in ocean bottom layer
       oceanPrecipFlux(mno2a_ind) = oceanTracerConc(mn_ind) * oceanTracerConc(o2_ind) &
-         * k_s2 * c2_benthos/sediment_density/benthosSolidPorosityTop 
+         * k_s2 * c2_benthos/particle_density/benthosSolidPorosityTop 
       !Old spin-up fixes the ocean bottom manganese concentration at 0.0096 mmol mn/m3, i.e.
-      !0.56_benthos_r8*oceanTracerConc(o2_ind) * k_s2 *  c2_benthos/sediment_density*benthosDepth
+      !0.56_benthos_r8*oceanTracerConc(o2_ind) * k_s2 *  c2_benthos/particle_density*benthosDepth
 
       ! use secondary equation 3 in ocean bottom layer
       oceanPrecipFlux(feoh3a_ind) = oceanTracerConc(fe_ind) * oceanTracerConc(o2_ind) &
-         * k_s3 * 4.0_benthos_r8/sediment_density/benthosSolidPorosityTop
+         * k_s3 * 4.0_benthos_r8/particle_density/benthosSolidPorosityTop
       !Old spin-up fixes the ocean bottom iron concentration at 0.0017 mmol fe/m3 everywhere, i.e.
-      !0.10_benthos_r8* oceanTracerConc(o2_ind)*k_s3 * 4.0_benthos_r8/sediment_density*benthosDepth
+      !0.10_benthos_r8* oceanTracerConc(o2_ind)*k_s3 * 4.0_benthos_r8/particle_density*benthosDepth
       oceanPrecipFlux(fepa_ind) = oceanPrecipFlux(feoh3a_ind)*ironBoundPFraction
    end if
 
@@ -2194,13 +2205,13 @@ contains
        useOceanConc = .false.
        useDeepSource = .false.
 
-    CASE DEFAULT    ! 0  change useOceanConc = false (uncouple with BEC)
+    CASE DEFAULT    ! 0  change useDepthDependentPorosity = false (fix at 0.7) useOceanConc = false (uncouple with BEC)
 
        ! 'Default test case'
 
        useCarbonateSaturation = .true.
        useSecondaryReactions = .true.
-       useDepthDependentPorosity = .true.
+       useDepthDependentPorosity = .false.
        useNonZeroDiffusivity = .true.
        useSedimentation = .true.
        usePositiveSedimentation = .true.
@@ -2536,8 +2547,14 @@ contains
    oceanBottomAlkalinity  = benthos_input%oceanBottomAlkalinity(column)
    ! Particulate fluxes are in mmol/m3*m/s
    oceanPOCFlux  = benthos_input%oceanPOCFlux(column)
-   oceanPONFlux  = benthos_input%oceanPOCFlux(column)/CtoP*NtoP
-   oceanPOPFlux  = benthos_input%oceanPOCFlux(column)/CtoP
+   if (useBGCSinkingFlux) then      ! ecosysTracers have undefined values for PONFlux/POPFlux
+      oceanPONFlux  = benthos_input%oceanPONFlux(column)
+      oceanPOPFlux  = benthos_input%oceanPOPFlux(column)
+   else
+      oceanPONFlux  = benthos_input%oceanPOCFlux(column)/CtoP*NtoP
+      oceanPOPFlux  = benthos_input%oceanPOCFlux(column)/CtoP
+   end if   
+         
    oceanParticulateIronFlux  = benthos_input%oceanParticulateIronFlux(column)
    oceanCalciteFlux  = benthos_input%oceanCalciteFlux(column)
    oceanBiogenicSilicaFlux  = benthos_input%oceanBiogenicSilicaFlux(column)
@@ -2568,7 +2585,7 @@ contains
       oceanBottomDepth = 53.0_benthos_r8
       oceanBottomTemperature = c0_benthos
       oceanBottomSalinity = 32.0_benthos_r8     ! Chukchi
-      oceanBottomPressure = 4.236e5_benthos_r8 ! N/m2
+      oceanBottomPressure = 4.236e5_benthos_r8  ! N/m2
       oceanBottomDensity = 1027.0_benthos_r8    ! kg/m3
    end if
 
@@ -2588,13 +2605,31 @@ contains
 
          benthosTracerBulk(iTracers,iLevels) = benthos_input%benthosTracerBulk(iLevels,column,iTracers)
          if (benthosTracerBulk(iTracers,iLevels) .lt. c0_benthos) then
-            write(*,*) 'benthosTracerBulk < 0 at start of SourceSink'
-            write(*,*) 'benthosTracerBulk(iTracers,iLevels):',benthosTracerBulk(iTracers,iLevels)
-            write(*,*) 'iTracers,iLevels,column:',iTracers,iLevels,column
             if (benthosTracerBulk(iTracers,iLevels) .gt. -puny) then
-               write(*,*) 'small negative. setting tracer to zero'
+               !write(*,*) 'small negative. setting tracer to zero'
                benthosTracerBulk(iTracers,iLevels) = c0_benthos
             else
+               write(*,*) 'benthosTracerBulk < 0 at start of SourceSink'
+               write(*,*) 'benthosTracerBulk(iTracers,iLevels):',benthosTracerBulk(iTracers,iLevels)
+               write(*,*) 'iTracers,iLevels,column:',iTracers,iLevels,column
+               write(*,*) 'oceanBottomPhosphate:',oceanBottomPhosphate
+               write(*,*) 'oceanBottomAmmonium:',oceanBottomAmmonium
+               write(*,*) 'oceanBottomNitrate:',oceanBottomNitrate
+               write(*,*) 'oceanBottomOxygen:',oceanBottomOxygen
+               write(*,*) 'oceanBottomIron:',oceanBottomIron
+               write(*,*) 'oceanBottomDIC:',oceanBottomDIC
+               write(*,*) 'oceanBottomManganese:',oceanBottomManganese
+               write(*,*) 'oceanBottomAlkalinity:',oceanBottomAlkalinity
+               write(*,*) 'oceanBottomSilicate:',oceanBottomSilicate
+               write(*,*) 'oceanPOCFlux:',oceanPOCFlux
+               write(*,*) 'oceanPONFlux:',oceanPONFlux
+               write(*,*) 'oceanParticulateIronFlux:',oceanParticulateIronFlux
+               write(*,*) 'oceanCalciteFlux:',oceanCalciteFlux
+               write(*,*) 'oceanPOPFlux:',oceanPOPFlux
+               write(*,*) 'oceanBiogenicSilicaFlux:',oceanBiogenicSilicaFlux
+               write(*,*) 'oceanDustFlux:',oceanDustFlux
+               write(*,*) 'terraPOCFlux:',terraPOCFlux
+               write(*,*) 'lithogenicFlux:',lithogenicFlux
                err = 1
                return
             end if
@@ -4130,15 +4165,15 @@ subroutine primaryStoichMatrix (primarySourceStoich, primarySinkStoich, &
       ! epsilon_Phosphate is accelerated POP remineralization (Reed et al 2015)
       ! epsilon_Phosphate = 2 works okay for Arkona Basin but may not work in other places
 
-      primarySinkStoich(poca_ind,iReactions) = c1_benthos/sediment_density
-      primarySinkStoich(pocb_ind,iReactions) = c1_benthos/sediment_density
-      primarySinkStoich(pocc_ind,iReactions) = c1_benthos/sediment_density
-      primarySinkStoich(pona_ind,iReactions) = b_ratio(1)/a_ratio(1)/sediment_density
-      primarySinkStoich(ponb_ind,iReactions) = b_ratio(2)/a_ratio(2)/sediment_density
-      primarySinkStoich(ponc_ind,iReactions) = b_ratio(3)/a_ratio(3)/sediment_density
-      primarySinkStoich(popa_ind,iReactions) = c1_benthos/a_ratio(1)/sediment_density*epsilon_Phosphate
-      primarySinkStoich(popb_ind,iReactions) = c1_benthos/a_ratio(2)/sediment_density*epsilon_Phosphate
-      primarySinkStoich(popc_ind,iReactions) = c1_benthos/a_ratio(3)/sediment_density*epsilon_Phosphate
+      primarySinkStoich(poca_ind,iReactions) = c1_benthos/particle_density
+      primarySinkStoich(pocb_ind,iReactions) = c1_benthos/particle_density
+      primarySinkStoich(pocc_ind,iReactions) = c1_benthos/particle_density
+      primarySinkStoich(pona_ind,iReactions) = b_ratio(1)/a_ratio(1)/particle_density
+      primarySinkStoich(ponb_ind,iReactions) = b_ratio(2)/a_ratio(2)/particle_density
+      primarySinkStoich(ponc_ind,iReactions) = b_ratio(3)/a_ratio(3)/particle_density
+      primarySinkStoich(popa_ind,iReactions) = c1_benthos/a_ratio(1)/particle_density*epsilon_Phosphate
+      primarySinkStoich(popb_ind,iReactions) = c1_benthos/a_ratio(2)/particle_density*epsilon_Phosphate
+      primarySinkStoich(popc_ind,iReactions) = c1_benthos/a_ratio(3)/particle_density*epsilon_Phosphate
       primarySinkStoich(alk_ind,iReactions) = c_div_a
 
       primarySourceStoich(dic_ind,iReactions) = c1_benthos
@@ -4153,9 +4188,9 @@ subroutine primaryStoichMatrix (primarySourceStoich, primarySinkStoich, &
    primarySinkStoich(alk_ind,5) = c_div_a*epsilon_Phosphate
    primarySinkStoich(alk_ind,6) = c_div_a*epsilon_Phosphate
    primarySinkStoich(no3_ind,2) = 4.0_benthos_r8/5.0_benthos_r8
-   primarySinkStoich(mno2a_ind,3) = c2_benthos/sediment_density
-   primarySinkStoich(feoh3a_ind,4) = 4.0_benthos_r8/sediment_density
-   primarySinkStoich(fepa_ind,4) = 4.0_benthos_r8*ironBoundPFraction/sediment_density
+   primarySinkStoich(mno2a_ind,3) = c2_benthos/particle_density
+   primarySinkStoich(feoh3a_ind,4) = 4.0_benthos_r8/particle_density
+   primarySinkStoich(fepa_ind,4) = 4.0_benthos_r8*ironBoundPFraction/particle_density
    primarySinkStoich(so4_ind,5) = p5_benthos
 
    primarySourceStoich(dic_ind,6) = p5_benthos
@@ -4217,7 +4252,7 @@ subroutine primaryStoichMatrix (primarySourceStoich, primarySinkStoich, &
 
    k_OM = (/k_alpha, k_beta, k_ref/)
    OM = (/ benthosTracerBulkLevel(poca_ind), benthosTracerBulkLevel(pocb_ind), &
-        benthosTracerBulkLevel(pocc_ind) /)*sediment_density
+        benthosTracerBulkLevel(pocc_ind) /)*particle_density
 
    do iType = 1,nOMtype
 
@@ -5648,9 +5683,9 @@ subroutine carbonateRateConstants(carbonateRates,benthosTracerBulkLevels,&
 
    ! Constants from Walter and Morse (1985) reduced by inhibition factor of 0.1 as in Krumins et al
 
-   k_p1 = kp1 * inhibition / sec_per_hour * mm_calcite * sediment_density! mmol/mmol of calcite/s*kg/m^3 !* sediment_density  ! barnacle Balanus
-   k_p2 = kp2 * inhibition / sec_per_hour * mm_aragonite * sediment_density! mmol/mmol of aragonite/s*kg/m^3 !* sediment_density ! green algae Halimeda
-   k_p3 = kp3 * inhibition / sec_per_hour * mm_mgcalcite * sediment_density ! !mmol/mmmol  of mg-calcite /s*kg/m^3 !* sediment_density ! foraminifier Peneroplis
+   k_p1 = kp1 * inhibition / sec_per_hour * mm_calcite * particle_density! mmol/mmol of calcite/s*kg/m^3 !* particle_density  ! barnacle Balanus
+   k_p2 = kp2 * inhibition / sec_per_hour * mm_aragonite * particle_density! mmol/mmol of aragonite/s*kg/m^3 !* particle_density ! green algae Halimeda
+   k_p3 = kp3 * inhibition / sec_per_hour * mm_mgcalcite * particle_density ! !mmol/mmmol  of mg-calcite /s*kg/m^3 !* particle_density ! foraminifier Peneroplis
 
    do iReactions = 1,nCarbonateReactions
       carbonateRates(iReactions) = c0_benthos
@@ -5776,33 +5811,33 @@ subroutine carbonateBenthosReactions (carbonateSourceTendk,carbonateSinkTendk,&
 
    secondaryRates(3) =  max(c0_benthos,k_s3*benthosTracerBulkLevels(fe_ind) * benthosTracerBulkLevels(o2_ind) )!mmol/m3/s
 
-   secondaryRates(4) = max(c0_benthos,k_s4 * benthosTracerBulkLevels(fes_ind)* benthosTracerBulkLevels(o2_ind)*sediment_density)  ! mmol/m3/s
+   secondaryRates(4) = max(c0_benthos,k_s4 * benthosTracerBulkLevels(fes_ind)* benthosTracerBulkLevels(o2_ind)*particle_density)  ! mmol/m3/s
 
-   secondaryRates(5) = max(c0_benthos,k_s5 * benthosTracerBulkLevels(fes2_ind)* benthosTracerBulkLevels(o2_ind)*sediment_density)  !  umol/g/s
+   secondaryRates(5) = max(c0_benthos,k_s5 * benthosTracerBulkLevels(fes2_ind)* benthosTracerBulkLevels(o2_ind)*particle_density)  !  umol/g/s
 
    secondaryRates(6) = max(c0_benthos,k_s6*benthosTracerBulkLevels(h2s_ind)  * benthosTracerBulkLevels(o2_ind) )   !mmol/m3/s
 
    secondaryRates(7) =max(c0_benthos,k_s7*benthosTracerBulkLevels(ch4_ind)  * benthosTracerBulkLevels(o2_ind) )   !mmol/m3/s
 
-   secondaryRates(8) = max(c0_benthos,k_s8 * benthosTracerBulkLevels(mno2a_ind)* benthosTracerBulkLevels(fe_ind)*sediment_density )  ! umol/g/s
+   secondaryRates(8) = max(c0_benthos,k_s8 * benthosTracerBulkLevels(mno2a_ind)* benthosTracerBulkLevels(fe_ind)*particle_density )  ! umol/g/s
 
-   secondaryRates(9) =max(c0_benthos,k_s8 * benthosTracerBulkLevels(mno2b_ind)* benthosTracerBulkLevels(fe_ind)*sediment_density)  !  umol/g/s
+   secondaryRates(9) =max(c0_benthos,k_s8 * benthosTracerBulkLevels(mno2b_ind)* benthosTracerBulkLevels(fe_ind)*particle_density)  !  umol/g/s
 
-   secondaryRates(10) = max(c0_benthos,k_s9 * benthosTracerBulkLevels(mno2a_ind)* benthosTracerBulkLevels(h2s_ind)*sediment_density)  ! umol/g/s
+   secondaryRates(10) = max(c0_benthos,k_s9 * benthosTracerBulkLevels(mno2a_ind)* benthosTracerBulkLevels(h2s_ind)*particle_density)  ! umol/g/s
 
-   secondaryRates(11) = max(c0_benthos,k_s9 * benthosTracerBulkLevels(mno2b_ind)*benthosTracerBulkLevels(h2s_ind)*sediment_density)  !  umol/g/s
+   secondaryRates(11) = max(c0_benthos,k_s9 * benthosTracerBulkLevels(mno2b_ind)*benthosTracerBulkLevels(h2s_ind)*particle_density)  !  umol/g/s
 
-   secondaryRates(12) =max(c0_benthos,k_s10 * benthosTracerBulkLevels(feoh3a_ind)*benthosTracerBulkLevels(h2s_ind)*sediment_density) ! umol/g/s
+   secondaryRates(12) =max(c0_benthos,k_s10 * benthosTracerBulkLevels(feoh3a_ind)*benthosTracerBulkLevels(h2s_ind)*particle_density) ! umol/g/s
 
-   secondaryRates(13) = max(c0_benthos,k_s10 * benthosTracerBulkLevels(feoh3b_ind)* benthosTracerBulkLevels(h2s_ind)*sediment_density)   ! umol/g/s
+   secondaryRates(13) = max(c0_benthos,k_s10 * benthosTracerBulkLevels(feoh3b_ind)* benthosTracerBulkLevels(h2s_ind)*particle_density)   ! umol/g/s
 
    secondaryRates(14) = max(c0_benthos,k_s11*benthosTracerBulkLevels(h2s_ind)* benthosTracerBulkLevels(fe_ind))    !mmol/m3/s
 
    secondaryRates(15) = max(c0_benthos,k_s12*benthosTracerBulkLevels(ch4_ind)* benthosTracerBulkLevels(so4_ind)) ! mmol/m3/s
 
-   secondaryRates(16) = max(c0_benthos,k_s13 * benthosTracerBulkLevels(s_ind)*sediment_density)   ! mmol/m3/s
+   secondaryRates(16) = max(c0_benthos,k_s13 * benthosTracerBulkLevels(s_ind)*particle_density)   ! mmol/m3/s
 
-   secondaryRates(17) = max(c0_benthos,k_s14*benthosTracerBulkLevels(s_ind) * benthosTracerBulkLevels(fes_ind)*sediment_density) !  umol/g/s
+   secondaryRates(17) = max(c0_benthos,k_s14*benthosTracerBulkLevels(s_ind) * benthosTracerBulkLevels(fes_ind)*particle_density) !  umol/g/s
 
    secondaryRates(18) = max(c0_benthos,k_s15 * benthosTracerBulkLevels(feoh3a_ind)) !umol/g/s
 

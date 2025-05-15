@@ -72,7 +72,8 @@ module ocn_benthos_parms
        deepFlux_h2s  = -50.0_benthos_r8 / sec_per_year, & ! upward flux for h2s (mmol/m2/s)
        pocFluxRate_o = 6000.0_benthos_r8 / sec_per_year, &   ! POC flux rate (mmol/m2/s)
        bottom_water_density = 1027.0_benthos_r8, & ! kg/m3
-       sediment_density = 2650.0_benthos_r8, & ! (kg/m3)
+       sediment_density = 2650.0_benthos_r8, & ! (kg/m3)   This is a misnomer
+       particle_density = 2650.0_benthos_r8, & ! (kg/m3)   This is correct
        mass_to_vol   = 1.0e3_benthos_r8 * bottom_water_density, & ! mol/kg -> mmol/m3
 !       mass_to_vol   = 1.0e6_benthos_r8 * sediment_density, &
        vol_to_mass   = c1_benthos / mass_to_vol, &   ! mmol/m3 -> mol/kg
@@ -152,6 +153,7 @@ module ocn_benthos_parms
       k_s4 = 300.0_benthos_r8/sec_per_year/mM_umolperL, & !/mmol m3 per s from /mmol L per year
       k_s5 = c1_benthos/sec_per_year/mM_umolperL, &  !/mmol m3 per s from /mmol L per year
       k_s6 = 160.0_benthos_r8/sec_per_year/mM_umolperL, & !/mmol m3 per s from /mmol L per year
+      !k_s7 = 1000000.0_benthos_r8/sec_per_year/mM_umolperL, & !Decreased /mmol m3 per s from /mmol L per year
       k_s7 = 10000000.0_benthos_r8/sec_per_year/mM_umolperL, & !/mmol m3 per s from /mmol L per year
       k_s8 = c2_benthos/sec_per_year/mM_umolperL, &
       k_s9 = 20.0_benthos_r8/sec_per_year/mM_umolperL, &
@@ -581,7 +583,7 @@ CONTAINS
     ! correct flux in check_conservation_FCT.m
     useFluxCorrection = .false.
 
-    ! Turn on dissolved biogeochemical tracers in the ocean
+    ! False sets ocean concentrations of solutes to zero 
     useOceanConc = .true.
 
     ! Turn on deep source from below the active benthos layers
@@ -589,6 +591,9 @@ CONTAINS
 
     ! Turn off the depth dependence of diffusivty except no flux bottom boundary and no flux top boundary for solids
     useConstantDiffusivity = .false.
+
+    ! Use the ocean MarBL biogeochemistry to force the benthos   
+    useOceanBottomState = .false.
 
     ! Set to default configuration
     benthosTestCase = 0
