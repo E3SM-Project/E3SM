@@ -180,9 +180,8 @@ module ocn_core_interface
       logical, pointer :: config_use_subgrid_wetting_drying
       logical, pointer :: config_scale_dismf_by_removed_ice_runoff
 
-      ! freshwater balance adjustment 
-      logical, pointer :: config_sfwf_balance
-      integer, pointer :: config_sfwf_balance_type
+      ! flag to turn on freshwater balance adjustment 
+      logical, pointer :: config_use_precip_scaling
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
@@ -483,9 +482,8 @@ module ocn_core_interface
       ! test for scaling precipitation fluxes to ensure a balance of fresh water
       !
       call mpas_pool_get_package(packagePool, 'scaledSFWFPKGActive', scaledSFWFPKGActive)
-      call mpas_pool_get_config(configPool, 'config_sfwf_balance', config_sfwf_balance)
-      call mpas_pool_get_config(configPool, 'config_sfwf_balance_type', config_sfwf_balance_type)
-      if (config_sfwf_balance .and. (config_sfwf_balance_type > 0) ) then
+      call mpas_pool_get_config(configPool, 'config_use_precip_scaling', config_use_precip_scaling)
+      if (config_use_precip_scaling) then
          scaledSFWFPKGActive = .true.
       end if
 
