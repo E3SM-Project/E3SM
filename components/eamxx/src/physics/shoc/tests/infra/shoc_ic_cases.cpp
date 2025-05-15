@@ -1,6 +1,7 @@
 #include "shoc_ic_cases.hpp"
 #include "physics_constants.hpp"
-#include "ekat/ekat_assert.hpp"
+
+#include <ekat_assert.hpp>
 
 namespace scream {
 namespace shoc {

@@ -14,11 +14,11 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 
 // Ekat includes
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_pack_utils.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_subview_utils.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_pack_kokkos.hpp>
+#include <ekat_pack_utils.hpp>
 
 extern "C" void gfr_init_hxx();
 

@@ -2,7 +2,7 @@
 #include "physics_constants.hpp"
 #include "p3_ic_cases.hpp"
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 using scream::Real;
 using scream::Int;
