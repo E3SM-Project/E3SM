@@ -7,9 +7,9 @@ set(INFRA_SRCS
 
 #crusher change
 if (Kokkos_ENABLE_HIP)
-set_source_files_properties(p3_test_data.cpp  PROPERTIES COMPILE_FLAGS -O0)
+  set_source_files_properties(p3_test_data.cpp  PROPERTIES COMPILE_FLAGS -O0)
 endif()
 
 add_library(p3_test_infra ${INFRA_SRCS})
-target_link_libraries(p3_test_infra p3)
+target_link_libraries(p3_test_infra PUBLIC p3 scream_test_support)
 target_include_directories(p3_test_infra PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
