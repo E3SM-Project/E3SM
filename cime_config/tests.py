@@ -877,8 +877,9 @@ _TESTS = {
 
     "e3sm_gpucxx" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
-                 "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
+            "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
                  )
     },
 
