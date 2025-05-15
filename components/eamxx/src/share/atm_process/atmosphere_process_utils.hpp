@@ -30,7 +30,7 @@ inline std::string e2str (const AtmosphereProcessType ap_type) {
     case AtmosphereProcessType::Group:                   return "Atmosphere Process Group";
     case AtmosphereProcessType::Diagnostic:              return "Atmosphere Diagnostic";
     default:
-      ekat::error::runtime_abort("Error! Unrecognized atmosphere process type.\n");
+      EKAT_ERROR_MSG("Error! Unrecognized atmosphere process type.\n");
   }
   return "INVALID";
 }
