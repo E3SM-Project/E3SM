@@ -1,5 +1,6 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
 
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
@@ -364,7 +365,8 @@ void SurfaceCouplingExporter::set_from_file_exports()
 // index query in the below.
 void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool called_during_initialization)
 {
-  using PC = physics::Constants<Real>;
+  using PC  = physics::Constants<Real>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
   const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
@@ -432,7 +434,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
 
   // Preprocess exports
   auto export_source = m_export_source;
-  const auto setup_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
+  const auto setup_policy = TPF::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
   Kokkos::parallel_for(setup_policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
     const int i = team.league_rank();
 

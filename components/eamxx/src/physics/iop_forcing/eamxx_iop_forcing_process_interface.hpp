@@ -29,7 +29,6 @@ class IOPForcing : public scream::AtmosphereProcess
 {
   // Typedefs for process
   using KT           = ekat::KokkosTypes<DefaultDevice>;
-  using ESU          = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using Pack         = ekat::Pack<Real, SCREAM_PACK_SIZE>;
   using IntPack      = ekat::Pack<int, Pack::n>;
   using Mask         = ekat::Mask<Pack::n>;

@@ -5,8 +5,6 @@
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-
 namespace scream {
 
 // This property check ensures that energy has been conserved.
@@ -14,7 +12,6 @@ namespace scream {
 class MassAndEnergyColumnConservationCheck: public PropertyCheck {
 
   using KT = KokkosTypes<DefaultDevice>;
-  using ExeSpaceUtils = ekat::ExeSpaceUtils<KT::ExeSpace>;
 
   template<typename ScalarT>
   using view_1d = typename KT::template view_1d<ScalarT>;

@@ -5,6 +5,8 @@
 #include "share/atm_process/IOPDataManager.hpp"
 
 #include <ekat_assert.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_lin_interp.hpp>
 
 #include <numeric>
@@ -68,6 +70,8 @@ void IOPDataManager::
 initialize_iop_file(const util::TimeStamp& run_t0,
                     int model_nlevs)
 {
+  using Pack = ekat::Pack<Real, SCREAM_PACK_SIZE>;
+
   EKAT_REQUIRE_MSG(m_params.isParameter("iop_file"),
                    "Error! Using IOP requires defining an iop_file parameter.\n");
 
@@ -366,6 +370,10 @@ read_fields_from_file_for_iop (const std::string& file_name,
 void IOPDataManager::
 read_iop_file_data (const util::TimeStamp& current_ts)
 {
+  using TPF    = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+  using Pack   = ekat::Pack<Real, SCREAM_PACK_SIZE>;
+  using Pack1d = ekat::Pack<Real, 1>;
+
   // Query to see if we need to load data from IOP file.
   // If we are still in the time interval as the previous
   // read from iop file, there is no need to reload data.
@@ -555,7 +563,7 @@ read_iop_file_data (const util::TimeStamp& current_ts)
       const auto total_nlevs = field.get_header().get_identifier().get_layout().dim(0);
 
       ekat::LinInterp<Real,Pack1d::n> vert_interp(1, nlevs_input, nlevs_output);
-      const auto policy = ESU::get_default_team_policy(1, total_nlevs);
+      const auto policy = TPF::get_default_team_policy(1, total_nlevs);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
         const auto x_src  = Kokkos::subview(iop_file_pres_v, Kokkos::pair<int,int>(iop_file_start,iop_file_end));
         const auto x_tgt  = Kokkos::subview(model_pres_v, Kokkos::pair<int,int>(model_start,model_end));
@@ -614,6 +622,8 @@ read_iop_file_data (const util::TimeStamp& current_ts)
 void IOPDataManager::
 set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_name)
 {
+  using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
+
   if (m_params.get<bool>("zero_non_iop_tracers") && field_mgr->has_group("tracers", grid_name)) {
     // Zero out all tracers before setting iop tracers (if requested)
     field_mgr->get_field_group("tracers", grid_name).m_monolithic_field->deep_copy(0);
@@ -684,7 +694,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_
   // Loop over all columns and copy IOP field values to FM views
   const auto ncols = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_local_dofs();
   const auto nlevs = field_mgr->get_grids_manager()->get_grid(grid_name)->get_num_vertical_levels();
-  const auto policy = ESU::get_default_team_policy(ncols, nlevs);
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const auto icol = team.league_rank();
 

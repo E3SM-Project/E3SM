@@ -3,6 +3,7 @@
 #include "physics/share/physics_saturation_impl.hpp"
 
 #include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -57,7 +58,9 @@ void Functions<Real,DefaultDevice>
   const P3Runtime& runtime_options)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(
     "p3_main_part3_disp",
