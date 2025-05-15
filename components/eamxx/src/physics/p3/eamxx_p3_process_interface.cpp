@@ -3,8 +3,8 @@
 #include "p3_functions.hpp"
 #include "eamxx_p3_process_interface.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 

@@ -1,11 +1,11 @@
 #ifndef GW_UNIT_TESTS_COMMON_HPP
 #define GW_UNIT_TESTS_COMMON_HPP
 
+#include "gw_functions.hpp"
+#include "gw_test_data.hpp"
+
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
-#include "gw_functions.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "gw_test_data.hpp"
 
 #include <vector>
 #include <sstream>

@@ -1,6 +1,6 @@
 #include "eamxx_scorpio_types.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 namespace scream {
 namespace scorpio {

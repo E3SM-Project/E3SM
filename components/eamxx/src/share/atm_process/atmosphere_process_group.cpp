@@ -3,8 +3,8 @@
 
 #include "share/property_checks/field_nan_check.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <memory>
 

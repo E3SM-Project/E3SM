@@ -1,14 +1,16 @@
 #ifndef EAMXX_MAM_OPTICS_HPP
 #define EAMXX_MAM_OPTICS_HPP
 
-#include <ekat/ekat_parameter_list.hpp>
-#include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_aerosol_optics_read_tables.hpp>
 #include <physics/mam/mam_coupling.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
+
+#include <ekat_parameter_list.hpp>
+#include <ekat_workspace.hpp>
+
 #include <string>
 
 #ifndef KOKKOS_ENABLE_CUDA

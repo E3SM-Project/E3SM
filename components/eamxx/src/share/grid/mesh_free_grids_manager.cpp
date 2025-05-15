@@ -8,7 +8,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
+#include <ekat_std_utils.hpp>
 
 #include <memory>
 #include <numeric>

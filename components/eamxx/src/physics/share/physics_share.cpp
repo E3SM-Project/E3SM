@@ -1,8 +1,6 @@
 #include "physics_share.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
+#include <ekat_assert.hpp>
 
 #include <random>
 

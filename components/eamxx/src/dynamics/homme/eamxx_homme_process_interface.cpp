@@ -34,14 +34,14 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 
 // Ekat includes
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos//ekat_subview_utils.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_scalar_traits.hpp"
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_workspace.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_subview_utils.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_pack_kokkos.hpp>
+#include <ekat_scalar_traits.hpp>
+#include <ekat_units.hpp>
+#include <ekat_pack_utils.hpp>
+#include <ekat_workspace.hpp>
 
 namespace scream
 {
@@ -1052,10 +1052,11 @@ void HommeDynamics::restart_homme_state () {
 
 void HommeDynamics::initialize_homme_state () {
   // Some types
-  using ColOps = ColumnOps<DefaultDevice,Real>;
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  using EOS = Homme::EquationOfState;
+  using ColOps       = ColumnOps<DefaultDevice,Real>;
+  using PF           = PhysicsFunctions<DefaultDevice>;
+  using ESU          = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using EOS          = Homme::EquationOfState;
+  using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
 
   const auto& rgn = m_cgll_grid->name();
 

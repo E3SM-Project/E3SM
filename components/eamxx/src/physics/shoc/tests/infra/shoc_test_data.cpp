@@ -2,10 +2,9 @@
 
 #include "shoc_data.hpp"
 
-#include "ekat/ekat_assert.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
 
 #include "share/util/eamxx_deep_copy.hpp"
 

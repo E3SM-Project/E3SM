@@ -6,7 +6,7 @@
 #include "share/util/eamxx_time_interpolation.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
-#include <ekat/ekat_parameter_list.hpp>
+#include <ekat_parameter_list.hpp>
 #include <string>
 
 namespace scream
