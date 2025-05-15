@@ -19,20 +19,6 @@ struct ScalarTraits<Homme::Scalar> {
   using inner_traits = ScalarTraits<Homme::Real>;
 
   static constexpr bool is_simd = true;
-
-  static std::string name () {
-    return "Homme::Scalar";
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static const value_type quiet_NaN () {
-    return value_type(inner_traits::quiet_NaN());
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static const value_type invalid () {
-    return value_type(inner_traits::invalid());
-  }
 };
 
 } // namespace ekat

@@ -428,7 +428,7 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
       "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
-  EKAT_REQUIRE_MSG (not ekat::is_invalid(iop_lat) and not ekat::is_invalid(iop_lon),
+  EKAT_REQUIRE_MSG (not std::isnan(iop_lat) and not std::isnan(iop_lon),
       "[DataInterpolation] Error! At least one between iop_lat and iop_lon appears to be invalid.\n"
       "  - iop_lat: " << iop_lat << "\n"
       "  - iop_lon: " << iop_lon << "\n");

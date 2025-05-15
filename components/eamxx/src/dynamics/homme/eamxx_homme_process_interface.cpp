@@ -37,8 +37,7 @@
 #include <ekat_assert.hpp>
 #include <ekat_subview_utils.hpp>
 #include <ekat_pack.hpp>
-#include <ekat_pack_kokkos.hpp>
-#include <ekat_scalar_traits.hpp>
+#include <ekat_math_utils.hpp>
 #include <ekat_units.hpp>
 #include <ekat_pack_utils.hpp>
 #include <ekat_workspace.hpp>
@@ -773,7 +772,7 @@ create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
 }
