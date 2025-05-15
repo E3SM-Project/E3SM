@@ -177,10 +177,6 @@ contains
            return
        end if
 
-       if (trim(config_precip_scaling_mode) == 'constant') then
-           return
-       end if 
-
        if ( present(timeLevel) ) then
           timeLevelLocal = timeLevel
        else
@@ -501,14 +497,27 @@ contains
             totalAccumulatedfwFluxHistory(nValidHistory) = avgfwFlux 
         end if
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ! Scaling factors are computed as the ratio of ssh-inferred mass flux to precipitation flux.
-        ! Average values are used when nHistory > 1
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        precFluxMean = sum(totalAccumulatedprecFluxHistory(1:nHistory)) / nHistory
-        fwFluxMean = sum(totalAccumulatedfwFluxHistory(1:nHistory)) / nHistory 
 
-        SFWFScalingFactor = SFWFScalingFactor - fwFluxMean / precFluxMean
+        if (trim(config_precip_scaling_mode) == 'constant') then 
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! constant factors setup by user via namelist!
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          SFWFScalingFactor = config_precip_scaling_constant_factor
+
+        else if (trim(config_precip_scaling_mode) == 'time-dependent') then
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          ! computed as the ratio of ssh-inferred      !
+          ! mass flux to precipitation flux.
+          ! Average values are used when nHistory > 1  !
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+          precFluxMean = sum(totalAccumulatedprecFluxHistory(1:nHistory)) / nHistory
+          fwFluxMean = sum(totalAccumulatedfwFluxHistory(1:nHistory)) / nHistory
+
+          SFWFScalingFactor = SFWFScalingFactor - fwFluxMean / precFluxMean
+
+        end if 
 
         ! reset yearly averaging of the precipitation and freshwater fluxes 
         nAccumulated = 0
@@ -518,6 +527,7 @@ contains
         ! Output to log file
         !-------------------------------------------------------------
         if (config_precip_scaling_write_to_logfile) then
+
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write('WATER CONSERVATION CHECK')
             A = earthAreaE3SM
@@ -530,11 +540,16 @@ contains
                     fwFluxMean,fwFluxMean*c; call mpas_log_write(m)
 
             call mpas_log_write('SCALING FACTOR ON PRECIPITATION FLUXES')
+
+            call mpas_log_write(' ')
+            write(m, '(A)') 'SFWFScalingMethod       '//trim(config_precip_scaling_mode); call mpas_log_write(m) 
+
             call mpas_log_write(' ')
             write(m,"('SFWFScalingFactor       ',es16.8,'       precip_fact              fact      ',f16.8)") &
                     SFWFScalingFactor,1.0_RKIND - fwFluxMean / precFluxMean; call mpas_log_write(m)
             call mpas_log_write(' ')
             call mpas_log_write('----------------------------------------------------------')
+
         end if 
 
     end subroutine update_scaling_factor!}}}
