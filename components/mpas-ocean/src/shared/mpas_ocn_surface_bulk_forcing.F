@@ -662,7 +662,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
       real (kind=RKIND), dimension(:), pointer :: rainTemperatureFlux, evapTemperatureFlux, &
-                                                  seaIceTemperatureFlux, icebergTemperatureFlux, &
+                                                  seaIceTemperatureFlux, &
                                                   totalFreshWaterTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: landIcePressure
       real (kind=RKIND) :: requiredSalt, allowedSalt, surfaceTemperatureFluxWithoutRunoff
@@ -705,7 +705,6 @@ contains
       call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceTemperatureFlux', seaIceTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'icebergTemperatureFlux', icebergTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
 
       nCells = nCellsArray( 3 )
@@ -742,6 +741,7 @@ contains
       !$omp end do
       !$omp end parallel
       ! assume that snow comes in at 0 C
+      ! assume that icebergs come in at 0 C
 
       ! Surface fluxes of water have an associated heat content, but the coupled system does not account for this
       ! Assume surface fluxes of water have a temperature dependent on the incoming mass flux.
@@ -766,12 +766,9 @@ contains
            seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
-           icebergTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
-               ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
-                                         inLandIceCavity=.false.) / rho_sw
 
            surfaceTemperatureFluxWithoutRunoff = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
-                                                 seaIceTemperatureFlux(iCell) + icebergTemperatureFlux(iCell)
+                                                 seaIceTemperatureFlux(iCell)
 
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
               + surfaceTemperatureFluxWithoutRunoff
@@ -783,6 +780,7 @@ contains
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux
            !    iceRunoffFlux
+           !    icebergFlux
 
          end do
          !$omp end do
