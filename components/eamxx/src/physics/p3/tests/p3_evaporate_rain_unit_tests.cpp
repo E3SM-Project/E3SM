@@ -174,7 +174,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        espd[i].read(Base::m_fid);
+        espd[i].read(Base::m_ifile);
       }
     }
 
@@ -249,7 +249,7 @@ struct UnitWrap::UnitTest<D>::TestEvapSublPrecip : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        espd_host(s).write(Base::m_fid);
+        espd_host(s).write(Base::m_ofile);
       }
     }
   } // end run_bfb
