@@ -793,6 +793,7 @@ contains
       integer :: iCell, iLevel, numColumns, column, autotroph, n
 
       real (kind=RKIND), parameter :: marbl_to_mpas_units = 0.01_RKIND  ! nmol/cm2/s to mmol/m2/s
+      real (kind=RKIND), parameter :: marbl_to_mpas_units_dust = 10._RKIND  ! g/cm2/s to kg/m2/s
 
       err = 0
 
@@ -1091,7 +1092,7 @@ contains
 
                benthos_dustToSed(iLevel,iCell) = max(0.0_RKIND, merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_dustToSed_indexInMARBL)%field_2d(column),  &
-                ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)*marbl_to_mpas_units)
+                ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)*marbl_to_mpas_units_dust)
 
             endif  !  config_ecosysTracers_diagnostic_fields_level3
 
@@ -1548,19 +1549,19 @@ contains
              ecosysMissingValue, ecosys_diag_O2_ZMIN_DEPTH_allocatedInMARBL)
 
            ecosys_diag_calcToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_calcToSed_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_calcToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
              ecosysMissingValue, ecosys_diag_calcToSed_allocatedInMARBL)
 
            ecosys_diag_calcToSed_ALT_CO2(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_calcToSed_ALT_CO2_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_calcToSed_ALT_CO2_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
              ecosysMissingValue, ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL)
 
            ecosys_diag_pocToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_pocToSed_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_pocToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
              ecosysMissingValue, ecosys_diag_pocToSed_allocatedInMARBL)
 
            ecosys_diag_pfeToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_pfeToSed_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_pfeToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
              ecosysMissingValue, ecosys_diag_pfeToSed_allocatedInMARBL)
 
            ecosys_diag_SedDenitrif(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
@@ -1634,19 +1635,19 @@ contains
          !
          if (config_ecosysTracers_diagnostic_fields_level3) then
            ecosys_diag_ponToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_ponToSed_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)
+             diags(ecosys_diag_ponToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
+             ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)  
 
            ecosys_diag_popToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_popToSed_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_popToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
              ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)
 
            ecosys_diag_bsiToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_bsiToSed_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_bsiToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units,  &
              ecosysMissingValue, ecosys_diag_bsiToSed_allocatedInMARBL)
 
            ecosys_diag_dustToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_dustToSed_indexInMARBL)%field_2d(column),  &
+             diags(ecosys_diag_dustToSed_indexInMARBL)%field_2d(column)*marbl_to_mpas_units_dust,  &
              ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)
 
            ecosys_diag_OtherRemin(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
