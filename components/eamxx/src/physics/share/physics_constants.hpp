@@ -5,6 +5,7 @@
 
 #include <ekat_string_utils.hpp>
 
+#include <Kokkos_NumericTraits.hpp>
 #include <vector>
 
 namespace scream {
@@ -147,7 +148,7 @@ Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
   } else if (gas_name == "cfc12" ) {
     return 120.;
   }
-  return ekat::ScalarTraits<Scalar>::invalid();
+  return Kokkos::Experimental::quiet_NaN_v<Scalar>;
 }
 
 template <typename Scalar>

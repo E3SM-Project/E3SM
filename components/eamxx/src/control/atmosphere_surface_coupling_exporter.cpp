@@ -87,7 +87,7 @@ void SurfaceCouplingExporter::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation();
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(Kokkos::Experimental::quiet_NaN_v<Real>);
 
   m_helper_fields[name] = f;
 }

@@ -82,7 +82,7 @@ set_extrapolation_type (const ExtrapType etype, const TopBot where)
 void VerticalRemapper::
 set_mask_value (const Real mask_val)
 {
-  EKAT_REQUIRE_MSG (not ekat::is_invalid(mask_val),
+  EKAT_REQUIRE_MSG (not Kokkos::isnan(mask_val),
       "[VerticalRemapper::set_mask_value] Error! Input mask value must be a valid number.\n");
 
   m_mask_val = mask_val;

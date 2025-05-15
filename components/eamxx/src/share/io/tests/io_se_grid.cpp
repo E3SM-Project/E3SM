@@ -80,7 +80,7 @@ TEST_CASE("se_grid_io")
   const auto fnames = {"field_1", "field_2", "field_3", "field_packed"};
   for (const auto& fname : fnames) {
     auto f = fm1->get_field(fname);
-    f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    f.deep_copy(Kokkos::Experimental::quiet_NaN_v<Real>);
   }
 
   // Check fields were written correctly
