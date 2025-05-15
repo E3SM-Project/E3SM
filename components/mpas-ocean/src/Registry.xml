@@ -2157,6 +2157,8 @@
 	    <var name="avgfwFlux" packages="scaledSFWFPKG"/>
 	    <var name="totalAccumulatedprecFluxHistory" packages="scaledSFWFPKG"/>
 	    <var name="totalAccumulatedfwFluxHistory" packages="scaledSFWFPKG"/>
+	    <var name="SSHinitial" packages="scaledSFWFPKG"/>
+	    <var name="SSHfinal" packages="scaledSFWFPKG"/>
             <var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
 	    <var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
 		</stream>
