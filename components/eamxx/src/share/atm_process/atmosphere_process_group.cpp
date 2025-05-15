@@ -5,6 +5,7 @@
 
 #include <ekat_std_utils.hpp>
 #include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>
 
@@ -24,9 +25,9 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       m_group_schedule_type = ScheduleType::Sequential;
     } else if (m_params.get<std::string>("schedule_type") == "parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
-      ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
+      EKAT_ERROR_MSG("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
+      EKAT_ERROR_MSG("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it

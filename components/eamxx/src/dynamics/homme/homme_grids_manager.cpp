@@ -83,7 +83,7 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
       return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
-    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
+    EKAT_ERROR_MSG("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
   }
   return nullptr;
 }
