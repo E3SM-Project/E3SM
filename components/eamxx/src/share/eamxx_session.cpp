@@ -1,8 +1,9 @@
 #include "eamxx_session.hpp"
 #include "eamxx_config.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/ekat_session.hpp"
+#include <ekat_fpe.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_kokkos_session.hpp>
 
 #include <iostream>
 #include <cfenv>
@@ -20,7 +21,7 @@ int get_default_fpes () {
 }
 
 void initialize_eamxx_session (bool print_config) {
-  ekat::initialize_ekat_session(print_config);
+  ekat::initialize_kokkos_session(print_config);
 
   // Make sure scream only has its FPEs
   ekat::disable_all_fpes();
@@ -31,7 +32,7 @@ void initialize_eamxx_session (bool print_config) {
 }
 
 void initialize_eamxx_session (int argc, char **argv, bool print_config) {
-  ekat::initialize_ekat_session(argc,argv,print_config);
+  ekat::initialize_kokkos_session(argc,argv,print_config);
 
   // Make sure scream only has its FPEs
   ekat::disable_all_fpes();
@@ -43,7 +44,7 @@ void initialize_eamxx_session (int argc, char **argv, bool print_config) {
 
 extern "C" {
 void finalize_eamxx_session () {
-  ekat::finalize_ekat_session();
+  ekat::finalize_kokkos_session();
 }
 } // extern "C"
 
