@@ -3,9 +3,8 @@
 
 #include "share/field/field.hpp"
 
-
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include <ekat_comm.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 #include <limits>
 #include <type_traits>
@@ -309,11 +308,10 @@ void perturb (Field& f,
 template <typename ST>
 void horiz_contraction(const Field &f_out, const Field &f_in,
                        const Field &weight, const ekat::Comm *comm) {
-  using KT          = ekat::KokkosTypes<DefaultDevice>;
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
   using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember  = typename TeamPolicy::member_type;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   auto l_out = f_out.get_header().get_identifier().get_layout();
   auto l_in  = f_in.get_header().get_identifier().get_layout();
@@ -335,7 +333,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       auto v_in    = f_in.get_view<const ST **>();
       auto v_out   = f_out.get_view<ST *>();
       const int d1 = l_in.dim(1);
-      auto p       = ESU::get_default_team_policy(d1, ncols);
+      auto p       = TPF::get_default_team_policy(d1, ncols);
       Kokkos::parallel_for(
           f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
             const int j = tm.league_rank();
@@ -349,7 +347,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       auto v_out   = f_out.get_view<ST **>();
       const int d1 = l_in.dim(1);
       const int d2 = l_in.dim(2);
-      auto p       = ESU::get_default_team_policy(d1 * d2, ncols);
+      auto p       = TPF::get_default_team_policy(d1 * d2, ncols);
       Kokkos::parallel_for(
           f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
             const int idx = tm.league_rank();
@@ -379,11 +377,10 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 
 template <typename ST>
 void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight) {
-  using KT          = ekat::KokkosTypes<DefaultDevice>;
   using RangePolicy = Kokkos::RangePolicy<Field::device_t::execution_space>;
   using TeamPolicy  = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember  = typename TeamPolicy::member_type;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   auto l_out = f_out.get_header().get_identifier().get_layout();
   auto l_in  = f_in.get_header().get_identifier().get_layout();
@@ -416,7 +413,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_in    = f_in.get_view<const ST **>();
       auto v_out   = f_out.get_view<ST *>();
       const int d0 = l_in.dim(0);
-      auto p       = ESU::get_default_team_policy(d0, nlevs);
+      auto p       = TPF::get_default_team_policy(d0, nlevs);
       Kokkos::parallel_for(
           f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
             const int i = tm.league_rank();
@@ -433,7 +430,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_out   = f_out.get_view<ST **>();
       const int d0 = l_in.dim(0);
       const int d1 = l_in.dim(1);
-      auto p       = ESU::get_default_team_policy(d0 * d1, nlevs);
+      auto p       = TPF::get_default_team_policy(d0 * d1, nlevs);
       Kokkos::parallel_for(
           f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
             const int idx = tm.league_rank();

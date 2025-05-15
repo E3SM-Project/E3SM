@@ -35,6 +35,7 @@
 
 // Ekat includes
 #include <ekat_assert.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <ekat_subview_utils.hpp>
 #include <ekat_pack.hpp>
 #include <ekat_math_utils.hpp>
@@ -674,6 +675,7 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
@@ -694,8 +696,7 @@ void HommeDynamics::homme_post_process (const double dt) {
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
   const auto npacks= ekat::npack<Pack>(nlevs);
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(ncols,npacks);
 
   // Establish the boundary condition for the TOA
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
@@ -778,6 +779,7 @@ create_helper_field (const std::string& name,
 }
 
 void HommeDynamics::init_homme_views () {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto& c = Homme::Context::singleton();
   auto& params  = c.get<Homme::SimulationParams>();
@@ -800,8 +802,7 @@ void HommeDynamics::init_homme_views () {
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
   const auto npacks= ekat::npack<Pack>(nlevs);
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto default_policy = ESU::get_default_team_policy(ncols,npacks);
+  const auto default_policy = TPF::get_default_team_policy(ncols,npacks);
 
   // Print homme's parameters, so user can see whether something wasn't set right.
   // TODO: make Homme::SimulationParams::print accept an ostream.
@@ -925,7 +926,7 @@ void HommeDynamics::restart_homme_state () {
         "  - field name: " + f.get_header().get_identifier().name() + "\n");
   }
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto& dgn = m_dyn_grid->name();
@@ -1027,7 +1028,7 @@ void HommeDynamics::restart_homme_state () {
   auto p_mid_view  = get_field_out("p_mid").get_view<Pack**>();
   auto qv_view     = qv_prev_ref->get_view<Pack**>();
 
-  const auto policy = ESU::get_default_team_policy(ncols,npacks);
+  const auto policy = TPF::get_default_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team){
     const int icol = team.league_rank();
 
@@ -1053,7 +1054,7 @@ void HommeDynamics::initialize_homme_state () {
   // Some types
   using ColOps       = ColumnOps<DefaultDevice,Real>;
   using PF           = PhysicsFunctions<DefaultDevice>;
-  using ESU          = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using TPF          = ekat::TeamPolicyFactory<KT::ExeSpace>;
   using EOS          = Homme::EquationOfState;
   using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
 
@@ -1082,7 +1083,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto ps_ref = get_field_in("ps",rgn).get_view<const Real*>();
   const auto hyai = hvcoord.hybrid_ai;
   const auto hybi = hvcoord.hybrid_bi;
-  const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
+  const auto policy_dp = TPF::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int icol = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
@@ -1126,7 +1127,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
   const auto hyai0 = hvcoord.hybrid_ai0;
   // Need two temporaries, for pi_mid and pi_int
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   WorkspaceMgr wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
@@ -1271,6 +1272,7 @@ copy_dyn_states_to_all_timelevels () {
 //       for now we have two locations where we do this.
 void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& grid) {
   using ColOps = ColumnOps<DefaultDevice,Real>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto ncols = grid->get_num_local_dofs();
   const auto nlevs = grid->get_num_vertical_levels();
@@ -1290,8 +1292,7 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
 
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 

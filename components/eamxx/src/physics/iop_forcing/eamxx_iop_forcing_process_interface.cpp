@@ -74,9 +74,11 @@ set_computed_group_impl (const FieldGroup& group)
 // =========================================================================================
 size_t IOPForcing::requested_buffer_size_in_bytes() const
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Number of bytes needed by the WorkspaceManager passed to shoc_main
   const int nlevi_packs  = ekat::npack<Pack>(m_num_levs+1);
-  const auto policy      = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const auto policy      = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
   const size_t wsm_bytes = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy);
 
   return wsm_bytes;
@@ -84,6 +86,8 @@ size_t IOPForcing::requested_buffer_size_in_bytes() const
 // =========================================================================================
 void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Buffers size not sufficient.\n");
 
@@ -93,7 +97,7 @@ void IOPForcing::init_buffers(const ATMBufferManager &buffer_manager)
   // WSM data
   m_buffer.wsm_data = mem;
 
-  const auto policy       = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const auto policy       = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
   const size_t wsm_npacks = WorkspaceMgr::get_total_bytes_needed(nlevi_packs, 7+m_num_tracers, policy)/sizeof(Pack);
   mem += wsm_npacks;
 
@@ -120,6 +124,8 @@ void IOPForcing::create_helper_field (const std::string& name,
 // =========================================================================================
 void IOPForcing::initialize_impl (const RunType run_type)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Set field property checks for the fields in this process
   using Interval = FieldWithinIntervalCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -130,7 +136,7 @@ void IOPForcing::initialize_impl (const RunType run_type)
 
   // Setup WSM for internal local variables
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
-  const auto policy = ESU::get_default_team_policy(m_num_cols, nlevi_packs);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, nlevi_packs);
   m_workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 7+m_num_tracers, policy);
 
   // Compute field for horizontal contraction weights (1/num_global_dofs)
@@ -330,6 +336,8 @@ iop_apply_coriolis(const MemberType& team,
 // =========================================================================================
 void IOPForcing::run_impl (const double dt)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Pack dimensions
   const auto nlev_packs  = ekat::npack<Pack>(m_num_levs);
 
@@ -389,7 +397,7 @@ void IOPForcing::run_impl (const double dt)
   }
 
   // Team policy and workspace manager for eamxx
-  const auto policy_iop = ESU::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy_iop = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Reset internal WSM variables.
   m_workspace_mgr.reset_internals();

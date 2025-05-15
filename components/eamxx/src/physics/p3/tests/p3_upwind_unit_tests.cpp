@@ -1,14 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "p3_unit_tests_common.hpp"
-
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 
 #include "share/eamxx_types.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
+#include <ekat_team_policy_utils.hpp>
 
 #include <thread>
 #include <array>
@@ -37,6 +35,8 @@ struct UnitWrap::UnitTest<D>::TestUpwind : public UnitWrap::UnitTest<D>::Base {
 void run_phys()
 {
   using ekat::repack;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+
   constexpr auto SPS = SCREAM_SMALL_PACK_SIZE;
 
   static const Int nfield = 2;
@@ -93,7 +93,7 @@ void run_phys()
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), set_fields);
         team.team_barrier();
       };
-      Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+      Kokkos::parallel_for(TPF::get_default_team_policy(1, npack),
                            init_fields);
 
       const auto sflux = scalarize(flux[1]);
@@ -187,7 +187,7 @@ void run_phys()
           if (r_max1 > r_max0 + 10*eps) ++nerr;
         };
         Int lnerr;
-        Kokkos::parallel_reduce(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
+        Kokkos::parallel_reduce(TPF::get_default_team_policy(1, npack),
                                 step, lnerr);
         nerr += lnerr;
         Kokkos::fence();

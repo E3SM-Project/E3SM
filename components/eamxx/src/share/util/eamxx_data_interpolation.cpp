@@ -11,6 +11,8 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "physics/share/physics_constants.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <regex>
@@ -94,7 +96,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     using KT = KokkosTypes<DefaultDevice>;
     using ExeSpace = typename KT::ExeSpace;
     using MemberType = typename KT::MemberType;
-    using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
     using C = scream::physics::Constants<Real>;
     using PT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
@@ -107,7 +109,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
 
     const int ncols = ps_v.extent(0);
     const int num_vert_packs = p_v.extent(1);
-    const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+    const auto policy = TPF::get_default_team_policy(ncols, num_vert_packs);
 
     Kokkos::parallel_for("spa_compute_p_src_loop", policy,
       KOKKOS_LAMBDA (const MemberType& team) {

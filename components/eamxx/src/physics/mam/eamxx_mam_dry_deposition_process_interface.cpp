@@ -6,6 +6,8 @@
 // For reading fractional land use file
 #include <physics/mam/readfiles/fractional_land_use.hpp>
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
@@ -334,8 +336,8 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

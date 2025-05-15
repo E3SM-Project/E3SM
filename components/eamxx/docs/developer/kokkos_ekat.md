@@ -242,7 +242,9 @@ will _not_ error out, but race conditions will exist among threads.
 
 ### KokkosTypes
 
-### ExeSpaceUtils
+### TeamPolicyFactory
+
+### ReductionUtils
 
 ### Vectorization: Packs
 
