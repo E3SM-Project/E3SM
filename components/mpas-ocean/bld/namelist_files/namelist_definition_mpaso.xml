@@ -1260,7 +1260,7 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<!--sfwf forcing -->
+<!--precip scaling -->
 
 <entry id="config_use_precip_scaling" type="logical"
 	category="precip_scaling" group="precip_scaling">
