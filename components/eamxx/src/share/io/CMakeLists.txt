@@ -11,7 +11,7 @@ add_library(eamxx_scorpio_interface
   eamxx_scorpio_types.cpp
   eamxx_scorpio_interface.cpp
 )
-target_link_libraries(eamxx_scorpio_interface PUBLIC ekat)
+target_link_libraries(eamxx_scorpio_interface PUBLIC ekat::AllLibs)
 target_link_libraries(eamxx_scorpio_interface PRIVATE pioc)
 target_include_directories(eamxx_scorpio_interface PUBLIC
   ${SCREAM_BIN_DIR}/src   # For eamxx_config.h
