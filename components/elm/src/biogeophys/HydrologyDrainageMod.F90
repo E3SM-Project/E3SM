@@ -38,6 +38,7 @@ contains
   subroutine HydrologyDrainage(bounds,    &
        num_nolakec, filter_nolakec,       &
        num_hydrologyc, filter_hydrologyc, &
+       num_h3dc, filter_h3dc,             &
        num_urbanc, filter_urbanc,         &
        num_do_smb_c, filter_do_smb_c,     &
        atm2lnd_vars, glc2lnd_vars,    &
@@ -57,7 +58,7 @@ contains
     use TopounitDataType   , only : top_ws
     use atm2lndType      , only : atm2lnd_type
     use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
-    use SoilHydrologyMod , only : ELMVICMap, Drainage
+    use SoilHydrologyMod , only : ELMVICMap, Drainage, DrainageH3D
     use elm_varctl       , only : use_vsfm, use_IM2_hillslope_hydrology
     !
     ! !ARGUMENTS:
@@ -66,6 +67,8 @@ contains
     integer                  , intent(in)    :: filter_nolakec(:)    ! column filter for non-lake points
     integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+    integer                  , intent(in)    :: num_h3dc             ! number of column h3d points in column filter
+    integer                  , intent(in)    :: filter_h3dc(:)       ! column filter for h3d points
     integer                  , intent(in)    :: num_urbanc           ! number of column urban points in column filter
     integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
     integer                  , intent(in)    :: num_do_smb_c         ! number of bareland columns in which SMB is calculated, in column filter
@@ -145,9 +148,15 @@ contains
 #endif
 
       if (.not. use_vsfm) then
-         call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
-              num_urbanc, filter_urbanc,&
-              soilhydrology_vars, soilstate_vars, dtime)
+        if (use_h3d) then
+           call DrainageH3D(bounds, num_h3dc, filter_h3dc, num_hydrologyc, &
+                filter_hydrologyc, num_urbanc, filter_urbanc, &
+                soilhydrology_vars, soilstate_vars, dtime)
+        else
+           call Drainage(bounds, num_hydrologyc, filter_hydrologyc, &
+                num_urbanc, filter_urbanc,&
+                soilhydrology_vars, soilstate_vars, dtime)
+        endif
       endif
 
 #ifndef _OPENACC

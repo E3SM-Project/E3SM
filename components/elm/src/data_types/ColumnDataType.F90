@@ -1746,6 +1746,12 @@ contains
                       this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES
                    else if (use_arctic_init) then
                       this%h2osoi_vol(c,j) = watsat_input(c,j) ! start saturated for arctic
+                   else if (use_h3d) then
+                      if (j < 5) then
+                         this%h2osoi_vol(c,j) = watsat_col(c,j) * 0.6
+                      else
+                         this%h2osoi_vol(c,j) = watsat_col(c,j)
+                      endif
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8
                    endif

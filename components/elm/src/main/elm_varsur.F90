@@ -46,7 +46,11 @@ module elm_varsur
   real(r8), pointer :: wt_glc_mec(:,:,:)   
 
   ! subgrid glacier_mec sfc elevation
-  real(r8), pointer :: topo_glc_mec(:,:,:) 
+  real(r8), pointer :: topo_glc_mec(:,:,:)
+
+  ! for h3D soil column, weight of each soil column on the hillslope (vegetated
+  ! land unit)
+  real(r8), pointer :: wt_h3dc(:,:) 
   
   ! Topounit related poiters
   real(r8), pointer :: num_tunit_per_grd(:)   ! Topounit area fraction
