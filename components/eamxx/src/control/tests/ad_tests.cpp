@@ -4,8 +4,8 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_yaml.hpp>
 
 #include <catch2/catch.hpp>
 

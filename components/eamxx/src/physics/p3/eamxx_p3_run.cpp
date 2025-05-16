@@ -1,15 +1,19 @@
 #include "physics/p3/eamxx_p3_process_interface.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 void P3Microphysics::run_impl (const double dt)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Set the dt for p3 postprocessing
   p3_postproc.m_dt = dt;
 
   // Create policy for pre and post process pfor
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Assign values to local arrays used by P3, these are now stored in p3_loc.
   Kokkos::parallel_for(

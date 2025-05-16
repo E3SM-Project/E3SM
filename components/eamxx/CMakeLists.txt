@@ -466,6 +466,8 @@ endif()
 #               Configure all tpls and subfolders                  #
 ####################################################################
 
+set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+
 if (DEFINED ENV{SCREAM_FAKE_ONLY})
   # We don't really need to build ekat, but we do need to configure the test-launcher
 
@@ -489,8 +491,6 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
   else()
     set (TEST_LAUNCHER_ON_GPU False)
   endif()
-
-  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
 
   if (EKAT_ENABLE_MPI)
     find_package(MPI REQUIRED COMPONENTS C)
@@ -520,11 +520,13 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
   endif()
 
 else()
-  include(EkatBuildEkat)
-  BuildEkat(PREFIX "SCREAM"
-    ENABLE_TESTS OFF
-    ENABLE_FPE   ON
-    ENABLE_FPE_DEFAULT_MASK OFF)
+  # Enable all EKAT packages
+  set(EKAT_ENABLE_KOKKOS ON)
+  set(EKAT_ENABLE_PACK ON)
+  set(EKAT_ENABLE_ALGORITHM ON)
+  set(EKAT_ENABLE_LOGGING ON)
+  set(EKAT_ENABLE_YAML_PARSER ON)
+  add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
 # Set compiler-specific flags

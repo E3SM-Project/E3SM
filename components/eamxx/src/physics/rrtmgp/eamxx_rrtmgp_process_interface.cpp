@@ -10,7 +10,8 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 
@@ -19,6 +20,7 @@ namespace scream {
 using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = KT::ExeSpace;
 using MemberType = KT::MemberType;
+using TPF = ekat::TeamPolicyFactory<ExeSpace>;
 
 namespace {
 
@@ -697,7 +699,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       if (name == "h2o") {
         // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
         // Convert to vmr
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int icol = team.league_rank();
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
@@ -713,7 +715,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         );
         // Back out volume mixing ratios
         const auto air_mol_weight = PC::MWdry;
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
@@ -823,7 +825,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         }
         Kokkos::deep_copy(d_mu0,h_mu0);
 
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         TIMED_KERNEL(
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
@@ -949,7 +951,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto lwp_k = m_buffer.lwp_k;
       auto iwp_k = m_buffer.iwp_k;
       if (not do_subcol_sampling) {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
@@ -963,7 +965,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           });
         });
       } else {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
@@ -980,7 +982,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       interface_t::mixing_ratio_to_cloud_mass(qi_k, cldfrac_tot_k, p_del_k, iwp_k);
       // Convert to g/m2 (needed by RRTMGP)
       {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+      const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
@@ -1037,7 +1039,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         lw_flux_up_k, lw_flux_dn_k, p_del_k, lw_heating_k
       );
       {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int idx = team.league_rank();
           const int icol = idx+beg;
@@ -1113,6 +1115,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
                           );
 
       // Copy output data back to FieldManager
+      const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       TIMED_KERNEL(
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -1170,7 +1173,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // across timesteps to conserve energy.
   const int ncols = m_ncol;
   const int nlays = m_nlay;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
+  const auto policy = TPF::get_default_team_policy(ncols, nlays);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlays), [&] (const int& k) {
@@ -1194,7 +1197,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
     const int ncols = m_ncol;
     const int nlays = m_nlay;
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
+    const auto policy = TPF::get_default_team_policy(ncols, nlays);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
 

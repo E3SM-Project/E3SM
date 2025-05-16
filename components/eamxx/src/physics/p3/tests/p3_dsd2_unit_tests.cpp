@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -63,7 +61,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        gcdd[i].read(Base::m_fid);
+        gcdd[i].read(Base::m_ifile);
       }
     }
 
@@ -109,7 +107,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        gcdd_host(s).write(Base::m_fid);
+        gcdd_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -154,7 +152,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        grdd[i].read(Base::m_fid);
+        grdd[i].read(Base::m_ifile);
       }
     }
 
@@ -199,7 +197,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 : public UnitWrap::UnitTest<D>::Base {
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        grdd_host(s).write(Base::m_fid);
+        grdd_host(s).write(Base::m_ofile);
       }
     }
   }

@@ -8,8 +8,8 @@
 #include "Context.hpp"
 #include "mpi/Comm.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_assert.hpp>
 
 #include <mpi.h>
 #include <string>

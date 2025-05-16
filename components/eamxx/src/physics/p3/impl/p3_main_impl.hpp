@@ -5,7 +5,8 @@
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -86,11 +87,12 @@ Int Functions<S,D>
   Int nk)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
   using ScratchViewType = Kokkos::View<bool*, typename ExeSpace::scratch_memory_space>;
 
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto scratch_size = ScratchViewType::shmem_size(2);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack).set_scratch_size(0, Kokkos::PerTeam(scratch_size));
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack).set_scratch_size(0, Kokkos::PerTeam(scratch_size));
 
   // load constants into local vars
   const     Scalar inv_dt          = 1 / infrastructure.dt;

@@ -4,7 +4,7 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/grid/point_grid.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <memory>
 

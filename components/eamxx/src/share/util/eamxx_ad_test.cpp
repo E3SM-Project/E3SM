@@ -10,8 +10,8 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 // EKAT headers
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_yaml.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <iomanip>
 

@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
+
+#include <ekat_team_policy_utils.hpp>
 
 #include <thread>
 #include <array>
@@ -21,6 +21,7 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::UnitTest<D>::Base
 {
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
 
   //-----------------------------------------------------------------
   void run_bfb_tests() {
@@ -45,36 +46,36 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
     for (Int i = 0; i < 3; ++i) {  // loop over exponents
       for (Int j = 0; j < 16; ++j) { // loop over relvars
 
-	// Get baseline solution
-	// ----------------------------------
+        // Get baseline solution
+        // ----------------------------------
         if (this->m_baseline_action == COMPARE) {
-          ekat::read(&baseline_scaling, 1, Base::m_fid);
+          impl::read_scalars(Base::m_ifile,baseline_scaling);
         }
 
-	// Get C++ solution
-	// ----------------------------------
+        // Get C++ solution
+        // ----------------------------------
 
-	//Make scalar copies so available on device
-	Scalar expon = expons[i];
-	Scalar relvar = relvars[j];
+        //Make scalar copies so available on device
+        Scalar expon = expons[i];
+        Scalar relvar = relvars[j];
 
-	RangePolicy my_policy(0,1);
-	Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int /* i */){
-	    Spack scalings = Functions::subgrid_variance_scaling(Spack(relvar),expon );
+        RangePolicy my_policy(0,1);
+        Kokkos::parallel_for(my_policy,KOKKOS_LAMBDA(int /* i */){
+            Spack scalings = Functions::subgrid_variance_scaling(Spack(relvar),expon );
 
-	    //all elements of scalings are identical. just copy 1 back to host.
-	    scaling_device(0) = scalings[0];
-	  });
+            //all elements of scalings are identical. just copy 1 back to host.
+            scaling_device(0) = scalings[0];
+          });
 
-	// Copy results back to host
-	Kokkos::deep_copy(scaling_host, scaling_device);
+        // Copy results back to host
+        Kokkos::deep_copy(scaling_host, scaling_device);
 
-	// Validate results
+        // Validate results
         if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
           REQUIRE(baseline_scaling == scaling_host(0) );
         }
         else if (this->m_baseline_action == GENERATE) {
-          ekat::write(&scaling_host(0), 1, Base::m_fid);
+          impl::write_scalars(Base::m_ofile,scaling_host(0));
         }
       } //end loop over relvar[j]
     } //end loop over expons[i]
@@ -161,7 +162,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
     int nerr = 0;
 
     //functions below use Spack size <16 but can't deal w/ exceptions on GPU, so do it here.
-    TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    auto policy = TPF::get_default_team_policy(1, 1);
     Kokkos::parallel_reduce("SGSvarScaling::run", policy,
       KOKKOS_LAMBDA(const MemberType& /* team */, int& errors) {
         errors = 0;
