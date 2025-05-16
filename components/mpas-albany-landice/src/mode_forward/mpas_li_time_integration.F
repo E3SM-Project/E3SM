@@ -29,6 +29,7 @@ module li_time_integration
    use li_time_integration_fe_rk
    use li_setup
    use li_constants
+   use li_time_average_coupled
 
    implicit none
    private
@@ -100,7 +101,7 @@ module li_time_integration
       !-----------------------------------------------------------------
       ! Pools pointers
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: meshPool, timeAveragingPool, geometryPool 
       character (len=StrKIND), pointer :: xtime
       real (kind=RKIND), pointer :: daysSinceStart
       character (len=StrKIND), pointer :: simulationStartTime
@@ -159,7 +160,6 @@ module li_time_integration
          block => block % next
       end do
 
-
       ! ===
       ! === Perform timestep
       ! ===
@@ -175,6 +175,14 @@ module li_time_integration
       end select
       err = ior(err,err_tmp)
 
+      ! === accumulate fluxes for time averaging of fields sent to coupler
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
+         block => block % next
+      end do
 
       ! === error check
       if (err > 0) then
