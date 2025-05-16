@@ -32,6 +32,7 @@ module ocn_time_varying_forcing
        ocn_time_varying_forcing_init, &
        ocn_time_varying_forcing_get, &
        ocn_time_varying_forcing_write_restart_times
+  real(kind=RKIND) :: rho_floatation
 
 contains
 
@@ -69,6 +70,8 @@ contains
     !if (config_use_time_varying_****_forcing) then
     !  call init_****_forcing(domain)
     !endif
+
+    rho_floatation = config_land_ice_rho_ocean
 
   end subroutine ocn_time_varying_forcing_init!}}}
 
@@ -469,10 +472,6 @@ contains
          "landIceFloatingFraction", "land_ice_forcing", "timeVaryingForcing", "landIceFloatingFractionForcing", "linear", &
          config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
 
-    call mpas_forcing_init_field(domain % streamManager, forcingGroupHead, "ocn_land_ice_forcing", &
-         "landIceDraft", "land_ice_forcing", "timeVaryingForcing", "landIceDraftForcing", "linear", &
-         config_time_varying_land_ice_forcing_reference_time, config_time_varying_land_ice_forcing_interval)
-
     call mpas_forcing_init_field_data(&
          forcingGroupHead, &                     ! forcingGroupHead
          "ocn_land_ice_forcing", &               ! forcingGroupName
@@ -519,6 +518,7 @@ contains
     type (mpas_pool_type), pointer :: &
          mesh, &
          forcingPool, &
+         diagnosticsPool, &
          timeVaryingForcingPool
 
     real(kind=RKIND), dimension(:), pointer :: &
@@ -527,9 +527,7 @@ contains
          landIceFloatingFractionForcing, &
          landIceFloatingFraction, &
          landIcePressureForcing, &
-         landIcePressure, &
-         landIceDraftForcing, &
-         landIceDraft
+         landIcePressure
 
     integer, pointer :: &
          nCells
@@ -578,6 +576,7 @@ contains
 
        call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
        call MPAS_pool_get_subpool(block % structs, "forcing", forcingPool)
+       call MPAS_pool_get_subpool(block % structs, "diagnostics", diagnosticsPool)
        call MPAS_pool_get_subpool(block % structs, "timeVaryingForcing", timeVaryingForcingPool)
    
        call MPAS_pool_get_dimension(mesh, "nCells", nCells)
@@ -585,18 +584,15 @@ contains
        call MPAS_pool_get_array(timeVaryingForcingPool, "landIceFractionForcing", landIceFractionForcing)
        call MPAS_pool_get_array(timeVaryingForcingPool, "landIceFloatingFractionForcing", landIceFloatingFractionForcing)
        call MPAS_pool_get_array(timeVaryingForcingPool, "landIcePressureForcing", landIcePressureForcing)
-       call MPAS_pool_get_array(timeVaryingForcingPool, "landIceDraftForcing", landIceDraftForcing)
        call MPAS_pool_get_array(forcingPool, "landIceFraction", landIceFraction)
        call MPAS_pool_get_array(forcingPool, "landIceFloatingFraction", landIceFloatingFraction)
        call MPAS_pool_get_array(forcingPool, "landIcePressure", landIcePressure)
-       call MPAS_pool_get_array(forcingPool, "landIceDraft", landIceDraft)
    
        do iCell = 1, nCells
    
           landIceFraction(iCell) = landIceFractionForcing(iCell)
           landIceFloatingFraction(iCell) = landIceFloatingFractionForcing(iCell)
           landIcePressure(iCell) = landIcePressureForcing(iCell)
-          landIceDraft(iCell) = landIceDraftForcing(iCell)
    
        enddo
        block => block % next

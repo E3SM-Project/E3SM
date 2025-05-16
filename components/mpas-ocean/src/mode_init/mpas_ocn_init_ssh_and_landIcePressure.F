@@ -96,7 +96,7 @@ contains
 
      real (kind=RKIND), dimension(:), pointer :: ssh
 
-     real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceDraft, &
+     real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
                                                  effectiveDensityInLandIce
 
      integer, dimension(:), pointer :: minLevelCell
@@ -142,7 +142,6 @@ contains
 
        call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
 
-       call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
 
        call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
        call mpas_pool_get_array(statePool, 'effectiveDensityInLandIce', effectiveDensityInLandIce, 1)

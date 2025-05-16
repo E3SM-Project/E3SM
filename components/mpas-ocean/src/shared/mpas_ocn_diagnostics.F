@@ -39,6 +39,7 @@ module ocn_diagnostics
    use ocn_surface_land_ice_fluxes
    use ocn_vertical_advection
    use ocn_subgrid
+   use ocn_wetting_drying, only: ocn_wetting_drying_update_land_ice
 
    implicit none
    private
@@ -78,6 +79,7 @@ module ocn_diagnostics
    integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  fCoef
    real (kind=RKIND) ::  landIceTopDragCoeff
+   real (kind=RKIND) ::  rho_floatation
    real (kind=RKIND), pointer ::  coef_3rd_order
 
    ! Methods for computing thickness at edges for flux calculations
@@ -141,7 +143,7 @@ contains
       logical :: full_compute = .true.
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceDraft, landIceFraction
+        frazilSurfacePressure, landIcePressure, landIceFraction, landIceFloatingFraction
 
       integer, dimension(:), pointer :: &
         landIceFloatingMask
@@ -179,8 +181,8 @@ contains
 
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
          if (nCellsAll.gt.0 .AND. landIceFloatingMask(1) == -1) then
             call mpas_log_write('landIceFloatingMask contains the default value which likely indicates that this field is missing in the initial condition file (e.g. because it is meant for an older E3SM version).', &
@@ -468,11 +470,14 @@ contains
       !
       !  compute fields needed to compute land-ice fluxes, either in the ocean model or in the coupler
       !
-      ! inputs: layerThickness, normalVelocity, landIceFraction, landIceFloatingMask
+      ! inputs: layerThickness, normalVelocity, landIcePressure, landIceFraction, landIceFloatingMask
       ! outputs:
       if (landIcePressureOn) then
          call ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, activeTracers, &
-                landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
+                landIcePressure, landIceFraction, landIceFloatingMask, timeLevel, indexTemperature, indexSalinity)
+      end if
+      if (landIcePressureOn .and. config_use_wetting_drying) then
+         call ocn_wetting_drying_update_land_ice(landIceFloatingMask, landIceFloatingFraction, err)
       end if
 
       if ( full_compute ) then
@@ -3641,7 +3646,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_compute_land_ice_flux_input_fields(layerThickness, normalVelocity, &
-      activeTracers, landIceFraction, landIceFloatingMask, &
+      activeTracers, landIcePressure, landIceFraction, landIceFloatingMask, &
       timeLevel, indexTval, indexSval)!{{{
 
       !-----------------------------------------------------------------
@@ -3656,7 +3661,7 @@ contains
          layerThickness, normalVelocity
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         landIceFraction
+         landIcePressure, landIceFraction
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          activeTracers
@@ -3690,11 +3695,23 @@ contains
 
       !-----------------------------------------------------------------
 
-      if (( trim(config_land_ice_flux_mode) == "off" ) .or.  &
-          ( trim(config_land_ice_flux_mode) == "pressure_only")) then
-         ! nothing to do here
-         return
-      end if
+      if ( trim(config_land_ice_flux_mode) == "off" ) return
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop present(landIceDraft, landIcePressure)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCellsAll
+         landIceDraft(iCell) = -landIcePressure(iCell) / (rho_floatation * gravity)
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+      if ( trim(config_land_ice_flux_mode) == "pressure_only") return
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
@@ -4587,36 +4604,6 @@ contains
 
    end subroutine ocn_validate_state!}}}
 
-   function ocn_build_log_filename(prefix, identifier) result(filename)!{{{
-      character (len=*), intent(in) :: prefix
-      integer, intent(in) :: identifier
-
-      character (len=StrKIND) :: filename
-
-      character (len=StrKIND) :: identifierString
-
-      if ( identifier .lt. 10 ) then
-         write(identifierString, '(I1)') identifier
-      else if ( identifier .lt. 100 ) then
-         write(identifierString, '(I2)') identifier
-      else if ( identifier .lt. 1000 ) then
-         write(identifierString, '(I3)') identifier
-      else if ( identifier .lt. 10000 ) then
-         write(identifierString, '(I4)') identifier
-      else if ( identifier .lt. 100000 ) then
-         write(identifierString, '(I5)') identifier
-      else if ( identifier .lt. 1000000 ) then
-         write(identifierString, '(I6)') identifier
-      else if ( identifier .lt. 10000000 ) then
-         write(identifierString, '(I7)') identifier
-      else
-         write(identifierString, '(I99)') identifier
-      end if
-
-      filename = trim(prefix) // trim(identifierString)
-
-   end function ocn_build_log_filename!}}}
-
    subroutine ocn_write_field_statistics(unitNumber, fieldName, minValue, maxValue)
       integer, intent(in) :: unitNumber
       character (len=*), intent(in) :: fieldName
@@ -4696,6 +4683,8 @@ contains
       else
          landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
       endif
+
+      rho_floatation = config_land_ice_rho_ocean
 
       if (trim(config_thickness_drag_type) == 'centered') then
          thickEdgeDragChoice = thickEdgeDragCenter
