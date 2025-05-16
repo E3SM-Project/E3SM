@@ -17,13 +17,16 @@ enum class InterpType {
   Coarsen
 };
 
-// A small struct to hold horiz remap data, which can
-// be shared across multiple horiz remappers
+// A small struct to hold horiz remap data, which can be shared across multiple horiz remappers
+// NOTE: the client will call the build method, which will read the map file, and create the
+//       CRS matrix data for online interpolation.
 struct HorizRemapperData {
   using KT = KokkosTypes<DefaultDevice>;
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
 
+  // The last argument specifies the base index for gids in the map file
+  // For ncremap-type files, all indices are 1-based
   void build (const std::string& map_file,
               const std::shared_ptr<const AbstractGrid>& fine_grid,
               const ekat::Comm& comm,
