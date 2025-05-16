@@ -335,7 +335,7 @@ subroutine oro_drag_interface(state,    cam_in,   sgh,      pbuf,   dtime,  nm, 
   !get the layer index of pblh in layer for input in drag scheme
   pblh_idx = pbuf_get_index('pblh')
   call pbuf_get_field(pbuf, pblh_idx, pblh)
-  do i=1,pcols
+  do i=1,ncol
       kpbl2d_in(i)=pblh_get_level_idx(zbot(i,:)-(state%phis(i)/gravit),pblh(i))
       kpbl2d_reverse_in(i)=pverp-kpbl2d_in(i)!pverp-k
   end do
@@ -394,12 +394,18 @@ function pblh_get_level_idx(height_array,pblheight)
   !get the pblh level index and return
   do k = 2, pver
     if((pblheight >= height_array(k).and.pblheight <height_array(k-1)))then
-      pblh_get_level_idx =  k
+      pblh_get_level_idx =  k - 1
       found=.true.
       return
     endif
   enddo
 
+  if (.not. found) then
+    print *, 'error, pbl not found'
+    print *, height_array
+    print *, pblheight
+    stop
+  endif
 end function
 
 !==========================================================================
