@@ -829,7 +829,7 @@ _TESTS = {
     "e3sm_eamxx_mam4xx_long_runtime" : {
         "time"  : "03:00:00",
         "tests" : (
-            "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
+            "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
             "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
         )
     },
