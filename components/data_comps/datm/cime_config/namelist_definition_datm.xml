@@ -304,7 +304,7 @@
       <value stream="ELMERA5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.0.25d.v5.c180614</value>
       <value stream="ERA56HR">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.ERA.6HRLY.0.25d.v5.c180614</value>
       <value stream="ELMGSWP3w5e5">$DIN_LOC_ROOT/share/domains</value>
-      <value stream="uELM_NA">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
+      <value stream="uELM_NA">$DIN_LOC_ROOT/share/domains/domain.clm/</value>
       <value stream="uELM_TES">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.km.1d</value>
       <value stream="CLMCRUNCEP\.">$DIN_LOC_ROOT/share/domains/domain.clm</value>
       <value stream="CLMCRUNCEP_V5">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.V5.c140715</value>
@@ -383,7 +383,7 @@
       <value stream="ELMERA5">domain.lnd.era5_721x1440_rdrlat_EC30to60E2r2.221115.nc</value>
       <value stream="ERA56HR">domain.lnd.era5_721x1440_rdrlat_EC30to60E2r2.221115.nc</value>
       <value stream="ELMGSWP3w5e5">domain.lnd.360x720_gswp3.0v1.c170606.nc</value>
-      <value stream="uELM_NA">domain.lnd.Daymet.km.1d.nc</value>
+      <value stream="uELM_NA">MOF21_domain.lnd.Daymet_NA.1km.1d.c240524.nc</value>
       <value stream="uELM_TES">domain.lnd.Daymet.km.1d.nc</value>
       <value stream="CLMMOSARTTEST">domain.lnd.nldas2_0224x0464_c110415.nc</value>
       <value stream="CLMNLDAS2">domain.lnd.0.125nldas2_0.125nldas2.190410.nc</value>
@@ -730,13 +730,13 @@
       <value  stream="ELMGSWP3w5e5.Solar">gswp_w5e5.Solr.%ym.nc</value>
       <value  stream="ELMGSWP3w5e5.Precip">gswp_w5e5.Prec.%ym.nc</value>
       <value  stream="ELMGSWP3w5e5.TPQW">gswp_w5e5.TPQWL.%ym.nc</value>
-      <value stream="uELM_NA.FSDS">clmforc.Daymet.km.1d.FSDS.%ym.nc</value>
-      <value stream="uELM_NA.FLDS">clmforc.Daymet.km.1d.FLDS.%ym.nc</value>
-      <value stream="uELM_NA.TBOT">clmforc.Daymet.km.1d.TBOT.%ym.nc</value>
-      <value stream="uELM_NA.QBOT">clmforc.Daymet.km.1d.QBOT.%ym.nc</value>
-      <value stream="uELM_NA.PRECTmms">clmforc.Daymet.km.1d.PRECTmms.%ym.nc</value>
-      <value stream="uELM_NA.PSRF">clmforc.Daymet.km.1d.PSRF.%ym.nc</value>
-      <value stream="uELM_NA.WIND">clmforc.Daymet.km.1d.WIND.%ym.nc</value>
+      <value stream="uELM_NA.FSDS">MOF21_clmforc.Daymet4.1km.1d.FSDS.%ym.nc</value>
+      <value stream="uELM_NA.FLDS">MOF21_clmforc.Daymet4.1km.1d.FLDS.%ym.nc</value>
+      <value stream="uELM_NA.TBOT">MOF21_clmforc.Daymet4.1km.1d.TBOT.%ym.nc</value>
+      <value stream="uELM_NA.QBOT">MOF21_clmforc.Daymet4.1km.1d.QBOT.%ym.nc</value>
+      <value stream="uELM_NA.PRECTmms">MOF21_clmforc.Daymet4.1km.1d.PRECTmms.%ym.nc</value>
+      <value stream="uELM_NA.PSRF">MOF21_clmforc.Daymet4.1km.1d.PSRF.%ym.nc</value>
+      <value stream="uELM_NA.WIND">MOF21_clmforc.Daymet4.1km.1d.WIND.%ym.nc</value>
 
       <value stream="uELM_TES.Prec">clmforc.Daymet.km.1d.Prec.%ym.nc</value>
       <value stream="uELM_TES.Solr">clmforc.Daymet.km.1d.Solr.%ym.nc</value>
