@@ -38,6 +38,9 @@ module seaice_core
       use seaice_diagnostics, only: &
            seaice_initialize_time_diagnostics
 
+      use seaice_forcing, only: &
+           use_restart_ic
+
       implicit none
 
       type (domain_type), intent(inout) :: domain
@@ -90,11 +93,15 @@ module seaice_core
       ! Regardless of which stream we read for initial conditions, reset the
       ! input alarms for both input and restart before reading any remaining input streams.
       !
+      ! tracks if restart_ic was used to properly initialize new forcing files
+      use_restart_ic = .false.
+
       if (config_do_restart) then
          call MPAS_stream_mgr_read(domain % streamManager, streamID='restart', ierr=ierr)
       else
          if (trim(config_initial_condition_type) == "restart") then
             call MPAS_stream_mgr_read(domain % streamManager, streamID='restart_ic', ierr=ierr)
+            use_restart_ic = .true.
          else
             call MPAS_stream_mgr_read(domain % streamManager, streamID='input', ierr=ierr)
          end if
