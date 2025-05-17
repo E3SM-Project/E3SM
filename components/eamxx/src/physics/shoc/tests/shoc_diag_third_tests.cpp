@@ -79,8 +79,11 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
     // set upper condition for dz_zi
     dz_zi[nlevi-1] = zt_grid[nlev-1];
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridging to F90
-    DiagThirdShocMomentsData SDS(shcol, nlev, nlevi);
+    DiagThirdShocMomentsData SDS(shcol, nlev, nlevi, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     // For this test shcol MUST be at least 2
@@ -200,6 +203,27 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
       }
     }
 
+    // SECOND TEST
+    // If SHOC is reverted to a 1.5 TKE closure then test to make sure that
+    //  all values of w3 are zero everywhere.  Will use the same input data
+    //  as the previous test.
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // Call the C++ implementation
+    diag_third_shoc_moments(SDS);
+
+    // Check the result
+
+    // Require that all values of w3 are ZERO
+    for (Int s = 0; s < shcol; ++s){
+      for (Int n = 0; n < nlevi; ++n){
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.w3[offset] == 0);
+      }
+    }
+
   }
 
   void run_bfb()
@@ -208,10 +232,10 @@ struct UnitWrap::UnitTest<D>::TestShocDiagThird : public UnitWrap::UnitTest<D>::
 
     DiagThirdShocMomentsData SDS_baseline[] = {
       //               shcol, nlev, nlevi
-      DiagThirdShocMomentsData(10, 71, 72),
-      DiagThirdShocMomentsData(10, 12, 13),
-      DiagThirdShocMomentsData(7,  16, 17),
-      DiagThirdShocMomentsData(2, 7, 8),
+      DiagThirdShocMomentsData(10, 71, 72, false),
+      DiagThirdShocMomentsData(10, 12, 13, false),
+      DiagThirdShocMomentsData(7,  16, 17, false),
+      DiagThirdShocMomentsData(2, 7, 8, false),
     };
 
     // Generate random input data

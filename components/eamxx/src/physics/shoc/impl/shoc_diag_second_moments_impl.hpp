@@ -15,7 +15,7 @@ template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::diag_second_moments(
   const MemberType& team, const Int& nlev, const Int& nlevi,
-  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune,
+  const Real& thl2tune, const Real& qw2tune, const Real& qwthl2tune, const Real& w2tune, const bool& shoc_1p5tke,
   const uview_1d<const Spack>& thetal, const uview_1d<const Spack>& qw, const uview_1d<const Spack>& u_wind,
   const uview_1d<const Spack>& v_wind, const uview_1d<const Spack>& tke, const uview_1d<const Spack>& isotropy,
   const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
@@ -38,20 +38,34 @@ void Functions<S,D>::diag_second_moments(
   linear_interp(team, zt_grid, zi_grid, tk,       tk_zi,       nlev, nlevi, 0);
   team.team_barrier();
 
-  // Vertical velocity variance is assumed to be propotional to the TKE
+  // Vertical velocity variance is assumed to be propotional to the TKE.
+  //  If 1.5 TKE closure is activated then set to zero.
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    w_sec(k) = w2tune*(sp(2.)/sp(3.))*tke(k);
+    w_sec(k) = shoc_1p5tke ? 0 : w2tune*(sp(2.)/sp(3.))*tke(k);
   });
 
-  // Calculate the temperature variance
-  calc_shoc_varorcovar(team, nlev, thl2tune, isotropy_zi, tkh_zi, dz_zi, thetal, thetal, thl_sec);
+  // For the following variances and covariance, if no SGS variability is desired then
+  //  set these to zero.  Doing so, in conjuction with setting w3 and w2 (above) to zero
+  //  will ensure that SHOC condensation reduces to an all-or-nothing scheme.
+  if (shoc_1p5tke){
+    const Int nlevi_pack = ekat::npack<Spack>(nlevi);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevi_pack), [&] (const Int& k) {
+      thl_sec(k) = 0;
+      qw_sec(k) = 0;
+      qwthl_sec(k) = 0;
+    });
+  }
+  else{
+    // Calculate the temperature variance
+    calc_shoc_varorcovar(team, nlev, thl2tune, isotropy_zi, tkh_zi, dz_zi, thetal, thetal, thl_sec);
 
-  // Calculate the moisture variance
-  calc_shoc_varorcovar(team, nlev ,qw2tune, isotropy_zi, tkh_zi, dz_zi, qw, qw, qw_sec);
+    // Calculate the moisture variance
+    calc_shoc_varorcovar(team, nlev ,qw2tune, isotropy_zi, tkh_zi, dz_zi, qw, qw, qw_sec);
 
-  // Calculate the temperature and moisture covariance
-  calc_shoc_varorcovar(team, nlev, qwthl2tune, isotropy_zi, tkh_zi, dz_zi, thetal, qw, qwthl_sec);
+    // Calculate the temperature and moisture covariance
+    calc_shoc_varorcovar(team, nlev, qwthl2tune, isotropy_zi, tkh_zi, dz_zi, thetal, qw, qwthl_sec);
+  }
 
   // Calculate vertical flux for heat
   calc_shoc_vertflux(team, nlev, tkh_zi, dz_zi, thetal, wthl_sec);
@@ -67,6 +81,7 @@ void Functions<S,D>::diag_second_moments(
 
   // Calculate vertical flux for momentum (meridional wind)
   calc_shoc_vertflux(team, nlev, tk_zi, dz_zi, v_wind, vw_sec);
+
 }
 
 } // namespace shoc
