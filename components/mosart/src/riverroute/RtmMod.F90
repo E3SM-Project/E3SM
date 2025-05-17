@@ -14,8 +14,8 @@ module RtmMod
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
   use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use seq_flds_mod    , only : rof_sed
-  use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
-                               MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
+  use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask
+  use mpi
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
@@ -130,6 +130,19 @@ module RtmMod
 
   logical :: do_rtmflood
   logical :: do_rtm
+
+  type :: outlet_discharge_info_type
+      integer :: gidx         
+      real(r8) :: discharge
+  end type outlet_discharge_info_type
+
+  ! Namelist variable and flag for TNR redirection
+  logical, public :: redirect_total_qgwl = .false.  ! Namelist control
+  logical, save   :: redirect_total_qgwl_flag = .false.  ! Module flag
+
+  ! Variables for TNR redirection
+  integer, parameter :: num_top_outlets_for_qgwl = 100   ! Number of top outlets to use
+  real(r8), save   :: global_net_qgwl = 0.0_r8               ! Global Total qgwl
 
   real(r8), save :: delt_save             ! previous delt 
 
@@ -275,7 +288,7 @@ contains
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
-         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag,redirect_total_qgwl
 
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
@@ -368,6 +381,7 @@ contains
 
     end if
     
+    redirect_total_qgwl_flag = redirect_total_qgwl
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (delt_mosart    ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -412,6 +426,7 @@ contains
     call mpi_bcast (rtmhist_fincl3, (max_namlen+2)*size(rtmhist_fincl3), MPI_CHARACTER, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_avgflag_pertape, size(rtmhist_avgflag_pertape), MPI_CHARACTER, 0, mpicom_rof, ier)
+    call mpi_bcast (redirect_total_qgwl_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier) 
 
     if (inundflag) then
        call mpi_bcast (OPT_inund,          1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -2078,7 +2093,7 @@ contains
 !
 ! !LOCAL VARIABLES:
 !EOP
-    integer  :: i, j, n, nr, ns, nt, n2, nf, idam ! indices
+    integer  :: i, j, k, n, nr, ns, nt, n2, nf, idam ! indices
     integer, parameter :: budget_terms_total = 80
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
@@ -2093,6 +2108,9 @@ contains
                 budget_other
     logical  :: budget_check, budget_write  ! do global budget check
     integer  :: nt_print ! number of tracers to be printed out
+    integer  :: nr_local
+    real(r8) :: qgwl_to_discharge_ratio
+    character(len=12) :: char_current_top_n, char_param_n, char_ratio
 
     ! BUDGET term ids
     ! budget computed in m3 over each coupling period
@@ -2219,6 +2237,22 @@ contains
     real(r8) :: river_volume_minimum        ! gridcell area multiplied by average river_depth_minimum [m3]
     real(r8) :: qgwl_volume                 ! volume of runoff during time step [m3]
 !scs
+
+    ! Variables for negative runoff redirection
+    real(r8) :: local_qgwl_sum
+    integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
+    real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
+    integer :: local_outlet_count
+    integer, allocatable :: all_outlet_gindices(:)    ! Gathered on master
+    real(r8), allocatable :: all_outlet_discharges(:)  ! Gathered on master
+    integer, allocatable :: recvcounts(:), displs(:)   ! For MPI_Gatherv
+    type(outlet_discharge_info_type), allocatable :: sorted_outlets(:)
+    integer :: num_all_outlets_global, current_top_n_count, target_gidx
+    real(r8) :: sum_discharge_top_n
+    real(r8), allocatable :: qgwl_correction_values(:) ! Values to apply
+    integer, allocatable :: qgwl_correction_gindices(:) ! Global indices for these corrections
+    real(r8), allocatable :: qgwl_correction_local(:) ! Local portion of correction array
+
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
 
@@ -2352,11 +2386,38 @@ contains
     endif ! budget_check
 
     ! data for euler solver, in m3/s here
+
+    ! Aggregate global Qgwl (TNR) if flag is true ---
+    global_net_qgwl = 0.0_r8 ! Reset global sum each step
+    if (redirect_total_qgwl_flag) then
+        local_qgwl_sum = 0.0_r8
+        do nr = rtmCTL%begr, rtmCTL%endr
+           ! if (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then !! if we want to redirect only the negative values but keep the positive ones
+                local_qgwl_sum = local_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
+           ! endif
+            TRunoff%qgwl(nr, :) = 0.0_r8
+        enddo
+       
+        call MPI_Allreduce(local_qgwl_sum, global_net_qgwl, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+        if (ier /= MPI_SUCCESS) then
+            if (masterproc) write(iulog,*) trim(subname),' ERROR in MPI_Allreduce for global_net_qgwl, ier=',ier
+            call shr_sys_abort(trim(subname)//' MPI_Allreduce error for global_net_qgwl')
+        endif
+        
+        if (masterproc) then
+            write(iulog,'(A,ES15.6)') trim(subname)//' Global Total QGWL this step: ', global_net_qgwl 
+        endif
+    else
+        ! If flag is false, ensure TRunoff gets the qgwl from rtmCTL for routing
+        do nr = rtmCTL%begr, rtmCTL%endr
+           TRunoff%qgwl(nr, :) = rtmCTL%qgwl(nr, :)
+        enddo
+    endif
+
     do nr = rtmCTL%begr,rtmCTL%endr
     do nt = 1,nt_rtm
        TRunoff%qsur(nr,nt) = rtmCTL%qsur(nr,nt)
        TRunoff%qsub(nr,nt) = rtmCTL%qsub(nr,nt)
-       TRunoff%qgwl(nr,nt) = rtmCTL%qgwl(nr,nt)
        TRunoff%qdem(nr,nt) = rtmCTL%qdem(nr,nt)
     enddo
     enddo
@@ -2840,6 +2901,220 @@ contains
        endif
     enddo
     enddo
+
+   ! Collect outlet discharge, Rank, Redistribute global_net_qgwl, Update discharge map ---
+   allocate(qgwl_correction_local(rtmCTL%begr:rtmCTL%endr)) ! Moved allocation here
+   qgwl_correction_local = 0.0_r8                          ! Initialize
+
+   if (redirect_total_qgwl_flag) then ! Check the main flag first
+      if (global_net_qgwl /= 0.0_r8) then ! Only proceed if there's some net qgwl to redistribute (can be pos or neg)
+         call t_startf('mosartr_qgwl_redir_dist')
+
+         ! Identify local outlets and their current discharges
+         local_outlet_count = 0
+         do nr = rtmCTL%begr, rtmCTL%endr
+               if (rtmCTL%mask(nr) == 3) then ! Is it an outlet?
+                  local_outlet_count = local_outlet_count + 1
+               endif
+         enddo
+
+         if (allocated(outlet_gindices_local)) deallocate(outlet_gindices_local)
+         if (allocated(outlet_discharges_local)) deallocate(outlet_discharges_local)
+         allocate(outlet_gindices_local(local_outlet_count))
+         allocate(outlet_discharges_local(local_outlet_count))
+         local_outlet_count = 0 ! Reset for population
+         do nr = rtmCTL%begr, rtmCTL%endr
+               if (rtmCTL%mask(nr) == 3) then
+                  local_outlet_count = local_outlet_count + 1
+                  outlet_gindices_local(local_outlet_count) = rtmCTL%gindex(nr)
+                  outlet_discharges_local(local_outlet_count) = rtmCTL%runoffocn(nr, nt_nliq) ! Current discharge
+               endif
+         enddo
+
+         ! Gather all outlet discharges to master for ranking
+         if (allocated(recvcounts)) deallocate(recvcounts)
+         if (allocated(displs)) deallocate(displs)
+         allocate(recvcounts(npes), displs(npes))
+         call MPI_Gather(local_outlet_count, 1, MPI_INTEGER, recvcounts, 1, MPI_INTEGER, mastertask, mpicom_rof, ier)
+
+         if (masterproc) then
+               displs(1) = 0
+               num_all_outlets_global = recvcounts(1)
+               do i = 2, npes
+                  displs(i) = displs(i-1) + recvcounts(i-1)
+                  num_all_outlets_global = num_all_outlets_global + recvcounts(i)
+               enddo
+               if (allocated(all_outlet_gindices)) deallocate(all_outlet_gindices)
+               if (allocated(all_outlet_discharges)) deallocate(all_outlet_discharges)
+               if (num_all_outlets_global > 0) then
+                  allocate(all_outlet_gindices(num_all_outlets_global))
+                  allocate(all_outlet_discharges(num_all_outlets_global))
+               else
+                  ! Handle cases where no outlets are found if necessary, or let current_top_n_count be 0
+                  num_all_outlets_global = 0 ! Ensure it's zero if no outlets
+               endif
+         else
+               num_all_outlets_global = 0 ! Non-master tasks initialize to 0
+         endif
+         call MPI_Bcast(num_all_outlets_global, 1, MPI_INTEGER, mastertask, mpicom_rof, ier)
+
+         if(num_all_outlets_global > 0) then
+            call MPI_Gatherv(outlet_gindices_local, local_outlet_count, MPI_INTEGER, &
+                              all_outlet_gindices, recvcounts, displs, MPI_INTEGER, &
+                              mastertask, mpicom_rof, ier)
+            call MPI_Gatherv(outlet_discharges_local, local_outlet_count, MPI_REAL8, &
+                              all_outlet_discharges, recvcounts, displs, MPI_REAL8, &
+                              mastertask, mpicom_rof, ier)
+         endif
+
+         if (allocated(outlet_gindices_local)) deallocate(outlet_gindices_local)
+         if (allocated(outlet_discharges_local)) deallocate(outlet_discharges_local)
+
+         ! Rank on master, calculate proportions, and prepare corrections
+         current_top_n_count = 0 ! Initialize for all tasks
+         if (masterproc) then
+               if (num_all_outlets_global > 0) then
+                  allocate(sorted_outlets(num_all_outlets_global))
+                  do i = 1, num_all_outlets_global
+                     sorted_outlets(i)%gidx = all_outlet_gindices(i)
+                     sorted_outlets(i)%discharge = all_outlet_discharges(i)
+                  enddo
+                  if (allocated(all_outlet_gindices)) deallocate(all_outlet_gindices)
+                  if (allocated(all_outlet_discharges)) deallocate(all_outlet_discharges)
+
+                  call sort_outlets_by_discharge_desc(sorted_outlets, num_all_outlets_global)
+
+                  current_top_n_count = min(num_top_outlets_for_qgwl, num_all_outlets_global)
+                  sum_discharge_top_n = 0.0_r8
+                  do i = 1, current_top_n_count
+                     sum_discharge_top_n = sum_discharge_top_n + sorted_outlets(i)%discharge
+                  enddo
+                  if(current_top_n_count > 0) then
+                     if (abs(sum_discharge_top_n) > 1.0e-9_r8) then ! Avoid division by zero
+                     block
+                           real(r8) :: qgwl_to_discharge_ratio_percent
+                           
+                           qgwl_to_discharge_ratio_percent = (global_net_qgwl / sum_discharge_top_n) * 100.0_r8
+                           
+                           ! Print the ratio
+                           write(iulog, *) trim(subname), &
+                              'Debug QGWL Ratio: (GlobalNetQGWL / SumTopNDischarge) = ', &
+                              qgwl_to_discharge_ratio_percent, '%', &
+                              ' (N_used = ', current_top_n_count, &
+                              ', N_param = ', num_top_outlets_for_qgwl, ')' ! Using your var name
+
+                           ! Check and print warning if magnitude is > 5%
+                           if (abs(qgwl_to_discharge_ratio_percent) > 5.0_r8) then
+                              call shr_sys_flush(iulog) ! Flush previous message
+                              write(iulog, *) trim(subname), &
+                                 'WARNING: QGWL_Redist_Ratio magnitude > 5% (', &
+                                 qgwl_to_discharge_ratio_percent, '%). ', &
+                                 'N_used = ', current_top_n_count, &
+                                 ', N_param = ', num_top_outlets_for_qgwl, &
+                                 '. Consider increasing N_param.'
+                              call shr_sys_flush(iulog) ! Flush warning
+                           endif
+                     end block
+                     else
+                     write(iulog, *) trim(subname), &
+                           'Debug QGWL Ratio: Sum of Top ', current_top_n_count, &
+                           ' Outlet Discharges is near zero. Ratio not calculated.'
+                     endif
+                  else
+                  write(iulog, *) trim(subname), &
+                        'Debug QGWL Ratio: No top outlets selected (N_used = 0). Redistribution skipped.'
+                  endif 
+                  if (current_top_n_count > 0) then
+                     allocate(qgwl_correction_gindices(current_top_n_count))
+                     allocate(qgwl_correction_values(current_top_n_count))
+                     qgwl_correction_values = 0.0_r8
+                     do i = 1, current_top_n_count
+                        qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
+                        qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_qgwl
+                     enddo
+                  else
+                  write(iulog, '(A)') trim(subname), &
+                        'Debug: No top outlets selected for QGWL redistribution (current_top_n_count is 0).'
+                     allocate(qgwl_correction_gindices(current_top_n_count))
+                     allocate(qgwl_correction_values(current_top_n_count))
+                     qgwl_correction_values = 0.0_r8
+                     if (sum_discharge_top_n > 1.0e-9_r8) then ! Avoid division by zero
+                        do i = 1, current_top_n_count
+                              qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
+                              qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_qgwl
+                        enddo
+                     else ! If sum of top N discharge is zero (or tiny), distribute equally (or handle as error/no distribution)
+                        do i = 1, current_top_n_count
+                              qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
+                              qgwl_correction_values(i) = global_net_qgwl / real(current_top_n_count, kind=r8)
+                        enddo
+                     endif
+                  endif
+                  if(allocated(sorted_outlets)) deallocate(sorted_outlets)
+               else
+                  current_top_n_count = 0 ! No outlets globally
+               endif ! num_all_outlets_global > 0
+         endif ! masterproc
+
+         ! Broadcast correction info
+         call MPI_Bcast(current_top_n_count, 1, MPI_INTEGER, mastertask, mpicom_rof, ier)
+         if (.not. masterproc .and. current_top_n_count > 0) then
+               if (allocated(qgwl_correction_gindices)) deallocate(qgwl_correction_gindices)
+               if (allocated(qgwl_correction_values)) deallocate(qgwl_correction_values)
+               allocate(qgwl_correction_gindices(current_top_n_count))
+               allocate(qgwl_correction_values(current_top_n_count))
+         endif
+         if (current_top_n_count > 0) then
+               call MPI_Bcast(qgwl_correction_gindices, current_top_n_count, MPI_INTEGER, mastertask, mpicom_rof, ier)
+               call MPI_Bcast(qgwl_correction_values, current_top_n_count, MPI_REAL8, mastertask, mpicom_rof, ier)
+
+               ! Populate local correction array
+               do k = 1, current_top_n_count
+                  target_gidx = qgwl_correction_gindices(k)
+                  do nr_local = rtmCTL%begr, rtmCTL%endr
+                     if (rtmCTL%gindex(nr_local) == target_gidx) then
+                           qgwl_correction_local(nr_local) = qgwl_correction_local(nr_local) + qgwl_correction_values(k)
+                           exit
+                     endif
+                  enddo
+               enddo
+         endif ! current_top_n_count > 0 for broadcast and local application
+
+         if (allocated(qgwl_correction_gindices)) deallocate(qgwl_correction_gindices)
+         if (allocated(qgwl_correction_values)) deallocate(qgwl_correction_values)
+         if (allocated(recvcounts)) deallocate(recvcounts)
+         if (allocated(displs)) deallocate(displs)
+
+         call t_stopf('mosartr_qgwl_redir_dist')
+      endif ! global_net_qgwl /= 0.0_r8 (or just global_net_qgwl condition removed as per your last request)
+   endif ! redirect_total_qgwl_flag
+
+
+   ! This loop should now use the qgwl_correction_local array
+   do nt = 1,nt_rtm
+   do nr = rtmCTL%begr,rtmCTL%endr
+      volr_init = rtmCTL%volr(nr,nt)
+
+      rtmCTL%runoff(nr,nt) = flow(nr,nt) ! This is main channel outflow from routing
+      rtmCTL%runofftot(nr,nt) = rtmCTL%direct(nr,nt) ! This is ice, qdto (if flag off), etc.
+
+      if (rtmCTL%mask(nr) == 1) then ! Land
+         rtmCTL%runofflnd(nr,nt) = rtmCTL%runoff(nr,nt)
+         rtmCTL%dvolrdtlnd(nr,nt)= rtmCTL%dvolrdt(nr,nt)
+      elseif (rtmCTL%mask(nr) >= 2) then ! Ocean or Outlet
+         rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt) ! Routed component
+
+         ! Apply the distributed global qgwl correction ONLY to liquid tracer at target outlets
+         if (redirect_total_qgwl_flag .and. nt == nt_nliq) then
+            rtmCTL%runoffocn(nr,nt) = rtmCTL%runoffocn(nr,nt) + qgwl_correction_local(nr)
+         endif
+         rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoffocn(nr,nt) ! Add potentially corrected routed flow
+         rtmCTL%dvolrdtocn(nr,nt)= rtmCTL%dvolrdt(nr,nt)
+      endif
+   enddo ! nr
+   enddo ! nt
+   if (allocated(qgwl_correction_local)) deallocate(qgwl_correction_local)
+
 
     call t_stopf('mosartr_subcycling')
 
@@ -5073,5 +5348,23 @@ contains
 
 !-----------------------------------------------------------------------
 
-end module RtmMod
+subroutine sort_outlets_by_discharge_desc(outlets_array, count) !TZ negative runoff
+   implicit none
+   integer, intent(in) :: count
+   type(outlet_discharge_info_type), intent(inout) :: outlets_array(:) ! Assumed-shape
+   integer :: i, j
+   type(outlet_discharge_info_type) :: temp_outlet_info
+   ! Bubble sort 
+   if (count < 2) return
+   do i = 1, count - 1
+       do j = 1, count - i
+           if (outlets_array(j)%discharge < outlets_array(j+1)%discharge) then
+               temp_outlet_info = outlets_array(j)
+               outlets_array(j) = outlets_array(j+1)
+               outlets_array(j+1) = temp_outlet_info
+           endif
+       enddo
+   enddo
+end subroutine sort_outlets_by_discharge_desc
 
+end module RtmMod
