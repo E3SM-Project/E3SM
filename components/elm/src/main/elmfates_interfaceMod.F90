@@ -218,14 +218,17 @@ module ELMFatesInterfaceMod
    implicit none
 
 
-   type, public :: f2hmap_type
+   type :: f2hmap_type
 
-      ! This is the associated column index of each FATES site
-      integer, allocatable :: fcolumn (:)
+      ! HLM patch index to FATES patchno index mapping, by site
+      integer, allocatable :: hlm_patch_index(:,:)
 
-      ! This is the associated site index of any HLM columns
-      ! This vector may be sparse, and non-sites have index 0
-      integer, allocatable :: hsites  (:)
+      contains
+
+        procedure, public :: SetPatchIndex
+        procedure, public :: GetPatchIndex
+        procedure, public :: GetColumnIndex
+        procedure, public :: GetLandunitIndex
 
    end type f2hmap_type
    
@@ -945,56 +948,40 @@ contains
       do nc = 1,nclumps
 
          call get_clump_bounds(nc, bounds_clump)
-         nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
+         ! nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
 
-         allocate(collist(1:nmaxcol))
+         ! allocate(collist(1:nmaxcol))
 
          ! Allocate the mapping that points columns to FATES sites, 0 is NA
-         allocate(this%f2hmap(nc)%hsites(bounds_clump%begc:bounds_clump%endc))
+         ! allocate(this%f2hmap(nc)%hsites(bounds_clump%begc:bounds_clump%endc))
 
          ! Initialize all columns with a zero index, which indicates no FATES site
-         this%f2hmap(nc)%hsites(:) = 0
+         ! this%f2hmap(nc)%hsites(:) = 0
 
-         s = 0
-         do c = bounds_clump%begc,bounds_clump%endc
-            l = col_pp%landunit(c)
-
-            ! These are the key constraints that determine if this column
-            ! will have a FATES site associated with it
-
-            ! INTERF-TODO: WE HAVE NOT FILTERED OUT FATES SITES ON INACTIVE COLUMNS.. YET
-            ! NEED A RUN-TIME ROUTINE THAT CLEARS AND REWRITES THE SITE LIST
-
-            if ( (lun_pp%itype(l) == istsoil) .and. (col_pp%active(c)) ) then
-               s = s + 1
-               collist(s) = c
-               this%f2hmap(nc)%hsites(c) = s
-               col_pp%is_fates(c) = .true.
-
+         ! Determine the number of FATES site based of the clumping
+         ! This assumes one site per landunit currently.
+         num_landunits_veg = 0
+         do l = bounds_clump%begl,bounds_clump%endl
+            if (lun_pp%itype(l) == istsoil) then
+               num_landunits_veg = num_landunits_veg + 1
                if(debug)then
-                  write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
+                  ! write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun_pp%itype(l)
                end if
             endif
-
          enddo
+
+         ! TODO Add adjustment to fates calculation here based on multi-column FATES options
+         s = num_landunits_veg
 
          if(debug)then
            write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
          end if
 
-         ! Allocate vectors that match FATES sites with HLM columns
-         ! RGK: Sites and fcolumns are forced as args during clm_driv() as of 6/4/2016
-         ! We may have to give these a dummy allocation of 1, which should
-         ! not be a problem since we always iterate on nsites.
+         ! Allocate map from FATES patchno index to HLM patch index by site
+         allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
 
-         allocate(this%f2hmap(nc)%fcolumn(s))
-
-         ! Assign the h2hmap indexing
-         this%f2hmap(nc)%fcolumn(1:s)         =  collist(1:s)
-
-         ! Deallocate the temporary arrays
-         deallocate(collist)
+         call this%f2hmap(nc)%SetPatchIndex()
 
          ! Set the number of FATES sites
          this%fates(nc)%nsites = s
@@ -4063,5 +4050,52 @@ end subroutine wrap_update_hifrq_hist
    call ncd_pio_closefile(ncid)
 
  end subroutine GetLandusePFTData
+
+! ======================================================================================
+
+ integer function GetColumnIndex(this,ifp,s) result(ifc)
+
+   !------------------------------------------------------------------------
+   ! This subroutine gets the mapping between the FATES patches and HLM columns
+   ! ------------------------------------------------------------------------
+
+   type(f2hmap_type), intent(inout) :: this
+
+   integer :: ifp  ! FATES bc_in/out patch dimension index
+   integer :: s    ! FATES site index
+
+   ifc = veg_pp%column(this%hlm_patch_index(ifp,s))
+
+ end function GetColumnIndex
+
+! ======================================================================================
+
+ subroutine SetPatchIndex(this,bounds_clump)
+
+   !------------------------------------------------------------------------
+   ! This subroutine sets the mapping between the FATES and HLM patches
+   ! ------------------------------------------------------------------------
+
+   type(f2hmap_type), intent(inout) :: this
+   type(bounds_type), intent(in)    :: bounds_clump
+
+   integer :: s    ! FATES side index
+   integer :: l    ! HLM landunit index
+   integer :: ifp  ! FATES patch index (patchno)
+
+   s = 0
+   do l = bounds_clump%begl,bounds_clump%endl
+      if (lun_pp%itype(l) == istsoil) then
+         s = s + 1
+         do ifp = 1,fates_maxPatchesperSite
+            ! This assumes that the first patch on the land unit is a vegetated
+            ! patch and that the patch indices are monotonically increasing.
+            ! See decompmod and initGridCellsMod for corroboration
+            this%hlm_patch_index(ifp,s) = lun_pp%pfti(l) + ifp
+         end do
+      end if
+    end do
+
+ end function SetColumnIndex
 
 end module ELMFatesInterfaceMod
