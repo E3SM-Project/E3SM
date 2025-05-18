@@ -74,11 +74,11 @@ Compsets are also available for standalone component model configurations, See t
 
 ## Supported resolution
 
-Currently two grid sets are supported for the above compsets, including a nominal low-resosluton confiuguration and one regionally refined mesh. Additional regionally refined meshes and a high-resolution grid will become available in the near future.
+Currently two grid sets are supported for the above compsets, including a nominal low-resolution configuration and one regionally refined mesh. Additional regionally refined meshes and a high-resolution grid will become available in the near future.
 
 | Grid Alias  |  Description  |
 | ----------- |  ------------ |
-|ne30pg2_r05_IcoswISC30E3r5 | For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km resolution, the land and river are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh dervied from the dual of a 30km resolution icosahedral mesh with ice shelf cavities (wISC) around Antarctica.|
+|ne30pg2_r05_IcoswISC30E3r5 | For this grid set, the atmosphere is on the ne30pg2 cubed-sphere mesh with approximately 100km resolution, the land and river are on a 0.5deg x 0.5deg structured grid, and the ocean and sea ice are on a hexagonal mesh derived from the dual of a 30km resolution icosahedral mesh with ice shelf cavities (wISC) around Antarctica.|
 |northamericax4v1pg2_r025_IcoswISC30E3r5 | The atmosphere for this grid set uses North America regionally refined mesh from about 110 km down to 25 km over the refined region. The land and river are on 0.25deg x 0.25deg structured grid. The ocean and sea ice are on the same icosahedral mesh as for `ne30pg2_r05_IcoswISC30E3r5`.|
 
 ## Input data

@@ -111,7 +111,7 @@ double ash_emission_rate(const double days_since_eruption) {
 
 ## An `AtmosphereProcess` in EAMxx
 
-- Intantiated inside an interface layer and contains _at a minimum_:
+- Instantiated inside an interface layer and contains _at a minimum_:
   - `set_grid`
   - `initialize_impl`
   - `run_impl`
@@ -139,7 +139,7 @@ See next slide for complete hpp file!
 
 ```cpp
 /*
- * First define this process intereface as a new header file
+ * First define this process interface as a new header file
  */
 #ifndef EAMXX_POMPEI_PROCESS_INTERFACE_HPP
 #define EAMXX_POMPEI_PROCESS_INTERFACE_HPP
@@ -373,7 +373,7 @@ Before simulation begins and happens only once
 
 ```cpp
 /*-----------------------------------------------------------------------------------------------
- * intialize_impl(run_type)
+ * initialize_impl(run_type)
  *
  * called once for each process at initialization of EAMxx.  This impl can be
  * defined with any actions or functions that are needed at initialization.
@@ -630,7 +630,7 @@ In `components/eamxx/cime_config/namelist_defaults_scream.xml`, add:
 
 - Just need to update our submission to run with pompei turned on.
 - Remember the atmchange commands we discussed in part 1.
-- Go back to the runscript we used and search for atmchange.  You’ll see a block of  commented out code which will turn pompei on.  Uncomment this and rerun the script.
+- Go back to the runscript we used and search for atmchange.  You’ll see a block of commented out code which will turn pompei on.  Uncomment this and rerun the script.
 - Note, you may need to change the case name or delete the old case to get this going.
 
 ---
