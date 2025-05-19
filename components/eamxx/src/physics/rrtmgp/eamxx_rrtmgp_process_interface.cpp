@@ -536,6 +536,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
     Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
   }
+
+  // Ensure rad_heating_pdel is recognized as initialized by the driver
+  auto& rad_heating = get_internal_field("rad_heating_pdel");
+  rad_heating.get_header().get_tracking().update_time_stamp(start_of_step_ts());
 }
 
 // =========================================================================================
