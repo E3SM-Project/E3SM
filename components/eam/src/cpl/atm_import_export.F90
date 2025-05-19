@@ -21,6 +21,7 @@ contains
     use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss, iac_present
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
+    use constituents  , only: pcnst
     !
     ! Arguments
     !
@@ -34,7 +35,7 @@ contains
     !
     ! Local variables
     !
-    integer            :: i,lat,n,c,ig  ! indices
+    integer            :: i,lat,n,c,ig,m  ! indices
     integer            :: ncols         ! number of columns
     logical, save      :: first_time = .true.
     integer            :: bnd_beg, bnd_end ! beginning and ending boundary month indices for IAC coupling
@@ -72,7 +73,11 @@ contains
        ! NOTE:overwrite_flds is .FALSE. for the first restart
        ! time step making cflx(:,1)=0.0 for the first restart time step.
        ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
-       cam_in(c)%cflx(:,2:) = 0._r8
+       do m = 2,pcnst
+         if ( (m/=c_i(1)) .and. (m/=c_i(2)) .and. (m/=c_i(3)) .and. (m/=c_i(4)) ) then
+           cam_in(c)%cflx(:,m) = 0._r8
+         endif
+       enddo
 
        do i =1,ncols
           if (overwrite_flds) then
@@ -161,17 +166,20 @@ contains
                 tfrac_complement = 1.0_r8 - tfrac
 
                 ! Interpolate IAC to extract values at current simulation time using monthly boundaries (bnd_beg and bnd_end)
-                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(bnd_beg),ig) * tfrac_complement + &
-                     -x2a(index_x2a_Fazz_co2sfc_iac(bnd_end),ig) * tfrac
+                !cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(bnd_beg),ig) * tfrac_complement + &
+                !     -x2a(index_x2a_Fazz_co2sfc_iac(bnd_end),ig) * tfrac
+                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
 
                 ! Interpolate IAC vertical emissions at high and low fields at the current simulation time
-                iac_vertical_emiss(c)%fco2_low_height(i) = &
-                     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_beg),ig) * tfrac_complement + &
-                     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac
+                !iac_vertical_emiss(c)%fco2_low_height(i) = &
+                !     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_beg),ig) * tfrac_complement + &
+                !     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac
+                iac_vertical_emiss(c)%fco2_low_height(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_spec),ig)
 
-                iac_vertical_emiss(c)%fco2_high_height(i) = &
-                     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
-                     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac
+                !iac_vertical_emiss(c)%fco2_high_height(i) = &
+                !     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
+                !     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac
+                iac_vertical_emiss(c)%fco2_high_height(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_spec),ig)
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
