@@ -142,7 +142,7 @@ contains
       logical :: full_compute = .true.
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure, landIceFraction
+        frazilSurfacePressure, landIcePressure, landIceDraft, landIceFraction
 
       integer, dimension(:), pointer :: &
         landIceFloatingMask
@@ -180,6 +180,7 @@ contains
 
       if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
          call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
          if (nCellsAll.gt.0 .AND. landIceFloatingMask(1) == -1) then
@@ -479,11 +480,11 @@ contains
       if ( full_compute ) then
 
          !
-         ! inputs: ssh, seaIcePressure, landIceDraft
+         ! inputs: ssh, seaIcePressure, landIceDraftForSsh
          ! outputs: pressureAdjustedSSH, gradSSH
          if (landIcePressureOn) then
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
-                   pressureAdjustedSSH, gradSSH, landIceDraft=landIceDraft )
+                   pressureAdjustedSSH, gradSSH, landIceDraftForSsh=landIceDraftForSsh )
         else
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
                    pressureAdjustedSSH, gradSSH)
@@ -2898,7 +2899,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
-                pressureAdjustedSSH, gradSSH, landIceDraft)!{{{
+                pressureAdjustedSSH, gradSSH, landIceDraftForSsh)!{{{
 
       implicit none
 
@@ -2914,7 +2915,7 @@ contains
       real (kind=RKIND), dimension(:), intent(in) :: &
          seaIcePressure
       real (kind=RKIND), dimension(:), optional, intent(in) :: &
-         landIceDraft
+         landIceDraftForSsh
 
       !-----------------------------------------------------------------
       !
@@ -2957,7 +2958,7 @@ contains
          !! This first directive should be correct, but there may
          !! be a problem with the optional argument. Removing optional
          !! landIceDraft from the present list for now.
-         !!acc parallel loop present(pressureAdjustedSSH, landIceDraft)
+         !!acc parallel loop present(pressureAdjustedSSH, landIceDraftForSsh)
          !$acc parallel loop present(pressureAdjustedSSH)
 #else
          !$omp parallel
@@ -2966,7 +2967,7 @@ contains
          do iCell = 1, nCells
             ! subtract the land ice draft from the SSH so sea ice doesn't experience tilt
             ! toward land ice
-            pressureAdjustedSSH(iCell) = pressureAdjustedSSH(iCell) - landIceDraft(iCell)
+            pressureAdjustedSSH(iCell) = pressureAdjustedSSH(iCell) - landIceDraftForSsh(iCell)
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
@@ -3693,19 +3694,26 @@ contains
 
       if ( trim(config_land_ice_flux_mode) == "off" ) return
 
+      if ( trim(config_land_ice_draft_mode) == "data" ) then
+
+         landIceDraftForSsh = landIceDraft
+
+      elseif ( trim(config_land_ice_draft_mode) == "pressure-dependent" ) then
+
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(landIceDraft, landIcePressure)
+         !$acc parallel loop present(landIceDraftForSsh, landIcePressure)
 #else
-      !$omp parallel
-      !$omp do schedule(runtime)
+         !$omp parallel
+         !$omp do schedule(runtime)
 #endif
-      do iCell = 1, nCellsAll
-         landIceDraft(iCell) = -landIcePressure(iCell) / (rho_floatation * gravity)
-      end do
+         do iCell = 1, nCellsAll
+            landIceDraftForSsh(iCell) = -landIcePressure(iCell) / (rho_floatation * gravity)
+         end do
 #ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
+         !$omp end do
+         !$omp end parallel
 #endif
+      endif
 
       if ( trim(config_land_ice_flux_mode) == "pressure_only") return
 
