@@ -114,13 +114,13 @@
 			description="Number of subgrid look-up table levels"
 		/>
 		<dim name="nRemovedIceRunoffHistory" definition="namelist:config_ais_ice_runoff_history_days"
-			 description="The number of days stored in the history of removed ice runoff."
+			description="The number of days stored in the history of removed ice runoff."
 		/>
 		<dim name="nGlcZLevels" definition="namelist:config_n_glc_z_levels"
                         description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling"
 		/>
-                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_precip_scaling_history_years"
-                         description="The number of years stored in the history of surface freshwater fluxes."
+		<dim name="nAccumulatedSFWFHistory" definition="namelist:config_precip_scaling_history_years"
+			description="The number of years stored in the history of surface freshwater fluxes."
 		/>
 	</dims>
 
@@ -754,39 +754,39 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_sgr_temperature_prescribed" type="real" default_value="0.0" units="C"
-			                description="Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true."
+					description="Prescribed subglacial runoff temperature value, applied when config_use_sgr_opt_temp_prescribed = .true."
 					possible_values="Any real number."
 		/>
 		<nml_option name="config_sgr_salinity_prescribed" type="real" default_value="0.0" units="1.e-3"
 					description="Prescribed subglacial runoff salinity value, applied when config_use_sgr_opt_salt_prescribed = .true."
 					possible_values="Any positive real number"
-                />
-        </nml_record>
-	<nml_record name="precip_scaling" mode="init;forward">
-                <nml_option name="config_use_precip_scaling" type="logical" default_value=".false."
-			                description="If enabled, precipitation fluxes from the data atmosphere are scalled to ensure freshwater balance in the ocean model."
-					possible_values=".true. or .false."
-                />
-	        <nml_option name="config_precip_scaling_mode" type="character" default_value="constant"
-			                description="Option for precipitation scaling to ensure freshwater balance in the ocean model."
-                        		possible_values="'constant' or 'time-dependent'"
 		/>
-                <nml_option name="config_precip_scaling_initial_factor" type="real" default_value="1.0" units="unitless"
-                                        description="Initial guess scaling factor on precipitation for config_precip_scaling_mode = 'time-dependent'."
-                                        possible_values="Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0"
-                />
-                <nml_option name="config_precip_scaling_constant_factor" type="real" default_value="1.0" units="unitless"
+	</nml_record>
+	<nml_record name="precip_scaling" mode="init;forward">
+		<nml_option name="config_use_precip_scaling" type="logical" default_value=".false."
+					description="If enabled, precipitation fluxes from the data atmosphere are scalled to ensure freshwater balance in the ocean model."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_precip_scaling_mode" type="character" default_value="constant"
+					description="Option for precipitation scaling to ensure freshwater balance in the ocean model."
+					possible_values="'constant' or 'time-dependent'"
+		/>
+		<nml_option name="config_precip_scaling_initial_factor" type="real" default_value="1.0" units="unitless"
+					description="Initial guess scaling factor on precipitation for config_precip_scaling_mode = 'time-dependent'."
+					possible_values="Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0"
+		/>
+		<nml_option name="config_precip_scaling_constant_factor" type="real" default_value="1.0" units="unitless"
 					description="Prescribed constant scaling factor on precipitation for config_precip_scaling_mode = 'constant'." 
 					possible_values="Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0"
-                />
-                <nml_option name="config_precip_scaling_history_years" type="integer" default_value="1" units="years"
-			                description="The number of years over for which the history span of precipitational scaling factor is computed."
-                       			possible_values="Must be a positive integer greater than or equal to 1."
 		/>
-                <nml_option name="config_precip_scaling_write_to_logfile" type="logical" default_value=".false."
-			                description="Logical flag indicating whether precipitation flux scaling information is written to the log file."
-                                        possible_values=".true. or .false."
-                />
+		<nml_option name="config_precip_scaling_history_years" type="integer" default_value="1" units="years"
+					description="The number of years over for which the history span of precipitational scaling factor is computed."
+					possible_values="Must be a positive integer greater than or equal to 1."
+		/>
+		<nml_option name="config_precip_scaling_write_to_logfile" type="logical" default_value=".false."
+					description="Logical flag indicating whether precipitation flux scaling information is written to the log file."
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
 		<nml_option name="config_use_time_varying_atmospheric_forcing" type="logical" default_value=".false."
@@ -848,7 +848,7 @@
 		<nml_option name="config_time_varying_land_ice_forcing_interval" type="character" default_value="01:00:00"
 			description="Time between forcing inputs"
 			possible_values="'YYYY-MM-DD_HH:MM:SS"
-                />
+		/>
 	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
 		<nml_option name="config_remove_ais_river_runoff" type="logical" default_value=".false."
@@ -1366,7 +1366,7 @@
 					possible_values="Any positive integer greater than or equal to one. A value of one employs the same dt in all regions."
 		/>
 	</nml_record>
-    <nml_record name="forward_backward" mode="forward">
+	<nml_record name="forward_backward" mode="forward">
 		<nml_option name="config_fb_weight_1" type="real" default_value="0.531"
 					description="The forward-backward weight for the first stage of FB-RK(3,2), used in FB_LTS."
 					possible_values="Any positive real number less than or equal to one."
@@ -1529,10 +1529,10 @@
 					description="Tolerance for the barotropic mode solver"
 					possible_values="any positive real, but typically less than 1.0e-9"
 		/>
-                <nml_option name="config_n_btr_si_large_iter" type="integer" default_value="1"
-                                        description="number of large barotropic system iterations"
-                                        possible_values="any positive integer, but typically 1 and less than 2"
-                />
+		<nml_option name="config_n_btr_si_large_iter" type="integer" default_value="1"
+					description="number of large barotropic system iterations"
+					possible_values="any positive integer, but typically 1 and less than 2"
+		/>
 		<nml_option name="config_btr_si_partition_match_mode" type="logical" default_value=".false."
 					description="If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
 					possible_values=".true. or .false."
@@ -2139,28 +2139,28 @@
 			<var_array name="avgSSHGradient"/>
 			<var name="forcingGroupNames"/>
 			<var name="forcingGroupRestartTimes"/>
-            <var name="gotmVertViscTopOfCell"/>
-            <var name="gotmVertDiffTopOfCell"/>
-            <var name="gotmTKETopOfCell"/>
-            <var name="gotmKbTopOfCell"/>
-            <var name="gotmEpsbTopOfCell"/>
-            <var name="gotmDissTopOfCell"/>
-            <var name="gotmLengthTopOfCell"/>
-            <var name="pgf_sal"/>
-            <var name="nAccumulatedRemovedIceRunoff" packages="scaledDISMFPKG"/>
-            <var name="avgRemovedIceRunoff" packages="scaledDISMFPKG"/>
-            <var name="totalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
-            <var name="nValidTotalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
-	    <var name="runningMeanRemovedIceRunoff" packages="scaledDISMFPKG"/>
-	    <var name="nAccumulatedfwFlux" packages="scaledSFWFPKG"/>
-	    <var name="avgprecFlux" packages="scaledSFWFPKG"/>
-	    <var name="avgfwFlux" packages="scaledSFWFPKG"/>
-	    <var name="totalAccumulatedprecFluxHistory" packages="scaledSFWFPKG"/>
-	    <var name="totalAccumulatedfwFluxHistory" packages="scaledSFWFPKG"/>
-	    <var name="SSHinitial" packages="scaledSFWFPKG"/>
-	    <var name="SSHfinal" packages="scaledSFWFPKG"/>
-            <var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
-	    <var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
+			<var name="gotmVertViscTopOfCell"/>
+			<var name="gotmVertDiffTopOfCell"/>
+			<var name="gotmTKETopOfCell"/>
+			<var name="gotmKbTopOfCell"/>
+			<var name="gotmEpsbTopOfCell"/>
+			<var name="gotmDissTopOfCell"/>
+			<var name="gotmLengthTopOfCell"/>
+			<var name="pgf_sal"/>
+	 		<var name="nAccumulatedRemovedIceRunoff" packages="scaledDISMFPKG"/>
+			<var name="avgRemovedIceRunoff" packages="scaledDISMFPKG"/>
+			<var name="totalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
+			<var name="nValidTotalRemovedIceRunoffHistory" packages="scaledDISMFPKG"/>
+			<var name="runningMeanRemovedIceRunoff" packages="scaledDISMFPKG"/>
+			<var name="nAccumulatedfwFlux" packages="scaledSFWFPKG"/>
+			<var name="avgprecFlux" packages="scaledSFWFPKG"/>
+			<var name="avgfwFlux" packages="scaledSFWFPKG"/>
+			<var name="totalAccumulatedprecFluxHistory" packages="scaledSFWFPKG"/>
+			<var name="totalAccumulatedfwFluxHistory" packages="scaledSFWFPKG"/>
+			<var name="SSHinitial" packages="scaledSFWFPKG"/>
+			<var name="SSHfinal" packages="scaledSFWFPKG"/>
+			<var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
+			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
 		</stream>
 
 		<stream name="output"
@@ -2549,7 +2549,7 @@
 			description="The effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
 		/>
-        <!-- FIELDS FOR GOTM -->
+		<!-- FIELDS FOR GOTM -->
 		<var name="gotmVertViscTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="GOTM: vertical viscosity defined at the cell center (horizontally) and top (vertically)"
 			 packages="gotmPKG"
@@ -2578,7 +2578,7 @@
 			 description="GOTM: turbulent length scale defined at the cell center (horizontally) and top (vertically)"
 			 packages="gotmPKG"
 		/>
-                <!-- FIELDS FOR VERTICAL REMAPPING -->
+		<!-- FIELDS FOR VERTICAL REMAPPING -->
 		<var name="layerThicknessLag" type="real" dimensions="nVertLevels nCells Time" units="m"
 			 description="The layerThickness after the Lagrangian step, prior to remapping."
 			 packages="verticalRemapPKG"
@@ -2818,7 +2818,7 @@
 		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
 			 description="Distance of each cell to nearest coastline cell."
 		/>
-                <!-- FIELDS FOR SUBGIRD WETTING AND DRYING-->
+		<!-- FIELDS FOR SUBGIRD WETTING AND DRYING-->
 		<var name="subgridWetVolumeCellTable" type="real" dimensions="nSubgridTableLevels nCells" units="m"
 			 description="Pre-computed wet volume per unit area for each cell at given ssh value"
 			 packages="subgridWetDryPKG"
@@ -3741,11 +3741,11 @@
 		/>
 		<!-- FIELD split_explicit AB2 time stepping -->
 		<var name="normalVelocityTendOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
-                        description="time tendency of normal component of velocity at the previous time step used in the split-explicit AB2 time stepping"
+			description="time tendency of normal component of velocity at the previous time step used in the split-explicit AB2 time stepping"
 			packages="splitAB2TimeIntegrator"
 		/>
 		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
-                        description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
+			description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
 			packages="splitAB2TimeIntegrator"
 		/>
 		<var name="layerThicknessCellWetDry" type="real" dimensions="nVertLevels nCells Time" units="m"
@@ -3985,43 +3985,43 @@
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
-                <!-- Additional fields required for computing scaling factors to maintain water balance -->
-                <var name="nAccumulatedfwFlux" type="integer" dimensions="Time"
-                         description="Number of accumulations in time averaging of surface water fluxes"
-                         packages="scaledSFWFPKG"
-                />
-                <var name="avgprecFlux" type="real" dimensions="Time" units="kg s^-1"
-                         description="The yearly mean, area integrated value of precipitation flux (rain+snow)."
-                         packages="scaledSFWFPKG"
+		<!-- Additional fields required for computing scaling factors to maintain water balance -->
+		<var name="nAccumulatedfwFlux" type="integer" dimensions="Time"
+			 description="Number of accumulations in time averaging of surface water fluxes"
+			 packages="scaledSFWFPKG"
 		/>
-                <var name="avgfwFlux" type="real" dimensions="Time" units="kg s^-1"
-                         description="The yearly mean, area integrated value of freshwater flux (ssh inferred)."
-                         packages="scaledSFWFPKG"
+		<var name="avgprecFlux" type="real" dimensions="Time" units="kg s^-1"
+			 description="The yearly mean, area integrated value of precipitation flux (rain+snow)."
+			 packages="scaledSFWFPKG"
 		/>
-                <var name="SSHinitial" type="real" dimensions="Time" units="kg"
+		<var name="avgfwFlux" type="real" dimensions="Time" units="kg s^-1"
+			 description="The yearly mean, area integrated value of freshwater flux (ssh inferred)."
+			 packages="scaledSFWFPKG"
+		/>
+		<var name="SSHinitial" type="real" dimensions="Time" units="kg"
 			 description="The total water mass inferred from sea surface height anomalies at the beginning of a year."
-                         packages="scaledSFWFPKG"
+			 packages="scaledSFWFPKG"
 		/>
-                <var name="SSHfinal" type="real" dimensions="Time" units="kg"
+		<var name="SSHfinal" type="real" dimensions="Time" units="kg"
 			 description="The total water mass inferred from sea surface height anomalies at the end of a year."
-                         packages="scaledSFWFPKG"
-                />
-                <var name="totalAccumulatedprecFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
-                         description="The history of accumulated total precipitation fluxes(rain+snow), used to compute a running mean."
-                         packages="scaledSFWFPKG"
+			 packages="scaledSFWFPKG"
 		/>
-                <var name="totalAccumulatedfwFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
-                         description="The history of accumulated freshwater fluxes, used to compute a running mean."
-                         packages="scaledSFWFPKG"
+		<var name="totalAccumulatedprecFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
+			 description="The history of accumulated total precipitation fluxes(rain+snow), used to compute a running mean."
+			 packages="scaledSFWFPKG"
 		/>
-                <var name="nValidTotalfwFluxHistory" type="integer" dimensions="Time"
-                         description="The number of valid days used for computing the surface water balance."
-                         packages="scaledSFWFPKG"
-                />
-                <var name="SFWFScalingFactor" type="real" dimensions="Time" units="fractional"
-                         description="The scaling factor of surface freshwater flux, derived over the nValidTotalfwFluxHistory valid entries"
-                         packages="scaledSFWFPKG"
-                />
+		<var name="totalAccumulatedfwFluxHistory" type="real" dimensions="nAccumulatedSFWFHistory Time" units="kg"
+			 description="The history of accumulated freshwater fluxes, used to compute a running mean."
+			 packages="scaledSFWFPKG"
+		/>
+		<var name="nValidTotalfwFluxHistory" type="integer" dimensions="Time"
+			 description="The number of valid days used for computing the surface water balance."
+			 packages="scaledSFWFPKG"
+		/>
+		<var name="SFWFScalingFactor" type="real" dimensions="Time" units="fractional"
+			 description="The scaling factor of surface freshwater flux, derived over the nValidTotalfwFluxHistory valid entries"
+			 packages="scaledSFWFPKG"
+		/>
 
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
@@ -4034,7 +4034,7 @@
 			 description="Correction for high res FOSI runs"
 		/>
 
-        <!-- Waves coupling fields -->
+		<!-- Waves coupling fields -->
 		<var name="stokesDriftZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Zonal component of the wave-induced Stokes drift current."
 			 packages="activeWavePKG"
@@ -4108,7 +4108,7 @@
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 		<var name="avgLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
-		         description="Time-averaged sum of freshwater fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
+			 description="Time-averaged sum of freshwater fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 		<var name="avgLandIceHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
 			 description="Time-averaged sum of heat fluxes associated with ice shelf basal melt fluxes cell centers sent to coupler. Positive into the ocean."
@@ -4118,7 +4118,7 @@
 		/>
 		<var name="avgRemovedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 			 description="Time-averaged sum of freshwater fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
-	        />
+		/>
 		<var name="avgRemovedIceRunoffHeatFlux" type="real" dimensions="nCells Time" units="W m^-2"
 			 description="Time-averaged sum of heat fluxes associated with removed ice runoff fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
@@ -4337,7 +4337,7 @@
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
 			 packages="tidalPotentialForcingPKG"
 		/>
-               	<var name="forcingTimeIncrement" type="real" dimensions="" units="s"
+		<var name="forcingTimeIncrement" type="real" dimensions="" units="s"
 			description="Time increment to compute forcing terms at intermediate time intervals"
 			packages="forwardMode"
 		/>
