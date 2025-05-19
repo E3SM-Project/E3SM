@@ -258,6 +258,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
+  runtime_options.shoc_1p5tke = m_params.get<bool>("shoc_1p5tke");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.

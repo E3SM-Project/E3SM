@@ -56,14 +56,19 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
     static constexpr Real wthv_sec_gr[shcol] = {0.5, -0.5};
     // Shear production term [s-2]
     static constexpr Real sterm_gr[shcol] = {0.5, 0.0};
+    // Brunt vaisalla frequency [s-1], only used for 1.5 closure
+    static constexpr Real brunt_gr[shcol] = {-0.04, 0.004};
     // TKE initial value
     Real tke_init_gr[shcol] = {mintke, 0.4};
 
     // Define upper bounds check for reasonable output
     Real adiss_upper_bound = 1;
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridgeing to F90
-    AdvSgsTkeData SDS(shcol, nlev, dtime);
+    AdvSgsTkeData SDS(shcol, nlev, dtime, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.dtime == dtime) );
@@ -78,6 +83,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
         SDS.wthv_sec[offset] = wthv_sec_gr[s];
         SDS.sterm_zt[offset] = sterm_gr[s];
         SDS.tke[offset] = tke_init_gr[s];
+	// Set eddy viscosity below to a constant for all tests
+	SDS.tk[offset] = 1.0;
+        // for 1.5 scheme this value is irrelevant
+        SDS.brunt[offset] = 0.0;
       }
     }
 
@@ -120,6 +129,50 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
       }
     }
 
+    // We are now going to repeat this test but with 1.5 TKE closure option activated
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // We will use the same input data as above but with the SGS buoyancy
+    //  flux set to zero, as will be the case with the 1.5 TKE option.
+    //  Additionally, we will fill the value of the brunt vaisala frequency.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.wthv_sec[offset] = 0.0;
+        SDS.brunt[offset] = brunt_gr[s];
+        SDS.tke[offset] = tke_init_gr[s];
+      }
+    }
+
+    // Call the C++ implementation
+    adv_sgs_tke(SDS);
+
+    // Check to make sure that there has been
+    //  TKE growth
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        // Require output to fall within reasonable bounds
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
+        REQUIRE(SDS.a_diss[offset] >= 0);
+
+        if (s == 0){
+          // Growth check
+          REQUIRE(SDS.tke[offset] > tke_init_gr[s]);
+        }
+        else{
+          // Decay check
+          REQUIRE(SDS.tke[offset] < tke_init_gr[s]);
+        }
+      }
+    }
+
     // SECOND TEST
     // TKE Dissipation test.  Given input values that are identical
     //  in two columns, verify that the dissipation rate is higher
@@ -132,7 +185,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
     // Shear production term [s-2]
     static constexpr Real sterm_diss = 0.01;
     // TKE initial value
-    Real tke_init_diss= 0.1;
+    static constexpr Real tke_init_diss =  0.1;
+
+    // Reset to default SHOC closures
+    SDS.shoc_1p5tke = false;
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -188,6 +244,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
         }
       }
     }
+
   }
 
   void run_bfb()
@@ -196,10 +253,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::
 
     AdvSgsTkeData baseline_data[] = {
       //            shcol, nlev
-      AdvSgsTkeData(10, 71, 72),
-      AdvSgsTkeData(10, 12, 13),
-      AdvSgsTkeData(7,  16, 17),
-      AdvSgsTkeData(2,   7, 8)
+      AdvSgsTkeData(10, 71, 72, false),
+      AdvSgsTkeData(10, 12, 13, false),
+      AdvSgsTkeData(7,  16, 17, false),
+      AdvSgsTkeData(2,   7, 8,  false)
     };
 
     // Generate random input data

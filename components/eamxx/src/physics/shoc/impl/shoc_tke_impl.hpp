@@ -30,6 +30,7 @@ void Functions<S,D>::shoc_tke(
   const Scalar&                lambda_thresh,
   const Scalar&                Ckh,
   const Scalar&                Ckm,
+  const bool&                  shoc_1p5tke,
   const uview_1d<const Spack>& wthv_sec,
   const uview_1d<const Spack>& shoc_mix,
   const uview_1d<const Spack>& dz_zi,
@@ -67,13 +68,13 @@ void Functions<S,D>::shoc_tke(
   linear_interp(team,zi_grid,zt_grid,sterm,sterm_zt,nlevi,nlev,0);
 
   // Advance sgs TKE
-  adv_sgs_tke(team,nlev,dtime,shoc_mix,wthv_sec,sterm_zt,tk,tke,a_diss);
+  adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,shoc_mix,wthv_sec,sterm_zt,tk,brunt,tke,a_diss);
 
   // Compute isotropic time scale [s]
   isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy);
 
   // Compute eddy diffusivity for heat and momentum
-  eddy_diffusivities(team,nlev,Ckh,Ckm,pblh,zt_grid,tabs,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
+  eddy_diffusivities(team,nlev,shoc_1p5tke,Ckh,Ckm,pblh,zt_grid,tabs,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
 
   // Release temporary variables from the workspace
   workspace.template release_many_contiguous<3>(

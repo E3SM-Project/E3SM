@@ -256,6 +256,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <coeff_kh type="real" doc="Eddy diffusivity coefficient for heat">0.1</coeff_kh>
       <coeff_km type="real" doc="Eddy diffusivity coefficient for momentum">0.1</coeff_km>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
+      <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
     </shoc>
 
     <!-- Basic options for each mam4 atm process -->

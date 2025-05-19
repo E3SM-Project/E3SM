@@ -51,6 +51,8 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     Real dtime = 300;
     // Buoyancy flux [K m/s]
     Real wthv_sec[nlev] = {0.05, 0.04, 0.03, 0.02, 0.03};
+    // Brunt Vaisalla frequency [s-1]
+    Real brunt[nlev] = {-0.0005,-0.0004,-0.0003,-0.0003,-0.0003};
     // Length Scale [m]
     Real shoc_mix[nlev] = {1000, 750, 500, 400, 300};
     // Define zonal wind on nlev grid [m/s]
@@ -83,8 +85,11 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
       tk[n] = tkh[n];
     }
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridging to F90
-    ShocTkeData SDS(shcol, nlev, nlevi, dtime);
+    ShocTkeData SDS(shcol, nlev, nlevi, dtime, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE(SDS.nlevi - SDS.nlev == 1);
@@ -108,6 +113,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
         SDS.tkh[offset] = tkh[n];
         SDS.tk[offset] = tk[n];
         SDS.tabs[offset] = tabs[n];
+        SDS.brunt[offset] = 0; // Do not consider for SHOC default
       }
 
       // Fill in test data on zi_grid.
@@ -178,6 +184,43 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
       }
     }
 
+    // We are now going to repeat this test but with 1.5 TKE closure option activated
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // We will use the same input data as above but with the SGS buoyancy
+    //  flux set to zero, as will be the case with the 1.5 TKE option.
+    //  Additionally, we will fill the value of the brunt vaisala frequency.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.wthv_sec[offset] = 0.0;
+        SDS.brunt[offset] = brunt[n];
+      }
+    }
+
+    // Call the C++ implementation
+    shoc_tke(SDS);
+
+    // Make array to save the result of TKE
+    Real tke_test1_1p5[nlev*shcol];
+
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.tke[offset] > tke_init[n]);
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.tkh[offset] > 0);
+        REQUIRE(SDS.tk[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] >= 0);
+        REQUIRE(SDS.isotropy[offset] <= maxiso);
+        tke_test1_1p5[offset] = SDS.tke[offset];
+      }
+    }
+
     // TEST TWO
     // Decay test.  Now starting with the TKE from TEST ONE in
     // its spun up state, feed inputs that should always make
@@ -197,6 +240,9 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     // Define meridional wind on nlev grid [m/s]
     Real v_wind_decay[nlev] = {-2, -2, -2, -2, -2};
 
+    // Call default SHOC closure assumptions
+    SDS.shoc_1p5tke = false;
+
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
       for(Int n = 0; n < nlev; ++n) {
@@ -206,6 +252,7 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
         SDS.shoc_mix[offset] = shoc_mix_decay[n];
         SDS.u_wind[offset] = u_wind_decay[n];
         SDS.v_wind[offset] = v_wind_decay[n];
+        SDS.brunt[offset] = 0; // do not consider for default SHOC
 
       }
     }
@@ -244,6 +291,41 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
         REQUIRE(SDS.isotropy[offset] <= maxiso);
       }
     }
+
+    // We are now going to repeat this test but with 1.5 TKE closure option activated
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // We will use the same input data as above but with the SGS buoyancy
+    //  flux set to zero, as will be the case with the 1.5 TKE option.
+    //  Additionally, we will fill the value of the brunt vaisala frequency.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.wthv_sec[offset] = 0.0;
+        SDS.brunt[offset] = brunt[n];
+      }
+    }
+
+    // Call the C++ implementation
+    shoc_tke(SDS);
+
+   // Verify ALL outputs are reasonable and that TKE has decayed
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.tke[offset] < tke_test1_1p5[offset]);
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.tkh[offset] > 0);
+        REQUIRE(SDS.tk[offset] > 0);
+        REQUIRE(SDS.isotropy[offset] >= 0);
+        REQUIRE(SDS.isotropy[offset] <= maxiso);
+      }
+    }
+
   }
 
   void run_bfb()
@@ -251,10 +333,10 @@ struct UnitWrap::UnitTest<D>::TestShocTke : public UnitWrap::UnitTest<D>::Base {
     auto engine = Base::get_engine();
 
     ShocTkeData baseline_data[] = {
-      ShocTkeData(10, 71, 72, 300),
-      ShocTkeData(10, 12, 13, 100),
-      ShocTkeData(7,  16, 17, 50),
-      ShocTkeData(2, 7, 8, 5),
+      ShocTkeData(10, 71, 72, 300, false),
+      ShocTkeData(10, 12, 13, 100, false),
+      ShocTkeData(7,  16, 17, 50, false),
+      ShocTkeData(2, 7, 8, 5, false),
     };
 
     // Generate random input data
