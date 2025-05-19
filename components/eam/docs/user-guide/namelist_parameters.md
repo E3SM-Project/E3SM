@@ -129,8 +129,8 @@
 
 | dCAPE-ULL Parameters      | Description                                                       | Default value          |
 | ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_trig_dcape`       | Enable dynamic CAPE (DCAPE) trigger for ZM deep convection        | `.false.`
-| `zmconv_trig_ull`         | Enable unrestricted launch level (ULL) mode for ZM deep convection| `.false.`
+| `zmconv_trig_dcape`       | Enable dynamic CAPE (DCAPE) trigger for ZM deep convection        | `.false.`              |
+| `zmconv_trig_ull`         | Enable unrestricted launch level (ULL) mode for ZM deep convection| `.false.`              |
 
 | Conv. micro. Parameters   | Description                                                       | Default value          |
 | ------------------------- | ----------------------------------------------------------------- | ---------------------- |
