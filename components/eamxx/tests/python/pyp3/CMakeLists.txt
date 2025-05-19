@@ -32,13 +32,16 @@ CreateADUnitTest(${TEST_BASE_NAME}_cxx
 set (EXEC_TYPE "py")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output_py.yaml)
-configure_file (${CMAKE_CURRENT_SOURCE_DIR}/p3_standalone_py
-                ${CMAKE_CURRENT_BINARY_DIR}/p3_standalone_py
+configure_file (${CMAKE_CURRENT_SOURCE_DIR}/p3_standalone.py
+                ${CMAKE_CURRENT_BINARY_DIR}/p3_standalone.py
                 @ONLY)
 
 # This test will a) run pyp3, and b) compare the generated nc files
+add_custom_target (p3_standalone_py ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/p3_standalone.py
+)
 CreateUnitTestFromExec(
-  ${TEST_BASE_NAME}_py "p3_standalone_py"
+  ${TEST_BASE_NAME}_py p3_standalone_py
   LABELS p3 physics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}_py
