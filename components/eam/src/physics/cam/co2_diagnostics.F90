@@ -87,6 +87,9 @@ contains
             ! carbon emissions and fluxes at current timestep
             state(lchnk)%c_flux_sfc(i) = 0._r8
             state(lchnk)%c_flux_air(i) = 0._r8
+            state(lchnk)%c_flux_sff(i) = 0._r8
+            state(lchnk)%c_flux_lnd(i) = 0._r8
+            state(lchnk)%c_flux_ocn(i) = 0._r8
             ! monthly accumulated carbon emissions and fluxes
             state(lchnk)%c_mflx_sfc(i) = 0._r8
             state(lchnk)%c_mflx_air(i) = 0._r8
@@ -256,6 +259,9 @@ contains
       ! put in state
       do i = 1, ncol
          state%c_flux_sfc(i) = sfc_flux(i)
+         state%c_flux_sff(i) = sfc_flux_fff(i)
+         state%c_flux_lnd(i) = sfc_flux_lnd(i)
+         state%c_flux_ocn(i) = sfc_flux_ocn(i)
       end do
 
       ! zero out monthly fluxes at start of each month
@@ -382,7 +388,7 @@ contains
       integer :: ierr
       integer :: cdate, year, mon, day, sec
       integer, parameter :: c_num_var     = 4
-      integer, parameter :: f_ts_num_var  = 2
+      integer, parameter :: f_ts_num_var  = 5
       integer, parameter :: f_mon_num_var = 5
       integer, parameter :: f_run_num_var = 5
       character(len=*), parameter :: sub_name='print_global_carbon_diags: '
@@ -392,7 +398,7 @@ contains
       real(r8) :: flux_mon_glob(f_mon_num_var)
       real(r8) :: flux_run_glob(f_run_num_var)
       real(r8) :: gtc_curr, gtc_init, gtc_mnst, gtc_prev, gtc_delta
-      real(r8) :: gtc_flux_sfc, gtc_flux_air
+      real(r8) :: gtc_flux_sfc, gtc_flux_air, gtc_flux_sff, gtc_flux_lnd, gtc_flux_ocn
       real(r8) :: gtc_mflx_sfc, gtc_mflx_air, gtc_mflx_sff, gtc_mflx_lnd, gtc_mflx_ocn
       real(r8) :: gtc_iflx_sfc, gtc_iflx_air, gtc_iflx_sff, gtc_iflx_lnd, gtc_iflx_ocn
       real(r8) :: gtc_flux_tot, gtc_mflx_tot, gtc_iflx_tot
@@ -422,6 +428,9 @@ contains
             ! carbon emissions and fluxes at current time step
             flux_ts(i,lchnk,1) = state(lchnk)%c_flux_sfc(i)
             flux_ts(i,lchnk,2) = state(lchnk)%c_flux_air(i)
+            flux_ts(i,lchnk,3) = state(lchnk)%c_flux_sff(i)
+            flux_ts(i,lchnk,4) = state(lchnk)%c_flux_lnd(i)
+            flux_ts(i,lchnk,5) = state(lchnk)%c_flux_ocn(i)
             ! monthly accumulated carbon emissions and fluxes
             flux_mon(i,lchnk,1) = state(lchnk)%c_mflx_sfc(i)
             flux_mon(i,lchnk,2) = state(lchnk)%c_mflx_air(i)
@@ -466,6 +475,9 @@ contains
 
       gtc_flux_sfc = flux_ts_glob(1)
       gtc_flux_air = flux_ts_glob(2)
+      gtc_flux_sff = flux_ts_glob(3)
+      gtc_flux_lnd = flux_ts_glob(4)
+      gtc_flux_ocn = flux_ts_glob(5)
 
       gtc_mflx_sfc = flux_mon_glob(1)
       gtc_mflx_air = flux_mon_glob(2)
@@ -512,6 +524,9 @@ contains
 
          write(iulog,C_FF) 'Surface  Emissions', gtc_flux_sfc, gtc_flux_sfc * dtime
          write(iulog,C_FF) 'Aircraft Emissions', gtc_flux_air, gtc_flux_air * dtime
+         write(iulog,C_FF) 'Sfc Fssl Fuel Flux', gtc_flux_sff, gtc_flux_sff * dtime
+         write(iulog,C_FF) 'Land  Surface Flux', gtc_flux_lnd, gtc_flux_lnd * dtime
+         write(iulog,C_FF) 'Ocean Surface Flux', gtc_flux_ocn, gtc_flux_ocn * dtime
 
          write(iulog, '(71("-"),"|",23("-"))')
 
