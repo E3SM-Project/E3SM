@@ -128,10 +128,18 @@ get_my_triplets (const std::string& map_file) const
   MPI_Type_create_struct (3,lengths,displacements,types,&mpi_triplet_t);
   MPI_Type_commit(&mpi_triplet_t);
 
-  // Create import-export
-  GridImportExport imp_exp (fine_grid,io_grid);
+  // Create import-export and gather my triplets
   std::map<int,std::vector<Triplet>> my_triplets_map;
-  imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  try {
+    GridImportExport imp_exp (fine_grid,io_grid);
+    imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  } catch (...) {
+    // Print the map file name, to help debugging
+    std::cout << "[HorizRemapperData] Something went wrong while performing a grid import-export operation.\n"
+              << " - map file name : " << map_file << "\n"
+              << " - fine grid name: " << fine_grid->name() << "\n";
+    throw;
+  }
   MPI_Type_free(&mpi_triplet_t);
 
   std::vector<Triplet> my_triplets;
