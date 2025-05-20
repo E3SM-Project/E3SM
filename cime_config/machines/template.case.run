@@ -19,6 +19,9 @@ from standard_script_setup          import *
 
 from CIME.case import Case
 
+from CIME.utils import run_cmd
+from CIME.status import run_and_log_case_status
+
 logger = logging.getLogger(__name__)
 
 import argparse
@@ -70,8 +73,24 @@ def _main_func(description):
     sys.argv.extend([] if "ARGS_FOR_SCRIPT" not in os.environ else os.environ["ARGS_FOR_SCRIPT"].split())
 
     caseroot, skip_pnl, set_continue_run, resubmit = parse_command_line(sys.argv, description)
+
     with Case(caseroot, read_only=False) as case:
+        # Load the environment and look for pre-run hook script
+        case.load_env(reset=True)
+        prerun_hook = os.environ.get("E3SM_CIME_PRERUN_HOOK", None)
+        if prerun_hook is not None:
+            run_func = lambda: run_cmd(prerun_hook)[0]
+            success = run_and_log_case_status(run_func,
+                        "Pre-run hook",
+                        caseroot=case.get_value("CASEROOT"))
+
         success = case.case_run(skip_pnl=skip_pnl, set_continue_run=set_continue_run, submit_resubmits=resubmit)
+        postrun_hook = os.environ.get("E3SM_CIME_POSTRUN_HOOK", None)
+        if postrun_hook is not None:
+            run_func = lambda: run_cmd(postrun_hook)[0]
+            success = run_and_log_case_status(run_func,
+                        "Post-run hook",
+                        caseroot=case.get_value("CASEROOT"))
 
     sys.exit(0 if success else 1)
 
