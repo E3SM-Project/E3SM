@@ -23,7 +23,7 @@ void init_fluxes(const int &ncol,
           ncol, pcnst - gas_start_ind);
 
   // Parallel loop over all the columns
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("mam4xx_srf_and_online_emissions_init_fluxes",
       policy, KOKKOS_LAMBDA(const KT::MemberType &team) {
         const int icol   = team.league_rank();
         view_1d flux_col = ekat::subview(constituent_fluxes, icol);

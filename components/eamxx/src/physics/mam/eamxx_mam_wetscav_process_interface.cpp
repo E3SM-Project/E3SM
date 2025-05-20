@@ -68,7 +68,7 @@ void MAMWetscav::set_grids(
   // cloud liquid number mixing ratio [1/kg]
   auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
   add_tracer<Required>("nc", grid_, n_unit);
-  
+
   static constexpr auto m2 = m * m;
   static constexpr auto s2 = s * s;
 
@@ -429,7 +429,7 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &scavimptblvol = scavimptblvol_;
 
   // Loop over atmosphere columns
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("MAMWetscav",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();  // column index
 

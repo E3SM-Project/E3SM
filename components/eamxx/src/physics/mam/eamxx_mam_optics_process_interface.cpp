@@ -52,7 +52,7 @@ void MAMOptics::set_grids(
   FieldLayout scalar3d_int = grid_->get_3d_scalar_layout(false);
   add_tracers_wet_atm();
   add_fields_dry_atm();
-    
+
   // cloud liquid number mixing ratio [1/kg]
   add_tracer<Required>("nc", grid_, n_unit);
 
@@ -406,7 +406,7 @@ void MAMOptics::run_impl(const double dt) {
 
       });
   Kokkos::fence();
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("mam4xx_optics_process",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const Int icol = team.league_rank();  // column index
         // absorption optical depth, per layer [unitless]
