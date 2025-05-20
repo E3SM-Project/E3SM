@@ -97,14 +97,32 @@ target_include_directories(scream_share PUBLIC
   ${SCREAM_BIN_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
-
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
 else()
   target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
+endif()
+
+if (EAMXX_ENABLE_PYTHON)
+  # Need python headers
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+  # Need pybind11
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
+    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE pybind11_ROOT)
+  find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
+
+  # Add py sources and link pybind11
+  target_sources (scream_share PRIVATE
+    eamxx_pysession.cpp)
+
+  target_link_libraries(scream_share PUBLIC Python::Python pybind11::module)
+  target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
 endif()
 
 target_link_libraries(scream_share PUBLIC ekat pioc)
