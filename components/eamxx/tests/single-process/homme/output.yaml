@@ -1,11 +1,11 @@
 %YAML 1.1
 ---
 filename_prefix: homme_standalone_output
-Averaging Type: Instant
-Max Snapshots Per File: 1
-Fields:
-  Physics GLL:
-    Field Names:
+averaging_type: instant
+max_snapshots_per_file: 1
+fields:
+  physics_gll:
+    field_names:
       - T_mid
       - qv
       - ps
@@ -18,6 +18,6 @@ Fields:
       - p_dry_mid
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

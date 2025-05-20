@@ -29,6 +29,9 @@ void Functions<S,D>
   const auto il_cldm = (runtime_options.use_separate_ice_liq_frac)
                            ? min(cld_frac_i, cld_frac_l)
                            : Spack(1);
+  const auto cld_frac_glaciated = (runtime_options.use_separate_ice_liq_frac)
+                           ? max(cld_frac_i-il_cldm, 0.0001)
+                           : Spack(1);
   Spack ratio;
 
   constexpr Scalar qtendsmall = C::QTENDSMALL;
@@ -68,11 +71,12 @@ void Functions<S,D>
   enforce_conservation = sources > qtendsmall && context;
   if (enforce_conservation.any()){
     if (runtime_options.use_separate_ice_liq_frac) {
-      qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend + qv2qi_vapdep_tend*(1-ratio)*(il_cldm/(cld_frac_i-il_cldm)));
+      qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend + qv2qi_vapdep_tend*(1-ratio)*(il_cldm/cld_frac_glaciated));
+      qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend + qi2qv_sublim_tend*(1-ratio)*(il_cldm/cld_frac_glaciated));
     } else {
       qv2qi_vapdep_tend.set(enforce_conservation, qv2qi_vapdep_tend*(1-ratio));
+      qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend*(1-ratio));
     }
-    qi2qv_sublim_tend.set(enforce_conservation, qi2qv_sublim_tend*(1-ratio));
   }
 }
 

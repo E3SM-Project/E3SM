@@ -7,7 +7,6 @@
 #include <random>
 
 namespace scream {
-
 namespace physics {
 
 //

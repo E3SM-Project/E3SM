@@ -102,6 +102,8 @@ module aero_model
   real(r8)          :: sol_factic_interstitial = 0.4_r8
   real(r8)          :: seasalt_emis_scale
   real(r8)          :: small = 1.e-36
+  real(r8)          :: dstemislimit = 1.e-4_r8
+  logical           :: dstemislimitswitch = .false.
 
   integer :: ndrydep = 0
   integer,allocatable :: drydep_indices(:)
@@ -132,8 +134,7 @@ contains
     character(len=16) :: aer_drydep_list(pcnst) = ' '
     namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,          &
              sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
-       sol_factb_interstitial, sol_factic_interstitial
-
+             sol_factb_interstitial, sol_factic_interstitial,dstemislimit,dstemislimitswitch
     !-----------------------------------------------------------------------------
 
     ! Read namelist
@@ -161,6 +162,8 @@ contains
     call mpibcast(sol_factic_interstitial, 1,                       mpir8,   0, mpicom)
     call mpibcast(sscav_tuning,          1,                         mpilog,  0, mpicom)
     call mpibcast(seasalt_emis_scale, 1, mpir8,   0, mpicom)
+    call mpibcast(dstemislimit, 1,                       mpir8,   0, mpicom) !dstemislimit
+    call mpibcast(dstemislimitswitch, 1,                  mpilog,  0, mpicom) !dstemislimit
 #endif
 
     wetdep_list = aer_wetdep_list
@@ -2805,6 +2808,8 @@ do_lphase2_conditional: &
          has_mam_mom, F_eff_out, nslt_om
     use dust_model,    only: dust_emis, dust_names, dust_indices, dust_active,dust_nbin, dust_nnum
     use physics_types, only: physics_state
+    use phys_grid,      only: get_rlat_all_p, get_rlon_all_p
+    use physconst,      only: pi
 
     ! Arguments:
 
@@ -2822,6 +2827,12 @@ do_lphase2_conditional: &
     real(r8) :: F_eff(pcols) ! optional diagnostic output -- organic enrichment ratio
 
     real (r8), parameter :: z0=0.0001_r8  ! m roughness length over oceans--from ocean model
+    integer :: icol,mmn
+    real(r8) :: tmp_lat(pcols),tmp_lon(pcols)
+    tmp_lat(:) =-999._r8
+    tmp_lon(:) =-999._r8
+    icol=0
+    mmn=0
 
     lchnk = state%lchnk
     ncol = state%ncol
@@ -2835,8 +2846,32 @@ do_lphase2_conditional: &
        do m=1,dust_nbin+dust_nnum
           mm = dust_indices(m)
           if (m<=dust_nbin) sflx(:ncol)=sflx(:ncol)+cam_in%cflx(:ncol,mm)
-          call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
        enddo
+
+       if(dstemislimitswitch.eqv..true.) then
+        do icol=1,ncol
+         if(sflx(icol).gt.dstemislimit) then
+          call get_rlon_all_p(lchnk,ncol,tmp_lon)
+          call get_rlat_all_p(lchnk,ncol,tmp_lat)
+          do m=1,dust_nbin+dust_nnum
+           mm = dust_indices(m)
+           cam_in%cflx(icol,mm)=cam_in%cflx(icol,mm)*dstemislimit/sflx(icol)
+          end do
+          write(iulog,'((a,1x,i10,1x),2(a,1x,f8.2),(a,1x,e15.5e2))') &
+                  'The dust emission cap is hit at icol= ',icol, &
+                  ' Latitude=',tmp_lat(icol)*180.0/pi, &
+                  ' Longitude=',tmp_lon(icol)*180.0/pi-180., &
+                  ' emission flux before imposing (kg/m2/s): ',sflx(icol)
+          sflx(icol)=dstemislimit
+         end if
+        end do
+       end if
+
+       do m=1,dust_nbin+dust_nnum
+        mm = dust_indices(m)
+        call outfld(trim(dust_names(m))//'SF',cam_in%cflx(:,mm),pcols, lchnk)
+       end do
+
        call outfld('DSTSFMBL',sflx(:),pcols,lchnk)
        call outfld('LND_MBL',soil_erod_tmp(:),pcols, lchnk )
     endif

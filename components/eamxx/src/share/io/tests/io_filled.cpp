@@ -113,7 +113,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -129,14 +129,14 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix",std::string("io_filled"));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", avg_type);
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", avg_type);
   om_pl.set<double>("fill_value",FillValue);
   om_pl.set<Real>("fill_threshold",fill_threshold);
   om_pl.set("track_avg_cnt",true);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",freq_units);
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -179,7 +179,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
@@ -200,8 +200,8 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("filename",filename);
+  reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
   // We set the value n to each input field for each odd valued timestep and FillValue for each even valued timestep

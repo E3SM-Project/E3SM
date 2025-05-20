@@ -53,6 +53,7 @@ _TESTS = {
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
+            "ERS.1x1_icycape.I1850GSWCNPRDCTCBC.elm-polygonal_tundra"
             )
         },
 
@@ -205,6 +206,18 @@ _TESTS = {
             )
         },
 
+#tests for the dust emission cap
+        "e3sm_dustemissioncap" : {
+        "tests"   : (
+            "ERP.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "PET.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "PEM_Ln18.ne4pg2_oQU480.F2010.eam-dustemissioncap",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.F2010.eam-dustemissioncap",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-dustemissioncap"
+            )
+        },
+
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
@@ -255,6 +268,7 @@ _TESTS = {
         "tests" : (
             "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
             "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
+            "SMS_Lh4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             )
         },
 
@@ -283,6 +297,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240wLI.GMPAS-IAF-PISMF.mpaso-impl_top_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-harmonic_mean_drag",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-upwind_advection",
+            "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-freshwater_tracers",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             "ERS_Ld5_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
             "ERS_Ld5.TL319_oQU240wLI_gis20.MPAS_LISIO_JRA1p5.mpaso-ocn_glc_tf_coupling",
@@ -297,6 +312,7 @@ _TESTS = {
             "PEM_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF.mpaso-jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-TMIX.mpaso-jra_1958",
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-jra_1958",
+            "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-freshwater_tracers_jra_1958",
             )
         },
 
@@ -699,7 +715,7 @@ _TESTS = {
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
             )
     },
 
@@ -734,6 +750,7 @@ _TESTS = {
             "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-6",
             "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
+            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
             )
     },
 
@@ -780,25 +797,40 @@ _TESTS = {
     "e3sm_eamxx_mam4xx_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aci",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aero_microphysics",
-            "SMS_D_Ln5.ne30pg2_oECv3.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-remap_emiss_ne4_ne30",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-optics",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-wetscav",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-aero_microphysics",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-drydep",
-            "ERS.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
+            "REP_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
+        )
+    },
+
+    "e3sm_eamxx_mam4xx_lowres_debug" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-wetscav",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
+            "SMS_D_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30",
+            "SMS_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
         )
     },
 
     "e3sm_eamxx_mam4xx_long_runtime" : {
         "time"  : "03:00:00",
         "tests" : (
-            "SMS_D_Lm2.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs",
-            "SMS_Ly1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.eamxx-mam4xx-all_mam4xx_procs"
+            "SMS_D_Lm2.ne4pg2_oQU480.F2010-EAMxx-MAM4xx-MPASSI",
+            "SMS_Ly1.ne4pg2_oQU480.F2010-EAMxx-MAM4xx"
         )
     },
 
@@ -845,8 +877,10 @@ _TESTS = {
 
     "e3sm_gpucxx" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
-                 "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
+            "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
+            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
                  )
     },
 

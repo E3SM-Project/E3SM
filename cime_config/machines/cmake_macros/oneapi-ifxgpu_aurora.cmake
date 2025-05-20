@@ -5,9 +5,8 @@ if (compile_threaded)
 endif()
 
 string(APPEND KOKKOS_OPTIONS " -DCMAKE_CXX_STANDARD=17 -DKokkos_ENABLE_SERIAL=On -DKokkos_ARCH_INTEL_PVC=On -DKokkos_ENABLE_SYCL=On -DKokkos_ENABLE_EXPLICIT_INSTANTIATION=Off")
-string(APPEND SYCL_FLAGS " -\-intel -fsycl -fsycl-targets=spir64_gen -mlong-double-64 -Xsycl-target-backend \"-device 12.60.7\"")
+string(APPEND SYCL_FLAGS " -\-intel -fsycl -fsycl-targets=spir64_gen -mlong-double-64 ")
 string(APPEND OMEGA_SYCL_EXE_LINKER_FLAGS " -Xsycl-target-backend \"-device 12.60.7\" ")
-string(APPEND CMAKE_CXX_FLAGS " -Xclang -fsycl-allow-virtual-functions")
 
 # Let's start with the best case: using device buffers in MPI calls by default.
 # This is paired with MPIR_CVAR_ENABLE_GPU=1 in config_machines.xml. If this

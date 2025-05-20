@@ -1746,8 +1746,8 @@ contains
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, nmonth
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nlevtrc_full, nvegwcs
     use elm_varpar      , only : nlevsoi
-    use landunit_varcon , only : max_lunit
-    use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
+    use landunit_varcon , only : max_lunit, max_non_poly_lunit
+    use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile, use_polygonal_tundra
     use elm_varctl      , only : version, hostname, username, conventions, source
     use domainMod       , only : ldomain
     use fileutils       , only : get_filename
@@ -1905,7 +1905,11 @@ contains
     call ncd_defdim(lnfid, 'numrad' , numrad , dimid)
     call ncd_defdim(lnfid, 'month'  , nmonth,  dimid)
     call ncd_defdim(lnfid, 'levsno' , nlevsno , dimid)
-    call ncd_defdim(lnfid, 'ltype', max_lunit, dimid)
+    if (use_polygonal_tundra) then
+      call ncd_defdim(lnfid, 'ltype', max_lunit, dimid)
+    else
+      call ncd_defdim(lnfid, 'ltype', max_non_poly_lunit, dimid)
+    end if
     call ncd_defdim(lnfid, 'nvegwcs',nvegwcs, dimid)
     call htape_add_ltype_metadata(lnfid)
     call ncd_defdim(lnfid, 'natpft', natpft_size, dimid)
@@ -1983,7 +1987,8 @@ contains
     ! Add global metadata defining landunit types
     !
     ! !USES:
-    use landunit_varcon, only : max_lunit, landunit_names, landunit_name_length
+    use landunit_varcon, only : max_lunit, max_non_poly_lunit, landunit_names, landunit_name_length
+    use elm_varctl,      only : use_polygonal_tundra
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: lnfid ! local file id
@@ -1996,10 +2001,17 @@ contains
     character(len=*), parameter :: subname = 'htape_add_ltype_metadata'
     !-----------------------------------------------------------------------
     
-    do ltype = 1, max_lunit
-       attname = att_prefix // landunit_names(ltype)
-       call ncd_putatt(lnfid, ncd_global, attname, ltype)
-    end do
+    if (use_polygonal_tundra) then
+      do ltype = 1, max_lunit
+        attname = att_prefix // landunit_names(ltype)
+        call ncd_putatt(lnfid, ncd_global, attname, ltype)
+      end do
+    else
+      do ltype = 1, max_non_poly_lunit
+        attname = att_prefix // landunit_names(ltype)
+        call ncd_putatt(lnfid, ncd_global, attname, ltype)
+      end do
+    end if
 
   end subroutine htape_add_ltype_metadata
 
@@ -4695,7 +4707,8 @@ contains
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil, nmonth, nvegwcs
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
     use elm_varpar      , only : nlevsoi
-    use landunit_varcon , only : max_lunit
+    use landunit_varcon , only : max_lunit, max_non_poly_lunit
+    use elm_varctl      , only : use_polygonal_tundra
     !
     ! !ARGUMENTS:
     character(len=*), intent(in) :: fname                      ! field name
@@ -4784,7 +4797,11 @@ contains
     case ('levtrc')
        num2d = nlevtrc_soil       
     case('ltype')
-       num2d = max_lunit
+       if (use_polygonal_tundra) then
+         num2d = max_lunit
+       else
+         num2d = max_non_poly_lunit
+       end if
     case('natpft')
        num2d = natpft_size
     case ('fates_levelem')

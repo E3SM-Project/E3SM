@@ -37,8 +37,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm       (comm)
   , m_params     (params)
 {
-  if (m_params.isParameter("Logger")) {
-    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("Logger");
+  if (m_params.isParameter("logger")) {
+    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("logger");
   } else {
     // Create a console-only logger, that logs all ranks
     using namespace ekat::logger;
@@ -55,7 +55,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 
-  m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
+  m_timer_prefix = m_params.get<std::string>("timer_prefix","EAMxx::");
 
   m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 
@@ -71,8 +71,12 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     start_timer (m_timer_prefix + this->name() + "::init");
   }
 
-  log (LogLevel::info,"  Initializing " + name() + "...");
-  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+  // Avoid logging and flushing if ap type is diag ...
+  // ... because we could have 100+ of those in production runs
+  if (this->type()!=AtmosphereProcessType::Diagnostic) {
+    log (LogLevel::info,"  Initializing " + name() + "...");
+    m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+  }
 
   set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
@@ -85,8 +89,12 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     m_start_of_step_fields[fname] = get_field_out(fname).clone();
   }
 
-  log (LogLevel::info,"  Initializing " + name() + "... done!");
-  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+  // Avoid logging and flushing if ap type is diag ...
+  // ... because we could have 100+ of those in production runs
+  if (this->type()!=AtmosphereProcessType::Diagnostic) {
+    log (LogLevel::info,"  Initializing " + name() + "... done!");
+    m_atm_logger->flush(); // During init, flush often (to help debug crashes)
+  }
 
   if (this->type()!=AtmosphereProcessType::Group) {
     stop_timer (m_timer_prefix + this->name() + "::init");
@@ -754,10 +762,10 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
     std::string s = "";
     switch (cfh) {
       case CheckFailHandling::Fatal:
-        s = "Fatal";
+        s = "fatal";
         break;
       case CheckFailHandling::Warning:
-        s = "Warning";
+        s = "warning";
         break;
       default:
         EKAT_ERROR_MSG ("Unexpected/unsupported CheckFailHandling value.\n");

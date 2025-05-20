@@ -273,7 +273,7 @@ POMPEI::POMPEI(const ekat::Comm &comm, const ekat::ParameterList &params)
 
 - EAMxx stores grid info
 - FieldManager stores fields
-- Fields have:
+- fields have:
   - Pointers to actual data
   - Units
   - Data layout
@@ -300,7 +300,7 @@ void POMPEI::set_grids(
   //   using PC = scream::physics::Constants<Real>;
 
   // Specify which grid this process will act upon, typical options are
-  // "Dynamics" or "Physics". auto m_grid = grids_manager->get_grid("Physics");
+  // "dynamics" or "physics". auto m_grid = grids_manager->get_grid("physics");
 
   // When declaring a field for use we need:
   //
@@ -334,7 +334,7 @@ void POMPEI::set_grids(
   //     NAME and UNITS are as above
   //     GRID is the actual grid, typically "m_grid"
 
-  m_grid  = grids_manager->get_grid("Physics");
+  m_grid  = grids_manager->get_grid("physics");
   m_ncols = m_grid->get_num_local_dofs();
   m_nlevs = m_grid->get_num_vertical_levels();
 
@@ -379,7 +379,7 @@ Before simulation begins and happens only once
  * defined with any actions or functions that are needed at initialization.
  *
  * Inputs:
- *     run_type - an enum which describes the run type.  Initial or Restart
+ *     run_type - an enum which describes the run type.  initial or restart
  *
  * can also be empty
  */

@@ -30,7 +30,7 @@ TEST_CASE ("write_and_read") {
   const int dim3  = ldim3 * comm.size();
 
   // Offsets for dim3 decomp owned by this rank
-  std::vector<int> my_offsets;
+  std::vector<offset_t> my_offsets;
   for (int i=0; i<ldim3; ++i) {
     my_offsets.push_back(ldim3*comm.rank() + i);
   }
@@ -48,12 +48,10 @@ TEST_CASE ("write_and_read") {
     define_dim (filename,"dim2",dim2); // OK, same specs
     REQUIRE_THROWS (define_dim (filename,"dim2",dim2+3)); // ERROR: changing dim length
     define_dim (filename,"dim3",dim3);
-    define_dim (filename,"dim4",dim3);
 
-    REQUIRE_THROWS (set_dim_decomp (filename,"dim5",my_offsets)); // ERROR: dimension not found
+    REQUIRE_THROWS (set_dim_decomp (filename,"dim4",my_offsets)); // ERROR: dimension not found
 
     set_dim_decomp (filename,"dim3",my_offsets);
-    set_dim_decomp (filename,"dim4",my_offsets);
 
     REQUIRE_THROWS (define_var (filename,"var1",{"dim1"},"double",true)); // ERROR: no time dimension (yet)
     REQUIRE_THROWS (define_var (filename,"var1",{"dim0"},"double",false)); // ERROR: dim0 not found
@@ -71,7 +69,6 @@ TEST_CASE ("write_and_read") {
     REQUIRE_THROWS (define_var (filename,"var3",{},"int",false)); // ERROR: changing time_dep flag
     define_var (filename,"var4",{"dim3","dim1"},"double",false);
     define_var (filename,"var5",{"dim3","dim1"},"double",true);
-    define_var (filename,"var6",{"dim1","dim4"},"double",true); // decomp is on fast striding dim!
 
     enddef (filename);
 
@@ -79,25 +76,18 @@ TEST_CASE ("write_and_read") {
     std::vector<float> var2 (dim1*dim2);
     std::vector<int> var3 (1);
     std::vector<double> var45 (ldim3*dim1);
-    std::vector<double> var6 (ldim3*dim1);
 
     // Write first time slice
     update_time (filename,0.0);
     std::iota (var1.begin(),var1.end(),100);
     std::iota (var2.begin(),var2.end(),100);
     std::iota (var3.begin(),var3.end(),100);
-    for (int i=0; i<ldim3; ++i) {
-      for (int j=0; j<dim1; ++j) {
-        var45[i*dim1+j] = my_offsets[i]*dim1 + j;
-        var6[j*ldim3+i] = j*dim3 + my_offsets[i];
-      }
-    }
+    std::iota (var45.begin(),var45.end(),100+comm.rank()*ldim3*dim1);
     write_var (filename,"var1",var1.data());
     write_var (filename,"var2",var2.data());
     write_var (filename,"var3",var3.data());
     write_var (filename,"var4",var45.data());
     write_var (filename,"var5",var45.data());
-    write_var (filename,"var6",var6.data());
 
     REQUIRE_THROWS (write_var (filename,"var3",static_cast<int*>(nullptr))); // ERROR: invalid pointer
 
@@ -105,17 +95,11 @@ TEST_CASE ("write_and_read") {
     update_time (filename,0.5);
     std::iota (var2.begin(),var2.end(),  200);
     std::iota (var3.begin(),var3.end(),  200);
-    for (int i=0; i<ldim3; ++i) {
-      for (int j=0; j<dim1; ++j) {
-        var45[i*dim1+j] = 100 + my_offsets[i]*dim1 + j;
-        var6[j*ldim3+i] = 100 + j*dim3 + my_offsets[i];
-      }
-    }
+    std::iota (var45.begin(),var45.end(),200+comm.rank()*ldim3*dim1);
     write_var (filename,"var2",var2.data());
     write_var (filename,"var3",var3.data());
     double minus_one = -1;
     write_var (filename,"var5",var45.data(),&minus_one);
-    write_var (filename,"var6",var6.data(),&minus_one);
 
     // Cleanup
     release_file (filename);
@@ -171,29 +155,20 @@ TEST_CASE ("write_and_read") {
     REQUIRE (not has_var(filename,"var0")); // Var not in file
 
     set_dim_decomp (filename,"dim3",my_offsets);
-    set_dim_decomp (filename,"dim4",my_offsets);
 
     std::vector<double> var1 (dim1);
     std::vector<float> var2 (dim1*dim2);
     std::vector<int> var3 (1);
     std::vector<double> var45 (ldim3*dim1);
-    std::vector<double> var6 (ldim3*dim1);
 
     std::vector<double> tgt_var1 (dim1);
     std::vector<float> tgt_var2 (dim1*dim2);
     std::vector<int> tgt_var3 (1);
     std::vector<double> tgt_var45 (ldim3*dim1);
-    std::vector<double> tgt_var6 (ldim3*dim1);
     std::iota (tgt_var1.begin(),tgt_var1.end(),  100);
     std::iota (tgt_var2.begin(),tgt_var2.end(),  100);
     std::iota (tgt_var3.begin(),tgt_var3.end(),  100);
-
-    for (int i=0; i<ldim3; ++i) {
-      for (int j=0; j<dim1; ++j) {
-        tgt_var45[i*dim1+j] = my_offsets[i]*dim1 + j;
-        tgt_var6[j*ldim3+i] = j*dim3 + my_offsets[i];
-      }
-    }
+    std::iota (tgt_var45.begin(),tgt_var45.end(),100+comm.rank()*ldim3*dim1);
 
     read_var (filename,"var1",var1.data());
     REQUIRE (tgt_var1==var1);
@@ -214,19 +189,10 @@ TEST_CASE ("write_and_read") {
     read_var (filename,"var5",var45.data(),0);
     REQUIRE (tgt_var45==var45);
 
-    read_var (filename,"var6",var6.data(),0);
-    REQUIRE (tgt_var6==var6);
-
     // Read second time slice
     std::iota (tgt_var2.begin(),tgt_var2.end(),  200);
     std::iota (tgt_var3.begin(),tgt_var3.end(),  200);
-
-    for (int i=0; i<ldim3; ++i) {
-      for (int j=0; j<dim1; ++j) {
-        tgt_var45[i*dim1+j] = 100 + my_offsets[i]*dim1 + j;
-        tgt_var6[j*ldim3+i] = 100 + j*dim3 + my_offsets[i];
-      }
-    }
+    std::iota (tgt_var45.begin(),tgt_var45.end(),200+comm.rank()*ldim3*dim1);
 
     read_var (filename,"var2",var2.data(),1);
     REQUIRE (tgt_var2==var2);
@@ -236,9 +202,6 @@ TEST_CASE ("write_and_read") {
 
     read_var (filename,"var5",var45.data(),1);
     REQUIRE (tgt_var45==var45);
-
-    read_var (filename,"var6",var6.data(),1);
-    REQUIRE (tgt_var6==var6);
 
     // Cleanup
     release_file (filename);

@@ -32,6 +32,7 @@
 <config_dt ice_grid="FRISwISC01to60E3r1">60.0</config_dt>
 <config_dt ice_grid="RRSwISC6to18E3r5">900.0</config_dt>
 <config_dt ice_grid="SOwISC12to30E3r3">1800.0</config_dt>
+<config_dt ice_grid="SOwISC12to30E3r4">1800.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -60,7 +61,6 @@
 <config_do_restart>false</config_do_restart>
 <config_restart_timestamp_name>'rpointer.ice'</config_restart_timestamp_name>
 <config_do_restart_hbrine>false</config_do_restart_hbrine>
-<config_do_restart_zsalinity>false</config_do_restart_zsalinity>
 <config_do_restart_bgc>false</config_do_restart_bgc>
 <config_do_restart_snow_density>false</config_do_restart_snow_density>
 <config_do_restart_snow_grain_radius>false</config_do_restart_snow_grain_radius>
@@ -89,6 +89,7 @@
 <config_initial_latitude_north ice_grid="FRISwISC02to60E3r1">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="FRISwISC01to60E3r1">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="SOwISC12to30E3r3">85.0</config_initial_latitude_north>
+<config_initial_latitude_north ice_grid="SOwISC12to30E3r4">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="ARRM10to60E2r1">75.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS30to10v3wLI">85.0</config_initial_latitude_north>
 <config_initial_latitude_north ice_grid="oRRS18to6v3">85.0</config_initial_latitude_north>
@@ -105,6 +106,7 @@
 <config_initial_latitude_south ice_grid="FRISwISC02to60E3r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="FRISwISC01to60E3r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="SOwISC12to30E3r3">-85.0</config_initial_latitude_south>
+<config_initial_latitude_south ice_grid="SOwISC12to30E3r4">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="ARRM10to60E2r1">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS30to10v3wLI">-85.0</config_initial_latitude_south>
 <config_initial_latitude_south ice_grid="oRRS18to6v3">-85.0</config_initial_latitude_south>
@@ -141,9 +143,6 @@
 <!-- testing -->
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 <config_testing_system_test>false</config_testing_system_test>
-<config_use_congelation_basal_melt>true</config_use_congelation_basal_melt>
-<config_use_lateral_melt>true</config_use_lateral_melt>
-<config_use_latent_processes>true</config_use_latent_processes>
 <config_limit_air_temperatures>true</config_limit_air_temperatures>
 
 <!-- velocity_solver -->
@@ -174,6 +173,7 @@
 <config_dynamics_subcycle_number ice_grid="FRISwISC01to60E3r1">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="RRSwISC6to18E3r5">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="SOwISC12to30E3r3">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="SOwISC12to30E3r4">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
@@ -215,7 +215,6 @@
 <config_use_ice_age>false</config_use_ice_age>
 <config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
-<config_use_cesm_meltponds>false</config_use_cesm_meltponds>
 <config_use_level_meltponds>true</config_use_level_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
@@ -227,7 +226,6 @@
 <!-- biogeochemistry -->
 <config_couple_biogeochemistry_fields>false</config_couple_biogeochemistry_fields>
 <config_use_brine>false</config_use_brine>
-<config_use_vertical_zsalinity>false</config_use_vertical_zsalinity>
 <config_use_vertical_biochemistry>false</config_use_vertical_biochemistry>
 <config_use_shortwave_bioabsorption>false</config_use_shortwave_bioabsorption>
 <config_use_vertical_tracers>false</config_use_vertical_tracers>
@@ -252,8 +250,6 @@
 <config_biogrid_bottom_molecular_sublayer>0.006</config_biogrid_bottom_molecular_sublayer>
 <config_biogrid_top_molecular_sublayer>0.006</config_biogrid_top_molecular_sublayer>
 <config_bio_gravity_drainage_length_scale>20.</config_bio_gravity_drainage_length_scale>
-<config_zsalinity_molecular_sublayer>0.0</config_zsalinity_molecular_sublayer>
-<config_zsalinity_gravity_drainage_scale>0.028</config_zsalinity_gravity_drainage_scale>
 <config_snow_porosity_at_ice_surface>-0.3</config_snow_porosity_at_ice_surface>
 <config_new_ice_fraction_biotracer>1.0</config_new_ice_fraction_biotracer>
 <config_fraction_biotracer_in_frazil>0.80</config_fraction_biotracer_in_frazil>

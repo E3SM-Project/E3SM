@@ -23,7 +23,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
@@ -256,8 +256,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.w2tune        = m_params.get<double>("w2tune");
   runtime_options.length_fac    = m_params.get<double>("length_fac");
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
-  runtime_options.Ckh           = m_params.get<double>("Ckh");
-  runtime_options.Ckm           = m_params.get<double>("Ckm");
+  runtime_options.Ckh           = m_params.get<double>("coeff_kh");
+  runtime_options.Ckm           = m_params.get<double>("coeff_km");
+  runtime_options.shoc_1p5tke = m_params.get<bool>("shoc_1p5tke");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -315,7 +316,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,z_surf,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -392,7 +393,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.dz_zi = m_buffer.dz_zi;
 #endif
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
@@ -483,6 +484,9 @@ void SHOCMacrophysics::run_impl (const double dt)
                        scan_policy,
                        shoc_preprocess);
   Kokkos::fence();
+
+  auto wtracer_sfc = shoc_preprocess.wtracer_sfc;
+  Kokkos::deep_copy(wtracer_sfc, 0);
 
   if (m_params.get<bool>("apply_tms", false)) {
     apply_turbulent_mountain_stress();

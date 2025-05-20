@@ -69,7 +69,7 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
 inline void register_mesh_free_grids_manager () {
   // A simple grids manager, useful to run physics-only unit tests
   auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  gm_factory.register_product("mesh_free",&create_mesh_free_grids_manager);
 }
 
 } // namespace scream

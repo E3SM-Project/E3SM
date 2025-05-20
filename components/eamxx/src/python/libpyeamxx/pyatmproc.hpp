@@ -38,8 +38,8 @@ struct PyAtmProc {
 
     // Create the atm proc
     auto& apf = AtmosphereProcessFactory::instance();
-    const auto& ap_type = params.pl.isParameter("Type")
-                        ? params.pl.get<std::string>("Type")
+    const auto& ap_type = params.pl.isParameter("type")
+                        ? params.pl.get<std::string>("type")
                         : params.pl.name();
     ap = apf.create(ap_type,comm,params.pl);
 
@@ -172,9 +172,7 @@ struct PyAtmProc {
     auto gm = PySession::get().gm;
     std::map<std::string,std::shared_ptr<FieldManager>> fms;
     for (auto it : gm->get_repo()) {
-      fms[it.first] = std::make_shared<FieldManager>(it.second);
-      fms[it.first]->registration_begins();
-      fms[it.first]->registration_ends();
+      fms[it.first] = std::make_shared<FieldManager>(it.second,RepoState::Closed);
     }
     for (auto it : fields) {
       const auto& gn = it.second.f.get_header().get_identifier().get_grid_name();

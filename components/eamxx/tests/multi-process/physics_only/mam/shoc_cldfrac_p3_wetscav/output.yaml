@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_cldfrac_p3_wetscav_output
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   # SHOC
   - cldfrac_liq
   - eddy_diff_mom
@@ -95,6 +95,6 @@ Field Names:
   - wetdens
   - qaerwat
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

@@ -12,9 +12,9 @@ YAML_FILE=$CASEROOT/eamxx_dyn_output.yaml
 # Figure out the suffix for the physics grid
 ATM_GRID=$(./xmlquery --value ATM_GRID)
 if [[ $ATM_GRID == *"pg2"* ]]; then
-  PGTYPE="PG2"
+  PGTYPE="pg2"
 else
-  PGTYPE="GLL"
+  PGTYPE="gll"
 fi
 
 # List of output fields
@@ -27,14 +27,14 @@ $YAML_EDIT_SCRIPT -g \
  --freq HIST_N                        \
  --freq-units HIST_OPTION             \
  --prefix ${CASE}.scream.phys_dyn.h   \
- --grid Dynamics                      \
- --io-grid 'Physics GLL'              \
+ --grid dynamics                      \
+ --io-grid 'physics_gll'              \
  --fields ${FIELDS}
 
 # Add also a couple of fields on the phys grid, to trigger 2-grid in same stream
 $YAML_EDIT_SCRIPT \
  -f $YAML_FILE              \
- --grid "Physics ${PGTYPE}" \
+ --grid "physics_${PGTYPE}" \
  --fields T_mid horiz_winds
 
 # Add this output yaml file to the list of eamxx output streams

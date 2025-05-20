@@ -27,51 +27,51 @@
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
  *  filename_prefix:                    STRING
- *  Averaging Type:                     STRING
- *  Max Snapshots Per File:             INT                   (default: 1)
- *  Fields:
+ *  averaging_type:                     STRING
+ *  max_snapshots_per_file:             INT                   (default: 1)
+ *  fields:
  *     GRID_NAME_1:
- *        Field Names:                  ARRAY OF STRINGS
- *        IO Grid Name:                 STRING                (optional)
+ *        field_names:                  ARRAY OF STRINGS
+ *        io_grid_name:                 STRING                (optional)
  *     GRID_NAME_2:
- *        Field Names:                  ARRAY OF STRINGS
- *        IO Grid Name:                 STRING                (optional)
+ *        field_names:                  ARRAY OF STRINGS
+ *        io_grid_name:                 STRING                (optional)
  *     ...
  *     GRID_NAME_N:
- *        Field Names:                  ARRAY OF STRINGS
- *        IO Grid Name:                 STRING                (optional)
+ *        field_names:                  ARRAY OF STRINGS
+ *        io_grid_name:                 STRING                (optional)
  *  output_control:
- *    Frequency:                        INT
+ *    frequency:                        INT
  *    frequency_units:                  STRING                (default: nsteps)
- *  Restart:
+ *  restart:
  *    filename_prefix:                  STRING                (default: ${filename_prefix})
  *    skip_restart_if_rhist_not_found:  BOOL                  (default: false)
  *  -----
  *  The meaning of these parameters is the following:
  *  - filename_prefix: the output filename root.
- *  - Averaging Type: a string that describes which type of output, current options are:
+ *  - averaging_type: a string that describes which type of output, current options are:
  *      instant - no averaging, output each snap as is.
  *      average - average of the field over some interval.
  *      min     - minimum value of the field over time interval.
  *      max     - maximum value of the field over time interval.
- *    Here, 'time interval' is described by ${Output Frequency} and ${Output frequency_units}.
- *    E.g., with 'Output Frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
- *  - Fields: parameters specifying fields to output
+ *    Here, 'time interval' is described by ${Output frequency} and ${Output frequency_units}.
+ *    E.g., with 'Output frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
+ *  - fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
- *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
- *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
+ *        - field_names: names of fields defined on grid $grid_name that need to be outputed
+ *        - io_grid_name: if provided, remap fields to this grid before output (useful to remap
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
- *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
+ *  - max_snapshots_per_file: the maximum number of snapshots saved per file. After this many
  *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
- *    - Frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
+ *    - frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
  *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
  *      snapshots have been written on a single nc file, the class will close the file, and open a new one
  *  - Checkpointing: parameters for checkpointing control
- *    - Frequency: the frequenct of checkpoints writes. This option is used/matters only if
- *      if Averaging Type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
+ *    - frequency: the frequenct of checkpoints writes. This option is used/matters only if
+ *      if averaging_type is *not* instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
- *  - Restart: parameters for history restart
+ *  - restart: parameters for history restart
  *    - filename_prefix: the history restart filename root.
  *    - skip_restart_if_rhist_not_found: if this is a restarted run and this is true, skip the
  *      hist restart if the proper filename is not found in rpointer. Allows to add a new stream
@@ -87,8 +87,8 @@
  *        ...
  *      - item_N
  *
- *   - in case of single-grid tests, you can specify fields names by adding 'Field Names' directly
- *     in the top-level parameter list. In that case, you can also add 'IO Grid Name' in the top-level
+ *   - in case of single-grid tests, you can specify fields names by adding 'field_names' directly
+ *     in the top-level parameter list. In that case, you can also add 'io_grid_name' in the top-level
  *     parameter list.
  *   - each instance of this class can only handle ONE grid, so if multiple grids are specified,
  *     you will need one instance per grid.
@@ -173,6 +173,7 @@ protected:
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
+  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name, const std::string& mode) const;
   void compute_diagnostic (const std::string& name, const bool allow_invalid_fields = false);
@@ -200,7 +201,7 @@ protected:
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;
 
-  // How to combine multiple snapshots in the output: Instant, Max, Min, Average
+  // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType     m_avg_type;
   Real              m_avg_coeff_threshold = 0.5; // % of unfilled values required to not just assign value as FillValue
 

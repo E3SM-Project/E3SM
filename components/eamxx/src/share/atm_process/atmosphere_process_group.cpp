@@ -20,13 +20,13 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (m_params.get<std::string>("schedule_type") == "Sequential") {
+    if (m_params.get<std::string>("schedule_type") == "sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (m_params.get<std::string>("schedule_type") == "Parallel") {
+    } else if (m_params.get<std::string>("schedule_type") == "parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
       ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'Parallel' and 'Sequential'.\n");
+      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -70,10 +70,10 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     auto& params_i = m_params.sublist(ap_name);
 
     // Get type (defaults to name)
-    const auto& ap_type = params_i.get<std::string>("Type",ap_name);
+    const auto& ap_type = params_i.get<std::string>("type",ap_name);
 
     // Set logger in this ap params
-    params_i.set("Logger",this->m_atm_logger);
+    params_i.set("logger",this->m_atm_logger);
 
     // Create the atm proc
     auto ap = apf.create(ap_type,proc_comm,params_i);

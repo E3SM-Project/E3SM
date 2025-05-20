@@ -140,7 +140,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez|pm-gpu|muller-gpu|jlse|sunspot|aurora">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu|pm-gpu|muller-gpu|alvarez-gpu|jlse|sunspot|aurora">
       <pes compset="any" pesize="any">
         <comment>eam: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
@@ -167,21 +167,6 @@
           <ntasks_glc>-1</ntasks_glc>
           <ntasks_wav>-1</ntasks_wav>
           <ntasks_cpl>-1</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
-    <mach name="gcp10">
-      <pes compset="any" pesize="any">
-        <comment>eam+gcp: default</comment>
-        <ntasks>
-          <ntasks_atm>30</ntasks_atm>
-          <ntasks_lnd>30</ntasks_lnd>
-          <ntasks_rof>30</ntasks_rof>
-          <ntasks_ice>16</ntasks_ice>
-          <ntasks_ocn>16</ntasks_ocn>
-          <ntasks_glc>16</ntasks_glc>
-          <ntasks_wav>30</ntasks_wav>
-          <ntasks_cpl>30</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
@@ -293,7 +278,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset="any" pesize="any">
         <comment>pm-cpu: any compset on ne4pg2 grid</comment>
         <ntasks>
@@ -843,32 +828,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="gcp10">
-      <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
-          Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP
-                               or       a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2
-                                        1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP_BGC%LNDATM  -->
-      <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
-        <comment> gcp10 -compset A_WCYCL* -res ne30pg2_oECv3 or ne30pg2_r05_EC30to60E2r2 without MPASO on 8 nodes </comment>
-        <ntasks>
-          <ntasks_atm>240</ntasks_atm>
-          <ntasks_lnd>240</ntasks_lnd>
-          <ntasks_rof>240</ntasks_rof>
-          <ntasks_ice>240</ntasks_ice>
-          <ntasks_ocn>240</ntasks_ocn>
-          <ntasks_cpl>240</ntasks_cpl>
-        </ntasks>
-        <nthrds>
-          <nthrds_atm>2</nthrds_atm>
-          <nthrds_lnd>2</nthrds_lnd>
-          <nthrds_rof>2</nthrds_rof>
-          <nthrds_ice>2</nthrds_ice>
-          <nthrds_ocn>2</nthrds_ocn>
-          <nthrds_cpl>1</nthrds_cpl>
-        </nthrds>
-      </pes>
-    </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP -->
       <pes compset=".*EAM.+ELM.+DOCN" pesize="S">
@@ -922,7 +882,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2.+_oi%IcoswISC30E3r5.+">
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="S">
         <comment> pm-cpu: ne30pg2_r05_IcoswISC30E3r5, 1 node, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
@@ -1209,7 +1169,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="summit|ascent|pm-gpu|muller-gpu">
+    <mach name="summit|ascent|pm-gpu|muller-gpu|alvarez-gpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="M">
         <comment>--res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>
@@ -1222,7 +1182,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez|gcp12">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu|gcp12">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+MOSART.+" pesize="any">
         <comment>pm-cpu/gcp: eam, 2 nodes: --res conusx4v1_r05_oECv3 --compset F2010 </comment>
         <ntasks>
@@ -1285,7 +1245,7 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
-    <mach name="pm-cpu|muller-cpu|alvarez">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC.+SWAV.*" pesize="any">
         <comment>pm-cpu: ne120pg2 F-compset with MPASSI on 43 nodes 128x1 ~1 sypd</comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>

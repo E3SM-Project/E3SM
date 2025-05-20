@@ -69,7 +69,7 @@ TEST_CASE("remap", "") {
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("physics_grid_type","GLL");
+  params.set<std::string>("physics_grid_type","gll");
   params.set<std::string>("vertical_coordinate_filename","NONE");
   HommeGridsManager gm(comm,params);
   gm.build_grids();
@@ -80,8 +80,8 @@ TEST_CASE("remap", "") {
   EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   // Get physics and dynamics grids, and their dofs
-  auto phys_grid = gm.get_grid("Physics GLL");
-  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
+  auto phys_grid = gm.get_grid("physics_gll");
+  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("dynamics"));
   auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
   auto h_d_lid2idx = dyn_grid->get_lid_to_idx_map().get_view<const int**,Host>();
@@ -198,7 +198,6 @@ TEST_CASE("remap", "") {
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-  remapper->registration_begins();
   remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);
@@ -608,7 +607,7 @@ TEST_CASE("combo_remap", "") {
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("physics_grid_type","GLL");
+  params.set<std::string>("physics_grid_type","gll");
   params.set<std::string>("vertical_coordinate_filename","NONE");
   HommeGridsManager gm(comm,params);
   gm.build_grids();
@@ -619,8 +618,8 @@ TEST_CASE("combo_remap", "") {
   EKAT_REQUIRE_MSG(num_local_cols>0, "Internal test error! Fix homme_pd_remap_tests, please.\n");
 
   // Get physics and dynamics grids, and their dofs
-  auto phys_grid = gm.get_grid("Physics GLL");
-  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("Dynamics"));
+  auto phys_grid = gm.get_grid("physics_gll");
+  auto dyn_grid  = std::dynamic_pointer_cast<const SEGrid>(gm.get_grid("dynamics"));
   auto h_p_dofs = phys_grid->get_dofs_gids().get_view<const gid_type*,Host>();
   auto h_d_dofs = dyn_grid->get_cg_dofs_gids().get_view<const gid_type*,Host>();
   auto h_d_lid2idx = dyn_grid->get_lid_to_idx_map().get_view<const int**,Host>();
@@ -739,7 +738,6 @@ TEST_CASE("combo_remap", "") {
 
   // Build the remapper, and register the fields
   std::shared_ptr<Remapper> remapper(new Remapper(phys_grid,dyn_grid));
-  remapper->registration_begins();
   remapper->register_field(s_2d_field_phys, s_2d_field_dyn);
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);

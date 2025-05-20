@@ -1,0 +1,38 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.4hourlyINST_coarse.h
+iotype: pnetcdf
+averaging_type: instant
+max_snapshots_per_file: 1 # only one snapshot per file
+horiz_remap_file: ${DIN_LOC_ROOT}/atm/scream/maps/map_ne1024pg2_to_ne30pg2_mono.20230901.nc
+fields:
+  physics_pg2:
+    field_names:
+    # 3D fields on model levels
+    - T_mid
+    - qv
+    - RelativeHumidity
+    - U
+    - V
+    - omega
+    - qc
+    - nc
+    - qr
+    - qi
+    - tke
+    - o3_volume_mix_ratio
+    # 2D fields
+    - VapWaterPath
+    - LiqWaterPath
+    - IceWaterPath
+    - surf_radiative_T
+    - ps
+    - qv_2m
+    - T_2m
+    - ocnfrac
+    - landfrac
+output_control:
+  frequency: 4
+  frequency_units: nhours
+restart:
+  force_new_file: true

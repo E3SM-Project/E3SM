@@ -46,9 +46,7 @@ public:
   using lrreal2dk   = typename KT::template view_2d<Real>;
   using ulrreal2dk  = Unmanaged<lrreal2dk>;
 
-#ifdef RRTMGP_ENABLE_KOKKOS
   using interface_t = rrtmgp::rrtmgp_interface<Real, layout_t, DefaultDevice>;
-#endif
 
   // Constructors
   RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -115,12 +113,7 @@ public:
   int m_ngas;
   std::vector<ci_string>   m_gas_names;
   real1dk                  m_gas_mol_weights;
-#ifdef RRTMGP_ENABLE_YAKL
-  GasConcs                 m_gas_concs;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
   GasConcsK<Real, layout_t, DefaultDevice> m_gas_concs_k;
-#endif
 
   // Prescribed greenhouse gas surface concentrations in moles / moles air
   Real m_co2vmr;
@@ -152,18 +145,6 @@ public:
 
     // 1d size (ncol)
     ureal1dk cosine_zenith;
-#ifdef RRTMGP_ENABLE_YAKL
-    real1d mu0;
-    real1d sfc_alb_dir_vis;
-    real1d sfc_alb_dir_nir;
-    real1d sfc_alb_dif_vis;
-    real1d sfc_alb_dif_nir;
-    real1d sfc_flux_dir_vis;
-    real1d sfc_flux_dir_nir;
-    real1d sfc_flux_dif_vis;
-    real1d sfc_flux_dif_nir;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal1dk mu0_k;
     ureal1dk sfc_alb_dir_vis_k;
     ureal1dk sfc_alb_dir_nir_k;
@@ -173,28 +154,9 @@ public:
     ureal1dk sfc_flux_dir_nir_k;
     ureal1dk sfc_flux_dif_vis_k;
     ureal1dk sfc_flux_dif_nir_k;
-#endif
 
     // 2d size (ncol, nlay)
     ureal2dk d_dz;
-#ifdef RRTMGP_ENABLE_YAKL
-    real2d p_lay;
-    real2d t_lay;
-    real2d z_del;
-    real2d p_del;
-    real2d qc;
-    real2d nc;
-    real2d qi;
-    real2d cldfrac_tot;
-    real2d eff_radius_qc;
-    real2d eff_radius_qi;
-    real2d tmp2d;
-    real2d lwp;
-    real2d iwp;
-    real2d sw_heating;
-    real2d lw_heating;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal2dk p_lay_k;
     ureal2dk t_lay_k;
     ureal2dk z_del_k;
@@ -210,35 +172,9 @@ public:
     ureal2dk iwp_k;
     ureal2dk sw_heating_k;
     ureal2dk lw_heating_k;
-#endif
 
     // 2d size (ncol, nlay+1)
     ureal2dk d_tint;
-#ifdef RRTMGP_ENABLE_YAKL
-    real2d p_lev;
-    real2d t_lev;
-    real2d sw_flux_up;
-    real2d sw_flux_dn;
-    real2d sw_flux_dn_dir;
-    real2d lw_flux_up;
-    real2d lw_flux_dn;
-    real2d sw_clnclrsky_flux_up;
-    real2d sw_clnclrsky_flux_dn;
-    real2d sw_clnclrsky_flux_dn_dir;
-    real2d sw_clrsky_flux_up;
-    real2d sw_clrsky_flux_dn;
-    real2d sw_clrsky_flux_dn_dir;
-    real2d sw_clnsky_flux_up;
-    real2d sw_clnsky_flux_dn;
-    real2d sw_clnsky_flux_dn_dir;
-    real2d lw_clnclrsky_flux_up;
-    real2d lw_clnclrsky_flux_dn;
-    real2d lw_clrsky_flux_up;
-    real2d lw_clrsky_flux_dn;
-    real2d lw_clnsky_flux_up;
-    real2d lw_clnsky_flux_dn;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal2dk p_lev_k;
     ureal2dk t_lev_k;
     ureal2dk sw_flux_up_k;
@@ -261,76 +197,34 @@ public:
     ureal2dk lw_clrsky_flux_dn_k;
     ureal2dk lw_clnsky_flux_up_k;
     ureal2dk lw_clnsky_flux_dn_k;
-#endif
 
     // 3d size (ncol, nlay+1, nswbands)
-#ifdef RRTMGP_ENABLE_YAKL
-    real3d sw_bnd_flux_up;
-    real3d sw_bnd_flux_dn;
-    real3d sw_bnd_flux_dir;
-    real3d sw_bnd_flux_dif;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal3dk sw_bnd_flux_up_k;
     ureal3dk sw_bnd_flux_dn_k;
     ureal3dk sw_bnd_flux_dir_k;
     ureal3dk sw_bnd_flux_dif_k;
-#endif
 
     // 3d size (ncol, nlay+1, nlwbands)
-#ifdef RRTMGP_ENABLE_YAKL
-    real3d lw_bnd_flux_up;
-    real3d lw_bnd_flux_dn;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal3dk lw_bnd_flux_up_k;
     ureal3dk lw_bnd_flux_dn_k;
-#endif
 
     // 2d size (ncol, nswbands)
-#ifdef RRTMGP_ENABLE_YAKL
-    real2d sfc_alb_dir;
-    real2d sfc_alb_dif;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal2dk sfc_alb_dir_k;
     ureal2dk sfc_alb_dif_k;
-#endif
 
     // 3d size (ncol, nlay, n[sw,lw]bands)
-#ifdef RRTMGP_ENABLE_YAKL
-    real3d aero_tau_sw;
-    real3d aero_ssa_sw;
-    real3d aero_g_sw;
-    real3d aero_tau_lw;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal3dk aero_tau_sw_k;
     ureal3dk aero_ssa_sw_k;
     ureal3dk aero_g_sw_k;
     ureal3dk aero_tau_lw_k;
-#endif
 
     // 3d size (ncol, nlay, n[sw,lw]bnds)
-#ifdef RRTMGP_ENABLE_YAKL
-    real3d cld_tau_sw_bnd;
-    real3d cld_tau_lw_bnd;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal3dk cld_tau_sw_bnd_k;
     ureal3dk cld_tau_lw_bnd_k;
-#endif
 
     // 3d size (ncol, nlay, n[sw,lw]gpts)
-#ifdef RRTMGP_ENABLE_YAKL
-    real3d cld_tau_sw_gpt;
-    real3d cld_tau_lw_gpt;
-#endif
-#ifdef RRTMGP_ENABLE_KOKKOS
     ureal3dk cld_tau_sw_gpt_k;
     ureal3dk cld_tau_lw_gpt_k;
-#endif
-
   };
 
 protected:

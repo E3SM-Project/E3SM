@@ -8,6 +8,9 @@ Module shr_mpi_mod
   use shr_log_mod, only: s_loglev  => shr_log_Level
   use shr_log_mod, only: s_logunit => shr_log_Unit
 
+  ! Import MPI fcns/types
+  use mpi
+
   implicit none
   private
 
@@ -91,8 +94,6 @@ Module shr_mpi_mod
        shr_mpi_maxr0, &
        shr_mpi_maxr1
   end interface shr_mpi_max
-
-#include <mpif.h>         ! mpi library include file
 
   !===============================================================================
 CONTAINS
@@ -957,7 +958,6 @@ CONTAINS
     !----- local -----
     integer(SHR_KIND_IN)               :: npes          ! Number of MPI tasks
     integer(SHR_KIND_IN)               :: locSize       ! Size of local distributed data
-    integer(SHR_KIND_IN), pointer      :: sendSize(:)   ! Size to send for initial gather
     integer(SHR_KIND_IN)               :: i             ! Index
     integer(SHR_KIND_IN)               :: rank          ! Rank of this MPI task
     integer(SHR_KIND_IN)               :: nSize         ! Maximum size to send
@@ -979,17 +979,14 @@ CONTAINS
     !
     ! --- Gather the send global sizes from each MPI task -----------------------
     !
-    allocate( sendSize(npes) )
-    sendSize(:) = 1
     globSize(:) = 1
-    call MPI_GATHER( locSize, 1, MPI_INTEGER, globSize, sendSize, &
+    call MPI_GATHER( locSize, 1, MPI_INTEGER, globSize, 1, &
          MPI_INTEGER, rootid, comm, ierr )
     if (present(string)) then
        call shr_mpi_chkerr(ierr,subName//trim(string))
     else
        call shr_mpi_chkerr(ierr,subName)
     endif
-    deallocate( sendSize )
     !
     ! --- Prepare the displacement and allocate arrays -------------------------
     !

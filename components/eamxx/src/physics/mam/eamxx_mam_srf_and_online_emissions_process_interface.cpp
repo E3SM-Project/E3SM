@@ -31,7 +31,7 @@ MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
 // ================================================================
 void MAMSrfOnlineEmiss::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -62,7 +62,11 @@ void MAMSrfOnlineEmiss::set_grids(
   // Specific humidity [kg/kg]
   add_tracers_wet_atm();
   add_fields_dry_atm();
-
+  
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+  
   //----------- Variables from microphysics scheme -------------
 
   // Surface geopotential [m2/s2]
@@ -106,7 +110,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ dms;
   // File name, name and sectors
-  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_DMS");
+  dms.data_file    = m_params.get<std::string>("srf_emis_specifier_for_dms");
   dms.species_name = "dms";
   dms.sectors      = {"DMS"};
   srf_emiss_species_.push_back(dms);  // add to the vector
@@ -116,7 +120,7 @@ void MAMSrfOnlineEmiss::set_grids(
   //--------------------------------------------------------------------
   srf_emiss_ so2;
   // File name, name and sectors
-  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_SO2");
+  so2.data_file    = m_params.get<std::string>("srf_emis_specifier_for_so2");
   so2.species_name = "so2";
   so2.sectors      = {"AGR", "RCO", "SHP", "SLV", "TRA", "WST"};
   srf_emiss_species_.push_back(so2);  // add to the vector
@@ -256,7 +260,7 @@ void MAMSrfOnlineEmiss::set_grids(
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 size_t MAMSrfOnlineEmiss::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
 }
 
 // ================================================================

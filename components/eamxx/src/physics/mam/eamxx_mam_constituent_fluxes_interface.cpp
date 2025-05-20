@@ -22,7 +22,7 @@ MAMConstituentFluxes::MAMConstituentFluxes(const ekat::Comm &comm,
 // ================================================================
 void MAMConstituentFluxes::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
-  grid_                 = grids_manager->get_grid("Physics");
+  grid_                 = grids_manager->get_grid("physics");
   const auto &grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs();       // Number of columns on this rank
@@ -36,6 +36,11 @@ void MAMConstituentFluxes::set_grids(
 
   add_tracers_wet_atm();
   add_fields_dry_atm();
+
+  // cloud liquid number mixing ratio [1/kg]
+  auto n_unit           = 1 / kg;   // units of number mixing ratios of tracers
+  add_tracer<Required>("nc", grid_, n_unit);
+  
   static constexpr Units m2(m * m, "m2");
   // Constituent fluxes at the surface (gasses and aerosols)
   //[units: kg/m2/s (mass) or #/m2/s (number)]
@@ -64,7 +69,7 @@ void MAMConstituentFluxes::set_grids(
 // ON HOST, returns the number of bytes of device memory needed by the above
 // Buffer type given the number of columns and vertical levels
 size_t MAMConstituentFluxes::requested_buffer_size_in_bytes() const {
-  return mam_coupling::buffer_size(ncol_, nlev_);
+  return mam_coupling::buffer_size(ncol_, nlev_, 0, 0);
 }
 
 // ================================================================

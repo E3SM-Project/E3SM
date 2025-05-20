@@ -46,7 +46,6 @@ SET(CMAKE_CXX_COMPILER "CC" CACHE STRING "")
 # Note: No longer need to set MPICH_CXX env variable and perhaps
 # NVCC_WRAPPER_DEFAULT_COMPILER. Ignore the warning about nvcc_wrapper during
 # configuration.
-SET(CUDA_BUILD TRUE CACHE STRING "")
 
 SET(CXXLIB_SUPPORTED_CACHE FALSE CACHE BOOL "")
 

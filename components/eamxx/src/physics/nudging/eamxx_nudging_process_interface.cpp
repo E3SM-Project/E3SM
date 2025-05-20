@@ -59,7 +59,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -236,7 +236,6 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
   const auto layout_tmp = grid_tmp->get_3d_scalar_layout(true);
   const auto layout_atm = m_grid->get_3d_scalar_layout(true);
-  m_horiz_remapper->registration_begins();
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     std::string name_tmp = name + "_tmp";

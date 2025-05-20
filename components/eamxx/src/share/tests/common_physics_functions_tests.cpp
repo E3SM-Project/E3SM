@@ -61,11 +61,11 @@ template<typename DeviceT>
 void run_scalar_valued_fns(std::mt19937_64& engine)
 {
   /*
-  Most of the common physics functions are templated to operate on scalars or on packs of vertical indices. 
-  The functions tested here don't include any vertical dimension (e.g. they handle variables only defined 
-  at the surface), so are only defined for scalar reals. This is fundamentally different than the other 
+  Most of the common physics functions are templated to operate on scalars or on packs of vertical indices.
+  The functions tested here don't include any vertical dimension (e.g. they handle variables only defined
+  at the surface), so are only defined for scalar reals. This is fundamentally different than the other
   functions, so these functions get their own run test.
-  */	
+  */
 
   using RealType   = scream::Real;
   using PF         = scream::PhysicsFunctions<DeviceT>;
@@ -93,7 +93,7 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(300,0),300,test_tol) );
   REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(300,1000),306.5,test_tol) );
   REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(250.3,-10.2),250.2337,test_tol) );
-  
+
   // lapse_T_for_psl property tests:
   // If T_ground = 0, T_ground_tmp should be 255/2 and lapse should be 0.0065 Really cold case.
   // If T_ground = 300 K with phi_ground>0 m2/s2, lapse = 0 and T_ground_tmp=0.5*(290.5+T_ground). Really hot case.
@@ -121,7 +121,7 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   PF::lapse_T_for_psl(T_ground, phi_ground, lapse, T_ground_tmp );
   REQUIRE( Check::equal(T_ground_tmp, T_ground) );
   REQUIRE( Check::equal(lapse,0.0065) );
-  
+
   // PSL property tests:
   // PSL==surface pressure if surface height = 0 m
   // computed value close to exact solution when lapse rate is zero (i.e. very warm conditions)
@@ -131,14 +131,14 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   RealType p_ground=100000; //can't use p0 because that is a ScalarT which could be a pack
   REQUIRE( Check::equal(PF::calculate_psl(310 , p_ground, 0 ), p_ground) );
   REQUIRE( Check::equal(PF::calculate_psl( 2 , 2, 0 ), 2) );
-  
+
   T_ground=300;
   T_ground_tmp=0.5*(290.5+T_ground);
   RealType psl_exact = p_ground*std::exp(phi_ground/(Rd*T_ground_tmp));
   RealType psl=PF::calculate_psl( T_ground , p_ground, phi_ground );
   REQUIRE( Check::approx_equal( psl_exact, psl, test_tol) );
   REQUIRE( psl>p_ground);
-  
+
   T_ground=280;
   phi_ground=-100;
   lapse=0.0065;
@@ -417,7 +417,7 @@ void run(std::mt19937_64& engine)
   tmp = PF::calculate_mmr_from_vmr(h2o_mol,qv0,vmr0);
   REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr(h2o_mol,qv0,tmp),vmr0,test_tol) );
   REQUIRE( !Check::approx_equal(PF::calculate_vmr_from_mmr(o2_mol,qv0,tmp),vmr0,test_tol) );
-  
+
   // --------- Run tests on full columns of data ----------- //
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -454,7 +454,7 @@ void run(std::mt19937_64& engine)
 
     // Compute drymmr from wetmmr
     PF::calculate_drymmr_from_wetmmr(team,wetmmr_for_testing,qv_wet,drymmr);
-    
+
     //convert qv_wet to qv_dry
     PF::calculate_drymmr_from_wetmmr(team,qv_wet,qv_wet,qv_dry);
 

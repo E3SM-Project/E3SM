@@ -509,14 +509,12 @@ add_default($nl, 'config_load_balance_timers');
 if ($CONTINUE_RUN eq 'TRUE') {
         add_default($nl, 'config_do_restart', 'val'=>".true.");
         add_default($nl, 'config_do_restart_hbrine', 'val'=>".true.");
-        add_default($nl, 'config_do_restart_zsalinity', 'val'=>".true.");
         add_default($nl, 'config_do_restart_bgc', 'val'=>".true.");
         add_default($nl, 'config_do_restart_snow_density', 'val'=>".true.");
         add_default($nl, 'config_do_restart_snow_grain_radius', 'val'=>".true.");
 } else {
         add_default($nl, 'config_do_restart', 'val'=>".false.");
         add_default($nl, 'config_do_restart_hbrine', 'val'=>".false.");
-        add_default($nl, 'config_do_restart_zsalinity', 'val'=>".false.");
         add_default($nl, 'config_do_restart_bgc', 'val'=>".false.");
         add_default($nl, 'config_do_restart_snow_density', 'val'=>".false.");
         add_default($nl, 'config_do_restart_snow_grain_radius', 'val'=>".false.");
@@ -585,9 +583,6 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 
 add_default($nl, 'config_use_test_ice_shelf');
 add_default($nl, 'config_testing_system_test');
-add_default($nl, 'config_use_congelation_basal_melt');
-add_default($nl, 'config_use_lateral_melt');
-add_default($nl, 'config_use_latent_processes');
 add_default($nl, 'config_limit_air_temperatures');
 
 ###################################
@@ -630,7 +625,7 @@ add_default($nl, 'config_recover_tracer_means_check');
 ##################################
 
 if ($ice_bgc eq 'ice_bgc') {
-        add_default($nl, 'config_column_physics_type', 'val'=>"column_package");
+        add_default($nl, 'config_column_physics_type', 'val'=>"icepack");
 } else {
         add_default($nl, 'config_column_physics_type');
 }
@@ -652,7 +647,6 @@ add_default($nl, 'config_use_column_snow_tracers');
 add_default($nl, 'config_use_ice_age');
 add_default($nl, 'config_use_first_year_ice');
 add_default($nl, 'config_use_level_ice');
-add_default($nl, 'config_use_cesm_meltponds');
 add_default($nl, 'config_use_level_meltponds');
 add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
@@ -665,7 +659,6 @@ add_default($nl, 'config_use_floe_size_distribution');
 # Namelist group: biogeochemistry #
 ###################################
 
-add_default($nl, 'config_use_vertical_zsalinity');
 add_default($nl, 'config_use_shortwave_bioabsorption');
 add_default($nl, 'config_use_skeletal_biochemistry');
 if ($ice_bgc eq 'ice_bgc') {
@@ -708,8 +701,6 @@ add_default($nl, 'config_scale_initial_vertical_bgc');
 add_default($nl, 'config_biogrid_bottom_molecular_sublayer');
 add_default($nl, 'config_biogrid_top_molecular_sublayer');
 add_default($nl, 'config_bio_gravity_drainage_length_scale');
-add_default($nl, 'config_zsalinity_molecular_sublayer');
-add_default($nl, 'config_zsalinity_gravity_drainage_scale');
 add_default($nl, 'config_snow_porosity_at_ice_surface');
 add_default($nl, 'config_new_ice_fraction_biotracer');
 add_default($nl, 'config_fraction_biotracer_in_frazil');
@@ -891,6 +882,7 @@ add_default($nl, 'config_rapid_mode_aspect_ratio');
 add_default($nl, 'config_slow_mode_drainage_strength');
 add_default($nl, 'config_slow_mode_critical_porosity');
 add_default($nl, 'config_macro_drainage_timescale');
+add_default($nl, 'config_congelation_freezing_method');
 add_default($nl, 'config_congelation_ice_porosity');
 
 #######################

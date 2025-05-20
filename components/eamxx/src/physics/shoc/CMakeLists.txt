@@ -86,7 +86,7 @@ if (NOT SCREAM_DEBUG)
   endif()
 endif()
 
-if (HIP_BUILD)
+if (Kokkos_ENABLE_HIP)
   #this is needed for crusher even with small kernels
   set_source_files_properties(shoc_diag_second_shoc_moments_disp.cpp  PROPERTIES COMPILE_FLAGS -O1)
 endif()

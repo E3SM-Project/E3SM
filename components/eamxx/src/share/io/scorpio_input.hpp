@@ -20,12 +20,12 @@
  *  The EKAT parameter list contains the following options to control input behavior:
  *  -----
  *  Input Parameters
- *    Filename: STRING
- *    Field Names:   ARRAY OF STRINGS
+ *    filename: STRING
+ *    field_names:   ARRAY OF STRINGS
  *  -----
  *  The meaning of these parameters is the following:
- *   - Filename: the name of the input file to be read.
- *   - Field Names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
+ *   - filename: the name of the input file to be read.
+ *   - field_names: list of names of fields to load from file. Should match the name in the file and the name in the field manager.
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
@@ -75,7 +75,7 @@ public:
 
   // --- Methods --- //
   // Initialize the class for reading into FieldManager-owned fields.
-  //  - params: input parameters (must contain at least "Filename")
+  //  - params: input parameters (must contain at least "filename")
   //  - field_mgr: the FieldManager containing the Field's where the
   //               variables from the input filed will be read into.
   //               Fields can be padded/strided.
@@ -83,7 +83,7 @@ public:
              const std::shared_ptr<const fm_type>& field_mgr);
 
   // Initialize the class for reading into user-provided flattened 1d host views.
-  //  - params: input parameters (must contain at least "Filename")
+  //  - params: input parameters (must contain at least "filename")
   //  - grid: the grid where the variables live
   //  - host_views_1d: the 1d flattened views where data will be read into.
   //                   These views must be contiguous (no padding/striding).

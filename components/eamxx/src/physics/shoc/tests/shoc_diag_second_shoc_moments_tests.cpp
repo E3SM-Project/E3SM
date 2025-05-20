@@ -85,7 +85,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
     // set upper condition for dz_zi
     dz_zi[nlevi-1] = zt_grid[nlev-1];
 
-    DiagSecondShocMomentsData SDS(shcol, nlev, nlevi);
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
+    DiagSecondShocMomentsData SDS(shcol, nlev, nlevi, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.nlevi == nlevi) );
@@ -260,6 +263,33 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
       }
     }
 
+    // SECOND TEST
+    // If SHOC is reverted to a 1.5 TKE closure then test to make sure that
+    //  all values of the scalar variances are zero everywhere.
+    //  Will use the same input data as the previous test.
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // Call the C++ implementation
+    diag_second_shoc_moments(SDS);
+
+    // Require that all values of w2 are ZERO
+    for (Int s = 0; s < shcol; ++s){
+      // nlev checks
+      for (Int n = 0; n < nlev; ++n){
+        const auto offset = n + s * nlev;
+        REQUIRE(SDS.w_sec[offset] == 0);
+      }
+      // nlevi checks
+      for (Int n = 0; n < nlevi; ++n){
+        const auto offset = n + s * nlevi;
+        REQUIRE(SDS.thl_sec[offset] == 0);
+        REQUIRE(SDS.qw_sec[offset] == 0);
+        REQUIRE(SDS.qwthl_sec[offset] == 0);
+      }
+    }
+
   } // run_property
 
   void run_bfb()
@@ -267,10 +297,10 @@ struct UnitWrap::UnitTest<D>::TestDiagSecondShocMoments : public UnitWrap::UnitT
     auto engine = Base::get_engine();
 
     DiagSecondShocMomentsData baseline_data[] = {
-      DiagSecondShocMomentsData(36,  72, 73),
-      DiagSecondShocMomentsData(72,  72, 73),
-      DiagSecondShocMomentsData(128, 72, 73),
-      DiagSecondShocMomentsData(256, 72, 73),
+      DiagSecondShocMomentsData(36,  72, 73, false),
+      DiagSecondShocMomentsData(72,  72, 73, false),
+      DiagSecondShocMomentsData(128, 72, 73, false),
+      DiagSecondShocMomentsData(256, 72, 73, false),
     };
 
     // Generate random input data

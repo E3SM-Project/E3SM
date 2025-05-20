@@ -12,29 +12,31 @@ IdentityRemapper (const grid_ptr_type grid,
 }
 
 void IdentityRemapper::set_aliasing (const Aliasing aliasing) {
-  EKAT_REQUIRE_MSG (get_state()==RepoState::Clean,
+  EKAT_REQUIRE_MSG (m_num_fields==0,
       "Error! Aliasing in IdentityRemapper must be set *before* registration starts.\n");
   m_aliasing = aliasing;
 }
 
-void IdentityRemapper::register_field_from_src (const Field& src)
+Field IdentityRemapper::register_field_from_src (const Field& src)
 {
   EKAT_REQUIRE_MSG (m_aliasing!=SrcAliasTgt,
       "Error! Makes no sense to register from src and ask that src alias tgt.\n");
   if (m_aliasing==TgtAliasSrc) {
     register_field(src,src);
+    return src;
   } else {
-    AbstractRemapper::register_field_from_src(src);
+    return AbstractRemapper::register_field_from_src(src);
   }
 }
-void IdentityRemapper::register_field_from_tgt (const Field& tgt)
+Field IdentityRemapper::register_field_from_tgt (const Field& tgt)
 {
   EKAT_REQUIRE_MSG (m_aliasing!=TgtAliasSrc,
       "Error! Makes no sense to register from tgt and ask that tgt alias src.\n");
   if (m_aliasing==SrcAliasTgt) {
     register_field(tgt,tgt);
+    return tgt;
   } else {
-    AbstractRemapper::register_field_from_tgt(tgt);
+    return AbstractRemapper::register_field_from_tgt(tgt);
   }
 }
 

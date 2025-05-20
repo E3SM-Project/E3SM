@@ -62,7 +62,7 @@ TEST_CASE("field_at_pressure_level_p2")
   auto gm   = create_gm(comm,ncols,nlevs);
 
   // Create a field manager for testing
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
   auto fm   = get_test_fm(grid);
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
@@ -168,7 +168,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   // Register fields with fm
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-  fm->registration_begins();
   fm->register_field(FR{fid1,Pack::n});
   fm->register_field(FR{fid2,Pack::n});
   fm->register_field(FR{fid3,Pack::n});

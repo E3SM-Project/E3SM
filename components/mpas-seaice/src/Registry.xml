@@ -416,10 +416,6 @@
 			description="Restart the brine height tracer needed for vertical bgc"
 			possible_values="true or false"
 		/>
-		<nml_option name="config_do_restart_zsalinity" type="logical" default_value="false" units="unitless"
-			description="Restart the z-salinity tracer"
-			possible_values="false"
-		/>
 		<nml_option name="config_do_restart_bgc" type="logical" default_value="false" units="unitless"
 			description="Restart the ice biogeochemistry"
 			possible_values="true or false"
@@ -578,18 +574,6 @@
 			description="If true initialize variables that will fail the testing system tests."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_use_congelation_basal_melt" type="logical" default_value="true" units="unitless"
-			description="If true congelation and basal melt processes are active."
-			possible_values="true or false"
-		/>
-		<nml_option name="config_use_lateral_melt" type="logical" default_value="true" units="unitless"
-			description="If true lateral melt process is active."
-			possible_values="true or false"
-		/>
-		<nml_option name="config_use_latent_processes" type="logical" default_value="true" units="unitless"
-			description="If true latent heat processes are active."
-			possible_values="true or false"
-		/>
 		<nml_option name="config_limit_air_temperatures" type="logical" default_value="true" units="unitless"
 			description="If true limit air temperatures above"
 			possible_values="true or false"
@@ -705,7 +689,7 @@
 	<nml_record name="column_package" in_defaults="true">
 		<nml_option name="config_column_physics_type" type="character" default_value="icepack" units="unitless"
 			description="Set column physics library."
-			possible_values="'icepack' and 'column_package'"
+			possible_values="'icepack'"
 		/>
 		<nml_option name="config_use_column_shortwave" type="logical" default_value="true" units="unitless"
 			description="Run the shortwave radiation column physics calculation."
@@ -748,11 +732,6 @@
 			description="If true use the level ice tracers."
 			possible_values="true or false"
 			icepack_name="tr_lvl"
-		/>
-		<nml_option name="config_use_cesm_meltponds" type="logical" default_value="false" units="unitless"
-			description="If true use the cesm meltponds tracers."
-			possible_values="true or false"
-			icepack_name="tr_pond_cesm"
 		/>
 		<nml_option name="config_use_level_meltponds" type="logical" default_value="true" units="unitless"
 			description="If true use the level ice meltponds tracers."
@@ -799,11 +778,6 @@
 			description="Use the brine height tracer"
 			possible_values="true or false"
 			icepack_name="tr_brine"
-		/>
-		<nml_option name="config_use_vertical_zsalinity" type="logical" default_value="false" units="unitless"
-			description="Use z-salinity (with Bitz and Lipscomb 1999 thermodynamics)"
-			possible_values="false"
-			icepack_name="tr_bgc_S"
 		/>
 		<nml_option name="config_use_vertical_biochemistry" type="logical" default_value="false" units="unitless"
 			description="Turn on the reaction terms for vertical biological tracers"
@@ -922,16 +896,6 @@
 			description="positive real number less than 1"
 			possible_values="Sets the gravity drainage length scale in the biological transport model"
 			icepack_name="l_sk"
-		/>
-		<nml_option name="config_zsalinity_molecular_sublayer" type="real" default_value="0.0" units="m"
-			description="Sets the ice/ocean molecular sublayer for the z-salinity model"
-			possible_values="zero or positive real number less than 1"
-			icepack_name="grid_oS"
-		/>
-		<nml_option name="config_zsalinity_gravity_drainage_scale" type="real" default_value="0.028" units="m"
-			description="Sets the gravity drainage length scale in the z-salinity model"
-			possible_values="positive real number less than 1"
-			icepack_name="l_skS"
 		/>
 		<nml_option name="config_snow_porosity_at_ice_surface" type="real" default_value="-0.3" units="unitless"
 			description="Specifies the snow porosity (volume of air/total volume) at the ice surface"
@@ -2100,7 +2064,6 @@
 			<var name="verticalParticulateIronConc"/>
 			<var name="verticalDissolvedIronConc"/>
 			<var name="verticalAerosolsConc"/>
-			<var name="verticalSalinity"/>
 			<var name="brineFraction"/>
 			<var name="mobileFraction"/>
 			<var name="newlyFormedIce"/>
@@ -2726,7 +2689,6 @@
 		<package name="pkgTracerVerticalDON" description="vertical dissolved organic nitrogen tracers"/>
 		<package name="pkgTracerVerticalIron" description="vertical iron tracers"/>
 		<package name="pkgTracerZAerosols" description="vertical aerosol tracers"/>
-		<package name="pkgTracerZSalinity" description=""/>
 
 		<!-- other column packages -->
 		<package name="pkgColumnFormDrag" description=""/>
@@ -3248,11 +3210,6 @@
 		     dimensions="nzAerosolsIceLayers nCategories nCells Time"
 		     units="kg m-3"
 		     packages="pkgTracerZAerosols"
-		/>
-		<var name="verticalSalinity"
-		     type="real"
-		     dimensions="nBioLayers nCategories nCells Time"
-		     packages="pkgTracerZSalinity"
 		/>
 	</var_struct>
 
@@ -3838,11 +3795,6 @@
 		     units="kg m-3"
 		     description="Cell average aerosol for each type in snow and ice bio-grid layer"
 		     packages="pkgTracerZAerosols"
-		/>
-		<var name="verticalSalinityCell"
-		     type="real"
-		     dimensions="nBioLayers nCells Time"
-		     packages="pkgTracerZSalinity"
 		/>
 	</var_struct>
 
@@ -5917,26 +5869,6 @@
 		     units="m2"
 		     description="Fluid permeability on the interfaceBiologyGrid"
 		/>
-		<var name="zSalinityFlux"
-		     type="real"
-		     dimensions="nCells Time"
-		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
-		/>
-		<var name="zSalinityGDFlux"
-		     type="real"
-		     dimensions="nCells Time"
-		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
-		/>
-		<var name="zSalinityFluxCat"
-		     type="real"
-		     dimensions="nCategories nCells"
-		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
-		/>
-		<var name="zSalinityGDFluxCat"
-		     type="real"
-		     dimensions="nCategories nCells"
-		     packages="pkgColumnBiogeochemistry;pkgColumnPackage"
-		/>
 		<var name="darcyVelocityBio"
 		     type="real"
 		     dimensions="nCategories nCells Time"
@@ -5956,10 +5888,6 @@
 		     description="change in the brine penetration height at the ice bottom (positive up)"
 		     icepack_name="dhbr_bot"
 		     packages="pkgTracerBrine"
-		/>
-		<var name="zSalinityIceDensity"
-		     type="real"
-		     dimensions="nCategories nCells Time"
 		/>
 		<var name="netSpecificAlgalGrowthRate"
 		     type="real"
@@ -6179,11 +6107,6 @@
 		     dimensions="nCells Time"
 		     units="umol Fe m-2"
 		     description="Total dissolved iron in the snow"
-		/>
-		<var name="totalVerticalSalinity"
-		     type="real"
-		     dimensions="nCells Time"
-		     packages="pkgTracerZSalinity;pkgColumnPackage"
 		/>
 		<var name="totalChlorophyll"
 		     type="real"

@@ -247,7 +247,6 @@ TEST_CASE ("refining_remapper") {
   {
     auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
-    r->registration_begins();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
@@ -272,7 +271,6 @@ TEST_CASE ("refining_remapper") {
   auto s3d_tgt   = create_field("s3d_tgt",LayoutType::Scalar3D,*tgt_grid);
   auto v3d_tgt   = create_field("v3d_tgt",LayoutType::Vector3D,*tgt_grid);
 
-  r->registration_begins();
   r->register_field(s2d_src,s2d_tgt);
   r->register_field(v2d_src,v2d_tgt);
   r->register_field(s3d_src,s3d_tgt);
