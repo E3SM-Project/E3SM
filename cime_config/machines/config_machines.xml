@@ -3602,7 +3602,7 @@
     <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-       <executable>mpiexec</executable>
+       <executable>$SRCROOT/cime_config/machines/mpiexec_daos.sh</executable>
        <!--executable>numactl -m 2-3 mpiexec</executable--><!--for HBM runs-->
        <arguments>
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
@@ -3632,14 +3632,16 @@
      <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
      <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
      <environment_variables>
+        <env name="E3SM_SRCROOT">$SRCROOT</env>
         <env name="DAOS_POOL">E3SM_Dec</env>
         <env name="DAOS_CONT">e3sm</env>
         <env name="D_IL_REPORT">1</env>
         <env name="E3SM_CIME_PRERUN_HOOK">/lus/flare/projects/E3SM_Dec/tools/daos/prerun_hook_aurora.sh</env>
         <env name="E3SM_CIME_POSTRUN_HOOK">/lus/flare/projects/E3SM_Dec/tools/daos/postrun_hook_aurora.sh</env>
         <!--env name="LD_PRELOAD">/soft/perftools/darshan/darshan-3.4.7/lib/libdarshan.so:/opt/aurora/24.347.0/spack/unified/0.9.2/install/linux-sles15-x86_64/oneapi-2025.0.5/hdf5-1.14.5-zrlo32i/lib/libhdf5.so:/opt/aurora/24.347.0/spack/unified/0.9.2/install/linux-sles15-x86_64/oneapi-2025.0.5/parallel-netcdf-1.12.3-cszcp66/lib/libpnetcdf.so:/usr/lib64/libpil4dfs.so</env-->
-        <!--env name="LD_PRELOAD">/usr/lib64/libpil4dfs.so</env>
-        <env name="DARSHAN_LOGFILE">/home/jayesh/darshan_logs/tmp_darshan_log</env-->
+        <!--env name="LD_PRELOAD">/usr/lib64/libpil4dfs.so</env-->
+        <env name="D_IL_ENFORCE_EXEC_ENV">1</env>
+        <!--env name="DARSHAN_LOGFILE">/home/jayesh/darshan_logs/tmp_darshan_log</env-->
         <env name="NETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002</env>
         <env name="PNETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
         <env name="LD_LIBRARY_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/lib:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/lib:$ENV{LD_LIBRARY_PATH}</env>
