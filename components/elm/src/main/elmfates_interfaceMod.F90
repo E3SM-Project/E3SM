@@ -3874,4 +3874,35 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine GetLandusePFTData
 
+! ======================================================================================
+
+ subroutine UpdateBCIn(this, nc)
+
+   ! !DESCRIPTION:
+   ! ---------------------------------------------------------------------------------
+   ! This call updates the HLM inputs to FATES
+   ! Currently this handles a subset of bc_in variables in an effort to stage the
+   ! refactor over time
+   ! ---------------------------------------------------------------------------------
+
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer, intent(in) :: nc
+
+   ! !LOCAL VARIABLES
+   integer :: s, p, c, l, i
+
+   do s=1,this%fates(nc)%nsites
+
+      c = GetColIndex(s)
+      call TransferBC(col_cf%w_scalar(c))
+
+   end do
+
+ end subroutine UpdateBCIn
+
+! ======================================================================================
+
 end module ELMFatesInterfaceMod
