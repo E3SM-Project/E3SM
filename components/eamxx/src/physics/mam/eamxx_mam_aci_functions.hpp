@@ -17,7 +17,7 @@ void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
   MAMAci::const_view_2d omega = dry_atmosphere.omega;
   MAMAci::const_view_2d T_mid = dry_atmosphere.T_mid;
   MAMAci::const_view_2d p_mid = dry_atmosphere.p_mid;
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("compute_w0_and_rho",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         // Get physical constants
@@ -46,7 +46,7 @@ void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy,
                                MAMAci::view_2d tke) {
   using CO = scream::ColumnOps<DefaultDevice, Real>;
 
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("compute_tke_at_interfaces",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
 
@@ -71,7 +71,7 @@ void compute_subgrid_scale_velocities(
     const Real wsubmin, const int top_lev, const int nlev,
     // output
     MAMAci::view_2d wsub, MAMAci::view_2d wsubice, MAMAci::view_2d wsig) {
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("compute_subgrid_scale_velocities",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         // More refined computation of sub-grid vertical velocity
@@ -111,7 +111,7 @@ void compute_nucleate_ice_tendencies(
   // from ice nucleation
   //-------------------------------------------------------------
 
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("compute_nucleate_ice_tendencies",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         //---------------------------------------------------------------------
@@ -174,7 +174,7 @@ void store_liquid_cloud_fraction(
     MAMAci::view_2d cloud_frac, MAMAci::view_2d cloud_frac_prev) {
   MAMAci::const_view_2d qc = dry_atmosphere.qc;
   MAMAci::const_view_2d qi = dry_atmosphere.qi;
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("store_liquid_cloud_fraction",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         //-------------------------------------------------------------
@@ -317,7 +317,7 @@ void call_function_dropmixnuc(
   //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("call_function_dropmixnuc",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         // for (int icol=0; icol<5; ++icol){
@@ -519,7 +519,7 @@ void call_hetfrz_compute_tendencies(
   for(int i = 0; i < MAMAci::hetro_scratch_; ++i)
     diagnostic_scratch[i] = diagnostic_scratch_[i];
 
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("call_hetfrz_compute_tendencies",
       team_policy, KOKKOS_LAMBDA(const haero::ThreadTeam &team) {
         const int icol = team.league_rank();
         //   Set up an atmosphere, surface, diagnostics, pronostics and
