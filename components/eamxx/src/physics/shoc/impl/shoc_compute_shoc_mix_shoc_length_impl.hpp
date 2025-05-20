@@ -42,8 +42,11 @@ void Functions<S,D>
 	// Search for stable cells
         const auto stable_mask = brunt(k) > 0;
 
+      // To avoid FPE when calculating sqrt(brunt), set brunt_tmp=0 in the case brunt<1.
+      Spack brunt_tmp(stable_mask, brunt(k));
+
         // Define length scale for stable cells
-        const auto length_tmp = ekat::sqrt(0.76*tk(k)/0.1/ekat::sqrt(brunt(k) + 1.e-10));
+        const auto length_tmp = ekat::sqrt(0.76*tk(k)/0.1/ekat::sqrt(brunt_tmp + 1.e-10));
         // Limit the stability corrected length scale between 0.1*dz and dz
 	const auto limited_len = ekat::min(dz_zt(k),ekat::max(0.1*dz_zt(k),length_tmp));
 
