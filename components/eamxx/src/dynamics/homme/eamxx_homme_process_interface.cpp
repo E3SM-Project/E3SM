@@ -768,18 +768,11 @@ void HommeDynamics::homme_post_process (const double dt) {
 
   if (has_energy_fixer()) {
 
-    const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
-    const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
-    const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
-    const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
+      get_field_out("vapor_flux").deep_copy(0);
+      get_field_out("ice_flux").deep_copy(0);
+      get_field_out("water_flux").deep_copy(0);
+      get_field_out("heat_flux").deep_copy(0);
 
-    Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-      const int& icol = team.league_rank();
-      vapor_flux(icol) = 0.0;
-      water_flux(icol) = 0.0;
-      ice_flux(icol)   = 0.0;
-      heat_flux(icol)  = 0.0;
-    });
   }; //if fixer
 
 }//homme_post_proc

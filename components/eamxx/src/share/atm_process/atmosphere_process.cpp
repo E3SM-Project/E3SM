@@ -1,6 +1,6 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/eamxx_timing.hpp"
-#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
+#include "share/property_checks/mass_and_energy_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
@@ -128,8 +128,8 @@ void AtmosphereProcess::run (const double dt) {
     //but this will change with cp* (with cpdry heat_glob const is much easier to compute)
     //actually we do not need mass_before, so mass_before is redundant
 
-    //however, we do not want to use column check if the fixer is on. without a correction 
-    //from the fixer, column check would fail after fixer. 
+    //however, we do not want to use column checks if the fixer is on. without a correction 
+    //from the fixer, column checks would fail after fixer. 
     //we decided that using the column check to verify the fixer (after intorducing a new "flux")
     //is not that practical. the fixer will be verified by another call to global integral,
     //but disabled by default.
@@ -1166,7 +1166,7 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const double dt
 
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
-      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_conservation.second);
+      std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(m_conservation.second);
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
@@ -1180,7 +1180,7 @@ void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_inf
 
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
-      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_conservation.second);
+      std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(m_conservation.second);
 
   //dt is needed to convert flux to change
   conservation_check->set_dt(dt);
@@ -1188,10 +1188,10 @@ void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_inf
 
   if(print_debug_info){
     //print everything about the fixer only in debug mode
-    m_atm_logger->info("EAMxx:: energy fixer, PB T tendency " + std::to_string( conservation_check->get_pb_fixer() ) );
-    m_atm_logger->info("EAMxx:: energy fixer, total energy before fix " + std::to_string( conservation_check->get_total_energy_before() ) );
+    m_atm_logger->info("EAMxx:: energy fixer: T tend added to each physics midlevel " + std::to_string( conservation_check->get_pb_fixer() ) );
+    m_atm_logger->info("EAMxx:: energy fixer: total energy before fix " + std::to_string( conservation_check->get_total_energy_before() ) );
     std::stringstream ss;
-    ss << "EAMxx:: energy fixer, rel energy error after fix " << std::setprecision(15) << conservation_check->get_echeck() << "\n";
+    ss << "EAMxx:: energy fixer: rel energy error after fix " << std::setprecision(15) << conservation_check->get_echeck() << "\n";
     m_atm_logger->info(ss.str());
   }
 

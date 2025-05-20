@@ -7,7 +7,6 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_workspace.hpp"
-#include "physics/p3/p3_functions.hpp"
 
 #include <string>
 
@@ -43,9 +42,6 @@ class HommeDynamics : public AtmosphereProcess
 
   using WorkspaceMgr = ekat::WorkspaceManager<Pack, DefaultDevice>;
   using Workspace = WorkspaceMgr::Workspace;
-
-  using P3F          = p3::Functions<Real, DefaultDevice>;
-  using view_1d_horiz  = typename P3F::view_1d<Real>;
 
 public:
 

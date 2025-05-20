@@ -190,7 +190,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <enable_energy_fixer>true</enable_energy_fixer>
       <!-- true means 2 more calls to AllReduce after dycore -->
-      <enable_energy_fixer_debug_info>true</enable_energy_fixer_debug_info>
+      <enable_energy_fixer_debug_info>false</enable_energy_fixer_debug_info>
     </homme>
 
     <!-- P3 microphysics -->
