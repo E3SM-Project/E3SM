@@ -1,3 +1,5 @@
+option (EAMXX_EMULATE_CLD_FRACTION "" OFF)
+
 set(CLDFRAC_SRCS
   eamxx_cld_fraction_process_interface.cpp
   cld_fraction.cpp
@@ -13,6 +15,9 @@ add_library(cld_fraction ${CLDFRAC_SRCS})
 target_compile_definitions(cld_fraction PUBLIC EAMXX_HAS_CLD_FRACTION)
 target_link_libraries(cld_fraction physics_share scream_share)
 target_compile_options(cld_fraction PUBLIC)
+if (EAMXX_EMULATE_CLD_FRACTION)
+  target_compile_definitions(cld_fraction PUBLIC EAMXX_EMULATE_CLD_FRACTION)
+endif()
 
 if (TARGET eamxx_physics)
   # Add this library to eamxx_physics

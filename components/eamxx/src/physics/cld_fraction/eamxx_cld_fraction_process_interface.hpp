@@ -3,6 +3,9 @@
 
 #include "physics/cld_fraction/cld_fraction_functions.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
+#ifdef EAMXX_EMULATE_CLD_FRACTION
+#include "share/atm_process/atmosphere_python_process.hpp"
+#endif
 #include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
@@ -17,7 +20,11 @@ namespace scream
  * in its list of subcomponents (the AD should make sure of this).
 */
 
+#ifdef EAMXX_EMULATE_CLD_FRACTION
+class CldFraction : public AtmospherePythonProcess
+#else
 class CldFraction : public AtmosphereProcess
+#endif
 {
 public:
   using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
