@@ -385,9 +385,33 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Redi_closure" type="char*1024"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch.
+Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. For N2_dependent, the range varies from config_redi_constant_kappa down to 10% of that value
 
-Valid values: 'constant', 'equalGM', 'data'
+Valid values: 'constant', 'N2_dependent', 'equalGM', 'data'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_redi_transition_layer_bld_fraction" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Parameter that controls over what fraction the redi tensor transitions from isopycnal to horizontal.  For example a value of 0.8 means at z = -0.8*bld the tensor is fully horizontal.  Transition is linear between the bld base and this point
+
+Valid values: Positive real numbers.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_new_sfc_taper" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Controls if the taper where redi is purely horizontal in the boundary layer instead of off
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_use_cavity_fix" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+if true use the corrected form of the horizontal temperature and salinity gradients
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -396,6 +420,22 @@ Default: Defined in namelist_defaults.xml
 The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'.
 
 Valid values: Positive real numbers.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_redi_spatially_variable_min_kappa" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+minimum value of redi diffusivity for N2_dependent redi scheme.
+
+Valid values: values around 100s
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_redi_spatially_variable_max_kappa" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+minimum value of redi diffusivity for N2_dependent redi scheme.
+
+Valid values: values around 100s
 Default: Defined in namelist_defaults.xml
 </entry>
 

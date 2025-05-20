@@ -143,6 +143,7 @@ module ocn_diagnostics_variables
 
    integer, dimension(:), pointer :: indMLD
    real(kind=RKIND), dimension(:), pointer :: dThreshMLD
+
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
 
    real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
@@ -164,7 +165,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerNonLocalTendency
    real (kind=RKIND), dimension(:,:,:), pointer :: activeTracerHorMixTendency
    real (kind=RKIND), dimension(:,:), pointer :: temperatureShortWaveTendency
-   real (kind=RKIND), dimension(:), pointer :: RediKappa
+   real (kind=RKIND), dimension(:,:), pointer :: RediKappa
 
    ! pointers for tendencies used in diagnostic budget computation
    real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
