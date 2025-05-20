@@ -97,14 +97,38 @@ target_include_directories(scream_share PUBLIC
   ${SCREAM_BIN_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
 # Used in the data interpolation
 target_link_libraries(scream_share PUBLIC stdc++fs)
-
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
 else()
   target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
+endif()
+
+if (EAMXX_ENABLE_PYTHON)
+  # Need python headers
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+  # Need nanobind
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+  message ("nb root: ${nanobind_ROOT}")
+  find_package(nanobind REQUIRED HINTS ${nanobind_ROOT})
+
+  # Build nanobind library
+  if (BUILD_SHARED_LIBS)
+    set (nb_target nanobind)
+  else()
+    set (nb_target nanobind-static)
+  endif()
+  nanobind_build_library (${nb_target} AS_SYSINCLUDE)
+
+  target_sources (scream_share PRIVATE eamxx_pysession.cpp)
+  target_link_libraries(scream_share PUBLIC Python::Python ${nb_target})
+  target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
 endif()
 
 target_link_libraries(scream_share PUBLIC ekat pioc)
