@@ -15,7 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
@@ -29,7 +29,6 @@ sys.path.append(os.path.join(_CIMEROOT, "CIME", "Tools"))
 # Cime imports
 from standard_script_setup import * # pylint: disable=wildcard-import
 from CIME.utils import expect, safe_copy, SharedArea
-from CIME.test_status import TestStatus, RUN_PHASE
 
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
@@ -104,19 +103,6 @@ def do_cime_vars(entry, case, refine=False, extra=None):
             entry = refine_type(entry)
 
     return entry
-
-###############################################################################
-def perform_consistency_checks(case, xml):
-###############################################################################
-    """
-    There may be separate parts of the xml that must satisfy some consistency
-    Here, we run any such check, so we can catch errors before submit time
-    NOTE: this function USED to run some checks on radiation/restart frequencies,
-          but we no longer have such restriction. I'm leaving the function here,
-          empty, in case some other constraint arises.
-    """
-    pass
-
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
@@ -568,8 +554,6 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
             print(f"Error during XML creation, writing {dbg_xml_path}")
 
         raise e
-
-    perform_consistency_checks (case, xml)
 
     return xml
 
