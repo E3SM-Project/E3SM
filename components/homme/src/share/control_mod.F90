@@ -134,7 +134,7 @@ module control_mod
   integer              , public :: restartfreq
   integer              , public :: runtype 
   integer              , public :: timerdetail 
-  integer              , public :: numnodes 
+  integer              , public :: numnodes
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
