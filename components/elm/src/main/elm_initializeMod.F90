@@ -784,7 +784,7 @@ contains
        call SatellitePhenologyInit(bounds_proc)
     end if
 
-    if (use_cn) then 
+    if (use_cn .or. use_fates) then 
        ! Create pointers to decomp pools for SoilLittVertTransp
        call CreateLitterTransportList()
     end if 
