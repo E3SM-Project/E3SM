@@ -3609,8 +3609,7 @@
           <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
           <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
           <arg name="ranks_bind">--cpu-bind $ENV{RANKS_BIND}</arg>
-          <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
-          <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
+          <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS} --rlimits CORE</arg>
        </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -3623,6 +3622,7 @@
        <modules>
           <command name="load">cmake/3.30.5</command>
           <command name="load">oneapi/release/2025.0.5</command>
+          <command name="load">mpich-config/collective-tuning/1024</command>
         </modules>
      </module_system>
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3650,13 +3650,12 @@
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
 
-	<env name="MPIR_CVAR_ENABLE_GPU">1</env>
+	<env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
         <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
-        <env name="GPU_TILE_COMPACT">/lus/flare/projects/E3SM_Dec/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
         <env name="RANKS_BIND">list:1-8:9-16:17-24:25-32:33-40:41-48:53-60:61-68:69-76:77-84:85-92:93-100 --gpu-bind list:0.0:0.1:1.0:1.1:2.0:2.1:3.0:3.1:4.0:4.1:5.0:5.1 --mem-bind list:0:0:0:0:0:0:1:1:1:1:1:1</env>
         <env name="ZES_ENABLE_SYSMAN">1</env>
 	<!-- default is ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE: enable this to run 4 MPI/tile or 48 MPI/node
@@ -3668,7 +3667,6 @@
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
-        <env name="GPU_TILE_COMPACT"> </env>
         <env name="RANKS_BIND">core</env>
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -3677,6 +3675,7 @@
     </environment_variables>
     <resource_limits>
         <resource name="RLIMIT_STACK">-1</resource>
+        <resource name="RLIMIT_CORE">-1</resource>
     </resource_limits>
   </machine>
 
