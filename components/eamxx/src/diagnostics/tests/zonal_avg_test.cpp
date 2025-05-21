@@ -28,10 +28,6 @@ std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
 TEST_CASE("zonal_avg") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
-  using TeamMember = typename TeamPolicy::member_type;
-  using KT         = ekat::KokkosTypes<DefaultDevice>;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   // A numerical tolerance
   auto tol = std::numeric_limits<Real>::epsilon() * 100;
@@ -51,19 +47,20 @@ TEST_CASE("zonal_avg") {
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
 
-  Field area     = grid->get_geometry_data("area");
-  auto area_view = area.get_view<const Real *>();
+  Field area       = grid->get_geometry_data("area");
+  auto area_view_h = area.get_view<const Real *, Host>();
 
   // Set latitude values
   Field lat = gm->get_grid_nonconst("Physics")->create_geometry_data(
       "lat", grid->get_2d_scalar_layout(), Units::nondimensional());
-  auto lat_view        = lat.get_view<Real *>();
+  auto lat_view_h      = lat.get_view<Real *, Host>();
   const Real lat_delta = sp(180.0) / nlats;
   std::vector<Real> zonal_areas(nlats, 0.0);
   for (int i = 0; i < ngcols; i++) {
-    lat_view(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
-    zonal_areas[i % nlats] += area_view[i];
+    lat_view_h(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
+    zonal_areas[i % nlats] += area_view_h[i];
   }
+  lat.sync_to_dev();
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ngcols}};
@@ -129,12 +126,13 @@ TEST_CASE("zonal_avg") {
   diag0_field.allocate_view();
 
   // calculate the zonal average
-  auto qc1_view   = qc1.get_view<const Real *>();
-  auto diag0_view = diag0_field.get_view<Real *>();
+  auto qc1_view_h   = qc1.get_view<const Real *, Host>();
+  auto diag0_view_h = diag0_field.get_view<Real *, Host>();
   for (int i = 0; i < ngcols; i++) {
     const int nlat = i % nlats;
-    diag0_view(nlat) += area_view(i) / zonal_areas[nlat] * qc1_view(i);
+    diag0_view_h(nlat) += area_view_h(i) / zonal_areas[nlat] * qc1_view_h(i);
   }
+  diag0_field.sync_to_dev();
 
   // Compare
   REQUIRE(views_are_equal(diag1_field, diag0_field));
@@ -171,16 +169,17 @@ TEST_CASE("zonal_avg") {
   FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, kg / kg, grid->name());
   Field diag3m_field(diag3m_id);
   diag3m_field.allocate_view();
-  auto qc3_view    = qc3.get_view<Real ***>();
-  auto diag3m_view = diag3m_field.get_view<Real ***>();
+  auto qc3_view_h    = qc3.get_view<Real ***, Host>();
+  auto diag3m_view_h = diag3m_field.get_view<Real ***, Host>();
   for (int i = 0; i < ngcols; i++) {
     const int nlat = i % nlats;
     for (int j = 0; j < dim3; j++) {
       for (int k = 0; k < nlevs; k++) {
-        diag3m_view(nlat, j, k) += area_view(i) / zonal_areas[nlat] * qc3_view(i, j, k);
+        diag3m_view_h(nlat, j, k) += area_view_h(i) / zonal_areas[nlat] * qc3_view_h(i, j, k);
       }
     }
   }
+  diag3m_field.sync_to_dev();
   diag3->set_required_field(qc3);
   diag3->initialize(t0, RunType::Initial);
   diag3->compute_diagnostic();
