@@ -28,6 +28,11 @@ PROJECT(HOMME C Fortran)
 
 INCLUDE(FortranCInterface)
 
+#if machine file sets WITH_DA, then all targets are built with DA (for unit testing)
+IF (WITH_DA)
+ADD_DEFINITIONS(-DHOMMEDA)
+ENDIF ()
+
 IF (${HOMME_BUILD_EXECS})
   OPTION(HOMME_ENABLE_TESTING "Whether tests should be enabled" TRUE)
   IF (${HOMME_ENABLE_TESTING})
@@ -119,7 +124,7 @@ OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_THETA_KOKKOS "SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
-OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
+OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" OFF)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
@@ -570,3 +575,5 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+
