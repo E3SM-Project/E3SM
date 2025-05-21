@@ -48,7 +48,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols);
 
   // Create timestep
-  const int dt=1800;
+  const double dt=1800;
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
@@ -120,28 +120,29 @@ void run(std::mt19937_64& engine)
   diag_liq->compute_diagnostic();
   diag_ice->compute_diagnostic();
 
-  Field preicp_total_f = diag_total->get_diagnostic().clone();
-  Field preicp_liq_f   = diag_liq->get_diagnostic().clone();
-  Field preicp_ice_f   = diag_ice->get_diagnostic().clone();
-  preicp_total_f.deep_copy(0);
-  preicp_liq_f.deep_copy(0);
-  preicp_ice_f.deep_copy(0);
-  auto precip_total_v = preicp_total_f.get_view<Real*>();
-  auto precip_liq_v   = preicp_liq_f.get_view<Real*>();
-  auto precip_ice_v   = preicp_ice_f.get_view<Real*>();
+  Field precip_total_f = diag_total->get_diagnostic().clone();
+  Field precip_liq_f   = diag_liq->get_diagnostic().clone();
+  Field precip_ice_f   = diag_ice->get_diagnostic().clone();
+  precip_total_f.deep_copy(0);
+  precip_liq_f.deep_copy(0);
+  precip_ice_f.deep_copy(0);
+  auto precip_total_v = precip_total_f.get_view<Real*>();
+  auto precip_liq_v   = precip_liq_f.get_view<Real*>();
+  auto precip_ice_v   = precip_ice_f.get_view<Real*>();
   const auto rhodt = PC::RHO_H2O*dt;
   Kokkos::parallel_for("precip_total_surf_mass_flux_test",
                        typename KT::RangePolicy(0,ncols),
                        KOKKOS_LAMBDA(const int& icol) {
     precip_liq_v(icol)   = precip_liq_surf_mass_v(icol)/rhodt;
     precip_ice_v(icol)   = precip_ice_surf_mass_v(icol)/rhodt;
-    precip_total_v(icol) = precip_liq_v(icol) + precip_ice_v(icol);
+    precip_total_v(icol) = precip_ice_v(icol);
+    precip_total_v(icol) += precip_liq_surf_mass_v(icol)/rhodt;
   });
   Kokkos::fence();
 
-  REQUIRE(views_are_equal(diag_total->get_diagnostic(),preicp_total_f));
-  REQUIRE(views_are_equal(diag_liq->get_diagnostic(),preicp_liq_f));
-  REQUIRE(views_are_equal(diag_ice->get_diagnostic(),preicp_ice_f));
+  REQUIRE(views_are_equal(diag_total->get_diagnostic(),precip_total_f));
+  REQUIRE(views_are_equal(diag_liq->get_diagnostic(),precip_liq_f));
+  REQUIRE(views_are_equal(diag_ice->get_diagnostic(),precip_ice_f));
 
   // Finalize the diagnostic
   diag_total->finalize();
