@@ -126,7 +126,7 @@
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_sooberingoax4x8v1np4_L30_ape_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_twpx4v1"                   nlev="72"                 >atm/cam/inic/homme/cami-mam3_0002-01-01-twpx4v1_L72_c170723.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_enax4v1"                   nlev="72"                 >atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_EAIslandx8x32v1"           nlev="80"                 >atm/cam/inic/homme/placeholder.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_EAIslandx8x32v1"           nlev="80"                 >atm/cam/inic/homme/HICCUP.atm_era5.2015-01-01.00.EAIsland_ne32x8x32v1.L80.nc</ncdata>
 
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
@@ -708,7 +708,7 @@
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->
-<drydep_srf_file hgrid="ne4np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne4np4">atm/cam/chem/trop_mam/atmsrf_ne4np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne4np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne4pg2_200527.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne11np4" >atm/cam/chem/trop_mam/atmsrf_ne11np4_c151204.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne16np4" >atm/cam/chem/trop_mam/atmsrf_ne16np4_110920.nc</drydep_srf_file>
@@ -742,7 +742,7 @@
 <drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
 <!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
-<drydep_srf_file hgrid="ne0np4_EAIslandx8x32v1">atm/cam/chem/trop_mam/atm_srf_EAIsland_ne32x8x32v1pg2_20250428.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_EAIslandx8x32v1" npg="2">atm/cam/chem/trop_mam/atm_srf_EAIsland_ne32x8x32v1pg2_20250428.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
