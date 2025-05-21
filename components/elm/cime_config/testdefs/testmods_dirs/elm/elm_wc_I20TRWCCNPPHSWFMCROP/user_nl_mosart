@@ -7,6 +7,7 @@
 !        the RTM build-namelist will set do_rtm to .false. - and will ignore 
 !        any change below
 !----------------------------------------------------------------------------------
+ finidat_rtm='$DIN_LOC_ROOT/lnd/clm2/initdata_map/20250119_CBGCv3.r05.chrysalis.I1850WCCNPPHSWFMCROP.rgsp.mosart.r.0601-01-01-00000.nc'
  rtmhist_fincl2 = 'RIVER_DISCHARGE_OVER_LAND_LIQ'
  frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_Global_half_20210422.nc'
  parafile = '$DIN_LOC_ROOT/rof/mosart/global_reservoir_halfdegree_c20200917.nc'
