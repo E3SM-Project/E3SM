@@ -8,7 +8,7 @@ module zm_transport
    use ppgrid
    use cam_abortutils,  only: endrun
    use constituents,    only: cnst_get_type_byind
-   use zm_conv,         only: zm_microp
+   use zm_conv,         only: zm_param
    use cam_logfile,     only: iulog
 
    implicit none
@@ -238,7 +238,7 @@ subroutine zm_transport_tracer( doconvtran, q, ncnst, &
          end do
 
          ! Conservation check for ZM microphysics
-         if (zm_microp) then
+         if (zm_param%zm_microp) then
             do i = il1g,il2g
                do k = jt(i),mx(i)
                   if (dcondt(i,k)*dt+const(i,k)<0._r8) then
