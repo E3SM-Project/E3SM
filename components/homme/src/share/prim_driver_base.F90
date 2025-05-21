@@ -1462,18 +1462,29 @@ contains
   subroutine set_tracer_transport_derived_values(elem, nets, nete, tl)
     use control_mod,        only: nu_p, transport_alg
     use time_mod,           only: TimeLevel_t
+    use physical_constants, only: rearth, gravit => g
 
     type(element_t),      intent(inout) :: elem(:)
     integer,              intent(in)    :: nets, nete
     type(TimeLevel_t),    intent(in)    :: tl
 
-    integer :: ie
+    integer :: ie, k
+
+#ifdef HOMMEDA
+    real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
+    real (kind=real_kind) ::  invrhatm(np,np,nlev), phi_i(np,np,nlevp)
+#endif
+
+#ifdef HOMMEDA
+    r0 = rearth
+#endif
 
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
     ! ===============
     do ie = nets,nete
+
        elem(ie)%derived%eta_dot_dpdn = 0     ! mean vertical mass flux
        elem(ie)%derived%vn0 = 0              ! mean horizontal mass flux
        elem(ie)%derived%omega_p = 0
@@ -1482,7 +1493,25 @@ contains
           elem(ie)%derived%dpdiss_biharmonic = 0
        endif
        if (transport_alg > 0) then
+
+#ifdef HOMMEDA
+          phi_i = elem(ie)%state%phinh_i(:,:,:,tl%n0)
+!repeated code
+          rheighti = phi_i/gravit + r0
+          rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2
+          rhatm = rheightm/r0
+          invrhatm = 1/rhatm
+#endif
+
           elem(ie)%derived%vstar = elem(ie)%state%v(:,:,:,:,tl%n0)
+
+#ifdef HOMMEDA
+       do k = 1, nlev
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*invrhatm(:,:,k)
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*invrhatm(:,:,k)
+       enddo
+#endif
+
        end if
        elem(ie)%derived%dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo

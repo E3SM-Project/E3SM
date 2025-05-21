@@ -304,6 +304,7 @@ contains
   subroutine calc_trajectory(elem, deriv, hvcoord, hybrid, dt, tl, &
        independent_time_steps, nets, nete)
     use vertremap_base, only : remap1
+    use physical_constants, only : rearth, gravit => g
 
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
@@ -318,8 +319,35 @@ contains
     real(kind=real_kind) :: wr(np,np,nlev,2)
     integer :: ie, k
 
+#ifdef HOMMEDA
+    real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
+    real (kind=real_kind) ::  invrhatm(np,np,nlev), phi_i(np,np,nlevp)
+#endif
+
+#ifdef HOMMEDA
+    r0 = rearth
+#endif
+
     do ie = nets,nete
+
+#ifdef HOMMEDA
+       phi_i = elem(ie)%state%phinh_i(:,:,:,tl%np1)
+!repeated code
+       rheighti = phi_i/gravit + r0
+       rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2
+       rhatm = rheightm/r0
+       invrhatm = 1/rhatm
+#endif
+
        elem(ie)%derived%vn0 = elem(ie)%state%v(:,:,:,:,tl%np1)
+
+#ifdef HOMMEDA
+       do k = 1, nlev
+          elem(ie)%derived%vn0(:,:,1,k) = elem(ie)%derived%vn0(:,:,1,k)*invrhatm(:,:,k)
+          elem(ie)%derived%vn0(:,:,2,k) = elem(ie)%derived%vn0(:,:,2,k)*invrhatm(:,:,k)
+       enddo
+#endif
+
     end do
     if (independent_time_steps) then
        call t_startf('SLMM_reconstruct')
