@@ -3586,13 +3586,13 @@
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SM_Dec/performance_archive</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/lus/flare/projects/$PROJECT/$USER/scratch</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lus/flare/projects/E3SM_Dec/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lus/flare/projects/E3SM_Dec/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lus/flare/projects/E3SM_Dec/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lus/flare/projects/E3SM_Dec/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/lus/flare/projects/E3SM_Dec/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>16</GMAKE_J>
+    <GMAKE_J>100</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
@@ -3623,6 +3623,7 @@
        <modules>
           <command name="load">cmake/3.30.5</command>
           <command name="load">oneapi/release/2025.0.5</command>
+          <command name="load">mpich-config/collective-tuning/1024</command>
         </modules>
      </module_system>
      <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>

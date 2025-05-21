@@ -553,6 +553,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
+#if 0
   const int ncol = ncol_;
   const int nlev = nlev_;
   const auto policy =
@@ -959,6 +960,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
+#endif
 }  // MAMMicrophysics::run_impl
 
 }  // namespace scream
