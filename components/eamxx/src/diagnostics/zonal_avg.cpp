@@ -29,7 +29,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, co
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(tm, ncols),
-              KOKKOS_LAMBDA(int i, Real &val) {
+              [&](int i, Real &val) {
                 // TODO: check if tenary is ok here (if not, multiply by flag)
                 int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
                 val += flag ? weight_view(i) * field_view(i) : sp(0.0);
@@ -51,7 +51,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, co
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(tm, ncols),
-              KOKKOS_LAMBDA(int i, Real &val) {
+              [&](int i, Real &val) {
                 int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
                 // TODO: check if tenary is ok here (if not, multiply by flag)
                 val += flag ? weight_view(i) * field_view(i, d1_i) : sp(0.0);
@@ -76,7 +76,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, co
           const Real lat_upper = lat_lower + lat_delta;
           Kokkos::parallel_reduce(
               Kokkos::TeamVectorRange(tm, ncols),
-              KOKKOS_LAMBDA(int i, Real &val) {
+              [&](int i, Real &val) {
                 int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
                 // TODO: check if tenary is ok here (if not, multiply by flag)
                 val += flag ? weight_view(i) * field_view(i, d1_i, d2_i) : sp(0.0);
