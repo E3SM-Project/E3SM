@@ -78,8 +78,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   std::vector<int> col(nlcols_tgt), row(nlcols_tgt);
   std::vector<Real> S(nlcols_tgt,1.0);
   for (int i=0; i<nlcols_tgt; ++i) {
-    row[i] = 1 + i + nlcols_tgt*comm.rank();
-    col[i] = 1 + gids_src_h[2*i] + 1;
+    row[i] = i + nlcols_tgt*comm.rank();
+    col[i] = gids_src_h[2*i] + 1;
   }
 
   // Write remap data to file
