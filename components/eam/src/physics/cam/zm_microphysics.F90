@@ -2060,12 +2060,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     if (dmc > 0._r8) then
 #if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
                        wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
                        wght = dmc/(ssmc + dmc + so4mc + mommc)
 #elif (defined RAIN_EVAP_TO_COARSE_AERO)
                        wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
 #else
-                       wght = dmc/(ssmc + dmc)
+                       wght = dmc/(ssmc + dmc + so4mc)
 #endif
                        dst_num = wght *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         &
                                   + aero%numg_a(i,k,aero%mode_coarse_idx))*0.5_r8*rho(i,k)*1.0e-6_r8
