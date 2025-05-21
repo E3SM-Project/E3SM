@@ -88,15 +88,6 @@ get_my_triplets (const std::string& map_file) const
 
   scorpio::release_file(map_file);
 
-  // 1.2 Dofs in grid are 0-based, while row/col ids in map file are 1-based.
-  // To match dofs, we need to offset the row/cols ids we just read in.
-  for (auto& id : rows) {
-    id -= 1;
-  }
-  for (auto& id : cols) {
-    id -= 1;
-  }
-
   // Create a grid based on the row gids I read in (may be duplicated across ranks)
   const auto& gids = type==InterpType::Refine ? rows : cols;
   std::set<gid_type> temp (gids.begin(),gids.end());
