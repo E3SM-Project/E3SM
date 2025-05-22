@@ -406,7 +406,7 @@ contains
     !     write out the mesh file to disk, in parallel
     outfile = 'wholeLnd.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    if (mnlid >= 0) then
+    if (mlnid >= 0) then
        ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
        if (ierr > 0 )  &
          call endrun('Error: fail to write the land mesh file')
