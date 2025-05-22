@@ -68,7 +68,6 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   // Create the grid
   std::shared_ptr<SEGrid> se_grid;
   se_grid = std::make_shared<SEGrid>(name,num_local_elems,num_gp,num_vertical_levels,m_comm);
-  se_grid->setSelfPointer(se_grid);
 
   // Set up the degrees of freedom.
   auto dof_gids  = se_grid->get_dofs_gids();

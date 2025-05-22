@@ -38,7 +38,7 @@ namespace scream
  * like spatial dimension or "physical" rank.
  */
 
-class AbstractGrid : public ekat::enable_shared_from_this<AbstractGrid>
+class AbstractGrid : public std::enable_shared_from_this<AbstractGrid>
 {
 public:
   // TODO: use int64_t? int? template class on gid_type?
