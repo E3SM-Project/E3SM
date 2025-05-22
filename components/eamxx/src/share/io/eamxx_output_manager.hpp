@@ -63,7 +63,7 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using globals_map_t = std::map<std::string,ekat::any>;
+  using globals_map_t = std::map<std::string,std::any>;
 
   // Constructor(s) & Destructor
   OutputManager() = default;
@@ -105,7 +105,7 @@ public:
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
   }
-  void add_global (const std::string& name, const ekat::any& global);
+  void add_global (const std::string& name, const std::any& global);
 
   void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);
