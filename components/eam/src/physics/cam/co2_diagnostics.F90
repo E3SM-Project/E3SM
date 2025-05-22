@@ -26,6 +26,7 @@ use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
 use time_manager   , only: is_first_step, is_last_step, get_prev_date, &
                            get_curr_date, is_end_curr_month
+use cam_control_mod, only: iac_active
 
 implicit none
 private
@@ -297,7 +298,8 @@ contains
       ! Called by: tphysac
       !-------------------------------------------------
       use physics_buffer,     only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
-      use iac_coupled_fields, only: iac_present
+      use cam_control_mod, only: iac_active
+      use iac_coupled_fields, only: iac_co2_name
 
       type(physics_state), intent(inout) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
@@ -314,7 +316,7 @@ contains
       !------------------------------------------------------------------------
       !Update fluxes only if co2 transport is true and either we are reading
       !the aircraft data or the data are provided IAC
-      if ( co2_transport() .and. (co2_readFlux_aircraft .or.  iac_present)) then
+      if ( co2_transport() .and. (co2_readFlux_aircraft .or.  iac_active)) then
 
          ! Set CO2 global index
          do m = 1, ncnst
@@ -325,9 +327,13 @@ contains
          end do
 
          ! acquire fossil fuel fluxes from physics buffer
-         if (present(pbuf_name)) then !FIXME: do an explicit comparison with the iac pbuf name
+         if (present(pbuf_name)) then
             ! acquire IAC fluxes from physics buffer
-            index_fossil_CO2 = pbuf_get_index(trim(pbuf_name))
+            if (trim(pbuf_name) == trim(iac_co2_name)) then
+               index_fossil_CO2 = pbuf_get_index(trim(pbuf_name))
+            else
+              call endrun(trim('get_carbon_air_fluxes') // 'incorrect pbuf_name for EHC aircraft co2 emissions') 
+            end if
          else
             ! acquire aircraft fluxes from physics buffer
             index_fossil_CO2 = pbuf_get_index('ac_CO2')

@@ -20,6 +20,7 @@ module iac_coupled_fields
   use shr_kind_mod,     only: r8 => shr_kind_r8, cxx =>SHR_KIND_CXX
   use shr_log_mod ,     only: errMsg => shr_log_errMsg
   use time_manager,     only: set_time_float_from_date, get_curr_date
+  use cam_control_mod,  only: iac_active
 
   implicit none
   private
@@ -35,7 +36,6 @@ module iac_coupled_fields
 
   ! Public data
   public iac_vertical_emiss
-  logical, public, protected :: iac_present=.false.
 
   !------------------------------------------------
   ! This is the chunked and columnated data from the iac coupling
@@ -68,8 +68,7 @@ contains
 
     ! FIXMEB: Hardwire it true for now - I don't know if this is an infodata or namelist
     ! variable or some other way of setting this for non-iac coupled runs.
-    iac_present=.true.
-    if (.not. iac_present) return
+    if (.not. iac_active) return
 
     ! Register the co2 field with the pbuf
     call pbuf_add_field(iac_co2_name,'physpkg',dtype_r8,(/pcols,pver/),idx)
@@ -98,7 +97,7 @@ contains
     !------------------------------------------------------------------
     ! Return if no iac coupling
     !------------------------------------------------------------------
-    if (.not. iac_present) return
+    if (.not. iac_active) return
 
     !get pbuf index to store the field in pbuf
     iac_co2_pbuf_ndx = pbuf_get_index(iac_co2_name,ierror)
@@ -137,10 +136,11 @@ contains
   end subroutine iac_coupled_fields_init
 
 
-  subroutine iac_coupled_fields_adv( state, pbuf2d)
+  subroutine iac_coupled_fields_adv( state, pbuf)
     !-------------------------------------------------------------------
-    ! Update pbuf2d with the iac coupled fields (just co2, for now)
-    ! called by: phys_timestep_init at every time step (in physpkg.F90)
+    ! Update pbuf with the iac coupled fields (just co2, for now)
+    ! called by: tphysac at every time step (in physpkg.F90)
+    ! additional constituents may need to be advanced in phys_timestep_init
     !-------------------------------------------------------------------
 
     use perf_mod,     only: t_startf, t_stopf
@@ -148,12 +148,12 @@ contains
     use ppgrid,       only: begchunk, endchunk
     use ppgrid,       only: pcols, pver
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
+    use cam_logfile,     only: iulog
 
     implicit none
 
-    type(physics_state), intent(in)    :: state(begchunk:endchunk)
-    type(physics_buffer_desc), pointer :: pbuf2d(:,:)
-    type(physics_buffer_desc), pointer :: pbuf_chnk(:)
+    type(physics_state), intent(in)    :: state
+    type(physics_buffer_desc), pointer :: pbuf(:)
 
     character(len=cxx)  :: err_str
     integer, parameter :: HIGH_LAYER = 11000 !Height at which fco2_high should be released [m]
@@ -162,18 +162,26 @@ contains
     integer  :: ichunk, ncol, klev, icol, high_lev
     real(r8), pointer :: tmpptr(:,:) ! pointer for storing CO2 values [kg/m2/s]
     real(r8) :: denominator, dist_amount
+    integer :: yr, mon, day, tod
 
     !------------------------------------------------------------------
     ! Return if no iac coupling
     !------------------------------------------------------------------
-    if (.not. iac_present) return
+    if (.not. iac_active) return
     call t_startf('iac_coupled_fields_adv')
 
+          ! adivi:  eam tm clock
+      if(masterproc) then
+         call get_curr_date( yr, mon, day, tod )
+         write(iulog,*)'atm_import eam tm yr=',yr,' tm mon=',mon,' tm day',day,'tm tod=',tod
+      endif
 
-    do ichunk = begchunk,endchunk
-       ncol = state(ichunk)%ncol !number of columns in this chunk
-       pbuf_chnk => pbuf_get_chunk(pbuf2d, ichunk)
-       call pbuf_get_field(pbuf_chnk, iac_co2_pbuf_ndx, tmpptr )! get tmpptr point to the iac field
+    ! now this funciton receives a chunk, not the entire pbuf2d or a set of state chunks
+    !do ichunk = begchunk,endchunk
+       !ncol = state(ichunk)%ncol !number of columns in this chunk
+       ncol = state%ncol
+       !pbuf_chnk => pbuf_get_chunk(pbuf2d, ichunk)
+       call pbuf_get_field(pbuf, iac_co2_pbuf_ndx, tmpptr )! get tmpptr point to the iac field
 
        ! In the following do-loop, we will populate tmpptr with the CO2 values read in from
        ! iac_vertical_emiss. iac_vertical_emiss has CO2 at two heights, the high height and the low
@@ -188,12 +196,14 @@ contains
 
           ! Find the layer containing HIGH_LAYER value
           do klev = 1, pver
-            if (state(ichunk)%zi(icol, klev+1) > HIGH_LAYER) cycle
+            if (state%zi(icol, klev+1) > HIGH_LAYER) cycle
             high_lev = klev !found the level at HIGH_LAYER
             exit
           enddo
           !assign the fco2_high_height to the "high_lev" level
-          tmpptr(icol,high_lev) = iac_vertical_emiss(ichunk)%fco2_high_height(icol)
+          tmpptr(icol,high_lev) = iac_vertical_emiss(state%lchnk)%fco2_high_height(icol)
+          if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,tmpptr(icol,high_lev)', icol, tmpptr(icol,high_lev)
+
 
           !For the fco2_low_height, we have several options in the following select case statement
           select case (iac_low_height_option)
@@ -207,9 +217,11 @@ contains
                 call endrun(err_str)
               end if
               !Amount of CO2 to distribute
-              dist_amount = iac_vertical_emiss(ichunk)%fco2_low_height(icol)/(pver - high_lev+1)
+              dist_amount = iac_vertical_emiss(state%lchnk)%fco2_low_height(icol)/(pver - high_lev+1)
+              if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,dist_amount', icol, dist_amount
               do klev = high_lev+1, pver
                 tmpptr(icol,klev) = dist_amount
+                 if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,klev, tmpptr(icol,klev)', icol, klev, tmpptr(icol,klev)
               enddo
 
              !Default case
@@ -218,7 +230,7 @@ contains
                 call endrun(err_str)
           end select
        end do
-    enddo
+    !enddo
 
     call t_stopf('iac_coupled_fields_adv')
   end subroutine iac_coupled_fields_adv
@@ -255,7 +267,7 @@ contains
     real(r8) :: model_time                         ! Model time in days used for interpolation
 
     !If IAC component is not active, return
-    if (.not. iac_present) return
+    if (.not. iac_active) return
 
     !Get the year, month, day and secs of this time step
     !(all arguments of the call below are outputs)
