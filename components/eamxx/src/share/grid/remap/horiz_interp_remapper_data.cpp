@@ -88,41 +88,10 @@ get_my_triplets (const std::string& map_file) const
 
   scorpio::release_file(map_file);
 
-  // 1.2 Dofs in grid are likely 0-based, while row/col ids in map file
-  // are likely 1-based. To match dofs, we need to offset the row/cols
-  // ids we just read in.
-  int map_file_min_row = std::numeric_limits<int>::max();
-  int map_file_min_col = std::numeric_limits<int>::max();
-  for (int id=0; id<nlweights; id++) {
-    map_file_min_row = std::min(rows[id],map_file_min_row);
-    map_file_min_col = std::min(cols[id],map_file_min_col);
-  }
-  int global_map_file_min_row, global_map_file_min_col;
-  comm.all_reduce(&map_file_min_row,&global_map_file_min_row,1,MPI_MIN);
-  comm.all_reduce(&map_file_min_col,&global_map_file_min_col,1,MPI_MIN);
-
-  gid_type row_offset = global_map_file_min_row;
-  gid_type col_offset = global_map_file_min_col;
-  if (type==InterpType::Refine) {
-    row_offset -= fine_grid->get_global_min_dof_gid();
-  } else {
-    col_offset -= fine_grid->get_global_min_dof_gid();
-  }
-  for (auto& id : rows) {
-    id -= row_offset;
-  }
-  for (auto& id : cols) {
-    id -= col_offset;
-  }
-
   // Create a grid based on the row gids I read in (may be duplicated across ranks)
-  std::vector<gid_type> unique_gids;
   const auto& gids = type==InterpType::Refine ? rows : cols;
-  for (auto gid : gids) {
-    if (not ekat::contains(unique_gids,gid)) {
-      unique_gids.push_back(gid);
-    }
-  }
+  std::set<gid_type> temp (gids.begin(),gids.end());
+  std::vector<gid_type> unique_gids (temp.begin(),temp.end());
   auto io_grid = std::make_shared<PointGrid> ("helper",unique_gids.size(),0,comm);
   auto io_grid_gids_h = io_grid->get_dofs_gids().get_view<gid_type*,Host>();
   int k = 0;
@@ -150,10 +119,18 @@ get_my_triplets (const std::string& map_file) const
   MPI_Type_create_struct (3,lengths,displacements,types,&mpi_triplet_t);
   MPI_Type_commit(&mpi_triplet_t);
 
-  // Create import-export
-  GridImportExport imp_exp (fine_grid,io_grid);
+  // Create import-export and gather my triplets
   std::map<int,std::vector<Triplet>> my_triplets_map;
-  imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  try {
+    GridImportExport imp_exp (fine_grid,io_grid);
+    imp_exp.gather(mpi_triplet_t,io_triplets,my_triplets_map);
+  } catch (...) {
+    // Print the map file name, to help debugging
+    std::cout << "[HorizRemapperData] Something went wrong while performing a grid import-export operation.\n"
+              << " - map file name : " << map_file << "\n"
+              << " - fine grid name: " << fine_grid->name() << "\n";
+    throw;
+  }
   MPI_Type_free(&mpi_triplet_t);
 
   std::vector<Triplet> my_triplets;

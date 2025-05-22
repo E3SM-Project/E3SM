@@ -134,10 +134,10 @@ void run (const std::string& diag_name, const std::string& location)
         // If interface, check value, otherwise perform int->mid averaging and check value
         auto int_val = prev_int_val + delta;
         if (location=="interfaces") {
-          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(int_val,1e-5));
+          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(int_val,Real(1e-5)));
         } else {
           auto mid_val = (int_val + prev_int_val) / 2;
-          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(mid_val,1e-5));
+          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(mid_val,Real(1e-5)));
         }
         prev_int_val = int_val;
       }
