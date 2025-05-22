@@ -674,10 +674,12 @@ contains
          ! test both names before falling back to the default number of layers. 
          dtbname(1) = 'aveDTB'
          dtbname(2) = 'zbedrock'
-         do_read_bedrock: do n=1,ndtbname
-            call ncd_io(ncid=ncid, varname=dtbname(n), flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
-            if (readvar) exit do_read_bedrock
-         end do do_read_bedrock
+         readvar = .false.
+         do n=1,ndtbname
+            if (.not. readvar) then
+               call ncd_io(ncid=ncid, varname=dtbname(n), flag='read', data=dtb, dim1name=grlnd, readvar=readvar)
+            end if
+         end do
 
 
          if (.not. readvar) then
