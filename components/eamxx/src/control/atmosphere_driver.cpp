@@ -957,21 +957,21 @@ void AtmosphereDriver::restart_model ()
     const auto& name = it.first;
           auto& any  = it.second;
 
-    if (any.isType<int>()) {
-      ekat::any_cast<int>(any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
-    } else if (any.isType<std::int64_t>()) {
-      ekat::any_cast<std::int64_t>(any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
-    } else if (any.isType<float>()) {
-      ekat::any_cast<float>(any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
-    } else if (any.isType<double>()) {
-      ekat::any_cast<double>(any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
-    } else if (any.isType<std::string>()) {
-      ekat::any_cast<std::string>(any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
+    if (any.type()==typeid(int)) {
+      std::any_cast<int&>(any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
+    } else if (any.type()==typeid(std::int64_t)) {
+      std::any_cast<std::int64_t&>(any) = scorpio::get_attribute<std::int64_t>(filename,"GLOBAL",name);
+    } else if (any.type()==typeid(float)) {
+      std::any_cast<float&>(any) = scorpio::get_attribute<float>(filename,"GLOBAL",name);
+    } else if (any.type()==typeid(double)) {
+      std::any_cast<double&>(any) = scorpio::get_attribute<double>(filename,"GLOBAL",name);
+    } else if (any.type()==typeid(std::string)) {
+      std::any_cast<std::string&>(any) = scorpio::get_attribute<std::string>(filename,"GLOBAL",name);
     } else {
       EKAT_ERROR_MSG (
           "Error! Unrecognized/unsupported concrete type for restart extra data.\n"
           " - extra data name  : " + name + "\n"
-          " - extra data typeid: " + any.content().type().name() + "\n");
+          " - extra data typeid: " + std::string(any.type().name()) + "\n");
     }
   }
 

@@ -1,9 +1,8 @@
 #ifndef SCREAM_CONTEXT_HPP
 #define SCREAM_CONTEXT_HPP
 
-#include <ekat_std_any.hpp>
-
 #include <map>
+#include <any>
 #include <typeindex>
 
 namespace scream
@@ -26,7 +25,7 @@ public:
     auto& obj = m_objects[key];
     obj.template reset<T>(args...);
 
-    return ekat::any_cast<T>(obj);
+    return std::any_cast<T&>(obj);
   }
 
   template<typename T>
@@ -36,7 +35,7 @@ public:
                        "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
     const auto& obj = m_objects.at(key);
 
-    return ekat::any_cast<T>(obj);
+    return std::any_cast<const T&>(obj);
   }
 
   template<typename T>
@@ -46,7 +45,7 @@ public:
                        "Error! Object with key '" + (std::string)key.name() + "' not found in the scream context.\n");
     auto& obj = m_objects.at(key);
 
-    return ekat::any_cast<T>(obj);
+    return std::any_cast<T&>(obj);
   }
 
   void clean_up () {
@@ -63,7 +62,7 @@ private:
   template<typename T>
   static key_type getKey() { return std::type_index(typeid(T)); }
 
-  std::map<key_type,ekat::any>  m_objects;
+  std::map<key_type,std::any>  m_objects;
 };
 
 inline void cleanup_singleton() {
