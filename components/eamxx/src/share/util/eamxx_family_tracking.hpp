@@ -1,7 +1,6 @@
 #ifndef SCREAM_FAMILY_TRACKING_CLASS
 #define SCREAM_FAMILY_TRACKING_CLASS
 
-#include <ekat_std_enable_shared_from_this.hpp>
 #include <ekat_assert.hpp>
 
 #include <list>
@@ -38,7 +37,7 @@ namespace scream
  */
 
 template<typename DerivedType>
-class FamilyTracking : public ekat::enable_shared_from_this<DerivedType>
+class FamilyTracking : public std::enable_shared_from_this<DerivedType>
 {
 public:
   using derived_type  = DerivedType;
