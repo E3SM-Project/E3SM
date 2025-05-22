@@ -4833,7 +4833,7 @@ contains
        endif
        if (glc_present) then
           call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_g2x=.true.)
-       endif          
+       endif
        if (do_bgc_budgets) then
           if (atm_present) then
              call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)

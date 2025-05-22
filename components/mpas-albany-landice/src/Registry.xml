@@ -1243,6 +1243,9 @@ is the value of that variable from the *previous* time level!
                 <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="applied surface mass balance on grounded ice"
                 />
+                <var name="bareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied negative surface mass balance applied to melting of bare ice"
+                />
                 <var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Potential basal mass balance"
                 />
@@ -1469,6 +1472,27 @@ is the value of that variable from the *previous* time level!
                description="temporary copy of vertexMask"
                persistence="scratch"
 	       />
+        </var_struct>
+
+<!-- ================ -->
+
+        <!-- Variables related to time averaging of fluxes -->
+        <var_struct name="timeAveraging" time_levs="1">
+                <var name="timeAccumulatedCoupled" type="real" dimensions="Time" units="s"
+                     description="accumulated time for use in averaging of coupler fields"
+                />
+                <var name="avgCalvingFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time averaged thickness of ice that calves (using calvingThickness from 'geometry' pool)"
+                />
+                <var name="avgFaceMeltFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time averaged thickness of ice thickness lost from face melting (using faceMeltingThickness from 'geometry' pool)"
+                />
+                <var name="avgBareIceAblation" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 
+                     description="time averaged potential negative surface mass balance for melting of bare ice (using BareIceAblation from 'geometry' pool)"
+                />
+                <var name="avgBareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 
+                     description="time averaged negative surface mass balance applied to melting of bare ice (using appliedBareIceAblation from 'geometry' pool)"
+                />
         </var_struct>
 
 <!-- ================ -->
