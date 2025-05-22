@@ -149,7 +149,6 @@
       use wmscrpmd, only: grid_area
       use w3parall, only: init_get_isea
       use w3dispmd, only: wavnu1
-      use w3triamd, only: SETUGIOBP
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave
@@ -923,8 +922,6 @@ CONTAINS
         END DO
 
         DW(0) = 0.
-
-        CALL SETUGIOBP
 
         call mpi_barrier ( mpi_comm, ierr )
       
