@@ -156,6 +156,7 @@ advance_iop_subsidence(const MemberType& team,
 {
   constexpr int pack_size = Pack::n;
   const int nlev_packs = ekat::npack<Pack>(nlevs);
+
   const auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
   const auto s_ref_p_int = ekat::scalarize(ref_p_int);
   const auto s_ref_p_del = ekat::scalarize(ref_p_del);
@@ -170,7 +171,7 @@ advance_iop_subsidence(const MemberType& team,
   workspace.take_many_contiguous_unsafe<1>({"omega_int"}, {&omega_int});
   auto s_omega_int = ekat::scalarize(omega_int);
 
-  // Compute omega on the interface grid using SCREAM convention
+  // Compute omega on the interface grid
   const int pack_begin = 1 / pack_size;
   const int pack_end   = (nlevs - 1) / pack_size;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pack_begin, pack_end + 1), [&](const int k) {
@@ -185,13 +186,12 @@ advance_iop_subsidence(const MemberType& team,
     omega_int(k).set(range_pack >= 1 && range_pack <= nlevs - 1, 
                      weight * omega_k + (1 - weight) * omega_km1);
   });
+
   omega_int(0)[0] = 0.0;
   omega_int(nlevs / pack_size)[nlevs % pack_size] = 0.0;
 
-
   // Allocate and populate temporary Real arrays for tridiagonal solver
   Real* shmem_ptr = static_cast<Real*>(team.team_shmem().get_shmem(7 * nlevs * sizeof(Real)));
-
   Real* a   = shmem_ptr + 0 * nlevs;
   Real* b   = shmem_ptr + 1 * nlevs;
   Real* c   = shmem_ptr + 2 * nlevs;
@@ -202,6 +202,7 @@ advance_iop_subsidence(const MemberType& team,
 
   auto solve_field = [&](auto& field_view, auto& s_field) {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+
       Real dp_val = s_ref_p_del(k) + 1e-4;
       Real omega_dn = s_omega_int(k);
       Real omega_up = s_omega_int(k + 1);
@@ -221,18 +222,14 @@ advance_iop_subsidence(const MemberType& team,
     cp[0] = c[0] / b[0];
     dp[0] = rhs[0] / b[0];
     for (int i = 1; i < nlevs; ++i) {
-      Real m = 1.0 / (b[i] - a[i] * cp[i - 1]);
-      cp[i] = c[i] * m;
-      dp[i] = (rhs[i] - a[i] * dp[i - 1]) * m;
+      cp[i] = c[i] / (b[i] - a[i] * cp[i - 1]);
+      dp[i] = (rhs[i] - a[i] * dp[i - 1]) / (b[i] - a[i] * cp[i - 1]);
     }
     sol[nlevs - 1] = dp[nlevs - 1];
     for (int i = nlevs - 2; i >= 0; --i) {
       sol[i] = dp[i] - cp[i] * sol[i + 1];
     }
     team.team_barrier();
-
-    EKAT_KERNEL_REQUIRE_MSG(nlevs <= nlev_packs * pack_size,
-      "advance_iop_subsidence: nlevs exceeds size of Pack-based storage");
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       for (int i = 0; i < pack_size; ++i) {
@@ -251,6 +248,7 @@ advance_iop_subsidence(const MemberType& team,
     solve_field(qm, sqm);
   }
 }
+
 
 // =========================================================================================
 KOKKOS_FUNCTION
@@ -356,7 +354,8 @@ void IOPForcing::run_impl (const double dt)
   }
 
   // Team policy and workspace manager for eamxx
-  const auto policy_iop = ESU::get_default_team_policy(m_num_cols, nlev_packs);
+  auto policy_iop = ESU::get_default_team_policy(m_num_cols, nlev_packs);
+  policy_iop.set_scratch_size(0, Kokkos::PerTeam(7 * m_num_levs * sizeof(Real)));
 
   // Reset internal WSM variables.
   m_workspace_mgr.reset_internals();
