@@ -487,79 +487,85 @@ CONTAINS
     integer :: varid
     integer :: status
     integer :: i, j, count, ier
-    integer :: lat, lon, ncl0, ncl1
+    integer :: lat, lon
     character(len=128) :: filename_rof
     integer, parameter :: RKIND = selected_real_kind(13)
-    real(kind=RKIND), dimension(:,:), allocatable :: latixy, longxy, arear
+    real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D
+    real(kind=RKIND), dimension(:,:), allocatable :: arear
     !---------------------------------------------------------------------------
 
     ! open mosart file
     filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/mosart/MOSART_global_half_20180721a.nc'
-    status = nf90_open(trim(filename_rof), NF90_NOWRITE, ncid)
 
-    ! read in data dimensions
-!JW    status = nf90_inq_dimid(ncid, "lat", dimid)
-!JW    status = nf90_inquire_dimension(ncid, dimid, len=nlatg)
-!JW    status = nf90_inq_dimid(ncid, "lon", dimid)
-!JW    status = nf90_inquire_dimension(ncid, dimid, len=nlong)
-    status = nf90_inq_dimid(ncid, "ncl0", dimid)
-    status = nf90_inquire_dimension(ncid, dimid, len=ncl0)
-    status = nf90_inq_dimid(ncid, "ncl1", dimid)
-    status = nf90_inquire_dimension(ncid, dimid, len=ncl1)
-    status = nf90_inq_dimid(ncid, "lat", dimid)
-    status = nf90_inquire_dimension(ncid, dimid, len=lat)
-    status = nf90_inq_dimid(ncid, "lon", dimid)
-    status = nf90_inquire_dimension(ncid, dimid, len=lon)
+    ! read file only from master_task
+    if (my_task == master_task) then
+       status = nf90_open(trim(filename_rof), NF90_NOWRITE, ncid)
+
+       ! read in data dimensions
+       status = nf90_inq_dimid(ncid, "lat", dimid)
+       status = nf90_inquire_dimension(ncid, dimid, len=lat)
+       status = nf90_inq_dimid(ncid, "lon", dimid)
+       status = nf90_inquire_dimension(ncid, dimid, len=lon)
+    end if
+
+    ! broadcast dimensions
+    call mpi_bcast (lat,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call mpi_bcast (lon,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+
+    ! set dimensions on all processors
     gsize = lat*lon
     nlatg = lat
     nlong = lon
     write(*,*) 'JW counts = ', nlatg, nlong, gsize
 
     ! allocate arrays
-    allocate(latixy(ncl0,ncl1))
-    allocate(longxy(lat,lon))
+    allocate(lat1D(lat))
+    allocate(lon1D(lon))
     allocate(arear(lat,lon))
     allocate(lonc(gsize))
     allocate(latc(gsize))
     allocate(area(gsize))
 
-    ! read in lat, lon, and area
-    status = nf90_inq_varid(ncid, "latixy", varid)
-!JW    status = nf90_get_var(ncid, varid, latixy, start=(/1,1/), count=(/nlatg,nlong/))
-    status = nf90_get_var(ncid, varid, latixy)
-    if(status /= nf90_noerr) write(*,*) 'JW2', status
+    ! read in lat, lon, and area only on master_task
+    if (my_task == master_task) then
+       status = nf90_inq_varid(ncid, "lat", varid)
+       status = nf90_get_var(ncid, varid, lat1D)
 
-    status = nf90_inq_varid(ncid, "longxy", varid)
-    status = nf90_get_var(ncid, varid, longxy)
-    if(status /= nf90_noerr) write(*,*) 'JW4', status
+       status = nf90_inq_varid(ncid, "lon", varid)
+       status = nf90_get_var(ncid, varid, lon1D)
 
-    status = nf90_inq_varid(ncid, "area", varid)
-    status = nf90_get_var(ncid, varid, arear)
-    if(status /= nf90_noerr) write(*,*) 'JW6', status
+       status = nf90_inq_varid(ncid, "area", varid)
+       status = nf90_get_var(ncid, varid, arear)
+       if(status /= nf90_noerr) write(*,*) 'JW6', status
+
+       call shr_file_freeUnit(ncid)
+    endif
+
+    ! broadcast lat1D, lon1D and arear
+    call mpi_bcast (lat1D,   lat, MPI_REAL8, 0, mpicom_rof, ier)
+    call mpi_bcast (lon1D,   lon, MPI_REAL8, 0, mpicom_rof, ier)
+    call mpi_bcast (arear, gsize, MPI_REAL8, 0, mpicom_rof, ier)
     write(*,*) 'JW max arear = ', maxval(arear)
-
-    call shr_file_freeUnit(ncid)
 
     ! load 2d data into 1d arrays
     count = 0
     do j = 1, nlong
        do i = 1, nlatg
          count = count + 1
-         latc(count) = latixy(i,j)
-         lonc(count) = longxy(i,j)
+         latc(count) = lat1D(i)
+         lonc(count) = lon1D(j)
          area(count) = arear(i,j)
        end do
     end do
-    write(*,*) 'JW max area = ', maxval(area)
 
 !JW    if (my_task == master_task) then
-       write(logunit_rof,*) 'Read latixy ',minval(latixy),maxval(latixy)
-       write(logunit_rof,*) 'Read longxy ',minval(longxy),maxval(longxy)
-       write(logunit_rof,*) 'Read area   ',minval(arear),maxval(arear)
+       write(logunit_rof,*) 'Read lat1D ', minval(lat1D), maxval(lat1D)
+       write(logunit_rof,*) 'Read lon1D ', minval(lon1D), maxval(lon1D)
+       write(logunit_rof,*) 'Read area  ', minval(arear), maxval(arear)
 !JW    end if
 
-    deallocate(latixy)
-    deallocate(longxy)
+    deallocate(lat1D)
+    deallocate(lon1D)
     deallocate(arear)
 
     return
