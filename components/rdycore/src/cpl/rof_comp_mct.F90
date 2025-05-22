@@ -54,7 +54,7 @@ module rof_comp_mct
   integer :: nlatg, nlong, gsize       ! size of runoff data and number of grid cells
   real(r8), allocatable :: latc(:)     ! latitude of 1d grid cell (deg)
   real(r8), allocatable :: lonc(:)     ! longitude of 1d grid cell (deg)
-  real(r8), allocatable :: area(:)     ! area of 1d grid cell (deg)
+  real(r8), allocatable :: areac(:)    ! area of 1d grid cell (deg)
 
   integer, allocatable :: start(:)     ! for gsmap initialization
   integer, allocatable :: length(:)    ! for gsmap initialization
@@ -400,7 +400,7 @@ CONTAINS
     ni = 0
     do n = lstart, lstop
        ni = ni + 1
-       data(ni) = area(n)*1.0e-6_r8/(re*re)
+       data(ni) = areac(n)*1.0e-6_r8/(re*re)
     end do
     call mct_gGrid_importRattr(dom_rof,"area",data,lsize)
 
@@ -473,6 +473,7 @@ CONTAINS
 
   subroutine  rof_read_mosart()
 
+    use shr_mpi_mod
     !---------------------------------------------------------------------------
     ! DESCRIPTION:
     ! Send the runoff model export state to the coupler
@@ -484,14 +485,15 @@ CONTAINS
     ! LOCAL VARIABLES
     integer :: dimid
     integer :: ncid
-    integer :: varid
+    integer :: varid, areavarid
     integer :: status
     integer :: i, j, count, ier
     integer :: lat, lon
     character(len=128) :: filename_rof
     integer, parameter :: RKIND = selected_real_kind(13)
-    real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D
-    real(kind=RKIND), dimension(:,:), allocatable :: arear
+    real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D, area1D
+    real(kind=RKIND), dimension(:,:), allocatable :: area
+
     !---------------------------------------------------------------------------
 
     ! open mosart file
@@ -509,22 +511,22 @@ CONTAINS
     end if
 
     ! broadcast dimensions
-    call mpi_bcast (lat,  1, MPI_INTEGER, 0, mpicom_rof, ier)
-    call mpi_bcast (lon,  1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call shr_mpi_bcast (lat, mpicom_rof, 'rof_read_mosart')
+    call shr_mpi_bcast (lon, mpicom_rof, 'rof_read_mosart')
 
     ! set dimensions on all processors
     gsize = lat*lon
     nlatg = lat
     nlong = lon
-    write(*,*) 'JW counts = ', nlatg, nlong, gsize
 
     ! allocate arrays
     allocate(lat1D(lat))
+    allocate(area1D(lat))
     allocate(lon1D(lon))
-    allocate(arear(lat,lon))
+    allocate(area(lat,lon))
     allocate(lonc(gsize))
     allocate(latc(gsize))
-    allocate(area(gsize))
+    allocate(areac(gsize))
 
     ! read in lat, lon, and area only on master_task
     if (my_task == master_task) then
@@ -534,39 +536,43 @@ CONTAINS
        status = nf90_inq_varid(ncid, "lon", varid)
        status = nf90_get_var(ncid, varid, lon1D)
 
-       status = nf90_inq_varid(ncid, "area", varid)
-       status = nf90_get_var(ncid, varid, arear)
-       if(status /= nf90_noerr) write(*,*) 'JW6', status
+       status = nf90_inq_varid(ncid, "area", areavarid)
+       if(status /= nf90_noerr) write(*,*) 'JW4', status
+       do j = 1, nlong
+          status = nf90_get_var(ncid, areavarid, area1D, start=(/1,j/), count=(/lat,1/))
+          if(status /= nf90_noerr) write(*,*) 'JW6', status
+          area(:,j) = area1d(:)
+       enddo
 
        call shr_file_freeUnit(ncid)
     endif
 
     ! broadcast lat1D, lon1D and arear
-    call mpi_bcast (lat1D,   lat, MPI_REAL8, 0, mpicom_rof, ier)
-    call mpi_bcast (lon1D,   lon, MPI_REAL8, 0, mpicom_rof, ier)
-    call mpi_bcast (arear, gsize, MPI_REAL8, 0, mpicom_rof, ier)
-    write(*,*) 'JW max arear = ', maxval(arear)
+    call shr_mpi_bcast (lat1D, mpicom_rof, 'rof_read_mosart')
+    call shr_mpi_bcast (lon1D, mpicom_rof, 'rof_read_mosart')
+    call shr_mpi_bcast (area,  mpicom_rof, 'rof_read_mosart')
+    write(*,*) 'JW max area = ', maxval(area)
 
     ! load 2d data into 1d arrays
     count = 0
     do j = 1, nlong
        do i = 1, nlatg
          count = count + 1
-         latc(count) = lat1D(i)
-         lonc(count) = lon1D(j)
-         area(count) = arear(i,j)
+         latc(count)  = lat1D(i)
+         lonc(count)  = lon1D(j)
+         areac(count) = area(i,j)
        end do
     end do
 
 !JW    if (my_task == master_task) then
        write(logunit_rof,*) 'Read lat1D ', minval(lat1D), maxval(lat1D)
        write(logunit_rof,*) 'Read lon1D ', minval(lon1D), maxval(lon1D)
-       write(logunit_rof,*) 'Read area  ', minval(arear), maxval(arear)
+       write(logunit_rof,*) 'Read area  ', minval(area),  maxval(area)
 !JW    end if
 
     deallocate(lat1D)
     deallocate(lon1D)
-    deallocate(arear)
+    deallocate(area)
 
     return
 
