@@ -458,13 +458,13 @@ CONTAINS
     !---------------------------------------------------------------------------
 
       do n = 1, lsize
-        r2x_r%rattr(index_r2x_Forr_rofl,n)    = float(my_task) + 100.0_r8
-        r2x_r%rattr(index_r2x_Forr_rofi,n)    = float(my_task) + 100.0_r8
-        r2x_r%rattr(index_r2x_Flrr_flood,n)   = float(my_task) + 100.0_r8
-        r2x_r%rattr(index_r2x_Flrr_volr,n)    = float(my_task) + 100.0_r8
-        r2x_r%rattr(index_r2x_Flrr_volrmch,n) = float(my_task) + 100.0_r8
-        r2x_r%rattr(index_r2x_Flrr_supply,n)  = float(my_task) + 100.0_r8
-        r2x_r%rattr(index_r2x_Flrr_deficit,n) = float(my_task) + 100.0_r8
+        r2x_r%rattr(index_r2x_Forr_rofl,n)    = float(my_task)
+        r2x_r%rattr(index_r2x_Forr_rofi,n)    = float(my_task)
+        r2x_r%rattr(index_r2x_Flrr_flood,n)   = float(my_task)
+        r2x_r%rattr(index_r2x_Flrr_volr,n)    = float(my_task)
+        r2x_r%rattr(index_r2x_Flrr_volrmch,n) = float(my_task)
+        r2x_r%rattr(index_r2x_Flrr_supply,n)  = float(my_task)
+        r2x_r%rattr(index_r2x_Flrr_deficit,n) = float(my_task)
       enddo
 
   end subroutine rof_export_mct
@@ -521,7 +521,6 @@ CONTAINS
 
     ! allocate arrays
     allocate(lat1D(lat))
-    allocate(area1D(lat))
     allocate(lon1D(lon))
     allocate(area(lat,lon))
     allocate(lonc(gsize))
@@ -530,6 +529,7 @@ CONTAINS
 
     ! read in lat, lon, and area only on master_task
     if (my_task == master_task) then
+       allocate(area1D(lat))
        status = nf90_inq_varid(ncid, "lat", varid)
        status = nf90_get_var(ncid, varid, lat1D)
 
@@ -537,21 +537,19 @@ CONTAINS
        status = nf90_get_var(ncid, varid, lon1D)
 
        status = nf90_inq_varid(ncid, "area", areavarid)
-       if(status /= nf90_noerr) write(*,*) 'JW4', status
        do j = 1, nlong
           status = nf90_get_var(ncid, areavarid, area1D, start=(/1,j/), count=(/lat,1/))
-          if(status /= nf90_noerr) write(*,*) 'JW6', status
           area(:,j) = area1d(:)
        enddo
 
        call shr_file_freeUnit(ncid)
+       deallocate(area1D)
     endif
 
     ! broadcast lat1D, lon1D and arear
     call shr_mpi_bcast (lat1D, mpicom_rof, 'rof_read_mosart')
     call shr_mpi_bcast (lon1D, mpicom_rof, 'rof_read_mosart')
     call shr_mpi_bcast (area,  mpicom_rof, 'rof_read_mosart')
-    write(*,*) 'JW max area = ', maxval(area)
 
     ! load 2d data into 1d arrays
     count = 0
@@ -564,11 +562,11 @@ CONTAINS
        end do
     end do
 
-!JW    if (my_task == master_task) then
+    if (my_task == master_task) then
        write(logunit_rof,*) 'Read lat1D ', minval(lat1D), maxval(lat1D)
        write(logunit_rof,*) 'Read lon1D ', minval(lon1D), maxval(lon1D)
        write(logunit_rof,*) 'Read area  ', minval(area),  maxval(area)
-!JW    end if
+    end if
 
     deallocate(lat1D)
     deallocate(lon1D)
