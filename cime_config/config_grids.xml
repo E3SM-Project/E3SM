@@ -4765,7 +4765,7 @@
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_IcoswISC30E3r5-nomask_trbilin.20250328.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_EAIsland_ne32x8x32v1pg2_traave.20250329.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_EAIsland_ne32x8x32v1pg2_traave.20250329.nc</map>
-      <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_IcoswISC30E3r5_trfvnp2.20250328.nc>
+      <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_IcoswISC30E3r5_trfvnp2.20250328.nc></map>
       <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_IcoswISC30E3r5_trfvnp2.20250328.nc</map>
     </gridmap>
 
