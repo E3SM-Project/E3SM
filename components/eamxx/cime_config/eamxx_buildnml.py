@@ -279,8 +279,8 @@ def evaluate_selector(sel_name, sel_value, ez_selectors, case, child_name):
                     "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(sel_name, ez_regex))
             val = groups[0]
         else:
-            # If the regex doesn't even match the case val, make the value so it won't match anything
-            val = None
+            # If the regex doesn't even match the case val, always fail the selector
+            return False
 
     else:
         val = case.get_value(sel_name)
@@ -296,7 +296,10 @@ def evaluate_selector(sel_name, sel_value, ez_selectors, case, child_name):
 
         val_re = re.compile(statement)
 
-        curr_result = not(val is None or (val_re.match(val) is None and not is_negation) or (val_re.match(val) is not None and is_negation))
+        found_match   = val_re.match(val) is not None # check if regex yielded a match
+        desired_match = not is_negation # whether we want to match regex or not
+        curr_result   = found_match == desired_match # check if the match was desired or not
+
         if and_syntax in sel_value:
             result &= curr_result
         elif or_syntax in sel_value:
