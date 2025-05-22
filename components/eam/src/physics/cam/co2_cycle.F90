@@ -480,7 +480,10 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
       use ppgrid,         only: pver
       use physconst,      only: gravit
       use iac_coupled_fields,  only: iac_co2_name
-   
+      use spmd_utils,      only: masterproc
+      use cam_logfile,     only: iulog
+      use time_manager,    only: get_curr_date  
+ 
       ! Arguments
       type(physics_state), intent(in)    :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
@@ -488,9 +491,10 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
    
       ! Local variables
       logical :: lq(pcnst)
-      integer :: ifld, ncol, klev
+      integer :: ifld, ncol, klev, icol
       real(r8), pointer :: iac_co2(:,:)
       real(r8) :: co2_tend(state%ncol)
+      integer :: yr, mon, day, tod
    
       !----------------------------------------------------------------------------
       if (.not. co2_flag ) then
@@ -507,7 +511,19 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
 
       ifld = pbuf_get_index(iac_co2_name)   
       call pbuf_get_field(pbuf, ifld, iac_co2)
-   
+  
+      ! adivi:  eam tm clock
+      if(masterproc) then
+         call get_curr_date( yr, mon, day, tod )
+         write(iulog,*)'atm_import eam tm yr=',yr,' tm mon=',mon,' tm day',day, 'tm tod=',tod
+      endif
+ 
+      do icol = 1, ncol
+         do klev = 1, pver
+            if(masterproc) write(iulog,*) 'In co2_cycle_iac_ptend: icol, klev, iac_co2(icol,klev)', icol, klev, iac_co2(icol,klev)
+         end do
+      end do
+
       ! [ac_CO2] = 'kg m-2 s-1'
       ! [ptend%q] = 'kg kg-1 s-1'
       ncol = state%ncol

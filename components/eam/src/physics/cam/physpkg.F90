@@ -1498,7 +1498,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend, co2_transport, co2_cycle_iac_ptend, co2_readFlux_aircraft
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
-    use iac_coupled_fields, only: iac_present, iac_co2_name
+    use iac_coupled_fields, only: iac_co2_name
+    use cam_control_mod,    only: iac_active
+    use iac_coupled_fields, only: iac_coupled_fields_adv
 
     implicit none
 
@@ -1679,8 +1681,10 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
-    if(iac_present) then
-      ! add tendency from iac model component
+    if(iac_active) then
+      ! set ehc aircraft emissions in pbuf
+      call iac_coupled_fields_adv(state, pbuf)
+      ! add tendency from ehc model component
       call co2_cycle_iac_ptend(state, pbuf, ptend)
       call physics_update(state, ptend, ztodt, tend)
       ! Compute diagnostics (supply optional iac_co2_name to get_carbon_air_fluxes for iac)
@@ -2827,7 +2831,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_aero,     only: prescribed_aero_adv
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
-  use iac_coupled_fields, only: iac_coupled_fields_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
   use nudging,             only: Nudge_Model,nudging_timestep_init
 
@@ -2859,7 +2862,10 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
 
-  call iac_coupled_fields_adv(phys_state, pbuf2d)
+  ! the aircraft co2 emissions from EHC are not advanced here
+  ! they are advanced in tphysac to ensure correct values
+  ! they are not needed before tphysac
+  ! other constuents that may come from EHC may need to be advanced here
 
   call t_startf('prescribed_volcaero_adv')
   call prescribed_volcaero_adv(phys_state, pbuf2d)

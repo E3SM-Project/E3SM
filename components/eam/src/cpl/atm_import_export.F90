@@ -6,7 +6,7 @@ module atm_import_export
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init , mon_spec, day_spec, tod_spec)
+  subroutine atm_import( x2a, cam_in, restart_init)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -18,20 +18,18 @@ contains
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
-    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss, iac_present
+    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss
     use physconst     , only: mwco2
-    use time_manager  , only: is_first_step
+    use time_manager  , only: is_first_step, get_curr_date, get_step_size
     use constituents  , only: pcnst
+    use cam_control_mod, only: iac_active
+    use spmd_utils  , only: masterproc
     !
     ! Arguments
     !
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
-    ! For IAC monthly coupling fields
-    integer, intent(in), optional :: mon_spec        ! Simulation month
-    integer, intent(in), optional :: day_spec        ! Simulation day
-    integer, intent(in), optional :: tod_spec        ! Simulation time of day [s]
     !
     ! Local variables
     !
@@ -46,23 +44,22 @@ contains
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
+    integer :: yr, mon, day, tod
+    integer :: mon_sfc, mon_air
+    integer :: dtime ! EAM timestep from namelist
     !-----------------------------------------------------------------------
     overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
 
-    !------------------------------------------------------------------------
-    ! Calculate time fraction for interpolating IAC fields
+    ! get atm time manager date to determine which EHC month data to get
+    call get_curr_date( yr, mon, day, tod )
 
-    ! NOTE: Time fractions for IAC fields should only be computed during the
-    ! runtime. We are checking the presence of "mon_spec" etc., which should only
-    ! be present if atm_import is called during the runtime
-    !------------------------------------------------------------------------
-    if (present(mon_spec) .and. present(day_spec) .and. present(tod_spec)) then
-       call iac_coupled_timeinterp (bnd_beg, bnd_end, tfrac)!out
+    ! adivi:  eam tm clock
+    if(masterproc) then
+       write(iulog,*)'atm_import eam tm yr=',yr,' tm mon=',mon,' tm day',day, ' tm tod=',tod
     endif
-
 
     ! ccsm sign convention is that fluxes are positive downward
     ig=1
@@ -150,36 +147,51 @@ contains
           end if
 
           !------------------------------------------------------------------------------------------
-          ! Interpolate IAC fields: Interpolate one surface field and two vertical emissions field
+          ! Do not interpolate EHC fields: annual emissions were split assuming
+          ! the monthly flux values were applied to the seconds in each month
+          ! This is true for CEDS data as well
           !
-          ! NOTE: Interpolation should only be done during the runtime. We use the presence of
-          ! optional argument "mon_spec" to detect runtime as it should only be present if
-          ! atm_import is called during the runtime
+          ! The last time step of the year is labelled as nxty0101-00000,
+          !    and needs month 12
+          !
+          ! Have moved iac_coupled_fields_adv from phys_timestep_init to
+          !    tphysac immediately before co2_cycle_iac_ptend
+          ! This aligns the setting of aircraft emissions to pbuf with the
+          !    surface emissions during atm_run for the current time step,
+          !    after the x2a vars have been set
+          ! This works for co2 because it isn't set until tphysac, but if
+          !    other constituents are added they may need to be advanced in
+          !    phys_timestep_init
+          !    Note that phys_timestep_init is called via atm_init for the
+          !       current time step during start and restart,
+          !       and also at the end of atm_run for the next time step
+          ! This means that the emissions are now set in the startup 01-01-00000 step
           !------------------------------------------------------------------------------------------
-          ! MUST FIXME:B- This should be controlled by a flag set to true by IAC, like "flux_from_iac" or something similar
-          ! we also need a flag to detect runtime
-          if (present(mon_spec) .and. iac_present) then
-             !if surface flux from IAC exists for this month, interpolate all IAC fields in time
-             if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+          if (iac_active) then
+             ! cam tm clock should always match atm Eclock/sync clock during
+             ! atm_import calls
+             if (mon == 1 .and. tod == 0) then
+                mon_sfc = 12
+                mon_air = 12
+             else
+                mon_sfc = mon
+                mon_air = mon
+             end if
 
-                ! Compute the tfrac compliment for interpolation
-                tfrac_complement = 1.0_r8 - tfrac
+             ! if surface emissions from EHC exist for this month, get them from coupler var
+             if (index_x2a_Fazz_co2sfc_iac(mon_sfc) /= 0) then
 
-                ! Interpolate IAC to extract values at current simulation time using monthly boundaries (bnd_beg and bnd_end)
-                !cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(bnd_beg),ig) * tfrac_complement + &
-                !     -x2a(index_x2a_Fazz_co2sfc_iac(bnd_end),ig) * tfrac
-                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
-
-                ! Interpolate IAC vertical emissions at high and low fields at the current simulation time
-                !iac_vertical_emiss(c)%fco2_low_height(i) = &
-                !     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_beg),ig) * tfrac_complement + &
-                !     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac
-                iac_vertical_emiss(c)%fco2_low_height(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_spec),ig)
-
-                !iac_vertical_emiss(c)%fco2_high_height(i) = &
-                !     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
-                !     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac
-                iac_vertical_emiss(c)%fco2_high_height(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_spec),ig)
+                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_sfc),ig)
+             end if
+             ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
+             if (index_x2a_Fazz_co2airlo_iac(mon_air) /= 0) then
+                iac_vertical_emiss(c)%fco2_low_height(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_air),ig)
+                 if(masterproc) write(iulog,*) 'In atm_import: i,iac_vertical_emiss(c)%fco2_low_height(i)',i,iac_vertical_emiss(c)%fco2_low_height(i)
+             end if
+             ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
+             if (index_x2a_Fazz_co2airhi_iac(mon_air) /= 0) then
+                iac_vertical_emiss(c)%fco2_high_height(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_air),ig)
+                if(masterproc) write(iulog,*) 'In atm_import: i,iac_vertical_emiss(c)%fco2_high_height(i)',i,iac_vertical_emiss(c)%fco2_high_height(i)
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
@@ -228,15 +240,15 @@ contains
              end if
 
              ! co2 flux from fossil fuel
-             if ( present(mon_spec)) then
-               if( index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
-                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
-               else if (co2_readFlux_fuel) then
-                   cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
-               else
-                   cam_in(c)%cflx(i,c_i(2)) = 0._r8
+             if ( iac_active ) then
+               if( index_x2a_Fazz_co2sfc_iac(mon_sfc) /= 0) then
+                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i)
                end if
-            endif
+             else if (co2_readFlux_fuel) then
+                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
+             else
+                cam_in(c)%cflx(i,c_i(2)) = 0._r8
+             end if
 
              ! co2 flux from land (cpl already multiplies flux by land fraction)
              if (index_x2a_Fall_fco2_lnd /= 0) then

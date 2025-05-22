@@ -53,6 +53,9 @@ module cam_control_mod
 
       integer :: magfield_fix_year = 1995
 
+! need to know if the EHC is active
+      logical, save :: iac_active = .false.
+
 contains
 
 subroutine cam_ctrl_set_physics_type(phys_package)

@@ -55,6 +55,9 @@ module atm_comp_mct
   use runtime_opts     , only: read_namelist
   use scamMod          , only: single_column,scmlat,scmlon
   use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
+
+  use cam_control_mod  , only: iac_active
+
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -105,6 +108,9 @@ CONTAINS
 !================================================================================
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
+
+    ! adivi: just for checking time
+    use time_manager,    only: get_curr_date
 
     !-----------------------------------------------------------------------
     !
@@ -275,6 +281,10 @@ CONTAINS
           write(iulog,*)'warning: co2_readFlux_fuel set false as iac is present'
        end if
 
+       ! set the eam control variable so other modules can know if the ehc is
+       ! active
+       iac_active = iac_present
+
        !
        ! Get nsrest from startup type methods
        !
@@ -408,6 +418,13 @@ CONTAINS
        call shr_file_getLogUnit (shrlogunit)
        call shr_file_getLogLevel(shrloglev)
        call shr_file_setLogUnit (iulog)
+
+
+       ! adivi:  atm time manager time check before time advance
+    if(masterproc) then
+       call get_curr_date( yr, mon, day, tod )
+       write(iulog,*)'atm_init before atm_import tm ymd=',ymd,' tm tod= ',tod
+    endif
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
@@ -547,11 +564,15 @@ CONTAINS
     nlend_sync = seq_timemgr_StopAlarmIsOn(EClock)
     rstwr_sync = seq_timemgr_RestartAlarmIsOn(EClock)
 
+    ! adivi:  eclock time check before atm_import
+    if(masterproc) then
+       write(iulog,*)'atm_run before atm_import sync ymd=',ymd_sync,' sync tod= ',tod_sync
+    endif
+
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-    call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync , &
-         day_spec=day_sync, tod_spec=tod_sync)
+    call atm_import( x2a_a%rattr, cam_in)
     call t_stopf  ('CAM_import')
     
     ! Cycle over all time steps in the atm coupling interval
@@ -581,6 +602,12 @@ CONTAINS
           call scam_use_iop_srf( cam_in )
        endif
 
+
+    ! adivi:  atm time manager time check before time advance
+    if(masterproc) then
+       write(iulog,*)'atm_run before cam run 2 and atm time advance tm ymd=',ymd,' tm tod= ',tod
+    endif
+
        ! Run CAM (run2, run3, run4)
        
        call t_startf ('CAM_run2')
@@ -601,6 +628,13 @@ CONTAINS
        call t_startf ('CAM_adv_timestep')
        call advance_timestep()
        call t_stopf  ('CAM_adv_timestep')
+
+       ! adivi:  atm time manager time check before time advance
+    if(masterproc) then
+       call get_curr_date( yr, mon, day, tod )
+       write(iulog,*)'atm_run before cam run 1 and after atm time advance tm ymd=',ymd,' tm tod= ',tod
+    endif
+
        
        ! Run cam radiation/clouds (run1)
           
