@@ -19,7 +19,7 @@ FieldHeader::FieldHeader (const identifier_type& id)
 
 void FieldHeader::
 set_extra_data (const std::string& key,
-                const ekat::any& data,
+                const std::any& data,
                 const bool throw_if_existing)
 {
   if (throw_if_existing) {
