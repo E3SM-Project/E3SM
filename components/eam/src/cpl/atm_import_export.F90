@@ -66,6 +66,8 @@ contains
     do c=begchunk,endchunk
        ncols = get_ncols_p(c)
 
+       if(masterproc) write(iulog,*) 'atm_import chunk: ', c
+
        ! initialize constituent surface fluxes to zero
        ! NOTE:overwrite_flds is .FALSE. for the first restart
        ! time step making cflx(:,1)=0.0 for the first restart time step.

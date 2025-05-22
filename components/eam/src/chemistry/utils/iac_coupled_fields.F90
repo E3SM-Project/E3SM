@@ -173,7 +173,7 @@ contains
           ! adivi:  eam tm clock
       if(masterproc) then
          call get_curr_date( yr, mon, day, tod )
-         write(iulog,*)'atm_import eam tm yr=',yr,' tm mon=',mon,' tm day',day,'tm tod=',tod
+         write(iulog,*)'iac_coupled_fields_adv eam tm yr=',yr,' tm mon=',mon,' tm day',day,'tm tod=',tod
       endif
 
     ! now this funciton receives a chunk, not the entire pbuf2d or a set of state chunks
@@ -189,6 +189,8 @@ contains
        ! options for distributing the low height values. The select-case block implements all those
        ! options
 
+       if(masterproc) write(iulog,*) 'iac_coupled_fields_adv chunk: ', state%lchnk
+
        ! Loop over columns in this chunk
        do icol = 1, ncol
           ! init all vertical layers to 0
@@ -202,7 +204,7 @@ contains
           enddo
           !assign the fco2_high_height to the "high_lev" level
           tmpptr(icol,high_lev) = iac_vertical_emiss(state%lchnk)%fco2_high_height(icol)
-          if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,tmpptr(icol,high_lev)', icol, tmpptr(icol,high_lev)
+          if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,high_lev, tmpptr(icol,high_lev)', icol, high_lev, tmpptr(icol,high_lev)
 
 
           !For the fco2_low_height, we have several options in the following select case statement
@@ -211,13 +213,13 @@ contains
               !Distribut the fco2_low_height equally among all the levels below "high_lev"
 
               !Divide by zero check
-              denominator = (pver - high_lev+1)
+              denominator = (pver - high_lev)
               if (denominator < 1.e-11 .and. denominator > -1.e-11) then !Checking if denominator is zero
                 write(err_str,*) 'ERROR: possible divide by zero, denominator is: ',denominator ,',',errmsg(__FILE__, __LINE__)
                 call endrun(err_str)
               end if
               !Amount of CO2 to distribute
-              dist_amount = iac_vertical_emiss(state%lchnk)%fco2_low_height(icol)/(pver - high_lev+1)
+              dist_amount = iac_vertical_emiss(state%lchnk)%fco2_low_height(icol)/(pver - high_lev)
               if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,dist_amount', icol, dist_amount
               do klev = high_lev+1, pver
                 tmpptr(icol,klev) = dist_amount
