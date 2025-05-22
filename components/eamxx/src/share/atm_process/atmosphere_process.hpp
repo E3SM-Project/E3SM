@@ -17,12 +17,12 @@
 #include <ekat_parameter_list.hpp>
 #include <ekat_factory.hpp>
 #include <ekat_string_utils.hpp>
-#include <ekat_std_enable_shared_from_this.hpp>
 #include <ekat_logger.hpp>
 
 #include <memory>
 #include <string>
 #include <set>
+#include <any>
 #include <list>
 
 namespace scream
@@ -69,7 +69,7 @@ namespace scream
  *     to override the get_internal_fields method.
  */
 
-class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
+class AtmosphereProcess : public std::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using TimeStamp = util::TimeStamp;
@@ -657,9 +657,7 @@ using AtmosphereProcessFactory =
 template <typename AtmProcType>
 inline std::shared_ptr<AtmosphereProcess>
 create_atmosphere_process (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmProcType>(comm,p);
-  ptr->setSelfPointer(ptr);
-  return ptr;
+  return std::make_shared<AtmProcType>(comm,p);
 }
 
 } // namespace scream
