@@ -1479,6 +1479,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
          ! end copy 
 #ifdef MOABDEBUG
+      if (mbofxid >= 0) then
          outfile = 'recMeshOcnF.h5m'//C_NULL_CHAR
          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
       !  write out the mesh file to disk
@@ -1487,6 +1488,7 @@ subroutine  copy_aream_from_area(mbappid)
              write(logunit,*) subname,' error in writing ocean mesh coupler '
              call shr_sys_abort(subname//' ERROR in writing ocean mesh coupler ')
          endif
+      endif
 #endif
       endif  ! end ocean
 
@@ -1826,13 +1828,15 @@ subroutine  copy_aream_from_area(mbappid)
          ! initialize aream from area; it may have different values in the end, or reset again
          call copy_aream_from_area(mbrxid)
 #ifdef MOABDEBUG
-         outfile = 'recMeshRof.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-  !      write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing rof mesh on coupler '
-            call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
+         if (mbrxid >= 0) then
+            outfile = 'recMeshRof.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+  !         write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in writing rof mesh on coupler '
+               call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
+            endif
          endif
 #endif
       endif ! end for rof coupler set up 
