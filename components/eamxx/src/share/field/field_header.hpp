@@ -161,15 +161,6 @@ has_extra_data (const std::string& key) const
   return m_extra_data->find(key)!=m_extra_data->end();
 }
 
-// Use this free function to exploit features of enable_from_this
-template<typename... Args>
-inline std::shared_ptr<FieldHeader>
-create_header(const Args&... args) {
-  auto ptr = std::make_shared<FieldHeader>(args...);
-  ptr->setSelfPointer(ptr);
-  return ptr;
-}
-
 // Use this free function to create a header for a field that
 // is the subfield of another field, that is, for something
 // that (in matlab syntax) looks like sf = f(:,1,:)

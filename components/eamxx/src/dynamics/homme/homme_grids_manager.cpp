@@ -147,7 +147,6 @@ void HommeGridsManager::build_dynamics_grid () {
   const int nlev   = get_nlev_f90();
 
   auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
-  dyn_grid->setSelfPointer(dyn_grid);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
   const Units rad (Units::nondimensional(),"rad");
@@ -215,7 +214,6 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   const int nlcols = get_num_local_columns_f90 (pg_code % 10);
 
   auto phys_grid = std::make_shared<PointGrid>(name,nlcols,nlev,m_comm);
-  phys_grid->setSelfPointer(phys_grid);
 
   // Create the gids, coords, area views
   using namespace ShortFieldTagsNames;
