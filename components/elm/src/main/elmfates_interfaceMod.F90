@@ -3896,8 +3896,6 @@ end subroutine wrap_update_hifrq_hist
 
    do s=1,this%fates(nc)%nsites
 
-      c = GetColIndex(s)
-
       ! TODO - create a new type that holds tag names and pointers to hlm arrays
       ! Note that the hlm_var is going to be clump bound, so this new type would
       ! need to be clump bound as well.  I.e. `newtype` would need to be specific
@@ -3920,13 +3918,14 @@ end subroutine wrap_update_hifrq_hist
       ! end subroutine SetAPIAssociation
       !
       !...
-      !
+
       ! num_hlmvar = 1
       ! do ivar = 1,num_hlmvar
       !     call TransferBC(this%api_tag(ivar), this%hlm_var(ivar))
       ! end do
 
-      call TransferBCIn('decomp_frac_moisture',col_cf%w_scalar(c))
+      call TransferBCIn('decomp_frac_moisture',col_cf%w_scalar)
+      call TransferBCIn('leaf_area_index',canopystate_inst%tlai_patch)
 
    end do
 
