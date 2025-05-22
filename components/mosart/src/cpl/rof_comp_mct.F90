@@ -388,9 +388,11 @@ contains
     !     write out the mesh file to disk, in parallel
     outfile = 'wholeRof.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
-    if (ierr > 0 )  &
-      call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
+    if (mrofid >= 0) then
+      ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+      if (ierr > 0 )  &
+        call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
+    endif
 #endif
 
   end subroutine rof_init_mct
