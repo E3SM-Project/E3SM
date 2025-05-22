@@ -29,8 +29,7 @@ class MassAndEnergyConservationCheck: public PropertyCheck {
   template <typename S>
   using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
-  //using namespace ShortFieldTagsNames;
-  //using namespace ekat::units;
+  Field field_version_s1;
 
 public:
 

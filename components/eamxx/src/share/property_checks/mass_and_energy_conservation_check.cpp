@@ -53,6 +53,19 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
   m_fields["water_flux"]     = water_flux;
   m_fields["ice_flux"]       = ice_flux;
   m_fields["heat_flux"]      = heat_flux;
+
+  //allocate Fields for fixer reductions
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+
+  //this does not exist, why? cause it can be a LEV or a COL array?
+  //FieldLayout scalar1d = m_grid->get_1d_scalar_layout();
+  FieldLayout scalar1d{{COL}, {m_num_cols}};
+  FieldIdentifier s1_fid("s1", scalar1d, kg / kg, m_grid->name());
+  field_version_s1 = Field(s1_fid);
+
+  field_version_s1.allocate_view();
+
 }
 
 void MassAndEnergyConservationCheck::compute_current_mass ()
@@ -313,18 +326,6 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  //better to get layouts from m_grid, even scalar0d
-  FieldLayout scalar0d({},{});
-  FieldIdentifier s0_fid("s0", scalar0d, kg / kg, m_grid->name());
-  Field res(s0_fid);
-  res.allocate_view();
-  //this does not exist, why? cause it can be a LEV or a COL array?
-  //FieldLayout scalar1d = m_grid->get_1d_scalar_layout();
-  FieldLayout scalar1d{{COL}, {m_num_cols}};
-  FieldIdentifier s1_fid("s1", scalar1d, kg / kg, m_grid->name());
-
-  Field field_version_s1(s1_fid);
-  field_version_s1.allocate_view();
   auto field_view_s1 = field_version_s1.get_view<Real*>();
 
   auto area = m_grid->get_geometry_data("area").clone();
@@ -339,16 +340,14 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
 
   //reprosum vars
   const Real* send;
-  Real* recv;
+  Real recv;
   Int nlocal = ncols;
   Int ncount = 1;
   auto s1_host = field_version_s1.get_view<const Real*,Host>();
-  auto s0_host = res.get_view<Real,Host>();
   send = s1_host.data();
-  recv = s0_host.data();
 
-  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-  total_gas_mass_after = (*recv);
+  eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+  total_gas_mass_after = recv;
 
 //this ||4 needs to be 2 for-loops, with one summing each 4 cols first, serially
 //for pg2 grids (if on np4 grids, it would require much more work?)  
@@ -370,8 +369,8 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
     field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i)) * area_view(i);
   });
 
-  eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-  pb_fixer = (*recv);
+  eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+  pb_fixer = recv;
 
   if(print_debug_info) {
     //total energy needed for relative error
@@ -379,8 +378,8 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
       const int i = team.league_rank();
       field_view_s1(i) = m_current_energy(i) * area_view(i);
     });
-    eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-    total_energy_before = (*recv);
+    eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+    total_energy_before = recv;
   }
 
   using PC = scream::physics::Constants<Real>;
@@ -416,8 +415,8 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
       field_view_s1(i) *= area_view(i);
     });
 
-    eamxx_repro_sum(send, recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
-    echeck = (*recv)/total_energy_before;
+    eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+    echeck = recv/total_energy_before;
   }
 
 };//global_fixer
