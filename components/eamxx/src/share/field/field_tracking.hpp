@@ -93,17 +93,6 @@ protected:
   std::set<ci_string> m_groups;
 };
 
-// Use this free function to exploit features of enable_shared_from_this,
-// as well as features from FamilyTracking.
-template<typename... Args>
-inline std::shared_ptr<FieldTracking>
-create_tracking(const Args&... args) {
-  auto ptr = std::make_shared<FieldTracking>(args...);
-  ptr->setSelfPointer(ptr);
-  return ptr;
-}
-
-
 } // namespace scream
 
 #endif // SCREAM_FIELD_TRACKING_HPP
