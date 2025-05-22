@@ -52,9 +52,7 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
 
-  ekat::any homme_nsteps;
-  homme_nsteps.reset<int>(-1);
-  m_restart_extra_data["homme_nsteps"] = homme_nsteps;
+  m_restart_extra_data["homme_nsteps"] = std::make_any<int>(-1);
 
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -507,7 +505,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
-    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]);
+    auto& nstep = std::any_cast<int&>(m_restart_extra_data["homme_nsteps"]);
     nstep = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
@@ -942,9 +940,9 @@ void HommeDynamics::restart_homme_state () {
         auto& tl = c.get<Homme::TimeLevel>();
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
-  const auto& nstep = ekat::any_ptr_cast<int>(m_restart_extra_data["homme_nsteps"]);
-  tl.nstep = *nstep;
-  set_homme_param("num_steps",*nstep);
+  const auto& nstep = std::any_cast<int>(m_restart_extra_data["homme_nsteps"]);
+  tl.nstep = nstep;
+  set_homme_param("num_steps",nstep);
 
   constexpr int NGP = HOMMEXX_NP;
   const int nlevs = m_phys_grid->get_num_vertical_levels();
@@ -1121,7 +1119,7 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = tl.n0;
   const int n0_qdp  = tl.n0_qdp;
 
-  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]) = tl.nstep;
+  std::any_cast<int&>(m_restart_extra_data["homme_nsteps"]) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
