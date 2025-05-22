@@ -85,7 +85,10 @@ be lost if SCREAM_HACK_XML is not enabled.
 
         3) For a parameter whose elements all have selectors, if none of the selectors
            are matched, then the parameter will be omitted from the case XML
-           file ($case/namelist_scream.xml).
+           file ($case/namelist_scream.xml). If you want a selector to NOT match a string/regex,
+           you can prepend the string with a "!". The operation ' @@ ' (AND) and ' || ' (OR) are also
+           supported for more complex checks (' @@ ' is used because & is a reserved character in XML).
+           Note, the whitespaces around the AND and OR operators are NOT optional.
 
         4) Parameter types will be inferred. You can override the inferred type
            via the 'type' metadata attribute. Types are:

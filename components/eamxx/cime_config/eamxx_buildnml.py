@@ -250,6 +250,66 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
         return yaml.dump(data, item, OrderedDumper, **kwds)
 
 ###############################################################################
+def evaluate_selector(sel_name, sel_value, ez_selectors, case, child_name):
+###############################################################################
+    # Parse and and ors into separate statements
+    and_syntax = " @@ "
+    or_syntax  = " || "
+    statements = []
+    if and_syntax in sel_value:
+        expect(or_syntax not in sel_value, "Cannot mix @@ and ||")
+        statements = sel_value.split(and_syntax)
+    elif or_syntax in sel_value:
+        statements = sel_value.split(or_syntax)
+    else:
+        statements = [sel_value]
+
+    # Get relevant value from case
+    if sel_name in ez_selectors:
+        ez_env, ez_regex = ez_selectors[sel_name]
+        case_val = case.get_value(ez_env)
+        expect(case_val is not None,
+              "Bad easy selector '{}' definition. Relies on unknown case value '{}'".format(sel_name, ez_env))
+
+        ez_regex_re = re.compile(ez_regex)
+        m = ez_regex_re.match(case_val)
+        if m:
+            groups = m.groups()
+            expect(len(groups) == 1,
+                    "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(sel_name, ez_regex))
+            val = groups[0]
+        else:
+            # If the regex doesn't even match the case val, always fail the selector
+            return False
+
+    else:
+        val = case.get_value(sel_name)
+        expect(val is not None,
+               "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(sel_name, child_name))
+
+    # Check value for matches with statements
+    result = False if or_syntax in sel_value else True
+    for statement in statements:
+        is_negation = statement.startswith("!")
+        if is_negation:
+            statement = statement.lstrip("!")
+
+        val_re = re.compile(statement)
+
+        found_match   = val_re.match(val) is not None # check if regex yielded a match
+        desired_match = not is_negation # whether we want to match regex or not
+        curr_result   = found_match == desired_match # check if the match was desired or not
+
+        if and_syntax in sel_value:
+            result &= curr_result
+        elif or_syntax in sel_value:
+            result |= curr_result
+        else:
+            result = curr_result
+
+    return result
+
+###############################################################################
 def evaluate_selectors(element, case, ez_selectors):
 ###############################################################################
     """
@@ -283,6 +343,24 @@ def evaluate_selectors(element, case, ez_selectors):
     ...   <var3 foo="ON">foo_on</var3>
     ...   <var4>bar_off</var4>
     ...   <var4 bar="ON">bar_on</var4>
+    ...   <var5>regex_wrong</var5>
+    ...   <var5 SCREAM_CMAKE_OPTIONS=".*BAR=OFF">regex_right</var5>
+    ...   <var6>and_right</var6>
+    ...   <var6 SCREAM_CMAKE_OPTIONS=".*BAR=OFF @@ .*64">and_wrong</var6>
+    ...   <var6a>and_wrong</var6a>
+    ...   <var6a SCREAM_CMAKE_OPTIONS=".*BAR=OFF @@ .*128">and_right</var6a>
+    ...   <var6b>or_right</var6b>
+    ...   <var6b SCREAM_CMAKE_OPTIONS=".*BAR=ON || .*64">or_wrong</var6b>
+    ...   <var6c>and_wrong</var6c>
+    ...   <var6c SCREAM_CMAKE_OPTIONS=".*BAR=OFF || .*64">or_right</var6c>
+    ...   <var7>negation_right</var7>
+    ...   <var7 grid="!ne4ne4">negation_wrong</var7>
+    ...   <var8>negation_wrong</var8>
+    ...   <var8 grid="!pg2">negation_right</var8>
+    ...   <var9>negation_right</var9>
+    ...   <var9 grid="!.*ne4">negation_wrong</var9>
+    ...   <var10>negation_wrong</var10>
+    ...   <var10 grid="!.*pg2">negation_right</var10>
     ... </namelist_defaults>
     ... '''
     >>> import xml.etree.ElementTree as ET
@@ -297,6 +375,24 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> get_child(good,'var3').text=="foo_on"
     True
     >>> get_child(good,'var4').text=="bar_off"
+    True
+    >>> get_child(good,'var5').text=="regex_right"
+    True
+    >>> get_child(good,'var6').text=="and_right"
+    True
+    >>> get_child(good,'var6a').text=="and_right"
+    True
+    >>> get_child(good,'var6b').text=="or_right"
+    True
+    >>> get_child(good,'var6c').text=="or_right"
+    True
+    >>> get_child(good,'var7').text=="negation_right"
+    True
+    >>> get_child(good,'var8').text=="negation_right"
+    True
+    >>> get_child(good,'var9').text=="negation_right"
+    True
+    >>> get_child(good,'var10').text=="negation_right"
     True
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad1 = '''
@@ -393,42 +489,18 @@ def evaluate_selectors(element, case, ez_selectors):
             if selectors:
                 all_match = True
                 had_case_selectors = False
-                for k, v in selectors.items():
+                for sel_name, sel_value in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
-                    if k in METADATA_ATTRIBS:
-                        if k=="type" and child_name in selected_child.keys():
+                    if sel_name in METADATA_ATTRIBS:
+                        if sel_name=="type" and child_name in selected_child.keys():
                             if "type" in selected_child[child_name].attrib:
-                                expect (v==selected_child[child_name].attrib["type"],
+                                expect (sel_value==selected_child[child_name].attrib["type"],
                                         f"The 'type' attribute of {child_name} is not consistent across different selectors")
                         continue
 
                     had_case_selectors = True
-                    val_re = re.compile(v)
-
-                    if k in ez_selectors:
-                        ez_env, ez_regex = ez_selectors[k]
-                        case_val = case.get_value(ez_env)
-                        expect(case_val is not None,
-                              "Bad easy selector '{}' definition. Relies on unknown case value '{}'".format(k, ez_env))
-
-                        ez_regex_re = re.compile(ez_regex)
-                        m = ez_regex_re.match(case_val)
-                        if m:
-                            groups = m.groups()
-                            expect(len(groups) == 1,
-                                    "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(k, ez_regex))
-                            val = groups[0]
-                        else:
-                            # If the regex doesn't even match the case val, then we consider
-                            # string below should ensure the selector will never match.
-                            val = None
-
-                    else:
-                        val = case.get_value(k)
-                        expect(val is not None,
-                               "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
-
-                    if val is None or val_re.match(val) is None:
+                    selectors_matched = evaluate_selector(sel_name, sel_value, ez_selectors, case, child_name)
+                    if not selectors_matched:
                         all_match = False
                         children_to_remove.append(child)
                         break
