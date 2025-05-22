@@ -16,7 +16,7 @@
 !>  due to precipitation uniformly to ensure a balance of fresh water
 !>  at the ocean surface.
 !>  Designed following precip_adjustment subroutine located at:
-!>    https://github.com/ESCOMP/POP2-CESM/blob/master/source/forcing_sfwf.F90
+!>  https://github.com/ESCOMP/POP2-CESM/blob/master/source/forcing_sfwf.F90
 !
 !-----------------------------------------------------------------------
 
@@ -31,12 +31,11 @@ module ocn_scaled_sfwf
     use ocn_config
     use ocn_mesh
 
-    use shr_kind_mod, only: & 
-        SHR_KIND_R8
-
     use shr_const_mod
 
     use ocn_constants, only: & 
+        pi, &      
+        earthRadius, & 
         rho_fw, & 
         rho_sw, &
         ocn_ref_salinity
@@ -57,7 +56,7 @@ module ocn_scaled_sfwf
     !
     !--------------------------------------------------------------------
 
-    public :: ocn_init_scaled_sfwf, &
+    public :: ocn_scaled_sfwf_init, &
               ocn_update_scaling_factor
 
     !--------------------------------------------------------------------
@@ -69,7 +68,7 @@ module ocn_scaled_sfwf
     logical :: scaledSFWFOn
     character (len=*), parameter :: alarmID = 'scaledSFWFUpdateAlarm'
 
-    real (kind=RKIND) :: earthAreaE3SM ! surface area of earth in coupler
+    real (kind=RKIND) :: earthArea ! surface area of earth in coupler
 
     real(kind=RKIND) :: rhow, areaCellGlobal, volumeCellGlobal
 
@@ -80,7 +79,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_scaled_sfwf
+!  routine ocn_scaled_sfwf_init
 !
 !> \brief   Initialize scaling of data freshwater fluxes
 !> \author Shixuan Zhang 
@@ -90,7 +89,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_init_scaled_sfwf(domain)!{{{
+    subroutine ocn_scaled_sfwf_init(domain)!{{{
 
         type (domain_type), intent(inout) :: domain
 
@@ -99,11 +98,6 @@ contains
         type (mpas_TimeInterval_type) :: alarmTimeStep
 
         integer :: err_tmp
-
-        ! taking PI from SHR_CONST_PI in share/util/shr_const_mod.F90 to match coupler
-        real (kind=RKIND), parameter :: piE3SM = SHR_CONST_PI
-        ! taking earth radius from SHR_CONST_REARTH in share/util/shr_const_mod.F90 to match coupler
-        real (kind=RKIND), parameter :: earthRadiusE3SM = SHR_CONST_REARTH ! radius of earth, m
 
         character(len=19) :: timeString
 
@@ -141,12 +135,12 @@ contains
                                   alarmTimeInterval=alarmTimeStep, ierr=err_tmp)
                           
         ! Compute Earth's surface area (used for normalizing fluxes)
-        earthAreaE3SM = 4.0_RKIND * piE3SM * earthRadiusE3SM*earthRadiusE3SM
+        earthArea = 4.0_RKIND * pi * earthRadius * earthRadius
 
         ! Density of sea water
         rhow = rho_sw
 
-    end subroutine ocn_init_scaled_sfwf!}}}
+    end subroutine ocn_scaled_sfwf_init!}}}
 
 
 !***********************************************************************
@@ -193,7 +187,7 @@ contains
 #ifdef mpas_DEBUG
             call mpas_log_write('       Computing Scaling Factor For Water Fluxes')
 #endif
-            call update_scaling_factor(domain,timeLevelLocal)
+            call ocn_update_scaling_factor(domain,timeLevelLocal)
             call mpas_reset_clock_alarm(domain % clock, alarmID, ierr=err_tmp)
        endif
 
@@ -201,7 +195,7 @@ contains
 
 !***********************************************************************
 !
-!  routine compute_ssh_mass
+!  routine compute_mass_from_ssh
 !
 !> \brief  Derive ssh inferred freshwater mass 
 !> \author Shixuan Zhang
@@ -210,7 +204,7 @@ contains
 !>  calculate ssh equivalent total mass over ocean grid point 
 !
 !-----------------------------------------------------------------------
-    subroutine compute_ssh_mass(domain,timeLevel,sshMass)!{{{
+    subroutine compute_mass_from_ssh(domain,timeLevel,sshMass)!{{{
 
         type (domain_type), intent(inout) :: domain
 
@@ -277,7 +271,7 @@ contains
         ! Output to log file
         !-------------------------------------------------------------
         if (config_precip_scaling_write_to_logfile) then
-            A = earthAreaE3SM
+            A = earthArea
             c = 1._RKIND / A 
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write('WATER CONSERVATION CHECK')
@@ -290,7 +284,7 @@ contains
             call mpas_log_write('----------------------------------------------------------')
         end if
 
-    end subroutine compute_ssh_mass!}}}
+    end subroutine compute_mass_from_ssh!}}}
 
 !***********************************************************************
 !
@@ -350,7 +344,7 @@ contains
 
         if ( nAccumulated == 0 ) then 
            call mpas_pool_get_array(forcingPool, "SSHinitial", SSHinitial)
-           call compute_ssh_mass(domain,timeLevel,SSHinitial)
+           call compute_mass_from_ssh(domain,timeLevel,SSHinitial)
         end if
 
         do while (associated(block_ptr))
@@ -394,7 +388,7 @@ contains
 
 !***********************************************************************
 !
-!  routine update_scaling_factor
+!  routine ocn_update_scaling_factor
 !
 !> \brief  Update scaling factors for data freshwater fluxes 
 !> \author Shixuan Zhang 
@@ -405,7 +399,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine update_scaling_factor(domain,timeLevel)!{{{
+    subroutine ocn_update_scaling_factor(domain,timeLevel)!{{{
 
         type (domain_type), intent(inout) :: domain
 
@@ -460,7 +454,7 @@ contains
 
         call mpas_pool_get_array(forcingPool, "SSHinitial", SSHinitial)
         call mpas_pool_get_array(forcingPool, "SSHfinal", SSHfinal)
-        call compute_ssh_mass(domain,timeLevel,SSHfinal)
+        call compute_mass_from_ssh(domain,timeLevel,SSHfinal)
 
         nHistory = config_precip_scaling_history_years
         dtAvg = dt * nAccumulated
@@ -530,7 +524,7 @@ contains
 
             call mpas_log_write('----------------------------------------------------------')
             call mpas_log_write('WATER CONSERVATION CHECK')
-            A = earthAreaE3SM
+            A = earthArea
             c = 1.0_RKIND / A
             call mpas_log_write('WATER FLUXES')
             call mpas_log_write('MPAS-Ocean name          kg/s (F)                coupler name     short name     kg/m^2/s (F/A)')
@@ -552,6 +546,6 @@ contains
 
         end if 
 
-    end subroutine update_scaling_factor!}}}
+    end subroutine ocn_update_scaling_factor!}}}
 
 end module ocn_scaled_sfwf

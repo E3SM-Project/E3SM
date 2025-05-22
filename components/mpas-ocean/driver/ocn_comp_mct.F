@@ -844,7 +844,7 @@ contains
        call ocn_init_scaled_dismf(domain)
 
        ! Initialize the precipitation scaling scheme 
-       call ocn_init_scaled_sfwf(domain)
+       call ocn_scaled_sfwf_init(domain)
        ! Ensure a valid first guess at the initial time 
        call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
        if (config_use_precip_scaling) then
@@ -911,7 +911,7 @@ contains
        call ocn_init_scaled_dismf(domain)
 
       ! initialize scaled data freshwater fluxes based on water balance relationship 
-       call ocn_init_scaled_sfwf(domain)
+       call ocn_scaled_sfwf_init(domain)
 
     end if
 
