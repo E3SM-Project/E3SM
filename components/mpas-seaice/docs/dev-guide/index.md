@@ -32,7 +32,7 @@ Additionally, a number of shared operators exist to perform common operations on
 Several files within MPAS-SI control the coupling of fields between MPAS-SI and other E3SM components via the coupler. A list of all variables being passed to and from MPAS-SI can be found in ``components/mpas-seaice/driver/mpassi_cpl_indices.F``.
 Variables named with the prefix ``x2i`` are passed from the coupler to MPAS-SI, variables with the prefix ``i2x`` are passed from MPAS-SI to the coupler.
 For example, all coupled variables are named with the following convention:
-``index_i2x_Si_ithick`` refers to a state variable of ice (``Si``) that gets passed from MPAS-SI to the coupler (``i2x``) for the ice thickness (``ithick``). ``index_x2i_So_t`` refers to an ocean state variable (``So``) passed from the the coupler to MPAS-SI (``x2i``) for ocean temperature (``t``).
+``index_i2x_Si_ithick`` refers to a state variable of ice (``Si``) that gets passed from MPAS-SI to the coupler (``i2x``) for the ice thickness (``ithick``). ``index_x2i_So_t`` refers to an ocean state variable (``So``) passed from the coupler to MPAS-SI (``x2i``) for ocean temperature (``t``).
 
 ## Icepack
 
