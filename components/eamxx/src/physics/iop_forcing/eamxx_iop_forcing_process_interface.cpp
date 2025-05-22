@@ -247,6 +247,23 @@ advance_iop_subsidence(const MemberType& team,
     auto sqm = ekat::scalarize(qm);
     solve_field(qm, sqm);
   }
+
+  // === Explicit thermal expansion term for T after implicit solve ===
+  constexpr Real Rair  = C::Rair;
+  constexpr Real Cpair = C::Cpair;
+
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
+    for (int i = 0; i < pack_size; ++i) {
+      const int idx = k * pack_size + i;
+      if (idx < nlevs) {
+        const Real omega_val = s_omega(idx);
+        const Real p_mid_val = s_ref_p_mid(idx);
+        const Real correction = 1.0 + (dt * Rair / Cpair) * omega_val / p_mid_val;
+        T(k)[i] *= correction;
+      }
+    }
+  });
+
 }
 
 
