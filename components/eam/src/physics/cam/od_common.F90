@@ -392,9 +392,9 @@ function pblh_get_level_idx(height_array,pblheight)
   pblh_get_level_idx = -1
   found=.false.
   !get the pblh level index and return
-  do k = 1, pver
-    if((pblheight >= height_array(k+1).and.pblheight <height_array(k)))then
-      pblh_get_level_idx =  k+1
+  do k = 2, pver
+    if((pblheight >= height_array(k).and.pblheight <height_array(k-1)))then
+      pblh_get_level_idx =  k
       found=.true.
       return
     endif
@@ -967,8 +967,8 @@ subroutine od2d(dudt,dvdt,dthdt,ncleff,ncd,sncleff,                        &
   !
   !--- calculate length of grid for flow-blocking drag
   !
-  delx=dxmeter
-  dely=dymeter  
+  delx(its:ite)=dxmeter(its:ite)
+  dely(its:ite)=dymeter(its:ite)
   !
   !
   !-----initialize arrays
