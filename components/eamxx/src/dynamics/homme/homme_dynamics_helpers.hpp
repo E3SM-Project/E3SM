@@ -36,14 +36,14 @@ struct HommeContextUser {
       Homme::Context::singleton().finalize_singleton();
     }
   }
-  int get_counter () const { return counter; }
+
   static HommeContextUser& singleton() {
     static HommeContextUser hcu;
     return hcu;
   }
 private:
-  HommeContextUser () : counter(0) {}
-  int counter;
+  HommeContextUser () = default;
+  int counter = 0;
 };
 
 } // namespace scream
