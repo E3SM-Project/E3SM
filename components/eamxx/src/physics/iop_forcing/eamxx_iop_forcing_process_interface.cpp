@@ -239,15 +239,6 @@ advance_iop_subsidence(const MemberType& team,
     });
   };
 
-  solve_field(T, s_T);
-  solve_field(u, s_u);
-  solve_field(v, s_v);
-  for (int m = 0; m < Q.extent_int(0); ++m) {
-    auto qm  = Kokkos::subview(Q, m, Kokkos::ALL());
-    auto sqm = ekat::scalarize(qm);
-    solve_field(qm, sqm);
-  }
-
   // === Explicit thermal expansion term for T after implicit solve ===
   constexpr Real Rair  = C::Rair;
   constexpr Real Cpair = C::Cpair;
@@ -263,6 +254,15 @@ advance_iop_subsidence(const MemberType& team,
       }
     }
   });
+
+  solve_field(T, s_T);
+  solve_field(u, s_u);
+  solve_field(v, s_v);
+  for (int m = 0; m < Q.extent_int(0); ++m) {
+    auto qm  = Kokkos::subview(Q, m, Kokkos::ALL());
+    auto sqm = ekat::scalarize(qm);
+    solve_field(qm, sqm);
+  }
 
 }
 
