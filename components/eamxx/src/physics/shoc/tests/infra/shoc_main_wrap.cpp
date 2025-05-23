@@ -31,7 +31,7 @@ Int shoc_main(FortranData& d) {
                         d.qw_sec.data(), d.qwthl_sec.data(), d.wthl_sec.data(), d.wqw_sec.data(),
                         d.wtke_sec.data(), d.uw_sec.data(),
                         d.vw_sec.data(), d.w3.data(), d.wqls_sec.data(), d.brunt.data(),
-                        d.shoc_ql2.data());
+                        d.shoc_ql2.data(), d.shoc_cond.data(), d.shoc_evap.data());
 }
 
 namespace {

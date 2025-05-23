@@ -38,7 +38,7 @@ struct FortranData {
   // Out
   Array2 shoc_cldfrac, shoc_ql;
   Array1 pblh;
-  Array2 shoc_mix, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec,
+  Array2 shoc_mix, shoc_cond, shoc_evap, w_sec, thl_sec, qw_sec, qwthl_sec, wthl_sec, wqw_sec,
     wtke_sec, uw_sec, vw_sec, w3, wqls_sec, isotropy, brunt, shoc_ql2;
 
   FortranData() = delete;

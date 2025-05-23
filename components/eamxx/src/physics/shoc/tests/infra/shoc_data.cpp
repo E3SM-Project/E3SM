@@ -52,6 +52,8 @@ FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_,
   shoc_ql = Array2("Cloud liquid mixing ratio [kg/kg]", shcol, nlev);
   pblh = Array1("Planetary boundary layer depth [m]", shcol);
   shoc_mix = Array2("Turbulent length scale [m]", shcol, nlev);
+  shoc_cond = Array2("Condensation rate [kg/kg/s]", shcol, nlev);
+  shoc_evap = Array2("Evaporation rate [kg/kg/s]", shcol, nlev);
   w_sec = Array2("Vertical velocity variance [m2/s2]", shcol, nlev);
   thl_sec = Array2("Temperature variance [K^2]", shcol, nlevi);
   qw_sec = Array2("Moisture variance [kg2/kg2]", shcol, nlevi);

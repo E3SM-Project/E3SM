@@ -523,11 +523,11 @@ void Functions<S,D>::shoc_main_internal(
                                  w3);                                    // Output
 
     // Call the PDF to close on SGS cloud and turbulence
-    shoc_assumed_pdf_disp(shcol,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
+    shoc_assumed_pdf_disp(shcol,nlev,nlevi,dtime,thetal,qw,w_field,thl_sec,qw_sec, // Input
                           wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
                           zt_grid, zi_grid,                                 // Input
                           workspace_mgr,                                    // Workspace mgr
-                          shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
+                          shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2,shoc_cond,shoc_evap); // Ouptut
 
     // Check TKE to make sure values lie within acceptable
     // bounds after vertical advection, etc.
@@ -659,8 +659,8 @@ Int Functions<S,D>::shoc_main(
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
     const auto tkh_s          = ekat::subview(shoc_output.tkh, i);
     const auto shoc_mix_s     = ekat::subview(shoc_history_output.shoc_mix, i);
-    const auto shoc_cond_s     = ekat::subview(shoc_history_output.shoc_cond, i);
-    const auto shoc_evap_s     = ekat::subview(shoc_history_output.shoc_evap, i);
+    const auto shoc_cond_s    = ekat::subview(shoc_history_output.shoc_cond, i);
+    const auto shoc_evap_s    = ekat::subview(shoc_history_output.shoc_evap, i);
     const auto w_sec_s        = ekat::subview(shoc_history_output.w_sec, i);
     const auto thl_sec_s      = ekat::subview(shoc_history_output.thl_sec, i);
     const auto qw_sec_s       = ekat::subview(shoc_history_output.qw_sec, i);

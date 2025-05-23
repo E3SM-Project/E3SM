@@ -469,15 +469,15 @@ struct ComputeDiagThirdShocMomentData : public PhysicsTestData {
 struct ShocAssumedPdfData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
+  Real dtime;
   Real *thetal, *qw, *w_field, *thl_sec, *qw_sec, *wthl_sec, *w_sec, *wqw_sec, *qwthl_sec, *w3, *pres;
 
   // Outputs
-  Real *shoc_cldfrac, *shoc_ql, *wqls, *wthv_sec, *shoc_ql2;
+  Real *shoc_cldfrac, *shoc_ql, *wqls, *wthv_sec, *shoc_ql2, *shoc_cond, *shoc_evap;
 
-  ShocAssumedPdfData(Int shcol_, Int nlev_, Int nlevi_) :
-    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2 }, { &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &w3, &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_) {}
-
-  PTD_STD_DEF(ShocAssumedPdfData, 3, shcol, nlev, nlevi);
+  ShocAssumedPdfData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_) :
+    ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }}, {{ &thetal, &qw, &w_field, &w_sec, &pres, &zt_grid, &shoc_cldfrac, &shoc_ql, &wqls, &wthv_sec, &shoc_ql2, &shoc_cond, &shoc_evap }, { &thl_sec, &qw_sec, &wthl_sec, &wqw_sec, &qwthl_sec, &w3, &zi_grid }}), shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_) {}
+  PTD_STD_DEF(ShocAssumedPdfData, 4, shcol, nlev, nlevi, dtime);
 };
 
 struct ShocAssumedPdfTildeToRealData {
@@ -707,7 +707,7 @@ struct ShocMainData : public ShocTestGridDataBase {
   Real *host_dse, *tke, *thetal, *qw, *u_wind, *v_wind, *qtracers, *wthv_sec, *tkh, *tk, *shoc_ql, *shoc_cldfrac;
 
   // Outputs
-  Real *pblh, *shoc_mix, *isotropy, *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *wqw_sec, *wtke_sec, *uw_sec, *vw_sec, *w3, *wqls_sec, *brunt, *shoc_ql2;
+  Real *pblh, *shoc_mix, *isotropy, *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *wqw_sec, *wtke_sec, *uw_sec, *vw_sec, *w3, *wqls_sec, *brunt, *shoc_ql2, *shoc_cond, *shoc_evap;
 
   Real elapsed_s;
 
@@ -716,7 +716,7 @@ struct ShocMainData : public ShocTestGridDataBase {
                     {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh },
                      { &thv, &zt_grid, &pres, &pdel, &w_field, &inv_exner, &host_dse, &tke, &thetal,
                        &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac,
-                       &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 },
+                       &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2, &shoc_cond, &shoc_evap },
                      { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec,
                        &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 },
                      { &wtracer_sfc },
@@ -1065,10 +1065,11 @@ void diag_third_shoc_moments_host(Int shcol, Int nlev, Int nlevi, bool shoc_1p5t
                                Real* w3);
 void adv_sgs_tke_host(Int nlev, Int shcol, Real dtime, bool shoc_1p5tke, Real* shoc_mix, Real* wthv_sec, Real* sterm_zt,
                    Real* tk, Real* brunt, Real* tke, Real* a_diss);
-void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* qw, Real* w_field,
+void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real dtime, Real* thetal, Real* qw, Real* w_field,
                         Real* thl_sec, Real* qw_sec, Real* wthl_sec, Real* w_sec, Real* wqw_sec,
                         Real* qwthl_sec, Real* w3, Real* pres, Real* zt_grid, Real* zi_grid,
-                        Real* shoc_cldfrac, Real* shoc_ql, Real* wqls, Real* wthv_sec, Real* shoc_ql2);
+                        Real* shoc_cldfrac, Real* shoc_ql, Real* wqls, Real* wthv_sec, Real* shoc_ql2,
+                        Real* shoc_cond, Real* shoc_evap);
 void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_zi, Real *tmpi);
 void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
                               Real *pres, Real *brunt, Real *brunt_int);
@@ -1084,7 +1085,7 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
                 Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh,
                 Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec,
                 Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec,
-                Real* brunt, Real* shoc_ql2);
+                Real* brunt, Real* shoc_ql2, Real* shoc_cond, Real* shoc_evap);
 
 void pblintd_height_host(Int shcol, Int nlev, Int npbl, Real* z, Real* u, Real* v, Real* ustar, Real* thv, Real* thv_ref, Real* pblh, Real* rino, bool* check);
 

@@ -11,6 +11,7 @@ void Functions<Real,DefaultDevice>
   const Int&                  shcol,
   const Int&                  nlev,
   const Int&                  nlevi,
+  const Scalar&               dtime,
   const view_2d<const Spack>& thetal,
   const view_2d<const Spack>& qw,
   const view_2d<const Spack>& w_field,
@@ -29,7 +30,9 @@ void Functions<Real,DefaultDevice>
   const view_2d<Spack>&       shoc_ql,
   const view_2d<Spack>&       wqls,
   const view_2d<Spack>&       wthv_sec,
-  const view_2d<Spack>&       shoc_ql2)
+  const view_2d<Spack>&       shoc_ql2,
+  const view_2d<Spack>&       shoc_cond,
+  const view_2d<Spack>&       shoc_evap)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -41,7 +44,7 @@ void Functions<Real,DefaultDevice>
     auto workspace = workspace_mgr.get_workspace(team);
 
     shoc_assumed_pdf(
-      team, nlev, nlevi,
+      team, nlev, nlevi, dtime,
       ekat::subview(thetal, i),
       ekat::subview(qw, i),
       ekat::subview(w_field, i),
@@ -60,7 +63,9 @@ void Functions<Real,DefaultDevice>
       ekat::subview(shoc_ql, i),
       ekat::subview(wqls, i),
       ekat::subview(wthv_sec, i),
-      ekat::subview(shoc_ql2, i));
+      ekat::subview(shoc_ql2, i),
+      ekat::subview(shoc_cond, i),
+      ekat::subview(shoc_evap, i));
   });
 }
 

@@ -28,6 +28,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 5;
     static constexpr auto nlevi   = nlev + 1;
+    static constexpr Real dtime = 1.0;
 
     // Tests for the top level subroutine
     //   shoc_assumed_pdf
@@ -73,7 +74,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     }
 
     // Initialize data structure for bridging to F90
-    ShocAssumedPdfData SDS(shcol, nlev, nlevi);
+    ShocAssumedPdfData SDS(shcol, nlev, nlevi, dtime);
 
     // Load input data
     for(Int s = 0; s < shcol; ++s) {
@@ -396,11 +397,11 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     auto engine = Base::get_engine();
 
     ShocAssumedPdfData SDS_baseline[] = {
-      //              shcol, nlev, nlevi
-      ShocAssumedPdfData(10, 71, 72),
-      ShocAssumedPdfData(10, 12, 13),
-      ShocAssumedPdfData(7,  16, 17),
-      ShocAssumedPdfData(2, 7, 8),
+      //              shcol, nlev, nlevi, dtime
+      ShocAssumedPdfData(10, 71, 72, 1.0),
+      ShocAssumedPdfData(10, 12, 13, 1.0),
+      ShocAssumedPdfData(7,  16, 17, 1.0),
+      ShocAssumedPdfData(2, 7, 8, 1.0),
     };
 
     // Generate random input data

@@ -788,6 +788,7 @@ struct Functions
     const Int&                  shcol,
     const Int&                  nlev,
     const Int&                  nlevi,
+    const Scalar&               dtime,
     const view_2d<const Spack>& thetal,
     const view_2d<const Spack>& qw,
     const view_2d<const Spack>& w_field,
@@ -806,7 +807,9 @@ struct Functions
     const view_2d<Spack>&       shoc_ql,
     const view_2d<Spack>&       wqls,
     const view_2d<Spack>&       wthv_sec,
-    const view_2d<Spack>&       shoc_ql2);
+    const view_2d<Spack>&       shoc_ql2,
+    const view_2d<Spack>&       shoc_cond,
+    const view_2d<Spack>&       shoc_evap);
 #endif
 
   KOKKOS_INLINE_FUNCTION
@@ -1152,6 +1155,8 @@ struct Functions
     const view_2d<Spack>&       tkh,
     // Diagnostic Output Variables
     const view_2d<Spack>&       shoc_mix,
+    const view_2d<Spack>&       shoc_cond,
+    const view_2d<Spack>&       shoc_evap,
     const view_2d<Spack>&       w_sec,
     const view_2d<Spack>&       thl_sec,
     const view_2d<Spack>&       qw_sec,

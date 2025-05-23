@@ -202,7 +202,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
-    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.shoc_cond,&m_buffer.shoc_evap,&m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.shoc_cond, &m_buffer.shoc_evap, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.tabs, &m_buffer.dz_zt
 #endif
@@ -362,8 +362,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
   history_output.isotropy  = m_buffer.isotropy;
-  history_output.shoc_cond  = m_buffer.shoc_cond;
-  history_output.shoc_evap  = m_buffer.shoc_evap;
+  history_output.shoc_cond = m_buffer.shoc_cond;
+  history_output.shoc_evap = m_buffer.shoc_evap;
   history_output.w_sec     = get_field_out("w_variance").get_view<Spack**>();
   history_output.thl_sec   = m_buffer.thl_sec;
   history_output.qw_sec    = m_buffer.qw_sec;
