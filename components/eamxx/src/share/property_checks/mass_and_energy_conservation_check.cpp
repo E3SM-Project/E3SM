@@ -372,7 +372,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
     // Calculate total energy
     const auto new_energy_for_fixer = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
-    Kokkos::single(Kokkos::PerThread(team),[&]() {
+    Kokkos::single(Kokkos::PerTeam(team),[&]() {
       energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
       field_view_s1(i) = (current_energy(i)-new_energy_for_fixer-energy_change(i)) * area_view(i);
     });
@@ -388,7 +388,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
     //total energy needed for relative error
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int i = team.league_rank();
-      Kokkos::single(Kokkos::PerThread(team),[&]() {
+      Kokkos::single(Kokkos::PerTeam(team),[&]() {
         field_view_s1(i) = current_energy(i) * area_view(i);
       });
     });
@@ -431,7 +431,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
       //overwrite the "new" fields with relative change
 
-      Kokkos::single(Kokkos::PerThread(team),[&]() {
+      Kokkos::single(Kokkos::PerTeam(team),[&]() {
         field_view_s1(i) = (current_energy(i)-new_energy_for_fixer-energy_change(i))*area_view(i);
       });
     });
