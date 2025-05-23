@@ -81,14 +81,6 @@ module elm_varpar
   real(r8), parameter :: scalez  = 0.025_r8
   real(r8), parameter :: zecoeff = 0.50_r8
 
-  !   If soil layers are not explicitly provided in the surface file, ELM will assume that
-  ! the soil layers align with the original ELM settings, even if the parameters above
-  ! are updated. Therefore, changing the parameters below is _STRONGLY DISCOURAGED_.  If
-  ! the surface file soil layers are not the same as ELM, simply include variable ZSOI
-  ! in the surface file, and ELM will use that variable instead.
-  real(r8), parameter :: scalez_orig  = 0.025_r8
-  real(r8), parameter :: zecoeff_orig = 0.50_r8
-
   ! constants for decomposition cascade
 
   integer :: i_met_lit 

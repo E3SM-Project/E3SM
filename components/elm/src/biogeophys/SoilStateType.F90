@@ -11,7 +11,6 @@ module SoilStateType
   use ncdio_pio       , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
   use elm_varpar      , only : more_vertlayers, numpft, numrad
   use elm_varpar      , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
-  use elm_varpar      , only : scalez_orig, zecoeff_orig
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
   use elm_varcon      , only : zsoi, dzsoi, zisoi, spval, namet, grlnd
@@ -468,9 +467,9 @@ contains
     ! Try to read soil information from the file.
     call ncd_io(ncid=ncid, varname='ZSOI', flag='read', data=zsoifl, dim1name=grlnd, readvar=readvar)
     if (.not. readvar ) then
-       !    Variable ZSOI not found, use the original ELM parameters.
+       !    Variable ZSOI not found, use the ELM parameters.
        do j = 1, nlevsoifl
-          zsoifl(j) = scalez_orig*(exp(zecoeff_orig*(j-0.5_r8))-1._r8)    !node depths
+          zsoifl(j) = scalez*(exp(zecoeff*(j-0.5_r8))-1._r8)    !node depths
        end do
     end if
 
