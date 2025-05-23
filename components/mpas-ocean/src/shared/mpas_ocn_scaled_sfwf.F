@@ -388,7 +388,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_update_scaling_factor
+!  routine compute_scaling_factor
 !
 !> \brief  Update scaling factors for data freshwater fluxes 
 !> \author Shixuan Zhang 
@@ -399,7 +399,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_update_scaling_factor(domain,timeLevel)!{{{
+    subroutine compute_scaling_factor(domain,timeLevel)!{{{
 
         type (domain_type), intent(inout) :: domain
 
@@ -546,6 +546,6 @@ contains
 
         end if 
 
-    end subroutine ocn_update_scaling_factor!}}}
+    end subroutine compute_scaling_factor!}}}
 
 end module ocn_scaled_sfwf
