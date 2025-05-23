@@ -17,6 +17,8 @@ module CanopyFluxesMod
   use elm_varctl            , only : use_hydrstress
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
+  use elm_varcon            , only : mm_epsilon
+  use elm_varcon            , only : pa_to_kpa
   use pftvarcon             , only : crop, nfixer
   use decompMod             , only : bounds_type
   use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
@@ -318,6 +320,9 @@ contains
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
     integer, parameter :: below_canopy = 2         ! Below canopy
+
+    ! Lower bound for VPD (based on CLM)
+    real(r8), parameter :: vpd_min = 50._r8
     !------------------------------------------------------------------------------
 
     associate(                                                               &
@@ -863,7 +868,7 @@ contains
             ! Done each iteration to account for differences in eah, tv.
 
             svpts(p) = el(p)                         ! Pa
-            eah(p) = forc_pbot(t) * qaf(p) / 0.622_r8   ! Pa
+            eah(p) = forc_pbot(t) * qaf(p) / mm_epsilon   ! Pa
             rhaf(p) = eah(p)/svpts(p)
 
             ! variables for history fields
@@ -871,7 +876,7 @@ contains
             raw_above(p)  = raw(p,above_canopy)
             rah_below(p)  = rah(p,below_canopy)
             raw_below(p)  = raw(p,below_canopy)
-            vpd(p)        = max((svpts(p) - eah(p)), 50._r8) * 0.001_r8 ! kPa
+            vpd(p)        = max((svpts(p) - eah(p)), vpd_min) * pa_to_kpa ! kPa
          end do
 
          ! Modification for shrubs proposed by X.D.Z
