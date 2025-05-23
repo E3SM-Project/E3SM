@@ -1,11 +1,12 @@
 #ifndef SCREAM_POINT_GRID_HPP
 #define SCREAM_POINT_GRID_HPP
 
-#include <memory>
 #include "share/grid/abstract_grid.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_comm.hpp>
+
+#include <memory>
 
 namespace scream
 {

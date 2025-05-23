@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 #include <numeric>
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_header.hpp"
 #include "share/field/field.hpp"
@@ -11,9 +10,10 @@
 
 #include "share/grid/point_grid.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_pack_utils.hpp>
+#include <ekat_test_utils.hpp>
+#include <ekat_subview_utils.hpp>
 
 namespace {
 

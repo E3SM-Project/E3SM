@@ -1,10 +1,12 @@
 #ifndef EAMXX_MAM_DRY_DEPOSITION_FUNCTIONS_HPP
 #define EAMXX_MAM_DRY_DEPOSITION_FUNCTIONS_HPP
 
-#include <ekat/kokkos/ekat_subview_utils.hpp>
 #include <mam4xx/aero_config.hpp>
 #include <mam4xx/convproc.hpp>
 #include <mam4xx/mam4.hpp>
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 
@@ -35,11 +37,12 @@ void compute_tendencies(
     // work arrays
     MAMDryDep::view_2d rho_, MAMDryDep::view_4d vlc_dry_,
     MAMDryDep::view_3d vlc_trb_, MAMDryDep::view_4d vlc_grv_,
-    MAMDryDep::view_3d dqdt_tmp_, MAMDryDep::view_3d qtracers) {
+    MAMDryDep::view_3d dqdt_tmp_, MAMDryDep::view_3d qtracers)
+{
+  using TPF = ekat::TeamPolicyFactory<MAMDryDep::KT::ExeSpace>;
+
   static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
-  const auto policy =
-      ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
-          ncol, nlev);
+  const auto policy = TPF::get_default_team_policy(ncol, nlev);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(
@@ -142,9 +145,9 @@ void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
                               const int ncol, const int nlev,
                               // output
                               const mam_coupling::AerosolState dry_aero) {
-  const auto policy =
-      ekat::ExeSpaceUtils<MAMDryDep::KT::ExeSpace>::get_default_team_policy(
-          ncol, nlev);
+  using TPF = ekat::TeamPolicyFactory<MAMDryDep::KT::ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(ncol, nlev);
   static constexpr int nmodes = mam4::AeroConfig::num_modes();
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {

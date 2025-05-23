@@ -8,9 +8,6 @@
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <algorithm>
 #include <array>
@@ -175,7 +172,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : pblintd_init_pot_data_baseline) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -197,7 +194,7 @@ struct UnitWrap::UnitTest<D>::TestPblintdInitPot : public UnitWrap::UnitTest<D>:
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (auto& d : pblintd_init_pot_data_cxx) {
-        d.write(Base::m_fid);
+        d.write(Base::m_ofile);
       }
     }
   }

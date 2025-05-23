@@ -7,7 +7,7 @@
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 #include <algorithm>
 

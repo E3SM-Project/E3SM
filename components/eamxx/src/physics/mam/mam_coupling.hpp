@@ -1,7 +1,7 @@
 #ifndef MAM_COUPLING_HPP
 #define MAM_COUPLING_HPP
 
-#include <ekat/kokkos/ekat_subview_utils.hpp>
+#include <ekat_subview_utils.hpp>
 #include <mam4xx/conversions.hpp>
 #include <mam4xx/mam4.hpp>
 #include <share/atm_process/ATMBufferManager.hpp>

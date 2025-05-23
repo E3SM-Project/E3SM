@@ -1,7 +1,7 @@
 #ifndef SCREAM_TIMING_HPP
 #define SCREAM_TIMING_HPP
 
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_comm.hpp>
 
 #include <string>
 

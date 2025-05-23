@@ -6,7 +6,9 @@
 // For EKAT units package
 #include <physics/mam/physical_limits.hpp>
 
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_units.hpp>
+
 /*
 -----------------------------------------------------------------
 NOTES:
@@ -496,8 +498,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMAci::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of local derivied
   // quantities

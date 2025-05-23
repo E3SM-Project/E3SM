@@ -1,13 +1,11 @@
 #include "catch2/catch.hpp"
 
 #include "tms_unit_tests_common.hpp"
-
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "tms_functions.hpp"
 #include "tms_test_data.hpp"
+
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
 
 namespace scream {
 namespace tms {
@@ -54,7 +52,7 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Bas
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -81,7 +79,7 @@ struct UnitWrap::UnitTest<D>::TestComputeTMS : public UnitWrap::UnitTest<D>::Bas
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+        cxx_data[i].write(Base::m_ofile);
       }
     }
   } // run_bfb

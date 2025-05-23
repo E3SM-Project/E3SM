@@ -15,9 +15,9 @@
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
 
 extern "C" {
 // These are specific C/F calls for these tests (i.e., not part of eamxx_homme_interface.hpp)

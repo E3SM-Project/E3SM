@@ -2,8 +2,9 @@
 
 #include "physics/tms/tms_functions.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -67,6 +68,8 @@ void TurbulentMountainStress::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void TurbulentMountainStress::run_impl (const double /* dt */)
 {
+  using TPF = ekat::TeamPolicyFactory<TMSFunctions::KT::ExeSpace>;
+
   // Helper views
   const auto pseudo_density = get_field_in("pseudo_density").get_view<const Spack**>();
   const auto qv             = get_field_in("qv").get_view<const Spack**>();
@@ -91,7 +94,7 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
   const int nlevs = m_nlevs;
   const int nlev_packs = ekat::npack<Spack>(nlevs);
   // calculate_z_int contains a team-level parallel_scan, which requires a special policy
-  const auto scan_policy = ekat::ExeSpaceUtils<TMSFunctions::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const TMSFunctions::KT::MemberType& team) {
     const int i = team.league_rank();
 

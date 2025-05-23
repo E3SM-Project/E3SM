@@ -17,7 +17,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   # The comparison test. Expects baseline to exist. All thread configurations
   # will use the same baseline.
   CreateUnitTest(physics_saturation_run_and_cmp "physics_saturation_run_and_cmp.cpp"
-    LIBS physics_share
+    LIBS physics_share physics_test
     EXE_ARGS "${BASELINE_FILE_ARG}"
     LABELS "physics")
 

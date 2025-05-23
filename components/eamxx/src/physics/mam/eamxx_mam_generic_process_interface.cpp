@@ -2,6 +2,8 @@
 #include <physics/mam/physical_limits.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 // ================================================================
 //  Constructor
@@ -442,8 +444,8 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
                                       mam_coupling::AerosolState &dry_aero,
                                       mam_coupling::WetAtmosphere &wet_atm,
                                       mam_coupling::DryAtmosphere &dry_atm) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int i = team.league_rank();  // column index
@@ -464,8 +466,8 @@ void MAMGenericInterface::pre_process(mam_coupling::AerosolState &wet_aero,
 void MAMGenericInterface::post_process(mam_coupling::AerosolState &wet_aero,
                                        mam_coupling::AerosolState &dry_aero,
                                        mam_coupling::DryAtmosphere &dry_atm) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
   Kokkos::parallel_for(
       scan_policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int i = team.league_rank();  // column index

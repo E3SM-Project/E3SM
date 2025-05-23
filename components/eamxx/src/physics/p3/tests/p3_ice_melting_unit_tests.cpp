@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -60,7 +58,7 @@ void ice_melting_bfb() {
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      IceMelt[i].read(Base::m_fid);
+      IceMelt[i].read(Base::m_ifile);
     }
   }
 
@@ -109,7 +107,7 @@ void ice_melting_bfb() {
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      IceMelt_host(s).write(Base::m_fid);
+      IceMelt_host(s).write(Base::m_ofile);
     }
   }
 
