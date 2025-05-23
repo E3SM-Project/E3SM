@@ -167,14 +167,31 @@ contains
           !    Note that phys_timestep_init is called via atm_init for the
           !       current time step during start and restart,
           !       and also at the end of atm_run for the next time step
-          ! This means that the emissions are now set in the startup 01-01-00000 step
+          ! Note that any EHC co2 values set during init are not used, as they
+          !    reset during the run step
           !------------------------------------------------------------------------------------------
           if (iac_active) then
              ! cam tm clock should always match atm Eclock/sync clock during
              ! atm_import calls
-             if (mon == 1 .and. tod == 0) then
-                mon_sfc = 12
-                mon_air = 12
+             if (mon <= 0 .or. mon > 12) then
+                ! this shouldn't happen, but log this error
+                write(iulog,*) 'ERROR! atm_import: eam tm month <=0 or >12: ', mon
+             else if (mon == 1 .and. day == 1 .and. tod == 0) then
+                if (is_first_step()) then
+                   ! get this year's data because this timestep is run at the start of the year
+                   ! for the initial model start
+                   ! the actual month 12 data for the previous data are not available
+                   mon_sfc = 1
+                   mon_air = 1
+                else
+                   ! this timestep is usually run at the end of the year, so get the correct data
+                   mon_sfc = 12
+                   mon_air = 12
+                end if
+             else if (day == 1 .and. tod == 0) then
+                ! this is the last timestep of the previous month
+                mon_sfc = mon - 1
+                mon_air = mon - 1
              else
                 mon_sfc = mon
                 mon_air = mon
