@@ -187,7 +187,7 @@ contains
 #ifdef mpas_DEBUG
             call mpas_log_write('       Computing Scaling Factor For Water Fluxes')
 #endif
-            call ocn_update_scaling_factor(domain,timeLevelLocal)
+            call compute_scaling_factor(domain,timeLevelLocal)
             call mpas_reset_clock_alarm(domain % clock, alarmID, ierr=err_tmp)
        endif
 
