@@ -130,7 +130,7 @@ void AtmosphereProcess::run (const double dt) {
       // Print hash of INPUTS before run
       print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
                               m_start_of_step_ts,
-                              true, false, false);
+                              true, false, true);
 
     // Run derived class implementation
     run_impl(dt_sub);
@@ -139,7 +139,7 @@ void AtmosphereProcess::run (const double dt) {
       // Print hash of OUTPUTS/INTERNALS after run
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
                               m_end_of_step_ts,
-                              true, true, true);
+                              false, true, true);
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks

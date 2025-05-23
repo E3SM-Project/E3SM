@@ -79,6 +79,9 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   }
 
   m_ngas = m_gas_names.size();
+
+  // Determine rad timestep, specified as number of atm steps
+  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 }
 
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -198,7 +201,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
-  add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
   add_field<Computed>("cldmed"        , scalar2d, nondim, grid_name);
@@ -219,6 +221,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d, micron, grid_name);
   add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d, micron, grid_name);
 
+  // This field is needed for restart
+  Field rad_heating_pdel (FieldIdentifier("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name));
+  rad_heating_pdel.allocate_view();
+  add_internal_field(rad_heating_pdel);
+
   // Translation of variables from EAM
   // --------------------------------------------------------------
   // EAM name | EAMXX name       | Description
@@ -230,12 +237,24 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
+  if (m_rad_freq_in_steps>1) {
+    // We need to ensure that these fields are added to the RESTART group,
+    // since the cpl will need them at every step, and rrtmgp may not run
+    // the 1st step after restart
+    add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name, "RESTART");
+    add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name, "RESTART");
+    add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name, "RESTART");
+    add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name, "RESTART");
+    add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name, "RESTART");
+    add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name, "RESTART");
+  } else {
+    add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name);
+    add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name);
+    add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name);
+    add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name);
+    add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
+    add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
+  }
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -456,9 +475,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   using PC = scream::physics::Constants<Real>;
 
-  // Determine rad timestep, specified as number of atm steps
-  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
-
   // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
@@ -532,6 +548,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
     Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
   }
+
+  // Ensure rad_heating_pdel is recognized as initialized by the driver
+  auto& rad_heating = get_internal_field("rad_heating_pdel");
+  rad_heating.get_header().get_tracking().update_time_stamp(start_of_step_ts());
 }
 
 // =========================================================================================
@@ -597,7 +617,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_lw_clrsky_flux_dn = get_field_out("LW_clrsky_flux_dn").get_view<Real**>();
   auto d_lw_clnsky_flux_up = get_field_out("LW_clnsky_flux_up").get_view<Real**>();
   auto d_lw_clnsky_flux_dn = get_field_out("LW_clnsky_flux_dn").get_view<Real**>();
-  auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
+  auto d_rad_heating_pdel = get_internal_field("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
   auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
@@ -638,7 +658,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
-  auto ts = start_of_step_ts();
+  auto ts = end_of_step_ts();
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {

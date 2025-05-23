@@ -63,20 +63,23 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   ap_old.request_allocation(ap_new.get_largest_pack_size());
   sw_flux_up_old.allocate_view();
 
+  int rad_freq = ad_params.sublist("atmosphere_processes").sublist("rrtmgp").get<int>("rad_frequency");
   // Start stepping
   if (atm_comm.am_i_root()) {
     printf("Start time stepping loop...       [  0%%]\n");
   }
-  for (int i=0; i<nsteps; ++i) {
 
+  auto time = t0;
+  for (auto time=t0+dt; time.get_num_steps()<=nsteps; time+=dt) {
+    auto istep = time.get_num_steps();
     // Create a (deep) copy of fields we want to check before calling ad.run() so we can verify
     // that these fields do or do not change as we expect them to based on the rad frequency
     sw_flux_up_old.deep_copy(sw_flux_up);
 
     ad.run(dt);
     if (atm_comm.am_i_root()) {
-      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
-      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
+      std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << istep << " completed";
+      std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(istep)/nsteps << "%]\n";
     }
 
     // Test that in between rad steps, we maintain the same values of fluxes and heating rates
@@ -84,14 +87,11 @@ TEST_CASE("rrtmgp-stand-alone", "") {
     // the first two steps should look the same
     auto d_sw_flux_up_new = sw_flux_up.get_view<Real**,Host>();
     auto d_sw_flux_up_old = sw_flux_up_old.get_view<Real**,Host>();
-    if (i == 0) {
-        REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
-    } else if (i == 1) {
-        REQUIRE(views_are_equal(sw_flux_up_old, sw_flux_up));
-    } else if (i == 2) {
-        REQUIRE(views_are_equal(sw_flux_up_old, sw_flux_up));
-    } else if (i == 3) {
-        REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
+
+    if (istep==1 or istep%rad_freq==0) {
+      REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
+    } else {
+      REQUIRE(views_are_equal(sw_flux_up_old, sw_flux_up));
     }
   }
 
