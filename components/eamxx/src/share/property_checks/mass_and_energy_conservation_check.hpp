@@ -81,9 +81,9 @@ public:
 
   void global_fixer(const bool &);
 
-  Real get_echeck();
-  Real get_total_energy_before();
-  Real get_pb_fixer();
+  Real get_echeck() const;
+  Real get_total_energy_before() const;
+  Real get_pb_fixer() const;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
@@ -147,7 +147,6 @@ protected:
   view_1d<Real> m_current_energy;
   view_1d<Real> m_current_mass;
 
-  view_1d<Real> m_new_energy_for_fixer;
   view_1d<Real> m_energy_change;
 }; // class EnergyConservationCheck
 

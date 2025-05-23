@@ -37,7 +37,6 @@ MassAndEnergyConservationCheck (const ekat::Comm& comm,
   m_current_mass   = view_1d<Real> ("current_total_water",  m_num_cols);
   m_current_energy = view_1d<Real> ("current_total_energy", m_num_cols);
 
-  m_new_energy_for_fixer = view_1d<Real> ("new energy fixer", m_num_cols);
   m_energy_change = view_1d<Real> ("energy change fixer", m_num_cols);
 
   m_fields["pseudo_density"] = pseudo_density;
@@ -331,22 +330,28 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   auto area = m_grid->get_geometry_data("area").clone();
   auto area_view = area.get_view<const Real*>();
 
+  //reprosum vars
+  const Real* send;
+  Real recv;
+  Int nlocal = ncols;
+  Int ncount = 1;
+
+//unite 1st and 2nd ||4 and repro calls  
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
     // Calculate total gas mass (sum dp, no water loading)
     field_view_s1(i) = compute_gas_mass_on_column(team, nlevs, pseudo_density_i) * area_view(i);
   });
+  Kokkos::fence();
 
-  //reprosum vars
-  const Real* send;
-  Real recv;
-  Int nlocal = ncols;
-  Int ncount = 1;
   auto s1_host = field_version_s1.get_view<const Real*,Host>();
   send = s1_host.data();
 
+  field_version_s1.sync_to_host(); 
   eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+  field_version_s1.sync_to_dev();
+
   total_gas_mass_after = recv;
 
 //this ||4 needs to be 2 for-loops, with one summing each 4 cols first, serially
@@ -363,22 +368,34 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
     const auto qi_i             = ekat::subview(qi, i);
 
     // Calculate total energy
-    m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
+    const auto m_new_energy_for_fixer = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
-    m_energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
-    field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i)) * area_view(i);
+    Kokkos::single(Kokkos::PerThread(team),[&]() {
+      m_energy_change(i) = compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
+      field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer-m_energy_change(i)) * area_view(i);
+    });
   });
+  Kokkos::fence();
 
+  field_version_s1.sync_to_host(); 
   eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+  field_version_s1.sync_to_dev();
   pb_fixer = recv;
 
   if(print_debug_info) {
     //total energy needed for relative error
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int i = team.league_rank();
-      field_view_s1(i) = m_current_energy(i) * area_view(i);
+      Kokkos::single(Kokkos::PerThread(team),[&]() {
+        field_view_s1(i) = m_current_energy(i) * area_view(i);
+      });
     });
+    Kokkos::fence();
+
+    field_version_s1.sync_to_host(); 
     eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+    field_version_s1.sync_to_dev();
+
     total_energy_before = recv;
   }
 
@@ -408,14 +425,20 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
       const auto qi_i             = ekat::subview(qi, i);
 
       // Calculate total energy
-      m_new_energy_for_fixer(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
+      const auto m_new_energy_for_fixer = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
       //overwrite the "new" fields with relative change
-      field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer(i)-m_energy_change(i));
-      field_view_s1(i) *= area_view(i);
-    });
 
+      Kokkos::single(Kokkos::PerThread(team),[&]() {
+        field_view_s1(i) = (m_current_energy(i)-m_new_energy_for_fixer-m_energy_change(i))*area_view(i);
+      });
+    });
+    Kokkos::fence();
+
+    field_version_s1.sync_to_host(); 
     eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
+    field_version_s1.sync_to_dev();
+
     echeck = recv/total_energy_before;
   }
 
@@ -521,15 +544,15 @@ compute_energy_boundary_flux_on_column (const Real vapor_flux,
   return vapor_flux*(LatVap+LatIce) - (water_flux-ice_flux)*RHO_H2O*LatIce + heat_flux;
 }
 
-Real MassAndEnergyConservationCheck::get_echeck(){
+Real MassAndEnergyConservationCheck::get_echeck() const{
   return echeck;
 }
 
-Real MassAndEnergyConservationCheck::get_total_energy_before(){
+Real MassAndEnergyConservationCheck::get_total_energy_before() const{
   return total_energy_before;
 }
 
-Real MassAndEnergyConservationCheck::get_pb_fixer(){
+Real MassAndEnergyConservationCheck::get_pb_fixer() const{
   return pb_fixer;
 }
 
