@@ -77,6 +77,7 @@ struct UnitWrap {
 
     // Put struct decls here
     struct TestGwdComputeTendenciesFromStressDivergence;
+    struct TestGwProf;
   }; // UnitWrap
 };
 

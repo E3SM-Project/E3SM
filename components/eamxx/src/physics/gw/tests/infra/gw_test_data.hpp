@@ -50,7 +50,6 @@ struct GwInit : public PhysicsTestData {
   PTD_STD_DEF(GwInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
 };
 
-
 struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
   // Inputs
   Int ncol, ngwv;
@@ -91,9 +90,36 @@ struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwdComputeTendenciesFromStressDivergenceData, 5, ncol, ngwv, do_taper, dt, effgw);
 };
 
+struct GwProfData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real cpair;
+  Real *t, *pmid, *pint;
+  GwInit init;
+
+  // Outputs
+  Real *rhoi, *ti, *nm, *ni;
+
+  GwProfData(Int ncol_, Real cpair_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver},
+      {ncol_, init_.pver + 1}
+    },
+    {
+      {&t, &pmid, &nm},
+      {&pint, &rhoi, &ti, &ni}
+    }),
+    ncol(ncol_), cpair(cpair_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwProfData, 2, ncol, cpair);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
+void gw_prof(GwProfData& d);
+
 extern "C" { // _f function decls
 }
 

@@ -36,9 +36,9 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
     GwdComputeTendenciesFromStressDivergenceData baseline_data[] = {
       //                                        ncol, ngwv, do_taper,   dt, effgw, init
       GwdComputeTendenciesFromStressDivergenceData(2,   10,    false,  0.4,   0.3, init_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(3,   10,    false,  0.4,   0.3, init_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(4,   10,    true ,  0.4,   0.3, init_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(5,   10,    true ,  0.4,   0.3, init_data[0]),
+      GwdComputeTendenciesFromStressDivergenceData(3,   10,    false,  0.4,   0.3, init_data[1]),
+      GwdComputeTendenciesFromStressDivergenceData(4,   10,    true ,  0.4,   0.3, init_data[2]),
+      GwdComputeTendenciesFromStressDivergenceData(5,   10,    true ,  0.4,   0.3, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);

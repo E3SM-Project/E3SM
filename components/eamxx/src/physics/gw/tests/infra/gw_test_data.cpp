@@ -26,6 +26,7 @@ void gwd_compute_tendencies_from_stress_divergence_c(Int ncol, Int ngwv, bool do
 
 void gw_init_c(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orographic_only, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
 
+void gw_prof_c(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi, Real* ti, Real* nm, Real* ni);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -39,6 +40,14 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gwd_compute_tendencies_from_stress_divergence_c(d.ncol, d.ngwv, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_prof(GwProfData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_prof_c(d.ncol, d.cpair, d.t, d.pmid, d.pint, d.rhoi, d.ti, d.nm, d.ni);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
