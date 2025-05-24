@@ -47,6 +47,8 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& w_field,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& qw_sec,
+  const Scalar&                dtime,
+  const bool&                  extra_diags,
   const uview_1d<const Spack>& wthl_sec,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& wqw_sec,
@@ -56,6 +58,8 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
   const Workspace&             workspace,
+  const uview_1d<Spack>&       shoc_cond,
+  const uview_1d<Spack>&       shoc_evap,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   const uview_1d<Spack>&       wqls,
@@ -241,6 +245,13 @@ void Functions<S,D>::shoc_assumed_pdf(
       shoc_assumed_pdf_compute_cloud_liquid_variance(a, s1, ql1, C1, std_s1,
                                                      s2, ql2, C2, std_s2, shoc_ql(k),
                                                      shoc_ql2(k));
+
+      // Compute cond and evap tendencies
+      if (extra_diags) {
+        auto dum     = ekat::max(0, a * ql1 + (1 - a) * ql2);
+        shoc_cond(k) = ekat::max(0, (dum - shoc_ql(k)) / dtime);
+        shoc_evap(k) = ekat::max(0, (shoc_ql(k) - dum) / dtime);
+      }
 
       // Compute liquid water flux
       shoc_assumed_pdf_compute_liquid_water_flux(a, w1_1, w_first, ql1, w1_2, ql2, wqls(k));

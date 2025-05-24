@@ -94,6 +94,7 @@ struct Functions
    Scalar Ckh;
    Scalar Ckm;
    bool shoc_1p5tke;
+   bool extra_diags;
  };
 
   // This struct stores input views for shoc_main.
@@ -210,6 +211,10 @@ struct Functions
     view_2d<Spack>  brunt;
     // return to isotropic timescale [s]
     view_2d<Spack>  isotropy;
+    // shoc condensation kg/kg/s
+    view_2d<Spack>  shoc_cond;
+    // shoc evaporation kg/kg/s
+    view_2d<Spack>  shoc_evap;
   };
 
 #ifdef SCREAM_SHOC_SMALL_KERNELS
@@ -762,6 +767,8 @@ struct Functions
     const uview_1d<const Spack>& w_field,
     const uview_1d<const Spack>& thl_sec,
     const uview_1d<const Spack>& qw_sec,
+    const Scalar&                dtime,
+    const bool&                  extra_diags,
     const uview_1d<const Spack>& wthl_sec,
     const uview_1d<const Spack>& w_sec,
     const uview_1d<const Spack>& wqw_sec,
@@ -771,6 +778,8 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const Workspace&             workspace,
+    const uview_1d<Spack>&       shoc_cond,
+    const uview_1d<Spack>&       shoc_evap,
     const uview_1d<Spack>&       shoc_cldfrac,
     const uview_1d<Spack>&       shoc_ql,
     const uview_1d<Spack>&       wqls,
@@ -786,6 +795,8 @@ struct Functions
     const view_2d<const Spack>& w_field,
     const view_2d<const Spack>& thl_sec,
     const view_2d<const Spack>& qw_sec,
+    const Scalar&               dtime,
+    const bool&                 extra_diags,
     const view_2d<const Spack>& wthl_sec,
     const view_2d<const Spack>& w_sec,
     const view_2d<const Spack>& wqw_sec,
@@ -795,6 +806,8 @@ struct Functions
     const view_2d<const Spack>& zt_grid,
     const view_2d<const Spack>& zi_grid,
     const WorkspaceMgr&         workspace_mgr,
+    const view_2d<Spack>&       shoc_cond,
+    const view_2d<Spack>&       shoc_evap,
     const view_2d<Spack>&       shoc_cldfrac,
     const view_2d<Spack>&       shoc_ql,
     const view_2d<Spack>&       wqls,
@@ -1029,6 +1042,7 @@ struct Functions
     const Scalar&                Ckh,
     const Scalar&                Ckm,
     const bool&                  shoc_1p5tke,
+    const bool&                  extra_diags,
     // Input Variables
     const Scalar&                host_dx,
     const Scalar&                host_dy,
@@ -1067,6 +1081,8 @@ struct Functions
     const uview_1d<Spack>&       shoc_ql2,
     const uview_1d<Spack>&       tkh,
     // Diagnostic Output Variables
+    const uview_1d<Spack>&       shoc_cond,
+    const uview_1d<Spack>&       shoc_evap,
     const uview_1d<Spack>&       shoc_mix,
     const uview_1d<Spack>&       w_sec,
     const uview_1d<Spack>&       thl_sec,
@@ -1104,6 +1120,7 @@ struct Functions
     const Scalar&                Ckh,
     const Scalar&                Ckm,
     const bool&                  shoc_1p5tke,
+    const bool&                  extra_diags,
     // Input Variables
     const view_1d<const Scalar>& host_dx,
     const view_1d<const Scalar>& host_dy,
@@ -1142,6 +1159,8 @@ struct Functions
     const view_2d<Spack>&       shoc_ql2,
     const view_2d<Spack>&       tkh,
     // Diagnostic Output Variables
+    const view_2d<Spack>&       shoc_evap,
+    const view_2d<Spack>&       shoc_cond,
     const view_2d<Spack>&       shoc_mix,
     const view_2d<Spack>&       w_sec,
     const view_2d<Spack>&       thl_sec,

@@ -98,6 +98,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
     add_field<Computed>("brunt", scalar3d_mid, pow(s,-1), grid_name, ps);
     add_field<Computed>("shoc_mix", scalar3d_mid, m, grid_name, ps);
     add_field<Computed>("isotropy", scalar3d_mid, s, grid_name, ps);
+    add_field<Computed>("shoc_cond", scalar3d_mid, kg/kg/s, grid_name, ps);
+    add_field<Computed>("shoc_evap", scalar3d_mid, kg/kg/s, grid_name, ps);
 
     // Diagnostic output - interface grid
     add_field<Computed>("wthl_sec", scalar3d_int, K*(m/s), grid_name, ps);
@@ -198,7 +200,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 
   using spack_2d_view_t = decltype(m_buffer.z_mid);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
-    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
+    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt, &m_buffer.unused,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SHOC_SMALL_KERNELS
@@ -258,7 +260,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
-  runtime_options.shoc_1p5tke = m_params.get<bool>("shoc_1p5tke");
+  runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+  runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -360,6 +363,13 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
   history_output.isotropy  = m_buffer.isotropy;
+  if (m_params.get<bool>("extra_shoc_diags", false)) {
+    history_output.shoc_cond = get_field_out("shoc_cond").get_view<Spack**>();
+    history_output.shoc_evap = get_field_out("shoc_evap").get_view<Spack**>();
+  } else {
+    history_output.shoc_cond = m_buffer.unused;
+    history_output.shoc_evap = m_buffer.unused;
+  }
   history_output.w_sec     = get_field_out("w_variance").get_view<Spack**>();
   history_output.thl_sec   = m_buffer.thl_sec;
   history_output.qw_sec    = m_buffer.qw_sec;
