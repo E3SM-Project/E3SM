@@ -109,8 +109,6 @@ module ocn_comp_mct
 
    integer  :: nsend, nrecv
 
-   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
-
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
    type(seq_infodata_type), pointer :: infodata
@@ -228,7 +226,6 @@ contains
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     logical, pointer :: config_scale_dismf_by_removed_ice_runoff
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
-    character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
 
     ! ssh coupling interval initialization
     integer, pointer :: index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
@@ -312,8 +309,6 @@ contains
     ! Determine coupling type
     call seq_infodata_GetData(infodata, cpl_seq_option=cpl_seq_option)
 
-    ! Determine if ocn to glc thermal forcing coupling is on
-    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
 !-----------------------------------------------------------------------
 !
@@ -907,15 +902,10 @@ contains
        call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
     end if
 
-    call mpas_pool_get_config(domain % configs, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
-    if ( trim(config_glc_thermal_forcing_coupling_mode) == 'off' ) then
-       call seq_infodata_PutData(infodata, ocn_c2_glctf=.false.)
-    else if ( trim(config_glc_thermal_forcing_coupling_mode) == '2d' ) then
-       call seq_infodata_PutData(infodata, ocn_c2_glctf=.true.)
-    else
-       call mpas_log_write('ERROR: unknown config_glc_thermal_forcing_coupling_mode: ' // &
-               trim(config_glc_thermal_forcing_coupling_mode), MPAS_LOG_CRIT)
-    end if
+    ! initialize glc z-levels, if necessary
+    ! these are used for ocn-glc thermal forcing coupling
+    call init_glc_z_levels(domain, ierr_local)
+    ierr = ior(ierr, ierr_local)
 
 !-----------------------------------------------------------------------
 !
@@ -2360,9 +2350,6 @@ contains
         end if
         if ( iceRunoffFluxField % isActive ) then
            iceRunoffFlux(i) = x2o_o % rAttr(index_x2o_Foxx_rofi, n)
-           if(iceRunoffFlux(n) < 0.0_RKIND) then
-               call shr_sys_abort ('Error: incoming rofi_F is negative')
-           end if
            if (config_remove_ais_ice_runoff) then
               if (latCell(i) < -0.99483767345_RKIND) then ! 57S in radians
                  removedIceRunoffFlux(i) = iceRunoffFlux(i)
@@ -2880,10 +2867,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   integer :: i, n
+   integer :: i, n, iLevel
    integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
                        index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity, &
-                       index_avgZonalSSHGradient, index_avgMeridionalSSHGradient
+                       index_avgZonalSSHGradient, index_avgMeridionalSSHGradient, &
+                       nGlcZLevels
 
    type (block_type), pointer :: block_ptr
 
@@ -2917,12 +2905,13 @@ contains
                                                avgRemovedRiverRunoffFlux, &
                                                avgRemovedIceRunoffFlux, &
                                                avgLandIceHeatFlux, &
-                                               avgRemovedIceRunoffHeatFlux, &
-                                               avgThermalForcingAtCritDepth
+                                               avgRemovedIceRunoffHeatFlux
 
    real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
                                                  avgSSHGradient, avgOceanSurfacePhytoC, &
-                                                 avgOceanSurfaceDOC, layerThickness
+                                                 avgOceanSurfaceDOC, layerThickness, &
+                                                 avgThermalForcingAtZLevels, &
+                                                 avgThermalForcingAtZLevelsMask
 
    real (kind=RKIND) :: surfaceFreezingTemp
 
@@ -2941,6 +2930,8 @@ contains
 
    logical :: keepFrazil
 
+   logical :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+
 
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
@@ -2958,6 +2949,9 @@ contains
                                                 config_use_DMSTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
+
+   ! Determine if ocn to glc thermal forcing coupling is on
+   call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
 
    n = 0
    block_ptr => domain % blocklist
@@ -3004,8 +2998,10 @@ contains
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffFlux', avgRemovedIceRunoffFlux)
         call mpas_pool_get_array(forcingPool, 'avgRemovedIceRunoffHeatFlux', avgRemovedIceRunoffHeatFlux)
      endif
-     if (trim(config_glc_thermal_forcing_coupling_mode) == '2d') then
-        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtCritDepth', avgThermalForcingAtCritDepth)
+     if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevels', avgThermalForcingAtZLevels)
+        call mpas_pool_get_array(forcingPool, 'avgThermalForcingAtZLevelsMask', avgThermalForcingAtZLevelsMask)
+        call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
      endif
 
      ! BGC fields
@@ -3168,8 +3164,21 @@ contains
           o2x_o % rAttr(index_o2x_So_stv, n) = landIceTracerTransferVelocities(indexSaltTrans,i)
           o2x_o % rAttr(index_o2x_So_rhoeff, n) = 0.0_RKIND
        endif
-       if (trim(config_glc_thermal_forcing_coupling_mode) == '2d' .and. ocn_c2_glctf) then
-          o2x_o % rAttr(index_o2x_So_tf2d, n) = avgThermalForcingAtCritDepth(i)
+       if (trim(config_glc_thermal_forcing_coupling_mode) == '3d') then
+          do iLevel = 1, nGlcZLevels
+             if (avgThermalForcingAtZLevelsMask(ilevel, i) > 0.9_RKIND) then
+                ! Only use this time average if it is available almost all the time
+                ! Otherwise the time average is not representative.
+                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = avgThermalForcingAtZLevels(ilevel, i) / &
+                        avgThermalForcingAtZLevelsMask(ilevel, i)
+                ! Consider this ocean cell valid (no need to continue carrying the time averaging fraction)
+                o2x_o % rAttr(index_o2x_So_tf3d_mask(iLevel), n) = 1.0_RKIND
+             else
+                ! If we're not using this location, set value and mask to zero
+                o2x_o % rAttr(index_o2x_So_tf3d(iLevel), n) = 0.0_RKIND
+                o2x_o % rAttr(index_o2x_So_tf3d_mask(iLevel), n) = 0.0_RKIND
+             endif
+          enddo
        endif
 
 
@@ -3382,6 +3391,53 @@ contains
       ctime(7:8) = time(5:6)
 
    end subroutine datetime!}}}
+
+
+   subroutine init_glc_z_levels(domain, err)
+      use glc_zocnclass_mod
+
+      implicit none
+      type (domain_type), pointer, intent(inout) :: domain
+      integer, intent(out) :: err
+
+      ! local vars
+      type (block_type), pointer :: block_ptr
+      type (mpas_pool_type), pointer :: forcingPool
+      integer, pointer :: nGlcZLevels
+      real (kind=RKIND), dimension(:), pointer :: glcZLevels
+      integer :: cpl_num_zocn, iLev
+
+      err = 0
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_dimension(forcingPool, 'nGlcZLevels', nGlcZLevels)
+         if (nGlcZLevels > 0) then
+            call mpas_pool_get_array(forcingPool, 'glcZLevels', glcZLevels)
+
+            cpl_num_zocn = glc_get_num_zocn_classes()
+
+            ! check that the num z-levels in the coupler matches what MALI was told to use
+            if (nGlcZLevels /= cpl_num_zocn) then
+               call mpas_log_write("nGlcZLevels=$i does not match glc_get_num_zocn_classes=$i", &
+                                   MPAS_LOG_ERR, intArgs=(/nGlcZLevels, cpl_num_zocn/))
+               err = ior(err, 1)
+            endif
+
+            glcZLevels = glc_get_zlevels()
+
+            call mpas_log_write("Using $i levels for glcZLevels", intArgs=(/nGlcZLevels/))
+            do iLev = 1, nGlcZLevels
+               call mpas_log_write("-- z-level $i: $r", intArgs=(/iLev/), &
+                    realArgs=(/glcZLevels(iLev)/))
+            enddo
+         endif
+
+         block_ptr => block_ptr % next
+      end do
+   end subroutine init_glc_z_levels
+
 
 #ifdef HAVE_MOAB
 

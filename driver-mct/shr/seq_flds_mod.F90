@@ -293,6 +293,7 @@ contains
     use shr_string_mod, only : shr_string_listIntersect
     use shr_mpi_mod,    only : shr_mpi_bcast
     use glc_elevclass_mod, only : glc_elevclass_init
+    use glc_zocnclass_mod, only : glc_zocnclass_init
     use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -386,10 +387,11 @@ contains
     logical :: flds_polar
     logical :: flds_tf
     integer :: glc_nec
+    integer :: glc_nzoc
 
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
-         glc_nec, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
+         glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, rof_sed, &
          wav_ocn_coup
@@ -426,6 +428,7 @@ contains
        flds_polar = .false.
        flds_tf = .false.
        glc_nec   = 0
+       glc_nzoc  = 0
        ice_ncat  = 1
        seq_flds_i2o_per_cat = .false.
        nan_check_component_fields = .false.
@@ -462,6 +465,7 @@ contains
     call shr_mpi_bcast(flds_polar   , mpicom)
     call shr_mpi_bcast(flds_tf      , mpicom)
     call shr_mpi_bcast(glc_nec      , mpicom)
+    call shr_mpi_bcast(glc_nzoc     , mpicom)
     call shr_mpi_bcast(ice_ncat     , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
     call shr_mpi_bcast(nan_check_component_fields, mpicom)
@@ -475,6 +479,7 @@ contains
     call shr_mpi_bcast(wav_ocn_coup, mpicom)
 
     call glc_elevclass_init(glc_nec)
+    call glc_zocnclass_init(glc_nzoc)
 
     !---------------------------------------------------------------------------
     ! Read in namelists for user specified new fields
@@ -2996,18 +3001,33 @@ contains
        attname  = 'So_rhoeff'
        call metadata_set(attname, longname, stdname, units)
 
-       if (flds_tf) then
+       if ((flds_tf) .and. (glc_nzoc > 0)) then
+          ! glc fields with multiple ocn z classes: ocn->glc
+          !
+          ! Note that these fields are sent in multiple elevation classes from ocn->cpl
+          ! and cpl->ocn (which differs from glc_nec variables)
 
-          name = 'So_tf2d'
-          call seq_flds_add(o2x_states,trim(name))
-          call seq_flds_add(x2g_states,trim(name))
-          call seq_flds_add(x2g_tf_states_from_ocn,trim(name))
-          longname = 'ocean thermal forcing at predefined critical depth'
-          stdname  = 'ocean_thermal_forcing_at_critical_depth'
+          name = 'So_tf3d'
+          longname = 'ocean thermal forcing at z-level'
+          stdname  = 'ocean_thermal_forcing_at_z_level'
           units    = 'C'
           attname  = name
-          call metadata_set(attname, longname, stdname, units)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, o2x_states)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_states, &
+               additional_list = .true.)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_tf_states_from_ocn, &
+               additional_list = .true.)
 
+          name = 'So_tf3d_mask'
+          longname = 'mask of valid ocean thermal forcing at z-level'
+          stdname  = 'mask_ocean_thermal_forcing_at_z_level'
+          units    = 'none'
+          attname  = name
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, o2x_states)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_states, &
+               additional_list = .true.)
+          call set_glc_zocnclass_field(name, attname, longname, stdname, units, x2g_tf_states_from_ocn, &
+               additional_list = .true.)
        end if
 
        name = 'Fogx_qicelo'
@@ -4328,6 +4348,66 @@ contains
        end do
     end if
   end subroutine set_glc_elevclass_field
+
+  !===============================================================================
+
+  subroutine set_glc_zocnclass_field(name, attname, longname, stdname, units, fieldlist, &
+       additional_list)
+
+    ! Sets a coupling field for all ocn z classes (1:glc_nzoc)
+    !
+    ! Note that, if glc_nzoc = 0, then we don't create any coupling fields
+    !
+    ! Puts the coupling fields in the given fieldlist, and also does the appropriate
+    ! metadata_set calls.
+    !
+    ! additional_list should be .false. (or absent) the first time this is called for a
+    ! given set of coupling fields. However, if this same set of coupling fields is being
+    ! added to multiple field lists, then additional_list should be set to true for the
+    ! second and subsequent calls; in this case, the metadata_set calls are not done
+    ! (because they have already been done).
+    !
+    ! name, attname and longname give the base name of the field; the ocn z class
+    ! index will be appended as a suffix
+
+    ! !USES:
+    use glc_zocnclass_mod, only : glc_get_num_zocn_classes, glc_zocnclass_as_string
+
+    ! !INPUT/OUTPUT PARAMETERS:
+    character(len=*), intent(in) :: name     ! base field name to add to fieldlist
+    character(len=*), intent(in) :: attname  ! base field name for metadata
+    character(len=*), intent(in) :: longname ! base long name for metadata
+    character(len=*), intent(in) :: stdname  ! standard name for metadata
+    character(len=*), intent(in) :: units    ! units for metadata
+    character(len=*), intent(inout) :: fieldlist  ! field list into which the fields should be added
+
+    logical, intent(in), optional :: additional_list  ! whether this is an additional list for the same set of coupling fields (see above for details; defaults to false)
+
+    !EOP
+    integer            :: num
+    character(len= 16) :: cnum
+    logical :: l_additional_list  ! local version of the optional additional_list argument
+
+    l_additional_list = .false.
+    if (present(additional_list)) then
+       l_additional_list = additional_list
+    end if
+
+    if (glc_get_num_zocn_classes() > 0) then
+       do num = 1, glc_get_num_zocn_classes()
+          cnum = glc_zocnclass_as_string(num)
+
+          call seq_flds_add(fieldlist, trim(name) // trim(cnum))
+
+          if (.not. l_additional_list) then
+             call metadata_set(attname  = trim(attname) // trim(cnum), &
+                  longname = trim(longname) // ' of thermal forcing class ' // trim(cnum), &
+                  stdname  = stdname, &
+                  units    = units)
+          end if
+       end do
+    end if
+  end subroutine set_glc_zocnclass_field
 
   !===============================================================================
 

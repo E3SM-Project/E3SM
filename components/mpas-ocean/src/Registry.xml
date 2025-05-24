@@ -116,6 +116,9 @@
 		<dim name="nRemovedIceRunoffHistory" definition="namelist:config_ais_ice_runoff_history_days"
 			 description="The number of days stored in the history of removed ice runoff."
 		/>
+		<dim name="nGlcZLevels" definition="namelist:config_n_glc_z_levels"
+                        description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling"
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -822,13 +825,13 @@
 					description="The number of days over for which the history of removed AIS runoff is stored. The default is 731 days (2 years + 1 day)."
 					possible_values="Any positive integer"
 		/>
-		<nml_option name="config_glc_thermal_forcing_coupling_mode" type="character" default_value="off"
-					description="If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing.  '2d' means thermal forcing at a prescribed depth is passed to GLC.  That depth is controlled by 'config_2d_thermal_forcing_depth', and the resulting thermal forcing field is calculated in the field 'avgThermalForcingAtCritDepth'."
-					possible_values="'off', '2d'"
+		<nml_option name="config_n_glc_z_levels" type="integer" default_value="0"
+					description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling. This option is only intended to be used for ocean thermal forcing coupling in E3SM, in which case E3SM will set this option, define the values of ismip6shelfMelt_zOcean through the driver, and pass thermal forcing from the ocean model.  Note that the default value of zero will result in this dimension not being defined (unless overridden by the value in an input file)."
+					possible_values="Any positive integer or zero"
 		/>
-		<nml_option name="config_2d_thermal_forcing_depth" type="real" default_value="300" units="m"
-					description="Depth at which to pass 2d thermal forcing to the coupler for use in the GLC component.  Note that mapping files for this field must be created with a mask to exclude ocean grid cells shallower than this value and thus must be regenerated if this value is changed."
-					possible_values="any non-negative value"
+		<nml_option name="config_glc_thermal_forcing_coupling_mode" type="character" default_value="off"
+					description="If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing. '3d' means thermal forcing is passed at multiple z-levels."
+					possible_values="'off', '3d'"
 		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
@@ -1731,6 +1734,7 @@
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="dataSubglacialRunoffFluxPKG" description="This package includes variables required for prescribed subglacial runoff flux at the grounding line into the ocean."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
+		<package name="landIceThermalForcing3DPKG" description="This package includes varibles required for passing a 3D thermal forcing field interpolated to z-levels to glc."/>
 		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
@@ -4072,8 +4076,14 @@
 			description="The time-averaged effective ocean density within ice shelves based on Archimedes' principle."
 			packages="landIceCouplingPKG"
 		/>
-		<var name="avgThermalForcingAtCritDepth" type="real" dimensions="nCells Time" units="C"
-			description="The time-averaged thermal forcing at the predefined critical depth specified by config_2d_thermal_forcing_depth"
+		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C" packages="landIceThermalForcing3DPKG"
+			description="The time-averaged thermal forcing at predefined z-levels used for indirect OCN-GLC coupling in E3SM"
+		/>
+		<var name="avgThermalForcingAtZLevelsMask" type="real" dimensions="nGlcZLevels nCells Time" units="none" packages="landIceThermalForcing3DPKG"
+                        description="0/1 mask of valid locations for avgThermalForcingAtZLevels.  Type is real because this is time-averaged so can take on values between 0 and 1."
+		/>
+		<var name="glcZLevels" type="real" dimensions="nGlcZLevels" units="m" packages="landIceThermalForcing3DPKG"
+			description="Z-levels at which ocean properties should be evaluated for indirect OCN-GLC coupling. This array will generally be provided by the E3SM coupler. Vertical coordinate is positive-up."
 		/>
 		<!-- Input fields for data (prescribed) land-ice fluxes -->
 		<var name="dataLandIceFreshwaterFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
