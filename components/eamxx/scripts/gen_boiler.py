@@ -760,6 +760,8 @@ def parse_f90_args(line):
     [('elem', 'type::element_t', 'inout', (':',))]
     >>> parse_f90_args('character*(max_path_len), intent(out), optional ::  iopfile_out')
     [('iopfile_out', 'type::string', 'out', None)]
+    >>> parse_f90_args('real(r8), intent(out) :: nm(ncol,pver), ni(ncol,0:pver)')
+    [('nm', 'real', 'out', ('ncol', 'pver')), ('ni', 'real', 'out', ('ncol', '0:pver'))]
 
     """
     expect(line.count("::") == 1, f"Expected line format 'type-info :: names' for: {line}")
@@ -786,18 +788,19 @@ def parse_f90_args(line):
             dims = tuple(item.replace(" ", "") for item in dims_raw.split(","))
 
     names = []
+    all_dims = []
     for name_dim in names_dims:
         if "(" in name_dim:
             name, dims_raw = name_dim.split("(")
             dims_raw = dims_raw.rstrip(")").strip()
             dims_check = tuple(item.replace(" ", "") for item in dims_raw.split(","))
-            expect(dims is None or dims_check == dims, f"Inconsistent dimensions in line: {line}")
-            dims = dims_check
+            all_dims.append(dims_check)
             names.append(name.strip())
         else:
+            all_dims.append(dims)
             names.append(name_dim.strip())
 
-    return [(name, argtype, intent, dims) for name in names]
+    return [(name, argtype, intent, dims) for name, dims in zip(names, all_dims)]
 
 ###############################################################################
 def parse_origin(contents, subs):
@@ -2880,3 +2883,7 @@ template struct Functions<Real,DefaultDevice>;
         print("ALL_SUCCESS" if all_success else "THERE WERE FAILURES")
 
         return all_success
+
+if __name__ == "__main__":
+    import doctest
+    doctest.run_docstring_examples(parse_f90_args, globals())
