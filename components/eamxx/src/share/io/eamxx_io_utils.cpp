@@ -140,6 +140,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
   std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
   std::regex vert_contract ("([A-Za-z0-9_]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
+  std::regex zonal_avg (R"(([A-Za-z0-9_]+)_zonal_avg(_with_(\d+)_bins)?$)");
 
   std::string diag_name;
   std::smatch matches;
@@ -208,6 +209,19 @@ create_diagnostic (const std::string& diag_field_name,
     if (matches[3].matched) {
       // note that the 4th match is (dp|dz)_weighted, while the 5th is (dp|dz)
       params.set<std::string>("weighting_method", matches[5].str());
+    }
+  }
+  else if (std::regex_search(diag_field_name,matches,zonal_avg)) {
+    diag_name = "ZonalAvgDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    // The second match is optional
+    if (matches[2].matched) {
+      // note that the 3rd match is the number of bins
+      params.set<std::string>("number_of_zonal_bins", matches[3].str());
+    } else {
+      // set number_of_zonal_bins to default 180
+      params.set<std::string>("number_of_zonal_bins", "180");
     }
   }
   else
