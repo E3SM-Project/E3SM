@@ -1408,13 +1408,11 @@ contains
                                                OceanDensity
    real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
    integer, dimension(:,:), pointer :: orig3dOceanMask
-   real(kind=RKIND), pointer :: config_ice_density
    real(kind=RKIND), pointer :: config_invalid_value_TF
    real(kind=RKIND) :: fractionalMaskVal
 
     errorCode = 0
 
-    call mpas_pool_get_config(domain % configs, 'config_ice_density', config_ice_density)
     call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
 
     n = 0
@@ -1493,7 +1491,6 @@ contains
    type (block_type), pointer :: block
 
    real (kind=RKIND), pointer :: config_sea_level
-   real (kind=RKIND), pointer :: config_ice_density
    character(len=StrKIND), pointer :: config_basal_mass_bal_float
 
    type (mpas_pool_type), pointer :: meshPool
@@ -1508,10 +1505,9 @@ contains
    real (kind=RKIND), dimension(:), pointer :: thickness
    real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied
    real (kind=RKIND), dimension(:), pointer :: avgCalvingFlux
+   real (kind=RKIND), dimension(:), pointer :: avgFaceMeltFlux
+   real (kind=RKIND), dimension(:), pointer :: avgFloatingBMBFlux
    real (kind=RKIND), dimension(:,:), pointer :: temperature
-   real (kind=RKIND), dimension(:), pointer :: faceMeltingThickness
-   real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBalApplied
-   real (kind=RKIND), pointer :: deltat  !< time step (s)
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
 
@@ -1521,7 +1517,6 @@ contains
     block => domain % blocklist
 
     call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
-    call mpas_pool_get_config(domain % configs, 'config_ice_density', config_ice_density)
     call mpas_pool_get_config(domain % configs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
     do while (associated(block))
@@ -1534,16 +1529,15 @@ contains
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
          call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
 
-         call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
-         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
 
-         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied) 
-         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux) 
+         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
+         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
+         call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltFlux', avgFaceMeltFlux)
+         call mpas_pool_get_array(timeAveragingPool, 'avgFloatingBMBFlux', avgFloatingBMBFlux)
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
@@ -1556,13 +1550,11 @@ contains
             g2x_g % rAttr(index_g2x_Figg_rofi,n) = 0.0 ! placeholder
             ! Fogg_rofi
             g2x_g % rAttr(index_g2x_Fogg_rofi,n) = avgCalvingFlux(i) 
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + &
-                    faceMeltingThickness(i) * config_ice_density / deltat  ! units: kg/m2/s
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFaceMeltFlux(i)
             if (trim(config_basal_mass_bal_float) == 'ismip6') then
                ! if MALI is calculating ISMF, add that to rofl
                ! In some configurations, ISMF will be calculated in coupler or MPAS-Ocean
-               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + &
-                  floatingBasalMassBalApplied(i)  ! units: kg/m2/s
+               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFloatingBMBFlux(i)
             endif
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level

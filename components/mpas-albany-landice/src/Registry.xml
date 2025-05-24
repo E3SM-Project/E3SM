@@ -1490,6 +1490,9 @@ is the value of that variable from the *previous* time level!
                 <var name="avgFaceMeltFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="time averaged thickness of ice thickness lost from face melting (using faceMeltingThickness from 'geometry' pool)"
                 />
+                <var name="avgFloatingBMBFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time averaged floating basal mass balance"
+                />
                 <var name="avgBareIceAblation" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 
                      description="time averaged potential negative surface mass balance for melting of bare ice (using BareIceAblation from 'geometry' pool)"
                 />
