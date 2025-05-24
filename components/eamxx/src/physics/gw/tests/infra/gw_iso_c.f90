@@ -45,4 +45,17 @@ contains
 
     call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
   end subroutine gwd_compute_tendencies_from_stress_divergence_c
+
+  subroutine gw_prof_c(ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni) bind(C)
+    use gw_common, only : gw_prof, pver
+
+    integer(kind=c_int) , value, intent(in) :: ncol
+    real(kind=c_real) , value, intent(in) :: cpair
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: t, pmid
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver) :: pint
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: rhoi, ti, ni
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: nm
+
+    call gw_prof(ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni)
+  end subroutine gw_prof_c
 end module gw_iso_c
