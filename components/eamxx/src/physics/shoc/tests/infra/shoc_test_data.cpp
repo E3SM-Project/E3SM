@@ -1948,10 +1948,19 @@ void shoc_assumed_pdf_host(Int shcol, Int nlev, Int nlevi, Real* thetal, Real* q
     const auto wqls_s = ekat::subview(wqls_d, i);
     const auto wthv_sec_s = ekat::subview(wthv_sec_d, i);
     const auto shoc_ql2_s = ekat::subview(shoc_ql2_d, i);
+    // TODO: properly test additional diagnostics later
+    // TODO: since extra diags is false, shoc_cond and shoc_evap shouldn't be touched
+    const Real dtime = 1.0;
+    const bool extra_diags = false;
+    // TODO: HACK: just pretend they're the same as shoc_cld_s for now
+    const auto shoc_cond_s = shoc_cldfrac_s;
+    const auto shoc_evap_s = shoc_cldfrac_s;
 
-    SHF::shoc_assumed_pdf(team, nlev, nlevi, thetal_s, qw_s, w_field_s, thl_sec_s, qw_sec_s, wthl_sec_s, w_sec_s,
+    SHF::shoc_assumed_pdf(team, nlev, nlevi, thetal_s, qw_s, w_field_s, thl_sec_s, qw_sec_s, dtime, extra_diags,
+                          wthl_sec_s, w_sec_s,
                           wqw_sec_s, qwthl_sec_s, w3_s, pres_s, zt_grid_s, zi_grid_s,
                           workspace,
+                          shoc_cond_s, shoc_evap_s,
                           shoc_cldfrac_s, shoc_ql_s, wqls_s, wthv_sec_s, shoc_ql2_s);
   });
 
@@ -2361,10 +2370,15 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
                                          horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
                                          tk_d,         shoc_cldfrac_d, shoc_ql_d};
   SHF::SHOCOutput shoc_output{pblh_d, ustar_d, obklen_d, shoc_ql2_d, tkh_d};
+  // TODO: HACK: for now, pretend shoc_cond_d and shoc_evap_d are just isotropy_d
+  // TODO: this is ok for now as shoc_cond_d and shoc_evap_d aren't edited in testing
+  // TODO: because we are setting the extra_diags to false by default and above
+  auto shoc_cond_d = isotropy_d;
+  auto shoc_evap_d = isotropy_d;
   SHF::SHOCHistoryOutput shoc_history_output{shoc_mix_d,  w_sec_d,    thl_sec_d, qw_sec_d,
                                              qwthl_sec_d, wthl_sec_d, wqw_sec_d, wtke_sec_d,
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
-                                             brunt_d,     isotropy_d};
+                                             brunt_d,     isotropy_d, shoc_cond_d, shoc_evap_d};
   SHF::SHOCRuntime shoc_runtime_options{0.001,0.04,2.65,0.02,1.0,1.0,1.0,1.0,0.5,7.0,0.1,0.1};
 
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
