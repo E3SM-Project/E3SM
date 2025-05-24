@@ -4774,7 +4774,7 @@
       <map name="ATM2ROF_FMAPNAME_NONLINEAR">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_r05_trfvnp2.20250521.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_r05_trbilin.20250521.nc</map>
       <map name="LND2ROF_FMAPNAME">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_ne32x8x32v1pg2_to_r05_traave.20250521.nc</map>
-      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/EAIslandx8x32v1pg2/map_EAIsland_r05_to_ne32x8x32v1pg2_traave.placeholder.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r05/map_r05_to_EAIsland_ne32x8x32v1pg2_traave.20250524.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
