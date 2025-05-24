@@ -216,8 +216,31 @@ advance_iop_subsidence(const MemberType& team,
     });
     team.team_barrier();
 
-    a[0] = 0.0;
-    c[nlevs - 1] = 0.0;
+    // --- Top (k = 0) ---
+    {
+      const int k = 0;
+      const Real dp_val = s_ref_p_del(k) + 1e-4;
+      const Real omega_up = s_omega_int(k + 1);
+      const Real coeff_up = dt * omega_up / dp_val;
+
+      a[k] = 0.0;
+      b[k] = 1.0 + coeff_up;
+      c[k] = -coeff_up;
+      rhs[k] = s_field(k);
+    }
+
+    // --- Bottom (k = nlevs - 1) ---
+    {
+      const int k = nlevs - 1;
+      const Real dp_val = s_ref_p_del(k) + 1e-4;
+      const Real omega_dn = s_omega_int(k);
+      const Real coeff_dn = dt * omega_dn / dp_val;
+
+      a[k] = -coeff_dn;
+      b[k] = 1.0 + coeff_dn;
+      c[k] = 0.0;
+      rhs[k] = s_field(k);
+    }
 
     cp[0] = c[0] / b[0];
     dp[0] = rhs[0] / b[0];
@@ -243,16 +266,13 @@ advance_iop_subsidence(const MemberType& team,
   constexpr Real Rair  = C::Rair;
   constexpr Real Cpair = C::Cpair;
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
-    for (int i = 0; i < pack_size; ++i) {
-      const int idx = k * pack_size + i;
-      if (idx < nlevs) {
-        const Real omega_val = s_omega(idx);
-        const Real p_mid_val = s_ref_p_mid(idx);
-        const Real correction = 1.0 + (dt * Rair / Cpair) * omega_val / p_mid_val;
-        T(k)[i] *= correction;
-      }
-    }
+  // Compute updated temperature, horizontal winds, and tracers
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
+    auto range_pack = ekat::range<IntPack>(k*Pack::n);
+
+    // Before updating T, first scale using thermal
+    // expansion term due to LS vertical advection
+    T(k) *= 1 + (dt*Rair/Cpair)*omega(k)/ref_p_mid(k);
   });
 
   solve_field(T, s_T);
