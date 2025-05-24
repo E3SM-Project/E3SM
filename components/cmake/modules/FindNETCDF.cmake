@@ -44,11 +44,13 @@ endfunction()
 
 function(create_netcdf_target)
 
+  message("JGF ${NetCDF_C_PATH}")
+
   # Grab things from env
-  set(PNETCDF_PATH        $ENV{PNETCDF_PATH})
+  set(PNETCDF_PATH        ${PnetCDF_C_PATH})
   set(NETCDF_PATH         $ENV{NETCDF_PATH})
-  set(NETCDF_C_PATH       $ENV{NETCDF_C_PATH})
-  set(NETCDF_FORTRAN_PATH $ENV{NETCDF_FORTRAN_PATH})
+  set(NETCDF_C_PATH       ${NetCDF_C_PATH})
+  set(NETCDF_FORTRAN_PATH ${NetCDF_Fortran_PATH})
 
   # Pnetcdf is optional, and only if not running serial
   if (NOT MPILIB STREQUAL mpi-serial)
