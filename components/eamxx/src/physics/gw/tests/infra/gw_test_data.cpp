@@ -31,6 +31,8 @@ void gw_prof_c(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi
 void momentum_energy_conservation_c(Int ncol, Int* tend_level, Real dt, Real* taucd, Real* pint, Real* pdel, Real* u, Real* v, Real* dudt, Real* dvdt, Real* dsdt, Real* utgw, Real* vtgw, Real* ttgw);
 
 void gwd_compute_stress_profiles_and_diffusivities_c(Int ncol, Int ngwv, Int* src_level, Real* ubi, Real* c, Real* rhoi, Real* ni, Real* kvtt, Real* t, Real* ti, Real* piln, Real* tau);
+
+void gwd_project_tau_c(Int ncol, Int ngwv, Int* tend_level, Real* tau, Real* ubi, Real* c, Real* xv, Real* yv, Real* taucd);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -68,6 +70,14 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gwd_compute_stress_profiles_and_diffusivities_c(d.ncol, d.ngwv, d.src_level, d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln, d.tau);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gwd_project_tau(GwdProjectTauData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gwd_project_tau_c(d.ncol, d.ngwv, d.tend_level, d.tau, d.ubi, d.c, d.xv, d.yv, d.taucd);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

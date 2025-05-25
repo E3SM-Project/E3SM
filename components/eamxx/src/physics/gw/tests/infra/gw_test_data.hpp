@@ -180,13 +180,49 @@ struct GwdComputeStressProfilesAndDiffusivitiesData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwdComputeStressProfilesAndDiffusivitiesData, 2, ncol, ngwv);
 };
 
+struct GwdProjectTauData : public PhysicsTestData {
+  // Inputs
+  Int ncol, ngwv;
+  Int *tend_level;
+  Real *tau, *ubi, *c, *xv, *yv;
+  GwInit init;
+
+  // Outputs
+  Real *taucd;
+
+  GwdProjectTauData(Int ncol_, Int ngwv_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pgwv*2, init_.pver + 1},
+      {ncol_, init_.pver + 1},
+      {ncol_, init_.pgwv*2},
+      {ncol_},
+      {ncol_, init_.pver + 1, 4},
+      {ncol_}
+    },
+    {
+      {&tau},
+      {&ubi},
+      {&c},
+      {&xv, &yv},
+      {&taucd}
+    },
+    {
+      {&tend_level}
+    }),
+    ncol(ncol_), ngwv(ngwv_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwdProjectTauData, 2, ncol, ngwv);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
-
 void momentum_energy_conservation(MomentumEnergyConservationData& d);
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
+void gwd_project_tau(GwdProjectTauData& d);
+
 extern "C" { // _f function decls
 }
 
