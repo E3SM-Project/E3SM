@@ -35,7 +35,6 @@ module ocn_scaled_sfwf
 
     use ocn_constants, only: & 
         pi, &      
-        earthRadius, & 
         rho_fw, & 
         rho_sw, &
         ocn_ref_salinity
@@ -68,7 +67,7 @@ module ocn_scaled_sfwf
     logical :: scaledSFWFOn
     character (len=*), parameter :: alarmID = 'scaledSFWFUpdateAlarm'
 
-    real (kind=RKIND) :: earthArea ! surface area of earth in coupler
+    real (kind=RKIND) :: earthArea ! surface area of earth (m2)
 
     real(kind=RKIND) :: rhow, areaCellGlobal, volumeCellGlobal
 
@@ -96,6 +95,11 @@ contains
         ! Alarm variables
         type (mpas_Time_Type) :: alarmTime
         type (mpas_TimeInterval_type) :: alarmTimeStep
+
+        type (block_type), pointer :: block_ptr
+        type (mpas_pool_type), pointer :: meshPool
+
+        real (kind=RKIND), pointer :: sphere_radius
 
         integer :: err_tmp
 
@@ -133,12 +137,24 @@ contains
 
         call mpas_add_clock_alarm(domain % clock, alarmID, alarmTime + alarmTimeStep, &
                                   alarmTimeInterval=alarmTimeStep, ierr=err_tmp)
-                          
-        ! Compute Earth's surface area (used for normalizing fluxes)
-        earthArea = 4.0_RKIND * pi * earthRadius * earthRadius
-
         ! Density of sea water
         rhow = rho_sw
+
+        ! Compute Earth's surface area (used for normalizing fluxes)
+        if (config_precip_scaling_write_to_logfile) then
+           block_ptr => domain % blocklist
+           do while(associated(block_ptr))
+              call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+              ! Extract earth radius 
+              call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+
+              ! Compute Earth's surface area (used for normalizing fluxes)
+              earthArea = 4.0_RKIND * pi * sphere_radius * sphere_radius
+
+              block_ptr => block_ptr % next
+           end do
+        end if
 
     end subroutine ocn_scaled_sfwf_init!}}}
 

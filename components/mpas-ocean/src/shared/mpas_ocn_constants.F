@@ -50,7 +50,6 @@ module ocn_constants
       sound                 ,&! speed of sound (m/s)
       vonkar                ,&! von Karman constant
       emissivity            ,&!
-      earthRadius           ,&! radius of earth, m 
       stefan_boltzmann      ,&! W/m^2/K^4
       latent_heat_vapor     ,&! lat heat of vaporization (erg/g)
       latent_heat_vapor_mks ,&! lat heat of vaporization (J/kg)
@@ -129,7 +128,6 @@ contains
        sound     = 1.5e2_RKIND                ! speed of sound (m/s)
        vonkar    = 0.4_RKIND                  ! von Karman constant
        emissivity         = 1.0_RKIND         !
-       earthRadius        = 6.37122e6_RKIND   ! radius of earth ~ m
        stefan_boltzmann   = 567.0e-10_RKIND   !  W/m^2/K^4
        latent_heat_vapor_mks  = 2.5e6_RKIND   ! lat heat of vaporization (J/kg)
        latent_heat_fusion = 3.34e6_RKIND      ! lat heat of fusion (erg/kg)
@@ -178,7 +176,6 @@ contains
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
        molecular_weight_C     = SHR_CONST_MWC           ! molecular weight carbon
        molecular_weight_O2    = SHR_CONST_MWO           ! molecular weight oxygen
-       earthRadius            = SHR_CONST_REARTH        ! m
 #endif
 
 !#ifdef ZERO_SEA_ICE_REF_SAL
