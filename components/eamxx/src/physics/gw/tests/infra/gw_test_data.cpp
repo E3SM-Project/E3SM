@@ -27,6 +27,8 @@ void gwd_compute_tendencies_from_stress_divergence_c(Int ncol, Int ngwv, bool do
 void gw_init_c(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orographic_only, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
 
 void gw_prof_c(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi, Real* ti, Real* nm, Real* ni);
+
+void momentum_energy_conservation_c(Int ncol, Int* tend_level, Real dt, Real* taucd, Real* pint, Real* pdel, Real* u, Real* v, Real* dudt, Real* dvdt, Real* dsdt, Real* utgw, Real* vtgw, Real* ttgw);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -48,6 +50,14 @@ void gw_prof(GwProfData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_prof_c(d.ncol, d.cpair, d.t, d.pmid, d.pint, d.rhoi, d.ti, d.nm, d.ni);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void momentum_energy_conservation(MomentumEnergyConservationData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  momentum_energy_conservation_c(d.ncol, d.tend_level, d.dt, d.taucd, d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

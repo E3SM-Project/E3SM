@@ -115,11 +115,44 @@ struct GwProfData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwProfData, 2, ncol, cpair);
 };
 
+struct MomentumEnergyConservationData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Int *tend_level;
+  Real dt;
+  Real *taucd, *pint, *pdel, *u, *v;
+  GwInit init;
+
+  // Inputs/Outputs
+  Real *dudt, *dvdt, *dsdt, *utgw, *vtgw, *ttgw;
+
+  MomentumEnergyConservationData(Int ncol_, Real dt_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver + 1, 4},
+      {ncol_, init_.pver + 1},
+      {ncol_, init_.pver},
+      {ncol_}
+    },
+    {
+      {&taucd},
+      {&pint},
+      {&pdel, &u, &v, &utgw, &vtgw, &ttgw, &dudt, &dvdt, &dsdt}
+    },
+    {
+      {&tend_level}
+    }),
+    ncol(ncol_), dt(dt_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(MomentumEnergyConservationData, 2, ncol, dt);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
 
+void momentum_energy_conservation(MomentumEnergyConservationData& d);
 extern "C" { // _f function decls
 }
 

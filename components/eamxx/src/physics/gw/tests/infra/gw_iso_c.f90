@@ -58,4 +58,19 @@ contains
 
     call gw_prof(ncol, cpair, t, pmid, pint, rhoi, ti, nm, ni)
   end subroutine gw_prof_c
+
+  subroutine momentum_energy_conservation_c(ncol, tend_level, dt, taucd, pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw) bind(C)
+    use gw_common, only : momentum_energy_conservation, pver
+
+    integer(kind=c_int) , value, intent(in) :: ncol
+    integer(kind=c_int) , intent(in), dimension(ncol) :: tend_level
+    real(kind=c_real) , value, intent(in) :: dt
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver, 4) :: taucd
+    real(kind=c_real) , intent(in), dimension(ncol, pver+1) :: pint
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: pdel, u, v
+    real(kind=c_real) , intent(inout), dimension(ncol, pver) :: dudt, dvdt, dsdt
+    real(kind=c_real) , intent(inout), dimension(ncol, pver) :: utgw, vtgw, ttgw
+
+    call momentum_energy_conservation(ncol, tend_level, dt, taucd, pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
+  end subroutine momentum_energy_conservation_c
 end module gw_iso_c
