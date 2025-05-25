@@ -33,6 +33,8 @@ void momentum_energy_conservation_c(Int ncol, Int* tend_level, Real dt, Real* ta
 void gwd_compute_stress_profiles_and_diffusivities_c(Int ncol, Int ngwv, Int* src_level, Real* ubi, Real* c, Real* rhoi, Real* ni, Real* kvtt, Real* t, Real* ti, Real* piln, Real* tau);
 
 void gwd_project_tau_c(Int ncol, Int ngwv, Int* tend_level, Real* tau, Real* ubi, Real* c, Real* xv, Real* yv, Real* taucd);
+
+void gwd_precalc_rhoi_c(Int pcnst, Int ncol, Int ngwv, Real dt, Int* tend_level, Real* pmid, Real* pint, Real* t, Real* gwut, Real* ubm, Real* nm, Real* rdpm, Real* c, Real* q, Real* dse, Real* egwdffi, Real* qtgw, Real* dttdf, Real* dttke, Real* ttgw);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -78,6 +80,14 @@ void gwd_project_tau(GwdProjectTauData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gwd_project_tau_c(d.ncol, d.ngwv, d.tend_level, d.tau, d.ubi, d.c, d.xv, d.yv, d.taucd);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gwd_precalc_rhoi_c(d.pcnst, d.ncol, d.ngwv, d.dt, d.tend_level, d.pmid, d.pint, d.t, d.gwut, d.ubm, d.nm, d.rdpm, d.c, d.q, d.dse, d.egwdffi, d.qtgw, d.dttdf, d.dttke, d.ttgw);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

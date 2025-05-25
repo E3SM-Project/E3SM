@@ -165,6 +165,32 @@ struct Functions
     const uview_1d<const Spack>& yv,
     // Outputs
     const uview_1d<Spack>& taucd);
+
+  KOKKOS_FUNCTION
+  static void gwd_precalc_rhoi(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const Spack& dt,
+    const uview_1d<const Int>& tend_level,
+    const uview_1d<const Spack>& pmid,
+    const uview_1d<const Spack>& pint,
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& gwut,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Spack>& nm,
+    const uview_1d<const Spack>& rdpm,
+    const uview_1d<const Spack>& c,
+    const uview_1d<const Spack>& q,
+    const uview_1d<const Spack>& dse,
+    // Outputs
+    const uview_1d<Spack>& egwdffi,
+    const uview_1d<Spack>& qtgw,
+    const uview_1d<Spack>& dttdf,
+    const uview_1d<Spack>& dttke,
+    const uview_1d<Spack>& ttgw);
 }; // struct Functions
 
 } // namespace gw
@@ -179,5 +205,6 @@ struct Functions
 # include "impl/gw_momentum_energy_conservation_impl.hpp"
 # include "impl/gw_gwd_compute_stress_profiles_and_diffusivities_impl.hpp"
 # include "impl/gw_gwd_project_tau_impl.hpp"
+# include "impl/gw_gwd_precalc_rhoi_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
