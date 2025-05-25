@@ -96,11 +96,6 @@ contains
         type (mpas_Time_Type) :: alarmTime
         type (mpas_TimeInterval_type) :: alarmTimeStep
 
-        type (block_type), pointer :: block_ptr
-        type (mpas_pool_type), pointer :: meshPool
-
-        real (kind=RKIND), pointer :: sphere_radius
-
         integer :: err_tmp
 
         character(len=19) :: timeString
@@ -141,20 +136,8 @@ contains
         rhow = rho_sw
 
         ! Compute Earth's surface area (used for normalizing fluxes)
-        if (config_precip_scaling_write_to_logfile) then
-           block_ptr => domain % blocklist
-           do while(associated(block_ptr))
-              call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        earthArea = 4.0_RKIND * pi * sphereRadius * sphereRadius
 
-              ! Extract earth radius 
-              call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
-
-              ! Compute Earth's surface area (used for normalizing fluxes)
-              earthArea = 4.0_RKIND * pi * sphere_radius * sphere_radius
-
-              block_ptr => block_ptr % next
-           end do
-        end if
 
     end subroutine ocn_scaled_sfwf_init!}}}
 
