@@ -130,6 +130,25 @@ struct Functions
     const uview_1d<Spack>& utgw,
     const uview_1d<Spack>& vtgw,
     const uview_1d<Spack>& ttgw);
+
+  KOKKOS_FUNCTION
+  static void gwd_compute_stress_profiles_and_diffusivities(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const uview_1d<const Int>& src_level,
+    const uview_1d<const Spack>& ubi,
+    const uview_1d<const Spack>& c,
+    const uview_1d<const Spack>& rhoi,
+    const uview_1d<const Spack>& ni,
+    const uview_1d<const Spack>& kvtt,
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& ti,
+    const uview_1d<const Spack>& piln,
+    // Inputs/Outputs
+    const uview_1d<Spack>& tau);
 }; // struct Functions
 
 } // namespace gw
@@ -142,5 +161,6 @@ struct Functions
 # include "impl/gw_gwd_compute_tendencies_from_stress_divergence_impl.hpp"
 # include "impl/gw_gw_prof_impl.hpp"
 # include "impl/gw_momentum_energy_conservation_impl.hpp"
+# include "impl/gw_gwd_compute_stress_profiles_and_diffusivities_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

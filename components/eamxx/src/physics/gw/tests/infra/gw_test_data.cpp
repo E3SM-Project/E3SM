@@ -29,6 +29,8 @@ void gw_init_c(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orograp
 void gw_prof_c(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi, Real* ti, Real* nm, Real* ni);
 
 void momentum_energy_conservation_c(Int ncol, Int* tend_level, Real dt, Real* taucd, Real* pint, Real* pdel, Real* u, Real* v, Real* dudt, Real* dvdt, Real* dsdt, Real* utgw, Real* vtgw, Real* ttgw);
+
+void gwd_compute_stress_profiles_and_diffusivities_c(Int ncol, Int ngwv, Int* src_level, Real* ubi, Real* c, Real* rhoi, Real* ni, Real* kvtt, Real* t, Real* ti, Real* piln, Real* tau);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -58,6 +60,14 @@ void momentum_energy_conservation(MomentumEnergyConservationData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   momentum_energy_conservation_c(d.ncol, d.tend_level, d.dt, d.taucd, d.pint, d.pdel, d.u, d.v, d.dudt, d.dvdt, d.dsdt, d.utgw, d.vtgw, d.ttgw);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gwd_compute_stress_profiles_and_diffusivities_c(d.ncol, d.ngwv, d.src_level, d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln, d.tau);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

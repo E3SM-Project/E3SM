@@ -79,6 +79,7 @@ struct UnitWrap {
     struct TestGwdComputeTendenciesFromStressDivergence;
     struct TestGwProf;
     struct TestMomentumEnergyConservation;
+    struct TestGwdComputeStressProfilesAndDiffusivities;
   }; // UnitWrap
 };
 
