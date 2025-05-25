@@ -80,6 +80,7 @@ struct UnitWrap {
     struct TestGwProf;
     struct TestMomentumEnergyConservation;
     struct TestGwdComputeStressProfilesAndDiffusivities;
+    struct TestGwdProjectTau;
   }; // UnitWrap
 };
 

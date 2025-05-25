@@ -149,6 +149,22 @@ struct Functions
     const uview_1d<const Spack>& piln,
     // Inputs/Outputs
     const uview_1d<Spack>& tau);
+
+  KOKKOS_FUNCTION
+  static void gwd_project_tau(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const uview_1d<const Int>& tend_level,
+    const uview_1d<const Spack>& tau,
+    const uview_1d<const Spack>& ubi,
+    const uview_1d<const Spack>& c,
+    const uview_1d<const Spack>& xv,
+    const uview_1d<const Spack>& yv,
+    // Outputs
+    const uview_1d<Spack>& taucd);
 }; // struct Functions
 
 } // namespace gw
@@ -162,5 +178,6 @@ struct Functions
 # include "impl/gw_gw_prof_impl.hpp"
 # include "impl/gw_momentum_energy_conservation_impl.hpp"
 # include "impl/gw_gwd_compute_stress_profiles_and_diffusivities_impl.hpp"
+# include "impl/gw_gwd_project_tau_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

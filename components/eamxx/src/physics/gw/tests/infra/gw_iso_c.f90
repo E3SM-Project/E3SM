@@ -86,4 +86,18 @@ contains
 
     call gwd_compute_stress_profiles_and_diffusivities(ncol, ngwv, src_level, ubi, c, rhoi, ni, kvtt, t, ti, piln, tau)
   end subroutine gwd_compute_stress_profiles_and_diffusivities_c
+
+  subroutine gwd_project_tau_c(ncol, ngwv, tend_level, tau, ubi, c, xv, yv, taucd) bind(C)
+    use gw_common, only : gwd_project_tau, pver, pgwv
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv
+    integer(kind=c_int) , intent(in), dimension(ncol) :: tend_level
+    real(kind=c_real) , intent(in), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver) :: ubi
+    real(kind=c_real) , intent(in), dimension(ncol, -pgwv:pgwv) :: c
+    real(kind=c_real) , intent(in), dimension(ncol) :: xv, yv
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver, 4) :: taucd
+
+    call gwd_project_tau(ncol, ngwv, tend_level, tau, ubi, c, xv, yv, taucd)
+  end subroutine gwd_project_tau_c
 end module gw_iso_c
