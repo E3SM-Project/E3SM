@@ -15,6 +15,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
   list(APPEND GW_SRCS
     eti/gw_gwd_compute_tendencies_from_stress_divergence.cpp
     eti/gw_gw_prof.cpp
+    eti/gw_momentum_energy_conservation.cpp
   ) # GW ETI SRCS
 endif()
 
