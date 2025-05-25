@@ -100,4 +100,22 @@ contains
 
     call gwd_project_tau(ncol, ngwv, tend_level, tau, ubi, c, xv, yv, taucd)
   end subroutine gwd_project_tau_c
+
+  subroutine gwd_precalc_rhoi_c(pcnst, ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse, egwdffi, qtgw, dttdf, dttke, ttgw) bind(C)
+    use gw_common, only : gwd_precalc_rhoi, pver, pgwv
+
+    integer(kind=c_int) , value, intent(in) :: pcnst, ncol, ngwv
+    real(kind=c_real) , value, intent(in) :: dt
+    integer(kind=c_int) , intent(in), dimension(ncol) :: tend_level
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: pmid, t, ubm, nm, rdpm, dse
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver) :: pint
+    real(kind=c_real) , intent(in), dimension(ncol, pver, -ngwv:ngwv) :: gwut
+    real(kind=c_real) , intent(in), dimension(ncol, -pgwv:pgwv) :: c
+    real(kind=c_real) , intent(in), dimension(ncol, pver, pcnst) :: q
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: egwdffi
+    real(kind=c_real) , intent(out), dimension(ncol, pver, pcnst) :: qtgw
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: dttdf, dttke, ttgw
+
+    call gwd_precalc_rhoi(ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse, egwdffi, qtgw, dttdf, dttke, ttgw)
+  end subroutine gwd_precalc_rhoi_c
 end module gw_iso_c

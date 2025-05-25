@@ -8,6 +8,7 @@ set(GW_TESTS_SRCS
     gw_momentum_energy_conservation_tests.cpp
     gw_gwd_compute_stress_profiles_and_diffusivities_tests.cpp
     gw_gwd_project_tau_tests.cpp
+    gw_gwd_precalc_rhoi_tests.cpp
 ) # GW_TESTS_SRCS
 
 # All tests should understand the same baseline args
