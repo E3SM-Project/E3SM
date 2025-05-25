@@ -73,4 +73,17 @@ contains
 
     call momentum_energy_conservation(ncol, tend_level, dt, taucd, pint, pdel, u, v, dudt, dvdt, dsdt, utgw, vtgw, ttgw)
   end subroutine momentum_energy_conservation_c
+
+  subroutine gwd_compute_stress_profiles_and_diffusivities_c(ncol, ngwv, src_level, ubi, c, rhoi, ni, kvtt, t, ti, piln, tau) bind(C)
+    use gw_common, only : gwd_compute_stress_profiles_and_diffusivities, pver, pgwv
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv
+    integer(kind=c_int) , intent(in), dimension(ncol) :: src_level
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver) :: ubi, rhoi, ni, kvtt, ti, piln
+    real(kind=c_real) , intent(in), dimension(ncol, -pgwv:pgwv) :: c
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: t
+    real(kind=c_real) , intent(inout), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+
+    call gwd_compute_stress_profiles_and_diffusivities(ncol, ngwv, src_level, ubi, c, rhoi, ni, kvtt, t, ti, piln, tau)
+  end subroutine gwd_compute_stress_profiles_and_diffusivities_c
 end module gw_iso_c

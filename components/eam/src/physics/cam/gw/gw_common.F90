@@ -28,6 +28,9 @@ public :: gravit
 public :: rair
 public :: gwd_compute_tendencies_from_stress_divergence
 
+! These only need to be public for unit testing
+public :: gwd_compute_stress_profiles_and_diffusivities
+
 ! This flag preserves answers for vanilla CAM by making a few changes (e.g.
 ! order of operations) when only orographic waves are on.
 logical(btype), public :: orographic_only = .false.
