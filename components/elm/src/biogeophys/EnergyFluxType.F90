@@ -308,7 +308,7 @@ contains
          ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
 
     this%btran_min_patch(begp:endp) = spval
-    call hist_addfld1d (fname='BTRANMN', units='unitless',  &
+    call hist_addfld1d (fname='BTRAN_MIN', units='unitless',  &
          avgflag='A', long_name='daily minimum of transpiration beta factor', &
          ptr_patch=this%btran_min_patch, l2g_scale_type='veg')
 
@@ -448,7 +448,7 @@ contains
 
     dtime = get_step_size_real()
 
-    call init_accum_field(name='BTRANAV', units='-', &
+    call init_accum_field(name='BTRAN_AVG', units='-', &
          desc='average over an hour of btran', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
@@ -496,6 +496,10 @@ contains
   !-----------------------------------------------------------------------
   subroutine UpdateAccVars (this, bounds)
     !
+    ! Original source of this sub-routine:
+    ! https://github.com/ESCOMP/CTSM
+    !
+    !
     ! USES
     use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field
@@ -534,19 +538,23 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
-    ! Accumulate and extract BTRANAV - hourly average btran
+    ! Accumulate and extract BTRAN_AVE - hourly average btran
     ! Used to compute minimum of hourly averaged btran
     ! over a day. Note that "spval" is returned by the call to
     ! accext if the time step does not correspond to the end of an
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
 
-    call update_accum_field  ('BTRANAV', this%btran_patch, nstep)
-    call extract_accum_field ('BTRANAV', rbufslp, nstep)
+    call update_accum_field  ('BTRAN_AVE', this%btran_patch, nstep)
+    call extract_accum_field ('BTRAN_AVE', rbufslp, nstep)
     end_cd = is_end_curr_day()
     do p = begp,endp
        if (rbufslp(p) /= spval) then
-          this%btran_min_inst_patch(p) = min(rbufslp(p), this%btran_min_inst_patch(p))
+          if (this%btran_min_inst_patch(p) == spval) then
+             this%btran_min_inst_patch(p) = rbufslp(p)
+          else
+             this%btran_min_inst_patch(p) = min(rbufslp(p), this%btran_min_inst_patch(p))
+          end if
        endif
        if (end_cd) then
           this%btran_min_patch(p) = this%btran_min_inst_patch(p)
