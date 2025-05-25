@@ -308,7 +308,7 @@ contains
          ptr_patch=this%btran_patch, set_lake=spval, set_urb=spval)
 
     this%btran_min_patch(begp:endp) = spval
-    call hist_addfld1d (fname='BTRAN_MIN', units='unitless',  &
+    call hist_addfld1d (fname='BTRAN_DAILY_MIN', units='unitless',  &
          avgflag='A', long_name='daily minimum of transpiration beta factor', &
          ptr_patch=this%btran_min_patch, l2g_scale_type='veg')
 
@@ -448,7 +448,7 @@ contains
 
     dtime = get_step_size_real()
 
-    call init_accum_field(name='BTRAN_AVG', units='-', &
+    call init_accum_field(name='BTRAN_HRLY_AVG', units='-', &
          desc='average over an hour of btran', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
@@ -538,15 +538,15 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
-    ! Accumulate and extract BTRAN_AVE - hourly average btran
+    ! Accumulate and extract BTRAN_HRLY_AVG - hourly average btran
     ! Used to compute minimum of hourly averaged btran
     ! over a day. Note that "spval" is returned by the call to
     ! accext if the time step does not correspond to the end of an
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
 
-    call update_accum_field  ('BTRAN_AVE', this%btran_patch, nstep)
-    call extract_accum_field ('BTRAN_AVE', rbufslp, nstep)
+    call update_accum_field  ('BTRAN_HRLY_AVG', this%btran_patch, nstep)
+    call extract_accum_field ('BTRAN_HRLY_AVG', rbufslp, nstep)
     end_cd = is_end_curr_day()
     do p = begp,endp
        if (rbufslp(p) /= spval) then
