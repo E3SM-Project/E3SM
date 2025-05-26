@@ -448,7 +448,7 @@ contains
 
     dtime = get_step_size_real()
 
-    call init_accum_field(name='BTRAN_HRLY_AVG', units='-', &
+    call init_accum_field(name='BTRANAV', units='-', &
          desc='average over an hour of btran', accum_type='timeavg', accum_period=nint(3600._r8/dtime), &
          subgrid_type='pft', numlev=1, init_value=0._r8)
 
@@ -545,8 +545,8 @@ contains
     ! accumulation interval. First, initialize the necessary values for
     ! an initial run at the first time step the accumulator is called
 
-    call update_accum_field  ('BTRAN_HRLY_AVG', this%btran_patch, nstep)
-    call extract_accum_field ('BTRAN_HRLY_AVG', rbufslp, nstep)
+    call update_accum_field  ('BTRANAV', this%btran_patch, nstep)
+    call extract_accum_field ('BTRANAV', rbufslp, nstep)
     end_cd = is_end_curr_day()
     do p = begp,endp
        if (rbufslp(p) /= spval) then
