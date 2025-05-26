@@ -124,6 +124,9 @@ struct TracerTimeSlice {
   int time_index;
 };
 
+// Converts raw YYYYMMDD date integers into sorted TimeStamp-index pairs.
+// Assumes yearly periodicity for now.
+// NOTE: Consider adding support for transient data. 
 struct TracerTimeDatabase {
   std::vector<TracerTimeSlice> slices;
   scream::util::TimeLine timeline = scream::util::TimeLine::YearlyPeriodic;
@@ -145,7 +148,8 @@ struct TracerTimeDatabase {
   int get_next_idx(int idx) const {
     return (idx + 1) % slices.size();
   }
-
+  
+  // Finds the interval [t_i, t_{i+1}) that contains ts. Assumes cyclic behavior.
   int find_interval(const util::TimeStamp& ts) const {
     EKAT_REQUIRE_MSG(size() >= 2, "Time database has fewer than 2 time slices.");
 
@@ -362,6 +366,7 @@ inline void init_monthly_time_offset(TracerData& tracer_data,
   tracer_data.offset_time_index_ = cyclical_ymd_index;
 }
 
+// Builds internal timeline database and computes intervals.
 inline void init_irregular_time_database(TracerData& tracer_data,
                                          const std::string& file,
                                          const int cyclical_ymd) {
@@ -619,6 +624,8 @@ inline void update_monthly_timestate(
   }
 }
 
+// Loads time slice data before and after current timestamp (ts), 
+// and prepares interpolation state. First call initializes both BEG and END.
 inline void update_irregular_timestate(
     const std::shared_ptr<AtmosphereInput>& scorpio_reader,
     const util::TimeStamp& ts,
@@ -657,7 +664,7 @@ inline void update_irregular_timestate(
                           data_tracer.ps[TracerDataIndex::END]);
       }
     } else {
-      // First call: load BEG
+      // On first call, initialize BEG from file; otherwise, copy END to BEG.
       update_tracer_data_from_file(
           scorpio_reader,
           db.slices[beg_idx].time_index,
@@ -690,6 +697,7 @@ inline void update_irregular_timestate(
   time_state.days_this_month = delta_t;
 }
 
+// Uses appropriate time update routine based on file type.
 inline void update_tracer_timestate(
     const std::shared_ptr<AtmosphereInput>& scorpio_reader,
     const util::TimeStamp& ts,
