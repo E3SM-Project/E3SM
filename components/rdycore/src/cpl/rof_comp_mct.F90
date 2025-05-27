@@ -142,6 +142,28 @@ CONTAINS
     ! Determine communicator group
     call mpi_comm_rank(mpicom_rof, my_task, ierr)
 
+    !--- open log file ---
+    call shr_file_getLogUnit (shrlogunit)
+    if (my_task == master_task) then
+       inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
+       if (exists) then
+          logunit_rof = shr_file_getUnit()
+          call shr_file_setIO('rof_modelio.nml'//trim(inst_suffix),logunit_rof)
+       end if
+       write(logunit_rof,*) "RDycore model initialization"
+    else
+       logunit_rof = shrlogunit
+    end if
+
+    call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogUnit (logunit_rof)
+
+    if (my_task == master_task) then
+       write(logunit_rof,*) ' RDycore npes = ', npes
+       write(logunit_rof,*) ' RDycore my_task  = ', my_task
+       write(logunit_rof,*) ' inst_name = ', trim(inst_name)
+    endif
+
     !----------------------------------------------------------------------------
     ! Read namelist file (TODO) - set values for now
     !----------------------------------------------------------------------------
@@ -174,28 +196,6 @@ CONTAINS
        ! Create mct river runoff export state
        call rof_export_mct( r2x_r )
 !JW    endif
-
-    !--- open log file ---
-    call shr_file_getLogUnit (shrlogunit)
-    if (my_task == master_task) then
-       inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
-       if (exists) then
-          logunit_rof = shr_file_getUnit()
-          call shr_file_setIO('rof_modelio.nml'//trim(inst_suffix),logunit_rof)
-       end if
-       write(logunit_rof,*) "RDycore model initialization"
-    else
-       logunit_rof = shrlogunit
-    end if
-
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logunit_rof)
-
-    if (my_task == master_task) then
-       write(logunit_rof,*) ' RDycore npes = ', npes
-       write(logunit_rof,*) ' RDycore my_task  = ', my_task
-       write(logunit_rof,*) ' inst_name = ', trim(inst_name)
-    endif
 
     !----------------------------------------------------------------------------
     ! Fill infodata that needs to be returned from RDycore
