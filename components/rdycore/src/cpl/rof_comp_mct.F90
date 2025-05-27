@@ -28,6 +28,7 @@ module rof_comp_mct
                               MPI_REAL8, MPI_INTEGER, MPI_CHARACTER, MPI_LOGICAL, MPI_SUM
   use RDycoreIO
 
+  use rdycoreMod     , only: rdycore_init
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -185,6 +186,8 @@ CONTAINS
     rof_prognostic=.true.
     flood_present=.false.
     call rof_read_namelist()
+
+    call rdycore_init(logunit_rof)
 
     !----------------------------------------------------------------------------
     ! Initialize RDycore
