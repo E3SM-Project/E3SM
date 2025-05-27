@@ -103,7 +103,7 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   elem_gids.sync_to_dev();
   lid2idx.sync_to_dev();
 
-  se_grid->m_short_name = "se";
+  se_grid->m_disambiguation_suffix = "_se";
   add_geo_data(se_grid);
 
   add_nonconst_grid(se_grid);
@@ -130,7 +130,7 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
   area.sync_to_host();
 
   add_geo_data(pt_grid);
-  pt_grid->m_short_name = "pt";
+  pt_grid->m_disambiguation_suffix = "_pt";
 
   add_nonconst_grid(pt_grid);
 }

@@ -127,6 +127,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // geo data in the output file when we create it.
   if (m_save_grid_data) {
     std::map<std::string, std::shared_ptr<const AbstractGrid>> grids;
+    DefaultMetadata meta;
     for (const auto& it : m_output_streams) {
       grids[it->get_io_grid()->name()] = it->get_io_grid();
     }
@@ -149,7 +150,13 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           continue;
         }
         if (use_suffix) {
-          fields.push_back(f.clone(f.name()+"_"+grid.second->m_short_name, grid.first));
+          fields.push_back(f.clone(f.name() + grid.second->m_disambiguation_suffix, grid.first));
+
+          // Adjust long/std name, as the default metadata does not recognize the names with suffix
+          using stratts_t = std::map<std::string,std::string>;
+          auto& str_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
+          str_atts["long_name"] = meta.get_longname(f.name());
+          str_atts["standard_name"] = meta.get_standardname(f.name());
         } else {
           fields.push_back(f.clone(f.name(), grid.first));
         }

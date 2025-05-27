@@ -205,7 +205,7 @@ public:
   // with the same name, IO can use this as a suffix to diambiguate the fields in
   // the IO file, by appending each grid's suffix to the fields names.
   // NOTE: we'd need setter/getter for this, so we might as well make it public
-  std::string m_short_name = "";
+  std::string m_disambiguation_suffix = "";
 
   int get_unique_grid_id () const { return m_unique_grid_id; }
 

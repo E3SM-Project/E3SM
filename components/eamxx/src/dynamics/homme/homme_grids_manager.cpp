@@ -187,7 +187,7 @@ void HommeGridsManager::build_dynamics_grid () {
 
   initialize_vertical_coordinates(dyn_grid);
 
-  dyn_grid->m_short_name = "dyn";
+  dyn_grid->m_disambiguation_suffix = "_d";
   add_nonconst_grid(dyn_grid);
 }
 
@@ -306,7 +306,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     dx_short_f.sync_to_dev();
   }
 
-  phys_grid->m_short_name = type;
+  phys_grid->m_disambiguation_suffix = type;
   add_nonconst_grid(phys_grid);
 }
 
