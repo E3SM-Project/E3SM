@@ -138,7 +138,7 @@ end subroutine shr_flux_adjust_constants
 !     2011-Mar-13 - J. Nusbaumer - Water Isotope ocean flux added.
 !     2019-May-16 - Jack Reeves Eyre (UA) and Kai Zhang (PNNL) - Added COARE/Fairall surface flux scheme option (ocn_surface_flux_scheme .eq. 1) based on code from Thomas Toniazzo (Bjerknes Centre, Bergen) ”
 !     2024-Jul - E. Thomas ethomas@lanl.gov - implementing Coare3.0 w/ Wave coupling
-!     2025-Mar - E. Thomas ethomas@lanl.gov - implementing Large+Yeager(default) Flux shceme w/ Wave coupling
+!     2025-Mar - E. Thomas ethomas@lanl.gov - implementing Large+Yeager(default) Flux scheme w/ Wave coupling
 ! !INTERFACE: ------------------------------------------------------------------
 
 SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
@@ -260,7 +260,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
    real(R8)    :: tau_diff ! difference in tau across iterations (Pa)
    real(R8)    :: prev_tau_diff ! previous value of tau_diff (Pa)
    real(R8)    :: wind_adj ! iteration-adjusted wind speed (m/s)
-!!++ Large with waves
+!!++ Large and Yeager with waves
    real(R8)    :: cdn_wav
 !!++ COARE only
    real(R8)    :: zo,zot,zoq      ! roughness lengths
@@ -396,8 +396,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         tstar = rhn * delt
         qstar = ren * delq
         ustar_prev = ustar*2.0_R8
-        write(s_logunit,*) 'ET EDIT: cdn_wav first:', cdn_wav
-        write(s_logunit,*) 'ET EDIT: rdn first:', rdn
         if (present(wsresp) .and. present(tau_est)) prev_tau = tau_est(n)
         tau_diff = 1.e100_R8
         wind_adj = wind0
@@ -450,8 +448,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
 
            !--- update ustar, tstar, qstar using updated, shifted coeffs --
            ustar = rd * vmag
-           write(s_logunit,*) 'ET EDIT: number iterations', iter
-           write(s_logunit,*) 'ET EDIT: ustar iteration', ustar
            tstar = rh * delt
            qstar = re * delq
 
@@ -467,8 +463,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
               vmag = max(seq_flux_atmocn_minwind, vmag)
            end if
         enddo
-        write(s_logunit,*) 'ET EDIT final num iter:', iter
-        write(s_logunit,*) 'ET EDIT: final ustar:', ustar
         if (iter < 1) then
            write(s_logunit,*) ustar,ustar_prev,flux_con_tol,flux_con_max_iter
            call shr_sys_abort('No iterations performed ' // errMsg(sourcefile, __LINE__))
