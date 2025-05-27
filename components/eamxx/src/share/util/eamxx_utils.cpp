@@ -73,4 +73,8 @@ std::vector<std::string> globloc(const std::string& pattern) {
   return filenames;
 }
 
+// Instantiate non-const static members of DefaultMetadata class
+std::map<std::string, std::string> DefaultMetadata::name_2_standardname;
+std::map<std::string, std::string> DefaultMetadata::name_2_longname;
+
 } // namespace scream

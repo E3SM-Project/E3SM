@@ -374,38 +374,38 @@ struct DefaultMetadata {
   // struct to store default metadata for variables output
   // See the io_metadata folder for the file of interest
 
-  // Default string to fill in missing metadata
-  std::string fill_str = "MISSING";
-
-  std::map<std::string, std::string> name_2_standardname, name_2_longname;
+  static std::map<std::string, std::string> name_2_standardname;
+  static std::map<std::string, std::string> name_2_longname;
 
   DefaultMetadata() {
-    // Ensure to resolve the path to the io_metadata.csv file
-    std::string fpath     = __FILE__;
-    std::string directory = fpath.substr(0, fpath.find_last_of("/\\"));
-    std::string csv_path  = directory + "/io_metadata/io_metadata.csv";
-    read_csv_file_to_maps(csv_path, name_2_standardname, name_2_longname);
+    if (name_2_standardname.size()==0) {
+      // Ensure to resolve the path to the io_metadata.csv file
+      std::string fpath     = __FILE__;
+      std::string directory = fpath.substr(0, fpath.find_last_of("/\\"));
+      std::string csv_path  = directory + "/io_metadata/io_metadata.csv";
+      read_csv_file_to_maps(csv_path, name_2_standardname, name_2_longname);
+    }
   }
 
-  std::string get_standardname(const std::string &name) const {
+  static std::string get_standardname(const std::string &name) {
     auto it = name_2_standardname.find(name);
     if(it != name_2_standardname.end()) {
       return it->second;
     } else {
-      return fill_str;
+      return "MISSING";
     }
   }
 
-  std::string get_longname(const std::string &name) const {
+  static std::string get_longname(const std::string &name) {
     auto it = name_2_longname.find(name);
     if(it != name_2_longname.end()) {
       return it->second;
     } else {
-      return fill_str;
+      return "MISSING";
     }
   }
 
-  void read_csv_file_to_maps(
+  static void read_csv_file_to_maps(
       const std::string &filename,
       std::map<std::string, std::string> &name_2_standardname,
       std::map<std::string, std::string> &name_2_longname) {
@@ -436,8 +436,8 @@ struct DefaultMetadata {
       }
 
       // Store the values to the maps, if they are not empty
-      name_2_standardname[column1] = column2.empty() ? fill_str : column2;
-      name_2_longname[column1]     = column3.empty() ? fill_str : column3;
+      name_2_standardname[column1] = column2.empty() ? "MISSING" : column2;
+      name_2_longname[column1]     = column3.empty() ? "MISSING" : column3;
     }
     file.close();
   }
