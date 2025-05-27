@@ -171,10 +171,6 @@ contains
     call t_startf('iac_coupled_fields_adv')
 
           ! adivi:  eam tm clock
-      if(masterproc) then
-         call get_curr_date( yr, mon, day, tod )
-         write(iulog,*)'iac_coupled_fields_adv eam tm yr=',yr,' tm mon=',mon,' tm day',day,'tm tod=',tod
-      endif
 
     ! now this funciton receives a chunk, not the entire pbuf2d or a set of state chunks
     !do ichunk = begchunk,endchunk
@@ -189,7 +185,6 @@ contains
        ! options for distributing the low height values. The select-case block implements all those
        ! options
 
-       if(masterproc) write(iulog,*) 'iac_coupled_fields_adv chunk: ', state%lchnk
 
        ! Loop over columns in this chunk
        do icol = 1, ncol
@@ -204,7 +199,6 @@ contains
           enddo
           !assign the fco2_high_height to the "high_lev" level
           tmpptr(icol,high_lev) = iac_vertical_emiss(state%lchnk)%fco2_high_height(icol)
-          if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,high_lev, tmpptr(icol,high_lev)', icol, high_lev, tmpptr(icol,high_lev)
 
 
           !For the fco2_low_height, we have several options in the following select case statement
@@ -220,10 +214,8 @@ contains
               end if
               !Amount of CO2 to distribute
               dist_amount = iac_vertical_emiss(state%lchnk)%fco2_low_height(icol)/(pver - high_lev)
-              if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,dist_amount', icol, dist_amount
               do klev = high_lev+1, pver
                 tmpptr(icol,klev) = dist_amount
-                 if(masterproc) write(iulog,*) 'In iac_coupled_fields_adv: icol,klev, tmpptr(icol,klev)', icol, klev, tmpptr(icol,klev)
               enddo
 
              !Default case

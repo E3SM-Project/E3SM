@@ -502,8 +502,6 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
          return
       end if
   
-      if(masterproc) write(iulog,*) 'co2_cycle_iac_ptend chunk: ', state%lchnk
- 
       ! Update ptend flags
       lq(:)               = .false. ! by default, do not update any tendencies
       lq(co2_fff_glo_ind) = .true.  ! update fossil fuel CO2 tendency
@@ -514,25 +512,11 @@ subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
       ifld = pbuf_get_index(iac_co2_name)   
       call pbuf_get_field(pbuf, ifld, iac_co2)
   
-      ! adivi:  eam tm clock
-      if(masterproc) then
-         call get_curr_date( yr, mon, day, tod )
-         write(iulog,*)'co2_cycle_set_ptend eam tm yr=',yr,' tm mon=',mon,' tm day',day, 'tm tod=',tod
-      endif
- 
-      ncol = state%ncol
-      do icol = 1, ncol
-         do klev = 1, pver
-            if(masterproc) write(iulog,*) 'In co2_cycle_iac_ptend: icol, klev, iac_co2(icol,klev)', icol, klev, iac_co2(icol,klev)
-         end do
-      end do
-
       ! [ac_CO2] = 'kg m-2 s-1'
       ! [ptend%q] = 'kg kg-1 s-1'
       ncol = state%ncol
       do klev = 1, pver
-         co2_tend(:ncol) = iac_co2(:ncol,klev)
-         !co2_tend(:ncol) = gravit * state%rpdeldry(:ncol,klev) * iac_co2(:ncol,klev)
+         co2_tend(:ncol) = gravit * state%rpdeldry(:ncol,klev) * iac_co2(:ncol,klev)
          ptend%q(:ncol,klev,co2_fff_glo_ind) = co2_tend(:ncol)
          ptend%q(:ncol,klev,co2_glo_ind)     = co2_tend(:ncol)
       end do

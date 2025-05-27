@@ -56,17 +56,10 @@ contains
     ! get atm time manager date to determine which EHC month data to get
     call get_curr_date( yr, mon, day, tod )
 
-    ! adivi:  eam tm clock
-    if(masterproc) then
-       write(iulog,*)'atm_import eam tm yr=',yr,' tm mon=',mon,' tm day',day, ' tm tod=',tod
-    endif
-
     ! ccsm sign convention is that fluxes are positive downward
     ig=1
     do c=begchunk,endchunk
        ncols = get_ncols_p(c)
-
-       if(masterproc) write(iulog,*) 'atm_import chunk: ', c
 
        ! initialize constituent surface fluxes to zero
        ! NOTE:overwrite_flds is .FALSE. for the first restart
@@ -205,12 +198,10 @@ contains
              ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2airlo_iac(mon_air) /= 0) then
                 iac_vertical_emiss(c)%fco2_low_height(i) = -x2a(index_x2a_Fazz_co2airlo_iac(mon_air),ig)
-                 if(masterproc) write(iulog,*) 'In atm_import: i,iac_vertical_emiss(c)%fco2_low_height(i)',i,iac_vertical_emiss(c)%fco2_low_height(i)
              end if
              ! if aircraft lo emissions from EHC exist for this month, get them from coupler var
              if (index_x2a_Fazz_co2airhi_iac(mon_air) /= 0) then
                 iac_vertical_emiss(c)%fco2_high_height(i) = -x2a(index_x2a_Fazz_co2airhi_iac(mon_air),ig)
-                if(masterproc) write(iulog,*) 'In atm_import: i,iac_vertical_emiss(c)%fco2_high_height(i)',i,iac_vertical_emiss(c)%fco2_high_height(i)
              endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then

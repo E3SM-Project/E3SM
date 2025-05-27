@@ -420,12 +420,6 @@ CONTAINS
        call shr_file_setLogUnit (iulog)
 
 
-       ! adivi:  atm time manager time check before time advance
-    if(masterproc) then
-       call get_curr_date( yr, mon, day, tod )
-       write(iulog,*)'atm_init before atm_import tm ymd=',ymd,' tm tod= ',tod
-    endif
-
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
           call atm_import( x2a_a%rattr, cam_in )
@@ -564,11 +558,6 @@ CONTAINS
     nlend_sync = seq_timemgr_StopAlarmIsOn(EClock)
     rstwr_sync = seq_timemgr_RestartAlarmIsOn(EClock)
 
-    ! adivi:  eclock time check before atm_import
-    if(masterproc) then
-       write(iulog,*)'atm_run before atm_import sync ymd=',ymd_sync,' sync tod= ',tod_sync
-    endif
-
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
@@ -603,11 +592,6 @@ CONTAINS
        endif
 
 
-    ! adivi:  atm time manager time check before time advance
-    if(masterproc) then
-       write(iulog,*)'atm_run before cam run 2 and atm time advance tm ymd=',ymd,' tm tod= ',tod
-    endif
-
        ! Run CAM (run2, run3, run4)
        
        call t_startf ('CAM_run2')
@@ -629,13 +613,6 @@ CONTAINS
        call advance_timestep()
        call t_stopf  ('CAM_adv_timestep')
 
-       ! adivi:  atm time manager time check before time advance
-    if(masterproc) then
-       call get_curr_date( yr, mon, day, tod )
-       write(iulog,*)'atm_run before cam run 1 and after atm time advance tm ymd=',ymd,' tm tod= ',tod
-    endif
-
-       
        ! Run cam radiation/clouds (run1)
           
        call t_startf ('CAM_run1')
