@@ -4,6 +4,7 @@ module rof_comp_mct
 
   use esmf
   use netcdf
+  use pio
   use seq_infodata_mod
   use mct_mod
   use seq_flds_mod
@@ -505,9 +506,22 @@ CONTAINS
 
        ! read in data dimensions
        status = nf90_inq_dimid(ncid, "lat", dimid)
-       status = nf90_inquire_dimension(ncid, dimid, len=lat)
-       status = nf90_inq_dimid(ncid, "lon", dimid)
-       status = nf90_inquire_dimension(ncid, dimid, len=lon)
+       if (status == PIO_NOERR) then
+         status = nf90_inquire_dimension(ncid, dimid, len=lat)
+         status = nf90_inq_dimid(ncid, "lon", dimid)
+         if (status /= PIO_NOERR) then
+            call shr_sys_abort("ERROR: lat dimension defined in the file, but lon dimension is missing. file " // trim(filename_rof))
+         endif
+         status = nf90_inquire_dimension(ncid, dimid, len=lon)
+       else
+          status = nf90_inq_dimid(ncid, "gridcell", dimid)
+          if (status == PIO_NOERR) then
+             status = nf90_inquire_dimension(ncid, dimid, len=lon)
+             lat = 1
+          else
+             call shr_sys_abort("ERROR: Neither (lon,lat) nor (gridcell) dimension defined in the following file: " // trim(filename_rof))
+          endif
+       endif
     end if
 
     ! broadcast dimensions
