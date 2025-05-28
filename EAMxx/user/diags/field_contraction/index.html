@@ -1874,6 +1874,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#zonal-reduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Zonal reduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
@@ -3361,6 +3370,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#zonal-reduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Zonal reduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
       Example
@@ -3399,7 +3417,8 @@
 <h1 id="field-contraction-diagnostics">Field contraction diagnostics</h1>
 <p>In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
-We call these horizontal and vertical reductions.</p>
+We call these horizontal and vertical reductions.
+We can also automatically calculate zonal averages.</p>
 <h2 id="horizontal-reduction">Horizontal reduction</h2>
 <p>We currently offer only one horizontal reduction <span class="arithmatex">\(C\)</span>, and it is defined as</p>
 <div class="arithmatex">\[
@@ -3487,6 +3506,33 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code> o
 </ul>
 <p>In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
 where g is the gravitational acceleration, in units of m/s<span class="arithmatex">\(^2\)</span>.</p>
+<h2 id="zonal-reduction">Zonal reduction</h2>
+<p>We currently have a utility to calculate zonal averages online.
+To select the zonal average, you need to suffix
+a field name <code>X</code> with <code>_zonal_avg</code> and the
+number of bins <code>Y</code> as <code>_Y_bins</code>. All zonal averages are calculated
+using the area fraction in each bin as the weight.</p>
+<p>For 180 latitude bins, the bins are defined
+as follows: [-90, -89), [-89, -88), ..., [89, 90).
+For 90 latitude bins, the bins are defined as follows:
+[-90, -88), [-88, -86), ..., [88, 90).
+And so on...</p>
+<table>
+<thead>
+<tr>
+<th>Reduction</th>
+<th>Weight</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>X_zonal_avg_Y_bins</code></td>
+<td>Area fraction</td>
+<td>Average across the zonal direction</td>
+</tr>
+</tbody>
+</table>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -3504,6 +3550,8 @@ where g is the gravitational acceleration, in units of m/s<span class="arithmate
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_180_bins</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_90_bins</span><span class="w">  </span><span class="c1"># K</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
