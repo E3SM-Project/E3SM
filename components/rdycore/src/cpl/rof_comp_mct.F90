@@ -1,6 +1,6 @@
 module rof_comp_mct
 
-  ! !USES:
+   ! !USES:
 
   use esmf
   use netcdf
@@ -34,6 +34,8 @@ module rof_comp_mct
   implicit none
   save
   private ! except
+
+#include <mpif.h>
 
   !--------------------------------------------------------------------------
   ! Public interfaces
@@ -196,10 +198,11 @@ CONTAINS
 !JW        if (rof_prognostic) then
 
        ! Initialize rof gsMap for ocean rof and land rof
-       call rof_SetGSMap_mct( mpicom_rof, rofid, gsMap_rof)
+       !call rof_SetGSMap_mct( mpicom_rof, rofid, gsMap_rof)
+       !lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
+       call rof_SetGSMap_From_RDycore_mct( rofid, gsMap_rof)
 
        ! Initialize rof domain
-       lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
 
        ! Initialize cpl -> RDycore attribute vector
