@@ -636,6 +636,7 @@ contains
               intArgs=(/localLoopCount, newMaskCountTotal/))
       deallocate(validOceanMaskOld)
       deallocate(oceanFieldOld)
+      deallocate(fieldSum)
 
    end subroutine horizontal_extrapolation
 !-----------------------------------------------------------------------
