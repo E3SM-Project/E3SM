@@ -339,6 +339,30 @@ Default: Defined in namelist_defaults.xml
 
 
 <!-- hmix_Leith -->
+<entry id="config_use_Smag_del4" type="logical"
+	category="hmix_Leith" group="hmix_Leith">
+If true, biharmonic Smagorinsky horizontal mixing is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Smag_del4_parameter" type="real"
+        category="hmix_Leith" group="hmix_Leith">
+Non-dimensional Smagorinsky del4 closure parameter
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Smag_visc4_max" type="real"
+        category="hmix_Leith" group="hmix_Leith">
+Upper bound on the allowable value of Smagorinsky-computed del4 viscosity
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_Leith_del2" type="logical"
 	category="hmix_Leith" group="hmix_Leith">
 If true, harmonic Leith horizontal mixing is used on the momentum equation.

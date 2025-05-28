@@ -20,6 +20,7 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_hmix.o \
 	   mpas_ocn_vel_hmix_del2.o \
 	   mpas_ocn_vel_hmix_leith.o \
+	   mpas_ocn_vel_hmix_smag.o \
 	   mpas_ocn_vel_hmix_del4.o \
 	   mpas_ocn_vel_forcing.o \
 	   mpas_ocn_vel_forcing_surface_stress.o \
@@ -111,11 +112,13 @@ mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_me
 
 mpas_ocn_vel_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
-mpas_ocn_vel_hmix.o: mpas_ocn_vel_hmix_del2.o mpas_ocn_vel_hmix_leith.o mpas_ocn_vel_hmix_del4.o mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_vel_hmix.o: mpas_ocn_vel_hmix_del2.o mpas_ocn_vel_hmix_leith.o mpas_ocn_vel_hmix_smag.o mpas_ocn_vel_hmix_del4.o mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_vel_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_vel_hmix_leith.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
+
+mpas_ocn_vel_hmix_smag.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_vel_hmix_del4.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
@@ -237,7 +240,7 @@ mpas_ocn_vertical_remap.o: mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_diagn
 
 mpas_ocn_stokes_drift.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o
 
-mpas_ocn_manufactured_solution.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o 
+mpas_ocn_manufactured_solution.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_subgrid.o: mpas_ocn_diagnostics_variables.o mpas_ocn_config.o mpas_ocn_constants.o
 

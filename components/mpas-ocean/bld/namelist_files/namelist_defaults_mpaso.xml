@@ -171,6 +171,9 @@
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 -->
 
+<config_use_Smag_del4>.true.</config_use_Smag_del4>
+<config_Smag_del4_parameter>2.0</config_Smag_del4_parameter>
+<config_Smag_visc4_max>2.4e11</config_Smag_visc4_max>
 <config_use_Leith_del2>.false.</config_use_Leith_del2>
 <config_use_Leith_del4>.false.</config_use_Leith_del4>
 <config_Leith_del2_parameter>2.0</config_Leith_del2_parameter>

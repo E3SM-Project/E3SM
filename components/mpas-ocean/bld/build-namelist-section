@@ -82,9 +82,17 @@ add_default($nl, 'config_tracer_del4');
 ##############################
 
 add_default($nl, 'config_use_Leith_del2');
-add_default($nl, 'config_Leith_parameter');
+add_default($nl, 'config_use_Leith_del4');
+add_default($nl, 'config_use_Smag_del4');
+add_default($nl, 'config_Smag_del4_parameter');
+add_default($nl, 'config_Smag_visc4_max');
+add_default($nl, 'config_Leith_del2_parameter');
+add_default($nl, 'config_Leith_del4_parameter');
+add_default($nl, 'config_Leith_del2_div_scaler');
+add_default($nl, 'config_Leith_del4_div_scaler');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
+add_default($nl, 'config_Leith_visc4_max');
 
 #########################################
 # Namelist group: Redi_isopycnal_mixing #

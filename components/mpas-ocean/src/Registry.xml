@@ -286,6 +286,18 @@
 					description="If true, the Leith enstrophy-cascade closure is turned on"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_Smag_del4" type="logical" default_value=".false."
+					description="If true, the Smagorinsky enstrophy-cascade closure is turned on"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Smag_del4_parameter" type="real" default_value="1.0" units="non-dimensional"
+					description="Non-dimensional Smagorinsky del4 closure scaler"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_Smag_visc4_max" type="real" default_value="1.5e10" units="m^4 s^-1"
+					description="Upper bound on the allowable value of Smagorinsky-computed viscosity"
+					possible_values="any positive real"
+		/>
 		<nml_option name="config_Leith_del2_parameter" type="real" default_value="1.0" units="non-dimensional"
 					description="Non-dimensional Leith del2 closure parameter"
 					possible_values="any positive real"
@@ -3702,6 +3714,10 @@
 		<var name="topographicWaveDrag" type="real" dimensions="nEdges" units=""
 			description="topographic wave drag multiplicative factor"
 			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="viscDel4Coef" type="real" dimensions="nVertLevels nEdges Time" units="m^4 s^-1"
+                        description="Hyperdiffusion viscosity coefficients"
+			packages="forwardMode;analysisMode"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
