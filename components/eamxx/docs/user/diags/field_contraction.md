@@ -3,8 +3,7 @@
 In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
-We can also automatically calculate zonal averages,
-albeit with additional flexibility (see below).
+We can also automatically calculate zonal averages.
 
 ## Horizontal reduction
 
@@ -63,21 +62,20 @@ where g is the gravitational acceleration, in units of m/s$^2$.
 ## Zonal reduction
 
 We currently have a utility to calculate zonal averages online.
-To select the zonal average, you only need to suffix
-a field name `X` with `_zonal_avg` and optionally the
-number of bins `num_lat`. All zonal averages are calculated
+To select the zonal average, you need to suffix
+a field name `X` with `_zonal_avg` and the
+number of bins `Y` as `_Y_bins`. All zonal averages are calculated
 using the area fraction in each bin as the weight.
 
-For 180 latitude bins (the default), the bins are defined
+For 180 latitude bins, the bins are defined
 as follows: [-90, -89), [-89, -88), ..., [89, 90).
 For 90 latitude bins, the bins are defined as follows:
-[-90, -88), [-88, -85), ..., [88, 90).
+[-90, -88), [-88, -86), ..., [88, 90).
 And so on...
 
 | Reduction | Weight | Description |
 | --------- | ------ | ----------- |
-| `X_zonal_avg` | Area fraction | Average across 180 latitude bins |
-| `X_zonal_avg_with_Y_bins` | Area fraction | Average across Y latitude bins |
+| `X_zonal_avg_Y_bins` | Area fraction | Average across the zonal direction |
 
 ## Example
 
@@ -98,8 +96,8 @@ fields:
       - T_mid_vert_sum_dz_weighted  # K * m
       - T_mid_vert_avg  # K
       - T_mid_vert_sum  # K
-      - T_mid_zonal_avg  # K
-      - T_mid_zonal_avg_with_90_bins  # K
+      - T_mid_zonal_avg_180_bins  # K
+      - T_mid_zonal_avg_90_bins  # K
 output_control:
   frequency: 1
   frequency_units: nmonths

@@ -104,7 +104,7 @@ ZonalAvgDiag::ZonalAvgDiag(const ekat::Comm &comm, const ekat::ParameterList &pa
     : AtmosphereDiagnostic(comm, params) {
   const auto &field_name     = m_params.get<std::string>("field_name");
   const auto &num_bins_value = params.get<std::string>("number_of_zonal_bins");
-  m_diag_name                = field_name + "_zonal_avg_with_" + num_bins_value + "_bins";
+  m_diag_name                = field_name + "_zonal_avg_" + num_bins_value + "_bins";
   m_num_zonal_bins           = std::stoi(num_bins_value);
 }
 

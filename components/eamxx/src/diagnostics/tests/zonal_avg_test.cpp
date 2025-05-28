@@ -84,15 +84,6 @@ TEST_CASE("zonal_avg") {
   RPDF pdf(sp(0.0), sp(200.0));
   auto engine = scream::setup_random_test();
 
-  // Construct the Diagnostics
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
-  register_diagnostics();
-
-  ekat::ParameterList params;
-  REQUIRE_THROWS(diag_factory.create("ZonalAvgDiag", comm,
-                                     params)); // No 'field_name' parameter
-
   // Set time for qc and randomize its values
   qc1.get_header().get_tracking().update_time_stamp(t0);
   qc2.get_header().get_tracking().update_time_stamp(t0);
@@ -101,10 +92,26 @@ TEST_CASE("zonal_avg") {
   randomize(qc2, engine, pdf);
   randomize(qc3, engine, pdf);
 
+  // Construct the Diagnostics
+  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
+  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  register_diagnostics();
+
   // Create and set up the diagnostic
+  ekat::ParameterList params;
+  REQUIRE_THROWS(diag_factory.create("ZonalAvgDiag", comm,
+                                     params)); // Bad construction
+
   params.set("grid_name", grid->name());
+  REQUIRE_THROWS(diag_factory.create("ZonalAvgDiag", comm,
+                                     params)); // Still no field_name
+
   params.set<std::string>("field_name", "qc");
+  REQUIRE_THROWS(diag_factory.create("ZonalAvgDiag", comm,
+                                     params)); // Still no number_of_zonal_bins
+
   params.set<std::string>("number_of_zonal_bins", std::to_string(nlats));
+  // Now we should be good to go...
   auto diag1 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag2 = diag_factory.create("ZonalAvgDiag", comm, params);
   auto diag3 = diag_factory.create("ZonalAvgDiag", comm, params);
