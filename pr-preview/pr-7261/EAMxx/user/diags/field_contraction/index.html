@@ -3418,8 +3418,7 @@
 <p>In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
-We can also automatically calculate zonal averages,
-albeit with additional flexibility (see below).</p>
+We can also automatically calculate zonal averages.</p>
 <h2 id="horizontal-reduction">Horizontal reduction</h2>
 <p>We currently offer only one horizontal reduction <span class="arithmatex">\(C\)</span>, and it is defined as</p>
 <div class="arithmatex">\[
@@ -3509,14 +3508,14 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code> o
 where g is the gravitational acceleration, in units of m/s<span class="arithmatex">\(^2\)</span>.</p>
 <h2 id="zonal-reduction">Zonal reduction</h2>
 <p>We currently have a utility to calculate zonal averages online.
-To select the zonal average, you only need to suffix
-a field name <code>X</code> with <code>_zonal_avg</code> and optionally the
-number of bins <code>num_lat</code>. All zonal averages are calculated
+To select the zonal average, you need to suffix
+a field name <code>X</code> with <code>_zonal_avg</code> and the
+number of bins <code>Y</code> as <code>_Y_bins</code>. All zonal averages are calculated
 using the area fraction in each bin as the weight.</p>
-<p>For 180 latitude bins (the default), the bins are defined
+<p>For 180 latitude bins, the bins are defined
 as follows: [-90, -89), [-89, -88), ..., [89, 90).
 For 90 latitude bins, the bins are defined as follows:
-[-90, -88), [-88, -85), ..., [88, 90).
+[-90, -88), [-88, -86), ..., [88, 90).
 And so on...</p>
 <table>
 <thead>
@@ -3528,14 +3527,9 @@ And so on...</p>
 </thead>
 <tbody>
 <tr>
-<td><code>X_zonal_avg</code></td>
+<td><code>X_zonal_avg_Y_bins</code></td>
 <td>Area fraction</td>
-<td>Average across 180 latitude bins</td>
-</tr>
-<tr>
-<td><code>X_zonal_avg_with_Y_bins</code></td>
-<td>Area fraction</td>
-<td>Average across Y latitude bins</td>
+<td>Average across the zonal direction</td>
 </tr>
 </tbody>
 </table>
@@ -3556,8 +3550,8 @@ And so on...</p>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg</span><span class="w">  </span><span class="c1"># K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_with_90_bins</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_180_bins</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_90_bins</span><span class="w">  </span><span class="c1"># K</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
