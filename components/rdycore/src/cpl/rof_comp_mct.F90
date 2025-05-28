@@ -434,6 +434,8 @@ CONTAINS
     use rdycoreMod, only : natural_id_cells_owned
     !
     ! ARGUMENTS:
+   use rdycoreMod, only : natural_id_cells_owned
+   !
     implicit none
     integer        , intent(in)    :: lsize
     type(mct_gsMap), intent(in)    :: gsMap_rof
@@ -441,7 +443,6 @@ CONTAINS
     !
     ! LOCAL VARIABLES
     integer :: n, ni              ! index
-    integer :: lstart, lstop      ! index
     integer , pointer :: idata(:) ! temporary
     real(r8), pointer :: data(:)  ! temporary
     real(r8) :: re = SHR_CONST_REARTH*0.001_r8 ! radius of earth (km)
@@ -505,10 +506,8 @@ CONTAINS
        call mct_gGrid_importRattr(dom_rof,"area",data,lsize)
     end if
 
-    ni = 0
-    do n = lstart, lstop
-       ni = ni + 1
-       data(ni) = 1.0_r8
+    do n = 1, lsize
+      data(n) = 1.0_r8
     end do
     call mct_gGrid_importRattr(dom_rof,"mask",data,lsize)
     call mct_gGrid_importRattr(dom_rof,"frac",data,lsize)
