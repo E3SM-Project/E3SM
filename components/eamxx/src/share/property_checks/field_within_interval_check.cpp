@@ -96,11 +96,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
       {
         auto v = f.template get_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, minmaxloc_value_t& result) {
-          if (v(i)<result.min_val) {
+          if (not (v(i) >= result.min_val)) {
             result.min_val = v(i);
             result.min_loc = i;
           }
-          if (v(i)>result.max_val) {
+          if (not (v(i) <= result.max_val)) {
             result.max_val = v(i);
             result.max_loc = i;
           }
@@ -113,11 +113,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-          if (v(i,j)<result.min_val) {
+          if (not (v(i,j) >= result.min_val)) {
             result.min_val = v(i,j);
             result.min_loc = idx;
           }
-          if (v(i,j)>result.max_val) {
+          if (not (v(i,j) <= result.max_val)) {
             result.max_val = v(i,j);
             result.max_loc = idx;
           }
@@ -130,11 +130,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-          if (v(i,j,k)<result.min_val) {
+          if (not (v(i,j,k) >= result.min_val)) {
             result.min_val = v(i,j,k);
             result.min_loc = idx;
           }
-          if (v(i,j,k)>result.max_val) {
+          if (not (v(i,j,k) <= result.max_val)) {
             result.max_val = v(i,j,k);
             result.max_loc = idx;
           }
@@ -147,11 +147,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-          if (v(i,j,k,l)<result.min_val) {
+          if (not (v(i,j,k,l) >= result.min_val)) {
             result.min_val = v(i,j,k,l);
             result.min_loc = idx;
           }
-          if (v(i,j,k,l)>result.max_val) {
+          if (not (v(i,j,k,l) <= result.max_val)) {
             result.max_val = v(i,j,k,l);
             result.max_loc = idx;
           }
@@ -164,11 +164,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-          if (v(i,j,k,l,m)<result.min_val) {
+          if (not (v(i,j,k,l,m) >= result.min_val)) {
             result.min_val = v(i,j,k,l,m);
             result.min_loc = idx;
           }
-          if (v(i,j,k,l,m)>result.max_val) {
+          if (not (v(i,j,k,l,m) <= result.max_val)) {
             result.max_val = v(i,j,k,l,m);
             result.max_loc = idx;
           }
@@ -181,11 +181,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-          if (v(i,j,k,l,m,n)<result.min_val) {
+          if (not (v(i,j,k,l,m,n) >= result.min_val)) {
             result.min_val = v(i,j,k,l,m,n);
             result.min_loc = idx;
           }
-          if (v(i,j,k,l,m,n)>result.max_val) {
+          if (not (v(i,j,k,l,m,n) <= result.max_val)) {
             result.max_val = v(i,j,k,l,m,n);
             result.max_loc = idx;
           }
