@@ -551,6 +551,7 @@ CONTAINS
 
     do i = 1, num_cells_owned
       total_runoff_data(i) = (x2r_r%rAttr(index_x2r_Flrl_rofsur, i) + x2r_r%rAttr(index_x2r_Flrl_rofsub, i)) * runoff_unit_conversion
+      if (total_runoff_data(i) < 0._r8) total_runoff_data(i) = 0._r8
     enddo
 
     allocate(ssh(lsize))
