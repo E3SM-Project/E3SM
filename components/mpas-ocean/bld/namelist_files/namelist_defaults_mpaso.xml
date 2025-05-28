@@ -440,7 +440,8 @@
 <config_land_ice_draft_mode ocn_grid="FRISwISC02to60E3r1">'data'</config_land_ice_draft_mode>
 <config_land_ice_draft_mode ocn_grid="FRISwISC01to60E3r1">'data'</config_land_ice_draft_mode>
 <config_land_ice_draft_mode ocn_grid="RRSwISC6to18E3r5">'data'</config_land_ice_draft_mode>
-<config_land_ice_rho_ocean>1028.0</config_land_ice_rho_ocean>
+<config_land_ice_draft_mode ocn_grid="SOwISC12to30E2r4">'data'</config_land_ice_draft_mode>
+<config_land_ice_rho_ocean>1028</config_land_ice_rho_ocean>
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
