@@ -271,6 +271,10 @@ TEST_CASE("field", "") {
     auto g1_x0 = f1.subfield(1,0);
     auto g1_x1 = f1.subfield(1,1);
 
+    // Check we preserve parent info
+    auto f1_0x_p = f1_0x.get_header().get_parent();
+    REQUIRE (f1_0x.alias("foo").get_header().get_parent()==f1_0x_p);
+
     REQUIRE (f1_0x.is_aliasing(g1_0x));
     REQUIRE (f1_1x.is_aliasing(g1_1x));
     REQUIRE (f1_x0.is_aliasing(g1_x0));
