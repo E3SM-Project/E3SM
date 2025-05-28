@@ -201,7 +201,7 @@ advance_iop_subsidence(const MemberType& team,
   Real* dp  = shmem_ptr + 6 * nlevs;
 
   auto solve_field = [&](auto& field_view, auto& s_field) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs-1), [&](const int k) {
 
       Real dp_val = s_ref_p_del(k) + 1e-4;
       Real omega_dn = s_omega_int(k);
