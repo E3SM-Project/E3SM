@@ -1458,7 +1458,7 @@ module li_iceshelf_melt
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
       character(len=StrKIND), pointer :: config_TF_vertical_calc
-      logical, pointer :: config_recalculate_thermal_forcing
+      logical, pointer :: config_calculate_thermal_forcing
       real (kind=RKIND) :: dzAccumulated, dz
       integer :: err_tmp, kk, iLayer
 
@@ -1479,7 +1479,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
       
-      call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
       call mpas_pool_get_config(liConfigs, 'config_TF_vertical_calc', config_TF_vertical_calc)
 
       block => domain % blocklist
@@ -1514,7 +1514,7 @@ module li_iceshelf_melt
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', zBndsOcean)
 
                !Consolidate 3d profile to 2d depending on parameterization type
-               if ( (config_recalculate_thermal_forcing) .and. (config_TF_vertical_calc == 'average' ) ) then
+               if ( (config_calculate_thermal_forcing) .and. (config_TF_vertical_calc == 'average' ) ) then
                   
                   ! Depth weighted average
                   TFocean(:) = 0.0_RKIND
@@ -1544,7 +1544,7 @@ module li_iceshelf_melt
                      endif
                   enddo
 
-               elseif ( (config_recalculate_thermal_forcing) .and. (config_TF_vertical_calc == '200-500') ) then
+               elseif ( (config_calculate_thermal_forcing) .and. (config_TF_vertical_calc == '200-500') ) then
                   ! Depth-weighted average between 200-500m
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
@@ -1574,7 +1574,7 @@ module li_iceshelf_melt
                      endif
                   enddo
 
-               elseif ( (config_TF_vertical_calc == 'seafloor') .or. (.not. config_recalculate_thermal_forcing) ) then
+               elseif ( (config_TF_vertical_calc == 'seafloor') .or. (.not. config_calculate_thermal_forcing) ) then
                   ! Calculate thermal forcing based solely on bedTopography. Default ISMIP6 method and ISMIP6melt are equivalent
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells

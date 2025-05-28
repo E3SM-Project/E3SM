@@ -92,7 +92,7 @@ contains
       !-----------------------------------------------------------------
       logical, pointer :: config_ocean_data_extrapolation
       real(kind=RKIND), pointer :: invalid_value_TF
-      logical, pointer :: config_recalculate_thermal_forcing
+      logical, pointer :: config_calculate_thermal_forcing
       logical, pointer :: config_extrap_sill_blocking
       real(kind=RKIND), pointer :: config_sea_level
       type (block_type), pointer :: block
@@ -131,7 +131,7 @@ contains
         ! initialize the ocean data and mask fields
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
-         call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
+         call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
          call mpas_pool_get_config(liConfigs, 'config_extrap_sill_blocking', config_extrap_sill_blocking)
          call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -156,7 +156,7 @@ contains
          call mpas_pool_get_array(extrapOceanDataPool, 'connectedMarineMask', connectedMarineMask)
          call mpas_pool_get_array(extrapOceanDataPool, 'altConnectedMarineMask', altConnectedMarineMask)
 
-         if (config_recalculate_thermal_forcing) then
+         if (config_calculate_thermal_forcing) then
             call mpas_pool_get_array(extrapOceanDataPool, 'oceanTemperature', oceanTemperature)
             call mpas_pool_get_array(extrapOceanDataPool, 'oceanSalinity', oceanSalinity)
          endif
@@ -282,7 +282,7 @@ contains
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
                do iLayer = 1, nISMIP6OceanLayers 
                   if (orig3dOceanMask(iLayer,iCell) /= 1) then
-                     if (config_recalculate_thermal_forcing) then
+                     if (config_calculate_thermal_forcing) then
                         ! for ice-dammed inland seas, assume default salinity, and back-calculate sea temperature to ensure zero thermal forcing
                         oceanSalinity(iLayer,iCell) = default_salinity
                         oceanTemperature(iLayer,iCell) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
@@ -301,7 +301,7 @@ contains
                    ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
                    connectedMarineMask(iCell) = 0
                  
-                   if (config_recalculate_thermal_forcing) then
+                   if (config_calculate_thermal_forcing) then
                       oceanTemperature(iLayer,iCell) = 0.0_RKIND
                       oceanSalinity(iLayer,iCell) = 0.0_RKIND
                    endif
@@ -357,7 +357,7 @@ contains
                   if ( (bedTopography(iCell) < layerCenter) .or. ((iLayer == 1) .and. (bedTopography(iCell) < 0.0_RKIND)) )then
                      availOceanMask(iLayer,iCell) = 1
                      
-                  elseif ((config_recalculate_thermal_forcing) .and. (.not. config_extrap_sill_blocking)) then
+                  elseif ((config_calculate_thermal_forcing) .and. (.not. config_extrap_sill_blocking)) then
                         
                         ! If recalculating thermal forcing with ISMIP6retreat or AMretreat methods, then ignore
                         ! topography and allow for translation of water properties directly to glacier face.
@@ -371,7 +371,7 @@ contains
          validOceanMask(:,:) = orig3dOceanMask(:,:)
 
          ! initialize the extrapolated fields
-         if (config_recalculate_thermal_forcing) then
+         if (config_calculate_thermal_forcing) then
             
             !combine fields into one variable to expedite extrapolation
             oceanField(1,:,:) = oceanTemperature(:,:) * validOceanMask(:,:)
@@ -439,7 +439,7 @@ contains
          enddo
 
          ! Reassign extrapolated TF back to primary TF field
-         if (config_recalculate_thermal_forcing) then
+         if (config_calculate_thermal_forcing) then
             oceanTemperature(:,:) = oceanField(1,:,:)
             oceanSalinity(:,:) = oceanField(2,:,:)
 
@@ -516,7 +516,7 @@ contains
       integer :: iCell, jCell, iLayer, iNeighbor, iter, iField
       integer :: localLoopCount, nFields, newMaskCountTotal
       integer :: nValidNeighb, newValidCount, newMaskCountLocalAccum, newMaskCountGlobal
-      logical, pointer :: config_recalculate_thermal_forcing
+      logical, pointer :: config_calculate_thermal_forcing
       real (kind=RKIND), dimension(:,:,:), allocatable :: oceanFieldOld
       real (kind=RKIND), dimension(:), allocatable :: fieldSum
 
@@ -526,7 +526,7 @@ contains
       block => domain % blocklist
       call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
       call mpas_pool_get_config(liConfigs,'config_weight_value_cell', weightCell)
-      call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
@@ -547,7 +547,7 @@ contains
       validOceanMaskOld(:,:) = validOceanMask(:,:)
       oceanFieldOld(:,:,:) = oceanField(:,:,:)
 
-      if (.not. config_recalculate_thermal_forcing) then
+      if (.not. config_calculate_thermal_forcing) then
          nFields = 1
       else
          nFields = 2
@@ -694,13 +694,13 @@ contains
       integer, dimension(:,:), pointer :: cellsOnCell
       integer :: iCell, jCell, iLayer, iNeighbor, iter, iField
       integer :: nFields, localLoopCount, newMaskCountLocalAccum
-      logical, pointer :: config_recalculate_thermal_forcing
+      logical, pointer :: config_calculate_thermal_forcing
 
       err = 0
 
       ! initialize the ocean data and mask fields
       block => domain % blocklist
-      call mpas_pool_get_config(liConfigs, 'config_recalculate_thermal_forcing', config_recalculate_thermal_forcing)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
@@ -716,7 +716,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
 
-      if (.not. config_recalculate_thermal_forcing) then
+      if (.not. config_calculate_thermal_forcing) then
          nFields = 1
       else
          nFields = 2
@@ -740,7 +740,7 @@ contains
                            MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell), iLayer-1/), realArgs=(/oceanField(iField,iLayer-1,iCell)/))
                         err = ior(err,1)
                      else
-                        if (config_recalculate_thermal_forcing) then
+                        if (config_calculate_thermal_forcing) then
                            !if extrapolating temp/salt, assign value equal to overlying cell
                            oceanField(iField,iLayer,iCell) = oceanField(iField,iLayer-1,iCell)
                         else
@@ -785,7 +785,7 @@ contains
 !> Use temperature and salinity to calculate thermal forcing. 
 !> If config_TF_iceberg_melt is true, then ocean temperature 
 !> in the upper water column will first be artificially cooled 
-!> to immitate iceberg melt-driven cooling.
+!> to imitate iceberg melt-driven cooling.
 !-----------------------------------------------------------------------
 
    subroutine calculate_thermal_forcing(domain, err)

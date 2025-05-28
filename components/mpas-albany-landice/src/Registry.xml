@@ -457,12 +457,12 @@
 			    description="If true, extrapolate ocean data (temperature and salinity, or thermal forcing) from external source into underneath the ice draft."
 			    possible_values=".true. or .false."
                 />
-      <nml_option name="config_recalculate_thermal_forcing" type="logical" default_value=".false." units="unitless"
-             description="If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options in config_thermal_forcing_param_type. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true."
+      <nml_option name="config_calculate_thermal_forcing" type="logical" default_value=".false." units="unitless"
+             description="If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options config_extrap_sill_blocking, config_TF_vertical_calc, config_TF_iceberg_melt, and config_TF_iceberg_depth. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true."
              possible_values=".true. or .false."
       />
 		<nml_option name="config_extrap_sill_blocking" type="logical" default_value=".true." units="unitless"
-				  description="Option to account for sill blocking of external water when extrapolated ocean properties to glacier termini. config_ocean_data_extrapolation and config_recalculate_thermal_forcing must both be true for this option to be valid. If only config_ocean_data_extrapolation is true while config_recalculate_thermal_forcing is false, then sill blocking will automatically be activated during extrapolation."
+				  description="Option to account for sill blocking of external water when extrapolated ocean properties to glacier termini. config_ocean_data_extrapolation and config_calculate_thermal_forcing must both be true for this option to be valid. If only config_ocean_data_extrapolation is true while config_calculate_thermal_forcing is false, then sill blocking will automatically be activated during extrapolation."
 				  possible_values=".true. or .false."
 	   />
 		<nml_option name="config_TF_vertical_calc" type="character" default_value="seafloor" units="unitless"
@@ -470,7 +470,7 @@
 		        possible_values="'seafloor', 'average', '200-500'"		  
 		/>
 	   <nml_option name="config_TF_iceberg_melt" type="character" default_value="none" units="unitless"
-				  description="Option to modify ocean temperature in the upper portion of the water column (above depth specified by config_TF_iceberg_depth) to resemble iceberg melt-driven cooling. Done before calculating the 3d thermal forcing field if both config_ocean_data_extrapolation and config_recalculate_thermal_forcing are also true. 'on' applies modification unilaterally, while 'mask' uses binary mask 'icebergFjordMask' to apply the correction. "
+				  description="Option to modify ocean temperature in the upper portion of the water column (above depth specified by config_TF_iceberg_depth) to resemble iceberg melt-driven cooling. Done before calculating the 3d thermal forcing field if both config_ocean_data_extrapolation and config_calculate_thermal_forcing are also true. 'on' applies modification universally, while 'mask' uses binary mask 'icebergFjordMask' to apply the correction. "
 				  possible_values="'off', 'on', 'mask'"		  
 		/>
 		<nml_option name="config_TF_iceberg_depth" type="real" default_value="-175.0" units="m"
@@ -1720,13 +1720,13 @@ is the value of that variable from the *previous* time level!
                      description="growmask for horizontal floodfill used to determine the over-extrapolaton region into grounded ice.  It is initialized as cells where bedTopography is below sea level and represents all the cells that seedOceanMaskHoriz could fill into.  The only purpose is for calculating availOceanMask."
                 />
                 <var name="oceanTemperature" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
-                        description="MPAS-Ocean potential temperature to be extrapolated to all grounding lines if config_recalcuate_thermal_forcing is true."
+                        description="ocean potential temperature to be extrapolated to all grounding lines if config_calcuate_thermal_forcing is true."
                 />
                 <var name="oceanSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
-                        description="MPAS-Ocean salinity to be extrapolated to all grounding lines if config_recalcuate_thermal_forcing is true."
+                        description="ocean salinity to be extrapolated to all grounding lines if config_calcuate_thermal_forcing is true."
                 />
                 <var name="icebergFjordMask" type="integer" dimensions="nCells Time" units="none" default_value="0"
-                        description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_param_type = AMfit. 1 prescribes AMberg at that cell, 0 prescribed AMmelt."
+                        description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_iceberg_melt = mask. 1 prescribes AMberg at that cell, 0 prescribed AMmelt."
 					 />
 					 <var name="oceanField" type="real" dimensions="TWO nISMIP6OceanLayers nCells Time" units="none"
 								description="Generic field used to extrapolate either ocean temperature and salinity, or thermal forcing. This field gets updated on each iteration of the extrapolation scheme. At end of extrapolation, those fields are set equal to oceanField. oceanField thus does not normally need to be output."
