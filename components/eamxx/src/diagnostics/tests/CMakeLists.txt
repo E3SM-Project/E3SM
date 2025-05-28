@@ -77,3 +77,6 @@ CreateDiagTest(horiz_avg "horiz_avg_test.cpp")
 
 # Test for vertical contraction
 CreateDiagTest(vert_contract "vert_contract_test.cpp")
+
+# Test zonal averaging
+CreateDiagTest(zonal_avg "zonal_avg_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
