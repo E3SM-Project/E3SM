@@ -182,7 +182,7 @@ advance_iop_subsidence(const MemberType& team,
     ekat::index_and_shift<-1>(s_ref_p_mid, range_pack, ref_p_mid_k, ref_p_mid_km1);
     ekat::index_and_shift<-1>(s_omega, range_pack, omega_k, omega_km1);
 
-    Pack weight = (ref_p_int(k) - ref_p_mid_km1) / (ref_p_mid_k - ref_p_mid_km1);
+    const auto weight = (ref_p_int(k) - ref_p_mid_km1) / (ref_p_mid_k - ref_p_mid_km1);
     omega_int(k).set(range_pack >= 1 && range_pack <= nlevs - 1, 
                      weight * omega_k + (1 - weight) * omega_km1);
   });
