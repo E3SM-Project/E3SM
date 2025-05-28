@@ -251,6 +251,8 @@ CONTAINS
 
   subroutine rof_run_mct( EClock, cdata, x2r, r2x )
 
+    use rdycoreMod, only : rdycore_run
+
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -267,7 +269,8 @@ CONTAINS
     call rof_import_mct( x2r )
     call t_stopf ('lc_rof_import')
 
-    !TODO: run rdycore code
+    ! run the model
+    call rdycore_run(logunit_rof)
 
     ! Map rof data to MCT datatype
     call t_startf ('lc_rof_export')
@@ -290,6 +293,8 @@ CONTAINS
   !
   subroutine rof_final_mct( EClock, cdata, x2r, r2x)
 
+    use rdycoreMod, only : rdycore_final
+
     implicit none
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -301,7 +306,11 @@ CONTAINS
     !EOP
     !-------------------------------------------------------------------------------
 
-  end subroutine rof_final_mct
+    call rdycore_final()
+
+    close (logunit_rof)
+
+   end subroutine rof_final_mct
 
   !===============================================================================
   !BOP ===========================================================================
@@ -527,15 +536,22 @@ CONTAINS
     ! Obtain the runoff input from the coupler
     ! convert from kg/m2s to m3/s
     !
+    use rdycoreMod     , only : num_cells_owned, total_runoff_data
+    use rof_cpl_indices, only : index_x2r_Flrl_rofsur, index_x2r_Flrl_rofsub
     ! ARGUMENTS:
     implicit none
     type(mct_aVect), intent(inout) :: x2r_r
     !
     ! LOCAL VARIABLES
-    integer :: n
+    integer                                  :: n, i
     real(kind=R8), dimension(:), allocatable :: ssh
-    character(len=32), parameter :: sub = 'rof_import_mct'
-    !---------------------------------------------------------------------------
+    real(r8), parameter                      :: runoff_unit_conversion = 1.0e-3_r8 ! [mm/s] to [m/s]
+    character(len=32), parameter             :: sub = 'rof_import_mct'
+   !---------------------------------------------------------------------------
+
+    do i = 1, num_cells_owned
+      total_runoff_data(i) = (x2r_r%rAttr(index_x2r_Flrl_rofsur, i) + x2r_r%rAttr(index_x2r_Flrl_rofsub, i)) * runoff_unit_conversion
+    enddo
 
     allocate(ssh(lsize))
     if (index_x2r_So_ssh>0) then
