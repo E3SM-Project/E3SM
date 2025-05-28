@@ -221,7 +221,7 @@ advance_iop_subsidence(const MemberType& team,
       const int k = 0;
       const Real dp_val = s_ref_p_del(k) + 1e-4;
       const Real omega_up = s_omega_int(k + 1);
-      const Real coeff_up = -0.5* dt * omega_up / dp_val;
+      const Real coeff_up = -0.5 * dt * omega_up / dp_val;
 
       a[k] = 0.0;
       b[k] = 1.0 + coeff_up;
