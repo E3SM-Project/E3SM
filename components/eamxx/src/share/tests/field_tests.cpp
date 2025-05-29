@@ -512,18 +512,9 @@ TEST_CASE("field_mgr", "") {
   REQUIRE_THROWS(field_mgr.get_field("field1", "grid3")); // Wrong grid
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo>& groups,
-                      const std::string& name)->bool {
-    for (auto it : groups) {
-      if (it.lock()->m_group_name==name) {
-        return true;
-      }
-    }
-    return false;
-  };
-  REQUIRE (has_group(f2_1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
-  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_2"));
-  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_1"));
+  REQUIRE (ekat::contains(f2_1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
+  REQUIRE (ekat::contains(f1_2.get_header().get_tracking().get_groups_names(),"Group_2"));
+  REQUIRE (ekat::contains(f1_2.get_header().get_tracking().get_groups_names(),"Group_1"));
 
   // Check that correct grids requested groups
   REQUIRE (field_mgr.has_group("group_1", "grid1"));
