@@ -206,12 +206,12 @@ advance_iop_subsidence(const MemberType& team,
       Real dp_val = s_ref_p_del(k) + 1e-4;
       Real omega_dn = s_omega_int(k);
       Real omega_up = s_omega_int(k + 1);
-      Real coeff_dn = -0.5 * dt * omega_dn / dp_val;
-      Real coeff_up = -0.5 * dt * omega_up / dp_val;
+      Real coeff_dn = 0.5 * dt * omega_dn / dp_val;
+      Real coeff_up = 0.5 * dt * omega_up / dp_val;
 
-      a[k] = -coeff_dn;
-      c[k] = -coeff_up;
-      b[k] = 1.0 + coeff_dn + coeff_up;
+      a[k] = coeff_dn;
+      c[k] = coeff_up;
+      b[k] = 1.0 - coeff_dn - coeff_up;
       rhs[k] = s_field(k);
     });
     team.team_barrier();
@@ -221,11 +221,11 @@ advance_iop_subsidence(const MemberType& team,
       const int k = 0;
       const Real dp_val = s_ref_p_del(k) + 1e-4;
       const Real omega_up = s_omega_int(k + 1);
-      const Real coeff_up = -0.5 * dt * omega_up / dp_val;
+      const Real coeff_up = 0.5 * dt * omega_up / dp_val;
 
       a[k] = 0.0;
-      b[k] = 1.0 + coeff_up;
-      c[k] = -coeff_up;
+      b[k] = 1.0 - coeff_up;
+      c[k] = coeff_up;
       rhs[k] = s_field(k);
     }
 
@@ -234,10 +234,10 @@ advance_iop_subsidence(const MemberType& team,
       const int k = nlevs - 1;
       const Real dp_val = s_ref_p_del(k) + 1e-4;
       const Real omega_dn = s_omega_int(k);
-      const Real coeff_dn = -0.5 * dt * omega_dn / dp_val;
+      const Real coeff_dn = 0.5 * dt * omega_dn / dp_val;
 
-      a[k] = -coeff_dn;
-      b[k] = 1.0 + coeff_dn;
+      a[k] = coeff_dn;
+      b[k] = 1.0 - coeff_dn;
       c[k] = 0.0;
       rhs[k] = s_field(k);
     }
