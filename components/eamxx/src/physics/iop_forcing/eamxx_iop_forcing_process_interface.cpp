@@ -284,6 +284,9 @@ advance_iop_subsidence(const MemberType& team,
     solve_field(qm, sqm);
   }
 
+  // Release WS views
+  workspace.release_many_contiguous<1>({&omega_int});
+
 }
 
 
