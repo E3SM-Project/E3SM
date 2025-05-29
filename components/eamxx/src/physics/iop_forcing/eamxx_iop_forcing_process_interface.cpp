@@ -268,7 +268,6 @@ advance_iop_subsidence(const MemberType& team,
 
   // Compute updated temperature, horizontal winds, and tracers
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
-    auto range_pack = ekat::range<IntPack>(k*Pack::n);
 
     // Before updating T, first scale using thermal
     // expansion term due to LS vertical advection
