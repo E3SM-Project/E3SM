@@ -159,7 +159,7 @@ protected:
   void register_variables(const std::string& filename, const std::string& fp_precision, const scorpio::FileMode mode);
   void set_decompositions(const std::string& filename);
   void compute_diagnostics (const bool allow_invalid_fields);
-  void init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model);
+  void init_diagnostics ();
   strvec_t get_var_dimnames (const FieldLayout& layout) const;
 
   // Tracking the averaging of any filled values:
