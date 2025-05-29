@@ -157,14 +157,14 @@ advance_iop_subsidence(const MemberType& team,
   constexpr int pack_size = Pack::n;
   const int nlev_packs = ekat::npack<Pack>(nlevs);
 
-  const auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-  const auto s_ref_p_int = ekat::scalarize(ref_p_int);
-  const auto s_ref_p_del = ekat::scalarize(ref_p_del);
-  const auto s_omega     = ekat::scalarize(omega);
-  const auto s_T         = ekat::scalarize(T);
-  const auto s_u         = ekat::scalarize(u);
-  const auto s_v         = ekat::scalarize(v);
-  const auto s_Q         = ekat::scalarize(Q);
+  auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
+  auto s_ref_p_int = ekat::scalarize(ref_p_int);
+  auto s_ref_p_del = ekat::scalarize(ref_p_del);
+  auto s_omega     = ekat::scalarize(omega);
+  auto s_T         = ekat::scalarize(T);
+  auto s_u         = ekat::scalarize(u);
+  auto s_v         = ekat::scalarize(v);
+  auto s_Q         = ekat::scalarize(Q);
 
   // Allocate temporary fields
   uview_1d<Pack> omega_int;
