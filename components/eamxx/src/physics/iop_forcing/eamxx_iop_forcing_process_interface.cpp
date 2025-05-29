@@ -137,7 +137,6 @@ void IOPForcing::initialize_impl (const RunType run_type)
   const Real one_over_num_dofs = 1.0/m_grid->get_num_global_dofs();
   if (iop_nudge_tq or iop_nudge_uv) m_helper_fields.at("horiz_mean_weights").deep_copy(one_over_num_dofs);
 }
-// =========================================================================================
 KOKKOS_FUNCTION
 void IOPForcing::
 advance_iop_subsidence(const MemberType& team,
@@ -166,114 +165,88 @@ advance_iop_subsidence(const MemberType& team,
   auto s_v         = ekat::scalarize(v);
   auto s_Q         = ekat::scalarize(Q);
 
-  // Allocate temporary fields
+  // Allocate omega_int as Pack (nlev_packs entries)
   uview_1d<Pack> omega_int;
+
+  // Allocate solver arrays as scalar (nlevs entries)
+  uview_1d<Real> a, b, c, rhs, sol, cp, dp;
+
   workspace.take_many_contiguous_unsafe<1>({"omega_int"}, {&omega_int});
+  workspace.take_many_contiguous_unsafe<7>({"a","b","c","rhs","sol","cp","dp"},
+                                           {&a,&b,&c,&rhs,&sol,&cp,&dp});
+
   auto s_omega_int = ekat::scalarize(omega_int);
 
-  // Compute omega on the interface grid
+  // Compute omega on interface levels
   const int pack_begin = 1 / pack_size;
   const int pack_end   = (nlevs - 1) / pack_size;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pack_begin, pack_end + 1), [&](const int k) {
     auto range_pack = ekat::range<IntPack>(k * pack_size);
-    range_pack.set(range_pack < 1, 1);
+    range_pack.set(range_pack < 1, 1); // avoid k-1 < 0
 
     Pack ref_p_mid_k, ref_p_mid_km1, omega_k, omega_km1;
     ekat::index_and_shift<-1>(s_ref_p_mid, range_pack, ref_p_mid_k, ref_p_mid_km1);
     ekat::index_and_shift<-1>(s_omega, range_pack, omega_k, omega_km1);
 
     const auto weight = (ref_p_int(k) - ref_p_mid_km1) / (ref_p_mid_k - ref_p_mid_km1);
-    omega_int(k).set(range_pack >= 1 && range_pack <= nlevs - 1, 
+    omega_int(k).set(range_pack >= 1 && range_pack <= nlevs - 1,
                      weight * omega_k + (1 - weight) * omega_km1);
   });
 
   omega_int(0)[0] = 0.0;
   omega_int(nlevs / pack_size)[nlevs % pack_size] = 0.0;
 
-  // Allocate and populate temporary Real arrays for tridiagonal solver
-  Real* shmem_ptr = static_cast<Real*>(team.team_shmem().get_shmem(7 * nlevs * sizeof(Real)));
-  Real* a   = shmem_ptr + 0 * nlevs;
-  Real* b   = shmem_ptr + 1 * nlevs;
-  Real* c   = shmem_ptr + 2 * nlevs;
-  Real* rhs = shmem_ptr + 3 * nlevs;
-  Real* sol = shmem_ptr + 4 * nlevs;
-  Real* cp  = shmem_ptr + 5 * nlevs;
-  Real* dp  = shmem_ptr + 6 * nlevs;
-
+  // Tridiagonal solver
   auto solve_field = [&](auto& field_view, auto& s_field) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs-1), [&](const int k) {
-
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
       Real dp_val = s_ref_p_del(k) + 1e-4;
       Real omega_dn = s_omega_int(k);
       Real omega_up = s_omega_int(k + 1);
       Real coeff_dn = 0.5 * dt * omega_dn / dp_val;
       Real coeff_up = 0.5 * dt * omega_up / dp_val;
 
-      a[k] = coeff_dn;
-      c[k] = coeff_up;
-      b[k] = 1.0 - coeff_dn - coeff_up;
-      rhs[k] = s_field(k);
+      a(k) = (k > 0)          ? coeff_dn               : 0.0;
+      c(k) = (k < nlevs - 1)  ? coeff_up               : 0.0;
+      b(k) = 1.0 - a(k) - c(k);
+      rhs(k) = s_field(k);
     });
     team.team_barrier();
 
-    // --- Top (k = 0) ---
-    {
-      const int k = 0;
-      const Real dp_val = s_ref_p_del(k) + 1e-4;
-      const Real omega_up = s_omega_int(k + 1);
-      const Real coeff_up = 0.5 * dt * omega_up / dp_val;
-
-      a[k] = 0.0;
-      b[k] = 1.0 - coeff_up;
-      c[k] = coeff_up;
-      rhs[k] = s_field(k);
-    }
-
-    // --- Bottom (k = nlevs - 1) ---
-    {
-      const int k = nlevs - 1;
-      const Real dp_val = s_ref_p_del(k) + 1e-4;
-      const Real omega_dn = s_omega_int(k);
-      const Real coeff_dn = 0.5 * dt * omega_dn / dp_val;
-
-      a[k] = coeff_dn;
-      b[k] = 1.0 - coeff_dn;
-      c[k] = 0.0;
-      rhs[k] = s_field(k);
-    }
-
-    cp[0] = c[0] / b[0];
-    dp[0] = rhs[0] / b[0];
+    // Thomas algorithm forward pass
+    cp(0) = c(0) / b(0);
+    dp(0) = rhs(0) / b(0);
     for (int i = 1; i < nlevs; ++i) {
-      cp[i] = c[i] / (b[i] - a[i] * cp[i - 1]);
-      dp[i] = (rhs[i] - a[i] * dp[i - 1]) / (b[i] - a[i] * cp[i - 1]);
+      const Real m = b(i) - a(i) * cp(i - 1);
+      cp(i) = c(i) / m;
+      dp(i) = (rhs(i) - a(i) * dp(i - 1)) / m;
     }
-    sol[nlevs - 1] = dp[nlevs - 1];
+
+    // Back substitution
+    sol(nlevs - 1) = dp(nlevs - 1);
     for (int i = nlevs - 2; i >= 0; --i) {
-      sol[i] = dp[i] - cp[i] * sol[i + 1];
+      sol(i) = dp(i) - cp(i) * sol(i + 1);
     }
+
     team.team_barrier();
 
+    // Store solution back into packed field
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&](const int k) {
       for (int i = 0; i < pack_size; ++i) {
-        int idx = k * pack_size + i;
-        if (idx < nlevs) field_view(k)[i] = sol[idx];
+        const int idx = k * pack_size + i;
+        if (idx < nlevs) field_view(k)[i] = sol(idx);
       }
     });
   };
 
-  // === Explicit thermal expansion term for T after implicit solve ===
+  // Apply explicit thermal expansion correction
   constexpr Real Rair  = C::Rair;
   constexpr Real Cpair = C::Cpair;
 
-  // Compute updated temperature, horizontal winds, and tracers
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
-
-    // Before updating T, first scale using thermal
-    // expansion term due to LS vertical advection
-    T(k) *= 1 + (dt*Rair/Cpair)*omega(k)/ref_p_mid(k);
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&](const int k) {
+    T(k) *= 1 + (dt * Rair / Cpair) * omega(k) / ref_p_mid(k);
   });
 
+  // Implicit solve on T, u, v, and Q
   solve_field(T, s_T);
   solve_field(u, s_u);
   solve_field(v, s_v);
@@ -283,11 +256,10 @@ advance_iop_subsidence(const MemberType& team,
     solve_field(qm, sqm);
   }
 
-  // Release WS views
   workspace.release_many_contiguous<1>({&omega_int});
+  workspace.release_many_contiguous<7>({&a,&b,&c,&rhs,&sol,&cp,&dp});
 
 }
-
 
 // =========================================================================================
 KOKKOS_FUNCTION
@@ -393,8 +365,7 @@ void IOPForcing::run_impl (const double dt)
   }
 
   // Team policy and workspace manager for eamxx
-  auto policy_iop = ESU::get_default_team_policy(m_num_cols, nlev_packs);
-  policy_iop.set_scratch_size(0, Kokkos::PerTeam(7 * m_num_levs * sizeof(Real)));
+  const auto policy_iop = ESU::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Reset internal WSM variables.
   m_workspace_mgr.reset_internals();
