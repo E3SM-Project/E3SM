@@ -4280,8 +4280,8 @@
     <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/usr/projects/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/usr/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/lustre/scratch5/$ENV{USER}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch5/$ENV{USER}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/usr/projects/e3sm/software/chicoma-cpu/cprnc</CCSM_CPRNC>
@@ -4356,6 +4356,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.5.0</command>
         <command name="load">intel/2023.2.0</command>
+        <command name="load">intel-mkl/2023.2.0</command>
       </modules>
 
       <modules compiler="amdclang">
