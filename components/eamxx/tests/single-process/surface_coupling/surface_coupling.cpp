@@ -20,7 +20,6 @@ namespace scream {
 using vos_type = std::vector<std::string>;
 using vor_type = std::vector<Real>;
 constexpr Real test_tol = std::numeric_limits<Real>::epsilon()*1e4;
-constexpr Real FillValue = -99999.0;
 
 // Test function for prescribed values
 Real test_func(const int col, const int t) {
@@ -92,7 +91,6 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("INSTANT"));
   om_pl.set("max_snapshots_per_file",2);
-  om_pl.set<double>("fill_value",FillValue);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
   ctrl_pl.set("frequency",1);
@@ -260,24 +258,24 @@ void test_imports(const FieldManager& fm,
 
     // The following are only imported during run phase. If this test is called
     // during initialization, all values should be the default value.
-    // TODO: Why are some of these FillValue and others are 0.0?  For the former,
-    // they are gathered from output it seems, so they take the FillValue.  While
-    // the few ones with 0.0 seem to take there initial value from the field initialization
-    // which is 0.0 I believe.  Still, based on the comment none of these should be read in
-    // yet right?
     if (called_directly_after_init) {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == FillValue);
-      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == FillValue);
-      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == FillValue);
-      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == FillValue);
+      // Right now, FieldManager allocates fields without setting a special value
+      // for uninitialized, so it just gets whatever is the default allocation.
+      // If we change what the FM does, we need to change this value.
+      const Real UninitedValue = 0.0;
+
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == UninitedValue);
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == UninitedValue);
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == UninitedValue);
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == UninitedValue);
       EKAT_REQUIRE(surf_radiative_T(i) == 0.0);
       EKAT_REQUIRE(T_2m(i)             == 0.0);
       EKAT_REQUIRE(qv_2m(i)            == 0.0);
       EKAT_REQUIRE(wind_speed_10m(i)   == 0.0);
       EKAT_REQUIRE(snow_depth_land(i)  == 0.0);
-      EKAT_REQUIRE(surf_lw_flux_up(i)  == FillValue);
-      EKAT_REQUIRE(ocnfrac(i)          == FillValue);
-      EKAT_REQUIRE(landfrac(i)         == FillValue);
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == UninitedValue);
+      EKAT_REQUIRE(ocnfrac(i)          == UninitedValue);
+      EKAT_REQUIRE(landfrac(i)         == UninitedValue);
     } else {
       EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0 )*import_data_view(i, import_cpl_indices_view(0)));
       EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1 )*import_data_view(i, import_cpl_indices_view(1)));
