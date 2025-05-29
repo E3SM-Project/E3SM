@@ -79,7 +79,6 @@ module ocn_diagnostics
    integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  fCoef
    real (kind=RKIND) ::  landIceTopDragCoeff
-   real (kind=RKIND) ::  rho_floatation
    real (kind=RKIND), pointer ::  coef_3rd_order
 
    ! Methods for computing thickness at edges for flux calculations
@@ -3679,7 +3678,8 @@ contains
 
       integer :: iCell, iEdge, cell1, cell2, iLevel, i
 
-      real (kind=RKIND) :: blThickness, dz, weightSum, h_nu, Gamma_turb, landIceEdgeFraction, velocityMagnitude
+      real (kind=RKIND) :: blThickness, dz, weightSum, h_nu, Gamma_turb, landIceEdgeFraction, &
+                           velocityMagnitude, rho_floatation
 
       ! Scratch Arrays
       real (kind=RKIND), dimension(:), allocatable ::  &
@@ -3704,6 +3704,8 @@ contains
          landIceDraftForSsh = landIceDraft
 
       elseif ( trim(config_land_ice_draft_mode) == "pressure-dependent" ) then
+
+         rho_floatation = config_land_ice_rho_ocean
 
 #ifdef MPAS_OPENACC
          !$acc parallel loop present(landIceDraftForSsh, landIcePressure)
@@ -4692,8 +4694,6 @@ contains
       else
          landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
       endif
-
-      rho_floatation = config_land_ice_rho_ocean
 
       if (trim(config_thickness_drag_type) == 'centered') then
          thickEdgeDragChoice = thickEdgeDragCenter
