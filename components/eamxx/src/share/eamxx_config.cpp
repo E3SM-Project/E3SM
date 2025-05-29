@@ -11,9 +11,8 @@ namespace scream {
 
 std::string eamxx_config_string() {
   std::string config = "\n-------- EKAT CONFIGS --------\n\n";
-  config += ekat::active_avx_string ();
-  config += ekat::compiler_id_string ();
-  config += ekat::fpe_config_string ();
+  config += "Active AVX settings: " + ekat::active_avx_string () + "\n";
+  config += "Compiler Id: " + ekat::compiler_id_string () + "\n";
   config += ekat::kokkos_config_string();
   config += "\n-------- SCREAM CONFIGS --------\n\n";
   config += " sizeof(Real) = " + std::to_string(sizeof(Real)) + "\n";
