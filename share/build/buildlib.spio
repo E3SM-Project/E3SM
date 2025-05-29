@@ -209,11 +209,13 @@ def buildlib(bldroot, installpath, case):
         pnetcdf_string = "WITH_PNETCDF:BOOL=ON"
         netcdf4_string = "NetCDF_C_HAS_PARALLEL:BOOL=TRUE"
 
+    netcdf4_nczarr_string = "NetCDF_C_HAS_NCZARR:BOOL=TRUE"
     adios_string = "WITH_ADIOS2:BOOL=ON"
     hdf5_string = "WITH_HDF5:BOOL=ON"
     expect_string_found = False
     pnetcdf_found = False
     netcdf4_parallel_found = False
+    netcdf4_nczarr_found = False
     adios_found = False
     hdf5_found = False
 
@@ -225,6 +227,8 @@ def buildlib(bldroot, installpath, case):
             pnetcdf_found = True
         if re.search(netcdf4_string, line):
             netcdf4_parallel_found = True
+        if re.search(netcdf4_nczarr_string, line):
+            netcdf4_nczarr_found = True
         if re.search(adios_string, line):
             adios_found = True
         if re.search(hdf5_string, line):
@@ -283,6 +287,8 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",pnetcdf"
     if netcdf4_parallel_found:
         valid_values += ",netcdf4p,netcdf4c"
+    if netcdf4_nczarr_found:
+        valid_values += ",netcdf4z"
     if adios_found:
         valid_values += ",adios"
         if adiosc_found:
