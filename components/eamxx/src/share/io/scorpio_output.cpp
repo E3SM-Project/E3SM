@@ -136,17 +136,15 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   auto& fm_after_hr = m_field_mgrs[AfterHorizRemap];
 
   // For simplicity, we create a "copy" of the input fm, so we can stuff also diags in it
-  fm_model = std::make_shared<FieldManager>(field_mgr->get_grids_manager(),RepoState::Closed);
+  fm_model = std::make_shared<FieldManager>(fm_grid,RepoState::Closed);
 
-  // First, add fields in the model FM...
-  for (const auto& fname : m_fields_names) {
-    if (field_mgr->has_field(fname)) {
-      fm_model->add_field(field_mgr->get_field(fname));
-    }
+  // Add ALL field of the FM that are on the output grid
+  for (const auto& [name,f_ptr] : field_mgr->get_repo(grid_name)) {
+    fm_model->add_field(*f_ptr);
   }
 
   // ... then add diagnostic fields
-  init_diagnostics (field_mgr);
+  init_diagnostics ();
 
   // Avg count only makes sense if we have
   //  - non-instant output
@@ -180,8 +178,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   if (use_vertical_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
-    auto p_mid = field_mgr->get_field("p_mid");
-    auto p_int = field_mgr->get_field("p_int");
+    auto p_mid = fm_model->get_field("p_mid");
+    auto p_int = fm_model->get_field("p_int");
     auto vert_remapper = std::make_shared<VerticalRemapper>(fm_model->get_grid(),vert_remap_file);
     vert_remapper->set_source_pressure (p_mid,p_int);
     vert_remapper->set_mask_value(m_fill_value);
@@ -520,6 +518,9 @@ res_dep_memory_footprint () const
   for (const auto& [phase,fm] : m_field_mgrs) {
     auto gn = fm->get_grid()->name();
     auto is_diag = [&](const std::string& name) {
+      if (not fm->has_group("diagnostic"))
+        return false;
+
       auto group = fm->get_field_group("diagnostic",gn);
       for (const auto& fn : group.m_info->m_fields_names) {
         if (name==fn)
@@ -877,62 +878,42 @@ compute_diagnostics(const bool allow_invalid_fields)
 }
 
 void AtmosphereOutput::
-init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model)
+init_diagnostics ()
 {
-  // So far, all output fields that ARE in the model FM have been added
+  // So far, all fields (on the output grid) that ARE in the model FM have been added
   // to the FM stored in this class for the FromModel phase. Anything missing
   // must be a diagnostic.
 
-  // Temp map to quickly check if a diag has been built already
-  strmap_t<diag_ptr_type> all_diags;
+  auto fm_model = m_field_mgrs[FromModel];
+  auto fm_grid = m_field_mgrs[FromModel]->get_grid();
 
   // NOTE: lambda's cannot call themselves recursively. So store the lambda
   //       inside a std::function, so that the lambda body CAN call create_diag.
   std::function<void(const std::string&)> create_diag;
   create_diag = [&](const std::string& name) {
+    // Create the diag
     auto diag = create_diagnostic(name,fm_model->get_grid());
 
+    // Set inputs in the diag (and recurse if inputs are also diags not yet created)
     for (const auto& freq : diag->get_required_field_requests()) {
       const auto& dep_name = freq.fid.name();
 
-      if (m_field_mgrs[FromModel]->has_field(dep_name) or
-          all_diags.count(dep_name)==1)
-        continue;
-
-      if (fm_model->has_field(dep_name)) {
-        m_field_mgrs[FromModel]->add_field(fm_model->get_field(dep_name));
-      } else {
+      if (not fm_model->has_field(dep_name)) {
+        // Not a field from the model, nor another diag we already created
         create_diag(dep_name);
       }
+
+      auto dep = fm_model->get_field(dep_name);
+      diag->set_required_field(dep);
     }
 
-    m_diagnostics.push_back(diag);
-    all_diags[name] = diag;
-  };
-
-  for (const auto& fname : m_fields_names) {
-    if (not m_field_mgrs[FromModel]->has_field(fname))
-      create_diag(fname);
-  }
-
-  // Now, all diags are built, and can be initialied. Notice that the order
-  // in which they appear in m_diagnostics follows the "evaluation order",
-  // meaning that if diag A depends on diag B, then B appears *before* A.
-  // This ensusre that:
-  //   1. here, we can fully init diags in order
-  //   2. at run time, we can evaluate diags in order
-  for (auto diag : m_diagnostics) {
-    for (const auto& freq : diag->get_required_field_requests()) {
-      const auto& fname = freq.fid.name();
-      auto f = m_field_mgrs[FromModel]->get_field(fname);
-      diag->set_required_field(f);
-    }
+    // Initialize the diag
     diag->initialize(util::TimeStamp(),RunType::Initial);
 
-    const auto& diag_field_name = diag->get_diagnostic().name();
-
-    m_field_mgrs[FromModel]->add_field(diag->get_diagnostic());
-    m_field_mgrs[FromModel]->add_to_group(diag_field_name,"diagnostic");
+    // Set the diag field in the FM
+    auto diag_field = diag->get_diagnostic();
+    fm_model->add_field(diag_field);
+    fm_model->add_to_group(diag_field.name(),"diagnostic");
 
     // Some diags need some extra setup or trigger extra behaviors
     std::string diag_avg_cnt_name = "";
@@ -958,7 +939,20 @@ init_diagnostics (const std::shared_ptr<const FieldManager>& fm_model)
 
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
-      m_field_to_avg_cnt_suffix.emplace(diag_field_name,diag_avg_cnt_name);
+      m_field_to_avg_cnt_suffix.emplace(diag_field.name(),diag_avg_cnt_name);
+    }
+
+    // All done, add to the diags vector
+    m_diagnostics.push_back(diag);
+  };
+
+  // Notice that, thanks to how we create and add diags to m_diagnostics,
+  // the order in which diags appear in m_diagnostics follows the evaluation
+  // order, meaning that if diag A depends on diag B, then B appears *before* A.
+  // This ensures we can evaluate diags in order at runtime
+  for (const auto& fname : m_fields_names) {
+    if (not m_field_mgrs[FromModel]->has_field(fname)) {
+      create_diag(fname);
     }
   }
 }
