@@ -777,11 +777,9 @@ subroutine nucleate_ice_cam_calc( &
                   else
                      ! 3-mode -- needs weighting for dust since dust and seasalt
                      !           are combined in the "coarse" mode type
-#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if ((defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE) && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO)
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
