@@ -458,7 +458,6 @@ TEST_CASE ("vertical_remapper") {
             REQUIRE_THROWS (remap->set_mask_value(std::numeric_limits<Real>::quiet_NaN()));
             remap->set_mask_value(mask_val); // Only needed if top and/or bot use etype=Mask
 
-            remap->registration_begins();
             remap->register_field(src_s2d,  tgt_s2d);
             remap->register_field(src_v2d,  tgt_v2d);
             remap->register_field(src_s3d_m,tgt_s3d_m);

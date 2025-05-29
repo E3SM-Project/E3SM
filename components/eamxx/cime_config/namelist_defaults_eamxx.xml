@@ -50,7 +50,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>driver_debug_options,driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_debug_options,driver_options,iop_options,atmosphere_processes,grids_manager,initial_conditions,scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -85,7 +85,10 @@ be lost if SCREAM_HACK_XML is not enabled.
 
         3) For a parameter whose elements all have selectors, if none of the selectors
            are matched, then the parameter will be omitted from the case XML
-           file ($case/namelist_scream.xml).
+           file ($case/namelist_scream.xml). If you want a selector to NOT match a string/regex,
+           you can prepend the string with a "!". The operation ' @@ ' (AND) and ' || ' (OR) are also
+           supported for more complex checks (' @@ ' is used because & is a reserved character in XML).
+           Note, the whitespaces around the AND and OR operators are NOT optional.
 
         4) Parameter types will be inferred. You can override the inferred type
            via the 'type' metadata attribute. Types are:
@@ -152,7 +155,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
       <!-- Run internal checks on code correctness.
            <= 0: off; >= 1: global hashes over state -->
-      <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
+      <internal_diagnostics_level
+        type="integer"
+        valid_values="0,1,2"
+        doc="Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)"
+      >0</internal_diagnostics_level>
       <compute_tendencies
         type="array(string)"
         doc="list of computed fields for which this process will back out tendencies"
@@ -162,8 +169,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list type="array(string)" doc="List of atm processes in this atm process group"/>
-      <Type>Group</Type>
-      <schedule_type valid_values="Sequential">Sequential</schedule_type>
+      <type>group</type>
+      <schedule_type valid_values="sequential">sequential</schedule_type>
     </atm_proc_group>
 
     <!-- Surface coupling (import and export) -->
@@ -183,22 +190,25 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
-      <Moisture>moist</Moisture>
+      <moisture>moist</moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
-      <BfbHash type="integer">18</BfbHash>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <enable_energy_fixer>true</enable_energy_fixer>
       <!-- true means 2 more calls to AllReduce after dycore -->
       <enable_energy_fixer_debug_info>false</enable_energy_fixer_debug_info>
+      <bfb_hash type="integer">18</bfb_hash>
     </homme>
 
     <!-- P3 microphysics -->
     <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols">false</use_hetfrz_classnuc>
+      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM.*MAM4xx">true</use_hetfrz_classnuc>
+      <do_prescribed_ccn COMPSET=".*SCREAM.*MAM4xx">false</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
+      <do_predict_nc COMPSET=".*SCREAM.*MAM4xx">true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
@@ -229,11 +239,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <deposition_nucleation_exponent type="real" doc="Deposition nucleation exponent factor">0.304</deposition_nucleation_exponent>
       <ice_sedimentation_factor type="real" doc="Ice sedimentation fall speed factor">1.0</ice_sedimentation_factor>
       <do_ice_production type="logical" doc="Flag to turn on ice production processes (loss processes unaffected)">true</do_ice_production>
-      <!-- flags to override subgrid coud fraction by setting them to 1 everywhere if true -->
       <set_cld_frac_l_to_one type="logical" doc="set P3 input liquid cloud fraction to 1 everywhere">false</set_cld_frac_l_to_one>
       <set_cld_frac_r_to_one type="logical" doc="set P3 input rain cloud fraction to 1 everywhere"  >false</set_cld_frac_r_to_one>
       <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere"   >false</set_cld_frac_i_to_one>
       <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
+      <extra_p3_diags type="logical" doc="Extra P3 diagnostics">false</extra_p3_diags>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -250,9 +260,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <w2tune type="real" doc="Vertical velocity variance">1.0</w2tune>
       <length_fac type="real" doc="Length scale factor">0.5</length_fac>
       <c_diag_3rd_mom type="real" doc="Third moment vertical velocity damping factor">7.0</c_diag_3rd_mom>
-      <Ckh type="real" doc="Eddy diffusivity coefficient for heat">0.1</Ckh>
-      <Ckm type="real" doc="Eddy diffusivity coefficient for momentum">0.1</Ckm>
+      <coeff_kh type="real" doc="Eddy diffusivity coefficient for heat">0.1</coeff_kh>
+      <coeff_km type="real" doc="Eddy diffusivity coefficient for momentum">0.1</coeff_km>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
+      <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
     </shoc>
 
     <!-- Basic options for each mam4 atm process -->
@@ -275,7 +286,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <fractional_land_use_file hgrid="ne4np4.pg2" type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne4pg2/atmsrf_ne4pg2_c20241017.nc</fractional_land_use_file>
 
     <!-- Mapping Files for finer resolutions -->
-    <drydep_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same."/>
+    <drydep_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same.">none</drydep_remap_file>
     <drydep_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</drydep_remap_file>
     <drydep_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</drydep_remap_file>
     <drydep_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</drydep_remap_file>
@@ -283,7 +294,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_drydep>
 
     <!-- CLD fraction -->
-    <cldFraction inherit="atm_proc_base"/>
+    <cld_fraction inherit="atm_proc_base"/>
 
     <!-- MAM4xx namelist options -->
 
@@ -338,7 +349,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_soag_elevated_emiss_file_name hgrid="ne4np4.pg2" type="file" doc="elevated emissions for soag">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/elevated/cmip6_mam4_soag_elev_1x1_2010_clim_ne4pg2_c20241008.nc</mam4_soag_elevated_emiss_file_name>
 
       <!-- Mapping Files for finer resolutions -->
-      <aero_microphys_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same."/>
+      <aero_microphys_remap_file type="file" doc="File containing mapping data from the grid of frac land use files to the model grid. Unused if the grid is the same.">none</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</aero_microphys_remap_file>
@@ -368,8 +379,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mam4_srf_online_emiss inherit="mam4_atm_proc_base">
 
       <!-- For all other grids -->
-      <srf_emis_specifier_for_DMS     type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20240816.nc</srf_emis_specifier_for_DMS>
-      <srf_emis_specifier_for_SO2     type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_SO2>
+      <srf_emis_specifier_for_dms     type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20240816.nc</srf_emis_specifier_for_dms>
+      <srf_emis_specifier_for_so2     type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so2>
       <srf_emis_specifier_for_bc_a4   type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_bc_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_bc_a4>
       <srf_emis_specifier_for_num_a1  type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a1_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a1>
       <srf_emis_specifier_for_num_a2  type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a2>
@@ -379,8 +390,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_emis_specifier_for_so4_a2  type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a2>
 
       <!-- For ne4pg2 grid -->
-      <srf_emis_specifier_for_DMS    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20240814.nc</srf_emis_specifier_for_DMS>
-      <srf_emis_specifier_for_SO2    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_SO2>
+      <srf_emis_specifier_for_dms    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20240814.nc</srf_emis_specifier_for_dms>
+      <srf_emis_specifier_for_so2    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so2>
       <srf_emis_specifier_for_bc_a4  hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_bc_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_bc_a4>
       <srf_emis_specifier_for_num_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_num_a1>
       <srf_emis_specifier_for_num_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_num_a2>
@@ -396,7 +407,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20241030.nc</marine_organics_file>
 
       <!-- Mapping Files for finer resolutions -->
-      <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same."/>
+      <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same.">none</srf_remap_file>
       <srf_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</srf_remap_file>
@@ -412,7 +423,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <nudging_fields type="array(string)" doc="List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx"/>
       <nudging_timescale type="integer" doc="Timescale to apply nudging tendencies, 0: full replacement, >0: actual timescale">0</nudging_timescale>
       <use_nudging_weights type="logical" doc="Flag for nudging weights option">false</use_nudging_weights>
-      <nudging_weights_file type="string" doc="weights that relax the nudging fields update"/>
+      <nudging_weights_file type="string" doc="weights that relax the nudging fields update">none</nudging_weights_file>
       <skip_vert_interpolation type="logical" doc="Flag for skipping vertical interpolation">false</skip_vert_interpolation>
       <source_pressure_type type="string"
 	                    valid_values="TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE"
@@ -420,7 +431,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).
     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).">TIME_DEPENDENT_3D_PROFILE</source_pressure_type>
       <source_pressure_file type="string" doc="If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.
-    Default is to look for p_levs in the first nudging_filenames_patterns file"/>
+    Default is to look for p_levs in the first nudging_filenames_patterns file">none</source_pressure_file>
       <nudging_refine_remap_mapfile
         type="string"
         doc="Refine-remapping mapfile from the source nudging dataset to the physics grid"
@@ -436,38 +447,38 @@ be lost if SCREAM_HACK_XML is not enabled.
     </nudging>
 
     <!-- ML correction -->
-    <mlcorrection inherit="atm_proc_base">
-      <ML_model_path_tq type="string" doc="Path to pre-trained ML model for temperature and specific humidity"/>
-      <ML_model_path_uv type="string" doc="Path to pre-trained ML model for wind fields"/>
-      <ML_model_path_sfc_fluxes type="string" doc="Path to pre-trained ML model for surface fluxes"/>
-      <ML_output_fields type="array(string)" doc="ML correction output variables, the following variables are supported: T_mid,qv,u,v"/>
-      <ML_correction_unit_test type="logical">false</ML_correction_unit_test>
-    </mlcorrection>
+    <ml_correction inherit="atm_proc_base">
+      <ml_model_path_tq type="string" doc="Path to pre-trained ML model for temperature and specific humidity"/>
+      <ml_model_path_uv type="string" doc="Path to pre-trained ML model for wind fields"/>
+      <ml_model_path_sfc_fluxes type="string" doc="Path to pre-trained ML model for surface fluxes"/>
+      <ml_output_fields type="array(string)" doc="ML correction output variables, the following variables are supported: T_mid,qv,u,v"/>
+      <ml_correction_unit_test type="logical">false</ml_correction_unit_test>
+    </ml_correction>
 
     <!-- IOPForcing -->
     <iop_forcing inherit="atm_proc_base" />
 
     <!-- For internal testing only -->
-    <testOnly inherit="atm_proc_base">
+    <test_only inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
       <my_param nlev="1" append="base">3,4</my_param>
       <my_param nlev="1" append="last">5,6</my_param>
       <my_param nlev="2" append="last">3,4</my_param>
       <my_param nlev="2" append="base">5,6</my_param>
-    </testOnly>
+    </test_only>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
-      <spa_remap_file type="file" doc="File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same."/>
+      <spa_remap_file type="file" doc="File containing mapping data from the grid of spa_data_file to the model grid. Unused if the grid is the same.">none</spa_remap_file>
       <spa_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120np4_mono_20220502.nc</spa_remap_file>
       <spa_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne120pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
-      <spa_remap_file COMPSET=".*DP-EAMxx"/>
+      <spa_remap_file COMPSET=".*DP-EAMxx">none</spa_remap_file>
 
-      <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one"/>
+      <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one">none</spa_data_file>
       <spa_data_file hgrid="ne.*np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
       <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30pg2_20240111.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_20220428.nc</spa_data_file>
@@ -547,10 +558,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
-      <atm_procs_list>shoc,cldFraction,spa,p3</atm_procs_list>
-      <atm_procs_list hgrid=".*pg2">tms,shoc,cldFraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cldFraction,p3</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cldFraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list>shoc,cld_fraction,spa,p3</atm_procs_list>
+      <atm_procs_list hgrid=".*pg2">tms,shoc,cld_fraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne120np4">6</number_of_subcycles>
@@ -577,16 +589,17 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 
   <!-- Grids manager specs -->
   <grids_manager>
-    <Type>Homme</Type>
-    <physics_grid_type>GLL</physics_grid_type>
-    <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
-    <physics_grid_rebalance>None</physics_grid_rebalance>
+    <type>homme</type>
+    <physics_grid_type>gll</physics_grid_type>
+    <physics_grid_type hgrid=".*pg2">pg2</physics_grid_type>
+    <physics_grid_rebalance>none</physics_grid_rebalance>
     <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
     <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
     <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
@@ -595,22 +608,24 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
-    <Filename type="file">UNSET</Filename>
-    <Filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
-    <Filename hgrid="ne4np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</Filename>
-    <Filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</Filename>
-    <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
-    <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</Filename>
-    <Filename hgrid="ne30np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</Filename>
-    <Filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
-    <Filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</Filename>
-    <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
-    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename>
-    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
-    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
-    <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
-    <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
-    <Filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</Filename>
+    <filename type="file">UNSET</filename>
+    <filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</filename>
+    <filename hgrid="ne4np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
+    <filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</filename>
+    <filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
+    <filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
+    <filename hgrid="ne30np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
+    <filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
+    <filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
+    <filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
+    <filename hgrid="ne256np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
+    <filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</filename>
+    <filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</filename>
+    <filename hgrid="ne1024np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
+    <filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</filename>
+    <filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
+    <filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</filename>
+    <filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</filename>
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
@@ -715,16 +730,16 @@ be lost if SCREAM_HACK_XML is not enabled.
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
-  <Scorpio>
+  <scorpio>
     <output_yaml_files type="array(string)"/>
     <model_restart>
       <iotype>default</iotype>
       <output_control locked="true">
-        <Frequency>${REST_N}</Frequency>
+        <frequency>${REST_N}</frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
       </output_control>
     </model_restart>
-  </Scorpio>
+  </scorpio>
 
   <!-- driver debug options for eamxx -->
   <!--
@@ -758,7 +773,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_to_screen type="logical">false</output_to_screen>
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
-    <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
+    <column_conservation_checks_fail_handling_type>warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
     <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
     <enable_iop type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_iop>
@@ -797,7 +812,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
     <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
-    <disable_diagnostics>False</disable_diagnostics>
+    <disable_diagnostics>false</disable_diagnostics>
     <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
     <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
@@ -869,7 +884,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
-    <theta_hydrostatic_mode>False</theta_hydrostatic_mode>
+    <theta_hydrostatic_mode>false</theta_hydrostatic_mode>
     <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>

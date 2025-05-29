@@ -26,10 +26,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -155,8 +155,7 @@ void run(std::mt19937_64& engine)
 
     // Run diagnostic and compare with manual calculation
     Field rh_f = T_mid_f.clone();
-    rh_f.deep_copy<double,Host>(0.0);
-    rh_f.sync_to_dev();
+    rh_f.deep_copy(0);
     const auto& rh_v = rh_f.get_view<Pack**>();
     using physics = scream::physics::Functions<Real, DefaultDevice>;
     using Smask = ekat::Mask<Pack::n>;

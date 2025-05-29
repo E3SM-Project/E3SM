@@ -34,6 +34,10 @@ set_extra_data (const std::string& key,
 
 std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name) const {
   auto fh = create_header(get_identifier().alias(name));
+  if (get_parent() != nullptr) {
+    // If we're aliasing, we MUST keep track of the parent
+    fh->create_parent_child_link(get_parent());
+  }
   fh->m_tracking = m_tracking;
   fh->m_alloc_prop = m_alloc_prop;
   fh->m_extra_data = m_extra_data;

@@ -163,7 +163,7 @@ module cime_comp_mod
   use seq_flds_mod, only : seq_flds_z2x_fluxes, seq_flds_x2z_fluxes
 
   ! nonlinear maps
-  use seq_nlmap_mod, only : seq_nlmap_setopts
+  use seq_nlmap_mod, only : seq_nlmap_setopts, seq_nlmap_init_a2oi_cons, seq_nlmap_init_a2l_cons
 
   ! component type and accessor functions
   use component_type_mod, only: component_get_iamin_compid, component_get_suffix
@@ -436,6 +436,7 @@ module cime_comp_mod
   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
   logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+  integer  :: glc_nzoc               ! number of z-levels for ocn/glc TF coupling
   logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
   logical  :: ocn_c2_rof             ! .true.  => ocn to rof coupling on
@@ -1066,6 +1067,7 @@ contains
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
     integer :: nlmaps_verbosity
+    logical :: nlmaps_atm2srf_conserve
     character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     !----------------------------------------------------------
@@ -1225,6 +1227,7 @@ contains
          reprosum_recompute=reprosum_recompute     , &
          max_cplstep_time=max_cplstep_time         , &
          nlmaps_verbosity=nlmaps_verbosity         , &
+         nlmaps_atm2srf_conserve=nlmaps_atm2srf_conserve, &
          nlmaps_exclude_fields=nlmaps_exclude_fields)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
@@ -1239,7 +1242,8 @@ contains
          repro_sum_recompute_in    = reprosum_recompute)
 
     call seq_nlmap_setopts(nlmaps_verbosity_in = nlmaps_verbosity, &
-         nlmaps_exclude_fields_in = nlmaps_exclude_fields)
+         nlmaps_exclude_fields_in = nlmaps_exclude_fields, &
+         nlmaps_atm2srf_conserve_in = nlmaps_atm2srf_conserve)
 
     ! Check cpl_seq_option
 
@@ -1452,6 +1456,8 @@ contains
   !===============================================================================
 
   subroutine cime_init()
+
+    type(seq_map), pointer :: mapper_lcl
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -1677,6 +1683,7 @@ contains
          ocnrof_prognostic=ocnrof_prognostic,   &
          ocn_c2_glcshelf=ocn_c2_glcshelf,       &
          ocn_c2_glctf=ocn_c2_glctf,             &
+         glc_nzoc=glc_nzoc,                     &
          glc_prognostic=glc_prognostic,         &
          rof_prognostic=rof_prognostic,         &
          rofocn_prognostic=rofocn_prognostic,   &
@@ -1778,6 +1785,7 @@ contains
        if (atm_prognostic) ocn_c2_atm = .true.
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
+       if (glc_prognostic .and. (glc_nzoc > 0)) ocn_c2_glctf = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
        if (rofocn_prognostic) ocn_c2_rof = .true.
 
@@ -2294,6 +2302,21 @@ contains
           call t_stopf ('CPL:init_aoflux')
        endif
     endif
+
+    !----------------------------------------------------------
+    !| Initialize atm/srf exact mass conservation if requested
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+       if (atm_present .and. ocn_present .and. lnd_present .and. ice_present) then
+          ! Returns immediately if atm2srf_conserve is .false.
+          mapper_lcl => prep_lnd_get_mapper_Fa2l()
+          call seq_nlmap_init_a2l_cons(mapper_lcl, fractions_ax)
+          mapper_lcl => prep_ocn_get_mapper_Fa2o()
+          call seq_nlmap_init_a2oi_cons(mapper_lcl, fractions_ax)
+       end if
+    end if
+    
 
     !----------------------------------------------------------
     !| ATM PREP for recalculation of initial solar
@@ -4813,7 +4836,7 @@ contains
        endif
        if (glc_present) then
           call seq_diag_glc_mct(glc(ens1), fractions_gx(ens1), infodata, do_g2x=.true.)
-       endif          
+       endif
        if (do_bgc_budgets) then
           if (atm_present) then
              call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)

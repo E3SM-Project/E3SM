@@ -22,7 +22,7 @@ module seq_flux_mct
   use seq_infodata_mod
 
   use component_type_mod
-  
+
   use iso_c_binding
 
   implicit none
@@ -41,7 +41,7 @@ module seq_flux_mct
 
   public seq_flux_atmocn_mct
   public seq_flux_atmocn_moab
-  
+
   public seq_flux_atmocnexch_mct
 
   !--------------------------------------------------------------------------
@@ -130,11 +130,11 @@ module seq_flux_mct
   real(r8)  :: seq_flux_mct_albdir = -1.0_r8  ! albedo, direct
   real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
 
-  ! moab 
+  ! moab
   real(r8),  allocatable :: tagValues(:) ! used for copying tag values from frac to frad
   real(r8),  allocatable :: tagValues2(:) ! used for copying tag values for albedos
   integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
-  
+
   ! Coupler field indices
 
   integer :: index_a2x_Sa_z
@@ -143,6 +143,7 @@ module seq_flux_mct
   integer :: index_a2x_Sa_wsresp
   integer :: index_a2x_Sa_tau_est
   integer :: index_a2x_Sa_ugust
+  integer :: index_a2x_Sa_topo
   integer :: index_a2x_Sa_tbot
   integer :: index_a2x_Sa_ptem
   integer :: index_a2x_Sa_shum
@@ -802,7 +803,7 @@ contains
     ! Local variables
     !
     type(mct_gGrid), pointer :: dom_o
-    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map 
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map
     logical             :: flux_albav           ! flux avg option
     integer(in)         :: n                  ! indices
     real(r8)            :: rlat                 ! gridcell latitude in radians
@@ -839,7 +840,7 @@ contains
     integer my_task  ! again, just for global ids
     logical,save        :: first_call = .true.
     integer, save       :: lSize
-    
+
 #ifdef MOABDEBUG
     character*100 outfile, wopts, lnum
 #endif
@@ -883,9 +884,9 @@ contains
           lats(n) = dom_o%data%rAttr(klat,n)
           lons(n) = dom_o%data%rAttr(klon,n)
        enddo
-      
+
        if (mboxid .ge. 0) then
-          ! allocate a local small array to copy a tag from another 
+          ! allocate a local small array to copy a tag from another
           ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
           arrSize = nvise(1) * 2 !  we have ifrac and ofrac to copy to ifrad, ofrad
           allocate(tagValues(arrSize) )
@@ -1080,7 +1081,7 @@ contains
        outfile = 'OcnCplAlbedo_'//trim(lnum)//'.h5m'//C_NULL_CHAR
        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
        ierr = iMOAB_WriteMesh(mboxid, outfile, wopts)
- 
+
        if (ierr .ne. 0) then
           write(logunit,*) subname,' error in writing ocean inst (for flux comp) '
           call shr_sys_abort(subname//' ERROR in writing ocean inst (for flux comp)  ')
@@ -1552,6 +1553,7 @@ contains
        if (atm_gustiness) then
           index_a2x_Sa_ugust = mct_aVect_indexRA(a2x,'Sa_ugust')
        end if
+       index_a2x_Sa_topo   = mct_aVect_indexRA(a2x,'Sa_topo')
        index_a2x_Sa_tbot   = mct_aVect_indexRA(a2x,'Sa_tbot')
        index_a2x_Sa_pslv   = mct_aVect_indexRA(a2x,'Sa_pslv')
        index_a2x_Sa_ptem   = mct_aVect_indexRA(a2x,'Sa_ptem')
@@ -1808,7 +1810,7 @@ contains
        end if
     enddo
 
-    ! transpose xao to xao_omct, to 
+    ! transpose xao to xao_omct, to
   end subroutine seq_flux_atmocn_mct
 
   subroutine seq_flux_atmocn_moab(comp, xao)
@@ -1836,7 +1838,7 @@ contains
      else
         call mct_die(subName,'call for either ocean or atm',1)
      endif
-     ! transpose into moab double array, then set with global id 
+     ! transpose into moab double array, then set with global id
      nloc = mct_avect_lsize(xao)
      listSize = mct_aVect_nRAttr(xao)
 
@@ -1847,7 +1849,7 @@ contains
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells
-     ! global ids are retrieved by albedo first call; it is a local module variable 
+     ! global ids are retrieved by albedo first call; it is a local module variable
      ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
      if (ierr .ne. 0) then
        write(logunit,*) subname,' error in setting atm-ocn fluxes  '
@@ -1860,7 +1862,7 @@ contains
       outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(appId, outfile, wopts)
- 
+
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in writing mesh '
          call shr_sys_abort(subname//' ERROR in writing mesh ')
@@ -1876,14 +1878,14 @@ contains
         endif
         outfile = 'o_flux_mct_'//trim(lnum)//'.h5m'//C_NULL_CHAR
         ierr = iMOAB_WriteMesh(appId, outfile, wopts)
- 
+
         if (ierr .ne. 0) then
             write(logunit,*) subname,' error in writing mesh '
             call shr_sys_abort(subname//' ERROR in writing mesh ')
         endif
      endif
 #endif
-     
+
 
   end subroutine seq_flux_atmocn_moab
   !===============================================================================

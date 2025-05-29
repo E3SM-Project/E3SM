@@ -5051,6 +5051,18 @@ In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
 
+<entry id="dstemislimit" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Dust emission cap used to avoid extremely high AOD
+Default: set by build-namelist.
+</entry>
+
+<entry id="dstemislimitswitch" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+The switch for the dust emission cap used to avoid extremely high AOD
+Default: set by build-namelist.
+</entry>
+
 <entry id="modal_strat_sulfate_aod_treatment" type="logical"  category="cam_chem"
        group="phys_ctl_nl" valid_values="" >
 Flag for H2SO4 specific stratospheric wateruptake treatment

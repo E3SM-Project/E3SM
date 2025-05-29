@@ -35,3 +35,7 @@ set(PIO_FILESYSTEM_HINTS "lustre")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_VEGA90A=On -DKokkos_ENABLE_OPENMP=OFF")
 set(USE_HIP "TRUE")
+
+# Work around a compiler-side issue (register allocation) in
+# eamxx_mam_microphysics_process_interface.cpp
+set(SCREAM_ENABLE_MAM OFF CACHE STRING "")

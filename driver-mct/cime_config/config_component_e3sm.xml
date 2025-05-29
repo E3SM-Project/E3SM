@@ -389,7 +389,6 @@
       <value compset="_MPASO">48</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
@@ -402,6 +401,9 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%FRISwISC01to60E3r1">1440</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%IcoswISC30E3r5">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%SOwISC12to30E3r3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS" grid="oi%SOwISC12to30E3r4">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
@@ -462,7 +464,6 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">48</value>
       <value compset="_EAMXX.*_ELM.*MPASO">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
@@ -484,7 +485,6 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
       <value compset="_EAM.*_ELM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -510,7 +510,6 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
       <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
@@ -519,6 +518,9 @@
       <value compset="_MPASO" grid="oi%ECwISC30to60E1r2">48</value>
       <value compset="_MPASO" grid="oi%EC30to60E2r2">48</value>
       <value compset="_MPASO" grid="oi%WC14to60E2r3">48</value>
+      <value compset="_MPASO" grid="oi%IcoswISC30E3r5">48</value>
+      <value compset="_MPASO" grid="oi%SOwISC12to30E3r3">48</value>
+      <value compset="_MPASO" grid="oi%SOwISC12to30E3r4">48</value>
       <value compset="_MPASO" grid="oi%oRRS30to10v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
@@ -826,7 +828,25 @@
     <group>run_glc</group>
     <file>env_run.xml</file>
     <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
-    Used by both ELM and CISM (even if CISM is not running, and only SGLC is used).</desc>
+    Used by both ELM and MALI (even if MALI is not running, and only SGLC is used).</desc>
+  </entry>
+
+  <entry id="GLC_NZOC">
+    <type>integer</type>
+    <valid_values>0,4,30</valid_values>
+    <default_value>0</default_value>
+    <values match="last">
+      <value compset="_MPASO.+_MALI">30</value>
+      <value compset="_MPASO.+_MALI%SIASTATIC">0</value>
+      <value compset="_MPASO.+_MALI%STATIC">0</value>
+      <value compset="_MPASO.+_MALI%SIADATA">0</value>
+      <value compset="_MPASO.+_MALI%DATA">0</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Glacier model number of z-ocean classes, 0 implies no OCN z-level coupling to GLC or
+    GLC is inactive.
+    Used by both OCN and GLC components.</desc>
   </entry>
 
   <entry id="GLC_TWO_WAY_COUPLING">
@@ -849,6 +869,35 @@
       Note that this is set to TRUE by default for TG compsets - even though there are
       no feedbacks for TG compsets, this enables extra coupler diagnostics for these
       compsets.</desc>
+  </entry>
+
+  <entry id="OCN_GLC_ISMF_COUPLING">
+    <type>char</type>
+    <valid_values>none,data_mpaso,data_mali,internal_mpaso,tf,coupler</valid_values>
+    <default_value>none</default_value>
+    <values match="last">
+       <value compset="MPASO_">none</value>
+       <value compset="_MPASO%.*DISMF">data_mpaso</value>
+       <value compset="_MALI">data_mali</value>
+       <value compset="_MPASO%.*PISMF.*_SGLC">internal_mpaso</value>
+       <value compset="_MPASO.*_MALI">tf</value>
+       <value compset="_MPASO%.*PISMF.*_MALI">coupler</value>
+    </values>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>How OCN/GLC ice-shelf melt flux (ISMF) coupling is calculated:
+      'none': ISMF is not represented in MPAS-O or MALI
+      'data_mpaso': ISMF is represented as a data field in MPAS-O;
+            ISMF is not represented in MALI or MALI is inactive
+      'data_mali': ISMF is represented as a data field in MALI;
+            ISMF is not represented in MPAS-O or MPAS-O is inactive
+      'internal_mpaso': ISMF is calculated prognostically in MPAS-O;
+            ISMF is not represented in MALI or MALI is inactive
+      'tf': MPAS-O passes 3d thermal forcing to MALI and MALI calculates ISMF
+             and passes it back to MPAS-O
+      'coupler': ISMF is calculated in the coupler on the MALI
+             grid and at the MPAS-O coupling interval, and then passed to both
+             MPAS-O and MALI</desc>
   </entry>
 
   <entry id="CCSM_GCOST">

@@ -39,11 +39,12 @@ public:
   using identifier_type     = typename Field::identifier_type;
   using ci_string           = typename identifier_type::ci_string;
   using repo_type           = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
+  using field_group_type    = std::map<ci_string,std::map<ci_string,std::shared_ptr<FieldGroup>>>;
   using group_info_map      = std::map<ci_string, std::shared_ptr<FieldGroupInfo>>;
 
   // Constructor(s)
-  explicit FieldManager (const std::shared_ptr<const AbstractGrid>& grid);
-  explicit FieldManager (const std::shared_ptr<const GridsManager>& grid);
+  explicit FieldManager (const std::shared_ptr<const AbstractGrid>& grid, const RepoState state = RepoState::Clean);
+  explicit FieldManager (const std::shared_ptr<const GridsManager>& grid, const RepoState state = RepoState::Clean);
 
   // No copies, cause the internal database is not a shared_ptr.
   // NOTE: you can change this if you find that copies are needed/useful.
@@ -51,7 +52,6 @@ public:
   FieldManager& operator= (const FieldManager&) = delete;
 
   // Change the state of the database
-  void registration_begins ();
   void register_field (const FieldRequest& req);
   void register_group (const GroupRequest& req);
   void registration_ends ();
@@ -68,7 +68,7 @@ public:
   void add_field (const Field& f);
 
   // Adds $field_name on $grid_name to group $group_name (creating the group, if necessary).
-  // NOTE: if $group_name is allocated as a bundled field, this throws.
+  // NOTE: if $group_name is allocated as a monolithic field, this throws.
   // NOTE: must be called after registration ends
   void add_to_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name);
   void add_to_group (const identifier_type& id, const std::string& group_name) { add_to_group(id.name(), id.get_grid_name(), group_name); }
@@ -120,7 +120,7 @@ public:
   }
   FieldGroupInfo get_group_info (const std::string& group_name, const std::string& grid_name) const;
 
-  FieldGroup get_field_group (const std::string& name, const std::string& grid_name) const;
+  FieldGroup get_field_group (const std::string& name, const std::string& grid_name);
 
   const std::map<ci_string,std::shared_ptr<Field>>&
   get_repo () const {
@@ -154,7 +154,7 @@ public:
 
 protected:
 
-  void pre_process_bundled_group_requests ();
+  void pre_process_monolithic_group_requests ();
 
   // The state of the repository
   RepoState m_repo_state;
@@ -162,8 +162,11 @@ protected:
   // The actual repo.
   repo_type           m_fields;
 
+  // Preprocessed field groups
+  field_group_type    m_field_groups;
+
   // The map group_name -> FieldGroupInfo
-  group_info_map      m_field_groups;
+  group_info_map      m_field_group_info;
 
   // Groups need to be created after all fields have been registered,
   // since we may need to rearrange fields inside them. Also, we

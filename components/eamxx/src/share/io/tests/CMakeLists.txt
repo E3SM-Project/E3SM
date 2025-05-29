@@ -88,6 +88,12 @@ CreateUnitTest(io_remap_test "io_remap_test.cpp"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
+## Test remap output when map file is sub-sampling (ARM-style)
+CreateUnitTest(io_horiz_sampling "io_horiz_sampling.cpp"
+  LIBS scream_io LABELS io remap
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
 ## Test single-column reader
 CreateUnitTest(io_scm_reader "io_scm_reader.cpp"
   LIBS scream_io LABELS io

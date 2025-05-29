@@ -25,6 +25,8 @@
 #include "diagnostics/aerocom_cld.hpp"
 #include "diagnostics/atm_backtend.hpp"
 #include "diagnostics/horiz_avg.hpp"
+#include "diagnostics/vert_contract.hpp"
+#include "diagnostics/zonal_avg.hpp"
 
 namespace scream {
 
@@ -53,6 +55,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("AeroComCld",&create_atmosphere_diagnostic<AeroComCld>);
   diag_factory.register_product("AtmBackTendDiag",&create_atmosphere_diagnostic<AtmBackTendDiag>);
   diag_factory.register_product("HorizAvgDiag",&create_atmosphere_diagnostic<HorizAvgDiag>);
+  diag_factory.register_product("VertContractDiag",&create_atmosphere_diagnostic<VertContractDiag>);
+  diag_factory.register_product("ZonalAvgDiag",&create_atmosphere_diagnostic<ZonalAvgDiag>);
 }
 
 } // namespace scream

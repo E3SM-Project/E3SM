@@ -176,6 +176,7 @@ MODULE seq_infodata_mod
      logical                 :: mct_usealltoall ! flag for mct alltoall
      logical                 :: mct_usevector   ! flag for mct vector
      integer                 :: nlmaps_verbosity          ! see seq_nlmap_mod
+     logical                 :: nlmaps_atm2srf_conserve   ! see seq_nlmap_mod
      character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number) ! see seq_nlmap_mod
 
      logical                 :: reprosum_use_ddpdd  ! use ddpdd algorithm
@@ -213,6 +214,7 @@ MODULE seq_infodata_mod
      logical                 :: glcice_present  ! does glc have iceberg coupling on
      logical                 :: glc_prognostic  ! does component model need input data from driver
      logical                 :: glc_coupled_fluxes ! does glc send fluxes to other components (only relevant if glc_present is .true.)
+     integer                 :: glc_nzoc        ! number of z-levels for ocn/glc thermal forcing coupling
      logical                 :: wav_present     ! does component model exist
      logical                 :: wav_prognostic  ! does component model need input data from driver
      logical                 :: esp_present     ! does component model exist
@@ -440,6 +442,7 @@ CONTAINS
     real(shr_kind_r8)      :: max_cplstep_time   ! abort if cplstep time exceeds this value
     character(SHR_KIND_CL) :: model_doi_url
     integer(SHR_KIND_IN)   :: nlmaps_verbosity   ! see seq_nlmap_mod
+    logical                :: nlmaps_atm2srf_conserve ! see seq_nlmap_mod
     character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number) ! see seq_nlmap_mod
 
     namelist /seq_infodata_inparm/  &
@@ -481,7 +484,7 @@ CONTAINS
          reprosum_use_ddpdd, reprosum_allow_infnan,        &
          reprosum_diffmax, reprosum_recompute,             &
          mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url, &
-         nlmaps_verbosity, nlmaps_exclude_fields
+         nlmaps_verbosity, nlmaps_atm2srf_conserve, nlmaps_exclude_fields
 
     !-------------------------------------------------------------------------------
 
@@ -603,6 +606,7 @@ CONTAINS
        max_cplstep_time      = 0.0
        model_doi_url        = 'unset'
        nlmaps_verbosity      = 0
+       nlmaps_atm2srf_conserve = .false.
        nlmaps_exclude_fields(:) = ' '
 
        !---------------------------------------------------------------------------
@@ -739,6 +743,7 @@ CONTAINS
        infodata%mct_usealltoall       = mct_usealltoall
        infodata%mct_usevector         = mct_usevector
        infodata%nlmaps_verbosity      = nlmaps_verbosity
+       infodata%nlmaps_atm2srf_conserve = nlmaps_atm2srf_conserve
        infodata%nlmaps_exclude_fields = nlmaps_exclude_fields
 
        infodata%info_debug            = info_debug
@@ -775,6 +780,7 @@ CONTAINS
        ! if glc_present is .false., so it's okay to just start out assuming it's .true.
        ! in all cases.
        infodata%glc_coupled_fluxes = .true.
+       infodata%glc_nzoc = 0
        infodata%wav_prognostic = .false.
        infodata%iac_prognostic = .false.
        infodata%iceberg_prognostic = .false.
@@ -1015,7 +1021,7 @@ CONTAINS
        ice_present, ice_prognostic,                                       &
        glc_present, glc_prognostic,                                       &
        iac_present, iac_prognostic,                                       &
-       glc_coupled_fluxes,                                                &
+       glc_coupled_fluxes, glc_nzoc,                                      &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
@@ -1048,8 +1054,8 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, max_cplstep_time, model_doi_url,   &
-       glc_valid_input, nlmaps_verbosity, nlmaps_exclude_fields,          &
-       rmean_rmv_ice_runoff)
+       glc_valid_input, nlmaps_verbosity, nlmaps_atm2srf_conserve,        &
+       nlmaps_exclude_fields, rmean_rmv_ice_runoff)
 
 
     implicit none
@@ -1167,6 +1173,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: mct_usealltoall         ! flag for mct alltoall
     logical,                optional, intent(OUT) :: mct_usevector           ! flag for mct vector
     integer(SHR_KIND_IN),   optional, intent(OUT) :: nlmaps_verbosity
+    logical,                optional, intent(OUT) :: nlmaps_atm2srf_conserve
     character(nlmaps_exclude_nchar), optional, intent(OUT) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     integer(SHR_KIND_IN),   optional, intent(OUT) :: info_debug
@@ -1197,6 +1204,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: glcice_present
     logical,                optional, intent(OUT) :: glc_prognostic
     logical,                optional, intent(OUT) :: glc_coupled_fluxes
+    integer,                optional, intent(OUT) :: glc_nzoc
     logical,                optional, intent(OUT) :: wav_present
     logical,                optional, intent(OUT) :: wav_prognostic
     logical,                optional, intent(OUT) :: iac_present
@@ -1355,6 +1363,7 @@ CONTAINS
     if ( present(mct_usealltoall)) mct_usealltoall = infodata%mct_usealltoall
     if ( present(mct_usevector)  ) mct_usevector  = infodata%mct_usevector
     if ( present(nlmaps_verbosity)) nlmaps_verbosity = infodata%nlmaps_verbosity
+    if ( present(nlmaps_atm2srf_conserve)) nlmaps_atm2srf_conserve = infodata%nlmaps_atm2srf_conserve
     if ( present(nlmaps_exclude_fields)) nlmaps_exclude_fields = infodata%nlmaps_exclude_fields
 
     if ( present(info_debug)     ) info_debug     = infodata%info_debug
@@ -1385,6 +1394,7 @@ CONTAINS
     if ( present(glcice_present) ) glcice_present = infodata%glcice_present
     if ( present(glc_prognostic) ) glc_prognostic = infodata%glc_prognostic
     if ( present(glc_coupled_fluxes)) glc_coupled_fluxes = infodata%glc_coupled_fluxes
+    if ( present(glc_nzoc)       ) glc_nzoc       = infodata%glc_nzoc
     if ( present(wav_present)    ) wav_present    = infodata%wav_present
     if ( present(wav_prognostic) ) wav_prognostic = infodata%wav_prognostic
     if ( present(esp_present)    ) esp_present    = infodata%esp_present
@@ -1573,7 +1583,7 @@ CONTAINS
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
        ice_present, ice_prognostic,                                       &
        glc_present, glc_prognostic,                                       &
-       glc_coupled_fluxes,                                                &
+       glc_coupled_fluxes, glc_nzoc,                                      &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
@@ -1608,7 +1618,8 @@ CONTAINS
        reprosum_use_ddpdd, reprosum_allow_infnan,                         &
        reprosum_diffmax, reprosum_recompute,                              &
        mct_usealltoall, mct_usevector, glc_valid_input,                   &
-       nlmaps_verbosity, nlmaps_exclude_fields, rmean_rmv_ice_runoff)
+       nlmaps_verbosity, nlmaps_atm2srf_conserve, nlmaps_exclude_fields,  &
+       rmean_rmv_ice_runoff)
 
 
     implicit none
@@ -1725,6 +1736,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: mct_usealltoall    ! flag for mct alltoall
     logical,                optional, intent(IN)    :: mct_usevector      ! flag for mct vector
     integer(SHR_KIND_IN),   optional, intent(IN)    :: nlmaps_verbosity
+    logical,                optional, intent(IN)    :: nlmaps_atm2srf_conserve
     character(nlmaps_exclude_nchar), optional, intent(IN) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     integer(SHR_KIND_IN),   optional, intent(IN)    :: info_debug
@@ -1755,6 +1767,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: glcice_present
     logical,                optional, intent(IN)    :: glc_prognostic
     logical,                optional, intent(IN)    :: glc_coupled_fluxes
+    integer,                optional, intent(IN)    :: glc_nzoc
     logical,                optional, intent(IN)    :: wav_present
     logical,                optional, intent(IN)    :: wav_prognostic
     logical,                optional, intent(IN)    :: esp_present
@@ -1912,6 +1925,7 @@ CONTAINS
     if ( present(mct_usealltoall)) infodata%mct_usealltoall = mct_usealltoall
     if ( present(mct_usevector)  ) infodata%mct_usevector  = mct_usevector
     if ( present(nlmaps_verbosity)) infodata%nlmaps_verbosity = nlmaps_verbosity
+    if ( present(nlmaps_atm2srf_conserve)) infodata%nlmaps_atm2srf_conserve = nlmaps_atm2srf_conserve
     if ( present(nlmaps_exclude_fields)) infodata%nlmaps_exclude_fields = nlmaps_exclude_fields
 
     if ( present(info_debug)     ) infodata%info_debug     = info_debug
@@ -1942,6 +1956,7 @@ CONTAINS
     if ( present(glcice_present) ) infodata%glcice_present = glcice_present
     if ( present(glc_prognostic) ) infodata%glc_prognostic = glc_prognostic
     if ( present(glc_coupled_fluxes)) infodata%glc_coupled_fluxes = glc_coupled_fluxes
+    if ( present(glc_nzoc)       ) infodata%glc_nzoc       = glc_nzoc
     if ( present(wav_present)    ) infodata%wav_present    = wav_present
     if ( present(wav_prognostic) ) infodata%wav_prognostic = wav_prognostic
     if ( present(iac_present)    ) infodata%iac_present    = iac_present
@@ -2224,6 +2239,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%mct_usealltoall,         mpicom)
     call shr_mpi_bcast(infodata%mct_usevector,           mpicom)
     call shr_mpi_bcast(infodata%nlmaps_verbosity,        mpicom)
+    call shr_mpi_bcast(infodata%nlmaps_atm2srf_conserve, mpicom)
     do i = 1, nlmaps_exclude_max_number
        call shr_mpi_bcast(infodata%nlmaps_exclude_fields(i), mpicom)
     end do
@@ -2256,6 +2272,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%glcice_present,          mpicom)
     call shr_mpi_bcast(infodata%glc_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%glc_coupled_fluxes,      mpicom)
+    call shr_mpi_bcast(infodata%glc_nzoc,                mpicom)
     call shr_mpi_bcast(infodata%wav_present,             mpicom)
     call shr_mpi_bcast(infodata%wav_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%esp_present,             mpicom)
@@ -2562,6 +2579,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glc_nzoc,           mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2621,6 +2639,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_nzoc,           mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%iac_present,        mpicom, pebcast=cplpe)
@@ -2944,6 +2963,7 @@ CONTAINS
     write(logunit,F0L) subname,'mct_usevector            = ', infodata%mct_usevector
 
     write(logunit,F0I) subname,'nlmaps_verbosity         = ', infodata%nlmaps_verbosity
+    write(logunit,F0L) subname,'nlmaps_atm2srf_conserve  = ', infodata%nlmaps_atm2srf_conserve
 
     write(logunit,'(2A)',advance='no') subname,'nlmaps_exclude_fields    = '
     do i = 1, size(infodata%nlmaps_exclude_fields)
@@ -2981,6 +3001,7 @@ CONTAINS
     write(logunit,F0L) subname,'glcice_present           = ', infodata%glcice_present
     write(logunit,F0L) subname,'glc_prognostic           = ', infodata%glc_prognostic
     write(logunit,F0L) subname,'glc_coupled_fluxes       = ', infodata%glc_coupled_fluxes
+    write(logunit,F0L) subname,'glc_nzoc                 = ', infodata%glc_nzoc
     write(logunit,F0L) subname,'wav_present              = ', infodata%wav_present
     write(logunit,F0L) subname,'wav_prognostic           = ', infodata%wav_prognostic
     write(logunit,F0L) subname,'iac_present              = ', infodata%iac_present

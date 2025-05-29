@@ -39,7 +39,7 @@
 		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
 		     description="The number of interfaces in the vertical direction."
 		/>
-		<dim name="nISMIP6OceanLayers" units="unitless"
+		<dim name="nISMIP6OceanLayers" units="unitless" definition="namelist:config_nISMIP6OceanLayers"
 		     description="The number of layers in the ISMIP6 ocean temperature dataset."
 		/>
 		<dim name="maxTracersAdvect" definition="4" units="unitless"
@@ -628,7 +628,10 @@
 		            description="Logical flag determining if log files will be created for each processor in an E3SM configuration.  If .true., the model initializes and writes to one files per processor."
 		            possible_values=".true. or .false."
                 />
-
+                <nml_option name="config_nISMIP6OceanLayers" type="integer" default_value="0" units="unitless"
+		            description="Value for nISMIP6OceanLayers dimension.  If the nISMIP6OceanLayers dimension is in an input file, that value will be used instead of the value in this option. This option is only intended to be used for ocean thermal forcing coupling in E3SM, in which case E3SM will set this option, define the values of ismip6shelfMelt_zOcean through the driver, and pass thermal forcing from the ocean model.  Note that the default value of zero will result in this dimension not being defined (unless overridden by the value in an input file)."
+		            possible_values="positive values or 0"
+                />
 	</nml_record>
 
 
@@ -1243,6 +1246,9 @@ is the value of that variable from the *previous* time level!
                 <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="applied surface mass balance on grounded ice"
                 />
+                <var name="bareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied negative surface mass balance applied to melting of bare ice"
+                />
                 <var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
                      description="Potential basal mass balance"
                 />
@@ -1469,6 +1475,30 @@ is the value of that variable from the *previous* time level!
                description="temporary copy of vertexMask"
                persistence="scratch"
 	       />
+        </var_struct>
+
+<!-- ================ -->
+
+        <!-- Variables related to time averaging of fluxes -->
+        <var_struct name="timeAveraging" time_levs="1">
+                <var name="timeAccumulatedCoupled" type="real" dimensions="Time" units="s"
+                     description="accumulated time for use in averaging of coupler fields"
+                />
+                <var name="avgCalvingFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time averaged thickness of ice that calves (using calvingThickness from 'geometry' pool)"
+                />
+                <var name="avgFaceMeltFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time averaged thickness of ice thickness lost from face melting (using faceMeltingThickness from 'geometry' pool)"
+                />
+                <var name="avgFloatingBMBFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="time averaged floating basal mass balance"
+                />
+                <var name="avgBareIceAblation" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 
+                     description="time averaged potential negative surface mass balance for melting of bare ice (using BareIceAblation from 'geometry' pool)"
+                />
+                <var name="avgBareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" 
+                     description="time averaged negative surface mass balance applied to melting of bare ice (using appliedBareIceAblation from 'geometry' pool)"
+                />
         </var_struct>
 
 <!-- ================ -->

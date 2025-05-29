@@ -59,7 +59,7 @@ TEST_CASE("output_restart","io")
 
   // First set up a field manager and grids manager to interact with the output functions
   auto gm = get_test_gm(comm,num_gcols,num_levs);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // The the IC field manager
   auto fm0 = get_test_fm(grid);
@@ -75,16 +75,16 @@ TEST_CASE("output_restart","io")
 
   // Create output params (some options are set below, depending on the run type
   ekat::ParameterList output_params;
-  output_params.set<std::string>("Floating Point Precision","real");
-  output_params.set<std::vector<std::string>>("Field Names",{"field_1", "field_2", "field_3", "field_4","field_5"});
+  output_params.set<std::string>("floating_point_precision","real");
+  output_params.set<std::vector<std::string>>("field_names",{"field_1", "field_2", "field_3", "field_4","field_5"});
   output_params.set<double>("fill_value",FillValue);
   output_params.set<int>("flush_frequency",1);
-  output_params.sublist("Restart").set<bool>("force_new_file",false);
+  output_params.sublist("restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
-  output_params.sublist("output_control").set<int>("Frequency",10);
-  output_params.sublist("Checkpoint Control").set<int>("Frequency",5);
+  output_params.sublist("output_control").set<int>("frequency",10);
+  output_params.sublist("checkpoint_control").set<int>("frequency",5);
   // This skips a test that only matters for AD runs
-  output_params.sublist("Checkpoint Control").set<bool>("is_unit_testing","true");
+  output_params.sublist("checkpoint_control").set<bool>("is_unit_testing","true");
 
   // Creates and runs an OM from output_params and given inputs
   auto run = [&](std::shared_ptr<FieldManager> fm,
@@ -126,24 +126,24 @@ TEST_CASE("output_restart","io")
       ofs.open("rpointer.atm", std::ofstream::out | std::ofstream::trunc);
     }
     print("   -> Averaging type: " + avg_type + " ", 40);
-    output_params.set<std::string>("Averaging Type",avg_type);
+    output_params.set<std::string>("averaging_type",avg_type);
 
     // 1. Run for full 20 days, no restarts needed
     auto fm_mono = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix","monolithic");
-    output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","never");
+    output_params.sublist("checkpoint_control").set<std::string>("frequency_units","never");
     run(fm_mono,t0,t0,20);
 
     // 2. Run for 15 days on fm0, write restart every 5 steps
     auto fm_rest = clone_fm(fm0);
     output_params.set<std::string>("filename_prefix","restarted");
-    output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","nsteps");
+    output_params.sublist("checkpoint_control").set<std::string>("frequency_units","nsteps");
     run(fm_rest,t0,t0,15);
 
     // 3. Restart the second run at step=15, and do 5 more steps
     // NOTE: keep fm_rest FM, since we are not testing the restart of the state, just the history.
     //       Here, we proceed as if the AD already restarted the state correctly.
-    output_params.sublist("Checkpoint Control").set<std::string>("frequency_units","never");
+    output_params.sublist("checkpoint_control").set<std::string>("frequency_units","never");
 
     // Ensure nsteps is equal to 15 upon restart
     auto run_t0 = (t0+15*dt).clone(15);
@@ -182,7 +182,6 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   FieldIdentifier fid5("field_5",rad_vector_3d,m*m, gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR{fid1,SL{"output"}});
   fm->register_field(FR{fid2,SL{"output"}});
   fm->register_field(FR{fid3,SL{"output"}});
@@ -203,9 +202,7 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
 
 std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
-  auto copy = std::make_shared<FieldManager>(src->get_grid());
-  copy->registration_begins();
-  copy->registration_ends();
+  auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
     copy->add_field(it.second->clone());
   }

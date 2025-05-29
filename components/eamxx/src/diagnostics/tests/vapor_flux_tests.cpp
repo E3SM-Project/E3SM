@@ -24,10 +24,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -80,12 +80,12 @@ void run(std::mt19937_64& engine)
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
 
-  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // No 'Wind Component'
-  params.set<std::string>("Wind Component","foo");
-  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // Invalid 'Wind Component'
+  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // No 'wind_component'
+  params.set<std::string>("wind_component","foo");
+  REQUIRE_THROWS (diag_factory.create("VaporFlux",comm,params)); // Invalid 'wind_component'
   for (const std::string which_comp : {"Zonal", "Meridional"}) {
     // Construct the Diagnostic
-    params.set<std::string>("Wind Component",which_comp);
+    params.set<std::string>("wind_component",which_comp);
     auto diag = diag_factory.create("VaporFlux",comm,params);
     diag->set_grids(gm);
 
@@ -134,8 +134,7 @@ void run(std::mt19937_64& engine)
       diag->compute_diagnostic();
       const auto& diag_out = diag->get_diagnostic();
       Field qv_vert_integrated_flux_u_f = diag_out.clone();
-      qv_vert_integrated_flux_u_f.deep_copy<double,Host>(0.0);
-      qv_vert_integrated_flux_u_f.sync_to_dev();
+      qv_vert_integrated_flux_u_f.deep_copy(0);
       const auto& qv_vert_integrated_flux_u_v = qv_vert_integrated_flux_u_f.get_view<Real*>();
       constexpr Real g = PC::gravit;
       int comp = which_comp=="Zonal" ? 0 : 1;

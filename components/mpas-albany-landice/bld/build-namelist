@@ -55,6 +55,10 @@ OPTIONS
      -ninst_glc            NINST_GLC for this case
      -mali_prognostic_mode  whether MALI should be prognostic, static, or data
                            Options are: FALSE, TRUE
+     -glc_nzoc             number of z-ocean classes [0 | 4 | 30]
+     -ocn_glc_ismf_coupling  methods for ocn/glc ice-shelf melt flux coupling
+                             ['none' | 'data_mpaso' | 'data_mali' | 'internal_mpaso' |
+                             'tf' | 'coupler']
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -100,6 +104,8 @@ my %opts = ( help              => 0,
              ntasks_glc        => 0,
              ninst_glc         => 0,
              mali_prognostic_mode => undef,
+             glc_nzoc          => 0,
+             ocn_glc_ismf_coupling => undef,
            );
 
 GetOptions(
@@ -119,6 +125,8 @@ GetOptions(
     "ntasks_glc=i"        => \$opts{'ntasks_glc'},
     "ninst_glc=i"         => \$opts{'ninst_glc'},
     "mali_prognostic_mode=s" => \$opts{'mali_prognostic_mode'},
+    "glc_nzoc=i"          => \$opts{'glc_nzoc'},
+    "ocn_glc_ismf_coupling=s" => \$opts{'ocn_glc_ismf_coupling'},
 
 )  or usage();
 
@@ -154,6 +162,8 @@ $cfgdir               = $opts{'cfg_dir'};
 my $NINST_GLC         = $opts{'ninst_glc'};
 my $NTASKS_GLC        = $opts{'ntasks_glc'};
 my $MALI_PROGNOSTIC_MODE = uc($opts{'mali_prognostic_mode'});
+my $GLC_NZOC          = $opts{'glc_nzoc'};
+my $OCN_GLC_ISMF_COUPLING = $opts{'ocn_glc_ismf_coupling'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -393,6 +403,7 @@ my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
 my $MALI_USE_ALBANY        = "$xmlvars{'MALI_USE_ALBANY'}";
+my $GLC_NZOC               = "$xmlvars{'GLC_NZOC'}";
 
 my $output_r = "./${CASE}.mali.r";
 my $output_h = "./${CASE}.mali.h";
@@ -412,6 +423,8 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 print "MALI build-namelist: glc_grid is $GLC_GRID \n";
 print "MALI build-namelist: MALI_PROGNOSTIC_MODE is $MALI_PROGNOSTIC_MODE \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
+print "MALI build-namelist: GLC_NZOC is $GLC_NZOC  \n";
+print "MALI build-namelist: OCN_GLC_ISMF_COUPLING is $OCN_GLC_ISMF_COUPLING  \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -540,7 +553,15 @@ add_default($nl, 'config_max_water_fraction');
 #################################
 
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
-    add_default($nl, 'config_basal_mass_bal_float');
+    if ($OCN_GLC_ISMF_COUPLING eq 'tf') {
+        add_default($nl, 'config_basal_mass_bal_float');
+    } elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mali') {
+        add_default($nl, 'config_basal_mass_bal_float', 'val'=>"file");
+    } elsif ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
+        add_default($nl, 'config_basal_mass_bal_float', 'val'=>"file");
+    } else {
+        add_default($nl, 'config_basal_mass_bal_float', 'val'=>"none");
+    }
 } else {
     add_default($nl, 'config_basal_mass_bal_float', 'val'=>"none");
 }
@@ -561,19 +582,24 @@ add_default($nl, 'config_temperature_profile_variability_amplitude');
 add_default($nl, 'config_temperature_profile_variability_period');
 add_default($nl, 'config_temperature_profile_variability_phase');
 add_default($nl, 'config_temperature_profile_GL_depth_fraction');
-if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
+if (($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') and ($GLC_NZOC gt 0)) {
     add_default($nl, 'config_front_mass_bal_grounded');
+    add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt');
 } else {
     add_default($nl, 'config_front_mass_bal_grounded', 'val'=>"none");
+    add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt', 'val'=>".false.");
 }
-add_default($nl, 'config_use_3d_thermal_forcing_for_face_melt');
 add_default($nl, 'config_beta_ocean_thermal_forcing');
 add_default($nl, 'config_add_ocean_thermal_forcing');
 add_default($nl, 'config_alpha_subglacial_discharge');
 add_default($nl, 'config_subglacial_discharge_coefficient');
 add_default($nl, 'config_subglacial_discharge_intercept');
 add_default($nl, 'config_uniform_face_melt_rate');
-add_default($nl, 'config_ocean_data_extrapolation');
+if (($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') and ($GLC_NZOC gt 0)) {
+    add_default($nl, 'config_ocean_data_extrapolation');
+} else {
+    add_default($nl, 'config_ocean_data_extrapolation', 'val'=>".false.");
+}
 add_default($nl, 'config_ocean_data_extrap_ncells_extra');
 add_default($nl, 'config_invalid_value_TF');
 add_default($nl, 'config_weight_value_cell');
@@ -647,6 +673,7 @@ add_default($nl, 'config_year_digits');
 add_default($nl, 'config_output_external_velocity_solver_data');
 add_default($nl, 'config_write_albany_ascii_mesh');
 add_default($nl, 'config_create_all_logs_in_e3sm');
+add_default($nl, 'config_nISMIP6OceanLayers', 'val'=>"$GLC_NZOC");
 
 #################################
 # Namelist group: decomposition #

@@ -25,7 +25,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
-  m_model_grid = grids_manager->get_grid("Physics");
+  m_model_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_model_grid->name();
 
   // Get bands info from file, and log it
@@ -89,10 +89,10 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, ref_ts);
 
   DataInterpolation::RemapData remap_data;
-  remap_data.hremap_file = spa_map_file=="None" ? "" : spa_map_file;
+  remap_data.hremap_file = spa_map_file=="none" ? "" : spa_map_file;
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
-    EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file=="None",
+    EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file=="none",
       "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
       "The IOP class defines it's own remap from file data -> model data.\n");
 
@@ -107,7 +107,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   remap_data.pmid = pmid;
   remap_data.pint = pint;
   m_data_interpolation->setup_remappers (remap_data);
-  m_data_interpolation->init_data_interval (timestamp());
+  m_data_interpolation->init_data_interval (start_of_step_ts());
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;
@@ -123,9 +123,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
 }
 
 // =========================================================================================
-void SPA::run_impl (const double dt)
+void SPA::run_impl (const double /* dt */)
 {
-  m_data_interpolation->run(timestamp()+dt);
+  m_data_interpolation->run(end_of_step_ts());
 }
 
 } // namespace scream

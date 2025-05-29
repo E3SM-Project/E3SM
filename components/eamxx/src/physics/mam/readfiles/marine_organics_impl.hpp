@@ -49,8 +49,6 @@ marineOrganicsFunctions<S, D>::create_horiz_remapper(
         std::make_shared<RefiningRemapperP2P>(horiz_interp_tgt_grid, map_file);
   }
 
-  remapper->registration_begins();
-
   const auto tgt_grid = remapper->get_tgt_grid();
 
   const auto layout_2d = tgt_grid->get_2d_scalar_layout();

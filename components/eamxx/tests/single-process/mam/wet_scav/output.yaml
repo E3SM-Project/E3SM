@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: mam4_wetscav_standalone_output
-Averaging Type: Instant
-Fields:
-  Physics:
-    Field Names:
+averaging_type: instant
+fields:
+  physics:
+    field_names:
       - aerdepwetis
       - aerdepwetcw
       - dgnumwet
@@ -37,6 +37,6 @@ Fields:
       - soa_c2
       - soa_c3
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

@@ -11,14 +11,14 @@ namespace scream {
 AeroComCld::AeroComCld(const ekat::Comm &comm,
                        const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("AeroComCld Kind"),
-                   "Error! AeroComCld requires 'AeroComCld Kind' in its "
+  EKAT_REQUIRE_MSG(params.isParameter("aero_com_cld_kind"),
+                   "Error! AeroComCld requires 'aero_com_cld_kind' in its "
                    "input parameters.\n");
 
-  m_topbot = m_params.get<std::string>("AeroComCld Kind");
+  m_topbot = m_params.get<std::string>("aero_com_cld_kind");
   // check if m_topbot is "Bot" or "Top", else error out
   EKAT_REQUIRE_MSG(m_topbot == "Bot" || m_topbot == "Top",
-                   "Error! AeroComCld requires 'AeroComCld Kind' "
+                   "Error! AeroComCld requires 'aero_com_cld_kind' "
                    "to be 'Bot' or 'Top' in its input parameters.\n");
 }
 
@@ -26,7 +26,7 @@ void AeroComCld::
 set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  auto grid             = grids_manager->get_grid("Physics");
+  auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
 
   const auto nondim = Units::nondimensional();

@@ -1,0 +1,16 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.1hourlyMAX_native.h
+iotype: pnetcdf
+averaging_type: max
+max_snapshots_per_file: 1 # only one snapshot per file
+fields:
+  physics_pg2:
+    field_names:
+    - T_2m
+    - precip_total_surf_mass_flux
+output_control:
+  frequency: 1
+  frequency_units: nhours
+restart:
+  force_new_file: true

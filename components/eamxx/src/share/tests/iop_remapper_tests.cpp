@@ -141,8 +141,6 @@ TEST_CASE("iop_remap")
     LayoutType::Tensor3D
   };
 
-  remap->registration_begins();
-
   bool midpoints = false; // midpoints is unused for 2d layouts
   for (auto l : layouts) {
     auto n = e2str(l);

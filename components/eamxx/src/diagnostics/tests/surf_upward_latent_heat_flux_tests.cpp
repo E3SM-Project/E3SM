@@ -22,10 +22,10 @@ create_gm (const ekat::Comm& comm, const int ncols) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", 1);
 
@@ -85,8 +85,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, LoggerType& logger)
   diag_latent_heat->compute_diagnostic();
   const auto diag_latent_heat_out = diag_latent_heat->get_diagnostic();
   Field surf_lhf = diag_latent_heat_out.clone();
-  surf_lhf.deep_copy<double,Host>(0.0);
-  surf_lhf.sync_to_dev();
+  surf_lhf.deep_copy(0);
   const auto& surf_lhf_v = surf_lhf.get_view<Real*>();
   constexpr auto latent_heat_evap = PC::LatVap; // [J/kg]
   Kokkos::parallel_for("surf_upward_latent_heat_flux_test",

@@ -47,7 +47,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   AtmosphereDriver ad;
 
   // Init, run, and finalize
-  // NOTE: Kokkos is finalize in ekat_catch_main.cpp, and YAKL is finalized
+  // NOTE: Kokkos is finalize in ekat_catch_main.cpp, and Kokkos is finalized
   //       during RRTMGPRatiation::finalize_impl, after RRTMGP has deallocated
   //       all its arrays.
   ad.set_comm(atm_comm);
@@ -60,7 +60,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   ad.create_fields ();
 
   // Setup surface coupler import to be NaNs for fields IOP should overwrite
-  const int ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
+  const int ncols = ad.get_grids_manager()->get_grid("physics")->get_num_local_dofs();
   static constexpr int num_imports = 4;
   char import_names[num_imports][32];
   std::strcpy(import_names[0], "surf_radiative_T");

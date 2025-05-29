@@ -35,7 +35,7 @@ if (DEFINED ENV{HDF5_ROOT})
   if (DEFINED ENV{HDF5_USE_STATIC_LIBRARIES})
     set(HDF5_USE_STATIC_LIBRARIES On)
   endif()
-  find_package(HDF5 REQUIRED COMPONENTS C HL)
+  find_package(HDF5 REQUIRED)
 endif()
 
 # Not all machines/PIO installations use ADIOS but, for now,
@@ -60,7 +60,7 @@ else()
 endif()
 
 if (DEFINED ENV{HDF5_ROOT})
-  list(APPEND PIOLIBS ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES})
+  list(APPEND PIOLIBS hdf5)
 endif()
 
 # Create the interface library, and set target properties

@@ -122,11 +122,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   using vos_t = std::vector<std::string>;
 
   // Figure out what kind of averaging is requested
-  auto avg_type = params.get<std::string>("Averaging Type");
+  auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type = str2avg(avg_type);
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
-      "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
+      "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
 
   // Set all internal field managers to the simulation field manager to start with.  If
   // vertical remapping, horizontal remapping or both are used then those remapper will
@@ -136,37 +136,37 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // By default, IO is done directly on the field mgr grid
   std::shared_ptr<const grid_type> fm_grid, io_grid;
   io_grid = fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
-  if (params.isParameter("Field Names")) {
+  if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    m_fields_names = params.get<vos_t>("Field Names");
-  } else if (params.isSublist("Fields")){
-    const auto& f_pl = params.sublist("Fields");
+    m_fields_names = params.get<vos_t>("field_names");
+  } else if (params.isSublist("fields")){
+    const auto& f_pl = params.sublist("fields");
     const auto& io_grid_aliases = io_grid->aliases();
     bool grid_found = false;
     for (const auto& grid_name : io_grid_aliases) {
       if (f_pl.isSublist(grid_name)) {
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
-        if (pl.isType<vos_t>("Field Names")) {
-          m_fields_names = pl.get<vos_t>("Field Names");
-        } else if (pl.isType<std::string>("Field Names")) {
-          m_fields_names.resize(1, pl.get<std::string>("Field Names"));
+        if (pl.isType<vos_t>("field_names")) {
+          m_fields_names = pl.get<vos_t>("field_names");
+        } else if (pl.isType<std::string>("field_names")) {
+          m_fields_names.resize(1, pl.get<std::string>("field_names"));
           if (m_fields_names[0]=="NONE") {
             m_fields_names.clear();
           }
         }
 
         // Check if the user wants to remap fields on a different grid first
-        if (pl.isParameter("IO Grid Name")) {
-          io_grid = field_mgr->get_grids_manager()->get_grid(pl.get<std::string>("IO Grid Name"));
+        if (pl.isParameter("io_grid_name")) {
+          io_grid = field_mgr->get_grids_manager()->get_grid(pl.get<std::string>("io_grid_name"));
         }
         break;
       }
     }
     EKAT_REQUIRE_MSG (grid_found,
-        "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
+        "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
   sort_and_check(m_fields_names);
 
@@ -241,7 +241,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // Now create a new FM on io grid, and create copies of output fields on that grid,
     // using the remapper to get the correct identifier on the tgt grid
     auto io_fm = std::make_shared<fm_type>(io_grid);
-    io_fm->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"sim");
       const auto tgt_fid = m_vert_remapper->create_tgt_fid(src.get_header().get_identifier());
@@ -256,7 +255,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     }
 
     // Register all output fields in the remapper.
-    m_vert_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"sim");
       const auto tgt = io_fm->get_field(src.name(), io_grid->name());
@@ -297,7 +295,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Create a FM on the horiz remapper tgt grid, and register fields on it
     auto io_fm = std::make_shared<fm_type>(io_grid);
-    io_fm->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"before_horizontal_remap");
       const auto tgt_fid = m_horiz_remapper->create_tgt_fid(src.get_header().get_identifier());
@@ -312,7 +309,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     }
 
     // Register all output fields in the remapper.
-    m_horiz_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       const auto src = get_field(fname,"before_horizontal_remap");
       const auto tgt = io_fm->get_field(src.name(), io_grid->name());
@@ -335,10 +331,10 @@ void AtmosphereOutput::restart (const std::string& filename)
 {
   // Create an input stream on the fly, and init averaging data
   ekat::ParameterList res_params("Input Parameters");
-  res_params.set<std::string>("Filename",filename);
+  res_params.set<std::string>("filename",filename);
   std::vector<std::string> input_field_names = m_fields_names;
   input_field_names.insert(input_field_names.end(),m_avg_cnt_names.begin(),m_avg_cnt_names.end());
-  res_params.set("Field Names",input_field_names);
+  res_params.set("field_names",input_field_names);
 
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
@@ -794,7 +790,8 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
 
     // If t==CMP, and the name stored in the layout is the default ("dim"),
     // we append also the extent, to allow different vector dims in the file
-    tag_name += tag_name=="dim" ? std::to_string(dims[i]) : "";
+    // TODO: generalie this to all tags, for now hardcoding to dim and bin only
+    tag_name += (tag_name == "dim" or tag_name=="bin") ? std::to_string(dims[i]) : "";
 
     auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
     int dim_len = is_partitioned
@@ -805,7 +802,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths.\n"
       "  - old length: " + std::to_string(m_dims[tag_name]) + "\n"
       "  - new length: " + std::to_string(dim_len) + "\n"
-      "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
+      "If same name applies to different dims (e.g. physics_gll and physics_pg2 define "
       "\"ncol\" at different lengths), reset tag name for one of the grids.\n");
   }
 } // register_dimensions
@@ -817,11 +814,11 @@ void AtmosphereOutput::register_views()
     auto field = get_field(name,"io");
     bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
 
-    // These local views are really only needed if the averaging time is not 'Instant',
+    // These local views are really only needed if the averaging time is not 'instant',
     // to store running tallies for the average operation. However, we create them
-    // also for Instant avg_type, for simplicity later on.
+    // also for instant avg_type, for simplicity later on.
 
-    // If we have an 'Instant' avg type, we can alias the 1d views with the
+    // If we have an 'instant' avg type, we can alias the 1d views with the
     // views of the field, provided that the field does not have padding,
     // and that it is not a subfield of another field (or else the view
     // would be strided).
@@ -877,6 +874,7 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
 
   // Now create and store a dev view to track the averaging count for this layout (if we are tracking)
   // We don't need to track average counts for files that are not tracking the time dim
+  using namespace ShortFieldTagsNames;
   const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto size = layout.size();
   const auto tags = layout.tags();
@@ -890,7 +888,8 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
 
       // If t==CMP, and the name stored in the layout is the default ("dim"),
       // we append also the extent, to allow different vector dims in the file
-      tag_name += tag_name=="dim" ? std::to_string(layout.dim(i)) : "";
+      // TODO: generalize this to all tags, for now hardcoding to dim and bin only
+      tag_name += (tag_name=="dim" or tag_name=="bin") ? std::to_string(layout.dim(i)) : "";
 
       avg_cnt_name += "_" + tag_name;
     }
@@ -955,7 +954,7 @@ register_variables(const std::string& filename,
       auto tag_name = m_io_grid->has_special_tag_name(t)
                     ? m_io_grid->get_special_tag_name(t)
                     : layout.names()[i];
-      if (tag_name=="dim") {
+      if (tag_name=="dim" or tag_name=="bin") {
         tag_name += std::to_string(layout.dim(i));
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
@@ -1343,6 +1342,7 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
   auto diag = scream::create_diagnostic(diag_field_name,sim_grid);
 
   // Some diags need some extra setup or trigger extra behaviors
+  // TODO: move this to the diag class itself, then query bool + string
   std::string diag_avg_cnt_name = "";
   auto& params = diag->get_params();
   if (diag->name()=="FieldAtPressureLevel") {
@@ -1358,6 +1358,10 @@ AtmosphereOutput::create_diagnostic (const std::string& diag_field_name)
                         + params.get<std::string>("height_units") + "_above_sealevel";
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
     }
+  } else if (diag->name()=="AerosolOpticalDepth550nm") {
+    params.set<double>("mask_value", m_fill_value);
+    m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+    diag_avg_cnt_name = "_" + diag->name();
   }
 
   // Ensure there's an entry in the map for this diag, so .at(diag_name) always works

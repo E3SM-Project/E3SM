@@ -99,7 +99,7 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -114,11 +114,11 @@ void write (const int freq, const int seed, const int ps, const ekat::Comm& comm
   // Create output params
   ekat::ParameterList om_pl;
   om_pl.set("filename_prefix","io_packed_ps"+std::to_string(ps));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", std::string("INSTANT"));
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", std::string("instant"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",freq);
+  ctrl_pl.set("frequency",freq);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
@@ -141,7 +141,7 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
@@ -161,8 +161,8 @@ void read (const int freq, const int seed, const int ps_write, const int ps_read
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("filename",filename);
+  reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
   reader.read_variables();

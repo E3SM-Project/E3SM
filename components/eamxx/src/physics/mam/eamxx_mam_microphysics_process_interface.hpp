@@ -125,15 +125,13 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
-  mam_coupling::TracerTimeState elevated_emiss_time_state_;
+  mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
   std::vector<std::shared_ptr<AtmosphereInput>> ElevatedEmissionsDataReader_;
   std::vector<std::shared_ptr<AbstractRemapper>> ElevatedEmissionsHorizInterp_;
   std::vector<std::string> extfrc_lst_;
   std::vector<mam_coupling::TracerData> elevated_emis_data_;
   std::map<std::string, std::string> elevated_emis_file_name_;
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
-  view_2d
-      elevated_emis_output_[mam_coupling::MAX_NUM_ELEVATED_EMISSIONS_FIELDS];
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
 
@@ -152,6 +150,15 @@ class MAMMicrophysics final : public MAMGenericInterface {
   mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+
+  // Work arrays for return values from
+  // perform_atmospheric_chemistry_and_microphysics
+  view_2d dflx_;
+  view_2d dvel_;
+  int num_2d_scratch_ = 9;
+  int get_len_temporary_views();
+  void init_temporary_views();
+  int len_temporary_views_{0};
 
 };  // MAMMicrophysics
 

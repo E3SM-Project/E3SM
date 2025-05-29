@@ -52,7 +52,6 @@ module glc_comp_mct
   use li_core
   use li_core_interface
 
-
   implicit none
   save
   private   ! By default make data private
@@ -696,6 +695,11 @@ contains
 !        block_ptr => block_ptr % next
 !    end do
 
+! initialize ocean z-levels, if necessary
+! these are used for ocean thermal forcing coupling
+    call init_ocean_z_levels(domain, err_tmp)
+    ierr = ior(ierr,err_tmp)
+
 !-----------------------------------------------------------------------
 !
 !   Calculate initial state in MALI (velocity, upperSurface, masks, etc.)
@@ -785,6 +789,7 @@ contains
     ! MALI modules
     use li_time_integration
     use li_statistics
+    use li_time_average_coupled
 
     implicit none
 !
@@ -810,7 +815,7 @@ contains
 
 ! Variable related to MALI
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, timeAveragingPool
       integer, pointer :: config_stats_interval   !< interval (number oftimesteps) for writing stats
       logical, pointer :: config_do_restart, config_write_output_on_startup, config_write_stats_on_startup
       character(len=StrKIND), pointer :: config_restart_timestamp_name
@@ -853,13 +858,13 @@ contains
       err = ior(err,err_tmp)
 
       ! Initialize time average fields
-!      block_ptr => domain % blocklist
-!      do while(associated(block_ptr))
-!        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-!        call ocn_time_average_coupled_init(forcingPool)
-!        block_ptr => block_ptr % next
-!      end do
-
+      block => domain % blocklist
+      do while(associated(block))
+        call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+        call li_time_average_coupled_init(meshPool,timeAveragingPool)
+        block => block % next
+      end do
 
       ! During integration, time level 1 stores the model state to be solved.
       ! For a variables with a second time level, it is the previous value.
@@ -1385,49 +1390,76 @@ contains
       message
 
    integer ::  &
-      i,n
+      i, n, iLev
 
    type (block_type), pointer :: block
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
    type (mpas_pool_type), pointer :: thermalPool
+   type (mpas_pool_type), pointer :: extrapOceanDataPool
 
-   integer, pointer :: nCellsSolve
+   integer, pointer :: nCellsSolve, nISMIP6OceanLayers
 
    real (kind=RKIND), dimension(:), pointer :: sfcMassBal,&
                                                floatingBasalMassBal,&
                                                surfaceTemperature,&
                                                basalOceanHeatflx,&
-                                               OceanDensity, &
-                                               ismip6_2dThermalForcing
+                                               OceanDensity
+   real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
+   integer, dimension(:,:), pointer :: orig3dOceanMask
+   real(kind=RKIND), pointer :: config_invalid_value_TF
+   real(kind=RKIND) :: fractionalMaskVal
 
     errorCode = 0
+
+    call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
 
     n = 0
     block => domain % blocklist
 
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
-
-         ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
 
+         ! Get dimensions
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(geometryPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+
+         ! Get variables from pools
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
-         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', ismip6_2dThermalForcing)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
+         call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
 !         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
          !call mpas_pool_get_array(geometryPool, 'OceanDensity',OceanDensity)
 
+         if (nISMIP6OceanLayers > 0) then
+            orig3dOceanMask(:,:) = 0
+            ismip6shelfMelt_3dThermalForcing(:,:) = 0.0_RKIND
+         endif
          do i = 1, nCellsSolve
             n = n + 1
             sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
-            if (ocn_c2_glctf) &
-               ismip6_2dThermalForcing(i) = x2g_g % rAttr(index_x2g_So_tf2d, n)
+            if (nISMIP6OceanLayers > 0) then
+               do iLev = 1, nISMIP6OceanLayers
+                  fractionalMaskVal = x2g_g % rAttr(index_x2g_So_tf3d_mask(iLev), n)
+                  if (fractionalMaskVal > 0.5_RKIND) then
+                     ! Only use MALI grid cells that have at least 50% overlap with MPAS-Ocean cells
+                     ! if valid, mark our integer mask as 1 and scale the TF value by the fractional mask
+                     orig3dOceanMask(iLev,i) = 1
+                     ismip6shelfMelt_3dThermalForcing(iLev, i) = x2g_g % rAttr(index_x2g_So_tf3d(iLev), n) / fractionalMaskVal
+                  else
+                     ! if not using, insert 0 in mask and bad val in TF field
+                     orig3dOceanMask(iLev,i) = 0
+                     ismip6shelfMelt_3dThermalForcing(iLev, i) = config_invalid_value_TF
+                  endif
+               enddo
+            endif
 !            surfaceTemperature(i) = x2g_g % rAttr(index_x2g_Sl_tsrf, n)
 !JW            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogo_qiceh, n)
 !            basalOceanHeatflx(i) = x2g_g % rAttr(index_x2g_Fogx_qicehi, n)
@@ -1459,16 +1491,22 @@ contains
    type (block_type), pointer :: block
 
    real (kind=RKIND), pointer :: config_sea_level
+   character(len=StrKIND), pointer :: config_basal_mass_bal_float
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
    type (mpas_pool_type), pointer :: thermalPool
+   type (mpas_pool_type), pointer :: timeAveragingPool
 
    integer, pointer :: nCellsSolve, nVertLevels
 
    real (kind=RKIND), dimension(:), pointer :: upperSurface
    real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
    real (kind=RKIND), dimension(:), pointer :: thickness
+   real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied
+   real (kind=RKIND), dimension(:), pointer :: avgCalvingFlux
+   real (kind=RKIND), dimension(:), pointer :: avgFaceMeltFlux
+   real (kind=RKIND), dimension(:), pointer :: avgFloatingBMBFlux
    real (kind=RKIND), dimension(:,:), pointer :: temperature
    integer, dimension(:), pointer :: cellMask
    !-------------------------------------------------------------------
@@ -1479,6 +1517,7 @@ contains
     block => domain % blocklist
 
     call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
+    call mpas_pool_get_config(domain % configs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1487,26 +1526,36 @@ contains
 
          ! Get variables from pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_subpool(block % structs, 'thermal',  thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
+         call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
          call mpas_pool_get_array(geometryPool, 'thickness', Thickness, timeLevel = 1)
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
+         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
+         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
+         call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltFlux', avgFaceMeltFlux)
+         call mpas_pool_get_array(timeAveragingPool, 'avgFloatingBMBFlux', avgFloatingBMBFlux)
+
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          do i = 1, nCellsSolve
             n = n + 1
 
-            ! Recuperate runoff routing switch code (originally in glc_route_ice_runoff module in earlier code), 
-            ! and attach to ice calving flux once present...
-            !call route_ice_runoff(0.0_RKIND, & 
-            !                      rofi_to_ocn=Fogg_rofi, &
-            !                      rofi_to_ice=Figg_rofi)
-            g2x_g % rAttr(index_g2x_Fogg_rofi,n)=0.0!...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Figg_rofi,n)=0.0 !...and remove these placeholders
-            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = 0.0 !Attach to subglacial liquid flux once present
+            ! Fogg_rofl
+            g2x_g % rAttr(index_g2x_Fogg_rofl,n) = avgBareIceAblationApplied(i) 
+            ! Figg_rofi
+            g2x_g % rAttr(index_g2x_Figg_rofi,n) = 0.0 ! placeholder
+            ! Fogg_rofi
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = avgCalvingFlux(i) 
+            g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFaceMeltFlux(i)
+            if (trim(config_basal_mass_bal_float) == 'ismip6') then
+               ! if MALI is calculating ISMF, add that to rofl
+               ! In some configurations, ISMF will be calculated in coupler or MPAS-Ocean
+               g2x_g % rAttr(index_g2x_Fogg_rofi,n) = g2x_g % rAttr(index_g2x_Fogg_rofi,n) + avgFloatingBMBFlux(i)
+            endif
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
             g2x_g % rAttr(index_g2x_Sg_tbot, n) = temperature(nVertlevels,i) - SHR_CONST_TKTRIP
@@ -1736,6 +1785,63 @@ contains
        ctime(7:8) = time(5:6)
 
     end subroutine datetime!}}}
+
+    subroutine init_ocean_z_levels(domain, err)
+       use glc_zocnclass_mod
+
+       implicit none
+       type (domain_type), pointer, intent(inout) :: domain
+       integer, intent(out) :: err
+
+       ! local vars
+       type (block_type), pointer :: block_ptr
+       type (mpas_pool_type), pointer :: geometryPool
+       integer, pointer :: nISMIP6OceanLayers
+       real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_zOcean
+       real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_zBndsOcean
+       integer :: cpl_num_zocn, iLev
+
+       err = 0
+
+       cpl_num_zocn = glc_get_num_zocn_classes()
+
+       block_ptr => domain % blocklist
+       call mpas_pool_get_subpool(block_ptr % structs, 'geometry', geometryPool)
+       call mpas_pool_get_dimension(geometryPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
+
+       ! check that the num z-levels in the coupler matches what MALI was told to use
+       if (nISMIP6OceanLayers /= cpl_num_zocn) then
+          call mpas_log_write("nISMIP6OceanLayers=$i does not match glc_get_num_zocn_classes=$i", &
+                              MPAS_LOG_ERR, intArgs=(/nISMIP6OceanLayers, cpl_num_zocn/))
+          err = ior(err, 1)
+          return
+       endif
+       call seq_infodata_PutData(infodata, glc_nzoc=cpl_num_zocn)
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'geometry', geometryPool)
+          if (nISMIP6OceanLayers > 0) then
+             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', ismip6shelfMelt_zOcean)
+             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', ismip6shelfMelt_zBndsOcean)
+
+
+             ismip6shelfMelt_zOcean = glc_get_zlevels()
+             ismip6shelfMelt_zBndsOcean = glc_get_zocnclass_bounds()
+
+             call mpas_log_write("Using $i levels for ismip6shelfMelt_zOcean", intArgs=(/nISMIP6OceanLayers/))
+             do iLev = 1, nISMIP6OceanLayers
+                call mpas_log_write("-- z-level $i: upper=$r, mid=$r, lower=$r", intArgs=(/iLev/), &
+                     realArgs=(/ismip6shelfMelt_zBndsOcean(1,iLev), &
+                                ismip6shelfMelt_zOcean(iLev), &
+                                ismip6shelfMelt_zBndsOcean(2,iLev)/))
+             enddo
+          endif
+
+          block_ptr => block_ptr % next
+       end do
+    end subroutine init_ocean_z_levels
+
 
 end module glc_comp_mct
 

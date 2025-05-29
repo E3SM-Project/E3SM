@@ -35,6 +35,10 @@ def _convert_adios_to_nc(case):
     adios_conv_tool_args = "--idir=" + rundir
     adios_conv_tool_cmd = adios_conv_tool_exe + " " + adios_conv_tool_args
 
+    adios_conv_tool_extra_args = os.environ.get('SPIO_ADIOSBP2NC_CONVERSION_TOOL_EXTRA_ARGS', '')
+    if adios_conv_tool_extra_args.strip():
+      adios_conv_tool_cmd += " " + adios_conv_tool_extra_args.strip()
+
     # Replace logfile name, "e3sm.log.*" with "e3sm_adios_post_io.log.*"
     # The logfile name is part of the run command suffix
     adios_conv_tool_cmd_suffix = env_mach_specific.get_value("run_misc_suffix")
@@ -101,7 +105,7 @@ def case_post_run_io(self):
     I/O Post processing :
     1. Convert ADIOS output files, if any, to NetCDF
     """
-    success = True
+    success = None
     has_adios = False
     self.load_env(job="case.post_run_io")
     component_classes = self.get_values("COMP_CLASSES")
@@ -109,13 +113,16 @@ def case_post_run_io(self):
     for compclass in component_classes:
         key = "PIO_TYPENAME_{}".format(compclass)
         pio_typename = self.get_value(key)
-        if pio_typename == "adios":
+        if pio_typename.startswith("adios"):
             has_adios = True
             break
     if has_adios:
-        logger.info("I/O post processing for ADIOS starting")
-        success = _convert_adios_to_nc(self)
-        logger.info("I/O post processing for ADIOS completed")
+        if os.environ.get('SPIO_ENABLE_ADIOSBP2NC_CONVERSION', '').lower() in ('true', '1'):
+            logger.info("I/O post processing for ADIOS starting")
+            success = _convert_adios_to_nc(self)
+            logger.info("I/O post processing for ADIOS completed")
+        else:
+            logger.info("Disabling I/O post processing (conversion to NetCDF) for ADIOS BP files since env['SPIO_ENABLE_ADIOSBP2NC_CONVERSION'] is not set/disabled")
     else:
         logger.info("No I/O post processing required")
 

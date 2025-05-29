@@ -34,9 +34,9 @@ AtmosphereInput (const std::string& filename,
 {
   // Create param list and field manager on the fly
   ekat::ParameterList params;
-  params.set("Filename",filename);
-  params.set("Skip_Grid_Checks",skip_grid_checks);
-  auto& names = params.get<std::vector<std::string>>("Field Names",{});
+  params.set("filename",filename);
+  params.set("skip_grid_checks",skip_grid_checks);
+  auto& names = params.get<std::vector<std::string>>("field_names",{});
 
   auto fm = std::make_shared<fm_type>(grid);
   for (auto& f : fields) {
@@ -77,8 +77,8 @@ init (const ekat::ParameterList& params,
       "Error! Input class was already inited (with fields).\n");
 
   m_params = params;
-  m_fields_names = m_params.get<decltype(m_fields_names)>("Field Names");
-  m_filename = m_params.get<std::string>("Filename");
+  m_fields_names = m_params.get<decltype(m_fields_names)>("field_names");
+  m_filename = m_params.get<std::string>("filename");
 
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr);
@@ -101,7 +101,7 @@ init (const ekat::ParameterList& params,
       "Error! Input class was already inited (with fields).\n");
 
   m_params = params;
-  m_filename = m_params.get<std::string>("Filename");
+  m_filename = m_params.get<std::string>("filename");
 
   // Set the grid associated with the input views
   set_grid(grid);
@@ -201,7 +201,7 @@ reset_filename (const std::string& filename)
   if (m_filename!="") {
     scorpio::release_file(m_filename);
   }
-  m_params.set("Filename",filename);
+  m_params.set("filename",filename);
   m_filename = filename;
   init_scorpio_structures();
 }
@@ -212,7 +212,7 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
-  const bool skip_grid_chk = m_params.get<bool>("Skip_Grid_Checks",false);
+  const bool skip_grid_chk = m_params.get<bool>("skip_grid_checks",false);
   if (!skip_grid_chk) {
     EKAT_REQUIRE_MSG (grid->is_unique(),
         "Error! I/O only supports grids which are 'unique', meaning that the\n"

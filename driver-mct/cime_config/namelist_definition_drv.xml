@@ -198,10 +198,22 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
+      Number of GLC elevation classes. Set by the xml variable GLC_NEC in env_run.xml
     </desc>
     <values>
       <value>$GLC_NEC</value>
+    </values>
+  </entry>
+
+  <entry  id="glc_nzoc" modify_via_xml="GLC_NZOC">
+    <type>integer</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      Number of GLC z-ocean classes. Set by the xml variable GLC_NZOC in env_run.xml
+    </desc>
+    <values>
+      <value>$GLC_NZOC</value>
     </values>
   </entry>
 
@@ -303,6 +315,17 @@
     </values>
   </entry>
 
+  <entry id="wav_ocn_coup">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>One- or Two-way coupling between Wave and Ocn.</desc>
+    <values>
+      <value>none</value>
+      <value WAV_OCN_COUP="oneway">oneway</value>
+      <value WAV_OCN_COUP="twoway">twoway</value>
+    </values>
+  </entry>
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -1746,6 +1769,22 @@
     </values>
   </entry>
 
+  <entry id="nlmaps_atm2srf_conserve">
+    <type>logical</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Use various source and destination grid area fractions in the
+      atmosphere-to-surface nonlinear maps so that an atmosphere-to-surface flux
+      integrates to the same value on the atmosphere grid and on the land +
+      ocean + ice grids.
+      default: .false.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="nlmaps_exclude_fields">
     <type>char(20)</type>
     <category>nlmaps</category>
@@ -1753,7 +1792,8 @@
     <desc>
       List of fields that are to be excluded from the set that are nonlinearly
       mapped. For these excluded fields, the low-order linear map is used,
-      instead. Modify user_nl_cpl to edit this.
+      instead. Modify user_nl_cpl to edit this. This option is ignored if
+      nlmaps_atm2srf_conserve is .true.
       default: 'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'
     </desc>
     <values>

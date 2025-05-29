@@ -45,8 +45,11 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
     // Define the heights on the zt grid [m]
     static constexpr Real zt_grid[nlev] = {5000, 3000, 2000, 1000, 500};
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridging to F90
-    ComputeShocMixShocLengthData SDS(shcol, nlev);
+    ComputeShocMixShocLengthData SDS(shcol, nlev, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     // For this test shcol MUST be at least 2
@@ -64,6 +67,9 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
         SDS.tke[offset] = (1.0+s)*tke_cons;
         SDS.brunt[offset] = brunt_cons;
         SDS.zt_grid[offset] = zt_grid[n];
+        // do not consider below for default SHOC
+	SDS.tk[offset] = 0;
+	SDS.dz_zt[offset] = 0;
       }
     }
 
@@ -112,6 +118,56 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
         REQUIRE(SDS.shoc_mix[offset + 1] - SDS.shoc_mix[offset] < 0);
       }
     }
+
+    // 1.5 TKE test
+    // Verify that length scale behaves as expected when 1.5 TKE closure
+    //   assumptions are used. Will recycle all previous data, except we
+    //   need to define dz, brunt vaisalla frequency, and tk.
+
+    // Brunt Vaisalla frequency [s-1]
+    static constexpr Real brunt_1p5[nlev] = {0.01,-0.01,0.01,-0.01,0.01};
+    // Define the heights on the zt grid [m]
+    static constexpr Real dz_zt_1p5[nlev] = {50, 100, 30, 20, 10};
+    // Eddy viscocity [m2 s-1]
+    static constexpr Real tk_cons_1p5 = 0.1;
+
+    // Activate 1.5 TKE closure
+    SDS.shoc_1p5tke = true;
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        // do not consider below for default SHOC
+	SDS.tk[offset] = tk_cons_1p5;
+	SDS.dz_zt[offset] = dz_zt_1p5[n];
+	SDS.brunt[offset] = brunt_1p5[n];
+      }
+    }
+
+    // Call the C++ implementation
+    compute_shoc_mix_shoc_length(SDS);
+
+    // Check the result
+
+    // Verify that if Brunt Vaisalla frequency is unstable that mixing length
+    //  is equal to vertical grid spacing.  If brunt is stable, then verify that
+    //  mixing length is less than the vertical grid spacing.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        if (SDS.brunt[offset] <= 0){
+           REQUIRE(SDS.shoc_mix[offset] == SDS.dz_zt[offset]);
+	}
+	else{
+	   REQUIRE(SDS.shoc_mix[offset] < SDS.dz_zt[offset]);
+	   REQUIRE(SDS.shoc_mix[offset] >= 0.1*SDS.dz_zt[offset]);
+	}
+
+      }
+    }
+
   }
 
   void run_bfb()
@@ -120,10 +176,10 @@ struct UnitWrap::UnitTest<D>::TestCompShocMixLength : public UnitWrap::UnitTest<
 
     ComputeShocMixShocLengthData SDS_baseline[] = {
       //               shcol, nlev
-      ComputeShocMixShocLengthData(10, 71),
-      ComputeShocMixShocLengthData(10, 12),
-      ComputeShocMixShocLengthData(7,  16),
-      ComputeShocMixShocLengthData(2, 7)
+      ComputeShocMixShocLengthData(10, 71, false),
+      ComputeShocMixShocLengthData(10, 12, false),
+      ComputeShocMixShocLengthData(7,  16, false),
+      ComputeShocMixShocLengthData(2, 7, false)
     };
 
     // Generate random input data
