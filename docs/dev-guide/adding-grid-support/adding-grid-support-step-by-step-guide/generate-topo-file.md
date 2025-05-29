@@ -28,7 +28,7 @@ The workflow to generate topography data for the atmosphere model must address t
 
 ## Topography Smoothing
 
-Smoothing of the input surface geopotential (`phi_s`) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing much be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use `homme_tool`, which is a standalone build of the HOMME dycor.
+Smoothing of the input surface geopotential (`phi_s`) is an essential step to ensure numerical stability of the atmospheric dynamics, but the smoothing must be done in a way that is consistent with the internal Laplacian used by the HOMME dycor. To accomplish this we use `homme_tool`, which is a standalone build of the HOMME dycor.
 
 ### Building homme_tool
 
@@ -107,7 +107,7 @@ make
 
 1. ### **Specify Source and Target Resolution**
 
-    We will environement variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from `ne3000pg1` to a chosen target resolution, in this case `ne30`:
+    We will use environment variables to specify the source and target grid resolutions based on the "ne" value of the cubed sphere grid ("ne" is the number of elements along a cube edge). A Typical use case will be mapping data from `ne3000pg1` to a chosen target resolution, in this case `ne30`:
 
     ```shell
     NE_SRC=3000
@@ -122,11 +122,11 @@ make
     ```
 
     !!! NOTE
-        For grids with regional refinement (RRM) there is no corresponding "ne" value - so a slightly modified workflow is needed. This entails modifying the grid file generation step, and then modifying topo and map file paths to accomodate the new RRM grid name.
+        For grids with regional refinement (RRM) there is no corresponding "ne" value - so a slightly modified workflow is needed. This entails modifying the grid file generation step, and then modifying topo and map file paths to accommodate the new RRM grid name.
 
 1. ### **Specify File Paths**
 
-    First we need to set some enviroment variables that point to various "root" directories where we will be writing and/or reading files. It
+    First we need to set some environment variables that point to various "root" directories where we will be writing and/or reading files. It
 
     ```shell
     e3sm_root=?    # path to E3SM source
@@ -276,7 +276,7 @@ make
 
 ## Batch script to streamline all steps
 
-Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since its better to do this manually in case problems arise.
+Running through all the steps above can be tedious and time-consuming. The batch scripts below include all these steps as well as batch system directives. The only step that is omitted is building homme_tool, since it's better to do this manually in case problems arise.
 
 Here is a check list of things to do before submitting this script:
 
@@ -433,11 +433,11 @@ To submit the slurm batch job use `sbatch <script>`
     # Check that final topo output file was created
     if [ ! -f ${topo_file_3} ]; then
       echo
-      echo -e ${RED} Failed to create topography file - Errors ocurred ${NC}
+      echo -e ${RED} Failed to create topography file - Errors occurred ${NC}
       echo
     else
       echo
-      echo -e ${GRN} Sucessfully created new topography file  ${NC}
+      echo -e ${GRN} Successfully created new topography file  ${NC}
       echo $topo_file_3
       echo
     fi
@@ -598,11 +598,11 @@ To submit the slurm batch job use `sbatch <script>`
     # Check that final topo output file was created
     if [ ! -f ${topo_file_3} ]; then
       echo
-      echo -e ${RED} Failed to create topography file - Errors ocurred ${NC}
+      echo -e ${RED} Failed to create topography file - Errors occurred ${NC}
       echo
     else
       echo
-      echo -e ${GRN} Sucessfully created new topography file  ${NC}
+      echo -e ${GRN} Successfully created new topography file  ${NC}
       echo $topo_file_3
       echo
     fi
