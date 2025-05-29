@@ -284,7 +284,7 @@ contains
                !$omp end do
                !$omp end parallel
 
-               if (associated(landIceDraftForSsh) ) then
+               if ( trim(config_land_ice_flux_mode) /= "off" ) then
                   !$omp parallel
                   !$omp do schedule(runtime)
                   do iCell = 1, nCells
@@ -350,7 +350,7 @@ contains
          !$omp end parallel
 
          !normalize MLD to top of ice cavity
-         if (associated(landIceDraftForSsh) ) then
+         if ( trim(config_land_ice_flux_mode) /= "off" ) then
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
@@ -415,7 +415,7 @@ contains
          !$omp end do
          !$omp end parallel
 
-         if (associated(landIceDraftForSsh) ) then
+         if ( trim(config_land_ice_flux_mode) /= "off" ) then
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
