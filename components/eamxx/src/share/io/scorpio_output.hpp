@@ -187,8 +187,8 @@ protected:
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   strvec_t                              m_fields_names;
-  strvec_t                              m_avg_cnt_names;
-  strmap_t<std::string>                 m_field_to_avg_cnt_map;
+  strmap_t<Field>                       m_field_to_avg_count;
+  std::vector<Field>                    m_avg_counts;
   strmap_t<std::string>                 m_field_to_avg_cnt_suffix;
   strmap_t<strvec_t>                    m_vars_dims;
   strmap_t<int>                         m_dims_len;

@@ -404,15 +404,16 @@ run (const std::string& filename,
   // Note, we assume that all fields that share a layout are also masked/filled in the same way.
   if (m_track_avg_cnt) {
     // Since 2+ fields may have same avg count, make sure we update the counts only ONCE.
-    std::set<std::string> avg_updated;
-    for (const auto& [fname, avg_cnt_name] : m_field_to_avg_cnt_map) {
-      if (avg_updated.count(avg_cnt_name)==1) {
+    for (auto& [fname, count] : m_field_to_avg_count) {
+      count.get_header().set_extra_data("updated",false);
+    }
+
+    for (auto& [fname, count] : m_field_to_avg_count) {
+      if (count.get_header().get_extra_data<bool>("updated")) {
         continue;
       }
-      avg_updated.insert(avg_cnt_name);
 
       auto field = fm_after_hr->get_field(fname);
-      auto count = fm_scorpio->get_field(avg_cnt_name);
       auto mask  = count.get_header().get_extra_data<Field>("mask");
 
       // Find where the field is NOT equal to m_fill_value
@@ -427,7 +428,7 @@ run (const std::string& filename,
         count.sync_to_host();
 
         auto func_start = std::chrono::steady_clock::now();
-        scorpio::write_var(filename,avg_cnt_name,count.get_internal_view_data<int,Host>());
+        scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
         auto func_finish = std::chrono::steady_clock::now();
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
         duration_write += duration_loc.count();
@@ -448,6 +449,7 @@ run (const std::string& filename,
           count.deep_copy(1,mask);
         }
       }
+      count.get_header().set_extra_data("updated",true);
     }
   }
 
@@ -471,15 +473,15 @@ run (const std::string& filename,
     }
 
     if (is_write_step) {
+      // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
-        // NOTE: we don't divide by the avg cnt for checkpoint output
+        // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
-          const auto& avg_cnt_name = m_field_to_avg_cnt_map.at(name);
-          auto avg_cnt = fm_scorpio->get_field(avg_cnt_name);
+          auto avg_count = m_field_to_avg_count.at(name);
 
-          f_out.scale_inv(avg_cnt);
+          f_out.scale_inv(avg_count);
 
-          const auto& mask = avg_cnt.get_header().get_extra_data<Field>("mask");
+          const auto& mask = avg_count.get_header().get_extra_data<Field>("mask");
           f_out.deep_copy(m_fill_value,mask);
         } else {
           // Divide by steps count only when the summation is complete
@@ -552,22 +554,6 @@ res_dep_memory_footprint () const
 
 void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const FieldLayout& layout)
 {
-  // Make sure this field "name" hasn't already been registered with avg_cnt tracking.
-  // Note, we check this because some diagnostics need to have their own tracking which
-  // is created at the 'create_diagnostics' function.
-  if (m_field_to_avg_cnt_map.count(name)>0) {
-    return;
-  }
-
-  // If the field is not an output field, do not register the avg count. This can happen
-  // if a diag depends on another diag. In this case, the inner diag is never outputed,
-  // so we don't want to create an avg count for its layout, since it may contain dims
-  // that are not in the list of registered dims (the dims of the output vars).
-  // See issue https://github.com/E3SM-Project/scream/issues/2663
-  if (not ekat::contains(m_fields_names,name)) {
-    return;
-  }
-
   // Now create a Field to track the averaging count for this layout
   const auto& avg_cnt_suffix = m_field_to_avg_cnt_suffix[name];
   const auto tags = layout.tags();
@@ -586,31 +572,31 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
     avg_cnt_name += "_" + tag_name;
   }
 
-  auto [it, inserted] = m_field_to_avg_cnt_map.emplace(name,avg_cnt_name);
-  if (not inserted) {
-    // We already created this avg cnt field
-    return;
+  // Look for an avg count field with the right name
+  for (const auto& f : m_avg_counts) {
+    if (f.name()==avg_cnt_name) {
+      // We already created this avg count field
+      m_field_to_avg_count[name] = f;
+      return;
+    }
   }
-  m_avg_cnt_names.push_back(avg_cnt_name);
+
+  // We have not created this avg count field yet.
   m_vars_dims[avg_cnt_name] = get_var_dimnames(layout);
 
-  auto fm_scorpio = m_field_mgrs[Scorpio];
-
-  // NOTE: while it seems right to use IntType as data type for cnt, we later use
-  //       it in arithmetic updates of the avg field, where we need both fields
-  //       to have the same data type
   auto nondim = ekat::units::Units::nondimensional();
-  FieldIdentifier cnt_id (avg_cnt_name,layout,nondim,fm_scorpio->get_grid()->name(),DataType::IntType);
-  Field cnt (cnt_id);
-  cnt.allocate_view();
+  FieldIdentifier count_id (avg_cnt_name,layout,nondim,m_io_grid->name(),DataType::IntType);
+  Field count(count_id);
+  count.allocate_view();
 
   // We will use a helper field for updating cnt, so store it inside the field header
-  auto mask = cnt.clone(cnt.name()+"_mask");
+  auto mask = count.clone(count.name()+"_mask");
   mask.get_header().set_extra_data("true_value",int(1));
   mask.get_header().set_extra_data("false_value",int(0));
-  cnt.get_header().set_extra_data("mask",mask);
-  
-  fm_scorpio->add_field(cnt);
+  count.get_header().set_extra_data("mask",mask);
+
+  m_avg_counts.push_back(count);
+  m_field_to_avg_count[name] = count;
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
@@ -633,8 +619,8 @@ reset_scorpio_fields()
   for (const auto& name : m_fields_names) {
     fm->get_field(name).deep_copy(value);
   }
-  for (const auto& name : m_avg_cnt_names) {
-    fm->get_field(name).deep_copy(0);
+  for (auto& count : m_avg_counts) {
+    count.deep_copy(0);
   }
 }
 /* ---------------------------------------------------------- */
@@ -720,9 +706,9 @@ register_variables(const std::string& filename,
       }
 
       // If tracking average count variables then add the name of the tracking variable for this variable
-      if (m_track_avg_cnt) {
-        const auto& lookup = m_field_to_avg_cnt_map.at(name);
-        scorpio::set_attribute(filename,name,"averaging_count_tracker",lookup);
+      if (m_field_to_avg_count.count(name)) {
+        const auto& count = m_field_to_avg_count.at(name);
+        scorpio::set_attribute(filename,name,"averaging_count_tracker",count.name());
       }
 
       // Atm procs may have set some request for metadata.
@@ -748,7 +734,8 @@ register_variables(const std::string& filename,
   // Now register the average count variables
   if (m_track_avg_cnt) {
     std::string unitless = "unitless";
-    for (const auto& name : m_avg_cnt_names) {
+    for (const auto& f : m_avg_counts) {
+      const auto& name = f.name();
       const auto& dimnames = m_vars_dims.at(name);
       if (mode==scorpio::FileMode::Append) {
         // Similar to the regular fields above, check that the var is in the file, and has the right properties
