@@ -4356,7 +4356,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.5.0</command>
         <command name="load">intel/2023.2.0</command>
-		<command name="load">intel-mkl/2023.2.0</command>
+        <command name="load">intel-mkl/2023.2.0</command>
       </modules>
 
       <modules compiler="amdclang">
