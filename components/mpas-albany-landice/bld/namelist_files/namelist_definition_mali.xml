@@ -1127,6 +1127,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_nISMIP6OceanLayers" type="integer"
+	category="io" group="io">
+Value for nISMIP6OceanLayers dimension.  If the nISMIP6OceanLayers dimension is in an input file, that value will be used instead of the value in this option. This option is only intended to be used for ocean thermal forcing coupling in E3SM, in which case E3SM will set this option, define the values of ismip6shelfMelt_zOcean through the driver, and pass thermal forcing from the ocean model.  Note that the default value of zero will result in this dimension not being defined (unless overridden by the value in an input file).
+
+Valid values: positive values or 0
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- decomposition -->
 

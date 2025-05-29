@@ -8,6 +8,8 @@ module mpaso_cpl_indices
   SAVE
   public                               ! By default make data private
 
+  integer , parameter, private:: glc_nzoc_max = 100
+
   ! ocn -> drv
 
   integer :: index_o2x_So_t      
@@ -37,7 +39,9 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_htv !ocean heat-transfer velocity
   integer :: index_o2x_So_stv !ocean salt-transfer velocity
   integer :: index_o2x_So_rhoeff !ocean effective density
-  integer :: index_o2x_So_tf2d !ocean thermal forcing at predefined critical depth
+  integer :: index_o2x_So_tf3d(glc_nzoc_max) !ocean thermal forcing at predefined z-levels
+  integer :: index_o2x_So_tf3d_mask(glc_nzoc_max) !mask ofocean thermal forcing at predefined z-levels
+
 
 
   ! ocn -> drv  (BGC)
@@ -174,8 +178,17 @@ contains
   subroutine mpaso_cpl_indices_set( )
 
     use seq_flds_mod, only : wav_ocn_coup      
+    use glc_zocnclass_mod
+
     type(mct_aVect) :: o2x      ! temporary
     type(mct_aVect) :: x2o      ! temporary
+
+    integer :: glc_nzoc
+    integer :: iLev
+    character(len=2) :: cnum
+    character(len=64) :: varname
+
+    glc_nzoc = glc_get_num_zocn_classes()
 
     ! Determine attribute vector indices
 
@@ -210,7 +223,16 @@ contains
     index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
     index_o2x_So_stv        = mct_avect_indexra(o2x,'So_stv')
     index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
-    index_o2x_So_tf2d       = mct_avect_indexra(o2x,'So_tf2d',perrWith='quiet')
+    if (glc_nzoc > 0) then
+       do iLev = 1, glc_nzoc
+          cnum = glc_zocnclass_as_string(iLev)
+          varname = 'So_tf3d' // cnum
+          index_o2x_So_tf3d(iLev) = mct_avect_indexra(o2x, trim(varname))
+
+          varname = 'So_tf3d_mask' // cnum
+          index_o2x_So_tf3d_mask(iLev) = mct_avect_indexra(o2x, trim(varname))
+       enddo
+    endif
 
     index_o2x_So_algae1     = mct_avect_indexra(o2x,'So_algae1',perrWith='quiet')
     index_o2x_So_algae2     = mct_avect_indexra(o2x,'So_algae2',perrWith='quiet')

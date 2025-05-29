@@ -51,9 +51,6 @@ OPTIONS
      -ocn_iceberg          variable for defining if the ocn model is expecting coupling fields
                            for icebergs from the seaice model
                            Options are: false, true
-     -ocn_ismf             variable for defining how the ocn model will handle ice shelf melt
-                           fluxes
-                           Options are: none, data, internal, coupled
      -ocn_sgr              variable for defining how the ocn model will handle subglacial
                            runoff
                            Options are: none, data
@@ -72,6 +69,10 @@ OPTIONS
      -ninst_ocn            NINST_OCN for this case
      -ocn_tidal_mixing     variable for defining if to run with parameterized tidal mixing
                            Options are: false, true. Default is false
+     -glc_nzoc             number of z-ocean classes for indirect glc-ocn coupling [0 | 4 | 30]
+     -ocn_glc_ismf_coupling  methods for ocn/glc ice-shelf melt flux coupling
+                             ['none' | 'data_mpaso' | 'data_mali' | 'internal_mpaso' |
+                              'tf' | 'coupler']
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -113,7 +114,6 @@ my %opts = ( help          => 0,
              ocn_grid      => undef,
              ocn_forcing   => undef,
              ocn_iceberg   => undef,
-             ocn_ismf      => undef,
              ocn_sgr      => undef,
              decomp_prefix => undef,
              date_stamp    => undef,
@@ -126,6 +126,8 @@ my %opts = ( help          => 0,
              ntasks_ocn    => 0,
              ninst_ocn     => 0,
              ocn_tidal_mixing => undef,
+             glc_nzoc      => 0,
+             ocn_glc_ismf_coupling => undef,
            );
 
 GetOptions(
@@ -140,7 +142,6 @@ GetOptions(
     "ocn_grid=s"      => \$opts{'ocn_grid'},
     "ocn_forcing=s"   => \$opts{'ocn_forcing'},
     "ocn_iceberg=s"   => \$opts{'ocn_iceberg'},
-    "ocn_ismf=s"      => \$opts{'ocn_ismf'},
     "ocn_sgr=s"       => \$opts{'ocn_sgr'},
     "decomp_prefix=s" => \$opts{'decomp_prefix'},
     "date_stamp=s"    => \$opts{'date_stamp'},
@@ -154,6 +155,8 @@ GetOptions(
     "ninst_ocn=i"     => \$opts{'ninst_ocn'},
     "preview"         => \$opts{'preview'},
     "ocn_tidal_mixing=s"   => \$opts{'ocn_tidal_mixing'},
+    "glc_nzoc=i"      => \$opts{'glc_nzoc'},
+    "ocn_glc_ismf_coupling=s" => \$opts{'ocn_glc_ismf_coupling'},
 )  or usage();
 
 # Give usage message.
@@ -184,7 +187,6 @@ my $inst_string   = $opts{'inst_string'};
 my $OCN_GRID      = $opts{'ocn_grid'};
 my $OCN_FORCING   = $opts{'ocn_forcing'};
 my $OCN_ICEBERG   = $opts{'ocn_iceberg'};
-my $OCN_ISMF      = $opts{'ocn_ismf'};
 my $OCN_SGR       = $opts{'ocn_sgr'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
@@ -196,6 +198,8 @@ my $ice_bgc       = $opts{'ice_bgc'};
 my $NINST_OCN     = $opts{'ninst_ocn'};
 my $NTASKS_OCN    = $opts{'ntasks_ocn'};
 my $OCN_TIDAL_MIXING   = $opts{'ocn_tidal_mixing'};
+my $GLC_NZOC      = $opts{'glc_nzoc'};
+my $OCN_GLC_ISMF_COUPLING = $opts{'ocn_glc_ismf_coupling'};
 $cfgdir           = $opts{'cfg_dir'};
 
 my $CIMEROOT;
@@ -463,6 +467,8 @@ my $ntasks = $NTASKS_OCN / $NINST_OCN;
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 print "MPASO build-namelist: ocn_tidal_mixing is $OCN_TIDAL_MIXING \n";
+print "MPASO build-namelist: GLC_NZOC is $GLC_NZOC  \n";
+print "MPASO build-namelist: OCN_GLC_ISMF_COUPLING is $OCN_GLC_ISMF_COUPLING  \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -736,15 +742,24 @@ if ($OCN_ICEBERG eq 'true') {
 # (true for JRA). When atm active, we assume liquid runoff corresonds to precip
 # or snow melt so we do not remove it. In either case, the energy for melting
 # doesn't come from the ocean.
-if (($OCN_ISMF ne 'none') && ($OCN_FORCING ne 'active_atm')) {
+if ((   ($OCN_GLC_ISMF_COUPLING eq 'coupler')
+     || ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso')
+     || ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso')
+    )
+    && ($OCN_FORCING ne 'active_atm'))
+{
 	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_remove_ais_river_runoff', 'val'=>".false.");
 }
 add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
 add_default($nl, 'config_ais_ice_runoff_history_days');
-add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
-add_default($nl, 'config_2d_thermal_forcing_depth');
+add_default($nl, 'config_n_glc_z_levels', 'val'=>"$GLC_NZOC");
+if ($GLC_NZOC gt 0) {
+    add_default($nl, 'config_glc_thermal_forcing_coupling_mode', 'val'=>"3d");
+} else {
+    add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
+}
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -805,11 +820,11 @@ add_default($nl, 'config_frazil_sea_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
 
-if ($OCN_ISMF eq 'coupled') {
+if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
-} elsif ($OCN_ISMF eq 'internal') {
+} elsif ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso') {
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
-} elsif ($OCN_ISMF eq 'data') {
+} elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso') {
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".false.");
 } else {
 	add_default($nl, 'config_frazil_under_land_ice');
@@ -819,13 +834,13 @@ if ($OCN_ISMF eq 'coupled') {
 # Namelist group: land_ice_fluxes #
 ###################################
 
-if ($OCN_ISMF eq 'coupled') {
+if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"coupled");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
-} elsif ($OCN_ISMF eq 'internal') {
+} elsif ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"standalone");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".true.");
-} elsif ($OCN_ISMF eq 'data') {
+} elsif ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso') {
 	add_default($nl, 'config_land_ice_flux_mode', 'val'=>"data");
 	add_default($nl, 'config_frazil_under_land_ice', 'val'=>".false.");
 } else {
@@ -1213,7 +1228,11 @@ if ($OCN_ICEBERG eq 'true') {
 	add_default($nl, 'config_use_freshwaterTracers_icebergFreshWaterFlux', 'val'=>".false.");
 }
 # When there are land ice fluxes, use freshwater tracer
-if (($OCN_ISMF ne 'none')) {
+if (   ($OCN_GLC_ISMF_COUPLING eq 'coupler')
+    || ($OCN_GLC_ISMF_COUPLING eq 'internal_mpaso')
+    || ($OCN_GLC_ISMF_COUPLING eq 'data_mpaso')
+    || ($OCN_GLC_ISMF_COUPLING eq 'tf')
+    ) {
 	add_default($nl, 'config_use_freshwaterTracers_landIceFreshwaterFlux', 'val'=>".true.");
 } else {
 	add_default($nl, 'config_use_freshwaterTracers_landIceFreshwaterFlux', 'val'=>".false.");

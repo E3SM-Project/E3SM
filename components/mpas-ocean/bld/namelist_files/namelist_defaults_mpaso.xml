@@ -377,8 +377,8 @@
 <config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
 <config_scale_dismf_by_removed_ice_runoff>.false.</config_scale_dismf_by_removed_ice_runoff>
 <config_ais_ice_runoff_history_days>731</config_ais_ice_runoff_history_days>
+<config_n_glc_z_levels>0</config_n_glc_z_levels>
 <config_glc_thermal_forcing_coupling_mode>'off'</config_glc_thermal_forcing_coupling_mode>
-<config_2d_thermal_forcing_depth>300.0</config_2d_thermal_forcing_depth>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>

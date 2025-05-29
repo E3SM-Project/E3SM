@@ -41,6 +41,8 @@ def buildnml(case, caseroot, compname):
     run_reftod        = case.get_value("RUN_REFTOD")
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
     mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
+    glc_nzoc          = case.get_value("GLC_NZOC")
+    ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -69,13 +71,13 @@ def buildnml(case, caseroot, compname):
         decomp_date += '150910'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais8to30km':
-        grid_date += '20221027'
+        grid_date += '20250411'
         grid_prefix += 'ais_8to30km'
         datamode_date += '20250121'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais4to20km':
-        grid_date += '20241224'
+        grid_date += '20250411'
         grid_prefix += 'ais_4to20km'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
@@ -85,7 +87,7 @@ def buildnml(case, caseroot, compname):
         decomp_date += '150922'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.gis4to40km':
-        grid_date += '20250214'
+        grid_date += '20250411'
         grid_prefix += 'gis_4to40km'
         decomp_date += '20250214'
         decomp_prefix += 'mpasli.graph.info.'
@@ -176,6 +178,8 @@ def buildnml(case, caseroot, compname):
         sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
         sysmod += " -mali_prognostic_mode '{}'".format(mali_prognostic_mode)
+        sysmod += " -glc_nzoc '{}'".format(glc_nzoc)
+        sysmod += " -ocn_glc_ismf_coupling '{}'".format(ocn_glc_ismf_coupling)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 
@@ -267,6 +271,11 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="restoreThickness"/>')
         lines.append('    <var name="dHdt"/>')
         lines.append('    <var name="ismip6_2dThermalForcing"/>')
+        lines.append('    <var name="ismip6shelfMelt_3dThermalForcing"/>')
+        lines.append('    <var name="orig3dOceanMask"/>')
+        lines.append('    <var name="ismip6shelfMelt_TFdraft"/>')
+        lines.append('    <var name="ismip6shelfMelt_zOcean"/>')
+        lines.append('    <var name="ismip6shelfMelt_zBndsOcean"/>')
         lines.append('    <var name="faceMeltSpeed"/>')
         lines.append('    <var name="faceMeltingThickness"/>')
         lines.append('    <var name="deltat"/>')
