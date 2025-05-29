@@ -518,17 +518,9 @@ res_dep_memory_footprint () const
   std::set<Field*> fields;
 
   for (const auto& [phase,fm] : m_field_mgrs) {
-    auto gn = fm->get_grid()->name();
-    auto is_diag = [&](const std::string& name) {
-      if (not fm->has_group("diagnostic"))
-        return false;
-
-      auto group = fm->get_field_group("diagnostic",gn);
-      for (const auto& fn : group.m_info->m_fields_names) {
-        if (name==fn)
-          return true;
-      }
-      return false;
+    auto is_diag = [&](const Field& f) {
+      const auto& groups = f.get_header().get_tracking().get_groups_names();
+      return ekat::contains(groups,"diagnostic");
     };
     for (const auto& [fname,f_ptr] : fm->get_repo()) {
       auto [it, inserted] = fields.insert(f_ptr.get());
@@ -541,8 +533,8 @@ res_dep_memory_footprint () const
         // We don't count subfields
         continue;
       }
-      if (phase==FromModel and not is_diag(f_ptr->name())) {
-        // We don't count fields from the model
+      if (phase==FromModel and not is_diag(*f_ptr)) {
+        // We don't count fields from the model, as we only shallow-copied them
         continue;
       }
       rdmf += fap.get_alloc_size();
@@ -630,7 +622,6 @@ register_variables(const std::string& filename,
                    const scorpio::FileMode mode)
 {
   using namespace ShortFieldTagsNames;
-  using strvec_t = std::vector<std::string>;
 
   EKAT_REQUIRE_MSG (ekat::contains(strvec_t{"float","single","double","real"},fp_precision),
       "Error! Invalid/unsupported value for fp_precision.\n"
@@ -900,7 +891,9 @@ init_diagnostics ()
     // Set the diag field in the FM
     auto diag_field = diag->get_diagnostic();
     fm_model->add_field(diag_field);
-    fm_model->add_to_group(diag_field.name(),"diagnostic");
+
+    // Add the field to the diag group
+    diag_field.get_header().get_tracking().add_group("diagnostic");
 
     // Some diags need some extra setup or trigger extra behaviors
     std::string diag_avg_cnt_name = "";
