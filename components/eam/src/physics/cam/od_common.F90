@@ -400,12 +400,8 @@ function pblh_get_level_idx(height_array,pblheight)
     endif
   enddo
 
-  if (.not. found) then
-    print *, 'error, pbl not found'
-    print *, height_array
-    print *, pblheight
-    stop
-  endif
+  if (.not.found) call endrun('ERROR - pblh_get_level_idx: pbl top index not found')
+
 end function
 
 !==========================================================================
