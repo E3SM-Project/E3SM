@@ -26,6 +26,7 @@ mkpeatMod.F90
 mktopostatsMod.F90
 mkVICparamsMod.F90
 mkCH4inversionMod.F90
+mkFertMod.F90
 mkSedMod.F90
 mkFertMod.F90
 mktopradMod.F90
