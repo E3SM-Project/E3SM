@@ -26,7 +26,7 @@
 
           Color fruit_color;
         
-          bool classify_good_color(Color color_) { ... };
+          bool is_favorite_color(Color color_) { ... };
         }
         ```
 
@@ -34,6 +34,6 @@
       class because:
         1. `Color` is not inherently associated with fruits--it could also
            belong to, for instance, a `Vegetable` class.
-        2. There is no strong reason the `classify_good_color()` needs to be a
+        2. There is no strong reason the `is_favorite_color()` needs to be a
            part of `Fruit`, since it would work the same way if it knew nothing
            about fruits.
