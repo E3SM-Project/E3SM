@@ -1,13 +1,11 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 #include "p3_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -79,7 +77,7 @@ void run_bfb_rain_vel()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (Int i = 0; i < max_pack_size; ++i) {
-      crfv_baseline[i].read(Base::m_fid);
+      crfv_baseline[i].read(Base::m_ifile);
     }
   }
 
@@ -125,7 +123,7 @@ void run_bfb_rain_vel()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int s = 0; s < max_pack_size; ++s) {
-      crfv_host(s).write(Base::m_fid);
+      crfv_host(s).write(Base::m_ofile);
     }
   }
 }
@@ -170,7 +168,7 @@ void run_bfb_rain_sed()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : rsds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -210,7 +208,7 @@ void run_bfb_rain_sed()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      rsds_cxx[i].write(Base::m_fid);
+      rsds_cxx[i].write(Base::m_ofile);
     }
   }
 }

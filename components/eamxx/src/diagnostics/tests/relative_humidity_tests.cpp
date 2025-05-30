@@ -11,9 +11,9 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
@@ -50,6 +50,7 @@ void run(std::mt19937_64& engine)
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<Pack>;
   using rview_1d   = typename KT::template view_1d<Real>;
+  using TPF        = ekat::TeamPolicyFactory<ExecSpace>;
 
   const     int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
@@ -63,7 +64,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
+  auto policy = TPF::get_default_team_policy(ncols, num_mid_packs);
 
   // Input (randomized) views, device
   view_1d temperature("temperature",num_mid_packs),

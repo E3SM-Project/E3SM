@@ -4,7 +4,7 @@
 #include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
-#include <ekat/ekat_parse_yaml_file.hpp>
+#include <ekat_yaml.hpp>
 
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>

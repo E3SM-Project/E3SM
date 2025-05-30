@@ -6,5 +6,5 @@ set(INFRA_SRCS
 )
 
 add_library(shoc_test_infra ${INFRA_SRCS})
-target_link_libraries(shoc_test_infra shoc)
+target_link_libraries(shoc_test_infra PUBLIC shoc scream_test_support)
 target_include_directories(shoc_test_infra PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -6,6 +6,8 @@
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
@@ -553,10 +555,11 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const int ncol = ncol_;
   const int nlev = nlev_;
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
+  const auto policy = TPF::get_default_team_policy(ncol, nlev);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);

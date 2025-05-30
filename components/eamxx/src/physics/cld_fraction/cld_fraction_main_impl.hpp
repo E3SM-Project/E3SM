@@ -2,7 +2,9 @@
 #define CLD_FRACTION_MAIN_IMPL_HPP
 
 #include "physics/cld_fraction/cld_fraction_functions.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_subview_utils.hpp>
 
 namespace scream {
 namespace cld_fraction {
@@ -23,8 +25,10 @@ void CldFractionFunctions<S,D>
   const view_2d<Spack>& tot_cld_frac_4out)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   Kokkos::parallel_for(
     "cld fraction main loop",
     policy,

@@ -3,7 +3,7 @@
 
 #include "Context.hpp"
 
-#include "ekat/ekat_scalar_traits.hpp"
+#include <ekat_scalar_traits.hpp>
 
 // Homme includes
 #include "Types.hpp"
@@ -19,20 +19,6 @@ struct ScalarTraits<Homme::Scalar> {
   using inner_traits = ScalarTraits<Homme::Real>;
 
   static constexpr bool is_simd = true;
-
-  static std::string name () {
-    return "Homme::Scalar";
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static const value_type quiet_NaN () {
-    return value_type(inner_traits::quiet_NaN());
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static const value_type invalid () {
-    return value_type(inner_traits::invalid());
-  }
 };
 
 } // namespace ekat
@@ -50,14 +36,14 @@ struct HommeContextUser {
       Homme::Context::singleton().finalize_singleton();
     }
   }
-  int get_counter () const { return counter; }
+
   static HommeContextUser& singleton() {
     static HommeContextUser hcu;
     return hcu;
   }
 private:
-  HommeContextUser () : counter(0) {}
-  int counter;
+  HommeContextUser () = default;
+  int counter = 0;
 };
 
 } // namespace scream

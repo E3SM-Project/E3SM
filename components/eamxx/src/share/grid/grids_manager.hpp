@@ -5,11 +5,11 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 
-#include "ekat/util/ekat_factory.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_factory.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <map>
 #include <set>

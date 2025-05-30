@@ -1,15 +1,15 @@
 #ifndef EAMXX_MAM_TRACER_READER_UTILS
 #define EAMXX_MAM_TRACER_READER_UTILS
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/util/ekat_lin_interp.hpp>
-
 #include "share/grid/point_grid.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_lin_interp.hpp>
 
 namespace scream::mam_coupling {
 
@@ -18,7 +18,7 @@ using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 using view_2d_host = typename KT::view_2d<Real>::HostMirror;
 
 using ExeSpace = typename KT::ExeSpace;
-using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 using C        = scream::physics::Constants<Real>;
 using LIV      = ekat::LinInterp<Real, 1>;
 
@@ -563,7 +563,7 @@ inline void perform_time_interpolation(const TracerTimeState &time_state,
 
   const int outer_iters = ncol * num_vars;
 
-  const auto policy = ESU::get_default_team_policy(outer_iters, num_vert);
+  const auto policy = TPF::get_default_team_policy(outer_iters, num_vert);
 
   auto delta_t_fraction = (t_now - t_beg) / delta_t;
 
@@ -612,7 +612,7 @@ inline void compute_source_pressure_levels(const view_1d &ps_src,
   constexpr auto P0        = C::P0;
   const int ncols          = ps_src.extent(0);
   const int num_vert_packs = p_src.extent(1);
-  const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+  const auto policy = TPF::get_default_team_policy(ncols, num_vert_packs);
 
   Kokkos::parallel_for(
       "tracer_compute_p_src_loop", policy, KOKKOS_LAMBDA(const Team &team) {
@@ -644,7 +644,7 @@ inline void perform_vertical_interpolation(const view_2d &p_src_c,
     output_local[ivar] = output[ivar];
   }
   const int outer_iters   = ncol * num_vars;
-  const auto policy_setup = ESU::get_default_team_policy(outer_iters, pver);
+  const auto policy_setup = TPF::get_default_team_policy(outer_iters, pver);
   const auto &data        = input.data;
 
   Kokkos::parallel_for(
@@ -679,7 +679,7 @@ inline void perform_vertical_interpolation(const const_view_1d &altitude_int,
   const int num_vert_packs          = num_vertical_lev_target;
   const int outer_iters             = ncols * num_vars;
   const auto policy_interp =
-      ESU::get_default_team_policy(outer_iters, num_vert_packs);
+      TPF::get_default_team_policy(outer_iters, num_vert_packs);
   // FIXME: Get m2km from emaxx.
   const Real m2km    = 1e-3;
   const auto &src_x  = altitude_int;

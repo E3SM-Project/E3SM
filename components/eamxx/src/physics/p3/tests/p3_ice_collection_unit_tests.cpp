@@ -1,8 +1,6 @@
 #include "catch2/catch.hpp"
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
 
@@ -66,7 +64,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        cldliq[i].read(Base::m_fid);
+        cldliq[i].read(Base::m_ifile);
       }
     }
 
@@ -121,7 +119,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cldliq_host(s).write(Base::m_fid);
+        cldliq_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -167,7 +165,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        rain[i].read(Base::m_fid);
+        rain[i].read(Base::m_ifile);
       }
     }
 
@@ -215,7 +213,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        rain_host(s).write(Base::m_fid);
+        rain_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -261,7 +259,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        self[i].read(Base::m_fid);
+        self[i].read(Base::m_ifile);
       }
     }
 
@@ -299,7 +297,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        self_host(s).write(Base::m_fid);
+        self_host(s).write(Base::m_ofile);
       }
     }
   }
