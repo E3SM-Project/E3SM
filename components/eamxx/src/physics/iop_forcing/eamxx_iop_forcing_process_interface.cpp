@@ -2,6 +2,7 @@
 
 #include "share/field/field_utils.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "ekat/util/ekat_lin_interp.hpp"
 
 namespace scream
 {
@@ -160,128 +161,39 @@ advance_iop_subsidence(const MemberType& team,
   const auto n_q_tracers = Q.extent_int(0);
   const auto nlev_packs = ekat::npack<Pack>(nlevs);
 
-  // Get some temporary views from WS
-  uview_1d<Pack> omega_int, delta_u, delta_v, delta_T, tmp;
-  workspace.take_many_contiguous_unsafe<4>({"omega_int", "delta_u", "delta_v", "delta_T"},
-                                           {&omega_int,  &delta_u,  &delta_v,  &delta_T});
-  const auto delta_Q_slot = workspace.take_macro_block("delta_Q", n_q_tracers);
-  uview_2d<Pack> delta_Q(delta_Q_slot.data(), n_q_tracers, nlev_packs);
+  auto s_ref_p_mid  = ekat::scalarize(ref_p_mid);
+  auto s_omega      = ekat::scalarize(omega);
+  auto s_u          = ekat::scalarize(u);
+  auto s_v          = ekat::scalarize(v);
+  auto s_T          = ekat::scalarize(T);
 
-  auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
-  auto s_omega = ekat::scalarize(omega);
-  auto s_delta_u = ekat::scalarize(delta_u);
-  auto s_delta_v = ekat::scalarize(delta_v);
-  auto s_delta_T = ekat::scalarize(delta_T);
-  auto s_delta_Q = ekat::scalarize(delta_Q);
-  auto s_omega_int = ekat::scalarize(omega_int);
+  // Semi-Lagrangian update loop
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
+    const Real omega_k = s_omega(k);
+    const Real p_ref = s_ref_p_mid(k); // reference pressure
+    const Real p_tgt = p_ref - dt * omega_k; // target pressure
 
-  // Compute omega on the interface grid by using a weighted average in pressure
-  const int pack_begin = 1/Pack::n, pack_end = (nlevs-1)/Pack::n;
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pack_begin, pack_end+1), [&] (const int k){
-    auto range_pack = ekat::range<IntPack>(k*Pack::n);
-    range_pack.set(range_pack<1, 1);
-    Pack ref_p_mid_k, ref_p_mid_km1, omega_k, omega_km1;
-    ekat::index_and_shift<-1>(s_ref_p_mid, range_pack, ref_p_mid_k, ref_p_mid_km1);
-    ekat::index_and_shift<-1>(s_omega, range_pack, omega_k, omega_km1);
+    // Set up linear interpolation
+    ekat::LinInterp<Real,Pack::n> vert_interp(1, nlev_packs, nlev_packs);
+    vert_interp.setup(team, p_ref, p_tgt);
 
-    const auto weight = (ref_p_int(k) - ref_p_mid_km1)/(ref_p_mid_k - ref_p_mid_km1);
-    omega_int(k).set(range_pack>=1 and range_pack<=nlevs-1,
-                      weight*omega_k + (1-weight)*omega_km1);
-  });
-  omega_int(0)[0] = 0;
-  omega_int(nlevs/Pack::n)[nlevs%Pack::n] = 0;
+    // Interpolate each field at the departure point
+    vert_interp.lin_interp(team, p_ref, p_tgt, s_u, u(k));
+    vert_interp.lin_interp(team, p_ref, p_tgt, s_v, v(k));
+    vert_interp.lin_interp(team, p_ref, p_tgt, s_T, T(k));
 
-  // Compute delta views for u, v, T, and Q (e.g., u(k+1) - u(k), k=0,...,nlevs-2)
-  ColOps::compute_midpoint_delta(team, nlevs-1, u, delta_u);
-  ColOps::compute_midpoint_delta(team, nlevs-1, v, delta_v);
-  ColOps::compute_midpoint_delta(team, nlevs-1, T, delta_T);
-  for (int iq=0; iq<n_q_tracers; ++iq) {
-    auto tracer       = Kokkos::subview(Q,       iq, Kokkos::ALL());
-    auto delta_tracer = Kokkos::subview(delta_Q, iq, Kokkos::ALL());
-    ColOps::compute_midpoint_delta(team, nlevs-1, tracer, delta_tracer);
-  }
-  team.team_barrier();
+    // Add thermal expansion term to temperature
+    T(k) *= 1 + (dt*Rair/Cpair)*omega_k/p_ref;
 
-  // Compute updated temperature, horizontal winds, and tracers
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const int k) {
-    auto range_pack = ekat::range<IntPack>(k*Pack::n);
-    const auto at_top = range_pack==0;
-    const auto not_at_top = not at_top;
-    const auto at_bot = range_pack==nlevs-1;
-    const auto not_at_bot = not at_bot;
-    const bool any_at_top = at_top.any();
-    const bool any_at_bot = at_bot.any();
-
-    // Get delta(k-1) packs. The range pack should not
-    // contain index 0 (so that we don't attempt to access
-    // k=-1 index) or index > nlevs-2 (since delta_* views
-    // are size nlevs-1).
-    auto range_pack_for_m1_shift = range_pack;
-    range_pack_for_m1_shift.set(range_pack<1, 1);
-    range_pack_for_m1_shift.set(range_pack>nlevs-2, nlevs-2);
-    Pack delta_u_k, delta_u_km1,
-         delta_v_k, delta_v_km1,
-         delta_T_k, delta_T_km1;
-    ekat::index_and_shift<-1>(s_delta_u, range_pack_for_m1_shift, delta_u_k, delta_u_km1);
-    ekat::index_and_shift<-1>(s_delta_v, range_pack_for_m1_shift, delta_v_k, delta_v_km1);
-    ekat::index_and_shift<-1>(s_delta_T, range_pack_for_m1_shift, delta_T_k, delta_T_km1);
-
-    // At the top and bottom of the model, set the end points for
-    // delta_*_k and delta_*_km1 to be the first and last entries
-    // of delta_*, respectively.
-    if (any_at_top) {
-      delta_u_k.set(at_top, s_delta_u(0));
-      delta_v_k.set(at_top, s_delta_v(0));
-      delta_T_k.set(at_top, s_delta_T(0));
-    }
-    if (any_at_bot) {
-      delta_u_km1.set(at_bot, s_delta_u(nlevs-2));
-      delta_v_km1.set(at_bot, s_delta_v(nlevs-2));
-      delta_T_km1.set(at_bot, s_delta_T(nlevs-2));
-    }
-
-    // Get omega_int(k+1) pack. The range pack should not
-    // contain index > nlevs-1 (since omega_int is size nlevs+1).
-    auto range_pack_for_p1_shift = range_pack;
-    range_pack_for_p1_shift.set(range_pack>nlevs-1, nlevs-1);
-    Pack omega_int_k, omega_int_kp1;
-    ekat::index_and_shift<1>(s_omega_int, range_pack, omega_int_k, omega_int_kp1);
-
-    const auto fac = (dt/2)/ref_p_del(k);
-
-    // Update u
-    u(k).update(not_at_bot, fac*omega_int_kp1*delta_u_k, -1, 1);
-    u(k).update(not_at_top, fac*omega_int_k*delta_u_km1, -1, 1);
-
-    // Update v
-    v(k).update(not_at_bot, fac*omega_int_kp1*delta_v_k, -1, 1);
-    v(k).update(not_at_top, fac*omega_int_k*delta_v_km1, -1, 1);
-
-    // Before updating T, first scale using thermal
-    // expansion term due to LS vertical advection
-    T(k) *= 1 + (dt*Rair/Cpair)*omega(k)/ref_p_mid(k);
-
-    // Update T
-    T(k).update(not_at_bot, fac*omega_int_kp1*delta_T_k, -1, 1);
-    T(k).update(not_at_top, fac*omega_int_k*delta_T_km1, -1, 1);
-
-    // Update Q
-    Pack delta_tracer_k, delta_tracer_km1;
-    for (int iq=0; iq<n_q_tracers; ++iq) {
-      auto s_delta_tracer = Kokkos::subview(s_delta_Q, iq, Kokkos::ALL());
-      ekat::index_and_shift<-1>(s_delta_tracer, range_pack_for_m1_shift, delta_tracer_k, delta_tracer_km1);
-      if (any_at_top) delta_tracer_k.set(at_top, s_delta_tracer(0));
-      if (any_at_bot) delta_tracer_km1.set(at_bot, s_delta_tracer(nlevs-2));
-
-      Q(iq, k).update(not_at_bot, fac*omega_int_kp1*delta_tracer_k, -1, 1);
-      Q(iq, k).update(not_at_top, fac*omega_int_k*delta_tracer_km1, -1, 1);
+    // Interpolate tracers at the departure point
+    for (int m = 0; m < n_q_tracers; ++m) {
+      auto tracer = Kokkos::subview(Q, m, Kokkos::ALL());
+      vert_interp.lin_interp(team, p_ref, p_tgt, tracer, Q(m,k));
     }
   });
-
-  // Release WS views
-  workspace.release_macro_block(delta_Q_slot, n_q_tracers);
-  workspace.release_many_contiguous<4>({&omega_int,  &delta_u,  &delta_v,  &delta_T});
 }
+
+
 // =========================================================================================
 KOKKOS_FUNCTION
 void IOPForcing::
