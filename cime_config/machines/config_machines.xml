@@ -3609,7 +3609,7 @@
         <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
         <arg name="ranks_per_node">-ppn {{ tasks_per_node }}</arg>
         <arg name="ranks_bind">--cpu-bind $ENV{RANKS_BIND}</arg>
-        <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="threads_per_rank">-d $ENV{OMP_NUM_THREADS} $ENV{RLIMITS}</arg>
         <arg name="gpu_maps">$ENV{GPU_TILE_COMPACT}</arg>
       </arguments>
     </mpirun>
@@ -3635,6 +3635,7 @@
         <env name="PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/bin:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/bin:$ENV{PATH}</env>
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
+        <env name="RLIMITS"> </env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
@@ -3674,6 +3675,12 @@
         <env name="KMP_AFFINITY">granularity=core,balanced</env>
         <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
+    <environment_variables DEBUG="TRUE">
+        <env name="RLIMITS">--rlimits CORE</env>
+    </environment_variables>
+    <resource_limits DEBUG="TRUE">
+        <resource name="RLIMIT_CORE">-1</resource>
+    </resource_limits>
     <resource_limits>
         <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
