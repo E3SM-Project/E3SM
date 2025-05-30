@@ -847,6 +847,24 @@
     Used by both ELM and CISM (even if CISM is not running, and only SGLC is used).</desc>
   </entry>
 
+  <entry id="GLC_NZOC">
+    <type>integer</type>
+    <valid_values>0,4,30</valid_values>
+    <default_value>0</default_value>
+    <values match="last">
+      <value compset="_MPASO.+_MALI">30</value>
+      <value compset="_MPASO.+_MALI%SIASTATIC">0</value>
+      <value compset="_MPASO.+_MALI%STATIC">0</value>
+      <value compset="_MPASO.+_MALI%SIADATA">0</value>
+      <value compset="_MPASO.+_MALI%DATA">0</value>
+    </values>
+    <group>run_glc</group>
+    <file>env_run.xml</file>
+    <desc>Glacier model number of z-ocean classes, 0 implies no OCN z-level coupling to GLC or
+    GLC is inactive.
+    Used by both OCN and GLC components.</desc>
+  </entry>
+
   <entry id="GLC_TWO_WAY_COUPLING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
