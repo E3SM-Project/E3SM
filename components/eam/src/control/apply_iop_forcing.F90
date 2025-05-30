@@ -173,100 +173,75 @@ end subroutine advance_iop_nudging
 
 !=========================================================================
 
-subroutine advance_iop_subsidence(scm_dt, ps_in, &                    ! In
-                             u_in, v_in, t_in, q_in, &                ! In
-                             u_update, v_update, t_update, q_update ) ! Out
+subroutine advance_iop_subsidence(scm_dt, ps_in, &
+                             u_in, v_in, t_in, q_in, &
+                             u_update, v_update, t_update, q_update)
 
-!-----------------------------------------------------------------------
-!
-! Purpose:
-! Option to compute effects of large scale subsidence on T, q, u, and v.
-! Code originated from CAM3.5/CAM5 Eulerian subsidence computation for SCM
-! in the old forecast.f90 routine.
-!-----------------------------------------------------------------------
+  implicit none
 
   ! Input arguments
-  real(r8), intent(in) :: scm_dt           ! model time step [s]
-  real(r8), intent(in) :: ps_in            ! surface pressure [Pa]
-  real(r8), intent(in) :: u_in(plev)       ! zonal wind [m/s]
-  real(r8), intent(in) :: v_in(plev)       ! meridional wind [m/s]
-  real(r8), intent(in) :: t_in(plev)       ! temperature [K]
-  real(r8), intent(in) :: q_in(plev,pcnst) ! tracer [vary]
+  real(r8), intent(in) :: scm_dt, ps_in
+  real(r8), intent(in) :: u_in(plev), v_in(plev), t_in(plev)
+  real(r8), intent(in) :: q_in(plev,pcnst)
 
   ! Output arguments
-  real(r8), intent(out) :: u_update(plev)      ! zonal wind [m/s]
-  real(r8), intent(out) :: v_update(plev)      ! meridional wind [m/s]
-  real(r8), intent(out) :: t_update(plev)      ! temperature [m/s]
-  real(r8), intent(out) :: q_update(plev,pcnst)! tracer [vary]
+  real(r8), intent(out) :: u_update(plev), v_update(plev), t_update(plev), q_update(plev,pcnst)
 
   ! Local variables
   integer :: k, m, nlon
-  real(r8) :: fac, weight
-  real(r8) :: wfldint(plevp)
-  real(r8) pmidm1(plev)  ! pressure at model levels
-  real(r8) pintm1(plevp) ! pressure at model interfaces
-  real(r8) pdelm1(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
+  real(r8) :: pintm1(plevp), pmidm1(plev), pdelm1(plev)
+  real(r8) :: p_dep, phi_dep
+  real(r8) :: omega_k
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! Perform weight averaged in pressure of the omega profile to get from
-  !   the midpoint grid to the interface grid
-
-  nlon = 1 ! number of columns for plevs0 routine
+  ! Compute pressure levels
+  nlon = 1
   call plevs0(nlon, plon, plev, ps_in, pintm1, pmidm1, pdelm1)
 
-  wfldint(1) = 0.0_r8
+  ! Loop over vertical levels
+  do k = 1, plev
+    omega_k = wfld(k)    ! omega at level k [Pa/s]
+    p_dep = pmidm1(k) - omega_k * scm_dt
 
-  do k=2,plev
-     weight = (pintm1(k) - pmidm1(k-1))/(pmidm1(k) - pmidm1(k-1))
-     wfldint(k) = (1.0_r8 - weight)*wfld(k-1) + weight*wfld(k)
+    ! === U velocity ===
+    call linear_interp_pressure(pmidm1, u_in, plev, p_dep, u_update(k))
+    call linear_interp_pressure(pmidm1, v_in, plev, p_dep, v_update(k))
+    call linear_interp_pressure(pmidm1, t_in, plev, p_dep, t_update(k))
+
+    do m = 1, pcnst
+      call linear_interp_pressure(pmidm1, q_in(:,m), plev, p_dep, q_update(k,m))
+    end do
+
+    ! Apply explicit thermal expansion (same as before)
+    t_update(k) = t_update(k) + scm_dt * omega_k * t_in(k) * rair / (cpair * pmidm1(k))
   end do
 
-  wfldint(plevp) = 0.0_r8
-
-  do k=2,plev-1
-    fac = scm_dt/(2.0_r8*pdelm1(k))
-    u_update(k) = u_in(k) &
-      - fac*(wfldint(k+1)*(u_in(k+1) - u_in(k)) &
-      + wfldint(k)*(u_in(k) - u_in(k-1)))
-    v_update(k) = v_in(k) &
-      - fac*(wfldint(k+1)*(v_in(k+1) - v_in(k)) &
-      + wfldint(k)*(v_in(k) - v_in(k-1)))
-    t_update(k) = t_in(k) &
-      - fac*(wfldint(k+1)*(t_in(k+1) - t_in(k)) &
-      + wfldint(k)*(t_in(k) - t_in(k-1)))
-
-    do m=1,pcnst
-      q_update(k,m) = q_in(k,m) &
-        - fac*(wfldint(k+1) * (q_in(k+1,m) - q_in(k,m)) &
-        + wfldint(k)*(q_in(k,m) - q_in(k-1,m)))
-    enddo
-  enddo
-
-  ! Top and bottom levels next
-  k = 1
-  fac = scm_dt/(2.0_r8*pdelm1(k))
-  u_update(k) = u_in(k) - fac*(wfldint(k+1)*(u_in(k+1) - u_in(k)))
-  v_update(k) = v_in(k) - fac*(wfldint(k+1)*(v_in(k+1) - v_in(k)))
-  t_update(k) = t_in(k) - fac*(wfldint(k+1)*(t_in(k+1) - t_in(k)))
-  do m=1,pcnst
-    q_update(k,m) = q_in(k,m) - fac*(wfldint(k+1)*(q_in(k+1,m) - q_in(k,m)))
-  enddo
-
-  k = plev
-  fac = scm_dt/(2.0_r8*pdelm1(plev))
-  u_update(k) = u_in(k) - fac*(wfldint(k)*(u_in(k) - u_in(k-1)))
-  v_update(k) = v_in(k) - fac*(wfldint(k)*(v_in(k) - v_in(k-1)))
-  t_update(k) = t_in(k) - fac*(wfldint(k)*(t_in(k) - t_in(k-1)))
-  do m=1,pcnst
-    q_update(k,m) = q_in(k,m) - fac*(wfldint(k)*(q_in(k,m) - q_in(k-1,m)))
-  enddo
-
-  ! thermal expansion term due to LS vertical advection
-  do k=1,plev
-    t_update(k) = t_update(k) + scm_dt*wfld(k)*t_in(k)*rair/(cpair*pmidm1(k))
-  enddo
-
 end subroutine advance_iop_subsidence
+
+subroutine linear_interp_pressure(p, phi, n, p_target, phi_interp)
+  implicit none
+  integer, intent(in) :: n
+  real(r8), intent(in) :: p(n), phi(n), p_target
+  real(r8), intent(out) :: phi_interp
+
+  integer :: i
+  real(r8) :: w
+
+  ! Clamp if outside bounds
+  if (p_target <= p(1)) then
+    phi_interp = phi(1)
+  else if (p_target >= p(n)) then
+    phi_interp = phi(n)
+  else
+    do i = 1, n-1
+      if (p_target >= p(i) .and. p_target < p(i+1)) then
+        w = (p_target - p(i)) / (p(i+1) - p(i))
+        phi_interp = (1.0_r8 - w) * phi(i) + w * phi(i+1)
+        return
+      end if
+    end do
+  end if
+end subroutine linear_interp_pressure
+
 
 !
 !-----------------------------------------------------------------------
