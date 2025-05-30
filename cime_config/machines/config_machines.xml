@@ -3647,11 +3647,15 @@
         <env name="FI_CXI_OVFLOW_BUF_SIZE">8388608</env>
         <env name="PALS_PING_PERIOD">240</env>
         <env name="PALS_RPC_TIMEOUT">240</env>
+        <env name="SYCL_PI_LEVEL_ZERO_SINGLE_THREAD_MODE">1</env>
+        <env name="SYCL_PI_LEVEL_ZERO_DISABLE_USM_ALLOCATOR">1</env>
+        <env name="SYCL_PI_LEVEL_ZERO_USM_RESIDENT">0x001</env>
+        <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
+        <env name="UR_L0_USE_COPY_ENGINE_FOR_IN_ORDER_QUEUE">1</env>
 
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
-        <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
         <env name="GPU_TILE_COMPACT">/lus/flare/projects/E3SM_Dec/tools/mpi_wrapper_utils/gpu_tile_compact.sh</env>
