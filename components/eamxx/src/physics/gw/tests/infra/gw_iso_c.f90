@@ -140,4 +140,15 @@ contains
 
     call gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, lat, t, ti, pmid, pint, dpm, rdpm, piln, rhoi, nm, ni, ubm, ubi, xv, yv, effgw, c, kvtt, q, dse, tau, utgw, vtgw, ttgw, qtgw, taucd, egwdffi, gwut, dttdf, dttke)
   end subroutine gw_drag_prof_c
+
+  subroutine gw_front_init_c(taubgnd, frontgfc_in, kfront_in) bind(C)
+    use gw_front, only : gw_front_init
+
+    real(kind=c_real) , value, intent(in) :: taubgnd, frontgfc_in
+    integer(kind=c_int) , value, intent(in) :: kfront_in
+
+    character(len=128) :: errstring
+
+    call gw_front_init(taubgnd, frontgfc_in, kfront_in, errstring)
+  end subroutine gw_front_init_c
 end module gw_iso_c
