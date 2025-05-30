@@ -191,6 +191,50 @@ struct Functions
     const uview_1d<Spack>& dttdf,
     const uview_1d<Spack>& dttke,
     const uview_1d<Spack>& ttgw);
+
+  KOKKOS_FUNCTION
+  static void gw_drag_prof(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const uview_1d<const Int>& src_level,
+    const uview_1d<const Int>& tend_level,
+    const bool& do_taper,
+    const Spack& dt,
+    const uview_1d<const Spack>& lat,
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& ti,
+    const uview_1d<const Spack>& pmid,
+    const uview_1d<const Spack>& pint,
+    const uview_1d<const Spack>& dpm,
+    const uview_1d<const Spack>& rdpm,
+    const uview_1d<const Spack>& piln,
+    const uview_1d<const Spack>& rhoi,
+    const uview_1d<const Spack>& nm,
+    const uview_1d<const Spack>& ni,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Spack>& ubi,
+    const uview_1d<const Spack>& xv,
+    const uview_1d<const Spack>& yv,
+    const Spack& effgw,
+    const uview_1d<const Spack>& c,
+    const uview_1d<const Spack>& kvtt,
+    const uview_1d<const Spack>& q,
+    const uview_1d<const Spack>& dse,
+    // Inputs/Outputs
+    const uview_1d<Spack>& tau,
+    // Outputs
+    const uview_1d<Spack>& utgw,
+    const uview_1d<Spack>& vtgw,
+    const uview_1d<Spack>& ttgw,
+    const uview_1d<Spack>& qtgw,
+    const uview_1d<Spack>& taucd,
+    const uview_1d<Spack>& egwdffi,
+    const uview_1d<Spack>& gwut,
+    const uview_1d<Spack>& dttdf,
+    const uview_1d<Spack>& dttke);
 }; // struct Functions
 
 } // namespace gw
@@ -206,5 +250,6 @@ struct Functions
 # include "impl/gw_gwd_compute_stress_profiles_and_diffusivities_impl.hpp"
 # include "impl/gw_gwd_project_tau_impl.hpp"
 # include "impl/gw_gwd_precalc_rhoi_impl.hpp"
+# include "impl/gw_gw_drag_prof_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

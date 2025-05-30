@@ -251,6 +251,52 @@ struct GwdPrecalcRhoiData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwdPrecalcRhoiData, 4, pcnst, ncol, ngwv, dt);
 };
 
+struct GwDragProfData : public PhysicsTestData {
+  // Inputs
+  Int pcnst, ncol, ngwv;
+  Int *src_level, *tend_level;
+  bool do_taper;
+  Real dt, effgw;
+  Real *lat, *t, *ti, *pmid, *pint, *dpm, *rdpm, *piln, *rhoi, *nm, *ni, *ubm, *ubi, *xv, *yv, *c, *kvtt, *q, *dse;
+  GwInit init;
+
+  // Inputs/Outputs
+  Real *tau;
+
+  // Outputs
+  Real *utgw, *vtgw, *ttgw, *qtgw, *taucd, *egwdffi, *gwut, *dttdf, *dttke;
+
+  GwDragProfData(Int pcnst_, Int ncol_, Int ngwv_, bool do_taper_, Real dt_, Real effgw_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_},
+      {ncol_, init_.pver},
+      {ncol_, init_.pver + 1},
+      {ncol_, init_.pgwv*2},
+      {ncol_, init_.pver, pcnst_},
+      {ncol_, init_.pgwv*2, init_.pver + 1},
+      {ncol_, init_.pver + 1, 4},
+      {ncol_, init_.pver, ngwv_*2},
+      {ncol_}
+    },
+    {
+      {&lat, &xv, &yv},
+      {&t, &pmid, &dpm, &rdpm, &nm, &ubm, &dse, &utgw, &vtgw, &ttgw, &dttdf, &dttke},
+      {&ti, &pint, &piln, &rhoi, &ni, &ubi, &kvtt, &egwdffi},
+      {&c},
+      {&q, &qtgw},
+      {&tau},
+      {&taucd},
+      {&gwut}
+    },
+    {
+      {&src_level, &tend_level}
+    }),
+    pcnst(pcnst_), ncol(ncol_), ngwv(ngwv_), do_taper(do_taper_), dt(dt_), effgw(effgw_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwDragProfData, 6, pcnst, ncol, ngwv, do_taper, dt, effgw);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
@@ -259,6 +305,7 @@ void momentum_energy_conservation(MomentumEnergyConservationData& d);
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_project_tau(GwdProjectTauData& d);
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d);
+void gw_drag_prof(GwDragProfData& d);
 
 extern "C" { // _f function decls
 }

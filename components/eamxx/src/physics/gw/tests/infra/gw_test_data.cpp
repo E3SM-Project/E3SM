@@ -35,6 +35,8 @@ void gwd_compute_stress_profiles_and_diffusivities_c(Int ncol, Int ngwv, Int* sr
 void gwd_project_tau_c(Int ncol, Int ngwv, Int* tend_level, Real* tau, Real* ubi, Real* c, Real* xv, Real* yv, Real* taucd);
 
 void gwd_precalc_rhoi_c(Int pcnst, Int ncol, Int ngwv, Real dt, Int* tend_level, Real* pmid, Real* pint, Real* t, Real* gwut, Real* ubm, Real* nm, Real* rdpm, Real* c, Real* q, Real* dse, Real* egwdffi, Real* qtgw, Real* dttdf, Real* dttke, Real* ttgw);
+
+void gw_drag_prof_c(Int pcnst, Int ncol, Int ngwv, Int* src_level, Int* tend_level, bool do_taper, Real dt, Real* lat, Real* t, Real* ti, Real* pmid, Real* pint, Real* dpm, Real* rdpm, Real* piln, Real* rhoi, Real* nm, Real* ni, Real* ubm, Real* ubi, Real* xv, Real* yv, Real effgw, Real* c, Real* kvtt, Real* q, Real* dse, Real* tau, Real* utgw, Real* vtgw, Real* ttgw, Real* qtgw, Real* taucd, Real* egwdffi, Real* gwut, Real* dttdf, Real* dttke);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -88,6 +90,14 @@ void gwd_precalc_rhoi(GwdPrecalcRhoiData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gwd_precalc_rhoi_c(d.pcnst, d.ncol, d.ngwv, d.dt, d.tend_level, d.pmid, d.pint, d.t, d.gwut, d.ubm, d.nm, d.rdpm, d.c, d.q, d.dse, d.egwdffi, d.qtgw, d.dttdf, d.dttke, d.ttgw);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_drag_prof(GwDragProfData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_drag_prof_c(d.pcnst, d.ncol, d.ngwv, d.src_level, d.tend_level, d.do_taper, d.dt, d.lat, d.t, d.ti, d.pmid, d.pint, d.dpm, d.rdpm, d.piln, d.rhoi, d.nm, d.ni, d.ubm, d.ubi, d.xv, d.yv, d.effgw, d.c, d.kvtt, d.q, d.dse, d.tau, d.utgw, d.vtgw, d.ttgw, d.qtgw, d.taucd, d.egwdffi, d.gwut, d.dttdf, d.dttke);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

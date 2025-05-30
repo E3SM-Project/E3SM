@@ -19,6 +19,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/gw_gwd_compute_stress_profiles_and_diffusivities.cpp
     eti/gw_gwd_project_tau.cpp
     eti/gw_gwd_precalc_rhoi.cpp
+    eti/gw_gw_drag_prof.cpp
   ) # GW ETI SRCS
 endif()
 

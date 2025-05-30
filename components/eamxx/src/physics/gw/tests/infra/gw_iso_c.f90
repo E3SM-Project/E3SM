@@ -118,4 +118,26 @@ contains
 
     call gwd_precalc_rhoi(ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse, egwdffi, qtgw, dttdf, dttke, ttgw)
   end subroutine gwd_precalc_rhoi_c
+
+  subroutine gw_drag_prof_c(pcnst, ncol, ngwv, src_level, tend_level, do_taper, dt, lat, t, ti, pmid, pint, dpm, rdpm, piln, rhoi, nm, ni, ubm, ubi, xv, yv, effgw, c, kvtt, q, dse, tau, utgw, vtgw, ttgw, qtgw, taucd, egwdffi, gwut, dttdf, dttke) bind(C)
+    use gw_common, only : gw_drag_prof, pver, pgwv
+
+    integer(kind=c_int) , value, intent(in) :: pcnst, ncol, ngwv
+    integer(kind=c_int) , intent(in), dimension(ncol) :: src_level, tend_level
+    logical(kind=c_bool) , value, intent(in) :: do_taper
+    real(kind=c_real) , value, intent(in) :: dt, effgw
+    real(kind=c_real) , intent(in), dimension(ncol) :: lat, xv, yv
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: t, pmid, dpm, rdpm, nm, ubm, dse
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver) :: ti, pint, piln, rhoi, ni, ubi, kvtt
+    real(kind=c_real) , intent(in), dimension(ncol, -pgwv:pgwv) :: c
+    real(kind=c_real) , intent(in), dimension(ncol, pver, pcnst) :: q
+    real(kind=c_real) , intent(inout), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: utgw, vtgw, ttgw, dttdf, dttke
+    real(kind=c_real) , intent(out), dimension(ncol, pver, pcnst) :: qtgw
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver, 4) :: taucd
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: egwdffi
+    real(kind=c_real) , intent(out), dimension(ncol, pver, -ngwv:ngwv) :: gwut
+
+    call gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, lat, t, ti, pmid, pint, dpm, rdpm, piln, rhoi, nm, ni, ubm, ubi, xv, yv, effgw, c, kvtt, q, dse, tau, utgw, vtgw, ttgw, qtgw, taucd, egwdffi, gwut, dttdf, dttke)
+  end subroutine gw_drag_prof_c
 end module gw_iso_c
