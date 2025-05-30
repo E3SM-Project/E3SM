@@ -20,7 +20,7 @@
     
     
       
-        <title>Types - E3SM</title>
+        <title>Types, Classes, Structures - E3SM</title>
       
     
     
@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#types" class="md-skip">
+        <a href="#types-classes-structures" class="md-skip">
           Skip to content
         </a>
       
@@ -126,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Types
+              Types, Classes, Structures
             
           </span>
         </div>
@@ -2153,7 +2153,7 @@
   
   
   <span class="md-ellipsis">
-    Types
+    Types, Classes, Structures
     
   </span>
   
@@ -2166,7 +2166,7 @@
   
   
   <span class="md-ellipsis">
-    Types
+    Types, Classes, Structures
     
   </span>
   
@@ -2192,6 +2192,15 @@
   <a href="#naming" class="md-nav__link">
     <span class="md-ellipsis">
       Naming
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
     </span>
   </a>
   
@@ -3666,6 +3675,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3693,10 +3711,13 @@
   
 
 
-<h1 id="types">Types</h1>
+<h1 id="types-classes-structures">Types, Classes, Structures</h1>
+<!-- FIXME: naming objects/instances? -->
+
 <h2 id="naming">Naming</h2>
 <ul>
-<li>Please name types (classes, structures) as <strong><em>descriptive nouns</em></strong>,
+<li>Please name types (classes, structures/<code>struct</code>, enumerations/<code>enum</code>) as
+  <strong><em>descriptive nouns</em></strong>,
   that describe what the type <em>is</em> or what its <em>purpose</em> is.<ul>
 <li>As an example, <code>AtmosphericManipulator</code> and not <code>Manipulator</code> or <code>AtMnp</code>.</li>
 <li>If you find yourself unable to name your type this way, that may
@@ -3704,8 +3725,15 @@
   or functions.</li>
 </ul>
 </li>
-<li>Types should make use of <code>CamelCase</code> and begin capitalized
-  (e.g., not <code>camelCase</code>).</li>
+<li>Types, classes, or structs should make use of <code>UpperCamelCase</code>.<ul>
+<li>Variables containing an object or an instance of a type, class, or struct,
+  should follow the <a href="../variables/#naming">naming convention for variables</a> and be
+  <code>lower_snake_case</code>.</li>
+</ul>
+</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<ul>
 <li>
 <p>There should be a logical grouping among the variables and classes contained
   in a type, such that the name captures that association.</p>
@@ -3713,13 +3741,13 @@
 <li>
 <p>To demonstrate, consider the following <code>Fruit</code> class.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Fruit</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">FruitName</span><span class="w"> </span><span class="p">{</span><span class="n">apple</span><span class="p">,</span><span class="w"> </span><span class="n">banana</span><span class="p">,</span><span class="w"> </span><span class="n">orange</span><span class="p">};</span>
+<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">FruitName</span><span class="w"> </span><span class="p">{</span><span class="n">Apple</span><span class="p">,</span><span class="w"> </span><span class="n">Banana</span><span class="p">,</span><span class="w"> </span><span class="n">Orange</span><span class="p">};</span>
 
-<span class="w">  </span><span class="n">FruitName</span><span class="w"> </span><span class="n">m_fruit</span><span class="p">;</span>
+<span class="w">  </span><span class="n">FruitName</span><span class="w"> </span><span class="n">m_fruit_name</span><span class="p">;</span>
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">is_juiceable</span><span class="p">(</span><span class="n">FruitName</span><span class="w"> </span><span class="n">fruit_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">};</span>
 
-<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">Color</span><span class="w"> </span><span class="p">{</span><span class="n">red</span><span class="p">,</span><span class="w"> </span><span class="n">green</span><span class="p">,</span><span class="w"> </span><span class="n">blue</span><span class="p">};</span>
+<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="nc">Color</span><span class="w"> </span><span class="p">{</span><span class="n">Red</span><span class="p">,</span><span class="w"> </span><span class="n">Green</span><span class="p">,</span><span class="w"> </span><span class="n">Blue</span><span class="p">};</span>
 
 <span class="w">  </span><span class="n">Color</span><span class="w"> </span><span class="n">fruit_color</span><span class="p">;</span>
 

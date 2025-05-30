@@ -2142,7 +2142,7 @@
   
   
   <span class="md-ellipsis">
-    Types
+    Types, Classes, Structures
     
   </span>
   
@@ -2347,78 +2347,6 @@
       Installing clang-format
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Installing clang-format">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#personal-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      Personal Machine
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Personal Machine">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#package-manager-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Package Manager Installation
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Package Manager Installation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mac-users-homebrew" class="md-nav__link">
-    <span class="md-ellipsis">
-      Mac Users (Homebrew)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linux-users" class="md-nav__link">
-    <span class="md-ellipsis">
-      Linux Users
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build-from-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      Build from Source
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-user-system" class="md-nav__link">
-    <span class="md-ellipsis">
-      Multi-user System
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -3754,78 +3682,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Installing clang-format">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#personal-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      Personal Machine
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Personal Machine">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#package-manager-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Package Manager Installation
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Package Manager Installation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#mac-users-homebrew" class="md-nav__link">
-    <span class="md-ellipsis">
-      Mac Users (Homebrew)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#linux-users" class="md-nav__link">
-    <span class="md-ellipsis">
-      Linux Users
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#build-from-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      Build from Source
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-user-system" class="md-nav__link">
-    <span class="md-ellipsis">
-      Multi-user System
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
     </ul>
@@ -3886,9 +3742,41 @@ configuration could change before this guide is updated to reflect as such.</p>
 building <code>llvm v14</code> from scratch.
 If you are a non-admin user of a multi-user cluster, HPC platform, etc., then
 it is likely to be an <strong><em>easy</em></strong> process, though potentially not immediate.</p>
-<h3 id="personal-machine">Personal Machine</h3>
-<h4 id="package-manager-installation">Package Manager Installation</h4>
-<h5 id="mac-users-homebrew">Mac Users (Homebrew)</h5>
+<details class="note">
+<summary>If you require or already have multiple versions of <code>clang-format</code> installed</summary>
+<p>Note that, depending on your requirements, this could be placed in your shell
+config file (<code>.bashrc</code>, <code>.zshrc</code>), or if only needed for a shell session, it
+can be done directly from the command line.</p>
+<p>The other option is to add a versioned symbolic link to your <code>PATH</code>.
+This is sometimes included in the package's <code>bin/</code> directory by default and,
+if not, can be added there after of placed somewhere that is already on your
+<code>PATH</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">$</span><span class="w"> </span><span class="n">cd</span><span class="w"> </span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">homebrew</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">llvm</span><span class="err">@</span><span class="mi">14</span><span class="o">/</span><span class="n">bin</span>
+<span class="n">$</span><span class="w"> </span><span class="n">ls</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="o">*</span>
+<span class="n">clang</span><span class="o">-</span><span class="n">format</span>
+<span class="c1">// no versioned binary so we create symlink</span>
+<span class="n">$</span><span class="w"> </span><span class="n">ln</span><span class="w"> </span><span class="o">-</span><span class="n">s</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span>
+<span class="n">$</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span>
+<span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">homebrew</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">llvm</span><span class="err">@</span><span class="mi">14</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span>
+</code></pre></div>
+<p><strong>OR</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">$</span><span class="w"> </span><span class="n">cd</span><span class="w"> </span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">homebrew</span><span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">llvm</span><span class="err">@</span><span class="mi">14</span><span class="o">/</span><span class="n">bin</span>
+<span class="n">$</span><span class="w"> </span><span class="n">ls</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="o">*</span>
+<span class="n">clang</span><span class="o">-</span><span class="n">format</span>
+<span class="c1">// no versioned binary so we create symlink in a directory already on PATH</span>
+<span class="n">$</span><span class="w"> </span><span class="n">echo</span><span class="w"> </span><span class="n">$PATH</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">:/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">bin</span>
+<span class="n">$</span><span class="w"> </span><span class="n">ln</span><span class="w"> </span><span class="o">-</span><span class="n">s</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="w"> </span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span>
+<span class="n">$</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span>
+</code></pre></div>
+</details>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Personal Machine</label><label for="__tabbed_1_2">Multi-user System</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Mac Users (Homebrew Package Manager)</label><label for="__tabbed_2_2">Linux Users (Package Manager)</label><label for="__tabbed_2_3">Build from Source</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
 <p>For Mac users, the <a href="https://brew.sh">Homebrew</a>
 package manager (<code>brew</code>) is the quickest and most straightforward way to get
 <code>clang-format</code> installed.
@@ -3905,7 +3793,14 @@ install the entire LLVM package at version 14, and this is as simple as</p>
 $<span class="w"> </span>which<span class="w"> </span>clang-format
 /opt/homebrew/opt/llvm@14/bin/clang-format
 </code></pre></div>
-<h5 id="linux-users">Linux Users</h5>
+<p>Note also, that if your system has multiple version of <code>clang-format</code> installed,
+it may be preferable to instead set a versioned alias to <code>clang-format</code>
+(<code>clang-format-14</code>) as in</p>
+<div class="highlight"><pre><span></span><code><span class="c1">// create a shell-alias</span>
+<span class="n">alias</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span><span class="o">=</span><span class="s">&quot;/opt/homebrew/opt/llvm@14/bin/clang-format&quot;</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
 <p>Given the many flavors of Linux, it is difficult to generalize, but there
 is a high probability the proper version of <code>clang-format</code> or <code>llvm</code> is
 provided by the built-in package manager.
@@ -3916,7 +3811,10 @@ Debian/Ubuntu <code>apt</code> syntax, it could be accomplished via something li
 clang-format-14/...
 $<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>clang-format-14
 </code></pre></div>
-<h4 id="build-from-source">Build from Source</h4>
+</div>
+<div class="tabbed-block"></div>
+</div>
+</div>
 <p>If you do not succeed in the above, <code>clang-format</code> can also be fully built
 from the <a href="https://github.com/llvm/llvm-project">LLVM Compiler Infrastructure</a>.
 It will begin with something like</p>
@@ -3930,7 +3828,10 @@ rather than all of <code>llvm</code>.
 And finally, the README for <a href="https://github.com/llvm/llvm-project/tree/llvmorg-14.0.6">LLVM version 14.0.6</a>
 is far more comprehensive that the one for the latest version, and it contains
 instructions specific to that build.</p>
-<h3 id="multi-user-system">Multi-user System</h3>
+</div>
+<div class="tabbed-block"></div>
+</div>
+</div>
 <p>In many cases <code>llvm</code>, <code>clang</code>, or <code>clang-format</code> will be available as a module,
 though whether version 14 is an option could be less likely.
 In the optimistic case, it could be as simple as (using Lmod syntax)</p>
@@ -3940,6 +3841,7 @@ $<span class="w"> </span>module<span class="w"> </span>load<span class="w"> </sp
 </code></pre></div>
 <p>If it is not available, you will probably need to reach out to a system
 administrator to get an official version installed.<sup id="fnref:but-conda"><a class="footnote-ref" href="#fn:but-conda">1</a></sup></p>
+<hr />
 <details class="tip">
 <summary>Unnecessary but Convenient Workflow Customization (<code>direnv</code>)</summary>
 <p>If you'd like to add a layer of automation/complexity to ensure you only use

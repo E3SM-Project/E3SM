@@ -2144,7 +2144,7 @@
   
   
   <span class="md-ellipsis">
-    Types
+    Types, Classes, Structures
     
   </span>
   
@@ -3731,7 +3731,59 @@
 <li>In situations where multiple class-member variables are passed as function
   arguments, favor passing the object, rather than the individual variables,
   for the sake of shorter lines and function signatures.</li>
-<li>==FIXME:== Passing as reference vs. value??</li>
+<li>As a rule of thumb, developers should prefer passing arguments by reference,
+  rather than by value, especially in cases for which the argument is <strong><em>large</em></strong>
+  or structurally <strong><em>complex</em></strong>.<ul>
+<li>E.g., prefer <code>func(Type &amp;x) { ... }</code> versus <code>func(Type x) { ... }</code>.</li>
+<li>This holds true much of the time because passing by value creates a copy
+  of the argument for use by the function, and this increases memory
+  pressure and a resultant performance penalty.</li>
+</ul>
+</li>
+<li>
+<p>To be more in-depth on the topic, we echo the guidance from the
+  <a href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#S-introduction"><strong><em>C++ Core Guidelines</em></strong></a>
+  and would encourage the curious to read more deeply on the topic.</p>
+<blockquote>
+<ul>
+<li>For "in" parameters, pass cheaply-copied types by value and others by
+reference to <code>const</code>.</li>
+<li>For "in-out" parameters, pass by reference to non-<code>const</code>.</li>
+<li>For "out" parameters, prefer return values to output parameters.</li>
+</ul>
+</blockquote>
+<ul>
+<li>The authors go on to explain that "cheap to copy" includes variables
+  holding 2 or 3 words--for example a double, pointer, or reference.</li>
+<li>To illustrate, the below function adheres to the provided guidance.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="n">SmallStruct</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">LargeNComplex</span><span class="w"> </span><span class="o">&amp;</span><span class="n">notSmall</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">forty_two</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">laser</span><span class="p">,</span>
+<span class="w">                 </span><span class="k">const</span><span class="w"> </span><span class="n">BigStruct</span><span class="w"> </span><span class="o">&amp;</span><span class="n">lotsaData</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">  </span><span class="c1">// SmallStruct object is only assigned-to and then returned, so it is</span>
+<span class="w">  </span><span class="c1">// defined as the return type</span>
+<span class="w">  </span><span class="n">SmallStruct</span><span class="w"> </span><span class="n">ans</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// forty_two, a scalar double, is considered small and so passed by value</span>
+<span class="w">  </span><span class="n">ans</span><span class="p">.</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">forty_two</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// lotsaData, a BigStruct object, is only accessed and so is</span>
+<span class="w">  </span><span class="c1">// passed by const reference</span>
+<span class="w">  </span><span class="n">ans</span><span class="p">.</span><span class="n">other_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lotsaData</span><span class="p">.</span><span class="n">small_piece</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// we pass laser by value and as const because pointers are cheap to copy,</span>
+<span class="w">  </span><span class="c1">// and the value is not changed</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">forty_two</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ans</span><span class="p">.</span><span class="n">val_vector</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">laser</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">notSmall</span><span class="p">.</span><span class="n">epsilon</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// notSmall is large and also modified in the function, so we pass by</span>
+<span class="w">  </span><span class="c1">// reference</span>
+<span class="w">  </span><span class="c1">// it is also accessed, above, so it must be an argument and not the</span>
+<span class="w">  </span><span class="c1">// return value</span>
+<span class="w">  </span><span class="n">notSmall</span><span class="p">.</span><span class="n">ans_struct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ans</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">ans</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+</li>
 </ul>
 
 
