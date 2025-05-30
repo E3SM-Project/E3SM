@@ -3576,8 +3576,8 @@
       <file grid="lnd" mask="IcosXISC30E3r7">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_IcosXISC30E3r7.240326.nc</file>
       <file grid="atm" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_RRSwISC6to18E3r5.240328.nc</file>
       <file grid="lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_RRSwISC6to18E3r5.240328.nc</file>
-      <file grid="atm" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.240808.nc</file>
-      <file grid="lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.240808.nc</file>
+      <file grid="atm" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.250515.nc</file>
+      <file grid="lnd" mask="SOwISC12to30E3r3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r3.250515.nc</file>
       <file grid="atm" mask="SOwISC12to30E3r4">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r4.250122.nc</file>
       <file grid="lnd" mask="SOwISC12to30E3r4">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_SOwISC12to30E3r4.250122.nc</file>
       <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_gx1v6.191014.nc</file>
