@@ -27,7 +27,7 @@ nav:
       - 'Code Formatting Standards': 'developer/style/format.md'
       - 'Code Style Standards':
         - 'Overview': 'developer/style/style.md'
-        - 'Types': 'developer/style/types.md'
+        - 'Types, Classes, Structures': 'developer/style/types.md'
         - 'Functions and Methods': 'developer/style/functions.md'
         - 'Variables': 'developer/style/variables.md'
         - 'Templating': 'developer/style/templates.md'
