@@ -3623,6 +3623,7 @@
       <modules>
         <command name="load">cmake/3.30.5</command>
         <command name="load">oneapi/release/2025.0.5</command>
+        <command name="load">mpich-config/collective-tuning/1024</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3639,9 +3640,6 @@
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
         <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
-        <env name="MPIR_CVAR_CH4_COLL_SELECTION_TUNING_JSON_FILE"></env>
-        <env name="MPIR_CVAR_COLL_SELECTION_TUNING_JSON_FILE"></env>
-        <env name="MPIR_CVAR_CH4_POSIX_COLL_SELECTION_TUNING_JSON_FILE"></env>
         <env name="UR_L0_USE_DRIVER_INORDER_LISTS">1</env>
         <env name="UR_L0_ENABLE_RELAXED_ALLOCATION_LIMITS">1</env>
         <env name="UR_L0_USE_COPY_ENGINE_FOR_IN_ORDER_QUEUE">1</env>
