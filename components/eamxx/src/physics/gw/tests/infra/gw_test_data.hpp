@@ -297,6 +297,23 @@ struct GwDragProfData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwDragProfData, 6, pcnst, ncol, ngwv, do_taper, dt, effgw);
 };
 
+struct GwFrontInitData : public PhysicsTestData{
+  // Inputs
+  Real taubgnd, frontgfc_in;
+  Int kfront_in;
+  GwInit init;
+
+  GwFrontInitData(Real taubgnd_, Real frontgfc_in_, Int kfront_in_, GwInit init_) :
+    PhysicsTestData({}, {}, {}),
+    taubgnd(taubgnd_),
+    frontgfc_in(frontgfc_in_),
+    kfront_in(kfront_in_),
+    init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwFrontInitData, 3, taubgnd, frontgfc_in, kfront_in);
+
+};
 // Glue functions to call fortran from from C++ with the Data struct
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
