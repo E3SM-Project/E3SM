@@ -201,8 +201,6 @@ advance_iop_subsidence(const MemberType& team,
     }
   });
 }
-
-
 // =========================================================================================
 KOKKOS_FUNCTION
 void IOPForcing::
