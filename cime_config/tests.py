@@ -722,7 +722,6 @@ _TESTS = {
     },
     "e3sm_eamxx_v1_lowres_debug" : {
         "time"  : "01:00:00",
-        "inherit" : ("e3sm_eamxx_mam4xx_lowres"),
         "tests" : (
             "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.eamxx-output-preset-3",
