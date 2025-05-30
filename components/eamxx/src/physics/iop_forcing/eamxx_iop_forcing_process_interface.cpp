@@ -167,6 +167,9 @@ advance_iop_subsidence(const MemberType& team,
   auto s_v          = ekat::scalarize(v);
   auto s_T          = ekat::scalarize(T);
 
+  // Init linear interpolation routine
+  ekat::LinInterp<Real,Pack::n> vert_interp(1, nlev_packs, nlev_packs);
+
   // Semi-Lagrangian update loop
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
     const Real omega_k = s_omega(k);
@@ -174,7 +177,6 @@ advance_iop_subsidence(const MemberType& team,
     const Real p_tgt = p_ref - dt * omega_k; // target pressure
 
     // Set up linear interpolation
-    ekat::LinInterp<Real,Pack::n> vert_interp(1, nlev_packs, nlev_packs);
     vert_interp.setup(team, p_ref, p_tgt);
 
     // Interpolate each field at the departure point
