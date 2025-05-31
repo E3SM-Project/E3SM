@@ -139,6 +139,25 @@ void IOPForcing::initialize_impl (const RunType run_type)
   if (iop_nudge_tq or iop_nudge_uv) m_helper_fields.at("horiz_mean_weights").deep_copy(one_over_num_dofs);
 }
 // =========================================================================================
+// =========================================================================================
+// =========================================================================================
+// Inline helper for scalar 1D linear interpolation
+KOKKOS_FUNCTION
+inline Real linear_interp_1d(const Real* x, const Real* f, const int n, const Real x_interp) {
+  if (x_interp <= x[0]) return f[0];
+  if (x_interp >= x[n-1]) return f[n-1];
+
+  for (int i = 0; i < n-1; ++i) {
+    if (x_interp >= x[i] && x_interp <= x[i+1]) {
+      Real t = (x_interp - x[i]) / (x[i+1] - x[i]);
+      return (1.0 - t) * f[i] + t * f[i+1];
+    }
+  }
+  return f[n-1]; // fallback
+}
+
+// =========================================================================================
+// Main semi-Lagrangian subsidence routine
 KOKKOS_FUNCTION
 void IOPForcing::
 advance_iop_subsidence(const MemberType& team,
@@ -155,45 +174,49 @@ advance_iop_subsidence(const MemberType& team,
                        const view_1d<Pack>& T,
                        const view_2d<Pack>& Q)
 {
-  constexpr Real Rair = C::Rair;
+  constexpr Real Rair  = C::Rair;
   constexpr Real Cpair = C::Cpair;
 
-  const auto n_q_tracers = Q.extent_int(0);
-  const auto nlev_packs = ekat::npack<Pack>(nlevs);
+  const int n_q_tracers = Q.extent_int(0);
 
-  auto s_ref_p_mid  = ekat::scalarize(ref_p_mid);
-  auto s_omega      = ekat::scalarize(omega);
-  auto s_u          = ekat::scalarize(u);
-  auto s_v          = ekat::scalarize(v);
-  auto s_T          = ekat::scalarize(T);
+  // Scalar views for pack-based inputs
+  auto s_ref_p_mid = ekat::scalarize(ref_p_mid);
+  auto s_omega     = ekat::scalarize(omega);
+  auto s_u         = ekat::scalarize(u);
+  auto s_v         = ekat::scalarize(v);
+  auto s_T         = ekat::scalarize(T);
+  auto s_Q         = ekat::scalarize(Q);  // Flattened as (n_q_tracers * nlevs)
 
-  // Init linear interpolation routine
-  ekat::LinInterp<Real,Pack::n> vert_interp(1, nlev_packs, nlev_packs);
+  const Real* x_ptr     = s_ref_p_mid.data();  // now properly const
+  const Real* omega_ptr = s_omega.data();      // now properly const
+  Real* u_ptr           = s_u.data();
+  Real* v_ptr           = s_v.data();
+  Real* T_ptr           = s_T.data();
+  Real* Q_ptr           = s_Q.data();
 
-  // Semi-Lagrangian update loop
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&](const int k) {
-    const Real omega_k = s_omega(k);
-    const Real p_ref = s_ref_p_mid(k); // reference pressure
-    const Real p_tgt = p_ref - dt * omega_k; // target pressure
+    const Real p_ref   = x_ptr[k];
+    const Real omega_k = omega_ptr[k];
+    const Real p_dep   = p_ref - dt * omega_k;
 
-    // Set up linear interpolation
-    vert_interp.setup(team, p_ref, p_tgt);
+    // Interpolate u, v, T at departure level
+    u_ptr[k] = linear_interp_1d(x_ptr, u_ptr, nlevs, p_dep);
+    v_ptr[k] = linear_interp_1d(x_ptr, v_ptr, nlevs, p_dep);
+    T_ptr[k] = linear_interp_1d(x_ptr, T_ptr, nlevs, p_dep);
 
-    // Interpolate each field at the departure point
-    vert_interp.lin_interp(team, p_ref, p_tgt, s_u, u(k));
-    vert_interp.lin_interp(team, p_ref, p_tgt, s_v, v(k));
-    vert_interp.lin_interp(team, p_ref, p_tgt, s_T, T(k));
+    // Add thermal expansion correction
+    T_ptr[k] *= 1.0 + (dt * Rair / Cpair) * omega_k / p_ref;
 
-    // Add thermal expansion term to temperature
-    T(k) *= 1 + (dt*Rair/Cpair)*omega_k/p_ref;
-
-    // Interpolate tracers at the departure point
+    // Interpolate each tracer
     for (int m = 0; m < n_q_tracers; ++m) {
-      auto tracer = Kokkos::subview(Q, m, Kokkos::ALL());
-      vert_interp.lin_interp(team, p_ref, p_tgt, tracer, Q(m,k));
+      Real* tracer_ptr = &Q_ptr[m * nlevs];
+      tracer_ptr[k] = linear_interp_1d(x_ptr, tracer_ptr, nlevs, p_dep);
     }
   });
 }
+
+
+
 // =========================================================================================
 KOKKOS_FUNCTION
 void IOPForcing::
