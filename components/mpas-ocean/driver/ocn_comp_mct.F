@@ -3692,7 +3692,7 @@ contains
    ent_type = 1 ! cells
    !  get all tags in one method
    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
-   ierr = iMOAB_GetDoubleTagStorage ( MPOID, tagname, totalmbls_r , ent_type, x2o_om(1, 1) )
+   ierr = iMOAB_GetDoubleTagStorage ( MPOID, tagname, totalmbls_r , ent_type, x2o_om )
    if ( ierr /= 0 ) then
       write(ocnLogUnit,*) 'Fail to get MOAB fields '
    endif
