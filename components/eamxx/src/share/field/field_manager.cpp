@@ -163,7 +163,7 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
   }
 
   auto& ft = get_field(field_name, grid_name).get_header().get_tracking();
-  ft.add_to_group(group);
+  ft.add_group(group_name);
 }
 
 bool FieldManager::
@@ -743,7 +743,7 @@ void FieldManager::registration_ends ()
         const auto& fnames = group_info->m_fields_names;
         for (const auto& fn : fnames) {
           // Update the field tracking
-          m_fields.at(grid_name).at(fn)->get_header().get_tracking().add_to_group(group_info);
+          m_fields.at(grid_name).at(fn)->get_header().get_tracking().add_group(group_info->m_group_name);
         }
       }
     }
@@ -790,7 +790,7 @@ void FieldManager::add_field (const Field& f) {
   EKAT_REQUIRE_MSG (not has_field(f.name(), grid_name),
       "Error! The method 'add_field' requires the input field to not be already existing.\n"
       "  - field name: " + f.get_header().get_identifier().name() + "\n");
-  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_info().size()==0 ||
+  EKAT_REQUIRE_MSG (f.get_header().get_tracking().get_groups_names().size()==0 ||
                     m_group_requests.at(grid_name).size()==0,
       "Error! When calling 'add_field', one of the following must be true:\n"
       "  - the input field is not be part of any group,\n"
