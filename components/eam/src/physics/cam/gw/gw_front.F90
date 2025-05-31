@@ -15,6 +15,9 @@ save
 public :: gw_front_init
 public :: gw_cm_src
 
+! Only public for testing
+public :: gw_front_project_winds
+
 ! Tuneable settings.
 
 ! Frontogenesis function critical threshold.

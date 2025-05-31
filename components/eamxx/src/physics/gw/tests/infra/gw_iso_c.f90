@@ -151,4 +151,17 @@ contains
 
     call gw_front_init(taubgnd, frontgfc_in, kfront_in, errstring)
   end subroutine gw_front_init_c
+
+  subroutine gw_front_project_winds_c(ncol, kbot, u, v, xv, yv, ubm, ubi) bind(C)
+    use gw_front, only : gw_front_project_winds
+    use gw_common, only : pver
+
+    integer(kind=c_int) , value, intent(in) :: ncol, kbot
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: u, v
+    real(kind=c_real) , intent(out), dimension(ncol) :: xv, yv
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: ubm
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
+
+    call gw_front_project_winds(ncol, kbot, u, v, xv, yv, ubm, ubi)
+  end subroutine gw_front_project_winds_c
 end module gw_iso_c
