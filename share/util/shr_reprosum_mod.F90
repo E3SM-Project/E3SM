@@ -94,6 +94,21 @@ module shr_reprosum_mod
 
    logical            :: repro_sum_allow_infnan = .false.
 
+   ! Declare the C function interface
+   interface
+      subroutine shr_reprosumx86_fix_start(arg) bind(c)
+        use iso_c_binding
+        integer, intent(out) :: arg
+      end subroutine shr_reprosumx86_fix_start
+   end interface
+
+   interface
+      subroutine shr_reprosumx86_fix_end(arg) bind(c)
+        use iso_c_binding
+        integer, intent(in) :: arg
+      end subroutine shr_reprosumx86_fix_end
+   end interface
+
    CONTAINS
 
 !
