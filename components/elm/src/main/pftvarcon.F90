@@ -1262,8 +1262,8 @@ contains
        npcropmax            = nsoybeanirrig        ! last prognostic crop in list
        nppercropmax         = 0                    ! set value for iscft test below
     else
-       npcropmax            = nsugarcaneirrig      ! last prognostic crop in list
-       nppercropmin         = nmiscanthus          ! first prognostic perennial crop
+       npcropmax            = nrtubersirrig        ! last prognostic crop in list
+       nppercropmin         = nsugarcane           ! first prognostic perennial crop
        nppercropmax         = nwillowirrig         ! last prognostic perennial crop in list
     end if
 
@@ -1518,7 +1518,7 @@ contains
              else
                 call endrun(msg=' ERROR: irrigated has wrong values'//errMsg(__FILE__, __LINE__))
              end if
-             if (      percrop(i) == 1.0_r8 .and. (i >= nmiscanthus .and. i <= nppercropmax))then
+             if (      percrop(i) == 1.0_r8 .and. (i >= nsugarcane .and. i <= nppercropmax))then
                 ! correct
              else if ( percrop(i) == 0.0_r8 )then
                 ! correct
