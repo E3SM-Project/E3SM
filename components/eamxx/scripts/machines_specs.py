@@ -47,7 +47,7 @@ def get_available_cpu_count(logical=True):
     if 'SLURM_CPU_BIND_LIST' in os.environ:
         cpu_count = len(get_cpu_ids_from_slurm_env_var())
     else:
-        cpu_count = psutil.cpu_count()
+        cpu_count = len(psutil.Process().cpu_affinity())
 
     if not logical:
         hyperthread_ratio = logical_cores_per_physical_core()
@@ -125,25 +125,6 @@ class Aurora(Machine):
 
         cls.batch = "qsub -q debug_scaling -l walltime=01:00:00 -A E3SM_Dec"
         cls.num_run_res = 12 # twelve gpus
-
-###############################################################################
-class Maclap(Machine):
-###############################################################################
-    concrete = True
-    @classmethod
-    def setup(cls):
-        super().setup_base("maclap")
-
-        cls.cxx_compiler = "mpicxx"
-        cls.c_compiler   = "mpicc"
-        cls.ftn_compiler = "mpifort"
-
-        compiler = "gnu"
-
-        cls.baselines_dir = "/Users/jgfouca/1400/ACME/eamxx_files/baselines"
-
-        cls.num_bld_res = 10
-        cls.num_run_res = 10
 
 ###############################################################################
 class PM(CrayMachine):

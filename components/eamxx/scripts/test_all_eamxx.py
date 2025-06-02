@@ -77,7 +77,6 @@ class TestAllScream(object):
         if machine is not None:
             self._machine = get_machine(machine)
             expect (not local, "Specifying a machine while passing '-l,--local' is ambiguous.")
-            print(f"JGF __init__ {self._machine} {self._machine.name} {self._machine.mach_file}")
         else:
             # We could potentially integrate more with CIME here to do actual
             # nodename probing.
@@ -228,8 +227,6 @@ class TestAllScream(object):
         if self._c_compiler is None:
             self._c_compiler = self._machine.c_compiler
 
-        print(f"JGF __init__END {self._machine} {self._machine.name} {self._machine.mach_file}")
-
     ###############################################################################
     def create_tests_dirs(self, root, clean):
     ###############################################################################
@@ -313,7 +310,6 @@ class TestAllScream(object):
     ###############################################################################
 
         # Ctest only needs config options, and doesn't need the leading 'cmake '
-        print(f"JGF generate_cmake_config {self._machine} {self._machine.name} {self._machine.mach_file}")
         result  = f"{'' if for_ctest else 'cmake '}-C {self._machine.mach_file}"
 
         # Netcdf should be available. But if the user is doing a testing session
@@ -396,7 +392,8 @@ class TestAllScream(object):
         elif "SLURM_CPU_BIND_LIST" in os.environ:
             affinity_cp = get_cpu_ids_from_slurm_env_var()
         else:
-            affinity_cp = list(range(psutil.cpu_count()))
+            this_process = psutil.Process()
+            affinity_cp = list(this_process.cpu_affinity())
 
         affinity_cp.sort()
 
@@ -496,8 +493,6 @@ class TestAllScream(object):
     ###############################################################################
     def generate_baselines(self, test):
     ###############################################################################
-        self._machine.setup()
-        print(f"JGF generate_baselines {self._machine} {self._machine.name} {self._machine.mach_file}")
         expect(test.uses_baselines,
                f"Something is off. generate_baseline should have not be called for test {test}")
 
@@ -571,8 +566,6 @@ class TestAllScream(object):
     ###############################################################################
     def generate_all_baselines(self):
     ###############################################################################
-        print(f"JGF generate_all_baselines {self._machine} {self._machine.name} {self._machine.mach_file}")
-
         git_head = get_current_head()
 
         tests_needing_baselines = self.baselines_to_be_generated()
@@ -600,8 +593,6 @@ class TestAllScream(object):
     ###############################################################################
     def run_test(self, test):
     ###############################################################################
-        self._machine.setup()
-        print(f"JGF run_test {id(self._machine)} {self._machine.name} {self._machine.mach_file}")
         git_head = get_current_head()
 
         print("===============================================================================")
@@ -638,8 +629,6 @@ class TestAllScream(object):
         print("Running tests!")
         print("###############################################################################")
 
-        print(f"JGF run_all_tests {id(self._machine)} {self._machine.name} {self._machine.mach_file}")
-
         success = True
         tests_success = {
             test : False
@@ -647,7 +636,6 @@ class TestAllScream(object):
 
         num_workers = len(self._tests) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
-            print(f"JGF run_all_tests::loop {id(self._machine)} {self._machine.name} {self._machine.mach_file}")
             future_to_test = {
                 executor.submit(self.run_test,test) : test
                 for test in self._tests}
@@ -727,8 +715,6 @@ class TestAllScream(object):
     ###############################################################################
     def test_all_eamxx(self):
     ###############################################################################
-
-        print(f"JGF test_all_eamxx {self._machine} {self._machine.name} {self._machine.mach_file}")
 
         # Add any override the user may have requested
         for env_var in self._custom_env_vars:
