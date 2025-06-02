@@ -3731,17 +3731,21 @@ are printed to <code>stdout</code> (flag omitted).
 Also, note that the <code>--style</code> flag can also fully define the options without
 the configuration file as follows, but this is not recommended as the
 configuration could change before this guide is updated to reflect as such.</p>
+<!-- markdownlint-disable MD046 MD013 -->
 <details class="danger">
 <summary>Terminal One-(long-)liner</summary>
 <div class="copy highlight"><pre><span></span><code>clang-format<span class="w"> </span><span class="o">[</span>-i<span class="o">]</span><span class="w"> </span>--style<span class="o">=</span><span class="s2">&quot;{BasedOnStyle: llvm, ColumnLimit: 100, AlignConsecutiveAssignments: true, AlignConsecutiveBitFields: true, AlignConsecutiveMacros: true, AlignEscapedNewlines: true, AlignTrailingComments: true}&quot;</span><span class="w"> </span>&lt;path/to/c++/source/file<span class="o">(</span>s<span class="o">)</span>&gt;
 </code></pre></div>
 </details>
+<!-- markdownlint-enable MD046 MD013 -->
+
 <h2 id="installing-clang-format">Installing <code>clang-format</code></h2>
 <p>On a personal machine, which we will consider to be one for which you have
 <code>sudo</code> privileges, installation can be conducted via package manager or by
 building <code>llvm v14</code> from scratch.
 If you are a non-admin user of a multi-user cluster, HPC platform, etc., then
 it is likely to be an <strong><em>easy</em></strong> process, though potentially not immediate.</p>
+<!-- markdownlint-disable MD046 -->
 <details class="note">
 <summary>If you require or already have multiple versions of <code>clang-format</code> installed</summary>
 <p>Note that, depending on your requirements, this could be placed in your shell
@@ -3771,17 +3775,21 @@ if not, can be added there after of placed somewhere that is already on your
 <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span>
 </code></pre></div>
 </details>
+<!-- markdownlint-enable MD046 -->
+
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Personal Machine</label><label for="__tabbed_1_2">Multi-user System</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
+<!-- markdownlint-disable MD046 -->
 <div class="tabbed-set tabbed-alternate" data-tabs="2:3"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Mac Users (Homebrew Package Manager)</label><label for="__tabbed_2_2">Linux Users (Package Manager)</label><label for="__tabbed_2_3">Build from Source</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>For Mac users, the <a href="https://brew.sh">Homebrew</a>
-package manager (<code>brew</code>) is the quickest and most straightforward way to get
-<code>clang-format</code> installed.
-Since <code>clang-format</code> v14 is not available to install directly from Homebrew, we
-install the entire LLVM package at version 14, and this is as simple as</p>
+package manager (<code>brew</code>) is the quickest and most straightforward way
+to get <code>clang-format</code> installed.
+Since <code>clang-format</code> v14 is not available to install directly from
+Homebrew, we install the entire LLVM package at version 14, and this
+is as simple as</p>
 <div class="copy highlight"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>llvm@14
 </code></pre></div>
 <p>It it likely that Homebrew will issue a message about not linking the
@@ -3812,9 +3820,7 @@ clang-format-14/...
 $<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>clang-format-14
 </code></pre></div>
 </div>
-<div class="tabbed-block"></div>
-</div>
-</div>
+<div class="tabbed-block">
 <p>If you do not succeed in the above, <code>clang-format</code> can also be fully built
 from the <a href="https://github.com/llvm/llvm-project">LLVM Compiler Infrastructure</a>.
 It will begin with something like</p>
@@ -3829,6 +3835,10 @@ And finally, the README for <a href="https://github.com/llvm/llvm-project/tree/l
 is far more comprehensive that the one for the latest version, and it contains
 instructions specific to that build.</p>
 </div>
+</div>
+</div>
+<!-- markdownlint-enable MD046 -->
+</div>
 <div class="tabbed-block"></div>
 </div>
 </div>
@@ -3842,6 +3852,7 @@ $<span class="w"> </span>module<span class="w"> </span>load<span class="w"> </sp
 <p>If it is not available, you will probably need to reach out to a system
 administrator to get an official version installed.<sup id="fnref:but-conda"><a class="footnote-ref" href="#fn:but-conda">1</a></sup></p>
 <hr />
+<!-- markdownlint-disable MD046 -->
 <details class="tip">
 <summary>Unnecessary but Convenient Workflow Customization (<code>direnv</code>)</summary>
 <p>If you'd like to add a layer of automation/complexity to ensure you only use
@@ -3871,6 +3882,8 @@ directory above/outside of <code>EAMxx</code>.</p>
 pre-configured <code>conda</code> environment since the <code>.envrc</code> is essentially a bash
 script with a few bells and whistles tacked on.</p>
 </details>
+<!-- markdownlint-enable MD046 -->
+
 <div class="footnote">
 <hr />
 <ol>

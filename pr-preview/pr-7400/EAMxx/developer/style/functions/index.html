@@ -3712,21 +3712,21 @@
 
 
 <h1 id="functions-and-methods">Functions and Methods</h1>
-<h3 id="naming">Naming</h3>
+<h2 id="naming">Naming</h2>
 <ul>
-<li>Please name functions (methods) to be <strong><em>descriptive</em></strong> and <strong><em>verb</em></strong><em>-ish</em> so
+<li>Please name functions (methods) to be <strong><em>descriptive</em></strong> and <em><strong>verb</strong>-ish</em> so
   that the name describes what the function <em>does</em>.<ul>
 <li>For example, <code>install_flux_capacitor()</code> instead of <code>f_capacitor_method()</code>
-  or <code>ifc()</code>.</li>
+    or <code>ifc()</code>.</li>
 <li>To note, if your function cannot be named verb-ishly, that is probably a
-  sign that there is a fundamental issue with your function.</li>
+    sign that there is a fundamental issue with your function.</li>
 </ul>
 </li>
 <li>In general, functions should use <code>snake_case</code> and not contain capitalization,
   unless capitalizing that quantity is a standard convention (e.g.,
   <code>find_Doc_Brown()</code>).</li>
 </ul>
-<h3 id="usage">Usage</h3>
+<h2 id="usage">Usage</h2>
 <ul>
 <li>In situations where multiple class-member variables are passed as function
   arguments, favor passing the object, rather than the individual variables,
@@ -3736,8 +3736,8 @@
   or structurally <strong><em>complex</em></strong>.<ul>
 <li>E.g., prefer <code>func(Type &amp;x) { ... }</code> versus <code>func(Type x) { ... }</code>.</li>
 <li>This holds true much of the time because passing by value creates a copy
-  of the argument for use by the function, and this increases memory
-  pressure and a resultant performance penalty.</li>
+    of the argument for use by the function, and this increases memory
+    pressure and a resultant performance penalty.</li>
 </ul>
 </li>
 <li>
@@ -3754,7 +3754,7 @@ reference to <code>const</code>.</li>
 </blockquote>
 <ul>
 <li>The authors go on to explain that "cheap to copy" includes variables
-  holding 2 or 3 words--for example a double, pointer, or reference.</li>
+    holding 2 or 3 words--for example a double, pointer, or reference.</li>
 <li>To illustrate, the below function adheres to the provided guidance.</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="n">SmallStruct</span><span class="w"> </span><span class="nf">func</span><span class="p">(</span><span class="n">LargeNComplex</span><span class="w"> </span><span class="o">&amp;</span><span class="n">notSmall</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">forty_two</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">laser</span><span class="p">,</span>
