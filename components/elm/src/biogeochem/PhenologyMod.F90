@@ -1992,7 +1992,7 @@ contains
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use elm_time_manager , only : get_curr_calday, get_days_per_year
-    use pftvarcon        , only : gddmin, hybgdd
+    use pftvarcon        , only : gddmin, hybgdd, lfemerg, baset, nsugarcane, nsugarcaneirrig
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use elm_varcon       , only : spval, secspday
     use elm_varctl       , only : fan_to_bgc_crop
@@ -2028,6 +2028,8 @@ contains
          manunitro          =>    veg_vp%manunitro                    , & ! Input: max manure to apply (kgN/m2)
          t10                =>    veg_es%t_a10                        , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a10tmin            =>    veg_es%t_a10min                     , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
+         t_ref2m_min_inst   =>    veg_es%t_ref2m_min_inst             , & ! Input:  [real(r8) (:) ]  instantaneous daily min of average 2 m height surface air temp (K)
+         t_ref2m_max_inst   =>    veg_es%t_ref2m_max_inst             , & ! Input:  [real(r8) (:) ]  instantaneous daily max of average 2 m height surface air temp (K)
          fertnitro          =>    crop_vars%fertnitro_patch           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
          fertphosp          =>    crop_vars%fertphosp_patch           , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
 
@@ -2036,6 +2038,7 @@ contains
          croplive           =>    crop_vars%croplive_patch            , & ! Output: [logical  (:) ]  Flag, true if planted, not harvested
          crpyld             =>    crop_vars%crpyld_patch              , & ! Output: [real(r8) ):) ]  harvested crop (bu/acre)
          dmyield            =>    crop_vars%dmyield_patch             , & ! Output: [real(r8) ):) ]  dry matter harvested crop (t/ha)
+         nyrs_crop_active   =>    crop_vars%nyrs_crop_active_patch    , & ! Input:  [integer (:)  ]  number of years this crop patch has been active
 
          bglfr_leaf         =>    cnstate_vars%bglfr_leaf_patch       , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)
          bglfr_froot        =>    cnstate_vars%bglfr_froot_patch      , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)
@@ -2048,6 +2051,7 @@ contains
          offset_flag        =>    cnstate_vars%offset_flag_patch      , & ! Output: [real(r8) (:) ]  offset flag
          offset_counter     =>    cnstate_vars%offset_counter_patch   , & ! Output: [real(r8) (:) ]  offset counter
          gddmaturity        =>    cnstate_vars%gddmaturity_patch      , & ! Output: [real(r8) (:) ]  gdd needed to harvest
+         huileaf            =>    cnstate_vars%huileaf_patch          , & ! Output: [real(r8) (:) ]  heat unit index needed from planting to leaf emergence
 
          leafc_xfer         =>    veg_cs%leafc_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
@@ -2136,6 +2140,7 @@ contains
                if (onset_counter(p) <= 0.0_r8 .and. &
                    (t10(p) /= spval  .and. t10(p) < senestemp(ivt(p)))) then
 
+                  write(iulog,*) 'END of ONSET; LEAF HARVEST'
                   onset_flag(p) = 0.0_r8
                   onset_counter(p) = 0.0_r8
                   offset_flag(p) = 1._r8
@@ -2157,17 +2162,33 @@ contains
                   onset_gdd(p) = 0._r8
                end if
 
-               ! if the gdd flag is set, and if the soil is above freezing
-               ! then accumulate growing degree days for onset trigger
-               soilt = t_soisno(c,3)
-               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               ! Based on Colmanetti et al., 2024 10.1016/j.eja.2023.127061
+               if (nyrs_crop_active(p) == 0) then ! Year 1
+                  huileaf(p) = lfemerg(ivt(p)) * gddmaturity(p)
+               else
+                  huileaf(p) = lfemerg(ivt(p)) * gddmaturity(p) * (1. / 6.)
+               end if
+
+               if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
+                  if (onset_gddflag(p) == 1.0_r8 .and. &
+                      t_ref2m_min_inst(p) /= spval .and. t_ref2m_max_inst(p) /= spval) then
+                     onset_gdd(p) = onset_gdd(p) + (((t_ref2m_min_inst(p) + &
+                                    t_ref2m_max_inst(p))/2.0_r8) - (baset(ivt(p)) + 273.15_r8))*fracday
+                  end if
+               else
+                  ! if the gdd flag is set, and if the soil is above freezing
+                  ! then accumulate growing degree days for onset trigger
+                  soilt = t_soisno(c,3)
+                  if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
+                     onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+                  end if
                end if
 
                ! if accumulated gdd has exceeded gdd required for leaf onset
                ! then set onset flag
                ! for perennial crops gddmin tracks gdd required for leaf onset
-               if (onset_gdd(p) > gddmin(ivt(p))) then
+               if ( ((ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) .and. (onset_gdd(p) > huileaf(p))) .or. &
+                    ((ivt(p)/=nsugarcane .and. ivt(p)/=nsugarcaneirrig) .and. (onset_gdd(p) > gddmin(ivt(p)))) ) then
 
                   ! Initialize onset counter
                   onset_flag(p) = 1.0_r8
@@ -2180,6 +2201,7 @@ contains
                   fert_counter(p)  = ndays_on * secspday
                   fert_p(p) = fertphosp(p)  / fert_counter(p)
                   synthfert(p) = fertnitro(p)  / fert_counter(p)
+                  write(iulog, *) 'LEAF ONSET STARTED; nyrs_crop_active(p)', nyrs_crop_active(p)
                   if (.not. fan_to_bgc_crop) then
                      manure(p) = (manunitro(ivt(p)) * 1000._r8) / fert_counter(p)
                   else
@@ -2187,7 +2209,7 @@ contains
                      ! application.
                      manure(p) = 0.0_r8
                   end if
-                end if
+               end if
             end if    ! offset flag
          else     ! crop not live
             ! next 2 lines conserve mass if leaf*_xfer > 0 due to interpinic

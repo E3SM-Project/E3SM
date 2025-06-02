@@ -103,6 +103,7 @@ module AllocationMod
   real(r8)              :: dayscrecover         !number of days to recover negative cpool
   real(r8), allocatable :: arepr(:)             !reproduction allocation coefficient
   real(r8), allocatable :: aroot(:)             !root allocation coefficient
+  real(r8), allocatable :: aerial(:)            !aboveground allocation coefficient
 
   !$acc declare create(bdnr                )
   !$acc declare create(dayscrecover        )
@@ -242,6 +243,7 @@ contains
     if ( crop_prog )then
        allocate(arepr(bounds%begp:bounds%endp)); arepr(bounds%begp : bounds%endp) = nan
        allocate(aroot(bounds%begp:bounds%endp)); aroot(bounds%begp : bounds%endp) = nan
+       allocate(aerial(bounds%begp:bounds%endp)); aerial(bounds%begp : bounds%endp) = nan
     end if
 
     ! Allocate scratch space for ECA and FATES/ECA
@@ -386,7 +388,7 @@ contains
     use elm_varctl      , only : carbonphosphorus_only!
     use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
     use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean
-    use pftvarcon        , only: iscft, percrop, nwcereal, nwcerealirrig
+    use pftvarcon        , only: iscft, percrop, nwcereal, nwcerealirrig, nsugarcane, nsugarcaneirrig
     use elm_varpar       , only: nlevdecomp
     use elm_varcon       , only: nitrif_n2o_loss_frac, secspday
     !
@@ -426,6 +428,17 @@ contains
     integer, parameter :: cphase_gf = 3                                  !Crop phenology phase grain fill
     integer, parameter :: max_lai   = 1                                  !Maximum allowed lai
 
+    ! LOCAL VARAIBLES for sugarcane allocation based on Colmanetti et al., 2024  10.1016/j.eja.2023.127061
+    real(r8), parameter :: rootd      = 0.3_r8   ! root decline parameter
+    real(r8), parameter :: sf1        = 0.02_r8  ! parameters for linear carbon allocation to the stalk
+    real(r8), parameter :: ipf1       = 1.0_r8   ! parameters for linear carbon allocation to the stalk
+    real(r8), parameter :: ecf2       = 0.065_r8 ! parameters for logarithmic carbon allocation to the stalk
+    real(r8), parameter :: ipf2       = 10.0_r8  ! parameters for logarithmic carbon allocation to the stalk
+    real(r8), parameter :: sf3        = 0.006_r8 ! parameters for linear carbon allocation to the stalk-sucrose
+    real(r8), parameter :: ipf3       = 5.0_r8   ! parameters for linear carbon allocation to the stalk-sucrose
+    real(r8), parameter :: ecf4       = 0.017_r8 ! parameters for logarithmic carbon allocation to the stalk-sucrose
+    real(r8), parameter :: ipf4       = 10.0_r8  ! parameters for logarithmic carbon allocation to the stalk-sucrose
+    real(r8) :: rmat, af1, af2, af3, af4, sipf3, sipf4
 
   !-----------------------------------------------------------------------
 
@@ -474,6 +487,7 @@ contains
          huileaf                      => cnstate_vars%huileaf_patch                            , & ! Input:  [real(r8) (:)   ]  heat unit index needed from planting to leaf emergence
          huigrain                     => cnstate_vars%huigrain_patch                           , & ! Input:  [real(r8) (:)   ]  same to reach vegetative maturity
          croplive                     => crop_vars%croplive_patch                           , & ! Input:  [logical  (:)   ]  flag, true if planted, not harvested
+         nyrs_crop_active             => crop_vars%nyrs_crop_active_patch                      , & ! Input:  [integer (:)    ]  number of years this crop patch has been active
          peaklai                      => cnstate_vars%peaklai_patch                            , & ! Input:  [integer  (:)   ]  1: max allowed lai; 0: not at max
          !lgsf                        => cnstate_vars%lgsf_patch                               , & ! Input:  [real(r8) (:)   ]  long growing season factor [0-1]
          aleafi                       => cnstate_vars%aleafi_patch                             , & ! Output: [real(r8) (:)   ]  saved allocation coefficient from phase 2
@@ -805,15 +819,45 @@ contains
                g1 = 0.25_r8
 
             else if (croplive(p) .and. percrop(ivt(p)) == 1.0_r8) then
-               arepr(p) = 0._r8
-               aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
-                    (arooti(ivt(p)) - arootf(ivt(p))) *  &
-                    min(1._r8, hui(p)/gddmaturity(p))))
-               fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
-                    exp(-bfact(ivt(p))*hui(p)/gddmaturity(p))) / &      ! replacing huigrain with gddmaturity since huigrain does not exist for perennial crops
-                    (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
-               aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
-               astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
+               if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
+
+                  rmat = 100.0_r8 * (hui(p)/gddmaturity(p))
+
+                  if (nyrs_crop_active(p) == 0) then ! Year 1
+                     aerial(p) = (1.0_r8 - arootf(ivt(p))) * min(1.0_r8, (1 - exp(-(rootd * 0.6 * rmat))))
+                  else
+                     aerial(p) = (1.0_r8 - arootf(ivt(p))) * min(1.0_r8, (1 - exp(-(rootd * rmat))))
+                  end if
+
+                  aroot(p) = 1.0_r8 - aerial(p)
+
+                  af1 = max(0._r8, (rmat * sf1) - (ipf1 * sf1))
+                  af2 = max(0._r8, (1.0_r8 - exp(-((rmat * ecf2) - (ipf2 * ecf2)))) )
+
+                  astem(p) = min( (1.0_r8 - aleaff(ivt(p)) - arootf(ivt(p))), (aerial(p) * max(af1, af2)) )
+                  aleaf(p) = aerial(p) - astem(p)
+
+
+                  sipf3 = ipf1 + (100.0_r8 - ipf1) * (ipf3 / 100.0_r8)
+                  sipf4 = ipf2 + (100.0_r8 - ipf2) * (ipf4 / 100.0_r8)
+
+                  af3 = max(0._r8, (rmat * sf3) - (sipf3 * sf3))
+                  af4 = max(0._r8, (1.0_r8 - exp(-((rmat * ecf4) - (sipf4 * ecf4)))) )
+
+                  arepr(p) = astem(p) * max(0._r8, af3, af4)
+                  astem(p) = astem(p) - arepr(p)
+
+               else ! if perennial but not sugarcane
+                  arepr(p) = 0._r8
+                  aroot(p) = max(0._r8, min(1._r8, arooti(ivt(p)) -   &
+                       (arooti(ivt(p)) - arootf(ivt(p))) *  &
+                       min(1._r8, hui(p)/gddmaturity(p))))
+                  fleaf = fleafi(ivt(p)) * (exp(-bfact(ivt(p))) -         &
+                       exp(-bfact(ivt(p))*hui(p)/gddmaturity(p))) / &      ! replacing huigrain with gddmaturity since huigrain does not exist for perennial crops
+                       (exp(-bfact(ivt(p)))-1) ! fraction alloc to leaf (from J Norman alloc curve)
+                  aleaf(p) = max(1.e-5_r8, (1._r8 - aroot(p)) * fleaf)
+                  astem(p) = 1._r8 - arepr(p) - aleaf(p) - aroot(p)
+               end if
 
                f1 = aroot(p) / aleaf(p)
                f3 = astem(p) / aleaf(p)

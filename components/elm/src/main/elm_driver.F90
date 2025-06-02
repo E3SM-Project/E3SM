@@ -996,7 +996,8 @@ contains
 
        call t_startf('ecosysdyn')
        if (use_cn)then
-          call crop_vars%CropIncrementYear(filter(nc)%num_pcropp, filter(nc)%pcropp)
+          call crop_vars%CropIncrementYear(filter(nc)%num_pcropp, filter(nc)%pcropp, &
+                                           filter(nc)%num_ppercropp, filter(nc)%ppercropp)
        endif
 
        if(use_betr)then
