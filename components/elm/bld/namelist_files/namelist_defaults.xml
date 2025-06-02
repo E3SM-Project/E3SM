@@ -235,7 +235,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 <!-- r05 resolution -->
 
 <finidat hgrid="r05" maxpft="17" mask="SOwISC12to30E3r3" use_cn=".true." ic_ymd="18500101" more_vertlayers=".false."
-sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.ne30pg2_r05_SOwISC12to30E3r3.1850-01-01-00000.c20240923.nc
+sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.ne30pg2_r05_SOwISC12to30E3r3.1850-01-01-00000.c20250524.nc
 </finidat>
 
 <!-- r025 resolution -->
