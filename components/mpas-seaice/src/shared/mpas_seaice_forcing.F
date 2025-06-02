@@ -35,6 +35,7 @@ module seaice_forcing
        post_oceanic_coupling
 
   type (MPAS_forcing_group_type), pointer, public :: seaiceForcingGroups
+  logical, public :: use_restart_ic
 
   ! forcing parameters
   real (kind=RKIND), parameter :: &
@@ -1841,19 +1842,38 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
+    type (MPAS_Time_Type) :: currTime
+    character(len=strKIND) :: timeStamp
+    integer :: ierr
+
     ! get forcing configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
+    currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+    timeStamp = '0000'//trim(timeStamp(5:))
+
     ! create the dust iron solubility forcing group
 
-    call MPAS_forcing_init_group(&
-         seaiceForcingGroups, &
-         "seaice_atm_bgc_forcing_monthly", &
-         domain, &
-         '0000-01-01_00:00:00', &
-         '0000-01-01_00:00:00', &
-         '0001-00-00_00:00:00', &
-         config_do_restart)
+    if (use_restart_ic) then
+       call MPAS_forcing_init_group(&
+            seaiceForcingGroups, &
+            "seaice_atm_bgc_forcing_monthly", &
+            domain, &
+            '0000-01-01_00:00:00', &
+            '0000-01-01_00:00:00', &
+            '0001-00-00_00:00:00', &
+            .false.)
+    else
+       call MPAS_forcing_init_group(&
+            seaiceForcingGroups, &
+            "seaice_atm_bgc_forcing_monthly", &
+            domain, &
+            '0000-01-01_00:00:00', & !timeStamp, &
+            '0000-01-01_00:00:00', &
+            '0001-00-00_00:00:00', &
+            config_do_restart)
+    endif
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
@@ -1862,12 +1882,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'IRON_Zolubility_wet', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'IRON_Zolubility_wet', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "IRON_Zolubility_wet", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "IRON_Zolubility_wet", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1875,12 +1895,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'IRON_Zolubility_dry', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'IRON_Zolubility_dry', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "IRON_Zolubility_dry", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "IRON_Zolubility_dry", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1888,12 +1908,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'dust_FLUZ_WET', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'dust_FLUZ_WET', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "dust_FLUZ_WET", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "dust_FLUZ_WET", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1901,12 +1921,12 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'dust_FLUZ_DRY', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'dust_FLUZ_DRY', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "dust_FLUZ_DRY", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "dust_FLUZ_DRY", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
@@ -1914,18 +1934,18 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
-         'IRON_in_duzt_fraction', &
-         'DustIronMonthlyForcing', &
-         'atmos_forcing', &
-         'IRON_in_duzt_fraction', &
-         'linear', &
+         "seaice_atm_bgc_forcing_monthly", &
+         "IRON_in_duzt_fraction", &
+         "DustIronMonthlyForcing", &
+         "atmos_forcing", &
+         "IRON_in_duzt_fraction", &
+         "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         'seaice_atm_bgc_forcing_monthly', &
+         "seaice_atm_bgc_forcing_monthly", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
