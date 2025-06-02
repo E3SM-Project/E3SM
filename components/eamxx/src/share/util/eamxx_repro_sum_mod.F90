@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 module eamxx_repro_sum_mod
 
   implicit none
