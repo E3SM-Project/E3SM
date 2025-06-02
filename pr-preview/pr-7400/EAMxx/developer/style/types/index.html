@@ -2204,6 +2204,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Organization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3682,6 +3697,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Organization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3712,8 +3742,6 @@
 
 
 <h1 id="types-classes-structures">Types, Classes, Structures</h1>
-<!-- FIXME: naming objects/instances? -->
-
 <h2 id="naming">Naming</h2>
 <ul>
 <li>Please name types (classes, structures/<code>struct</code>, enumerations/<code>enum</code>) as
@@ -3721,14 +3749,16 @@
   that describe what the type <em>is</em> or what its <em>purpose</em> is.<ul>
 <li>As an example, <code>AtmosphericManipulator</code> and not <code>Manipulator</code> or <code>AtMnp</code>.</li>
 <li>If you find yourself unable to name your type this way, that may
-  indicate that it should be broken into independent classes, variables,
-  or functions.</li>
+    indicate that it should be broken into independent classes, variables,
+    or functions.
+        - See FIXME: below for an example.</li>
 </ul>
 </li>
 <li>Types, classes, or structs should make use of <code>UpperCamelCase</code>.<ul>
 <li>Variables containing an object or an instance of a type, class, or struct,
-  should follow the <a href="../variables/#naming">naming convention for variables</a> and be
-  <code>lower_snake_case</code>.</li>
+    should follow the
+    <a href="../variables/#naming">naming convention for variables</a>
+    and be <code>lower_snake_case</code>.</li>
 </ul>
 </li>
 </ul>
@@ -3752,23 +3782,73 @@
 <span class="w">  </span><span class="n">Color</span><span class="w"> </span><span class="n">fruit_color</span><span class="p">;</span>
 
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_favorite_color</span><span class="p">(</span><span class="n">Color</span><span class="w"> </span><span class="n">color_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">};</span>
-<span class="p">}</span>
+<span class="p">};</span>
 </code></pre></div>
 </li>
 <li>
 <p>It would be better to break this into a separate <code>Fruit</code> and <code>Color</code>
-  class because:</p>
-<ol>
-<li><code>Color</code> is not inherently associated with fruits--it could also
-   belong to, for instance, a <code>Vegetable</code> class.</li>
-<li>There is no strong reason the <code>is_favorite_color()</code> needs to be a
-   part of <code>Fruit</code>, since it would work the same way if it knew nothing
-   about fruits.</li>
-</ol>
+    class because:
+        1. <code>Color</code> is not inherently associated with fruits--it could also
+           belong to, for instance, a <code>Vegetable</code> class.
+        2. There is no strong reason the <code>is_favorite_color()</code> needs to be a
+           part of <code>Fruit</code>, since it would work the same way if it knew nothing
+           about fruits.</p>
+</li>
+<li>Related to the previous guideline, types/classes/structs should ideally
+  <em>encapsulate <strong>concepts</strong></em> to improve both readability and usability.</li>
+<li>This implies that even a small struct has a reason to exist when it
+    serves the goal of shrinking or simplifying the outer class.</li>
+<li>An example of this in EAMxx is the
+    <a href="https://github.com/E3SM-Project/E3SM/blob/75b5b0a0c9078e18736860b2445a8975d7de750d/components/eamxx/src/share/util/eamxx_time_stamp.hpp#L114"><code>TimeInterval</code></a>
+    struct that only contains 4 class variables and 3 relatively simple
+    methods; yet, it serves to keep the
+    <a href="https://github.com/E3SM-Project/E3SM/blob/75b5b0a0c9078e18736860b2445a8975d7de750d/components/eamxx/src/share/util/eamxx_data_interpolation.hpp#L14"><code>DataInterpolation</code></a>
+    class smaller and better-organized.</li>
+</ul>
+</li>
+</ul>
+<h3 id="organization">Organization</h3>
+<p>For the sake of consistency to aid readability and findability, we recommend
+classes be organized (ordered) according to the following rules.</p>
+<ul>
+<li>Public interfaces should appear at the top of a class declaration.<ul>
+<li>These are the typically what other developers or users will be looking
+    for when reading or interacting with your code.</li>
+</ul>
+</li>
+<li>Place methods first and class variables last, according to the same logic as
+  above.</li>
+<li>Group methods of the same "kind" or "purpose."<ul>
+<li>E.g., group <em>getters</em> together and separate them from state-changing
+    methods that are also grouped together.</li>
+<li>Avoid interleaving functions of different kind.</li>
+</ul>
+</li>
+<li>Seek to group class-variable declarations together in a meaningful way.<ul>
+<li>This could be according to the actual C++ <strong><em>type</em></strong>, but even better
+    would be done according to how the variables will be used or what
+    other parts of the code they will interact with.</li>
+<li>
+<p>To illustrate, in the snippet below, a class storing 2 grid-types and
+    a <code>bool</code> should prefer <code>class A</code> to <code>class B</code></p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">A</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">MyGrid</span><span class="w"> </span><span class="n">source</span><span class="p">;</span>
+<span class="w">  </span><span class="n">MyGrid</span><span class="w"> </span><span class="n">target</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">forward</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">B</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">MyGrid</span><span class="w"> </span><span class="n">source</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">forward</span><span class="p">;</span>
+<span class="w">  </span><span class="n">MyGrid</span><span class="w"> </span><span class="n">target</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
 </li>
 </ul>
 </li>
 </ul>
+<p>We acknowledge that these rules do not form a complete logical schema, and so,
+we defer to the judgement of the developer and their willingness to consider
+the poor souls that will one day read their code. <img alt="🙂" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/1f642.svg" title=":slightly_smiling_face:" /></p>
 
 
 

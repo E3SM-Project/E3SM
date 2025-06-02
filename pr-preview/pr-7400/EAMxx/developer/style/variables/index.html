@@ -2250,6 +2250,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#intermediate-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Intermediate Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#descriptive-power-vs-brevity-in-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Descriptive Power vs. Brevity in Naming
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3682,6 +3706,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#intermediate-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Intermediate Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#descriptive-power-vs-brevity-in-naming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Descriptive Power vs. Brevity in Naming
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -3716,37 +3764,87 @@
 <ul>
 <li>Please name variables as <strong><em>descriptive nouns</em></strong>.<ul>
 <li>That is, for a variable holding data related to <em>horizontal winds</em>, choose
-  <code>horizontal_winds</code> or even <code>horiz_winds</code> versus <code>wh</code>.</li>
+    <code>horizontal_winds</code> or even <code>horiz_winds</code> versus <code>wh</code>.</li>
 <li>In cases for which this may be untenable, add comments explaining
-  non-obvious variable names.</li>
+    non-obvious variable names.</li>
 </ul>
 </li>
 <li>In general, variables should use <code>snake_case</code> and be entirely lowercase,
   unless capitalizing is a standard convention (e.g., <code>T</code> for temperature).</li>
 <li>We do not currently employ a stylistic distinction between different types of
-  variables--e.g., <code>const</code>, <code>static</code>, member variables, etc.<ul>
-<li>To that end, some developers use a non-standardized convention of
-  distinguishing member variables with a leading <code>m_</code>
-  (<code>m_var</code> <span class="arithmatex">\(\approx\)</span> "my var"), or a trailing/leading underscore
-  (<code>var_</code> or <code>_var</code>).</li>
+  variables--e.g., <code>const</code>, <code>static</code>, member variables, etc.</li>
+<li>We do, however, ask that some convention is employed to identify member
+  variables of a class.<ul>
+<li>Some commonly used techniques include distinguishing member variables
+    with a leading <code>m_</code> (<code>m_var</code> <span class="arithmatex">\(\approx\)</span> "my var"), or a trailing/leading
+    underscore (<code>var_</code> or <code>_var</code>).</li>
+<li>That said, this convention should be <strong><em>locally consistent</em></strong> within a
+    given class, struct, or otherwise.</li>
+</ul>
+</li>
+<li>As to favoring <strong><em>nouns</em></strong> for naming, one should avoid using articles or
+  verbs in variable names.<ul>
+<li>The key "exception" here would be prefixes like <code>is_</code>, <code>has_</code>, <code>can_</code>
+    that are commonly used with boolean variables.</li>
 </ul>
 </li>
 </ul>
 <h2 id="usage">Usage</h2>
+<h3 id="intermediate-variables">Intermediate Variables</h3>
+<p>There is a balance to be struck between introducing extra, or intermediate,
+variables and avoiding excess allocations/de-allocations or minimizing clutter.</p>
 <ul>
-<li>There is a balance to be struck between introducing extra, or intermediate,
-  variables and avoiding excess allocations/de-allocations or minimizing clutter.<ul>
 <li>In line with the hierarchy of correct/fast/understandable, mentioned in
   the <a href="../style/#general-guidelines">Style Standards Overview</a>,
-  it can sometimes improve matters to introduce an intermediate variable,
+  it often improves matters to introduce an intermediate variable,
   pointer, subview, etc., rather than triply-indexing into a variable
   that's contained within a class-member struct.</li>
 <li>This principle applies to calculations as well, as there are situations
   in which readability is improved by breaking complex operations into
   multiple steps.</li>
+<li><strong>Generally speaking</strong>, unless the code is highly-optimized and/or
+  performance-critical, <strong>usage of intermediate variables is preferred</strong>.<ul>
+<li>Here, readability and bug-safety are the top concerns, so the clarity
+    provided by descriptive intermediate variables and resultant shorter
+    lines, trumps most other factors.</li>
 </ul>
 </li>
 </ul>
+<h3 id="descriptive-power-vs-brevity-in-naming">Descriptive Power vs. Brevity in Naming</h3>
+<p>There is obvious a crossover point at which a name becomes <strong>too</strong> descriptive
+or simply too long, so as to be cumbersome to use.
+Thus, the issue of descriptive naming should be balanced against brevity in
+name choice, and we give some examples and rules of thumb.</p>
+<ul>
+<li>Consider synonyms that may shorten a variable name without sacrificing clarity.</li>
+<li>Make use of common word truncations or abbreviations.<ul>
+<li>E.g., <code>mgr</code> instead of <code>manager</code> or <code>dev</code> in place of <code>device</code>.</li>
+<li>However, avoid non-standard abbreviations that may only be common
+    parlance within a small group.
+        - This includes names that correspond to standard arithmetic variables
+          in an equation (<code>gamma</code>, <code>y_hat</code>), <strong><em>unless</em></strong> the equation is
+          included as a comment and the connection is readily apparent.</li>
+</ul>
+</li>
+<li>The converse of the previous is avoid making contractions that negatively
+  impact clarity.<ul>
+<li>A notorious example of this is removing vowels.<ul>
+<li>E.g., <code>loop_cnt</code>, rather than <code>loop_count</code> provides little savings,
+    at the expense of clarity.<sup id="fnref:funfact"><a class="footnote-ref" href="#fn:funfact">1</a></sup></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:funfact">
+<p>Much like some <a href="https://www.investopedia.com/ask/answers/050115/what-types-options-positions-create-unlimited-liability.asp">dangerous options-trading strategies</a>,
+this practice offers limited upside, yet the potential downside is unlimited.&#160;<a class="footnote-backref" href="#fnref:funfact" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 

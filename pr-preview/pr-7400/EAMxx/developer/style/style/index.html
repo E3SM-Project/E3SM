@@ -3741,7 +3741,7 @@ will thank you for it!</p>
     should explain <strong><em>why</em></strong> something is being done in the code,
     rather than <strong><em>what</em></strong> the code is doing.<sup id="fnref:butwhattabout"><a class="footnote-ref" href="#fn:butwhattabout">1</a></sup></li>
 <li>Comments should dispel confusion and not cause it.</li>
-<li>Comments should not duplicate the code.</li>
+<li>Comments should not duplicate the code.<sup id="fnref:dupe"><a class="footnote-ref" href="#fn:dupe">2</a></sup></li>
 <li>Provide links or references when using code from elsewhere or
     whenever it is otherwise appropriate.</li>
 <li>A bad comment is worse than no comment.</li>
@@ -3758,6 +3758,13 @@ will thank you for it!</p>
 <p>An obvious exception to this is explaining complex or opaque
 parts of the code that cannot be made simpler--for instance, a clever arithmetic
 trick in a complicated interpolation scheme.&#160;<a class="footnote-backref" href="#fnref:butwhattabout" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:dupe">
+<p>For example, this type of comment does not add any information and
+is unnecessary.
+<div class="highlight"><pre><span></span><code><span class="c1">// perform initialization</span>
+<span class="k">this</span><span class="o">-&gt;</span><span class="n">initialize</span><span class="p">();</span>
+</code></pre></div>&#160;<a class="footnote-backref" href="#fnref:dupe" title="Jump back to footnote 2 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>

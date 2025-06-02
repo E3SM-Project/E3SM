@@ -3695,8 +3695,9 @@
 <p>To enforce consistent code format throughout EAMxx, we make use of an
 autoformatting workflow, carried out via Github Actions in the E3SM repository.</p>
 <ul>
-<li>The tool we employ is <code>clang-format</code>, and the version we have chosen is
-  v14.<sup id="fnref:v14"><a class="footnote-ref" href="#fn:v14">1</a></sup></li>
+<li>The tool we employ is
+  <a href="https://clang.llvm.org/docs/ClangFormat.html"><code>clang-format</code></a>,
+  and the version we have chosen is v14.<sup id="fnref:v14"><a class="footnote-ref" href="#fn:v14">1</a></sup></li>
 </ul>
 <!-- FIXME: Nail this down when figured out -->
 <ul>
@@ -3705,8 +3706,8 @@ autoformatting workflow, carried out via Github Actions in the E3SM repository.<
   and a list of the handful of customizations of this convention are
   enumerated in the configuration file <a href="https://github.com/E3SM-Project/E3SM/blob/master/components/eamxx/.clang-format"><code>$EAMXX_ROOT/.clang-format</code></a>.<ul>
 <li>See this <a href="../resources/clang-format_HOWTO/">How-to Guide</a>
-  for more details on how to configure <code>clang-format</code> on your chosen
-  development machine.</li>
+    for additional details on how to configure <code>clang-format</code> on your chosen
+    development machine.</li>
 </ul>
 </li>
 </ul>
@@ -3716,7 +3717,7 @@ autoformatting workflow, carried out via Github Actions in the E3SM repository.<
   adherence to our formatting standard.</li>
 <li>The workflow is triggered by any Pull Request (PR) that modifies EAMxx code.<ul>
 <li>It is also triggered by other PR-related triggers, such as pushing
-  changes, or converting from <strong>draft</strong> to <strong>ready</strong>.</li>
+    changes, or converting from <strong>draft</strong> to <strong>ready</strong>.</li>
 </ul>
 </li>
 <li>All code modified by a PR must be formatted prior to <strong>merging</strong>.</li>
@@ -3724,16 +3725,14 @@ autoformatting workflow, carried out via Github Actions in the E3SM repository.<
   Pull Request, but feel free to <code>clang-format</code> as you develop if that is
   your preference.<ul>
 <li>The one situation for which opening a pre-formatted PR may not be
-  preferred is if the file has never previously been <code>clang-format</code>-ed
-  and requires a large number of changes.<ul>
-<li>I.e., touching the majority of lines in a file for format-only changes
-  will make it difficult for a reviewer to determine which lines were
-  changed for substantive reasons.</li>
-<li>In this case, please refrain from formatting the code prior to opening
-  the PR, and, instead, run <code>clang-format</code> once the PR is approved to be
-  merged and make that the final commit.</li>
-</ul>
-</li>
+    preferred is if the file has never previously been <code>clang-format</code>-ed
+    and requires a large number of changes.
+        - I.e., touching the majority of lines in a file for format-only
+          changes will make it difficult for a reviewer to determine which
+          lines were changed for substantive reasons.
+        - In this case, please refrain from formatting the code prior to
+          opening the PR, and, instead, run <code>clang-format</code> once the PR is
+          approved to be merged and make that the final commit.</li>
 </ul>
 </li>
 <li>As of now, the <code>eamxx-format</code> workflow only considers files that are edited
@@ -3741,7 +3740,7 @@ autoformatting workflow, carried out via Github Actions in the E3SM repository.<
 <li>In addition to the pass/fail status, the workflow, provides the path to any
   files that caused the failure.<ul>
 <li>This information is found on the <strong><em>Summary</em></strong> page for any failed
-  <code>eamxx-format</code> <strong><em>Job</em></strong>.<sup id="fnref:huh-where"><a class="footnote-ref" href="#fn:huh-where">2</a></sup></li>
+    <code>eamxx-format</code> <strong><em>Job</em></strong>.<sup id="fnref:huh-where"><a class="footnote-ref" href="#fn:huh-where">2</a></sup></li>
 </ul>
 </li>
 </ul>
@@ -3753,11 +3752,17 @@ autoformatting workflow, carried out via Github Actions in the E3SM repository.<
 differences in behavior across versions.&#160;<a class="footnote-backref" href="#fnref:v14" title="Jump back to footnote 1 in the text">&#8617;</a></p>
 </li>
 <li id="fn:huh-where">
-<p>To get to this summary, follow the <strong><em>Actions</em></strong> link at the top
-of the E3SM repository page; select <code>eamxx-format</code> from the <strong><em>All workflows</em></strong>
-section of the <strong><em>Actions</em></strong> sidebar; then choose the most recent run that is
-associated with your PR, which should be near the top of the list. The summary
-is in the main pane of the page with the title <strong>clang-format-linter summary</strong>.&#160;<a class="footnote-backref" href="#fnref:huh-where" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+<p>To get to this summary, select the <strong><em>Checks</em></strong> tab at the top of
+the PR page and select the <code>eamxx-format</code> workflow from the left sidebar.
+The summary is in the main pane of the page with the title
+<strong>clang-format-linter summary</strong>.<sup id="fnref:also"><a class="footnote-ref" href="#fn:also">3</a></sup>&#160;<a class="footnote-backref" href="#fnref:huh-where" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:also">
+<p>Note that this can also be accessed the long way around by following the
+<strong><em>Actions</em></strong> link at the top of the E3SM repository page;
+select <code>eamxx-format</code> from the <strong><em>All workflows</em></strong> section of the <strong><em>Actions</em></strong>
+sidebar; then choose the most recent run that is associated with your PR,
+which should be near the top of the list.&#160;<a class="footnote-backref" href="#fnref:also" title="Jump back to footnote 3 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
