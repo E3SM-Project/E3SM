@@ -12,6 +12,7 @@ set(GW_TESTS_SRCS
     gw_gw_drag_prof_tests.cpp
     gw_gw_front_project_winds_tests.cpp
     gw_gw_front_gw_sources_tests.cpp
+    gw_gw_cm_src_tests.cpp
 ) # GW_TESTS_SRCS
 
 # All tests should understand the same baseline args

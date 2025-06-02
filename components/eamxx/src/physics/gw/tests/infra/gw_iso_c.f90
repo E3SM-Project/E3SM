@@ -175,4 +175,21 @@ contains
 
     call gw_front_gw_sources(ncol, ngwv, kbot, frontgf, tau)
   end subroutine gw_front_gw_sources_c
+
+  subroutine gw_cm_src_c(ncol, ngwv, kbot, u, v, frontgf, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
+    use gw_common, only : pver, pgwv
+    use gw_front, only : gw_cm_src
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv, kbot
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: u, v
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: frontgf
+    integer(kind=c_int) , intent(out), dimension(ncol) :: src_level, tend_level
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: ubm
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
+    real(kind=c_real) , intent(out), dimension(ncol) :: xv, yv
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv) :: c
+
+    call gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, src_level, tend_level, tau, ubm, ubi, xv, yv, c)
+  end subroutine gw_cm_src_c
 end module gw_iso_c

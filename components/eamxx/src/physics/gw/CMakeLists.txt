@@ -22,6 +22,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/gw_gw_drag_prof.cpp
     eti/gw_gw_front_project_winds.cpp
     eti/gw_gw_front_gw_sources.cpp
+    eti/gw_gw_cm_src.cpp
   ) # GW ETI SRCS
 endif()
 

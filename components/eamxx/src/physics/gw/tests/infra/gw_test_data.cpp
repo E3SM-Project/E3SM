@@ -43,6 +43,9 @@ void gw_front_init_c(Real taubgnd, Real frontgfc_in, Int kfront_in);
 void gw_front_project_winds_c(Int ncol, Int kbot, Real* u, Real* v, Real* xv, Real* yv, Real* ubm, Real* ubi);
 
 void gw_front_gw_sources_c(Int ncol, Int ngwv, Int kbot, Real* frontgf, Real* tau);
+
+void gw_cm_src_c(Int ncol, Int ngwv, Int kbot, Real* u, Real* v, Real* frontgf, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c);
+
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -126,6 +129,14 @@ void gw_front_gw_sources(GwFrontGwSourcesData& d)
   gw_front_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_front_gw_sources_c(d.ncol, d.ngwv, d.kbot, d.frontgf, d.tau);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_cm_src(GwCmSrcData& d)
+{
+  gw_front_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_cm_src_c(d.ncol, d.ngwv, d.kbot, d.u, d.v, d.frontgf, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
