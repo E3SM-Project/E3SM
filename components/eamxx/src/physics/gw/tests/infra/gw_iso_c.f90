@@ -153,8 +153,8 @@ contains
   end subroutine gw_front_init_c
 
   subroutine gw_front_project_winds_c(ncol, kbot, u, v, xv, yv, ubm, ubi) bind(C)
-    use gw_front, only : gw_front_project_winds
     use gw_common, only : pver
+    use gw_front, only : gw_front_project_winds
 
     integer(kind=c_int) , value, intent(in) :: ncol, kbot
     real(kind=c_real) , intent(in), dimension(ncol, pver) :: u, v
@@ -164,4 +164,15 @@ contains
 
     call gw_front_project_winds(ncol, kbot, u, v, xv, yv, ubm, ubi)
   end subroutine gw_front_project_winds_c
+
+  subroutine gw_front_gw_sources_c(ncol, ngwv, kbot, frontgf, tau) bind(C)
+    use gw_common, only : pver, pgwv
+    use gw_front, only : gw_front_gw_sources
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv, kbot
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: frontgf
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+
+    call gw_front_gw_sources(ncol, ngwv, kbot, frontgf, tau)
+  end subroutine gw_front_gw_sources_c
 end module gw_iso_c

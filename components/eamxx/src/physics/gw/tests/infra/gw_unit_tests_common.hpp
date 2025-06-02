@@ -84,6 +84,7 @@ struct UnitWrap {
     struct TestGwdPrecalcRhoi;
     struct TestGwDragProf;
     struct TestGwFrontProjectWinds;
+    struct TestGwFrontGwSources;
   }; // UnitWrap
 };
 
