@@ -1992,7 +1992,7 @@ contains
     ! !USES:
     use shr_const_mod    , only : SHR_CONST_TKFRZ
     use elm_time_manager , only : get_curr_calday, get_days_per_year
-    use pftvarcon        , only : gddmin, hybgdd
+    use pftvarcon        , only : gddmin, hybgdd, lfemerg, baset, nsugarcane, nsugarcaneirrig
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
     use elm_varcon       , only : spval, secspday
     use elm_varctl       , only : fan_to_bgc_crop
@@ -2028,6 +2028,8 @@ contains
          manunitro          =>    veg_vp%manunitro                    , & ! Input: max manure to apply (kgN/m2)
          t10                =>    veg_es%t_a10                        , & ! Input:  [real(r8) (:) ]  10-day running mean of the 2 m temperature (K)
          a10tmin            =>    veg_es%t_a10min                     , & ! Input:  [real(r8) (:) ]  10-day running mean of min 2-m temperature
+         t_ref2m_min_inst   =>    veg_es%t_ref2m_min_inst             , & ! Input:  [real(r8) (:) ]  instantaneous daily min of average 2 m height surface air temp (K)
+         t_ref2m_max_inst   =>    veg_es%t_ref2m_max_inst             , & ! Input:  [real(r8) (:) ]  instantaneous daily max of average 2 m height surface air temp (K)
          fertnitro          =>    crop_vars%fertnitro_patch           , & ! Input:  [real(r8) (:) ]  max fertilizer to be applied in total (kgN/m2)
          fertphosp          =>    crop_vars%fertphosp_patch           , & ! Input:  [real(r8) (:) ]  max P fertilizer to be applied in total (kgP/m2)
 
@@ -2036,6 +2038,7 @@ contains
          croplive           =>    crop_vars%croplive_patch            , & ! Output: [logical  (:) ]  Flag, true if planted, not harvested
          crpyld             =>    crop_vars%crpyld_patch              , & ! Output: [real(r8) ):) ]  harvested crop (bu/acre)
          dmyield            =>    crop_vars%dmyield_patch             , & ! Output: [real(r8) ):) ]  dry matter harvested crop (t/ha)
+         nyrs_crop_active   =>    crop_vars%nyrs_crop_active_patch    , & ! Input:  [integer (:)  ]  number of years this crop patch has been active
 
          bglfr_leaf         =>    cnstate_vars%bglfr_leaf_patch       , & ! Output: [real(r8) (:) ]  background leaf litterfall rate (1/s)
          bglfr_froot        =>    cnstate_vars%bglfr_froot_patch      , & ! Output: [real(r8) (:) ]  background fine root litterfall rate (1/s)
@@ -2048,6 +2051,7 @@ contains
          offset_flag        =>    cnstate_vars%offset_flag_patch      , & ! Output: [real(r8) (:) ]  offset flag
          offset_counter     =>    cnstate_vars%offset_counter_patch   , & ! Output: [real(r8) (:) ]  offset counter
          gddmaturity        =>    cnstate_vars%gddmaturity_patch      , & ! Output: [real(r8) (:) ]  gdd needed to harvest
+         huileaf            =>    cnstate_vars%huileaf_patch          , & ! Output: [real(r8) (:) ]  heat unit index needed from planting to leaf emergence
 
          leafc_xfer         =>    veg_cs%leafc_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
@@ -2157,17 +2161,33 @@ contains
                   onset_gdd(p) = 0._r8
                end if
 
-               ! if the gdd flag is set, and if the soil is above freezing
-               ! then accumulate growing degree days for onset trigger
-               soilt = t_soisno(c,3)
-               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               ! Based on Colmanetti et al., 2024 10.1016/j.eja.2023.127061
+               if (nyrs_crop_active(p) == 0) then ! Year 1
+                  huileaf(p) = lfemerg(ivt(p)) * gddmaturity(p)
+               else
+                  huileaf(p) = lfemerg(ivt(p)) * gddmaturity(p) * (1. / 6.)
+               end if
+
+               if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
+                  if (onset_gddflag(p) == 1.0_r8 .and. &
+                      t_ref2m_min_inst(p) /= spval .and. t_ref2m_max_inst(p) /= spval) then
+                     onset_gdd(p) = onset_gdd(p) + (((t_ref2m_min_inst(p) + &
+                                    t_ref2m_max_inst(p))/2.0_r8) - (baset(ivt(p)) + 273.15_r8))*fracday
+                  end if
+               else
+                  ! if the gdd flag is set, and if the soil is above freezing
+                  ! then accumulate growing degree days for onset trigger
+                  soilt = t_soisno(c,3)
+                  if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
+                     onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+                  end if
                end if
 
                ! if accumulated gdd has exceeded gdd required for leaf onset
                ! then set onset flag
                ! for perennial crops gddmin tracks gdd required for leaf onset
-               if (onset_gdd(p) > gddmin(ivt(p))) then
+               if ( ((ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) .and. (onset_gdd(p) > huileaf(p))) .or. &
+                    ((ivt(p)/=nsugarcane .and. ivt(p)/=nsugarcaneirrig) .and. (onset_gdd(p) > gddmin(ivt(p)))) ) then
 
                   ! Initialize onset counter
                   onset_flag(p) = 1.0_r8
@@ -2187,7 +2207,7 @@ contains
                      ! application.
                      manure(p) = 0.0_r8
                   end if
-                end if
+               end if
             end if    ! offset flag
          else     ! crop not live
             ! next 2 lines conserve mass if leaf*_xfer > 0 due to interpinic
@@ -2968,6 +2988,9 @@ contains
    ! instead of in the OffsetLitterfall subroutine. The harvest index is
    ! determined based on the LPJ model.
    !
+   ! !USES:
+   use pftvarcon        , only : nsugarcane, nsugarcaneirrig
+   !
    ! !ARGUMENTS:
    integer, intent(in) :: num_ppercropp       ! number of prog perennial crop patches in filter
    integer, intent(in) :: filter_ppercropp(:) ! filter for prognostic perennial crop patches
@@ -2991,26 +3014,36 @@ contains
    offset_counter           => cnstate_vars%offset_counter_patch, & ! Input: [real(r8) (:)] offset days counter
 
    presharv                 => veg_vp%presharv                  , & ! Input: [real(r8) (:)] proportion of residue harvested
+   fyield                   => veg_vp%fyield                    , & ! Input: [real(r8) (:)] fraction of grain actually harvested
    convfact                 => veg_vp%convfact                  , & ! Input: [real(r8) (:)] conversation factor from gC/m2 to bu/acre
 
    leafc                    => veg_cs%leafc                     , & ! Input: [real(r8) (:)] leaf C (gC/m2)
    livestemc                => veg_cs%livestemc                 , & ! Input: [real(r8) (:)] livestem C (gC/m2)
+   grainc                   => veg_cs%grainc                    , & ! Input: [real(r8) (:)] grain C (gC/m2)
    leafn                    => veg_ns%leafn                     , & ! Input: [real(r8) (:)] leaf N (gN/m2)
    livestemn                => veg_ns%livestemn                 , & ! Input: [real(r8) (:)] livestem N (gN/m2)
+   grainn                   => veg_ns%grainn                    , & ! Input: [real(r8) (:)] grain N (gN/m2)
    leafp                    => veg_ps%leafp                     , & ! Input: [real(r8) (:)] leaf P (gP/m2)
    livestemp                => veg_ps%livestemp                 , & ! Input: [real(r8) (:)] livestem P (gP/m2)
+   grainp                   => veg_ps%grainp                    , & ! Input: [real(r8) (:)] grain P (gP/m2)
+   cpool_to_grainc          => veg_cf%cpool_to_grainc           , & ! Input: [real(r8) (:)] allocation to grain C (gC/m2/s)
    cpool_to_livestemc       => veg_cf%cpool_to_livestemc        , & ! Input: [real(r8) (:)] allocation to live stem C (gC/m2/s)
    cpool_to_leafc           => veg_cf%cpool_to_leafc            , & ! Input: [real(r8) (:)] allocation to leaf C (gC/m2/s)
+   npool_to_grainn          => veg_nf%npool_to_grainn           , & ! Input: [real(r8) (:)] allocation to grain N (gN/m2/s)
    npool_to_leafn           => veg_nf%npool_to_leafn            , & ! Input: [real(r8) (:)] allocation to leaf N (gN/m2/s)
    npool_to_livestemn       => veg_nf%npool_to_livestemn        , & ! Input: [real(r8) (:)] allocation to live stem N (gN/m2/s)
+   ppool_to_grainp          => veg_pf%ppool_to_grainp           , & ! Input: [real(r8) (:)] allocation to grain P (gP/m2/s)
    ppool_to_leafp           => veg_pf%ppool_to_leafp            , & ! Input: [real(r8) (:)] allocation to leaf P (gP/m2/s)
    ppool_to_livestemp       => veg_pf%ppool_to_livestemp        , & ! Input: [real(r8) (:)] allocation to live stem P (gP/m2/s)
    hrv_leafc_to_prod1c      => veg_cf%hrv_leafc_to_prod1c       , & ! Input: [real(r8) (:)] crop leaf C harvested
    hrv_livestemc_to_prod1c  => veg_cf%hrv_livestemc_to_prod1c   , & ! Input: [real(r8) (:)] crop live stem C harvested
+   hrv_grainc_to_prod1c     => veg_cf%hrv_grainc_to_prod1c      , & ! Input: [real(r8) (:)] crop grainc harvested
    hrv_leafn_to_prod1n      => veg_nf%hrv_leafn_to_prod1n       , & ! Input: [real(r8) (:)] crop leaf N harvested
    hrv_livestemn_to_prod1n  => veg_nf%hrv_livestemn_to_prod1n   , & ! Input: [real(r8) (:)] crop live stem N harvested
+   hrv_grainn_to_prod1n     => veg_nf%hrv_grainn_to_prod1n      , & ! Input: [real(r8) (:)] crop grainn harvested
    hrv_leafp_to_prod1p      => veg_pf%hrv_leafp_to_prod1p       , & ! Input: [real(r8) (:)] crop leaf P harvested
    hrv_livestemp_to_prod1p  => veg_pf%hrv_livestemp_to_prod1p   , & ! Input: [real(r8) (:)] crop live stem P harvested
+   hrv_grainp_to_prod1p     => veg_pf%hrv_grainp_to_prod1p      , & ! Input: [real(r8) (:)] crop grainp harvested
    crpyld                   => crop_vars%crpyld_patch           , & ! InOut: [real(r8) ):)] harvested crop (bu/acre)
    dmyield                  => crop_vars%dmyield_patch            & ! InOut: [real(r8) ):)] dry matter harvested crop (t/ha)
    )
@@ -3025,11 +3058,16 @@ contains
          if (offset_counter(p) == dt) then
          t1 = 1._r8 / dt
               ! calculate yield (crpyld = bu/acre and dmyield = t/ha)
-              ! for perennial bioenergy grass yield comes from leaf and stem harvest
-              crpyld(p)  = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + &
+              if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
+                   crpyld(p)    = (grainc(p)+cpool_to_grainc(p)*dt) * fyield(ivt(p)) * convfact(ivt(p)) / (cgrain * 1000)
+                   dmyield(p)   = (grainc(p)+cpool_to_grainc(p)*dt) * fyield(ivt(p)) * 0.01 / cgrain
+              else
+                   ! for perennial bioenergy grass yield comes from leaf and stem harvest
+                   crpyld(p)  = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + &
                            livestemc(p) + cpool_to_livestemc(p)*dt) * convfact(ivt(p)) / (cgrain * 1000)
-              dmyield(p) = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + &
+                   dmyield(p) = presharv(ivt(p)) * (leafc(p) + cpool_to_leafc(p)*dt + &
                            livestemc(p) + cpool_to_livestemc(p)*dt) * 0.01 /cgrain
+              end if
 
               !calculate harvested carbon and nitrogen; remaining goes into litterpool
               hrv_leafc_to_prod1c(p)  = presharv(ivt(p)) * ((t1 * leafc(p)) + cpool_to_leafc(p))
@@ -3043,6 +3081,11 @@ contains
               hrv_leafp_to_prod1p(p) = presharv(ivt(p)) * ((t1 * leafp(p)) + ppool_to_leafp(p))
               hrv_livestemp_to_prod1p(p) = presharv(ivt(p)) * ((t1 * livestemp(p)) + ppool_to_livestemp(p))
 
+              if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
+                  hrv_grainc_to_prod1c(p) = t1 * grainc(p) + cpool_to_grainc(p)
+                  hrv_grainn_to_prod1n(p) = t1 * grainn(p) + npool_to_grainn(p)
+                  hrv_grainp_to_prod1p(p) = t1 * grainp(p) + ppool_to_grainp(p)
+              end if
          end if ! offseddt_counter
 
       end if ! offset_flag
