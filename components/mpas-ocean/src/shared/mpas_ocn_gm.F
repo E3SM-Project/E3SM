@@ -207,6 +207,56 @@ module ocn_gm
 
          nCells = nCellsArray(4)
 
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, lt1, lt2, c_mode1, resolution, dc_Lr)
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            sum_hN = 0.0
+
+            do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
+
+               lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+               lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+               sum_hN = sum_hN + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                               lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
+            end do
+
+            ! See Chelton (1998)
+            ! https://journals.ametsoc.org/view/journals/phoc/28/3/1520-0485_1998_028_0433_gvotfb_2.0.co_2.xml
+            ! eqn 2.2a, also Appendix A,
+            ! for the first-mode (m=1) baroclinic gravity wave speed in m/s
+            ! c_m = 1/pi integral(N dz )
+
+            c_mode1 = max(1.0E-5_RKIND, sum_hN/pi)
+
+            ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
+            ! just after eqn 4 the defines the deformation
+            ! radius as:
+            ! L = sqrt( c_g^2/ ( f^2 + 2*beta*c_g) )
+            !   = c_g * sqrt(1/( f^2 + 2*beta*c_g) )  (note c_g is guaranteed non-negative)
+            ! This comes from a combination of Chelton (1998) eqns 2.3a and
+            ! 2.3b, with a smooth transition in between.
+            RossbyRadius(iEdge) = c_mode1*sqrt( 1.0_RKIND / &
+               (fEdge(iEdge)*fEdge(iEdge) + 2.0_RKIND*betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND))
+
+            dc_Lr = dcEdge(iEdge)/RossbyRadius(iEdge)
+
+            ! Ramp the parameterization between the given min and max values
+            ! of the ratio of the cell width to the Rossby radius
+            if (dc_Lr <= config_GMRedi_Rossby_ramp_min) then
+               RossbyRadiusTaper(iEdge) = 0.0_RKIND
+            else if (dc_Lr >= config_GMRedi_Rossby_ramp_max) then
+               RossbyRadiusTaper(iEdge) = 1.0_RKIND
+            else
+               ! a linear ramp between the min and max of dc_Lr
+               RossbyRadiusTaper(iEdge) = (dc_Lr - config_GMRedi_Rossby_ramp_min) / &
+                  (config_GMRedi_Rossby_ramp_max - config_GMRedi_Rossby_ramp_min)
+            end if
+         end do
+         !$omp end do
+         !$omp end parallel
+
          if (config_GM_horizontal_taper == 'RossbyRadius') then
             !$omp parallel
             !$omp do schedule(runtime)
