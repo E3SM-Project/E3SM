@@ -126,63 +126,6 @@ module subgridAveMod
 
 contains
 
-  !-----------------------------------------------------------------------
-  ! subroutine p2c_1d (bounds, parr, carr, p2c_scale_type)
-  !   !
-  !   ! !DESCRIPTION:
-  !   ! Perfrom subgrid-average from pfts to columns.
-  !   ! Averaging is only done for points that are not equal to "spval".
-  !   !
-  !   ! !ARGUMENTS:
-  !   type(bounds_type), intent(in) :: bounds
-  !   real(r8), intent(in)  :: parr( bounds%begp: )         ! patch array
-  !   real(r8), intent(out) :: carr( bounds%begc: )         ! column array
-  !   character(len=*), intent(in) :: p2c_scale_type ! scale type
-  !   !
-  !   ! !LOCAL VARIABLES:
-  !   integer  :: p,c,index                       ! indices
-  !   real(r8) :: scale_p2c(bounds%begp:bounds%endp) ! scale factor for column->landunit mapping
-  !   logical  :: found                              ! temporary for error check
-  !   real(r8) :: sumwt(bounds%begc:bounds%endc)     ! sum of weights
-  !   !------------------------------------------------------------------------
-  !
-  !   if (p2c_scale_type == 'unity') then
-  !      do p = bounds%begp,bounds%endp
-  !         scale_p2c(p) = 1.0_r8
-  !      end do
-  !   else
-  !     write(iulog,*)'p2c_2d error: scale type ',p2c_scale_type,' not supported'
-  !     call endrun(msg=errMsg(__FILE__, __LINE__))
-  !   end if
-  !
-  !   carr(bounds%begc:bounds%endc) = spval
-  !   sumwt(bounds%begc:bounds%endc) = 0._r8
-  !   do p = bounds%begp,bounds%endp
-  !      if (veg_pp%active(p) .and. veg_pp%wtcol(p) /= 0._r8) then
-  !         if (parr(p) /= spval) then
-  !            c = veg_pp%column(p)
-  !            if (sumwt(c) == 0._r8) carr(c) = 0._r8
-  !            carr(c) = carr(c) + parr(p) * scale_p2c(p) * veg_pp%wtcol(p)
-  !            sumwt(c) = sumwt(c) + veg_pp%wtcol(p)
-  !         end if
-  !      end if
-  !   end do
-  !   found = .false.
-  !   do c = bounds%begc,bounds%endc
-  !      if (sumwt(c) > 1.0_r8 + 1.e-6_r8) then
-  !         found = .true.
-  !         index = c
-  !      else if (sumwt(c) /= 0._r8) then
-  !         carr(c) = carr(c)/sumwt(c)
-  !      end if
-  !   end do
-  !   if (found) then
-  !     write(iulog,*)'p2c_1d error: sumwt is greater than 1.0'
-  !     call endrun(decomp_index=index, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
-  !   end if
-  !
-  ! end subroutine p2c_1d
-
   subroutine p2c_1d (bounds, parr, carr, p2c_scale_type)
      ! !DESCRIPTION:
      ! Perfrom subgrid-average from pfts to columns.

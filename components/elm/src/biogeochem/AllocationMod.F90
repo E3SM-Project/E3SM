@@ -1053,8 +1053,6 @@ contains
    real(r8) :: sum1,sum2,sum_immob_no3,sum_immob_nh4,sum_immob_p,sum_pot_immob_p
    integer :: begc, endc 
 
-
-
    !-----------------------------------------------------------------------
 
    associate(                                                                                 &
@@ -1165,6 +1163,8 @@ contains
         leafp_xfer                   => veg_ps%leafp_xfer                 &
         )
 
+     begc = bounds%begc
+     endc = bounds%endc
 
      if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
 
