@@ -474,7 +474,7 @@
 				  possible_values="'off', 'on', 'mask'"		  
 		/>
 		<nml_option name="config_TF_iceberg_depth" type="real" default_value="-175.0" units="m"
-				  description="Depth above which to iceberg meltwater is important. If config_TF_param_type is set to 'AMberg' or 'AMfit', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024)."
+				  description="Depth above which to iceberg meltwater is important. If config_TF_iceberg_melt is set to 'true' or 'mask', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024)."
 				  possible_values="Any negative real value"
 		/>
 		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="2" units="unitless"
@@ -1726,7 +1726,7 @@ is the value of that variable from the *previous* time level!
                         description="ocean salinity to be extrapolated to all grounding lines if config_calcuate_thermal_forcing is true."
                 />
                 <var name="icebergFjordMask" type="integer" dimensions="nCells Time" units="none" default_value="0"
-                        description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_iceberg_melt = mask. 1 prescribes AMberg at that cell, 0 prescribed AMmelt."
+                        description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_iceberg_melt = mask. 1 parameterizes iceberg melt-driven cooling at that cell, 0 indicates no iceberg-related alteration."
 					 />
 					 <var name="oceanField" type="real" dimensions="TWO nISMIP6OceanLayers nCells Time" units="none"
 								description="Generic field used to extrapolate either ocean temperature and salinity, or thermal forcing. This field gets updated on each iteration of the extrapolation scheme. At end of extrapolation, those fields are set equal to oceanField. oceanField thus does not normally need to be output."
