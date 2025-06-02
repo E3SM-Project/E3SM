@@ -247,9 +247,6 @@ contains
             !depth of snow required for complete burial of grasses
          endif
 
-         ! RPF - fb above had previously been f exposed,
-         ! in contrast to definition in declaration statements
-         ! so modifying fb defs and elai/esai statements
          elai(p) = max(tlai(p)*(1._r8 - fb), 0.0_r8)
          esai(p) = max(tsai(p)*(1._r8 - fb), 0.0_r8)
 
