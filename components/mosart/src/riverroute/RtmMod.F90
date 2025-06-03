@@ -137,12 +137,12 @@ module RtmMod
   end type outlet_discharge_info_type
 
   ! Namelist variable and flag for TNR redirection
-  logical, public :: redirect_total_qgwl = .false.  ! Namelist control
-  logical, save   :: redirect_total_qgwl_flag = .false.  ! Module flag
+  logical, public :: redirect_negative_qgwl = .false.  ! Namelist control
+  logical, save   :: redirect_negative_qgwl_flag = .false.  ! Module flag
 
   ! Variables for TNR redirection
-  integer, parameter :: num_top_outlets_for_qgwl = 100   ! Number of top outlets to use
-  real(r8), save   :: global_net_qgwl = 0.0_r8               ! Global Total qgwl
+  integer, parameter :: num_top_outlets_for_qgwl = 500   ! Number of top outlets to use
+  real(r8), save   :: global_net_negative_qgwl = 0.0_r8               ! Global Total negative qgwl
 
   real(r8), save :: delt_save             ! previous delt 
 
@@ -288,7 +288,7 @@ contains
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
-         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag,redirect_total_qgwl
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag,redirect_negative_qgwl
 
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
@@ -381,7 +381,7 @@ contains
 
     end if
     
-    redirect_total_qgwl_flag = redirect_total_qgwl
+    redirect_negative_qgwl_flag = redirect_negative_qgwl
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (delt_mosart    ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -426,7 +426,7 @@ contains
     call mpi_bcast (rtmhist_fincl3, (max_namlen+2)*size(rtmhist_fincl3), MPI_CHARACTER, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_avgflag_pertape, size(rtmhist_avgflag_pertape), MPI_CHARACTER, 0, mpicom_rof, ier)
-    call mpi_bcast (redirect_total_qgwl_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier) 
+    call mpi_bcast (redirect_negative_qgwl_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier) 
 
     if (inundflag) then
        call mpi_bcast (OPT_inund,          1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -1836,7 +1836,6 @@ contains
 !    if (masterproc) call shr_sys_flush(iulog)
     call MOSART_init()
 
-
     if(sediflag) then
         call t_startf('mosarti_sediment_init')
         call MOSART_sediment_init(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
@@ -2388,24 +2387,35 @@ contains
     ! data for euler solver, in m3/s here
 
     ! Aggregate global Qgwl (TNR) if flag is true ---
-    global_net_qgwl = 0.0_r8 ! Reset global sum each step
-    if (redirect_total_qgwl_flag) then
-        local_qgwl_sum = 0.0_r8
-        do nr = rtmCTL%begr, rtmCTL%endr
-           ! if (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then !! if we want to redirect only the negative values but keep the positive ones
-                local_qgwl_sum = local_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-           ! endif
-            TRunoff%qgwl(nr, :) = 0.0_r8
-        enddo
+    global_net_negative_qgwl = 0.0_r8 ! Reset global sum each step
+    if (redirect_negative_qgwl_flag) then
+        local_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
+         do nr = rtmCTL%begr, rtmCTL%endr
+            if (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then
+                  local_qgwl_sum = local_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
+                  TRunoff%qgwl(nr, nt_nliq) = 0.0_r8 ! Negative part is removed for global redistribution
+            else
+                  TRunoff%qgwl(nr, nt_nliq) = rtmCTL%qgwl(nr, nt_nliq) ! Positive part goes to local routing
+            endif
+            ! Handle other tracers for qgwl if necessary - assuming qgwl for other tracers
+            ! should follow the original rtmCTL input if not the liquid one being modified.
+            do nt = 1, nt_rtm
+                  if (nt /= nt_nliq) then
+                     TRunoff%qgwl(nr, nt) = rtmCTL%qgwl(nr, nt) ! Other tracers pass through
+                  endif
+            enddo
+            ! If qgwl for nt_nliq was positive, it's already set above.
+            ! If qgwl for nt_nliq was negative, it was zeroed out for nt_nliq.
+         enddo
        
-        call MPI_Allreduce(local_qgwl_sum, global_net_qgwl, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+        call MPI_Allreduce(local_qgwl_sum, global_net_negative_qgwl, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
         if (ier /= MPI_SUCCESS) then
-            if (masterproc) write(iulog,*) trim(subname),' ERROR in MPI_Allreduce for global_net_qgwl, ier=',ier
-            call shr_sys_abort(trim(subname)//' MPI_Allreduce error for global_net_qgwl')
+            if (masterproc) write(iulog,*) trim(subname),' ERROR in MPI_Allreduce for global_net_negative_qgwl, ier=',ier
+            call shr_sys_abort(trim(subname)//' MPI_Allreduce error for global_net_negative_qgwl')
         endif
         
         if (masterproc) then
-            write(iulog,'(A,ES15.6)') trim(subname)//' Global Total QGWL this step: ', global_net_qgwl 
+            write(iulog,'(A,ES15.6)') trim(subname)//' Global negative sum of Qgwl this step: ', global_net_negative_qgwl 
         endif
     else
         ! If flag is false, ensure TRunoff gets the qgwl from rtmCTL for routing
@@ -2902,12 +2912,12 @@ contains
     enddo
     enddo
 
-   ! Collect outlet discharge, Rank, Redistribute global_net_qgwl, Update discharge map ---
+   ! Collect outlet discharge, Rank, Redistribute global_net_negative_qgwl, Update discharge map ---
    allocate(qgwl_correction_local(rtmCTL%begr:rtmCTL%endr)) ! Moved allocation here
    qgwl_correction_local = 0.0_r8                          ! Initialize
 
-   if (redirect_total_qgwl_flag) then ! Check the main flag first
-      if (global_net_qgwl /= 0.0_r8) then ! Only proceed if there's some net qgwl to redistribute (can be pos or neg)
+   if (redirect_negative_qgwl_flag) then ! Check the main flag first
+      if (global_net_negative_qgwl < 0.0_r8) then ! Only proceed if there's some net qgwl to redistribute (can be pos or neg)
          call t_startf('mosartr_qgwl_redir_dist')
 
          ! Identify local outlets and their current discharges
@@ -2994,7 +3004,7 @@ contains
                      block
                            real(r8) :: qgwl_to_discharge_ratio_percent
                            
-                           qgwl_to_discharge_ratio_percent = (global_net_qgwl / sum_discharge_top_n) * 100.0_r8
+                           qgwl_to_discharge_ratio_percent = (global_net_negative_qgwl / sum_discharge_top_n) * 100.0_r8
                            
                            ! Print the ratio
                            write(iulog, *) trim(subname), &
@@ -3030,7 +3040,7 @@ contains
                      qgwl_correction_values = 0.0_r8
                      do i = 1, current_top_n_count
                         qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
-                        qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_qgwl
+                        qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_negative_qgwl
                      enddo
                   else
                   write(iulog, '(A)') trim(subname), &
@@ -3041,12 +3051,12 @@ contains
                      if (sum_discharge_top_n > 1.0e-9_r8) then ! Avoid division by zero
                         do i = 1, current_top_n_count
                               qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
-                              qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_qgwl
+                              qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_negative_qgwl
                         enddo
                      else ! If sum of top N discharge is zero (or tiny), distribute equally (or handle as error/no distribution)
                         do i = 1, current_top_n_count
                               qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
-                              qgwl_correction_values(i) = global_net_qgwl / real(current_top_n_count, kind=r8)
+                              qgwl_correction_values(i) = global_net_negative_qgwl / real(current_top_n_count, kind=r8)
                         enddo
                      endif
                   endif
@@ -3086,8 +3096,8 @@ contains
          if (allocated(displs)) deallocate(displs)
 
          call t_stopf('mosartr_qgwl_redir_dist')
-      endif ! global_net_qgwl /= 0.0_r8 (or just global_net_qgwl condition removed as per your last request)
-   endif ! redirect_total_qgwl_flag
+      endif ! global_net_negative_qgwl /= 0.0_r8 (or just global_net_negative_qgwl condition removed as per your last request)
+   endif ! redirect_negative_qgwl_flag
 
 
    ! This loop should now use the qgwl_correction_local array
@@ -3105,7 +3115,7 @@ contains
          rtmCTL%runoffocn(nr,nt) = rtmCTL%runoff(nr,nt) ! Routed component
 
          ! Apply the distributed global qgwl correction ONLY to liquid tracer at target outlets
-         if (redirect_total_qgwl_flag .and. nt == nt_nliq) then
+         if (redirect_negative_qgwl_flag .and. nt == nt_nliq) then
             rtmCTL%runoffocn(nr,nt) = rtmCTL%runoffocn(nr,nt) + qgwl_correction_local(nr)
          endif
          rtmCTL%runofftot(nr,nt) = rtmCTL%runofftot(nr,nt) + rtmCTL%runoffocn(nr,nt) ! Add potentially corrected routed flow
