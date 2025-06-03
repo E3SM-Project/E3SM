@@ -21,6 +21,12 @@
 #include "ekat/std_meta/ekat_std_any.hpp"
 #include "ekat/logging/ekat_logger.hpp"
 
+#ifdef EAMXX_HAS_PYTHON
+#include <Python.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#endif
+
 #include <memory>
 #include <string>
 #include <set>
@@ -111,7 +117,7 @@ public:
   // TODO: should we check that initialize has been called, when calling run/finalize?
   void initialize (const TimeStamp& t0, const RunType run_type);
   void run (const double dt);
-  void finalize   (/* what inputs? */);
+  void finalize ();
 
   // Return the MPI communicator
   const ekat::Comm& get_comm () const { return m_comm; }
@@ -618,6 +624,13 @@ protected:
   std::list<FieldRequest>   m_computed_field_requests;
   std::list<GroupRequest>   m_required_group_requests;
   std::list<GroupRequest>   m_computed_group_requests;
+
+#ifdef EAMXX_HAS_PYTHON
+  PyObject* m_py_module = nullptr;
+
+  strmap_t<strmap_t<pybind11::array>> m_py_fields_dev;
+  strmap_t<strmap_t<pybind11::array>> m_py_fields_host;
+#endif
 };
 
 // ================= IMPLEMENTATION ================== //
