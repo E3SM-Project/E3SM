@@ -85,15 +85,21 @@ void PhysicsFunctions<DeviceT>::calculate_vertical_velocity(const MemberType& te
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT PhysicsFunctions<DeviceT>::exner_function(const ScalarT& pressure)
+ScalarT PhysicsFunctions<DeviceT>::exner_function(const ScalarT& pressure, const ScalarT* p0_override)
 {
   using C = scream::physics::Constants<Real>;
 
+  ScalarT p0_val;
   static constexpr auto p0 = C::P0;
+  if (p0_override) {
+    p0_val = *p0_override;
+  } else {
+    p0_val = p0;
+  }
   static constexpr auto rd = C::RD;
   static constexpr auto inv_cp = C::INV_CP;
 
-  return pow( pressure/p0, rd*inv_cp );
+  return pow( pressure/p0_val, rd*inv_cp );
 }
 
 template<typename DeviceT>
@@ -101,20 +107,21 @@ template<typename ScalarT, typename InputProviderP>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::exner_function(const MemberType& team,
                                                const InputProviderP& pressure,
-                                               const view_1d<ScalarT>& exner)
+                                               const view_1d<ScalarT>& exner,
+                                               const ScalarT* p0_override)
 {
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team,exner.extent(0)),
                        [&] (const int k) {
-    exner(k) = exner_function(pressure(k));
+    exner(k) = exner_function(pressure(k), p0_override);
   });
 }
 
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT PhysicsFunctions<DeviceT>::calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure)
+ScalarT PhysicsFunctions<DeviceT>::calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure, const ScalarT* p0_override)
 {
-  return temperature/exner_function(pressure);
+  return temperature / exner_function(pressure, p0_override);
 }
 
 template<typename DeviceT>
@@ -133,11 +140,12 @@ KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_theta_from_T(const MemberType& team,
                                                        const InputProviderT& temperature,
                                                        const InputProviderP& pressure,
-                                                       const view_1d<ScalarT>& theta)
+                                                       const view_1d<ScalarT>& theta,
+                                                       const ScalarT* p0_override)
 {
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team,theta.extent(0)),
                        [&] (const int k) {
-    theta(k) = calculate_theta_from_T(temperature(k),pressure(k));
+    theta(k) = calculate_theta_from_T(temperature(k),pressure(k), p0_override);
   });
 }
 
@@ -159,9 +167,9 @@ void PhysicsFunctions<DeviceT>::calculate_thetal_from_theta(const MemberType& te
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
-ScalarT PhysicsFunctions<DeviceT>::calculate_T_from_theta(const ScalarT& theta, const ScalarT& pressure)
+ScalarT PhysicsFunctions<DeviceT>::calculate_T_from_theta(const ScalarT& theta, const ScalarT& pressure, const ScalarT* p0_override)
 {
-  return theta*exner_function(pressure);
+  return theta*exner_function(pressure, p0_override);
 }
 
 template<typename DeviceT>
@@ -170,11 +178,12 @@ KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_T_from_theta(const MemberType& team,
                                                        const InputProviderT& theta,
                                                        const InputProviderP& pressure,
-                                                       const view_1d<ScalarT>& temperature)
+                                                       const view_1d<ScalarT>& temperature,
+                                                       const ScalarT* p0_override)
 {
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team,temperature.extent(0)),
                        [&] (const int k) {
-    temperature(k) = calculate_T_from_theta(theta(k),pressure(k));
+    temperature(k) = calculate_T_from_theta(theta(k),pressure(k), p0_override);
   });
 }
 

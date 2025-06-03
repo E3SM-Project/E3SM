@@ -361,7 +361,7 @@ void test_exports(const FieldManager& fm,
     const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(nlevs-1),z_mid_i(nlevs-1));
 
     Sa_z(i)       = z_mid_i(nlevs-1);
-    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), p_mid_i(nlevs-1));
+    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), p_mid_i(nlevs-1), &p_int_i(nlevs));
     Sa_dens(i)    = PF::calculate_density(pseudo_density_i(nlevs-1), dz_i(nlevs-1));
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(nlevs), phis(i));
 

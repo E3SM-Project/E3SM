@@ -80,7 +80,7 @@ struct PhysicsFunctions
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT exner_function(const ScalarT& pressure);
+  static ScalarT exner_function(const ScalarT& pressure, const ScalarT* p0_override = nullptr);
 
   //-----------------------------------------------------------------------------------------------//
   // Converts temperature to potential temperature using Exners function:
@@ -92,7 +92,8 @@ struct PhysicsFunctions
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure);
+  static ScalarT calculate_theta_from_T(const ScalarT& temperature, const ScalarT& pressure, 
+                                        const ScalarT* p0_override = nullptr);
 
   //-----------------------------------------------------------------------------------------------//
   // Converts potential temperature to liquid potental temperature:
@@ -117,7 +118,8 @@ struct PhysicsFunctions
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_T_from_theta(const ScalarT& theta, const ScalarT& pressure);
+  static ScalarT calculate_T_from_theta(const ScalarT& theta, const ScalarT& pressure, 
+                                        const ScalarT* p0_override = nullptr);
 
   //-----------------------------------------------------------------------------------------------//
   // Compute temperature from virtual temperature
@@ -396,14 +398,16 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static void exner_function (const MemberType& team,
                               const InputProviderP& pressure,
-                              const view_1d<ScalarT>& exner);
+                              const view_1d<ScalarT>& exner,
+                              const ScalarT* p0_override = nullptr);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderP>
   KOKKOS_INLINE_FUNCTION
   static void calculate_theta_from_T (const MemberType& team,
                                       const InputProviderT& temperature,
                                       const InputProviderP& pressure,
-                                      const view_1d<ScalarT>& theta);
+                                      const view_1d<ScalarT>& theta,
+                                      const ScalarT* p0_override = nullptr);
 
   template<typename ScalarT, typename InputProviderTheta, typename InputProviderT, typename InputProviderQ>
   KOKKOS_INLINE_FUNCTION
@@ -417,7 +421,8 @@ struct PhysicsFunctions
   static void calculate_T_from_theta (const MemberType& team,
                                       const InputProviderT& theta,
                                       const InputProviderP& pressure,
-                                      const view_1d<ScalarT>& temperature);
+                                      const view_1d<ScalarT>& temperature,
+                                      const ScalarT* p0_override = nullptr);
 
   template<typename ScalarT, typename InputProviderT, typename InputProviderQ>
   KOKKOS_INLINE_FUNCTION
