@@ -26,4 +26,7 @@ grids_manager:
 initial_conditions:
   cldfrac_liq: 0.0
   qi: 0.0
+
+scorpio:
+  output_yaml_files: [output_${POSTFIX}.yaml]
 ...

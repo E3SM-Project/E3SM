@@ -78,15 +78,62 @@ void CldFraction::run_impl (const double /* dt */)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio.
-  auto qi   = get_field_in("qi").get_view<const Pack**>();
-  auto liq_cld_frac = get_field_in("cldfrac_liq").get_view<const Pack**>();
-  auto ice_cld_frac = get_field_out("cldfrac_ice").get_view<Pack**>();
-  auto tot_cld_frac = get_field_out("cldfrac_tot").get_view<Pack**>();
-  auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis").get_view<Pack**>();
-  auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis").get_view<Pack**>();
+  auto qi   = get_field_in("qi");
+  auto liq_cld_frac = get_field_in("cldfrac_liq");
+  auto ice_cld_frac = get_field_out("cldfrac_ice");
+  auto tot_cld_frac = get_field_out("cldfrac_tot");
+  auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis");
+  auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module!=nullptr) {
+    // For now, we run only on CPU
+    const auto& py_fields = m_py_fields_host.at("physics");
 
-  CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
-    qi,liq_cld_frac,ice_cld_frac,tot_cld_frac,ice_cld_frac_4out,tot_cld_frac_4out);
+    auto py_qi                = py_fields.at("qi");
+    auto py_liq_cld_frac      = py_fields.at("cldfrac_liq");
+    auto py_ice_cld_frac      = py_fields.at("cldfrac_ice");
+    auto py_tot_cld_frac      = py_fields.at("cldfrac_tot");
+    auto py_ice_cld_frac_4out = py_fields.at("cldfrac_ice_for_analysis");
+    auto py_tot_cld_frac_4out = py_fields.at("cldfrac_tot_for_analysis");
+
+    PyObject* pArgs = PyTuple_Pack(6,
+        qi,
+        liq_cld_frac,
+        ice_cld_frac,
+        tot_cld_frac,
+        ice_cld_frac_4out,
+        tot_cld_frac_4out);
+    PyObject* pFunc = PyObject_GetAttrString(m_py_module, "main");
+    if (pFunc && PyCallable_Check(pFunc)) {
+      PyObject_CallObject(pFunc, pArgs);
+    } else {
+      // Handle the error: function not found or not callable
+      if (PyErr_Occurred()) {
+        PyErr_Print();
+      }
+    }
+    Py_XDECREF(pFunc);
+    Py_DECREF(pArgs); // Decrease reference count of the arguments
+
+    qi.sync_to_dev();
+    liq_cld_frac.sync_to_dev();
+    ice_cld_frac.sync_to_dev();
+    tot_cld_frac.sync_to_dev();
+    ice_cld_frac_4out.sync_to_dev();
+    tot_cld_frac_4out.sync_to_dev();
+  } else
+#endif
+  {
+    auto qi_v                = qi.get_view<const Pack**>();
+    auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
+    auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
+    auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
+    auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+    auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+
+    CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
+      qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+  }
 }
 
 // =========================================================================================
