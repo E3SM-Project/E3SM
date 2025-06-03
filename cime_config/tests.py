@@ -148,6 +148,8 @@ _TESTS = {
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
+            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             )
         },
 
@@ -300,10 +302,6 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-freshwater_tracers",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             "ERS_Ld5_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
-            # OCN/GLC 3d TF coupling GIS test:
-            "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
-            # OCN/GLC 3d TF coupling AIS test:
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             "SMS_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.mpaso-frazil_ice_porosity",
             )
         },
