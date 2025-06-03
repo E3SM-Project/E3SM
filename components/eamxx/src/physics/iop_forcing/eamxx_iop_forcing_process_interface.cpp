@@ -194,10 +194,10 @@ advance_iop_subsidence(const MemberType& team,
   auto s_u         = ekat::scalarize(u);
   auto s_v         = ekat::scalarize(v);
   auto s_T         = ekat::scalarize(T);
-  auto s_Q         = ekat::scalarize(Q);  // Flattened as (n_q_tracers * nlevs)
+  auto s_Q         = ekat::scalarize(Q);
 
-  const Real* x_ptr     = s_ref_p_mid.data();  // now properly const
-  const Real* omega_ptr = s_omega.data();      // now properly const
+  const Real* x_ptr     = s_ref_p_mid.data();
+  const Real* omega_ptr = s_omega.data();
   Real* u_ptr           = s_u.data();
   Real* v_ptr           = s_v.data();
   Real* T_ptr           = s_T.data();
@@ -207,6 +207,10 @@ advance_iop_subsidence(const MemberType& team,
     const Real p_ref   = x_ptr[k];
     const Real omega_k = omega_ptr[k];
     const Real p_dep   = p_ref - dt * omega_k;
+
+    // Note that I know I should probably be using ekat's linear interp
+    //  routine but I couldn't figure out for the life of me how to interface
+    //  with this without getting an onslaught of compile issues.  HELP!?
 
     // Interpolate u, v, T at departure level
     u_ptr[k] = linear_interp_1d(x_ptr, u_ptr, nlevs, p_dep);
