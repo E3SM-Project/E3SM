@@ -467,7 +467,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
-void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
+void RRTMGPRadiation::initialize_impl(const RunType run_type) {
   using PC = scream::physics::Constants<Real>;
 
   // Determine orbital year. If orbital_year is negative, use current year
@@ -547,6 +547,9 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Ensure rad_heating_pdel is recognized as initialized by the driver
   auto& rad_heating = get_internal_field("rad_heating_pdel");
   rad_heating.get_header().get_tracking().update_time_stamp(start_of_step_ts());
+
+  m_force_run_on_next_step = run_type==RunType::Initial or
+    m_params.get("force_run_after_restart",false);
 }
 
 // =========================================================================================
@@ -654,7 +657,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
   // Are we going to update fluxes and heating this step?
   auto ts = end_of_step_ts();
-  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
+  auto update_rad = m_force_run_on_next_step or scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
@@ -1226,6 +1229,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
     });
   }
 
+  m_force_run_on_next_step = false;
 }
 // =========================================================================================
 

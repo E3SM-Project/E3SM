@@ -411,12 +411,12 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux_k") {
 }
 
 TEST_CASE("rrtmgp_test_radiation_do_k") {
-  // Rad runs at step 1, as well as whenever step is a multiple of freq
+  // Rad runs whenever step is a multiple of freq
+  // NOTE: the rrtmgp process class handles logic for running on 1st step
   for (int istep : {1,2,3,4,5,6}) {
     for (int rad_freq : {1,2,3}) {
       bool divides = istep%rad_freq == 0;
-      bool first = istep==1;
-      REQUIRE( scream::rrtmgp::radiation_do(rad_freq,istep)== (first  or divides) );
+      REQUIRE( scream::rrtmgp::radiation_do(rad_freq,istep)== divides );
     }
   }
 }

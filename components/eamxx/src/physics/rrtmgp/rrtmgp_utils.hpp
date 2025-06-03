@@ -45,7 +45,7 @@ inline bool radiation_do(const int rad_freq, const int nstep) {
   if (rad_freq == 0) {
     return false;
   } else {
-    return nstep == 1 or nstep % rad_freq == 0;
+    return nstep % rad_freq == 0;
   }
 }
 
