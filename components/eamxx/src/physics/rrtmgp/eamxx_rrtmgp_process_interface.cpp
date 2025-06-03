@@ -237,24 +237,19 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  if (m_rad_freq_in_steps>1) {
-    // We need to ensure that these fields are added to the RESTART group,
-    // since the cpl will need them at every step, and rrtmgp may not run
-    // the 1st step after restart
-    add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name, "RESTART");
-    add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name, "RESTART");
-    add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name, "RESTART");
-    add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name, "RESTART");
-    add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name, "RESTART");
-    add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name, "RESTART");
-  } else {
-    add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name);
-    add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name);
-    add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name);
-    add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name);
-    add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
-    add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
-  }
+
+  // We need to ensure that these fields are added to the RESTART group,
+  // since the cpl will need them at every step, and rrtmgp may not run
+  // the 1st step after restart (depending on rad freq).
+  // NOTE: technically, we know rad freq, so we *could* avoid adding them
+  //       to the rest file if rad_freq=1. But a) that is not common at high
+  //       res anyways, and b) that could prevent changing rad_freq upon restart
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name, "RESTART");
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
