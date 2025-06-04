@@ -29,7 +29,7 @@ struct GwInit : public PhysicsTestData {
 
   GwInit(Int pver_, Int pgwv_, Real dc_, bool orographic_only_, bool do_molec_diff_, bool tau_0_ubc_, Int nbot_molec_, Int ktop_, Int kbotbg_, Real fcrit2_, Real kwv_) :
     PhysicsTestData({
-      {pgwv_ * 2},
+      {pgwv_*2 + 1},
       {pver_ + 1}
     },
     {
@@ -69,9 +69,9 @@ struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
     PhysicsTestData({
       {ncol_},
       {ncol_, init_.pver},
-      {ncol_, 2*init_.pgwv},
-      {ncol_, 2*init_.pgwv, init_.pver + 1},
-      {ncol_, init_.pver, 2*ngwv_},
+      {ncol_, 2*init_.pgwv + 1},
+      {ncol_, 2*init_.pgwv + 1, init_.pver + 1},
+      {ncol_, init_.pver, 2*ngwv_ + 1},
       {ncol_}
     },
     {
@@ -160,9 +160,9 @@ struct GwdComputeStressProfilesAndDiffusivitiesData : public PhysicsTestData {
   GwdComputeStressProfilesAndDiffusivitiesData(Int ncol_, Int ngwv_, GwInit init_) :
     PhysicsTestData({
       {ncol_, init_.pver + 1},
-      {ncol_, init_.pgwv*2},
+      {ncol_, init_.pgwv*2 + 1},
       {ncol_, init_.pver},
-      {ncol_, init_.pgwv*2, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
       {ncol_}
     },
     {
@@ -192,9 +192,9 @@ struct GwdProjectTauData : public PhysicsTestData {
 
   GwdProjectTauData(Int ncol_, Int ngwv_, GwInit init_) :
     PhysicsTestData({
-      {ncol_, init_.pgwv*2, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
       {ncol_, init_.pver + 1},
-      {ncol_, init_.pgwv*2},
+      {ncol_, init_.pgwv*2 + 1},
       {ncol_},
       {ncol_, init_.pver + 1, 4},
       {ncol_}
@@ -230,8 +230,8 @@ struct GwdPrecalcRhoiData : public PhysicsTestData {
     PhysicsTestData({
       {ncol_, init_.pver},
       {ncol_, init_.pver + 1},
-      {ncol_, init_.pver, ngwv_*2},
-      {ncol_, init_.pgwv*2},
+      {ncol_, init_.pver, ngwv_*2 + 1},
+      {ncol_, init_.pgwv*2 + 1},
       {ncol_, init_.pver, pcnst_},
       {ncol_}
     },
@@ -271,11 +271,11 @@ struct GwDragProfData : public PhysicsTestData {
       {ncol_},
       {ncol_, init_.pver},
       {ncol_, init_.pver + 1},
-      {ncol_, init_.pgwv*2},
+      {ncol_, init_.pgwv*2 + 1},
       {ncol_, init_.pver, pcnst_},
-      {ncol_, init_.pgwv*2, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
       {ncol_, init_.pver + 1, 4},
-      {ncol_, init_.pver, ngwv_*2},
+      {ncol_, init_.pver, ngwv_*2 + 1},
       {ncol_}
     },
     {
@@ -352,7 +352,7 @@ struct GwFrontGwSourcesData : public PhysicsTestData {
   GwFrontGwSourcesData(Int ncol_, Int ngwv_, Int kbot_, GwFrontInitData init_) :
     PhysicsTestData({
       {ncol_, init_.init.pver},
-      {ncol_, init_.init.pgwv*2, init_.init.pver}
+      {ncol_, init_.init.pgwv*2 + 1, init_.init.pver + 1}
     },
     {
       {&frontgf},
@@ -377,10 +377,10 @@ struct GwCmSrcData : public PhysicsTestData {
   GwCmSrcData(Int ncol_, Int ngwv_, Int kbot_, GwFrontInitData init_) :
     PhysicsTestData({
       {ncol_, init_.init.pver},
-      {ncol_, init_.init.pgwv*2, init_.init.pver + 1},
+      {ncol_, init_.init.pgwv*2 + 1, init_.init.pver + 1},
       {ncol_, init_.init.pver + 1},
       {ncol_},
-      {ncol_, init_.init.pgwv*2},
+      {ncol_, init_.init.pgwv*2 + 1},
       {ncol_}
     },
     {

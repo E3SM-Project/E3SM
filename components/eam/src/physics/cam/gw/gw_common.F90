@@ -865,7 +865,6 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   !------------------------------------------------------------------------
 
   ! Initialize gravity wave drag tendencies to zero.
-
   utgw = 0._r8
   vtgw = 0._r8
   taucd = 0._r8
