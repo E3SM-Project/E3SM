@@ -1,10 +1,11 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 
-#include <memory>
-#include <string>
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_group.hpp"
+
+#include <memory>
+#include <string>
 
 namespace scream {
 

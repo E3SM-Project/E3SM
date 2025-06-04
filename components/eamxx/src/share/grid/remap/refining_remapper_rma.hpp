@@ -6,7 +6,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "eamxx_config.h"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 #include <mpi.h>
 

@@ -5,8 +5,8 @@
 #include "share/util/eamxx_combine_ops.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/std_meta/ekat_std_type_traits.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_std_type_traits.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <memory>   // For std::shared_ptr
 #include <string>

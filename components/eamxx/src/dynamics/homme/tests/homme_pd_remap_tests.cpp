@@ -13,9 +13,9 @@
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/homme_grids_manager.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <memory>
 #include <random>

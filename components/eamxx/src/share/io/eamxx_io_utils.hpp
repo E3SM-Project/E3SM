@@ -6,8 +6,8 @@
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/grid/abstract_grid.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_comm.hpp>
 
 #include <string>
 #include <memory>

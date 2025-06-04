@@ -1,10 +1,12 @@
 #include "eamxx_ml_correction_process_interface.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
-#include "share/field/field_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/field/field_utils.hpp"
+
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 // =========================================================================================
@@ -164,13 +166,13 @@ void MLCorrection::run_impl(const double dt) {
     using PC  = scream::physics::Constants<Real>;
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;
-    using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+    using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
     const auto &pseudo_density       = get_field_in("pseudo_density").get_view<const Real**>();
     const auto &precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real *>();
     const auto &precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real *>();
     constexpr Real g = PC::gravit;
     const auto num_levs = m_num_levs;
-    const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
+    const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
 
     const auto &qv_told = qv_in.get_view<const Real **>();
     const auto &qv_tnew = get_field_in("qv").get_view<const Real **>();

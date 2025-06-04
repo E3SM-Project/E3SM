@@ -5,8 +5,6 @@
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
-#include "ekat/util/ekat_test_utils.hpp"
-
 namespace {
 
 TEST_CASE("field", "") {
