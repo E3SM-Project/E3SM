@@ -1,5 +1,6 @@
 #include "share/io/scorpio_input.hpp"
 
+#include "share/field/field_utils.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
 #include <ekat/util/ekat_string_utils.hpp>
@@ -15,15 +16,6 @@ AtmosphereInput (const ekat::ParameterList& params,
                  const std::shared_ptr<const fm_type>& field_mgr)
 {
   init(params,field_mgr);
-}
-
-AtmosphereInput::
-AtmosphereInput (const ekat::ParameterList& params,
-                 const std::shared_ptr<const grid_type>& grid,
-                 const std::map<std::string,view_1d_host>& host_views_1d,
-                 const std::map<std::string,FieldLayout>&  layouts)
-{
-  init (params,grid,host_views_1d,layouts);
 }
 
 AtmosphereInput::
@@ -57,12 +49,7 @@ AtmosphereInput (const std::vector<std::string>& fields_names,
 AtmosphereInput::
 ~AtmosphereInput ()
 {
-  // In practice, this should always be true, but since we have a do-nothing default ctor,
-  // it is possible to create an instance without ever using it. Since finalize would
-  // attempt to close the pio file, we need to call it only if init happened.
-  if (m_inited_with_views || m_inited_with_fields) {
-    finalize();
-  }
+  finalize();
 }
 
 void AtmosphereInput::
@@ -71,10 +58,8 @@ init (const ekat::ParameterList& params,
 {
   EKAT_REQUIRE_MSG (field_mgr->get_grids_manager()->size()==1,
       "Error! AtmosphereInput expects FieldManager defined only on a single grid.\n");
-  EKAT_REQUIRE_MSG (not m_inited_with_views,
-      "Error! Input class was already inited (with user-provided views).\n");
-  EKAT_REQUIRE_MSG (not m_inited_with_fields,
-      "Error! Input class was already inited (with fields).\n");
+  EKAT_REQUIRE_MSG (not m_fields_inited,
+      "Error! Input class was already inited.\n");
 
   m_params = params;
   m_fields_names = m_params.get<decltype(m_fields_names)>("field_names");
@@ -83,53 +68,9 @@ init (const ekat::ParameterList& params,
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr);
 
-  m_inited_with_fields = true;
-
   // Init scorpio internal structures
   init_scorpio_structures ();
 }
-
-void AtmosphereInput::
-init (const ekat::ParameterList& params,
-      const std::shared_ptr<const grid_type>& grid,
-      const std::map<std::string,view_1d_host>& host_views_1d,
-      const std::map<std::string,FieldLayout>&  layouts)
-{
-  EKAT_REQUIRE_MSG (not m_inited_with_views,
-      "Error! Input class was already inited (with user-provided views).\n");
-  EKAT_REQUIRE_MSG (not m_inited_with_fields,
-      "Error! Input class was already inited (with fields).\n");
-
-  m_params = params;
-  m_filename = m_params.get<std::string>("filename");
-
-  // Set the grid associated with the input views
-  set_grid(grid);
-
-  EKAT_REQUIRE_MSG (host_views_1d.size()==layouts.size(),
-      "Error! Input host views and layouts maps has different sizes.\n"
-      "       host_views_1d size: " + std::to_string(host_views_1d.size()) + "\n"
-      "       layouts size: " + std::to_string(layouts.size()) + "\n");
-
-  m_layouts = layouts;
-  m_host_views_1d = host_views_1d;
-
-  // Loop over one of the two maps, store key in m_fields_names,
-  // and check that the two maps have the same keys
-  for (const auto& it : m_layouts) {
-    m_fields_names.push_back(it.first);
-    EKAT_REQUIRE_MSG (m_host_views_1d.count(it.first)==1,
-        "Error! Input layouts and views maps do not store the same keys.\n"
-	"    layout = " + it.first);
-  }
-
-  m_inited_with_views = true;
-
-  // Init scorpio internal structures
-  init_scorpio_structures ();
-}
-
-/* ---------------------------------------------------------- */
 
 void AtmosphereInput::
 set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
@@ -139,13 +80,11 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
   EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
 
   // If resetting a field manager we want to check that the layouts of all fields are the same.
-  if (m_field_mgr) {
-    for (auto felem : m_field_mgr->get_repo()) {
-      auto name = felem.second->name();
-      auto field_curr = m_field_mgr->get_field(name);
+  if (m_fm_from_user) {
+    for (const auto& [name, f] : m_fm_from_user->get_repo()) {
       auto field_new  = field_mgr->get_field(name);
       // Check Layouts
-      auto lay_curr   = field_curr.get_header().get_identifier().get_layout();
+      auto lay_curr   = f->get_header().get_identifier().get_layout();
       auto lay_new    = field_new.get_header().get_identifier().get_layout();
       EKAT_REQUIRE_MSG(lay_curr==lay_new,"ERROR!! AtmosphereInput::set_field_manager - setting new field manager which has different layout for field " << name <<"\n"
 		      << "    Old Layout: " << lay_curr.to_string() << "\n"
@@ -153,34 +92,35 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
     }
   }
 
-  m_field_mgr = field_mgr;
+  m_fm_from_user = field_mgr;
 
   // Store grid and fm
-  set_grid(m_field_mgr->get_grid());
+  set_grid(field_mgr->get_grid());
 
-  // Init fields specs
+  // Init fm_for_scorpio
+  m_fm_for_scorpio = std::make_shared<FieldManager>(m_io_grid,RepoState::Closed);
   for (auto const& name : m_fields_names) {
-    auto f = m_field_mgr->get_field(name);
+    auto f = m_fm_from_user->get_field(name);
     const auto& fh  = f.get_header();
     const auto& fap = fh.get_alloc_properties();
-    const auto& fid = fh.get_identifier();
-    const auto& fl  = fid.get_layout();
-
-    // Store the layout
-    m_layouts.emplace(name,fl);
 
     // If we can alias the field's host view, do it.
-    // Otherwise, create a temporary.
-    bool can_alias_field_view = fh.get_parent()==nullptr && fap.get_padding()==0;
-    if (can_alias_field_view) {
-      auto data = f.get_internal_view_data<Real,Host>();
-      m_host_views_1d[name] = view_1d_host(data,fl.size());
+    // Otherwise, create a clone.
+    bool can_alias = fh.get_parent()==nullptr && fap.get_padding()==0;
+    if (can_alias) {
+      m_fm_for_scorpio->add_field(f);
     } else {
       // We have padding, or the field is a subfield (or both).
-      // Either way, we need a temporary view.
-      m_host_views_1d[name] = view_1d_host("",fl.size());
+      // Either way, we need a temporary.
+      // NOTE: Field::clone honors the max pack size for the allocation,
+      //       which would defy one of the reason for cloning it...
+      Field copy (f.get_header().get_identifier());
+      copy.allocate_view();
+      m_fm_for_scorpio->add_field(copy);
     }
   }
+
+  m_fields_inited = true;
 }
 
 void AtmosphereInput::
@@ -192,7 +132,6 @@ set_fields (const std::vector<Field>& fields) {
     m_fields_names.push_back(f.name());
   }
   set_field_manager(fm);
-  m_inited_with_fields = true;
 }
 
 void AtmosphereInput::
@@ -245,145 +184,62 @@ void AtmosphereInput::read_variables (const int time_index)
       m_atm_logger->info("  time idx : " + std::to_string(time_index));
     }
   }
-  EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
-      "Error! Scorpio structures not inited yet. Did you forget to call 'init(..)'?\n");
+  EKAT_REQUIRE_MSG (m_fields_inited and m_scorpio_inited,
+      "Error! Internal structures not fully inited yet. Did you forget to call 'init(..)'?\n");
 
   for (auto const& name : m_fields_names) {
 
+    auto f_scorpio = m_fm_for_scorpio->get_field(name);
+    auto f_user    = m_fm_from_user->get_field(name);
+
     // Read the data
-    auto v1d = m_host_views_1d.at(name);
+    switch (f_scorpio.data_type()) {
+      case DataType::DoubleType:
+        scorpio::read_var(m_filename,name,f_scorpio.get_internal_view_data<double,Host>(),time_index);
+        break;
+      case DataType::FloatType:
+        scorpio::read_var(m_filename,name,f_scorpio.get_internal_view_data<float,Host>(),time_index);
+        break;
+      case DataType::IntType:
+        scorpio::read_var(m_filename,name,f_scorpio.get_internal_view_data<int,Host>(),time_index);
+        break;
+      default:
+        EKAT_ERROR_MSG (
+            "Error! Unsupported/unrecognized data type while reading field from file.\n"
+            " - file name : " + m_filename + "\n"
+            " - field name: " + name + "\n");
+    }
 
-    scorpio::read_var(m_filename,name,v1d.data(),time_index);
-
-    // If we have a field manager, make sure the data is correctly
-    // synced to both host and device views of the field.
-    if (m_field_mgr) {
-
-      auto f = m_field_mgr->get_field(name);
-      const auto& fh  = f.get_header();
-      const auto& fl  = fh.get_identifier().get_layout();
-      const auto& fap = fh.get_alloc_properties();
-
-      // Check if the stored 1d view is sharing the data ptr with the field
-      const bool can_alias_field_view = fh.get_parent()==nullptr && fap.get_padding()==0;
-
-      // If the 1d view is a simple reshape of the field's Host view data,
-      // then we're already done. Otherwise, we need to manually copy.
-      if (not can_alias_field_view) {
-        // Get the host view of the field properly reshaped, and deep copy
-        // from temp_view (properly reshaped as well).
-        auto rank = fl.rank();
-        auto view_1d = m_host_views_1d.at(name);
-        switch (rank) {
-          case 1:
-            {
-              // No reshape needed, simply copy
-              auto dst = f.get_view<Real*,Host>();
-              for (int i=0; i<fl.dim(0); ++i) {
-                dst(i) = view_1d(i);
-              }
-              break;
-            }
-          case 2:
-            {
-              // Reshape temp_view to a 2d view, then copy
-              auto dst = f.get_view<Real**,Host>();
-              auto src = view_Nd_host<2>(view_1d.data(),fl.dim(0),fl.dim(1));
-              for (int i=0; i<fl.dim(0); ++i) {
-                for (int j=0; j<fl.dim(1); ++j) {
-                  dst(i,j) = src(i,j);
-              }}
-              break;
-            }
-          case 3:
-            {
-              // Reshape temp_view to a 3d view, then copy
-              auto dst = f.get_view<Real***,Host>();
-              auto src = view_Nd_host<3>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2));
-              for (int i=0; i<fl.dim(0); ++i) {
-                for (int j=0; j<fl.dim(1); ++j) {
-                  for (int k=0; k<fl.dim(2); ++k) {
-                    dst(i,j,k) = src(i,j,k);
-              }}}
-              break;
-            }
-          case 4:
-            {
-              // Reshape temp_view to a 4d view, then copy
-              auto dst = f.get_view<Real****,Host>();
-              auto src = view_Nd_host<4>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3));
-              for (int i=0; i<fl.dim(0); ++i) {
-                for (int j=0; j<fl.dim(1); ++j) {
-                  for (int k=0; k<fl.dim(2); ++k) {
-                    for (int l=0; l<fl.dim(3); ++l) {
-                      dst(i,j,k,l) = src(i,j,k,l);
-              }}}}
-              break;
-            }
-          case 5:
-            {
-              // Reshape temp_view to a 5d view, then copy
-              auto dst = f.get_view<Real*****,Host>();
-              auto src = view_Nd_host<5>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4));
-              for (int i=0; i<fl.dim(0); ++i) {
-                for (int j=0; j<fl.dim(1); ++j) {
-                  for (int k=0; k<fl.dim(2); ++k) {
-                    for (int l=0; l<fl.dim(3); ++l) {
-                      for (int m=0; m<fl.dim(4); ++m) {
-                        dst(i,j,k,l,m) = src(i,j,k,l,m);
-              }}}}}
-              break;
-            }
-          case 6:
-            {
-              // Reshape temp_view to a 6d view, then copy
-              auto dst = f.get_view<Real******,Host>();
-              auto src = view_Nd_host<6>(view_1d.data(),fl.dim(0),fl.dim(1),fl.dim(2),fl.dim(3),fl.dim(4),fl.dim(5));
-              for (int i=0; i<fl.dim(0); ++i) {
-                for (int j=0; j<fl.dim(1); ++j) {
-                  for (int k=0; k<fl.dim(2); ++k) {
-                    for (int l=0; l<fl.dim(3); ++l) {
-                      for (int m=0; m<fl.dim(4); ++m) {
-                        for (int n=0; n<fl.dim(5); ++n) {
-                          dst(i,j,k,l,m,n) = src(i,j,k,l,m,n);
-              }}}}}}
-              break;
-            }
-          default:
-            EKAT_ERROR_MSG ("Error! Unexpected field rank (" + std::to_string(rank) + ").\n");
-        }
-      }
-
-      // Sync to device
-      f.sync_to_dev();
+    f_scorpio.sync_to_dev();
+    if (not f_scorpio.is_aliasing(f_user)) {
+      f_user.deep_copy(f_scorpio);
     }
   }
-  auto func_finish = std::chrono::steady_clock::now();
   if (m_atm_logger) {
+    auto func_finish = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start)/1000.0;
-    m_atm_logger->info("  Done! Elapsed time: " + std::to_string(duration.count()) +" seconds");
+    m_atm_logger->debug("  Done! Elapsed time: " + std::to_string(duration.count()) +" seconds");
   }
 }
 
 /* ---------------------------------------------------------- */
 void AtmosphereInput::finalize()
 {
-  scorpio::release_file(m_filename);
+  if (m_scorpio_inited) {
+    scorpio::release_file(m_filename);
+  }
 
-  m_field_mgr = nullptr;
-  m_io_grid   = nullptr;
+  m_fm_from_user   = nullptr;
+  m_fm_for_scorpio = nullptr;
+  m_io_grid        = nullptr;
 
-  m_host_views_1d.clear();
-  m_layouts.clear();
+  m_fields_inited  = false;
+  m_scorpio_inited = false;
+}
 
-  m_inited_with_views = false;
-  m_inited_with_fields = false;
-} // finalize
-
-/* ---------------------------------------------------------- */
 void AtmosphereInput::init_scorpio_structures()
 {
-  EKAT_REQUIRE_MSG (m_inited_with_views or m_inited_with_fields,
+  EKAT_REQUIRE_MSG (m_fields_inited,
       "Error! Cannot init scorpio structures until fields/views have been set.\n");
 
   std::string iotype_str = m_params.get<std::string>("iotype", "default");
@@ -400,8 +256,8 @@ void AtmosphereInput::init_scorpio_structures()
   }
 
   // Check variables are in the input file
-  for (auto const& name : m_fields_names) {
-    const auto& layout = m_layouts.at(name);
+  for (const auto & [name, f] : m_fm_for_scorpio->get_repo()) {
+    const auto& layout = f->get_header().get_identifier().get_layout();
 
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(layout);
@@ -442,6 +298,8 @@ void AtmosphereInput::init_scorpio_structures()
 
   // Set decompositions for the variables
   set_decompositions();
+
+  m_scorpio_inited = true;
 }
 
 /* ---------------------------------------------------------- */
@@ -478,8 +336,9 @@ void AtmosphereInput::set_decompositions()
   const auto decomp_tag  = m_io_grid->get_partitioned_dim_tag();
 
   bool has_decomposed_layouts = false;
-  for (const auto& it : m_layouts) {
-    if (it.second.has_tag(decomp_tag)) {
+  for (const auto & [name, f] : m_fm_for_scorpio->get_repo()) {
+    const auto& layout = f->get_header().get_identifier().get_layout();
+    if (layout.has_tag(decomp_tag)) {
       has_decomposed_layouts = true;
       break;
     }

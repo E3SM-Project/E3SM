@@ -190,45 +190,23 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
 void MeshFreeGridsManager::
 load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
-  using geo_view_host = AtmosphereInput::view_1d_host;
   const auto units = ekat::units::Units::nondimensional();
 
   auto lat  = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
   auto lon  = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
 
-  // Create host mirrors for reading in data
-  std::map<std::string,geo_view_host> host_views = {
-    { "lat", lat.get_view<Real*,Host>() },
-    { "lon", lon.get_view<Real*,Host>() }
-  };
-
-  // Store view layouts
-  std::map<std::string,FieldLayout> layouts = {
-    { "lat", lat.get_header().get_identifier().get_layout() },
-    { "lon", lon.get_header().get_identifier().get_layout() }
-  };
-
-  // Read lat/lon into host views
-  ekat::ParameterList lat_lon_reader_pl;
-  lat_lon_reader_pl.set("filename",filename);
-  lat_lon_reader_pl.set<std::vector<std::string>>("field_names",{"lat","lon"});
-
-  AtmosphereInput lat_lon_reader(lat_lon_reader_pl, grid, host_views, layouts);
+  AtmosphereInput lat_lon_reader(filename, grid, {lat,lon});
   lat_lon_reader.read_variables();
   lat_lon_reader.finalize();
 
-  // Sync to dev
-  lat.sync_to_dev();
-  lon.sync_to_dev();
-
 #ifndef NDEBUG
   for (auto f : {lat, lon}) {
-  auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
-  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
-      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
-  auto lon_check = std::make_shared<FieldNaNCheck>(lon,grid)->check();
-  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
-      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
+    auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
+    EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
+        "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
+    auto lon_check = std::make_shared<FieldNaNCheck>(lon,grid)->check();
+    EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
+        "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
   }
 #endif
 }
@@ -236,8 +214,6 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
 void MeshFreeGridsManager::
 load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
-  using geo_view_host = AtmosphereInput::view_1d_host;
-
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
@@ -253,29 +229,8 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   auto lev  = grid->create_geometry_data("lev",  layout_mid, mbar);
   auto ilev = grid->create_geometry_data("ilev", layout_int, mbar);
 
-  // Create host mirrors for reading in data
-  std::map<std::string,geo_view_host> host_views = {
-    { "hyam", hyam.get_view<Real*,Host>() },
-    { "hybm", hybm.get_view<Real*,Host>() },
-    { "hyai", hyai.get_view<Real*,Host>() },
-    { "hybi", hybi.get_view<Real*,Host>() }
-  };
-
-  // Store view layouts
-  using namespace ShortFieldTagsNames;
-  std::map<std::string,FieldLayout> layouts = {
-    { "hyam", hyam.get_header().get_identifier().get_layout() },
-    { "hybm", hybm.get_header().get_identifier().get_layout() },
-    { "hyai", hyai.get_header().get_identifier().get_layout() },
-    { "hybi", hybi.get_header().get_identifier().get_layout() }
-  };
-
-  // Read hyam/hybm into host views
-  ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("filename",filename);
-  vcoord_reader_pl.set<std::vector<std::string>>("field_names",{"hyam","hybm","hyai","hybi"});
-
-  AtmosphereInput vcoord_reader(vcoord_reader_pl,grid, host_views, layouts);
+  std::vector<Field> fields = {hyam,hybm,hyai,hybi};
+  AtmosphereInput vcoord_reader(filename,grid,fields);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 
@@ -298,10 +253,6 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   ilev_v(num_lev) = 0.01*ps0*(hyai_v(num_lev)+hybi_v(num_lev));
 
   // Sync to dev
-  hyam.sync_to_dev();
-  hybm.sync_to_dev();
-  hyai.sync_to_dev();
-  hybi.sync_to_dev();
   lev.sync_to_dev();
   ilev.sync_to_dev();
 

@@ -312,8 +312,6 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 
 void HommeGridsManager::
 initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
-  using view_1d_host = AtmosphereInput::view_1d_host;
-  using vos_t = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
 
   // If we put vcoords in the IC file, we open the ic file, whose name
@@ -329,11 +327,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
     filename =  m_params.get<std::string>("ic_filename");
   }
 
-  // Read vcoords into host views
-  ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("filename",filename);
-  vcoord_reader_pl.set<vos_t>("field_names",{"hyai","hybi","hyam","hybm"});
-
+  // Create vcoords fields
   auto layout_mid = dyn_grid->get_vertical_layout(true);
   auto layout_int = dyn_grid->get_vertical_layout(false);
   constexpr auto nondim = ekat::units::Units::nondimensional();
@@ -343,39 +337,19 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   auto hyam = dyn_grid->create_geometry_data("hyam",layout_mid,nondim);
   auto hybm = dyn_grid->create_geometry_data("hybm",layout_mid,nondim);
 
-  std::map<std::string,view_1d_host> host_views = {
-    { "hyai", hyai.get_view<Real*,Host>() },
-    { "hybi", hybi.get_view<Real*,Host>() },
-    { "hyam", hyam.get_view<Real*,Host>() },
-    { "hybm", hybm.get_view<Real*,Host>() }
-  };
-  std::map<std::string,FieldLayout> layouts = {
-    { "hyai", layout_int },
-    { "hybi", layout_int },
-    { "hyam", layout_mid },
-    { "hybm", layout_mid }
-  };
-
-  AtmosphereInput vcoord_reader(vcoord_reader_pl,dyn_grid,host_views,layouts);
+  std::vector<Field> fields = {hyai, hybi, hyam, hybm};
+  AtmosphereInput vcoord_reader(filename,dyn_grid,fields);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
 
-  // Sync to device
-  hyai.sync_to_dev();
-  hybi.sync_to_dev();
-  hyam.sync_to_dev();
-  hybm.sync_to_dev();
-
-  // Pass host views data to hvcoord init function
-  const auto ps0 = Homme::PhysicalConstants::p0;
-
   // Set vcoords in f90
   // NOTE: homme does the check for these arrays, so no need to do any property check here
+  const auto ps0 = Homme::PhysicalConstants::p0;
   prim_set_hvcoords_f90 (ps0,
-                         host_views["hyai"].data(),
-                         host_views["hybi"].data(),
-                         host_views["hyam"].data(),
-                         host_views["hybm"].data());
+                         hyai.get_internal_view_data<Real,Host>(),
+                         hybi.get_internal_view_data<Real,Host>(),
+                         hyam.get_internal_view_data<Real,Host>(),
+                         hybm.get_internal_view_data<Real,Host>());
 }
 
 void HommeGridsManager::
