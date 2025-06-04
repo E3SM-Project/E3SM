@@ -192,22 +192,22 @@ load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) co
 {
   const auto units = ekat::units::Units::nondimensional();
 
-  auto lat  = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
-  auto lon  = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
+  auto lat = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
+  auto lon = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
 
-  AtmosphereInput lat_lon_reader(filename, grid, {lat,lon});
+  std::vector<Field> latlon = {lat,lon};
+
+  AtmosphereInput lat_lon_reader(filename, grid, latlon);
   lat_lon_reader.read_variables();
   lat_lon_reader.finalize();
 
 #ifndef NDEBUG
-  for (auto f : {lat, lon}) {
-    auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
-    EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
-        "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
-    auto lon_check = std::make_shared<FieldNaNCheck>(lon,grid)->check();
-    EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
-        "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
-  }
+  auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
+  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
+  auto lon_check = std::make_shared<FieldNaNCheck>(lon,grid)->check();
+  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
 #endif
 }
 

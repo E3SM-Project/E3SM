@@ -57,6 +57,10 @@ public:
                    const std::shared_ptr<const grid_type>& grid,
                    const std::vector<Field>& fields,
                    const bool skip_grid_checks = false);
+  AtmosphereInput (const std::string& filename,
+                   const std::shared_ptr<const grid_type>& grid,
+                   const std::map<std::string,Field>& fields,
+                   const bool skip_grid_checks = false);
   // This constructor only sets the minimal info, deferring initialization
   // to when set_field_manager/reset_fields and reset_filename are called
   AtmosphereInput (const std::vector<std::string>& fields_names,
