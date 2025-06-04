@@ -2533,7 +2533,7 @@ f"""{decl}
     // Set up inputs
     {data_struct} baseline_data[] = {{
       // TODO
-      {scalar_comment}
+      {scalar_comments}
       {data_struct}(),
     }};
 
@@ -2572,6 +2572,7 @@ f"""{decl}
       }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
+                          scalar_comments=scalar_comments,
                           sub=sub,
                           gen_random=gen_random,
                           c2f_transpose_code=c2f_transpose_code,
