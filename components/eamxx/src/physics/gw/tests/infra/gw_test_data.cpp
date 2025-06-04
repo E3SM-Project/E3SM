@@ -49,6 +49,8 @@ void gw_cm_src_c(Int ncol, Int ngwv, Int kbot, Real* u, Real* v, Real* frontgf, 
 void gw_convect_init_c(Int maxh, Int maxuh, Real plev_src_wind, Real* mfcc_in);
 
 void gw_convect_project_winds_c(Int ncol, Real* u, Real* v, Real* xv, Real* yv, Real* ubm, Real* ubi);
+
+void gw_heating_depth_c(Int ncol, Real maxq0_conversion_factor, Real hdepth_scaling_factor, bool use_gw_convect_old, Real* zm, Real* netdt, Int* mini, Int* maxi, Real* hdepth, Real* maxq0_out, Real* maxq0);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -156,6 +158,14 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d)
   gw_convect_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_convect_project_winds_c(d.ncol, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_heating_depth(GwHeatingDepthData& d)
+{
+  gw_convect_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_heating_depth_c(d.ncol, d.maxq0_conversion_factor, d.hdepth_scaling_factor, d.use_gw_convect_old, d.zm, d.netdt, d.mini, d.maxi, d.hdepth, d.maxq0_out, d.maxq0);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

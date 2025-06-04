@@ -218,4 +218,19 @@ contains
 
     call gw_convect_project_winds(ncol, u, v, xv, yv, ubm, ubi)
   end subroutine gw_convect_project_winds_c
+
+  subroutine gw_heating_depth_c(ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0) bind(C)
+    use gw_common, only : pver
+    use gw_convect, only : gw_heating_depth
+
+    integer(kind=c_int) , value, intent(in) :: ncol
+    real(kind=c_real) , value, intent(in) :: maxq0_conversion_factor, hdepth_scaling_factor
+    logical(kind=c_bool) , value, intent(in) :: use_gw_convect_old
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: zm
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: netdt
+    integer(kind=c_int) , intent(out), dimension(ncol) :: mini, maxi
+    real(kind=c_real) , intent(out), dimension(ncol) :: hdepth, maxq0_out, maxq0
+
+    call gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0)
+  end subroutine gw_heating_depth_c
 end module gw_iso_c

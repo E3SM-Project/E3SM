@@ -295,6 +295,23 @@ struct Functions
     const uview_1d<Spack>& yv,
     const uview_1d<Spack>& ubm,
     const uview_1d<Spack>& ubi);
+
+  KOKKOS_FUNCTION
+  static void gw_heating_depth(
+    // Inputs
+    const Int& pver,
+    const Int& ncol,
+    const Spack& maxq0_conversion_factor,
+    const Spack& hdepth_scaling_factor,
+    const bool& use_gw_convect_old,
+    const uview_1d<const Spack>& zm,
+    const uview_1d<const Spack>& netdt,
+    // Outputs
+    const uview_1d<Int>& mini,
+    const uview_1d<Int>& maxi,
+    const uview_1d<Spack>& hdepth,
+    const uview_1d<Spack>& maxq0_out,
+    const uview_1d<Spack>& maxq0);
 }; // struct Functions
 
 } // namespace gw
@@ -315,5 +332,6 @@ struct Functions
 # include "impl/gw_gw_front_gw_sources_impl.hpp"
 # include "impl/gw_gw_cm_src_impl.hpp"
 # include "impl/gw_gw_convect_project_winds_impl.hpp"
+# include "impl/gw_gw_heating_depth_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

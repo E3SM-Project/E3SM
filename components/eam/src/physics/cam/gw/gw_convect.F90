@@ -19,6 +19,7 @@ public :: gw_convect_init
 public :: gw_beres_src
 ! Only public for bridging/testing
 public :: gw_convect_project_winds
+public :: gw_heating_depth
 
 ! Dimension for heating depth.
 integer :: maxh
