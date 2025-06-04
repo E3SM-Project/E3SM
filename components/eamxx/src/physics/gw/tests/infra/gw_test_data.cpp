@@ -46,6 +46,8 @@ void gw_front_gw_sources_c(Int ncol, Int ngwv, Int kbot, Real* frontgf, Real* ta
 
 void gw_cm_src_c(Int ncol, Int ngwv, Int kbot, Real* u, Real* v, Real* frontgf, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c);
 
+void gw_convect_init_c(Int maxh, Int maxuh, Real plev_src_wind, Real* mfcc_in);
+
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -137,6 +139,14 @@ void gw_cm_src(GwCmSrcData& d)
   gw_front_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_cm_src_c(d.ncol, d.ngwv, d.kbot, d.u, d.v, d.frontgf, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_convect_init(GwConvectInitData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_convect_init_c(d.maxh, d.maxuh, d.plev_src_wind, d.mfcc_in);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

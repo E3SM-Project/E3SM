@@ -192,4 +192,17 @@ contains
 
     call gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, src_level, tend_level, tau, ubm, ubi, xv, yv, c)
   end subroutine gw_cm_src_c
+
+  subroutine gw_convect_init_c(maxh, maxuh, plev_src_wind, mfcc_in) bind(C)
+    use gw_common, only : pgwv
+    use gw_convect, only : gw_convect_init
+
+    integer(kind=c_int) , value, intent(in) :: maxh, maxuh
+    real(kind=c_real) , value, intent(in) :: plev_src_wind
+    real(kind=c_real) , intent(in), dimension(maxh, -maxuh:maxuh, -pgwv:pgwv) :: mfcc_in
+
+    character(len=128) :: errstring
+
+    call gw_convect_init(plev_src_wind, mfcc_in, errstring)
+  end subroutine gw_convect_init_c
 end module gw_iso_c
