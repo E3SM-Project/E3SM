@@ -243,6 +243,9 @@ void AtmosphereOutput::restart (const std::string& filename)
   for (const auto& [name,f_ptr] : fm->get_repo()) {
     fields.push_back(*f_ptr);
   }
+  for (const auto& f : m_avg_counts) {
+    fields.push_back(f);
+  }
 
   AtmosphereInput hist_restart (filename, fm->get_grid(), fields);
   hist_restart.read_variables();
@@ -722,44 +725,43 @@ register_variables(const std::string& filename,
       }
     }
   }
-  // Now register the average count variables
-  if (m_track_avg_cnt) {
-    std::string unitless = "unitless";
-    for (const auto& f : m_avg_counts) {
-      const auto& name = f.name();
-      const auto& dimnames = m_vars_dims.at(name);
-      if (mode==scorpio::FileMode::Append) {
-        // Similar to the regular fields above, check that the var is in the file, and has the right properties
-        EKAT_REQUIRE_MSG (scorpio::has_var(filename,name),
-            "Error! Cannot append, due to variable missing from the file.\n"
-            "  - filename : " + filename + "\n"
-            "  - varname  : " + name + "\n");
-        const auto& var = scorpio::get_var(filename,name);
-        EKAT_REQUIRE_MSG (var.dim_names()==dimnames,
-            "Error! Cannot append, due to variable dimensions mismatch.\n"
-            "  - filename : " + filename + "\n"
-            "  - varname  : " + name + "\n"
-            "  - var dims : " + ekat::join(dimnames,",") + "\n"
-            "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
-        EKAT_REQUIRE_MSG (var.units==unitless,
-            "Error! Cannot append, due to variable units mismatch.\n"
-            "  - filename : " + filename + "\n"
-            "  - varname  : " + name + "\n"
-            "  - var units: " + unitless + "\n"
-            "  - var units from file: " + var.units + "\n");
-        EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
-            "Error! Cannot append, due to time dependency mismatch.\n"
-            "  - filename : " + filename + "\n"
-            "  - varname  : " + name + "\n"
-            "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
-            "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
-      } else {
-        // Note, unlike with regular output variables, for the average counting
-        // variables we don't need to add all of the extra metadata.  So we simply
-        // define the variable.
-        scorpio::define_var(filename, name, unitless, dimnames,
-                            "real",fp_precision, m_add_time_dim);
-      }
+
+  // Now register the average count variables (if any)
+  std::string unitless = "unitless";
+  for (const auto& f : m_avg_counts) {
+    const auto& name = f.name();
+    const auto& dimnames = m_vars_dims.at(name);
+    if (mode==scorpio::FileMode::Append) {
+      // Similar to the regular fields above, check that the var is in the file, and has the right properties
+      EKAT_REQUIRE_MSG (scorpio::has_var(filename,name),
+          "Error! Cannot append, due to variable missing from the file.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n");
+      const auto& var = scorpio::get_var(filename,name);
+      EKAT_REQUIRE_MSG (var.dim_names()==dimnames,
+          "Error! Cannot append, due to variable dimensions mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n"
+          "  - var dims : " + ekat::join(dimnames,",") + "\n"
+          "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
+      EKAT_REQUIRE_MSG (var.units==unitless,
+          "Error! Cannot append, due to variable units mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n"
+          "  - var units: " + unitless + "\n"
+          "  - var units from file: " + var.units + "\n");
+      EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
+          "Error! Cannot append, due to time dependency mismatch.\n"
+          "  - filename : " + filename + "\n"
+          "  - varname  : " + name + "\n"
+          "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
+          "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
+    } else {
+      // Note, unlike with regular output variables, for the average counting
+      // variables we don't need to add all of the extra metadata.  So we simply
+      // define the variable.
+      scorpio::define_var(filename, name, unitless, dimnames,
+                          "real",fp_precision, m_add_time_dim);
     }
   }
 } // register_variables
