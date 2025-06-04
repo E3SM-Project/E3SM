@@ -19,6 +19,9 @@ public:
     return s;
   }
 
+  // These are needed in order to be able to import py modules from non-standard paths
+  // Even the current path (which is usually automatically added by the py interpreted)
+  // has to be manually added when calling py from C++.
   void add_path (const std::string& path);
   void add_curr_path ();
 
@@ -32,7 +35,6 @@ private:
   // If when we call initialize the 1st time (num_customers=0) we see
   // that py is already inited, we ASSUME its init/finalize is EXTERNALLY handled
   bool should_finalize = false;
-
 };
 
 } // namespace scream
