@@ -205,4 +205,17 @@ contains
 
     call gw_convect_init(plev_src_wind, mfcc_in, errstring)
   end subroutine gw_convect_init_c
+
+  subroutine gw_convect_project_winds_c(ncol, u, v, xv, yv, ubm, ubi) bind(C)
+    use gw_common, only : pver
+    use gw_convect, only : gw_convect_project_winds
+
+    integer(kind=c_int) , value, intent(in) :: ncol
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: u, v
+    real(kind=c_real) , intent(out), dimension(ncol) :: xv, yv
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: ubm
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
+
+    call gw_convect_project_winds(ncol, u, v, xv, yv, ubm, ubi)
+  end subroutine gw_convect_project_winds_c
 end module gw_iso_c

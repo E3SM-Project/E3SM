@@ -419,6 +419,32 @@ struct GwConvectInitData : public PhysicsTestData{
   PTD_STD_DEF_INIT(GwConvectInitData, 3, maxh, maxuh, plev_src_wind);
 };
 
+struct GwConvectProjectWindsData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real *u, *v;
+  GwConvectInitData init;
+
+  // Outputs
+  Real *xv, *yv, *ubm, *ubi;
+
+  GwConvectProjectWindsData(Int ncol_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_, init_.init.pver},
+      {ncol_},
+      {ncol_, init_.init.pver + 1}
+    },
+    {
+      {&u, &v, &ubm},
+      {&xv, &yv},
+      {&ubi}
+    }),
+    ncol(ncol_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwConvectProjectWindsData, 1, ncol);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
@@ -430,6 +456,7 @@ void gw_drag_prof(GwDragProfData& d);
 void gw_front_project_winds(GwFrontProjectWindsData& d);
 void gw_front_gw_sources(GwFrontGwSourcesData& d);
 void gw_cm_src(GwCmSrcData& d);
+void gw_convect_project_winds(GwConvectProjectWindsData& d);
 
 extern "C" { // _f function decls
 }

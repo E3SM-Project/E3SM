@@ -48,6 +48,7 @@ void gw_cm_src_c(Int ncol, Int ngwv, Int kbot, Real* u, Real* v, Real* frontgf, 
 
 void gw_convect_init_c(Int maxh, Int maxuh, Real plev_src_wind, Real* mfcc_in);
 
+void gw_convect_project_winds_c(Int ncol, Real* u, Real* v, Real* xv, Real* yv, Real* ubm, Real* ubi);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -147,6 +148,14 @@ void gw_convect_init(GwConvectInitData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_convect_init_c(d.maxh, d.maxuh, d.plev_src_wind, d.mfcc_in);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_convect_project_winds(GwConvectProjectWindsData& d)
+{
+  gw_convect_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_convect_project_winds_c(d.ncol, d.u, d.v, d.xv, d.yv, d.ubm, d.ubi);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

@@ -282,6 +282,19 @@ struct Functions
     const uview_1d<Spack>& xv,
     const uview_1d<Spack>& yv,
     const uview_1d<Spack>& c);
+
+  KOKKOS_FUNCTION
+  static void gw_convect_project_winds(
+    // Inputs
+    const Int& pver,
+    const Int& ncol,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    // Outputs
+    const uview_1d<Spack>& xv,
+    const uview_1d<Spack>& yv,
+    const uview_1d<Spack>& ubm,
+    const uview_1d<Spack>& ubi);
 }; // struct Functions
 
 } // namespace gw
@@ -301,5 +314,6 @@ struct Functions
 # include "impl/gw_gw_front_project_winds_impl.hpp"
 # include "impl/gw_gw_front_gw_sources_impl.hpp"
 # include "impl/gw_gw_cm_src_impl.hpp"
+# include "impl/gw_gw_convect_project_winds_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
