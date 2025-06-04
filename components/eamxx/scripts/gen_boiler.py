@@ -2498,7 +2498,9 @@ f"""{decl}
         for scalar in scalars:
             check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
 
-        scalar_comments = "// " + ", ".join(scalar_name for scalar_name, _ in scalars)
+        _, _, _, all_dims, input_scalars, _, _, _ = group_data(arg_data, filter_out_intent="out")
+        all_scalar_inputs = all_dims + [scalar_name for scalar_name, _ in input_scalars]
+        scalar_comments = "// " + ", ".join(all_scalar_inputs)
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
