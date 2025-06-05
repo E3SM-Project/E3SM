@@ -3469,7 +3469,7 @@
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceDraftForSsh" type="real" dimensions="nCells Time" units="m"
 			description="The elevation of the interface between land ice and the ocean that is used to correct the SSH gradient passed to MPAS-SeaIce and may be used for wetting-and-drying."
-			packages="landIcePressurePKG;landIceFluxesPKG"
+			packages="landIcePressurePKG"
 		/>
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
