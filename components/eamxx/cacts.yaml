@@ -39,12 +39,13 @@ project:
   name: EAMxx
   baseline_gen_label: baseline_gen
   baseline_summary_file: baseline_list
-  cmake_vars_names:
-    enable_baselines:
+  cmake_settings:
+    baselines_on:
       SCREAM_ENABLE_BASELINE_TESTS: ON
-    generate_baselines:
+    baselines_off:
+      SCREAM_ENABLE_BASELINE_TESTS: OFF
+    baselines_only:
       SCREAM_ONLY_GENERATE_BASELINES: ON
-    baselines_dir: SCREAM_BASELINES_DIR
   cdash:
     drop_site: my.cdash.org
     drop_location: /submit.php?project=E3SM
@@ -140,6 +141,14 @@ machines:
     gpu_arch: "cuda"
     num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
 
+  ghci-snl-hip:
+    baselines_dir: /projects/e3sm/baselines/scream/ghci-snl-hip
+    gpu_arch: hip
+    num_run_res: $(rocm-smi --showproductname | grep 'GPU\[' | awk '{print $1}' | sort -u | wc -l)
+    env_setup:
+      - source /etc/profile.d/setup-user-env.sh
+      - export MPICH_CXX=hipcc
+
   ghci-oci:
     env_setup: ["eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
 
@@ -219,6 +228,8 @@ configurations:
     description: null
     uses_baselines: True
     on_by_default: True
+    cmake_args:
+      SCREAM_BASELINES_DIR: ${machine.baselines_dir}/${build.longname}
 
   dbg:
     longname: full_debug
