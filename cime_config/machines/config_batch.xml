@@ -553,6 +553,7 @@
 
     <batch_system MACH="aurora" type="pbspro">
       <batch_submit>/lus/flare/projects/E3SM_Dec/tools/qsub/throttle</batch_submit>
+      <jobid_pattern>(\d+)\.aurora-pbs</jobid_pattern>
       <directives>
         <directive> -l filesystems=home:flare </directive>
       </directives>
