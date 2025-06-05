@@ -425,6 +425,10 @@ extern template void Field::update<CombineMode::Update, S, T>(const Field&, cons
 extern template void Field::update<CombineMode::Multiply, S, T>(const Field&, const T, const T);            \
 extern template void Field::update<CombineMode::Divide, S, T>(const Field&, const T, const T)
 
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(S,T) \
+extern template void Field::update<CombineMode::Max, S, T>(const Field&, const T, const T);            \
+extern template void Field::update<CombineMode::Min, S, T>(const Field&, const T, const T)
+
 #define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(S,T1,T2) \
 extern template void Field::update_impl<CombineMode::Update,  S, true, T1, T2>(const Field&, const T1, const T1);  \
 extern template void Field::update_impl<CombineMode::Multiply,S, true, T1, T2>(const Field&, const T1, const T1);  \
@@ -432,6 +436,12 @@ extern template void Field::update_impl<CombineMode::Divide,  S, true, T1, T2>(c
 extern template void Field::update_impl<CombineMode::Update,  S, false, T1, T2>(const Field&, const T1, const T1); \
 extern template void Field::update_impl<CombineMode::Multiply,S, false, T1, T2>(const Field&, const T1, const T1); \
 extern template void Field::update_impl<CombineMode::Divide,  S, false, T1, T2>(const Field&, const T1, const T1)
+
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(S,T1,T2) \
+extern template void Field::update_impl<CombineMode::Max, S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Min, S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Max, S, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Min, S, false, T1, T2>(const Field&, const T1, const T1)
 
 #define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
 extern template void Field::deep_copy_impl<S,true,T>(const T, const Field&); \
@@ -456,6 +466,8 @@ extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<
 #define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
 EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
 EAMXX_FIELD_ETI_DECL_UPDATE(Host,T);            \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Device,T);  \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Host,T);    \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
 EAMXX_FIELD_ETI_DECL_DEEP_COPY(Host,T);         \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
@@ -464,8 +476,10 @@ EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
 EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
 
 #define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
-EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);   \
-EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Host,T1,T2)
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);           \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Host,T1,T2);             \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Device,T1,T2);   \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Host,T1,T2)
 
 // TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
 //       Real is by far the most common, so it'd be nice to just to that. But

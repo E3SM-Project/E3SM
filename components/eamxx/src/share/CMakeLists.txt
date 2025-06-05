@@ -82,6 +82,30 @@ list (APPEND SHARE_SRC
   field/eti/field_eti_update_impl_int_host.cpp
   field/eti/field_eti_update_int_device.cpp
   field/eti/field_eti_update_int_host.cpp
+  field/eti/field_utils_eti_compute_mask_lt_int.cpp
+  field/eti/field_utils_eti_compute_mask_lt_float.cpp
+  field/eti/field_utils_eti_compute_mask_lt_double.cpp
+  field/eti/field_utils_eti_compute_mask_ne_int.cpp
+  field/eti/field_utils_eti_compute_mask_ne_float.cpp
+  field/eti/field_utils_eti_compute_mask_ne_double.cpp
+  field/eti/field_eti_update_max_min_double_device.cpp
+  field/eti/field_eti_update_max_min_double_host.cpp
+  field/eti/field_eti_update_max_min_float_device.cpp
+  field/eti/field_eti_update_max_min_float_host.cpp
+  field/eti/field_eti_update_max_min_impl_double_device.cpp
+  field/eti/field_eti_update_max_min_impl_double_host.cpp
+  field/eti/field_eti_update_max_min_impl_fill_double_device.cpp
+  field/eti/field_eti_update_max_min_impl_fill_double_host.cpp
+  field/eti/field_eti_update_max_min_impl_fill_float_device.cpp
+  field/eti/field_eti_update_max_min_impl_fill_float_host.cpp
+  field/eti/field_eti_update_max_min_impl_fill_int_device.cpp
+  field/eti/field_eti_update_max_min_impl_fill_int_host.cpp
+  field/eti/field_eti_update_max_min_impl_float_device.cpp
+  field/eti/field_eti_update_max_min_impl_float_host.cpp
+  field/eti/field_eti_update_max_min_impl_int_device.cpp
+  field/eti/field_eti_update_max_min_impl_int_host.cpp
+  field/eti/field_eti_update_max_min_int_device.cpp
+  field/eti/field_eti_update_max_min_int_host.cpp
 )
 
 if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
