@@ -1,6 +1,5 @@
+# Hydrology {#rst_Hydrology}
 
-<<<<<<< HEAD
-=======
 The model parameterizes interception, throughfall, canopy drip, snow
 accumulation and melt, water transfer between snow layers, infiltration,
 evaporation, surface runoff, sub-surface drainage, redistribution within
@@ -958,4 +957,3 @@ and lakes, which reduces the total amount of runoff available to the
 river routing model (Chapter `rst_MOSART`{.interpreted-text
 role="numref"}).
 
->>>>>>> Converted from CLM5

@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-
-=======
-# Plant Hydraulics 
+# Plant Hydraulics {#rst_Plant Hydraulics}
 
 ## Roots {#Roots}
 
@@ -23,39 +20,6 @@ plant-dependent root distribution parameter adopted from
 `Jackson et al. (1996)<Jacksonetal1996>`{.interpreted-text role="ref"}
 (`Table Plant functional type root distribution parameters`{.interpreted-text
 role="numref"}).
-
-**Table 1: Plant functional type root distribution parameters ** 
-
-| Plant Functional Type | $\beta$ |
-|----------------------|---------|
-| NET Temperate | 0.976 |
-| NET Boreal | 0.943 |
-| NDT Boreal | 0.943 |
-| BET Tropical | 0.993 |
-| BET temperate | 0.966 |
-| BDT tropical | 0.993 |
-| BDT temperate | 0.966 |
-| BDT boreal | 0.943 |
-| BES temperate | 0.964 |
-| BDS temperate | 0.964 |
-| BDS boreal | 0.914 |
-| C₃ grass arctic | 0.914 |
-| C₃ grass | 0.943 |
-| C₄ grass | 0.943 |
-| Crop R | 0.943 |
-| Crop I | 0.943 |
-| Corn R | 0.943 |
-| Corn I | 0.943 |
-| Temp Cereal R | 0.943 |
-| Temp Cereal I | 0.943 |
-| Winter Cereal R | 0.943 |
-| Winter Cereal I | 0.943 |
-| Soybean R | 0.943 |
-| Soybean I | 0.943 |
-| Miscanthus R | 0.943 |
-| Miscanthus I | 0.943 |
-| Switchgrass R | 0.943 |
-| Switchgrass I | 0.943 |
 
 ::: {#Table Plant functional type root distribution parameters}
   -----------------------------------------------------
@@ -676,4 +640,3 @@ temperature, reflecting leaf surface energy balance.
 ![Flow diagram of leaf flux calculations](phs_iteration_schematic.*)
 :::
 
->>>>>>> Converted from CLM5
