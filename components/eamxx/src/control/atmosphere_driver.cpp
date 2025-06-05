@@ -1620,9 +1620,11 @@ void AtmosphereDriver::run (const int dt) {
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
   // Print current timestamp information
+  auto end_of_step = m_current_ts + dt;
   m_atm_logger->log(ekat::logger::LogLevel::info,
-    "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
-    "  model start-of-step time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
+    "Atmosphere step = " + std::to_string(end_of_step.get_num_steps()) + "\n" +
+    "  model beg-of-step timestamp: " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n"
+    "  model end-of-step timestamp: " + end_of_step.get_date_string() + " " + end_of_step.get_time_string() + "\n");
 
   // Reset accum fields to 0
   // Note: at the 1st timestep this is redundant, since we did it at init,

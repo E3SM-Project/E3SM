@@ -240,6 +240,8 @@ protected:
 
   // Struct which contains local variables
   Buffer m_buffer;
+
+  bool m_force_run_on_next_step = false;
 };  // class RRTMGPRadiation
 
 }  // namespace scream

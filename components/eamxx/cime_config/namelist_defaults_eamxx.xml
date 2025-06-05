@@ -551,6 +551,7 @@ be lost if SCREAM_HACK_XML is not enabled.
           true
       </do_subcol_sampling>
       <pool_size_multiplier type="real">1.0</pool_size_multiplier>
+      <force_run_after_restart type="logical" doc="Force rad to run on first step after restart, regardless of rad frequency">false</force_run_after_restart>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
