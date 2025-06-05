@@ -1,4 +1,4 @@
-# Hydrology {#rst_Hydrology}
+# Hydrology
 
 The model parameterizes interception, throughfall, canopy drip, snow
 accumulation and melt, water transfer between snow layers, infiltration,

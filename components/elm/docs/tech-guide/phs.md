@@ -1,4 +1,4 @@
-# Plant Hydraulics {#rst_Plant Hydraulics}
+# Plant Hydraulics
 
 ## Roots {#Roots}
 
