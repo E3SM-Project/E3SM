@@ -2630,6 +2630,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_iceberg_temperature" type="real"
+	category="ocean" group="ocean">
+Initial temperature of icebergs.
+
+Valid values: Any real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_scale_dib_by_removed_ice_runoff" type="logical"
 	category="ocean" group="ocean">
 Whether to scale data iceberg fluxes by the running mean of removed ice runoff
