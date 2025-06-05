@@ -13,7 +13,7 @@ namespace gw {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb()
   {
@@ -33,15 +33,14 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
     }
 
     // Set up inputs
-    GwdComputeTendenciesFromStressDivergenceData baseline_data[] = {
-      //                                        ncol, ngwv, do_taper,   dt, effgw, init
-      GwdComputeTendenciesFromStressDivergenceData(2,   10,    false,  0.4,   0.3, init_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(3,   10,    false,  0.4,   0.3, init_data[1]),
-      GwdComputeTendenciesFromStressDivergenceData(4,   10,    true ,  0.4,   0.3, init_data[2]),
-      GwdComputeTendenciesFromStressDivergenceData(5,   10,    true ,  0.4,   0.3, init_data[3]),
+    GwDragProfData baseline_data[] = {
+      GwDragProfData(5, 2, 10, true, .4, 1.8, init_data[0]),
+      GwDragProfData(6, 3, 11, false, .8, 2.4, init_data[1]),
+      GwDragProfData(7, 4, 12, true, 1.4, 3.4, init_data[2]),
+      GwDragProfData(8, 5, 13, false, 2.4, 4.4, init_data[3]),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwDragProfData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
@@ -51,11 +50,11 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
-    GwdComputeTendenciesFromStressDivergenceData test_data[] = {
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[1]),
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[2]),
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[3]),
+    GwDragProfData test_data[] = {
+      GwDragProfData(baseline_data[0]),
+      GwDragProfData(baseline_data[1]),
+      GwDragProfData(baseline_data[2]),
+      GwDragProfData(baseline_data[3]),
     };
 
     // Read baseline data
@@ -67,27 +66,45 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
     // Get data from test
     for (auto& d : test_data) {
-      gwd_compute_tendencies_from_stress_divergence(d);
+      gw_drag_prof(d);
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        GwdComputeTendenciesFromStressDivergenceData& d_baseline = baseline_data[i];
-        GwdComputeTendenciesFromStressDivergenceData& d_test = test_data[i];
+        GwDragProfData& d_baseline = baseline_data[i];
+        GwDragProfData& d_test = test_data[i];
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
           REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
           REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
-        }
-        for (Int k = 0; k < d_baseline.total(d_baseline.gwut); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.gwut) == d_test.total(d_test.gwut));
-          REQUIRE(d_baseline.gwut[k] == d_test.gwut[k]);
         }
         for (Int k = 0; k < d_baseline.total(d_baseline.utgw); ++k) {
           REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
           REQUIRE(d_baseline.utgw[k] == d_test.utgw[k]);
           REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
           REQUIRE(d_baseline.vtgw[k] == d_test.vtgw[k]);
+          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.ttgw));
+          REQUIRE(d_baseline.ttgw[k] == d_test.ttgw[k]);
+          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.dttdf));
+          REQUIRE(d_baseline.dttdf[k] == d_test.dttdf[k]);
+          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.dttke));
+          REQUIRE(d_baseline.dttke[k] == d_test.dttke[k]);
+        }
+        for (Int k = 0; k < d_baseline.total(d_baseline.qtgw); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.qtgw) == d_test.total(d_test.qtgw));
+          REQUIRE(d_baseline.qtgw[k] == d_test.qtgw[k]);
+        }
+        for (Int k = 0; k < d_baseline.total(d_baseline.taucd); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.taucd) == d_test.total(d_test.taucd));
+          REQUIRE(d_baseline.taucd[k] == d_test.taucd[k]);
+        }
+        for (Int k = 0; k < d_baseline.total(d_baseline.egwdffi); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.egwdffi) == d_test.total(d_test.egwdffi));
+          REQUIRE(d_baseline.egwdffi[k] == d_test.egwdffi[k]);
+        }
+        for (Int k = 0; k < d_baseline.total(d_baseline.gwut); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.gwut) == d_test.total(d_test.gwut));
+          REQUIRE(d_baseline.gwut[k] == d_test.gwut[k]);
         }
 
       }
@@ -107,9 +124,9 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
 namespace {
 
-TEST_CASE("gwd_compute_tendencies_from_stress_divergence_bfb", "[gw]")
+TEST_CASE("gw_drag_prof_bfb", "[gw]")
 {
-  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwdComputeTendenciesFromStressDivergence;
+  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwDragProf;
 
   TestStruct t;
   t.run_bfb();

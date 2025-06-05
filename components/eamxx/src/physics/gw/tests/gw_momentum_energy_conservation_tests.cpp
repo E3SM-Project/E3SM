@@ -13,7 +13,7 @@ namespace gw {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestMomentumEnergyConservation : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb()
   {
@@ -33,15 +33,14 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
     }
 
     // Set up inputs
-    GwdComputeTendenciesFromStressDivergenceData baseline_data[] = {
-      //                                        ncol, ngwv, do_taper,   dt, effgw, init
-      GwdComputeTendenciesFromStressDivergenceData(2,   10,    false,  0.4,   0.3, init_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(3,   10,    false,  0.4,   0.3, init_data[1]),
-      GwdComputeTendenciesFromStressDivergenceData(4,   10,    true ,  0.4,   0.3, init_data[2]),
-      GwdComputeTendenciesFromStressDivergenceData(5,   10,    true ,  0.4,   0.3, init_data[3]),
+    MomentumEnergyConservationData baseline_data[] = {
+      MomentumEnergyConservationData(2, .4, init_data[0]),
+      MomentumEnergyConservationData(3, .8, init_data[1]),
+      MomentumEnergyConservationData(4, 1.4, init_data[2]),
+      MomentumEnergyConservationData(5, 2.4, init_data[3]),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeTendenciesFromStressDivergenceData);
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(MomentumEnergyConservationData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
@@ -51,11 +50,11 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
-    GwdComputeTendenciesFromStressDivergenceData test_data[] = {
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[0]),
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[1]),
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[2]),
-      GwdComputeTendenciesFromStressDivergenceData(baseline_data[3]),
+    MomentumEnergyConservationData test_data[] = {
+      MomentumEnergyConservationData(baseline_data[0]),
+      MomentumEnergyConservationData(baseline_data[1]),
+      MomentumEnergyConservationData(baseline_data[2]),
+      MomentumEnergyConservationData(baseline_data[3]),
     };
 
     // Read baseline data
@@ -67,27 +66,29 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
     // Get data from test
     for (auto& d : test_data) {
-      gwd_compute_tendencies_from_stress_divergence(d);
+      momentum_energy_conservation(d);
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        GwdComputeTendenciesFromStressDivergenceData& d_baseline = baseline_data[i];
-        GwdComputeTendenciesFromStressDivergenceData& d_test = test_data[i];
-        for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
-        }
-        for (Int k = 0; k < d_baseline.total(d_baseline.gwut); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.gwut) == d_test.total(d_test.gwut));
-          REQUIRE(d_baseline.gwut[k] == d_test.gwut[k]);
+        MomentumEnergyConservationData& d_baseline = baseline_data[i];
+        MomentumEnergyConservationData& d_test = test_data[i];
+        for (Int k = 0; k < d_baseline.total(d_baseline.dudt); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dudt));
+          REQUIRE(d_baseline.dudt[k] == d_test.dudt[k]);
+          REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dvdt));
+          REQUIRE(d_baseline.dvdt[k] == d_test.dvdt[k]);
+          REQUIRE(d_baseline.total(d_baseline.dudt) == d_test.total(d_test.dsdt));
+          REQUIRE(d_baseline.dsdt[k] == d_test.dsdt[k]);
         }
         for (Int k = 0; k < d_baseline.total(d_baseline.utgw); ++k) {
           REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.utgw));
           REQUIRE(d_baseline.utgw[k] == d_test.utgw[k]);
           REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.vtgw));
           REQUIRE(d_baseline.vtgw[k] == d_test.vtgw[k]);
+          REQUIRE(d_baseline.total(d_baseline.utgw) == d_test.total(d_test.ttgw));
+          REQUIRE(d_baseline.ttgw[k] == d_test.ttgw[k]);
         }
 
       }
@@ -107,9 +108,9 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
 
 namespace {
 
-TEST_CASE("gwd_compute_tendencies_from_stress_divergence_bfb", "[gw]")
+TEST_CASE("momentum_energy_conservation_bfb", "[gw]")
 {
-  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwdComputeTendenciesFromStressDivergence;
+  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestMomentumEnergyConservation;
 
   TestStruct t;
   t.run_bfb();

@@ -496,6 +496,8 @@ class TestAllScream(object):
         expect(test.uses_baselines,
                f"Something is off. generate_baseline should have not be called for test {test}")
 
+        self._machine.setup()
+
         baseline_dir = self.get_test_dir(self._baseline_dir, test)
         test_dir = self.get_test_dir(self._work_dir, test)
         if test_dir.exists():
@@ -593,6 +595,8 @@ class TestAllScream(object):
     ###############################################################################
     def run_test(self, test):
     ###############################################################################
+        self._machine.setup()
+
         git_head = get_current_head()
 
         print("===============================================================================")

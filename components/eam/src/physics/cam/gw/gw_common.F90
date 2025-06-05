@@ -26,7 +26,12 @@ public :: fcrit2
 public :: kwv
 public :: gravit
 public :: rair
+
+! These only need to be public for unit testing
+public :: gwd_compute_stress_profiles_and_diffusivities
+public :: gwd_project_tau
 public :: gwd_compute_tendencies_from_stress_divergence
+public :: gwd_precalc_rhoi
 
 ! This flag preserves answers for vanilla CAM by making a few changes (e.g.
 ! order of operations) when only orographic waves are on.
@@ -860,7 +865,6 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   !------------------------------------------------------------------------
 
   ! Initialize gravity wave drag tendencies to zero.
-
   utgw = 0._r8
   vtgw = 0._r8
   taucd = 0._r8
