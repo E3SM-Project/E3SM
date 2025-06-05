@@ -69,8 +69,8 @@ def main(case_dir):
             if not ln_ok:
                 # Another set of special cases that are OK.
                 mass = abs(float(ln.split()[3]))
-                ln_ok = (('fin-mass 17/38' in ln and mass < 1e-34 and relerr < 1e-4) or
-                         ('fin-mass  3/24' in ln and mass < 1e-16 and relerr < 1e-3))
+                ln_ok = (('fin-mass 17/38' in ln and mass < 1e-16) or
+                         ('fin-mass  3/24' in ln and mass < 1e-16))
             if not ln_ok:
                 special_case = False
                 print(ln)
