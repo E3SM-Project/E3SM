@@ -132,7 +132,7 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_ncol        = 10;
+    static constexpr int num_1d_ncol        = 8;
     static constexpr int num_2d_nlay        = 16;
     static constexpr int num_2d_nlay_p1     = 23;
     static constexpr int num_2d_nswbands    = 2;
@@ -144,8 +144,6 @@ public:
     static constexpr int num_3d_nlay_nlwgpts = 1;
 
     // 1d size (ncol)
-    ureal1dk cosine_zenith;
-    ureal1dk mu0_k;
     ureal1dk sfc_alb_dir_vis_k;
     ureal1dk sfc_alb_dir_nir_k;
     ureal1dk sfc_alb_dif_vis_k;

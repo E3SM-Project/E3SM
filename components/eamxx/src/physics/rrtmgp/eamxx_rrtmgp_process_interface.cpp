@@ -259,6 +259,9 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     add_field<Computed>("heat_flux",  scalar2d, W/m2,    grid_name);
   }
 
+  // Working fields that we also want for diagnostic output
+  add_field<Computed>("cosine_solar_zenith_angle", scalar2d, nondim, grid_name);
+
   // Load bands bounds from coefficients files and compute the band centerpoint.
   // Store both in the grid (if not already present)
   const auto cm = centi*m;
@@ -324,8 +327,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d arrays
-  m_buffer.mu0_k = decltype(m_buffer.mu0_k)(mem, m_col_chunk_size);
-  mem += m_buffer.mu0_k.size();
   m_buffer.sfc_alb_dir_vis_k = decltype(m_buffer.sfc_alb_dir_vis_k)(mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dir_vis_k.size();
   m_buffer.sfc_alb_dir_nir_k = decltype(m_buffer.sfc_alb_dir_nir_k)(mem, m_col_chunk_size);
@@ -342,8 +343,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_flux_dif_vis_k.size();
   m_buffer.sfc_flux_dif_nir_k = decltype(m_buffer.sfc_flux_dif_nir_k)(mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dif_nir_k.size();
-  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_col_chunk_size);
-  mem += m_buffer.cosine_zenith.size();
 
   // 2d arrays
   m_buffer.p_lay_k = decltype(m_buffer.p_lay_k)(mem, m_col_chunk_size, m_nlay);
@@ -741,6 +740,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
       }
     }
 
+    // Get solar zenith angle device view
+    auto d_mu0 = get_field_out("cosine_solar_zenith_angle").get_view<Real*>();
+
     // Loop over each chunk of columns
     for (int ic=0; ic<m_num_col_chunks; ++ic) {
       const int beg  = m_col_chunk_beg[ic];
@@ -752,7 +754,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // must be layout right
       ulrreal2dk d_tint = ulrreal2dk(m_buffer.d_tint.data(), m_col_chunk_size, m_nlay+1);
       ulrreal2dk d_dz   = ulrreal2dk(m_buffer.d_dz.data(), m_col_chunk_size, m_nlay);
-      auto d_mu0 = m_buffer.cosine_zenith;
       ConvertToRrtmgpSubview conv = {beg, ncol};
       TIMED_INLINE_KERNEL(init_views,
 
@@ -815,6 +816,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_bnd_k  = conv.subview3d(m_buffer.cld_tau_lw_bnd_k);
       auto cld_tau_sw_gpt_k  = conv.subview3d(m_buffer.cld_tau_sw_gpt_k);
       auto cld_tau_lw_gpt_k  = conv.subview3d(m_buffer.cld_tau_lw_gpt_k);
+      auto mu0_k = conv.subview1d(d_mu0);
                    );
 
       // Set gas concs to "view" only the first ncol columns
@@ -826,7 +828,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         // Determine the cosine zenith angle
         // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
         //       deep copied to a device view.
-        auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
+        auto h_mu0 = Kokkos::create_mirror_view(mu0_k);
         if (m_fixed_solar_zenith_angle > 0) {
           for (int i=0; i<ncol; i++) {
             h_mu0(i) = m_fixed_solar_zenith_angle;
@@ -839,7 +841,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
             h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
           }
         }
-        Kokkos::deep_copy(d_mu0,h_mu0);
+        Kokkos::deep_copy(mu0_k,h_mu0);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         TIMED_KERNEL(
@@ -1026,7 +1028,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         ncol, m_nlay,
         p_lay_k, t_lay_k, p_lev_k, t_lev_k,
         m_gas_concs_k,
-        sfc_alb_dir_k, sfc_alb_dif_k, d_mu0,
+        sfc_alb_dir_k, sfc_alb_dif_k, mu0_k,
         lwp_k, iwp_k, rel_k, rei_k, cldfrac_tot_k,
         aero_tau_sw_k, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k,
         cld_tau_sw_bnd_k, cld_tau_lw_bnd_k,
