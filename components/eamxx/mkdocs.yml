@@ -2,12 +2,9 @@ site_name: EAMxx
 
 nav:
   - 'Home': 'index.md'
-  # - 'WIP Sandbox': 'WIP.md'
   - 'User Guide':
     - 'Overview': 'user/index.md'
-    # - 'Quick-start Guide': 'user/user_quickstart.md'
     - 'EAMxx case basics': 'user/eamxx_cases.md'
-    # - 'Testing': 'user/user_testing.md'
     - 'Model Configuration': 'user/model_configuration.md'
     - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
@@ -23,19 +20,25 @@ nav:
       - 'Field contraction diagnostics': 'user/diags/field_contraction.md'
     - 'Presentations': 'user/presentations.md'
   - 'Developer Guide':
-    # - 'Overview': 'developer/index.md'
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
     - 'Code Structure and Organization': 'developer/code_structure.md'
-    # - 'Installation': 'common/installation.md'
-    - 'Style Guide': 'developer/style_guide.md'
+    - 'Style Guide':
+      - 'Overview': 'developer/style/style_guide_overview.md'
+      - 'Code Formatting Standards': 'developer/style/format.md'
+      - 'Code Style Standards':
+        - 'Overview': 'developer/style/style.md'
+        - 'Types, Classes, Structures': 'developer/style/types.md'
+        - 'Functions and Methods': 'developer/style/functions.md'
+        - 'Variables': 'developer/style/variables.md'
+        - 'Templating': 'developer/style/templates.md'
+      - 'Resources':
+        - 'How-to Guide: clang-format': 'developer/style/resources/clang-format_HOWTO.md'
     - 'Testing':
       - 'Overview': 'developer/dev_testing/index.md'
       - 'Testing for Development': 'developer/dev_testing/testing_for_development.md'
       - 'Automated Standalone Testing': 'developer/dev_testing/test_all_eamxx.md'
       - 'Full model (CIME)': 'developer/dev_testing/full_model_testing.md'
       - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
-      # - 'Supported Computing Platforms': 'developer/dev_testing/supported_machines.md'
-      # - 'Testing Locally': 'developer/dev_testing/local_test.md'
     - 'Important Tools and Objects':
       - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
       - 'Fields': 'developer/field.md'
@@ -46,7 +49,6 @@ nav:
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
-  # - 'Glossary': 'common/glossary.md'
 
 edit_uri: ""
 
