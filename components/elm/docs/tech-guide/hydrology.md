@@ -13,9 +13,13 @@ $\Delta W_{a}$ (all in $kg\ m^{-2}$ or $mm\ of\ H_2O$)
 
 The total water balance of the system is
 
-$$\begin{aligned}
-{\Delta W_{can,\,liq} +\Delta W_{can,\,sno} +\Delta W_{sfc} +\Delta W_{sno} +} \\ {\sum _{i=1}^{N_{levsoi} }\left(\Delta w_{liq,\, i} +\Delta w_{ice,\, i} \right)+\Delta W_{a} =\left(\begin{array}{l} {q_{rain} +q_{sno} -E_{v} -E_{g} -q_{over} } \\ {-q_{h2osfc} -q_{drai} -q_{rgwl} -q_{snwcp,\, ice} } \end{array}\right) \Delta t}
-\end{aligned}$$
+$$
+\begin{aligned}
+\Delta W_{can,\,liq} + \Delta W_{can,\,sno} + \Delta W_{sfc} + \Delta W_{sno} + 
+\sum_{i=1}^{N_{levsoi}} (\Delta w_{liq,\, i} + \Delta w_{ice,\, i}) + \Delta W_{a} \\
+= \left( q_{rain} + q_{sno} - E_{v} - E_{g} - q_{over} - q_{h2osfc} - q_{drai} - q_{rgwl} - q_{snwcp,\, ice} \right) \Delta t
+\end{aligned}
+$$
 <p align="right"><strong>(1)</strong></p>
 
 where $q_{rain}$ is the liquid part of precipitation, $q_{sno}$ is the
@@ -271,24 +275,24 @@ role="numref"}). Surface water storage and outflow are functions of fine
 spatial scale elevation variations called microtopography. The
 microtopography is assumed to be distributed normally around the grid
 cell mean elevation. Given the standard deviation of the
-microtopographic distribution, $\sigma _{micro}$ (m), the fractional
+microtopographic distribution, $\sigma_{micro}$ (m), the fractional
 area of the grid cell that is inundated can be calculated. Surface water
 storage, $Wsfc$, is related to the height (relative to the grid cell
 mean elevation) of the surface water, $d$, by
 
-$$W_{sfc} =\frac{d}{2} \left(1+erf\left(\frac{d}{\sigma _{micro} \sqrt{2} } \right)\right)+\frac{\sigma _{micro} }{\sqrt{2\pi } } e^{\frac{-d^{2} }{2\sigma _{micro} ^{2} } }$$
+$$W_{sfc} =\frac{d}{2} \left(1+erf\left(\frac{d}{\sigma_{micro} \sqrt{2} } \right)\right)+\frac{\sigma_{micro} }{\sqrt{2\pi } } e^{\frac{-d^{2} }{2\sigma_{micro} ^{2} } }$$
 
 where $erf$ is the error function. For a given value of $W_{sfc}$,
 `7.66`{.interpreted-text role="eq"} can be solved for $d$ using the
 Newton-Raphson method. Once $d$ is known, one can determine the fraction
 of the area that is inundated as
 
-$$f_{h2osfc} =\frac{1}{2} \left(1+erf\left(\frac{d}{\sigma _{micro} \sqrt{2} } \right)\right)$$
+$$f_{h2osfc} =\frac{1}{2} \left(1+erf\left(\frac{d}{\sigma_{micro} \sqrt{2} } \right)\right)$$
 
 No global datasets exist for microtopography, so the default
 parameterization is a simple function of slope
 
-$$\sigma _{micro} =\left(\beta +\beta _{0} \right)^{\eta }$$
+$$\sigma_{micro} =\left(\beta +\beta_{0} \right)^{\eta }$$
 
 where $\beta$ is the topographic slope,
 $\beta_{0} =\left(\sigma_{\max } \right)^{\frac{1}{\eta } }$ determines
@@ -433,7 +437,7 @@ approximations for `7.84`{.interpreted-text role="eq"}.
 
 The hydraulic conductivity $k_{i}$ ($mm\ s^{-1}$) and the soil matric
 potential $\psi_{i}$ (mm) for layer $i$ vary with volumetric soil water
-$\theta _{i}$ and soil texture. As with the soil thermal properties
+$\theta_{i}$ and soil texture. As with the soil thermal properties
 (section `Soil And Snow Thermal Properties`{.interpreted-text
 role="numref"}) the hydraulic properties of the soil are assumed to be a
 weighted combination of the mineral properties, which are determined
@@ -449,7 +453,7 @@ two adjacent layers $z_{h,\, i}$
 (`Figure Water flux schematic`{.interpreted-text role="numref"}) and is
 a function of the saturated hydraulic conductivity
 $k_{sat} \left[z_{h,\, i} \right]$, the liquid volumetric soil moisture
-of the two layers $\theta _{i}$ and $\theta_{i+1}$ and an ice impedance
+of the two layers $\theta_{i}$ and $\theta_{i+1}$ and an ice impedance
 factor $\Theta_{ice}$
 
 $$
@@ -482,7 +486,7 @@ where $f_{om,i}$ is the soil organic matter fraction, $\theta_{sat,om}$
 is the porosity of organic matter, and the porosity of the mineral soil
 $\theta_{sat,\min,i}$ is
 
-$$\theta_{sat,\min ,i} = 0.489 - 0.00126(\% sand)_{i} .$$
+$$\theta_{sat, min, i} = 0.489 - 0.00126(\text{% sand})_{i}$$
 
 The exponent $B_{i}$ is
 
@@ -490,7 +494,7 @@ $$B_{i} =(1-f_{om,i} )B_{\min ,i} +f_{om,i} B_{om}$$
 
 where $B_{om}$ is for organic matter and
 
-$$B_{\min ,i} =2.91+0.159(\% clay)_{i} .$$
+$$B_{\min ,i} =2.91+0.159(\text{% clay})_{i} $$
 
 The soil matric potential (mm) is defined at the node depth $z_{i}$ of
 each layer $i$ (`Figure Water flux schematic`{.interpreted-text
@@ -505,7 +509,7 @@ $$\psi_{sat,i} =(1-f_{om,i} )\psi_{sat,\min ,i} +f_{om,i} \psi_{sat,om}$$
 where $\psi_{sat,om}$ is the saturated organic matter matric potential
 and the saturated mineral soil matric potential $\psi_{sat,\min,i}$ is
 
-$$\psi_{sat,\, \min ,\, i} =-10.0\times 10^{1.88-0.0131(\% sand)_{i}} .$$
+$$\psi_{sat,\, \min ,\, i} =-10.0\times 10^{1.88-0.0131(\text{% sand})_{i}} $$
 
 The saturated hydraulic conductivity, $k_{sat} \left[z_{h,\, i} \right]$
 ($mm\ s^{-1}$), for organic soils ($k_{sat,\, om}$ ) may be two to three
@@ -528,12 +532,13 @@ span the soil space. Flow through these pathways interacts only with
 organic material, and thus can be described by $k_{sat,\, om}$. This
 fraction of the grid cell is given by
 
-$$\begin{aligned}
-\begin{array}{lr}
-f_{perc} =\; N_{perc} \left(f_{om} {\rm \; }-f_{threshold} \right)^{\beta_{perc} } f_{om} {\rm \; } & \qquad f_{om} \ge f_{threshold}  \\
-f_{perc} = 0 & \qquad f_{om} <f_{threshold}
-\end{array}
-\end{aligned}$$
+$$
+f_{\text{perc}} =
+\begin{cases}
+N_{\text{perc}} \left(f_{\text{om}} - f_{\text{threshold}} \right)^{\beta_{\text{perc}}} f_{\text{om}}, & \text{if } f_{\text{om}} \ge f_{\text{threshold}} \\
+0, & \text{if } f_{\text{om}} < f_{\text{threshold}}
+\end{cases}
+$$
 
 where $\beta ^{perc} =0.139$, $f_{threshold} =0.5$, and
 $N_{perc} =\left(1-f_{threshold} \right)^{-\beta_{perc} }$. In the
@@ -548,7 +553,7 @@ where saturated hydraulic conductivity for mineral soil depends on soil
 texture (`Cosby et al. 1984 <Cosbyetal1984>`{.interpreted-text
 role="ref"}) as
 
-$$k_{sat,\, \min } \left[z_{h,\, i} \right]=0.0070556\times 10^{-0.884+0.0153\left(\% sand\right)_{i} } .$$
+$$k_{sat,\, \min } \left[z_{h,\, i} \right]=0.0070556\times 10^{-0.884+0.0153\left(\text{% sand}\right)_{i} } .$$
 
 The bulk soil layer saturated hydraulic conductivity is then computed as
 
@@ -575,7 +580,7 @@ role="numref"}, the equation for conservation of mass (equation
 `7.79`{.interpreted-text role="eq"}) can be integrated over each layer
 as
 
-$$\int _{-z_{h,\, i} }^{-z_{h,\, i-1} }\frac{\partial \theta }{\partial t} \,  dz=-\int _{-z_{h,\, i} }^{-z_{h,\, i-1} }\frac{\partial q}{\partial z}  \, dz-\int _{-z_{h,\, i} }^{-z_{h,\, i-1} } e\, dz .$$
+$$\int_{-z_{h,\, i} }^{-z_{h,\, i-1} }\frac{\partial \theta }{\partial t} \,  dz=-\int_{-z_{h,\, i} }^{-z_{h,\, i-1} }\frac{\partial q}{\partial z}  \, dz-\int_{-z_{h,\, i} }^{-z_{h,\, i-1} } e\, dz .$$
 
 Note that the integration limits are negative since $z$ is defined as
 positive upward from the soil surface. This equation can be written as
@@ -621,7 +626,9 @@ Note that because more than one plant functional type (PFT) may share a
 soil column, the transpiration $E_{v}^{t}$ is a weighted sum of
 transpiration from all PFTs whose weighting depends on PFT area as
 
-$$E_{v}^{t} =\sum _{j=1}^{npft}\left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}$$
+$$
+E_{v}^{t} = \sum_{j=1}^{n_{\text{pft}}} \left( E_{v,j}^{t} \cdot \text{wt}_j \right)
+$$
 
 where $npft$ is the number of PFTs sharing a soil column,
 $\left(E_{v}^{t} \right)_{j}$ is the transpiration from the $j^{th}$ PFT
@@ -631,15 +638,15 @@ $r_{e,\, i}$ is also a column-level quantity that is a weighted sum over
 all PFTs. The weighting depends on the per unit area transpiration of
 each PFT and its relative area as
 
-$$r_{e,\, i} =\frac{\sum _{j=1}^{npft}\left(r_{e,\, i} \right)_{j} \left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}  }{\sum _{j=1}^{npft}\left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}  }$$
+$$r_{e,\, i} =\frac{\sum_{j=1}^{npft}\left(r_{e,\, i} \right)_{j} \left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}  }{\sum_{j=1}^{npft}\left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}  }$$
 
 where $\left(r_{e,\, i} \right)_{j}$ is the effective root fraction for
 the $j^{th}$ PFT
 
 $$\begin{aligned}
 \begin{array}{lr}
-\left(r_{e,\, i} \right)_{j} =\frac{\left(r_{i} \right)_{j} \left(w_{i} \right)_{j} }{\left(\beta _{t} \right)_{j} } & \qquad \left(\beta _{t} \right)_{j} >0 \\
-\left(r_{e,\, i} \right)_{j} =0 & \qquad \left(\beta _{t} \right)_{j} =0
+\left(r_{e,\, i} \right)_{j} =\frac{\left(r_{i} \right)_{j} \left(w_{i} \right)_{j} }{\left(\beta_{t} \right)_{j} } & \qquad \left(\beta_{t} \right)_{j} >0 \\
+\left(r_{e,\, i} \right)_{j} =0 & \qquad \left(\beta_{t} \right)_{j} =0
 \end{array}
 \end{aligned}$$
 
@@ -689,13 +696,13 @@ $$q_{i-1}^{n} =-k\left[z_{h,\, i-1} \right]\left[\frac{\left(\psi_{i-1} -\psi_{i
 
 $$q_{i}^{n} =-k\left[z_{h,\, i} \right]\left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} -z_{i} } \right]$$
 
-$$\frac{\partial q_{i-1} }{\partial \theta _{liq,\, i-1} } =-\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi_{i-1} }{\partial \theta _{liq,\, i-1} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i-1} } \left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
+$$\frac{\partial q_{i-1} }{\partial \theta_{liq,\, i-1} } =-\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi_{i-1} }{\partial \theta_{liq,\, i-1} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta_{liq,\, i-1} } \left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
 
-$$\frac{\partial q_{i-1} }{\partial \theta _{liq,\, i} } =\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi_{i} }{\partial \theta _{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i} } \left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
+$$\frac{\partial q_{i-1} }{\partial \theta_{liq,\, i} } =\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi_{i} }{\partial \theta_{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta_{liq,\, i} } \left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
 
-$$\frac{\partial q_{i} }{\partial \theta _{liq,\, i} } =-\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi_{i} }{\partial \theta _{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i} } \left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right]$$
+$$\frac{\partial q_{i} }{\partial \theta_{liq,\, i} } =-\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi_{i} }{\partial \theta_{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta_{liq,\, i} } \left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right]$$
 
-$$\frac{\partial q_{i} }{\partial \theta _{liq,\, i+1} } =\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi_{i+1} }{\partial \theta _{liq,\, i+1} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i+1} } \left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right].$$
+$$\frac{\partial q_{i} }{\partial \theta_{liq,\, i+1} } =\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi_{i+1} }{\partial \theta_{liq,\, i+1} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta_{liq,\, i+1} } \left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right].$$
 
 The derivatives of the soil matric potential at the node depth are
 derived from `7.94`{.interpreted-text role="eq"}
@@ -713,8 +720,8 @@ The derivatives of the hydraulic conductivity at the layer interface are
 derived from `7.85`{.interpreted-text role="eq"}
 
 $$\begin{array}{l}
-{\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i-1} }
-= \frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i} }
+{\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta_{liq,\, i-1} }
+= \frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta_{liq,\, i} }
 = \left(2B_{i-1} +3\right) \ \overline{\Theta}_{ice} \ k_{sat} \left[z_{h,\, i-1} \right] \ \left[\frac{\overline{\theta}_{liq}}{\overline{\theta}_{sat}} \right]^{2B_{i-1} +2} \left(\frac{0.5}{\overline{\theta}_{sat}} \right)} \end{array}$$
 
 where $\overline{\Theta}_{ice} = \Theta(\overline{\theta}_{ice})$
@@ -727,8 +734,8 @@ $\overline{\theta}_{sat} = 0.5\left(\theta_{sat,\, i-1} +\theta_{sat,\, i} \righ
 and
 
 $$\begin{array}{l}
-{\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i} }
-= \frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i+1} }
+{\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta_{liq,\, i} }
+= \frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta_{liq,\, i+1} }
 = \left(2B_{i} +3\right) \ \overline{\Theta}_{ice} \ k_{sat} \left[z_{h,\, i} \right] \ \left[\frac{\overline{\theta}_{liq}}{\overline{\theta}_{sat}} \right]^{2B_{i} +2} \left(\frac{0.5}{\overline{\theta}_{sat}} \right)} \end{array}.$$
 
 where
@@ -826,7 +833,7 @@ $$w_{liq,\, i}^{n+1} =w_{liq,\, i}^{n} +\Delta \theta_{liq,\, i} \Delta z_{i} \q
 
 The volumetric water content is
 
-$$\theta_{i} =\frac{w_{liq,\, i} }{\Delta z_{i} \rho _{liq} } +\frac{w_{ice,\, i} }{\Delta z_{i} \rho _{ice} } .$$
+$$\theta_{i} =\frac{w_{liq,\, i} }{\Delta z_{i} \rho_{liq} } +\frac{w_{ice,\, i} }{\Delta z_{i} \rho_{ice} } .$$
 
 ## Frozen Soils and Perched Water Table
 
@@ -843,7 +850,7 @@ $$q_{drai,perch} =k_{drai,\, perch} \left(z_{frost} -z_{\nabla ,perch} \right)$$
 where $k_{drai,\, perch}$ depends on topographic slope and soil
 hydraulic conductivity,
 
-$$k_{drai,\, perch} =10^{-5} \sin (\beta )\left(\frac{\sum _{i=N_{perch} }^{i=N_{frost} }\Theta_{ice,i} k_{sat} \left[z_{i} \right]\Delta z_{i}  }{\sum _{i=N_{perch} }^{i=N_{frost} }\Delta z_{i}  } \right)$$
+$$k_{drai,\, perch} =10^{-5} \sin (\beta )\left(\frac{\sum_{i=N_{perch} }^{i=N_{frost} }\Theta_{ice,i} k_{sat} \left[z_{i} \right]\Delta z_{i}  }{\sum_{i=N_{perch} }^{i=N_{frost} }\Delta z_{i}  } \right)$$
 
 where $\Theta_{ice}$ is an ice impedance factor, $\beta$ is the mean
 grid cell topographic slope in radians, $z_{frost}$ is the depth to the
@@ -883,7 +890,7 @@ the water table location, is derived by taking the difference between
 two equilibrium soil moisture profiles whose water tables differ by an
 infinitesimal amount
 
-$$S_{y} =\theta_{sat} \left(1-\left(1+\frac{z_{\nabla } }{\Psi _{sat} } \right)^{\frac{-1}{B} } \right)$$
+$$S_{y} =\theta_{sat} \left(1-\left(1+\frac{z_{\nabla } }{\Psi_{sat} } \right)^{\frac{-1}{B} } \right)$$
 
 where B is the Clapp-Hornberger exponent. Because $S_{y}$ is a function
 of the soil properties, it results in water table dynamics that are
@@ -949,7 +956,7 @@ $$q_{rgwl} =q_{grnd,ice} +q_{grnd,liq} -E_{g} -E_{v} -\frac{\left(W_{b}^{n+1} -W
 where $W_{b}^{n}$ and $W_{b}^{n+1}$ are the water balances at the
 beginning and ending of the time step defined as
 
-$$W_{b} =W_{can} +W_{sno} +\sum _{i=1}^{N}\left(w_{ice,i} +w_{liq,i} \right) .$$
+$$W_{b} =W_{can} +W_{sno} +\sum_{i=1}^{N}\left(w_{ice,i} +w_{liq,i} \right) .$$
 
 Currently, glaciers are non-vegetated and $E_{v} =W_{can} =0$. The
 contribution of lake runoff to $q_{rgwl}$ is described in section
