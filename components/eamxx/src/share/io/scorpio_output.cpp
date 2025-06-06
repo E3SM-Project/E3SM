@@ -586,8 +586,6 @@ void AtmosphereOutput::set_avg_cnt_tracking(const std::string& name, const Field
 
   // We will use a helper field for updating cnt, so store it inside the field header
   auto mask = count.clone(count.name()+"_mask");
-  mask.get_header().set_extra_data("true_value",int(1));
-  mask.get_header().set_extra_data("false_value",int(0));
   count.get_header().set_extra_data("mask",mask);
 
   m_avg_counts.push_back(count);
