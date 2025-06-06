@@ -362,7 +362,7 @@ contains
 
   end subroutine seq_rest_read
 
-subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
+subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use iMOAB,            only: iMOAB_GetGlobalInfo
@@ -373,6 +373,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
     character(*)           , intent(in) :: rest_file  ! restart file path/name
     type(seq_infodata_type), intent(in) :: infodata
     logical        ,         intent(in) :: samegrid_al ! needed for land nx
+    logical        ,         intent(in) :: samegrid_lr ! needed for land nx, too
 
     integer(IN)          :: n,n1,n2,n3
     real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
@@ -454,7 +455,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                 ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
                 call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                    'afrac:lfrac:lfrin', nx=nx_lnd)
-             else
+             else if(samegrid_lr) then
+               ! nx for land will be from global nb rof
+               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
+                  'afrac:lfrac:lfrin', nx=nx_lnd)
+             else ! is this ever true  ? 
                 call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                    'afrac:lfrac:lfrin')
              endif
@@ -471,7 +477,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                 call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  matrix = p_l2racc_lm, nx=nx_lnd)
-             else
+             else if(samegrid_lr) then
+               ! nx for land will be from global nb rof
+               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
+                trim(tagname), &
+                matrix = p_l2racc_lm, nx=nx_lnd)
+             else 
                 call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  matrix = p_l2racc_lm )
@@ -942,7 +954,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
 
   subroutine seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
-               tag, samegrid_al, rest_file)
+               tag, samegrid_al, samegrid_lr, rest_file)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use iMOAB,            only: iMOAB_GetGlobalInfo
@@ -965,6 +977,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
 
     character(len=*)       , intent(in)    :: tag
     logical        ,         intent(in)    :: samegrid_al ! needed for land nx
+    logical        ,         intent(in)    :: samegrid_lr ! needed for land nx too, for trigrid case
     character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
 
 
@@ -1175,6 +1188,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                   whead=whead, wdata=wdata, nx=nx_lnd)
+             else if(samegrid_lr) then
+               ! nx for land will be from global nb atmosphere
+               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               call seq_io_write(rest_file, mblxid, 'fractions_lx', &
+                'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
+                 whead=whead, wdata=wdata, nx=nx_lnd)
              else
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
@@ -1197,6 +1216,12 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al)
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
+             else if(samegrid_lr) then
+               ! nx for land will be from global nb atmosphere
+               ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
+               call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
+                trim(tagname), &
+                whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
              else
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
