@@ -388,9 +388,11 @@ contains
     !     write out the mesh file to disk, in parallel
     outfile = 'wholeRof.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
-    if (ierr > 0 )  &
-      call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
+    if (mrofid >= 0) then
+      ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)
+      if (ierr > 0 )  &
+        call shr_sys_abort( sub//' Error: fail to write the moab runoff mesh file')
+    endif
 #endif
 
   end subroutine rof_init_mct
@@ -1260,7 +1262,7 @@ end subroutine rof_export_moab
      
     !
     ! LOCAL VARIABLES
-    integer :: n2, n, nt, begr, endr, nliq, nfrz
+    integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
     real(R8) :: tmp1, tmp2
     real(R8) :: shum
     character(CXX) ::  tagname ! 
@@ -1287,7 +1289,7 @@ end subroutine rof_export_moab
     ! populate the array x2r_rm with data from MOAB tags
     tagname=trim(seq_flds_x2r_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices, point cloud
-    ierr = iMOAB_GetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1) )
+    ierr = iMOAB_GetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm )
     if ( ierr > 0) then
       call shr_sys_abort(sub//'Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
@@ -1295,6 +1297,8 @@ end subroutine rof_export_moab
     ! Note that ***runin are fluxes
     nliq = 0
     nfrz = 0
+    nmud = 0
+    nsan = 0
     do nt = 1,nt_rtm
        if (trim(rtm_tracers(nt)) == 'LIQ') then
           nliq = nt
@@ -1302,9 +1306,27 @@ end subroutine rof_export_moab
        if (trim(rtm_tracers(nt)) == 'ICE') then
           nfrz = nt
        endif
+       if (trim(rtm_tracers(nt)) == 'MUD') then
+          nmud = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'SAN') then
+          nsan = nt
+       endif
     enddo
-    if (nliq == 0 .or. nfrz == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+    if (nliq == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ',nliq,rtm_tracers
+       call shr_sys_abort()
+    endif
+    if (nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers ICE',nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+    if (nmud == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers MUD',nmud,rtm_tracers
+       call shr_sys_abort()
+    endif
+    if (nsan == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers SAN',nsan,rtm_tracers
        call shr_sys_abort()
     endif
 
@@ -1351,7 +1373,24 @@ end subroutine rof_export_moab
           THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
           THeat%coszen(n)    = x2r_rm(n2,index_x2r_coszen_str)
        end if
+
+
+       rtmCTL%qsur(n,nmud) = 0.0_r8
+       rtmCTL%qsur(n,nsan) = 0.0_r8
+
+       if (index_x2r_Flrl_inundinf > 0) then
+          rtmCTL%inundinf(n) = x2r_rm(n2,index_x2r_Flrl_inundinf) * (rtmCTL%area(n)*0.001_r8)
+       endif
+
     enddo
+
+    if(sediflag) then
+        do n = begr,endr
+           n2 = n - begr + 1
+           rtmCTL%qsur(n,nmud) = x2r_rm(n2,index_x2r_Flrl_rofmud) * (rtmCTL%area(n)) ! kg/m2/s --> kg/s for sediment
+           rtmCTL%qsur(n,nsan) = 0.0_r8
+        enddo
+    end if
 
   end subroutine rof_import_moab
 

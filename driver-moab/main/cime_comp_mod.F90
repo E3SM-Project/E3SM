@@ -452,6 +452,8 @@ module cime_comp_mod
   logical  :: lnd_c2_glc             ! .true.  => lnd to glc coupling on
   logical  :: ocn_c2_atm             ! .true.  => ocn to atm coupling on
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
+  logical  :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
+  integer  :: glc_nzoc               ! number of z-levels for ocn/glc TF coupling
   logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
   logical  :: ocn_c2_rof             ! .true.  => ocn to rof coupling on
@@ -569,7 +571,7 @@ module cime_comp_mod
        'Sa_u:Sa_v'
 
   character(CL) :: hist_a2x3hr_flds  = &
-       'Sa_z:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
+       'Sa_z:Sa_topo:Sa_u:Sa_v:Sa_tbot:Sa_ptem:Sa_shum:Sa_dens:Sa_pbot:Sa_pslv:Faxa_lwdn:&
        &Faxa_rainc:Faxa_rainl:Faxa_snowc:Faxa_snowl:&
        &Faxa_swndr:Faxa_swvdr:Faxa_swndf:Faxa_swvdf:&
        &Sa_co2diag:Sa_co2prog'
@@ -1705,6 +1707,8 @@ contains
          ocn_prognostic=ocn_prognostic,         &
          ocnrof_prognostic=ocnrof_prognostic,   &
          ocn_c2_glcshelf=ocn_c2_glcshelf,       &
+	 ocn_c2_glctf=ocn_c2_glctf,             &
+	 glc_nzoc=glc_nzoc,                     &
          glc_prognostic=glc_prognostic,         &
          rof_prognostic=rof_prognostic,         &
          rofocn_prognostic=rofocn_prognostic,   &
@@ -1801,6 +1805,7 @@ contains
        if (atm_prognostic) ocn_c2_atm = .true.
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
+       if (glc_prognostic .and. (glc_nzoc > 0)) ocn_c2_glctf = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
        if (rofocn_prognostic) ocn_c2_rof = .true.
 
@@ -2539,7 +2544,7 @@ contains
           call shr_sys_flush(logunit)
        end if
        call t_startf('CPL:seq_rest_read-moab')
-       call seq_rest_mb_read(rest_file, infodata, samegrid_al)
+       call seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
        call t_stopf('CPL:seq_rest_read-moab')
 #ifdef MOABDEBUG
        call write_moab_state(.false.)
@@ -3529,7 +3534,7 @@ contains
                call shr_sys_flush(logunit)
              end if
              call t_startf('CPL:seq_rest_read-moab')
-             call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al)
+             call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al, samegrid_lr)
              call t_stopf('CPL:seq_rest_read-moab')
           end if
           ! Clear the resume file so we don't try to read it again
@@ -5388,7 +5393,7 @@ contains
           call t_startf('CPL:seq_rest_mb_write')
           call seq_rest_mb_write(EClock_d, seq_SyncClock, infodata,       &
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
-               trim(cpl_inst_tag), samegrid_al, drv_moab_resume_file)
+               trim(cpl_inst_tag), samegrid_al, samegrid_lr, drv_moab_resume_file)
           call t_stopf('CPL:seq_rest_mb_write')
 
           if (iamroot_CPLID) then

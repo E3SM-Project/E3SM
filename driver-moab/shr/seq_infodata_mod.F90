@@ -209,6 +209,7 @@ MODULE seq_infodata_mod
      logical                 :: glcice_present  ! does glc have iceberg coupling on
      logical                 :: glc_prognostic  ! does component model need input data from driver
      logical                 :: glc_coupled_fluxes ! does glc send fluxes to other components (only relevant if glc_present is .true.)
+     integer                 :: glc_nzoc        ! number of z-levels for ocn/glc thermal forcing coupling
      logical                 :: wav_present     ! does component model exist
      logical                 :: wav_prognostic  ! does component model need input data from driver
      logical                 :: esp_present     ! does component model exist
@@ -777,6 +778,7 @@ CONTAINS
        ! if glc_present is .false., so it's okay to just start out assuming it's .true.
        ! in all cases.
        infodata%glc_coupled_fluxes = .true.
+       infodata%glc_nzoc = 0
        infodata%wav_prognostic = .false.
        infodata%iac_prognostic = .false.
        infodata%iceberg_prognostic = .false.
@@ -1024,7 +1026,7 @@ CONTAINS
        ice_present, ice_prognostic,                                       &
        glc_present, glc_prognostic,                                       &
        iac_present, iac_prognostic,                                       &
-       glc_coupled_fluxes,                                                &
+       glc_coupled_fluxes, glc_nzoc,                                      &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
@@ -1205,6 +1207,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: glcice_present
     logical,                optional, intent(OUT) :: glc_prognostic
     logical,                optional, intent(OUT) :: glc_coupled_fluxes
+    integer,                optional, intent(OUT) :: glc_nzoc
     logical,                optional, intent(OUT) :: wav_present
     logical,                optional, intent(OUT) :: wav_prognostic
     logical,                optional, intent(OUT) :: iac_present
@@ -1399,6 +1402,7 @@ CONTAINS
     if ( present(glcice_present) ) glcice_present = infodata%glcice_present
     if ( present(glc_prognostic) ) glc_prognostic = infodata%glc_prognostic
     if ( present(glc_coupled_fluxes)) glc_coupled_fluxes = infodata%glc_coupled_fluxes
+    if ( present(glc_nzoc)       ) glc_nzoc       = infodata%glc_nzoc
     if ( present(wav_present)    ) wav_present    = infodata%wav_present
     if ( present(wav_prognostic) ) wav_prognostic = infodata%wav_prognostic
     if ( present(esp_present)    ) esp_present    = infodata%esp_present
@@ -1593,7 +1597,7 @@ CONTAINS
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
        ice_present, ice_prognostic,                                       &
        glc_present, glc_prognostic,                                       &
-       glc_coupled_fluxes,                                                &
+       glc_coupled_fluxes, glc_nzoc,                                      &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
@@ -1776,6 +1780,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: glcice_present
     logical,                optional, intent(IN)    :: glc_prognostic
     logical,                optional, intent(IN)    :: glc_coupled_fluxes
+    integer,                optional, intent(IN)    :: glc_nzoc
     logical,                optional, intent(IN)    :: wav_present
     logical,                optional, intent(IN)    :: wav_prognostic
     logical,                optional, intent(IN)    :: esp_present
@@ -1969,6 +1974,7 @@ CONTAINS
     if ( present(glcice_present) ) infodata%glcice_present = glcice_present
     if ( present(glc_prognostic) ) infodata%glc_prognostic = glc_prognostic
     if ( present(glc_coupled_fluxes)) infodata%glc_coupled_fluxes = glc_coupled_fluxes
+    if ( present(glc_nzoc)       ) infodata%glc_nzoc       = glc_nzoc
     if ( present(wav_present)    ) infodata%wav_present    = wav_present
     if ( present(wav_prognostic) ) infodata%wav_prognostic = wav_prognostic
     if ( present(iac_present)    ) infodata%iac_present    = iac_present
@@ -2285,6 +2291,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%glcice_present,          mpicom)
     call shr_mpi_bcast(infodata%glc_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%glc_coupled_fluxes,      mpicom)
+    call shr_mpi_bcast(infodata%glc_nzoc,                mpicom)
     call shr_mpi_bcast(infodata%wav_present,             mpicom)
     call shr_mpi_bcast(infodata%wav_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%esp_present,             mpicom)
@@ -2602,6 +2609,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%glc_nzoc,           mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%glc_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2661,6 +2669,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%glcice_present,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%glc_coupled_fluxes, mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%glc_nzoc,           mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%wav_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%wav_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%iac_present,        mpicom, pebcast=cplpe)
@@ -3015,6 +3024,7 @@ CONTAINS
     write(logunit,F0L) subname,'glcice_present           = ', infodata%glcice_present
     write(logunit,F0L) subname,'glc_prognostic           = ', infodata%glc_prognostic
     write(logunit,F0L) subname,'glc_coupled_fluxes       = ', infodata%glc_coupled_fluxes
+    write(logunit,F0L) subname,'glc_nzoc                 = ', infodata%glc_nzoc
     write(logunit,F0L) subname,'wav_present              = ', infodata%wav_present
     write(logunit,F0L) subname,'wav_prognostic           = ', infodata%wav_prognostic
     write(logunit,F0L) subname,'iac_present              = ', infodata%iac_present

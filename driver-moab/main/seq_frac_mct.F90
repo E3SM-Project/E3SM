@@ -140,7 +140,7 @@ module seq_frac_mct
 
   ! !USES:
 
-  use shr_kind_mod     , only: R8 => SHR_KIND_R8
+  use shr_kind_mod     , only: R8 => SHR_KIND_R8, IN=>SHR_KIND_IN
   use shr_sys_mod
   use shr_const_mod
 
@@ -287,6 +287,10 @@ contains
 
     !----- local -----
     type(mct_ggrid), pointer    :: dom_a
+    type(mct_gsmap), pointer    :: gsmap_a ! see if we can get from here the global ids (missing from dom_a)
+    type(mct_gsmap), pointer    :: gsmap_l
+    type(mct_gsmap), pointer    :: gsmap_r 
+    type(mct_gsmap), pointer    :: gsmap_i ! ofrac on ice error 
     type(mct_ggrid), pointer    :: dom_i
     type(mct_ggrid), pointer    :: dom_l
     type(mct_ggrid), pointer    :: dom_o
@@ -326,11 +330,13 @@ contains
     character*32             ::  wgtIdef
     real(r8),    allocatable :: tagValues(:) ! used for setting some default tags
     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+    integer(IN), pointer :: dof(:)    !
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
     integer kgg  ! index in global number attribute, used for global id in MOAB 
     integer idintx ! used for context for intx atm - ocn
     integer id_join ! used for example for atm%cplcompid
     integer :: mpicom ! we are on coupler PES here
+    integer :: my_task !
     character(30)            :: outfile, wopts
 
 
@@ -361,6 +367,7 @@ contains
     dom_w => component_get_dom_cx(wav)
     dom_z => component_get_dom_cx(iac)
 
+    mpicom = seq_comm_mpicom(CPLID)
     debug_old = seq_frac_debug
     seq_frac_debug = 2
 
@@ -469,17 +476,21 @@ contains
          tagname = 'lfrin'//C_NULL_CHAR ! 'lfrin'
          allocate(tagValues(lSize) )
          tagValues = dom_l%data%rAttr(kf,:)
-         kgg = mct_aVect_indexIA(dom_l%data ,"GlobGridNum" ,perrWith=subName)
-         allocate(GlobalIds(lSize))
-         GlobalIds = dom_l%data%iAttr(kgg,:)
-
+         !kgg = mct_aVect_indexIA(dom_l%data ,"GlobGridNum" ,perrWith=subName)
+         !allocate(GlobalIds(lSize))
+         !GlobalIds = dom_l%data%iAttr(kgg,:)
+         gsmap_l  => component_get_gsmap_cx(lnd) ! gsmap_lx
+         call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+         call mct_gsMap_orderedPoints(gsmap_l, my_task, dof)
          ! ent_type should be 3, FV
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, dof )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting lfrin on lnd   '
             call shr_sys_abort(subname//' ERROR in setting lfrin on lnd')
          endif
-         deallocate(GlobalIds)
+         !deallocate(GlobalIds)
+         deallocate(dof)
          deallocate(tagValues)
 
        endif
@@ -526,16 +537,21 @@ contains
          tagname = 'rfrac'//C_NULL_CHAR ! 'rfrac'
          allocate(tagValues(lSize) )
          tagValues = dom_r%data%rAttr(kf,:)
-         kgg = mct_aVect_indexIA(dom_r%data ,"GlobGridNum" ,perrWith=subName)
-         allocate(GlobalIds(lSize))
-         GlobalIds = dom_r%data%iAttr(kgg,:)
+         !kgg = mct_aVect_indexIA(dom_r%data ,"GlobGridNum" ,perrWith=subName)
+         !allocate(GlobalIds(lSize))
+         !GlobalIds = dom_r%data%iAttr(kgg,:)
+         gsmap_r  => component_get_gsmap_cx(rof) ! gsmap_rx
+         call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+         call mct_gsMap_orderedPoints(gsmap_r, my_task, dof)
          ! again, we are setting on the river instance that is also used for ocean coupling
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, lSize , ent_type, tagValues, dof )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting rfrac on rof   '
             call shr_sys_abort(subname//' ERROR in setting rfrac on rof ')
          endif
-         deallocate(GlobalIds)
+         !deallocate(GlobalIds)
+         deallocate(dof)
          deallocate(tagValues)
 
        endif
@@ -590,23 +606,49 @@ contains
          tagname = 'ofrac'//C_NULL_CHAR ! 'ofrac'
          allocate(tagValues(lSize) )
          tagValues = dom_i%data%rAttr(kf,:)
-         kgg = mct_aVect_indexIA(dom_i%data ,"GlobGridNum" ,perrWith=subName)
-         allocate(GlobalIds(lSize))
-         GlobalIds = dom_i%data%iAttr(kgg,:)
-
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         !kgg = mct_aVect_indexIA(dom_i%data ,"GlobGridNum" ,perrWith=subName)
+         !allocate(GlobalIds(lSize))
+         !GlobalIds = dom_i%data%iAttr(kgg,:)
+         gsmap_i  => component_get_gsmap_cx(ice) ! gsmap_ix
+         call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+         call mct_gsMap_orderedPoints(gsmap_i, my_task, dof)
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, dof )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting ofrac on ice   '
             call shr_sys_abort(subname//' ERROR in setting ofrac on ice ')
          endif
-         deallocate(GlobalIds)
+         !deallocate(GlobalIds)
          deallocate(tagValues)
+         deallocate(dof)
+#ifdef MOABDEBUG
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+         if (mbixid .ge. 0  ) then
+            outfile = 'iceCplInit1Fr.h5m'//C_NULL_CHAR
+            ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
+         endif
+#endif
        endif
 
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
        endif
+#ifdef MOABDEBUG
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+       if (mbaxid .ge. 0  ) then
+          outfile = 'atmCplInit1Fr.h5m'//C_NULL_CHAR
+          ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in writing mesh '
+             call shr_sys_abort(subname//' ERROR in writing mesh ')
+          endif
+       endif
+#endif
 
     end if ! end of ice_present
 
@@ -674,6 +716,17 @@ contains
           deallocate(tagValues)
           mapper_o2a => prep_atm_get_mapper_Fo2a()
           call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false.)
+#ifdef MOABDEBUG
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+         if (mbaxid .ge. 0  ) then
+            outfile = 'atmCplInit2Fr.h5m'//C_NULL_CHAR
+            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
+         endif
+#endif
        endif
 
        if (atm_present) then
@@ -715,16 +768,21 @@ contains
           tagname = 'lfrac'//C_NULL_CHAR ! 'lfrac
           allocate(tagValues(lSize) )
           tagValues = fractions_a%rAttr(kl,:)
-          kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
-          allocate(GlobalIds(lSize))
-          GlobalIds = dom_a%data%iAttr(kgg,:)
+          !kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
+          !allocate(GlobalIds(lSize))
+          !GlobalIds = dom_a%data%iAttr(kgg,:)
           ! set on atmosphere instance
-          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+          gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+          call mpi_comm_rank(mpicom,my_task,ierr)
+            ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+          call mct_gsMap_orderedPoints(gsmap_a, my_task, dof)
+          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, dof )
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in setting lfrac on atm   '
              call shr_sys_abort(subname//' ERROR in setting lfrac on atm ')
           endif
-          deallocate(GlobalIds)
+          !deallocate(GlobalIds)
+          deallocate(dof)
           deallocate(tagValues)
         endif
        else if (lnd_present) then
@@ -737,6 +795,38 @@ contains
                 if (atm_frac_correct) fractions_a%rAttr(kl,n) = 1.0_r8
              endif
           enddo
+          ! case --res r05_r05 --compset RMOSGPCC  is coming here 
+          ! there are no active ice or ocn comps
+          ! ist is almost like above, except the ofrac is modified too
+          if (mbaxid .ge. 0  ) then ! //
+            tagname = 'lfrac'//C_NULL_CHAR ! 'lfrac
+            allocate(tagValues(lSize) )
+            tagValues = fractions_a%rAttr(kl,:)
+            kgg = mct_aVect_indexIA(dom_a%data ,"GlobGridNum" ,perrWith=subName)
+            !allocate(GlobalIds(lSize))
+            ! GlobalIds = dom_a%data%iAttr(kgg,:)
+            gsmap_a  => component_get_gsmap_cx(atm) ! gsmap_ax
+            call mpi_comm_rank(mpicom,my_task,ierr)
+            ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+            call mct_gsMap_orderedPoints(gsmap_a, my_task, dof)
+            ! set on atmosphere instance
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, dof )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in setting lfrac on atm   '
+               call shr_sys_abort(subname//' ERROR in setting lfrac on atm ')
+            endif
+            ! unlike above, set ofrac too
+            tagname = 'ofrac'//C_NULL_CHAR ! 'ofrac
+            tagValues = fractions_a%rAttr(ko,:)
+            ! set on atmosphere instance, ofrac value
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mbaxid, tagname, lSize , ent_type, tagValues, dof )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in setting ofrac on atm   '
+               call shr_sys_abort(subname//' ERROR in setting ofrac on atm ')
+            endif
+            deallocate(dof)
+            deallocate(tagValues)
+          endif
        endif
     endif
 
@@ -753,6 +843,24 @@ contains
           kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
           kl = mct_aVect_indexRA(fractions_l,"lfrac",perrWith=subName)
           fractions_l%rAttr(kl,:) = fractions_l%rAttr(kk,:)
+          ! still need to do MOAB case, basically copy the value of lfrin to lfrac, on land
+          ! fractions / on land moab instance; otherwise would stay at 0 :) 
+          ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
+          arrSize = nvise(1) ! there is one tag that we need to copy
+          allocate(tagValues(arrSize) )
+          tagname = 'lfrin'//C_NULL_CHAR
+          ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrSize , ent_type, tagValues)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in getting lfrin on lnd   '
+            call shr_sys_abort(subname//' ERROR in getting lfrin on lnd  ')
+          endif
+          tagname = 'lfrac'//C_NULL_CHAR 
+          ierr = iMOAB_SetDoubleTagStorage ( mbixid, tagname, arrSize , ent_type, tagValues)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting lfrac on lnd   '
+            call shr_sys_abort(subname//' ERROR in setting lfrac on lnd  ')
+          endif
+          deallocate(tagValues)
        end if
     end if
     if (lnd_present .and. rof_present) then
@@ -849,22 +957,25 @@ contains
     !----- local -----
     type(mct_aVect), pointer :: i2x_i
     type(mct_ggrid), pointer :: dom_i
-    type(mct_ggrid), pointer :: dom_o ! introduced just to update ocean moab fractions
+    !type(mct_ggrid), pointer :: dom_o ! introduced just to update ocean moab fractions
+    type(mct_gsmap), pointer    :: gsmap_i ! ofrac on ice error
     logical                  :: atm_present   ! true => atm is present
     logical                  :: ice_present   ! true => ice is present
     logical                  :: ocn_present   ! true => ocn is present
     integer                  :: n
     integer                  :: ki, kl, ko, kf
     real(r8),allocatable :: fcorr(:)
+    integer(IN), pointer, save :: dof(:)    !
 
     logical, save :: first_time = .true.
 ! moab
     integer                  ::   ierr, kgg
     integer , save           ::   lSize, ent_type
+    integer mpicom, my_task
     character(CXX)           :: tagname
     real(r8),    allocatable, save :: tagValues(:) ! used for setting some tags
     real(r8),    allocatable, save :: tagValuesOfrac(:) ! used for setting some tags
-    integer ,    allocatable, save :: GlobalIds(:) ! used for setting values associated with ids
+    !integer ,    allocatable, save :: GlobalIds(:) ! used for setting values associated with ids
 #ifdef MOABDEBUG
     character(len=100) :: outfile, wopts, lnum
 #endif
@@ -891,8 +1002,9 @@ contains
 
     dom_i => component_get_dom_cx(ice)
     i2x_i => component_get_c2x_cx(ice)
+    mpicom = seq_comm_mpicom(CPLID)
 
-    dom_o => component_get_dom_cx(ocn) ! 
+    !dom_o => component_get_dom_cx(ocn) ! 
     if (ice_present) then
        call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")
 
@@ -908,9 +1020,13 @@ contains
        if (first_time) then  ! allocate some local arrays
           lSize = mct_aVect_lSize(dom_i%data)
           allocate(tagValues(lSize) )
-          allocate(GlobalIds(lSize) )
-          kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
-          GlobalIds = dom_i%data%iAttr(kgg,:)
+          !allocate(GlobalIds(lSize) )
+          !kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
+          !GlobalIds = dom_i%data%iAttr(kgg,:)
+          gsmap_i  => component_get_gsmap_cx(ice) ! gsmap_ix
+          call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+          call mct_gsMap_orderedPoints(gsmap_i, my_task, dof)
           allocate (tagValuesOfrac(local_size_mb_ocn))
           ent_type = 1 ! cells for mpas sea ice
           first_time = .false.
@@ -923,7 +1039,7 @@ contains
           ! fraclist_i = 'afrac:ifrac:ofrac'
           !
           tagValues = fractions_i%rAttr(ki,:)
-          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
+          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, dof )
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in setting ifrac on ice moab instance  '
              call shr_sys_abort(subname//' ERROR in setting ifrac on ice moab instance ')
@@ -931,7 +1047,7 @@ contains
 
           tagname = 'ofrac'//C_NULL_CHAR
           tagValues = fractions_i%rAttr(ko,:)
-          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
+          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, dof )
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in setting ofrac on ice moab instance  '
              call shr_sys_abort(subname//' ERROR in setting ofrac on ice moab instance ')
