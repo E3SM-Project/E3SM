@@ -54,6 +54,7 @@ void gw_heating_depth_c(Int ncol, Real maxq0_conversion_factor, Real hdepth_scal
 
 void gw_storm_speed_c(Int ncol, Real storm_speed_min, Real* ubm, Int* mini, Int* maxi, Int* storm_speed, Real* uh, Real* umin, Real* umax);
 
+void gw_convect_gw_sources_c(Int ncol, Int ngwv, Real* lat, Real hdepth_min, Real* hdepth, Int* mini, Int* maxi, Real* netdt, Real* uh, Int* storm_speed, Real* maxq0, Real* umin, Real* umax, Real* tau);
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -177,6 +178,14 @@ void gw_storm_speed(GwStormSpeedData& d)
   gw_convect_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_storm_speed_c(d.ncol, d.storm_speed_min, d.ubm, d.mini, d.maxi, d.storm_speed, d.uh, d.umin, d.umax);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_convect_gw_sources(GwConvectGwSourcesData& d)
+{
+  gw_convect_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_convect_gw_sources_c(d.ncol, d.ngwv, d.lat, d.hdepth_min, d.hdepth, d.mini, d.maxi, d.netdt, d.uh, d.storm_speed, d.maxq0, d.umin, d.umax, d.tau);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

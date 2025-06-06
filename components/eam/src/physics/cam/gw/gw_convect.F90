@@ -21,6 +21,7 @@ public :: gw_beres_src
 public :: gw_convect_project_winds
 public :: gw_heating_depth
 public :: gw_storm_speed
+public :: gw_convect_gw_sources
 
 ! Dimension for heating depth.
 integer :: maxh

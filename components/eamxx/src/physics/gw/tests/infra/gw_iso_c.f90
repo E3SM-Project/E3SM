@@ -247,4 +247,18 @@ contains
 
     call gw_storm_speed(ncol, storm_speed_min, ubm, mini, maxi, storm_speed, uh, umin, umax)
   end subroutine gw_storm_speed_c
+
+  subroutine gw_convect_gw_sources_c(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, maxq0, umin, umax, tau) bind(C)
+    use gw_common, only : pver, pgwv
+    use gw_convect, only : gw_convect_gw_sources
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv
+    real(kind=c_real) , intent(in), dimension(ncol) :: lat, hdepth, uh, maxq0, umin, umax
+    real(kind=c_real) , value, intent(in) :: hdepth_min
+    integer(kind=c_int) , intent(in), dimension(ncol) :: mini, maxi, storm_speed
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: netdt
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+
+    call gw_convect_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, maxq0, umin, umax, tau)
+  end subroutine gw_convect_gw_sources_c
 end module gw_iso_c
