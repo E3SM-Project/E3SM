@@ -860,7 +860,6 @@ contains
     !
     integer             :: g, nstep
     real(r8)            :: dt
-    real(r8), parameter :: error_tol = 1.e-8_r8
     !-----------------------------------------------------------------------
 
     associate(                                                       &
@@ -978,7 +977,7 @@ contains
 
          grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
-         if (abs(grc_errcb(g)) > error_tol .and. nstep > 1) then
+         if (abs(grc_errcb(g)) > balance_check_tolerance .and. nstep > 1) then
             write(iulog,*)'grid cbalance error = ', grc_errcb(g), g
             write(iulog,*)'Latdeg,Londeg       = ', grc_pp%latdeg(g), grc_pp%londeg(g)
             write(iulog,*)'input               = ', grc_cinputs(g)*dt
