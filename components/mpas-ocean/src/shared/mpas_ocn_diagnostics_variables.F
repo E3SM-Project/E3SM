@@ -70,6 +70,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: RiTopOfCell
    real (kind=RKIND), dimension(:,:), pointer :: RiTopOfEdge
 
+   real (kind=RKIND), dimension(:), pointer :: upwindFactor
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
@@ -289,6 +290,10 @@ contains
                    layerThicknessCellWetDry)
          call mpas_pool_get_array(diagnosticsPool, 'sshCellWetDry', &
                    sshCellWetDry)
+      end if
+      if (config_use_spatially_variable_upwind) then
+         call mpas_pool_get_array(diagnosticsPool, 'upwindFactor', &
+                   upwindFactor)
       end if
 
       if (config_use_GM.or.config_use_Redi) then
@@ -811,6 +816,7 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
+         !$acc                   upwindFactor,                    &
          !$acc                   layerThickEdgeDrag,              &
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
@@ -1072,6 +1078,7 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
+         !$acc                   upwindFactor,                    &
          !$acc                   layerThickEdgeDrag,              &
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
@@ -1280,6 +1287,7 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
+                 upwindFactor,                    &
                  layerThickEdgeDrag,              &
                  layerThickEdgeFlux,              &
                  layerThickEdgeMean,              &
