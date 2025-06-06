@@ -4,6 +4,7 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/eamxx_config.hpp"
+#include "eamxx_version.h"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_comm.hpp>

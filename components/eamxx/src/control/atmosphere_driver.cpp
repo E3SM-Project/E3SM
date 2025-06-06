@@ -13,6 +13,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
+#include "eamxx_version.h"
 
 #include <ekat_assert.hpp>
 #include <ekat_string_utils.hpp>
