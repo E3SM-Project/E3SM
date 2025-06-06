@@ -174,7 +174,7 @@ contains
 !      real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:,:), allocatable :: pressureAdjustedForLandIce 
 
-      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraftForSsh
+      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD
       real (kind=RKIND), dimension(:), pointer :: dGradientMLD, landIcePressure
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: interp_local
