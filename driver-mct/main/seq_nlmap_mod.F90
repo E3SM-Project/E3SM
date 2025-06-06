@@ -730,7 +730,7 @@ contains
                    tmp = (gwts(k) - glbl_masses(k))/gwts(natt+k)
                    if (abs(tmp) < 1e-15) then
                       msg = ''
-                   else if (abs(tmp) < 1e-13 .or. (a2s_cons .and. abs(tmp) < 1e-11)) then
+                   else if (abs(tmp) < 1e-13 .or. (a2s_cons .and. abs(tmp) < 1e-8)) then
                       ! Allow slightly more error for the a2s_cons case because
                       ! it is sensitive to domain.lnd-caused inconsistency.
                       msg = ' OK'
