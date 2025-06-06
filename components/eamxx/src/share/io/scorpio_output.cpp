@@ -440,7 +440,7 @@ run (const std::string& filename,
         // If count<=threshold, we set count=fill_value, so that fill_val propagates
         // to the output fields when we divide by count later
         if (output_step and m_avg_type==OutputAvgType::Average) {
-          int min_count = static_cast<int>(std::ceil(m_avg_coeff_threshold*nsteps_since_last_output));
+          int min_count = static_cast<int>(std::floor(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
           compute_mask<Comparison::LE>(count,min_count,mask);
