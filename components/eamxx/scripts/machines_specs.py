@@ -75,11 +75,13 @@ class Machine(object):
     baselines_dir = ""
 
     @classmethod
-    def setup_base(cls,name,num_bld_res=-1,num_run_res=-1):
-        cls.name = name
+    def setup_base(cls):
+        # cls.name = name
         cls.mach_file = pathlib.Path(EAMXX_DIR) / "cmake" / "machine-files" / (cls.name + ".cmake")
-        cls.num_bld_res = num_bld_res if num_bld_res > 0 else get_available_cpu_count()
-        cls.num_run_res = num_run_res if num_run_res > 0 else get_available_cpu_count()
+        if cls.num_bld_res <= 0:
+            get_available_cpu_count()
+        if cls.num_run_res <= 0:
+            get_available_cpu_count()
 
     @classmethod
     def uses_gpu (cls):
@@ -89,10 +91,11 @@ class Machine(object):
 class Generic(Machine):
 ###############################################################################
     concrete = True
+    name = "linux-generic"
 
     @classmethod
     def setup(cls):
-        super().setup_base("linux-generic")
+        super().setup_base()
         # Set baselines_dir to PWD/../ctest-build/baselines
         cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
 
@@ -419,6 +422,7 @@ class AnlGceUb22(Machine):
 ###############################################################################
 def get_all_machines (base=Machine):
 ###############################################################################
+    machines = []
     # If the user has the file ~/.cime/scream_mach_specs.py, import the machine type Local from it
     if pathlib.Path("~/.cime/scream_mach_specs.py").expanduser().is_file(): # pylint: disable=no-member
         sys.path.append(str(pathlib.Path("~/.cime").expanduser()))
@@ -430,8 +434,10 @@ def get_all_machines (base=Machine):
         # Also, its static analysis runs on a static sys.path, without ~/.cime,
         # so it doesn't find the module
         from scream_mach_specs import Local# pylint: disable=unused-import, import-error
+        Local.setup()
+        machines.append(Local)
+        return machines
 
-    machines = []
     for m in base.__subclasses__():
         if m.concrete:
             m.setup() # Init the class static data
@@ -493,7 +499,10 @@ def get_mach_env_setup_command(machine, ctest_j=None):
 ###############################################################################
 def setup_mach_env(machine, ctest_j=None):
 ###############################################################################
-    assert_machine_supported(machine)
+    # NOTE: this appears to be unnecessary because the `machine` arg, passed by
+    # test_all_eamxx.py, is originally set by get_machine(), which would error
+    # out if it weren't in the list returned by the below
+    # assert_machine_supported(machine)
 
     env_setup = get_mach_env_setup_command(machine, ctest_j=ctest_j)
 

@@ -306,11 +306,11 @@ class TestAllScream(object):
         return missing
 
     ###############################################################################
-    def generate_cmake_config(self, test, for_ctest=False):
+    def generate_cmake_config(self, test, mfile, for_ctest=False):
     ###############################################################################
-
         # Ctest only needs config options, and doesn't need the leading 'cmake '
-        result  = f"{'' if for_ctest else 'cmake '}-C {self._machine.mach_file}"
+        first_str = '' if for_ctest else 'cmake '
+        result  = first_str + '-C ' + mfile
 
         # Netcdf should be available. But if the user is doing a testing session
         # where all netcdf-related code is disabled, he/she should be able to run
@@ -392,8 +392,11 @@ class TestAllScream(object):
         elif "SLURM_CPU_BIND_LIST" in os.environ:
             affinity_cp = get_cpu_ids_from_slurm_env_var()
         else:
-            this_process = psutil.Process()
-            affinity_cp = list(this_process.cpu_affinity())
+            if not self._machine.os_type == "macos":
+                this_process = psutil.Process()
+                affinity_cp = list(this_process.cpu_affinity())
+            else:
+                affinity_cp = list(range(psutil.cpu_count()))
 
         affinity_cp.sort()
 
@@ -483,7 +486,7 @@ class TestAllScream(object):
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
         # taskset resources even though the ctest script is also running the tests
-        if self._parallel:
+        if self._parallel and not (self._machine.os_type == "macos"):
             resources = self.get_taskset_resources(test)
             result = result.replace("'", r"'\''") # handle nested quoting
             result = f"taskset -c {','.join([str(r) for r in resources])} sh -c '{result}'"
@@ -522,7 +525,7 @@ class TestAllScream(object):
             return False
 
         cmd = f"make -j{test.compile_res_count}"
-        if self._parallel:
+        if self._parallel and not (self._machine.os_type == "macos"):
             resources = self.get_taskset_resources(test)
             cmd = f"taskset -c {','.join([str(r) for r in resources])} sh -c '{cmd}'"
 
@@ -591,7 +594,7 @@ class TestAllScream(object):
         return success
 
     ###############################################################################
-    def run_test(self, test):
+    def run_test(self, test, mfile):
     ###############################################################################
         git_head = get_current_head()
 
@@ -600,7 +603,7 @@ class TestAllScream(object):
         print("===============================================================================")
 
         test_dir = self.get_test_dir(self._work_dir,test)
-        cmake_config = self.generate_cmake_config(test, for_ctest=True)
+        cmake_config = self.generate_cmake_config(test, mfile, for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
         if self._config_only:
@@ -634,10 +637,16 @@ class TestAllScream(object):
             test : False
             for test in self._tests}
 
+        # appears to be some issue with the threading executor/submitter where
+        # second-order objects in `self` are not inherited by the threaded
+        # instance (at least for macos)
+        # thus, we need this intermediate variable
+        mfile = self._machine.mach_file
+
         num_workers = len(self._tests) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
             future_to_test = {
-                executor.submit(self.run_test,test) : test
+                executor.submit(self.run_test, test, mfile) : test
                 for test in self._tests}
 
             for future in threading3.as_completed(future_to_test):
