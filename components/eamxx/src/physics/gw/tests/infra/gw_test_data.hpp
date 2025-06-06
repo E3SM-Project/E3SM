@@ -476,6 +476,37 @@ struct GwHeatingDepthData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwHeatingDepthData, 4, ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old);
 };
 
+struct GwStormSpeedData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real storm_speed_min;
+  Real *ubm;
+  Int *mini, *maxi;
+  GwConvectInitData init;
+
+  // Outputs
+  Int *storm_speed;
+  Real *uh, *umin, *umax;
+
+  GwStormSpeedData(Int ncol_, Real storm_speed_min_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_, init_.init.pver},
+      {ncol_},
+      {ncol_}
+    },
+    {
+      {&ubm},
+      {&uh, &umin, &umax}
+    },
+    {
+      {&mini, &maxi, &storm_speed}
+    }),
+    ncol(ncol_), storm_speed_min(storm_speed_min_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwStormSpeedData, 2, ncol, storm_speed_min);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
@@ -489,6 +520,7 @@ void gw_front_gw_sources(GwFrontGwSourcesData& d);
 void gw_cm_src(GwCmSrcData& d);
 void gw_convect_project_winds(GwConvectProjectWindsData& d);
 void gw_heating_depth(GwHeatingDepthData& d);
+void gw_storm_speed(GwStormSpeedData& d);
 
 extern "C" { // _f function decls
 }

@@ -88,6 +88,7 @@ struct UnitWrap {
     struct TestGwCmSrc;
     struct TestGwConvectProjectWinds;
     struct TestGwHeatingDepth;
+    struct TestGwStormSpeed;
   }; // UnitWrap
 };
 

@@ -312,6 +312,21 @@ struct Functions
     const uview_1d<Spack>& hdepth,
     const uview_1d<Spack>& maxq0_out,
     const uview_1d<Spack>& maxq0);
+
+  KOKKOS_FUNCTION
+  static void gw_storm_speed(
+    // Inputs
+    const Int& pver,
+    const Int& ncol,
+    const Spack& storm_speed_min,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Int>& mini,
+    const uview_1d<const Int>& maxi,
+    // Outputs
+    const uview_1d<Int>& storm_speed,
+    const uview_1d<Spack>& uh,
+    const uview_1d<Spack>& umin,
+    const uview_1d<Spack>& umax);
 }; // struct Functions
 
 } // namespace gw
@@ -333,5 +348,6 @@ struct Functions
 # include "impl/gw_gw_cm_src_impl.hpp"
 # include "impl/gw_gw_convect_project_winds_impl.hpp"
 # include "impl/gw_gw_heating_depth_impl.hpp"
+# include "impl/gw_gw_storm_speed_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

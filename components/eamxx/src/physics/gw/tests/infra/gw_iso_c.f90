@@ -233,4 +233,18 @@ contains
 
     call gw_heating_depth(ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old, zm, netdt, mini, maxi, hdepth, maxq0_out, maxq0)
   end subroutine gw_heating_depth_c
+
+  subroutine gw_storm_speed_c(ncol, storm_speed_min, ubm, mini, maxi, storm_speed, uh, umin, umax) bind(C)
+    use gw_common, only : pver
+    use gw_convect, only : gw_storm_speed
+
+    integer(kind=c_int) , value, intent(in) :: ncol
+    real(kind=c_real) , value, intent(in) :: storm_speed_min
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: ubm
+    integer(kind=c_int) , intent(in), dimension(ncol) :: mini, maxi
+    integer(kind=c_int) , intent(out), dimension(ncol) :: storm_speed
+    real(kind=c_real) , intent(out), dimension(ncol) :: uh, umin, umax
+
+    call gw_storm_speed(ncol, storm_speed_min, ubm, mini, maxi, storm_speed, uh, umin, umax)
+  end subroutine gw_storm_speed_c
 end module gw_iso_c
