@@ -8,14 +8,15 @@ changes in canopy water $\Delta W_{can,\,liq}$, canopy snow water
 $\Delta W_{can,\,sno}$ surface water $\Delta W_{sfc}$, snow water
 $\Delta W_{sno}$, soil water $\Delta w_{liq,\, i}$, and soil ice
 $\Delta w_{ice,\, i}$, and water in the unconfined aquifer
-$\Delta W_{a}$ (all in kg m^-2^ or mm of H~2~O)
+$\Delta W_{a}$ (all in $kg\ m^{-2}$ or $mm\ of\ H_2O$)
 (`Figure Hydrologic processes`{.interpreted-text role="numref"}).
 
 The total water balance of the system is
 
 $$\begin{aligned}
-\begin{array}{l} {\Delta W_{can,\,liq} +\Delta W_{can,\,sno} +\Delta W_{sfc} +\Delta W_{sno} +} \\ {\sum _{i=1}^{N_{levsoi} }\left(\Delta w_{liq,\, i} +\Delta w_{ice,\, i} \right)+\Delta W_{a} =\left(\begin{array}{l} {q_{rain} +q_{sno} -E_{v} -E_{g} -q_{over} } \\ {-q_{h2osfc} -q_{drai} -q_{rgwl} -q_{snwcp,\, ice} } \end{array}\right) \Delta t} \end{array}
+{\Delta W_{can,\,liq} +\Delta W_{can,\,sno} +\Delta W_{sfc} +\Delta W_{sno} +} \\ {\sum _{i=1}^{N_{levsoi} }\left(\Delta w_{liq,\, i} +\Delta w_{ice,\, i} \right)+\Delta W_{a} =\left(\begin{array}{l} {q_{rain} +q_{sno} -E_{v} -E_{g} -q_{over} } \\ {-q_{h2osfc} -q_{drai} -q_{rgwl} -q_{snwcp,\, ice} } \end{array}\right) \Delta t}
 \end{aligned}$$
+<p align="right"><strong>(1)</strong></p>
 
 where $q_{rain}$ is the liquid part of precipitation, $q_{sno}$ is the
 solid part of precipitation, $E_{v}$ is ET from vegetation (Chapter
@@ -32,7 +33,7 @@ $q_{rgwl}$ and $q_{snwcp,ice}$ are liquid and solid runoff from glaciers
 and lakes, and runoff from other surface types due to snow capping
 (section
 `Runoff from glaciers and snow-capped surfaces`{.interpreted-text
-role="numref"}) (all in kg m^-2^ s^-1^), $N_{levsoi}$ is the number of
+role="numref"}) (all in $kg\ m^{-2} s^{-1}$), $N_{levsoi}$ is the number of
 soil layers (note that hydrology calculations are only done over soil
 layers 1 to $N_{levsoi}$; ground levels $N_{levsoi} +1$ to $N_{levgrnd}$
 are currently hydrologically inactive;
@@ -43,14 +44,14 @@ role="ref"} and $\Delta t$ is the time step (s).
 ![Hydrologic processes represented in CLM.](hydrologic.processes.png)
 :::
 
-## Canopy Water {#Canopy Water}
+## Canopy Water
 
 Liquid precipitation is either intercepted by the canopy, falls directly
 to the snow/soil surface (throughfall), or drips off the vegetation
 (canopy drip). Solid precipitation is treated similarly, with the
 addition of unloading of previously intercepted snow. Interception by
 vegetation is divided between liquid and solid phases $q_{intr,\,liq}$
-and $q_{intr,\,ice}$ (kg m^-2^ s^-1^)
+and $q_{intr,\,ice}$ ($kg\ m^{-2} s^{-1}$)
 
 $$q_{intr,\,liq} = f_{pi,\,liq} \ q_{rain}$$
 
@@ -61,7 +62,7 @@ precipitation of rain and snow, respectively
 
 $$f_{pi,\,liq} = \alpha_{liq} \ tanh \left(L+S\right)$$
 
-$$f_{pi,\,ice} =\alpha_{sno} \ \left\{1-\exp \left[-0.5\left(L+S\right)\right]\right\} \ ,$$
+$$f_{pi,\,ice} =\alpha_{sno} \ \left\(1-\exp \left[-0.5\left(L+S\right)\right]\right\) $$
 
 and $L$ and $S$ are the exposed leaf and stem area index, respectively
 (section `Phenology and vegetation burial by snow`{.interpreted-text
@@ -69,7 +70,7 @@ role="numref"}), and the $\alpha$\'s scale the fractional area of a leaf
 that collects water
 (`Lawrence et al. 2007 <Lawrenceetal2007>`{.interpreted-text
 role="ref"}). Default values of $\alpha_{liq}$ and $\alpha_{sno}$ are
-set to 1. Throughfall (kg m^-2^ s^-1^) is also divided into liquid and
+set to 1. Throughfall ($kg\ m^{-2} s^{-1}$) is also divided into liquid and
 solid phases, reaching the ground (soil or snow surface) as
 
 $$q_{thru,\, liq} = q_{rain} \left(1 - f_{pi,\,liq}\right)$$
@@ -93,17 +94,17 @@ $$W_{can,sno}^{intr} =W_{can,sno}^{n} +q_{intr,\, ice} \Delta t\ge 0$$
 are the the canopy liquid water and snow water equivalent after
 accounting for interception, $W_{can,\,liq}^{n}$ and $W_{can,\,sno}^{n}$
 are the canopy liquid and snow water from the previous time step, and
-$W_{can,\,liq}^{max }$ and $W_{can,\,snow}^{max }$ (kg m^-2^ or mm of
-H~2~O) are the maximum amounts of liquid water and snow the canopy can
+$W_{can,\,liq}^{max }$ and $W_{can,\,snow}^{max }$ ($kg\ m^{-2}$ or $mm\ of\
+H_2O) are the maximum amounts of liquid water and snow the canopy can
 hold. They are defined by
 
 $$W_{can,\,liq}^{max } =p_{liq}\left(L+S\right)$$
 
 $$W_{can,\,sno}^{max } =p_{sno}\left(L+S\right).$$
 
-The maximum storage of liquid water is $p_{liq}=0.1$ kg m^-2^
+The maximum storage of liquid water is $p_{liq}=0.1$ $kg\ m^{-2}$
 (`Dickinson et al. 1993 <Dickinsonetal1993>`{.interpreted-text
-role="ref"}), and that of snow is $p_{sno}=6$ kg m^-2^, consistent with
+role="ref"}), and that of snow is $p_{sno}=6$ $kg\ m^{-2}$, consistent with
 reported field measurements
 (`Pomeroy et al. 1998 <Pomeroyetal1998>`{.interpreted-text role="ref"}).
 
@@ -137,18 +138,18 @@ role="numref"})
 
 $$\begin{aligned}
 E_{v}^{liq} =
-\left\{\begin{array}{lr}
+\left\(\begin{array}{lr}
 E_{v}^{w} &  T_v > T_{f} \\
 0         &  T_v \le T_f
-\end{array}\right\}
+\end{array}\right\)
 \end{aligned}$$
 
 $$\begin{aligned}
 E_{v}^{ice} =
-\left\{\begin{array}{lr}
+\left\(\begin{array}{lr}
 0         & T_v > T_f \\
 E_{v}^{w} & T_v \le T_f
-\end{array}\right\}.
+\end{array}\right\).
 \end{aligned}$$
 
 The total rate of liquid and solid precipitation reaching the ground is
@@ -175,44 +176,45 @@ role="numref"}) calculations, is
 (`Dickinson et al.1993 <Dickinsonetal1993>`{.interpreted-text
 role="ref"})
 
-$$\begin{aligned}
-f_{wet} =
-\left\{\begin{array}{lr}
-\left[\frac{W_{can} }{p_{liq}\left(L+S\right)} \right]^{{2\mathord{\left/ {\vphantom {2 3}} \right.} 3} } \le 1 & \qquad L+S > 0 \\
-0 &\qquad L+S = 0
-\end{array}\right\}
-\end{aligned}$$
+$$
+f_{\text{wet}} =
+\begin{cases}
+\left[\dfrac{W_{\text{can}}}{\rho_{\text{liq}}(L + S)} \right]^{2/3}, & \text{if } L + S > 0 \text{ and } \left[\dfrac{W_{\text{can}}}{\rho_{\text{liq}}(L + S)} \right]^{2/3} \leq 1 \\
+1, & \text{if } L + S > 0 \text{ and } \left[\dfrac{W_{\text{can}}}{\rho_{\text{liq}}(L + S)} \right]^{2/3} > 1 \\
+0, & \text{if } L + S = 0
+\end{cases}
+$$
 
 while the fraction of the canopy that is dry and transpiring is
 
-$$\begin{aligned}
-f_{dry} =
-\left\{\begin{array}{lr}
-\frac{\left(1-f_{wet} \right)L}{L+S} & \qquad L+S > 0 \\
-0 &\qquad L+S = 0
-\end{array}\right\}.
-\end{aligned}$$
+$$
+f_{\text{dry}} =
+\begin{cases}
+\dfrac{(1 - f_{\text{wet}}) L}{L + S}, & \text{if } L + S > 0 \\
+0, & \text{if } L + S = 0
+\end{cases}
+$$
 
 Similarly, the snow-covered fraction of the canopy is used for surface
 alebdo when intercepted snow is present (Chapter
 `rst_Surface Albedos`{.interpreted-text role="numref"})
 
-$$\begin{aligned}
-f_{can,\, sno} =
-\left\{\begin{array}{lr}
-\left[\frac{W_{can,\, sno} }{p_{sno}\left(L+S\right)} \right]^{{3\mathord{\left/ {\vphantom {3 20}} \right.} 20} } \le 1 & \qquad L+S > 0 \\
-0 &\qquad L+S = 0
-\end{array}\right\}.
-\end{aligned}$$
+$$
+f_{\text{can,\,sno}} =
+\begin{cases}
+\min\left( \left[\dfrac{W_{\text{can,\,sno}}}{\rho_{\text{sno}}(L + S)} \right]^{3/20},\ 1 \right), & \text{if } L + S > 0 \\
+0, & \text{if } L + S = 0
+\end{cases}
+$$
 
-## Surface Runoff, Surface Water Storage, and Infiltration {#Surface Runoff, Surface Water Storage, and Infiltration}
+## Surface Runoff, Surface Water Storage, and Infiltration
 
 The moisture input at the grid cell surface,$q_{liq,\, 0}$, is the sum
-of liquid precipitation reaching the ground and melt water from snow (kg
-m^-2^ s^-1^). The moisture flux is then partitioned between surface
+of liquid precipitation reaching the ground and melt water from snow ($kg\
+m^{-2} s^{-1}$). The moisture flux is then partitioned between surface
 runoff, surface water storage, and infiltration into the soil.
 
-### Surface Runoff {#Surface Runoff}
+### Surface Runoff
 
 The simple TOPMODEL-based
 (`Beven and Kirkby 1979 <BevenKirkby1979>`{.interpreted-text
@@ -231,7 +233,7 @@ The fractional saturated area is a function of soil moisture
 $$f_{sat} =f_{\max } \ \exp \left(-0.5f_{over} z_{\nabla } \right)$$
 
 where $f_{\max }$ is the potential or maximum value of $f_{sat}$,
-$f_{over}$ is a decay factor (m^-1^), and $z_{\nabla}$ is the water
+$f_{over}$ is a decay factor ($m^{-1}$), and $z_{\nabla}$ is the water
 table depth (m) (section `Lateral Sub-surface Runoff`{.interpreted-text
 role="numref"}). The maximum saturated fraction, $f_{\max }$, is defined
 as the value of the discrete cumulative distribution function (CDF) of
@@ -256,14 +258,14 @@ $f_{\max }$ is used to fill the gaps. See
 `Li et al. (2013b) <Lietal2013b>`{.interpreted-text role="ref"} for
 additional details. The decay factor $f_{over}$ for global simulations
 was determined through sensitivity analysis and comparison with observed
-runoff to be 0.5 m^-1^.
+runoff to be 0.5 $m^{-1}$.
 
-### Surface Water Storage {#Surface Water Storage}
+### Surface Water Storage
 
 A surface water store has been added to the model to represent wetlands
 and small, sub-grid scale water bodies. As a result, the wetland land
 unit has been removed as of CLM4.5. The state variables for surface
-water are the mass of water $W_{sfc}$ (kg m^-2^) and temperature
+water are the mass of water $W_{sfc}$ ($kg\ m^{-2}$) and temperature
 $T_{h2osfc}$ (Chapter `rst_Soil and Snow Temperatures`{.interpreted-text
 role="numref"}). Surface water storage and outflow are functions of fine
 spatial scale elevation variations called microtopography. The
@@ -319,7 +321,7 @@ storage coefficent $k_{h2osfc} = \sin \left(\beta \right)$ is a function
 of grid cell mean topographic slope where $\beta$ is the slope in
 radians.
 
-### Infiltration {#Infiltration}
+### Infiltration
 
 The surface moisture flux remaining after surface runoff has been
 removed,
@@ -328,7 +330,7 @@ $$q_{in,surface} = (1-f_{sat}) \ q_{liq,\, 0}$$
 
 is divided into inputs to surface water ($q_{in,\, h2osfc}$ ) and the
 soil $q_{in,soil}$. If $q_{in,soil}$ exceeds the maximum soil
-infiltration capacity (kg m^-2^ s^-1^),
+infiltration capacity ($kg\ m^{-2} s^{-1}$),
 
 $$q_{infl,\, \max } =(1-f_{sat}) \ \Theta_{ice} k_{sat}$$
 
@@ -363,7 +365,7 @@ $$q_{infl} = q_{in,soil} + q_{drain,h2osfc}$$
 Infiltration $q_{infl}$ and explicit surface runoff $q_{over}$ are not
 allowed for glaciers.
 
-## Soil Water {#Soil Water}
+## Soil Water
 
 Soil water is predicted from a multi-layer model, in which the vertical
 soil moisture transport is governed by infiltration, surface and
@@ -378,9 +380,9 @@ $$\frac{\partial \theta }{\partial t} =-\frac{\partial q}{\partial z} - e$$
 
 where $\theta$ is the volumetric soil water content (mm^3^ of water /
 mm^-3^ of soil), $t$ is time (s), $z$ is height above some datum in the
-soil column (mm) (positive upwards), $q$ is soil water flux (kg m^-2^
-s^-1^ or mm s^-1^) (positive upwards), and $e$ is a soil moisture sink
-term (mm of water mm^-1^ of soil s^-1^) (ET loss). This equation is
+soil column (mm) (positive upwards), $q$ is soil water flux ($kg\ m^{-2}
+s^{-1}$ or $mm\ s^{-1}$) (positive upwards), and $e$ is a soil moisture sink
+term ($mm\ of\ water mm^{-1}\ of\ soil\ s^{-1}$) (ET loss). This equation is
 solved numerically by dividing the soil column into multiple layers in
 the vertical and integrating downward over each layer with an upper
 boundary condition of the infiltration flux into the top soil layer
@@ -392,19 +394,19 @@ The soil water flux $q$ in equation `7.79`{.interpreted-text role="eq"}
 can be described by Darcy\'s law
 `(Dingman 2002) <Dingman2002>`{.interpreted-text role="ref"}
 
-$$q = -k \frac{\partial \psi _{h} }{\partial z}$$
+$$q = -k \frac{\partial \psi_{h} }{\partial z}$$
 
-where $k$ is the hydraulic conductivity (mm s^-1^), and $\psi _{h}$ is
+where $k$ is the hydraulic conductivity ($mm\ s^{-1}$), and $\psi_{h}$ is
 the hydraulic potential (mm). The hydraulic potential is
 
-$$\psi _{h} =\psi _{m} +\psi _{z}$$
+$$\psi_{h} =\psi_{m} +\psi_{z}$$
 
-where $\psi _{m}$ is the soil matric potential (mm) (which is related to
+where $\psi_{m}$ is the soil matric potential (mm) (which is related to
 the adsorptive and capillary forces within the soil matrix), and
-$\psi _{z}$ is the gravitational potential (mm) (the vertical distance
+$\psi_{z}$ is the gravitational potential (mm) (the vertical distance
 from an arbitrary reference elevation to a point in the soil). If the
-reference elevation is the soil surface, then $\psi _{z} =z$. Letting
-$\psi =\psi _{m}$, Darcy\'s law becomes
+reference elevation is the soil surface, then $\psi_{z} =z$. Letting
+$\psi =\psi_{m}$, Darcy\'s law becomes
 
 $$q = -k \left[\frac{\partial \left(\psi +z\right)}{\partial z} \right].$$
 
@@ -427,10 +429,10 @@ role="numref"}), changes in soil water content are predicted from
 `7.79`{.interpreted-text role="eq"} using finite-difference
 approximations for `7.84`{.interpreted-text role="eq"}.
 
-### Hydraulic Properties {#Hydraulic Properties}
+### Hydraulic Properties
 
-The hydraulic conductivity $k_{i}$ (mm s^-1^) and the soil matric
-potential $\psi _{i}$ (mm) for layer $i$ vary with volumetric soil water
+The hydraulic conductivity $k_{i}$ ($mm\ s^{-1}$) and the soil matric
+potential $\psi_{i}$ (mm) for layer $i$ vary with volumetric soil water
 $\theta _{i}$ and soil texture. As with the soil thermal properties
 (section `Soil And Snow Thermal Properties`{.interpreted-text
 role="numref"}) the hydraulic properties of the soil are assumed to be a
@@ -450,13 +452,13 @@ $k_{sat} \left[z_{h,\, i} \right]$, the liquid volumetric soil moisture
 of the two layers $\theta _{i}$ and $\theta_{i+1}$ and an ice impedance
 factor $\Theta_{ice}$
 
-$$\begin{aligned}
+$$
 k\left[z_{h,\, i} \right] =
-\left\{\begin{array}{lr}
-\Theta_{ice} k_{sat} \left[z_{h,\, i} \right]\left[\frac{0.5\left(\theta_{\, i} +\theta_{\, i+1} \right)}{0.5\left(\theta_{sat,\, i} +\theta_{sat,\, i+1} \right)} \right]^{2B_{i} +3} & \qquad 1 \le i \le N_{levsoi} - 1 \\
-\Theta_{ice} k_{sat} \left[z_{h,\, i} \right]\left(\frac{\theta_{\, i} }{\theta_{sat,\, i} } \right)^{2B_{i} +3} & \qquad i = N_{levsoi}
-\end{array}\right\}.
-\end{aligned}$$
+\begin{cases}
+\Theta_{\text{ice}} \, k_{\text{sat}}\left[z_{h,\, i} \right] \left[\dfrac{0.5\left(\theta_{i} + \theta_{i+1} \right)}{0.5\left(\theta_{\text{sat},\, i} + \theta_{\text{sat},\, i+1} \right)} \right]^{2B_{i} + 3}, & \text{for } 1 \le i \le N_{\text{levsoi}} - 1 \\
+\Theta_{\text{ice}} \, k_{\text{sat}}\left[z_{h,\, i} \right] \left(\dfrac{\theta_{i}}{\theta_{\text{sat},\, i}} \right)^{2B_{i} + 3}, & \text{for } i = N_{\text{levsoi}}
+\end{cases}
+$$
 
 The ice impedance factor is a function of ice content, and is meant to
 quantify the increased tortuosity of the water flow when part of the
@@ -494,19 +496,19 @@ The soil matric potential (mm) is defined at the node depth $z_{i}$ of
 each layer $i$ (`Figure Water flux schematic`{.interpreted-text
 role="numref"})
 
-$$\psi _{i} =\psi _{sat,\, i} \left(\frac{\theta_{\, i} }{\theta_{sat,\, i} } \right)^{-B_{i} } \ge -1\times 10^{8} \qquad 0.01\le \frac{\theta_{i} }{\theta_{sat,\, i} } \le 1$$
+$$\psi_{i} =\psi_{sat,\, i} \left(\frac{\theta_{\, i} }{\theta_{sat,\, i} } \right)^{-B_{i} } \ge -1\times 10^{8} \qquad 0.01\le \frac{\theta_{i} }{\theta_{sat,\, i}} \le 1$$
 
 where the saturated soil matric potential (mm) is
 
-$$\psi _{sat,i} =(1-f_{om,i} )\psi _{sat,\min ,i} +f_{om,i} \psi _{sat,om}$$
+$$\psi_{sat,i} =(1-f_{om,i} )\psi_{sat,\min ,i} +f_{om,i} \psi_{sat,om}$$
 
-where $\psi _{sat,om}$ is the saturated organic matter matric potential
-and the saturated mineral soil matric potential $\psi _{sat,\min,i}$ is
+where $\psi_{sat,om}$ is the saturated organic matter matric potential
+and the saturated mineral soil matric potential $\psi_{sat,\min,i}$ is
 
-$$\psi _{sat,\, \min ,\, i} =-10.0\times 10^{1.88-0.0131(\% sand)_{i} } .$$
+$$\psi_{sat,\, \min ,\, i} =-10.0\times 10^{1.88-0.0131(\% sand)_{i}} .$$
 
 The saturated hydraulic conductivity, $k_{sat} \left[z_{h,\, i} \right]$
-(mm s^-1^), for organic soils ($k_{sat,\, om}$ ) may be two to three
+($mm\ s^{-1}$), for organic soils ($k_{sat,\, om}$ ) may be two to three
 orders of magnitude larger than that of mineral soils
 ($k_{sat,\, \min }$ ). Bulk soil layer values of $k_{sat}$ calculated as
 weighted averages based on $f_{om}$ may therefore be determined
@@ -566,7 +568,7 @@ $$k_{sat,om} = max(0.28 - 0.2799\times z_{i} / zsapric, k_{sat,\, \min } \left[z
 where $zsapric =0.5$ m is the depth that organic matter takes on the
 characteristics of sapric peat.
 
-### Numerical Solution {#Numerical Solution Hydrology}
+### Numerical Solution
 
 With reference to `Figure Water flux schematic`{.interpreted-text
 role="numref"}, the equation for conservation of mass (equation
@@ -583,7 +585,7 @@ $$\Delta z_{i} \frac{\partial \theta_{liq,\, i} }{\partial t} =-q_{i-1} +q_{i} -
 where $q_{i}$ is the flux of water across interface $z_{h,\, i}$,
 $q_{i-1}$ is the flux of water across interface $z_{h,\, i-1}$, and
 $e_{i}$ is a layer-averaged soil moisture sink term (ET loss) defined as
-positive for flow out of the layer (mm s^-1^). Taking the finite
+positive for flow out of the layer ($mm\ s^{-1}$). Taking the finite
 difference with time and evaluating the fluxes implicitly at time $n+1$
 yields
 
@@ -683,26 +685,26 @@ equations `7.111`{.interpreted-text role="eq"} -
 `7.114`{.interpreted-text role="eq"} can be obtained from equation
 `7.82`{.interpreted-text role="eq"} as
 
-$$q_{i-1}^{n} =-k\left[z_{h,\, i-1} \right]\left[\frac{\left(\psi _{i-1} -\psi _{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} -z_{i-1} } \right]$$
+$$q_{i-1}^{n} =-k\left[z_{h,\, i-1} \right]\left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} -z_{i-1} } \right]$$
 
-$$q_{i}^{n} =-k\left[z_{h,\, i} \right]\left[\frac{\left(\psi _{i} -\psi _{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} -z_{i} } \right]$$
+$$q_{i}^{n} =-k\left[z_{h,\, i} \right]\left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} -z_{i} } \right]$$
 
-$$\frac{\partial q_{i-1} }{\partial \theta _{liq,\, i-1} } =-\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi _{i-1} }{\partial \theta _{liq,\, i-1} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i-1} } \left[\frac{\left(\psi _{i-1} -\psi _{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
+$$\frac{\partial q_{i-1} }{\partial \theta _{liq,\, i-1} } =-\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi_{i-1} }{\partial \theta _{liq,\, i-1} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i-1} } \left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
 
-$$\frac{\partial q_{i-1} }{\partial \theta _{liq,\, i} } =\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi _{i} }{\partial \theta _{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i} } \left[\frac{\left(\psi _{i-1} -\psi _{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
+$$\frac{\partial q_{i-1} }{\partial \theta _{liq,\, i} } =\left[\frac{k\left[z_{h,\, i-1} \right]}{z_{i} -z_{i-1} } \frac{\partial \psi_{i} }{\partial \theta _{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta _{liq,\, i} } \left[\frac{\left(\psi_{i-1} -\psi_{i} \right)+\left(z_{i} - z_{i-1} \right)}{z_{i} - z_{i-1} } \right]$$
 
-$$\frac{\partial q_{i} }{\partial \theta _{liq,\, i} } =-\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi _{i} }{\partial \theta _{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i} } \left[\frac{\left(\psi _{i} -\psi _{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right]$$
+$$\frac{\partial q_{i} }{\partial \theta _{liq,\, i} } =-\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi_{i} }{\partial \theta _{liq,\, i} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i} } \left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right]$$
 
-$$\frac{\partial q_{i} }{\partial \theta _{liq,\, i+1} } =\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi _{i+1} }{\partial \theta _{liq,\, i+1} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i+1} } \left[\frac{\left(\psi _{i} -\psi _{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right].$$
+$$\frac{\partial q_{i} }{\partial \theta _{liq,\, i+1} } =\left[\frac{k\left[z_{h,\, i} \right]}{z_{i+1} -z_{i} } \frac{\partial \psi_{i+1} }{\partial \theta _{liq,\, i+1} } \right]-\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta _{liq,\, i+1} } \left[\frac{\left(\psi_{i} -\psi_{i+1} \right)+\left(z_{i+1} - z_{i} \right)}{z_{i+1} - z_{i} } \right].$$
 
 The derivatives of the soil matric potential at the node depth are
 derived from `7.94`{.interpreted-text role="eq"}
 
-$$\frac{\partial \psi _{i-1} }{\partial \theta_{liq,\, \, i-1} } =-B_{i-1} \frac{\psi _{i-1} }{\theta_{\, \, i-1} }$$
+$$\frac{\partial \psi_{i-1} }{\partial \theta_{liq,\, \, i-1} } =-B_{i-1} \frac{\psi_{i-1} }{\theta_{\, \, i-1} }$$
 
-$$\frac{\partial \psi _{i} }{\partial \theta_{\, liq,\, i} } =-B_{i} \frac{\psi _{i} }{\theta_{i} }$$
+$$\frac{\partial \psi_{i} }{\partial \theta_{\, liq,\, i} } =-B_{i} \frac{\psi_{i} }{\theta_{i} }$$
 
-$$\frac{\partial \psi _{i+1} }{\partial \theta_{liq,\, i+1} } =-B_{i+1} \frac{\psi _{i+1} }{\theta_{\, i+1} }$$
+$$\frac{\partial \psi_{i+1} }{\partial \theta_{liq,\, i+1} } =-B_{i+1} \frac{\psi_{i+1} }{\theta_{\, i+1} }$$
 
 with the constraint
 $0.01\, \theta_{sat,\, i} \le \theta_{\, i} \le \theta_{sat,\, i}$.
@@ -826,7 +828,7 @@ The volumetric water content is
 
 $$\theta_{i} =\frac{w_{liq,\, i} }{\Delta z_{i} \rho _{liq} } +\frac{w_{ice,\, i} }{\Delta z_{i} \rho _{ice} } .$$
 
-## Frozen Soils and Perched Water Table {#Frozen Soils and Perched Water Table}
+## Frozen Soils and Perched Water Table
 
 When soils freeze, the power-law form of the ice impedance factor
 (section `Hydraulic Properties`{.interpreted-text role="numref"}) can
@@ -854,7 +856,7 @@ is set to 0.9. Drainage from the perched saturated zone $q_{drai,perch}$
 is removed from layers $N_{perch}$ through $N_{frost}$, which are the
 layers containing $z_{\nabla,perch}$ and, $z_{frost}$ respectively.
 
-## Lateral Sub-surface Runoff {#Lateral Sub-surface Runoff}
+## Lateral Sub-surface Runoff
 
 Lateral sub-surface runoff occurs when saturated soil moisture
 conditions exist within the soil column. Sub-surface runoff is
@@ -921,10 +923,10 @@ $$w_{ice,\, 1}^{n+1} =w_{ice,\, 1}^{n} -q_{subl} \Delta t.$$
 
 Sublimation of ice is limited to the amount of ice available.
 
-## Runoff from glaciers and snow-capped surfaces {#Runoff from glaciers and snow-capped surfaces}
+## Runoff from glaciers and snow-capped surfaces
 
 All surfaces are constrained to have a snow water equivalent
-$W_{sno} \le W_{cap} = 10,000$ kg m^-2^. For snow-capped columns, any
+$W_{sno} \le W_{cap} = 10,000$ $kg\ m^{-2}$. For snow-capped columns, any
 addition of mass at the top (precipitation, dew/riping) is balanced by
 an equally large mass flux at the bottom of the snow column. This
 so-called capping flux is separated into solid $q_{snwcp,ice}$ and
