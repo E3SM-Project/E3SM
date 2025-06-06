@@ -440,10 +440,12 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     const auto qv_i             = ekat::subview(qv, i);
     const auto T_mid_i          = ekat::subview(T_mid, i);
     const auto p_mid_i          = ekat::subview(p_mid, i);
+    const auto p_int_i          = ekat::subview(p_int, i);
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
     const auto dz_i             = ekat::subview(dz, i);
 
     const auto s_p_mid_i = ekat::scalarize(p_mid_i);
+    const auto s_p_int_i = ekat::scalarize(p_int_i);
     const auto s_T_mid_i = ekat::scalarize(T_mid_i);
     const auto z_int_i = ekat::subview(z_int, i);
     const auto z_mid_i = ekat::subview(z_mid, i);
@@ -487,7 +489,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     }
 
     if (export_source(idx_Sa_ptem)==FROM_MODEL) {
-      Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
+      Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1), 
+                                              &s_p_int_i(num_levs));
     }
 
     if (export_source(idx_Sa_pbot)==FROM_MODEL) {
