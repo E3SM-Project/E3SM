@@ -82,9 +82,9 @@ list (APPEND SHARE_SRC
   field/eti/field_eti_update_impl_int_host.cpp
   field/eti/field_eti_update_int_device.cpp
   field/eti/field_eti_update_int_host.cpp
-  field/eti/field_utils_eti_compute_mask_lt_int.cpp
-  field/eti/field_utils_eti_compute_mask_lt_float.cpp
-  field/eti/field_utils_eti_compute_mask_lt_double.cpp
+  field/eti/field_utils_eti_compute_mask_le_int.cpp
+  field/eti/field_utils_eti_compute_mask_le_float.cpp
+  field/eti/field_utils_eti_compute_mask_le_double.cpp
   field/eti/field_utils_eti_compute_mask_ne_int.cpp
   field/eti/field_utils_eti_compute_mask_ne_float.cpp
   field/eti/field_utils_eti_compute_mask_ne_double.cpp

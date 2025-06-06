@@ -3,7 +3,7 @@
 namespace scream {
 namespace impl {
 
-template void compute_mask<Comparison::LT,int>(const Field&, int, Field&);
+template void compute_mask<Comparison::LE,int>(const Field&, int, Field&);
 
 } // namespace impl
 } // namespace scream

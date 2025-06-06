@@ -443,7 +443,7 @@ run (const std::string& filename,
           int min_count = static_cast<int>(std::ceil(m_avg_coeff_threshold*nsteps_since_last_output));
 
           // Recycle mask to find where count<thresh
-          compute_mask<Comparison::LT>(count,min_count,mask);
+          compute_mask<Comparison::LE>(count,min_count,mask);
 
           // Later, we divide fields by count. By setting count=1 where count<thresholt,
           // we can later do

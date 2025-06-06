@@ -1231,7 +1231,7 @@ extern template void impl::compute_mask<C, double>(const Field&, const double, F
 
 // Only these two, since they are the only ones used so far (in IO)
 EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::NE);
-EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::LT);
+EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::LE);
 
 } // namespace impl
 
