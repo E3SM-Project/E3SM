@@ -397,7 +397,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
             "SMS_Ld3.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.eam-cosplite",
-            "SMS.T62_SOwISC12to60E2r4.GMPAS-IAF",
+            "SMS.T62_SOwISC12to30E3r3.GMPAS-IAF",
             )
         },
 
