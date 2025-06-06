@@ -1204,6 +1204,58 @@ void RRTMGPRadiation::run_impl (const double dt) {
     });
   });
 
+  // When rad does NOT run, we fill all the rad-specific output fields (i.e., NOT T_mid)
+  // with FillValue. We also ALWAYS set extra data to signal whether rad ran or not,
+  // so that diags like ShortwaveCloudForcing can decide whether it's ok to run or not
+  // NOTE: as part of fixing https://github.com/E3SM-Project/E3SM/issues/6803, this hack
+  //       may have to be revised
+  std::vector<std::string> rad_computed_fields = {
+    "SW_flux_dn",
+    "SW_flux_up",
+    "SW_flux_dn_dir",
+    "LW_flux_up",
+    "LW_flux_dn",
+    "SW_clnclrsky_flux_dn",
+    "SW_clnclrsky_flux_up",
+    "SW_clnclrsky_flux_dn_dir",
+    "SW_clrsky_flux_dn",
+    "SW_clrsky_flux_up",
+    "SW_clrsky_flux_dn_dir",
+    "SW_clnsky_flux_dn",
+    "SW_clnsky_flux_up",
+    "SW_clnsky_flux_dn_dir",
+    "LW_clnclrsky_flux_up",
+    "LW_clnclrsky_flux_dn",
+    "LW_clrsky_flux_up",
+    "LW_clrsky_flux_dn",
+    "LW_clnsky_flux_up",
+    "LW_clnsky_flux_dn",
+    "cldlow",
+    "cldmed",
+    "cldhgh",
+    "cldtot",
+    "dtau067",
+    "dtau105",
+    "sunlit",
+    "cldfrac_rad",
+    "T_mid_at_cldtop",
+    "p_mid_at_cldtop",
+    "cldfrac_ice_at_cldtop",
+    "cldfrac_liq_at_cldtop",
+    "cldfrac_tot_at_cldtop",
+    "cdnc_at_cldtop",
+    "eff_radius_qc_at_cldtop",
+    "eff_radius_qi_at_cldtop"
+  };
+
+  for (auto& name : rad_computed_fields) {
+    auto f = get_field_out(name);
+    f.get_header().set_extra_data("radiation_ran",update_rad);
+    if (not update_rad) {
+      f.deep_copy(constants::DefaultFillValue<Real>().value);
+    }
+  }
+
   // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
   // Any boundary fluxes not included in radiation interface are set to 0.
   if (has_column_conservation_check()) {
