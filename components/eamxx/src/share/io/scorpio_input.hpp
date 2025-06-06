@@ -53,13 +53,13 @@ public:
   AtmosphereInput () = default;
   AtmosphereInput (const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr);
-  AtmosphereInput (const ekat::ParameterList& params,
-                   const std::shared_ptr<const grid_type>& grid,
-                   const std::map<std::string,view_1d_host>& host_views_1d,
-                   const std::map<std::string,FieldLayout>&  layouts);
   AtmosphereInput (const std::string& filename,
                    const std::shared_ptr<const grid_type>& grid,
                    const std::vector<Field>& fields,
+                   const bool skip_grid_checks = false);
+  AtmosphereInput (const std::string& filename,
+                   const std::shared_ptr<const grid_type>& grid,
+                   const std::map<std::string,Field>& fields,
                    const bool skip_grid_checks = false);
   // This constructor only sets the minimal info, deferring initialization
   // to when set_field_manager/reset_fields and reset_filename are called
@@ -81,17 +81,6 @@ public:
   //               Fields can be padded/strided.
   void init (const ekat::ParameterList& params,
              const std::shared_ptr<const fm_type>& field_mgr);
-
-  // Initialize the class for reading into user-provided flattened 1d host views.
-  //  - params: input parameters (must contain at least "filename")
-  //  - grid: the grid where the variables live
-  //  - host_views_1d: the 1d flattened views where data will be read into.
-  //                   These views must be contiguous (no padding/striding).
-  //  - layouts: the layout of the vars (used to reshape the views).
-  void init (const ekat::ParameterList& params,
-             const std::shared_ptr<const grid_type>& grid,
-             const std::map<std::string,view_1d_host>& host_views_1d,
-             const std::map<std::string,FieldLayout>&  layouts);
 
   // Read fields that were required via parameter list.
   void read_variables (const int time_index = -1);
@@ -126,17 +115,15 @@ protected:
   // Internal variables
   ekat::ParameterList   m_params;
 
-  std::shared_ptr<const fm_type>        m_field_mgr;
+  std::shared_ptr<const fm_type>        m_fm_from_user;
+  std::shared_ptr<fm_type>              m_fm_for_scorpio;
   std::shared_ptr<const AbstractGrid>   m_io_grid;
 
-  std::map<std::string, view_1d_host>   m_host_views_1d;
-  std::map<std::string, FieldLayout>    m_layouts;
-  
   std::string               m_filename;
   std::vector<std::string>  m_fields_names;
 
-  bool m_inited_with_fields        = false;
-  bool m_inited_with_views         = false;
+  bool m_fields_inited  = false;
+  bool m_scorpio_inited = false;
 
   // The logger to be used throughout the ATM to log message
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
