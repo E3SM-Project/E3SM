@@ -11,7 +11,7 @@ if (NOT TARGET mpi4py)
   # If user provided an include dir, we will use that, otherwise we'll ask python to find it
   if (NOT MPI4PY_INCLUDE_DIR)
     execute_process(COMMAND
-      "${PYTHON_EXECUTABLE}" "-c" "import mpi4py; print (mpi4py.get_include())"
+      "${Python_EXECUTABLE}" "-c" "import mpi4py; print (mpi4py.get_include())"
       OUTPUT_VARIABLE OUTPUT
       RESULT_VARIABLE RESULT
       OUTPUT_STRIP_TRAILING_WHITESPACE)

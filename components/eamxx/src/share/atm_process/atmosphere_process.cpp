@@ -3,6 +3,11 @@
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 
+#ifdef EAMXX_HAS_PYTHON
+#include "share/field/field_pyutils.hpp"
+#include "share/eamxx_pysession.hpp"
+#endif
+
 #include "ekat/ekat_assert.hpp"
 
 #include <set>
@@ -64,6 +69,29 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       m_params.get<bool>("enable_column_conservation_checks", false);
 
   m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
+#ifdef EAMXX_HAS_PYTHON
+  if (m_params.isParameter("py_module_name")) {
+    PySession::get().initialize();
+    const auto& py_module_name = m_params.get<std::string>("py_module_name");
+    // Create a py-compatible string
+    PyObject* pName = PyUnicode_FromString(py_module_name.c_str());
+    if (pName == nullptr) {
+      // Handle error
+      PyErr_Print();
+      EKAT_ERROR_MSG ("Error! Could not convert std::string to py-compatible string.\n");
+    }
+
+    // Import the module
+    m_py_module = PyImport_Import(pName);
+    Py_DECREF(pName); // Decrement reference count for pName so it gets cleaned up in py
+
+    if (m_py_module == nullptr) {
+      // Handle error
+      PyErr_Print();
+      EKAT_ERROR_MSG ("Error! Could not import module '" + py_module_name + "'.\n");
+    }
+  }
+#endif
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -162,8 +190,17 @@ void AtmosphereProcess::run (const double dt) {
   stop_timer (m_timer_prefix + this->name() + "::run");
 }
 
-void AtmosphereProcess::finalize (/* what inputs? */) {
+void AtmosphereProcess::finalize () {
   finalize_impl(/* what inputs? */);
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module != nullptr) {
+    Py_DECREF(m_py_module);
+
+    // Note: In case multiple places have called PySession::get().initialize(),
+    // only the last call to finalize *actually* finalizes the interpreter
+    PySession::get().finalize();
+  }
+#endif
 }
 
 void AtmosphereProcess::setup_tendencies_requests () {
@@ -300,6 +337,14 @@ void AtmosphereProcess::set_required_field (const Field& f) {
   }
 
   set_required_field_impl (f);
+
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module!=nullptr) {
+    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
+    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+  }
+#endif
 }
 
 void AtmosphereProcess::set_computed_field (const Field& f) {
@@ -326,6 +371,14 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
   if (m_compute_proc_tendencies && m_proc_tendencies.count(f.name())==1) {
     m_proc_tendencies[f.name()] = f;
   }
+
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module!=nullptr) {
+    const auto& grid_name= f.get_header().get_identifier().get_grid_name();
+    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
+    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+  }
+#endif
 }
 
 void AtmosphereProcess::set_required_group (const FieldGroup& group) {
@@ -353,6 +406,22 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
   }
 
   set_required_group_impl(group);
+
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module!=nullptr) {
+    const auto& grid_name = group.grid_name();
+    if (group.m_monolithic_field) {
+      const auto& f = group.m_monolithic_field;
+      m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
+      m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
+    } else {
+      for (const auto& [name,f] : group.m_individual_fields) {
+        m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
+        m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
+      }
+    }
+  }
+#endif
 }
 
 void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
@@ -380,6 +449,22 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   }
 
   set_computed_group_impl(group);
+
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module!=nullptr) {
+    const auto& grid_name = group.grid_name();
+    if (group.m_monolithic_field) {
+      const auto& f = group.m_monolithic_field;
+      m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
+      m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
+    } else {
+      for (const auto& [name,f] : group.m_individual_fields) {
+        m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
+        m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
+      }
+    }
+  }
+#endif
 }
 
 void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
