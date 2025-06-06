@@ -621,12 +621,34 @@ contains
          !deallocate(GlobalIds)
          deallocate(tagValues)
          deallocate(dof)
+#ifdef MOABDEBUG
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+         if (mbixid .ge. 0  ) then
+            outfile = 'iceCplInit1Fr.h5m'//C_NULL_CHAR
+            ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
+         endif
+#endif
        endif
 
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
        endif
+#ifdef MOABDEBUG
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+       if (mbaxid .ge. 0  ) then
+          outfile = 'atmCplInit1Fr.h5m'//C_NULL_CHAR
+          ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in writing mesh '
+             call shr_sys_abort(subname//' ERROR in writing mesh ')
+          endif
+       endif
+#endif
 
     end if ! end of ice_present
 
@@ -694,6 +716,17 @@ contains
           deallocate(tagValues)
           mapper_o2a => prep_atm_get_mapper_Fo2a()
           call seq_map_map(mapper_o2a, fractions_o, fractions_a, fldlist='ofrac',norm=.false.)
+#ifdef MOABDEBUG
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+         if (mbaxid .ge. 0  ) then
+            outfile = 'atmCplInit2Fr.h5m'//C_NULL_CHAR
+            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
+         endif
+#endif
        endif
 
        if (atm_present) then
