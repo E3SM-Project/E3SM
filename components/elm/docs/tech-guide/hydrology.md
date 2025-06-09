@@ -15,7 +15,7 @@ The total water balance of the system is
 
 $$
 \begin{aligned}
-\Delta W_{can,\,liq} + \Delta W_{can,\,sno} + \Delta W_{sfc} + \Delta W_{sno} + 
+\Delta W_{can,\,liq} + \Delta W_{can,\,sno} + \Delta W_{sfc} + \Delta W_{sno} +
 \sum_{i=1}^{N_{levsoi}} (\Delta w_{liq,\, i} + \Delta w_{ice,\, i}) + \Delta W_{a} \\
 = \left( q_{rain} + q_{sno} - E_{v} - E_{g} - q_{over} - q_{h2osfc} - q_{drai} - q_{rgwl} - q_{snwcp,\, ice} \right) \Delta t
 \end{aligned}
@@ -965,4 +965,3 @@ role="numref"}. The runoff term $q_{rgwl}$ may be negative for glaciers
 and lakes, which reduces the total amount of runoff available to the
 river routing model (Chapter `rst_MOSART`{.interpreted-text
 role="numref"}).
-
