@@ -1274,9 +1274,13 @@ module li_iceshelf_melt
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
 
-               if (zOcean(ksup + 1) >= bedTopography(iCell)) then
-                  kinf = ksup + 1
-               else ! Do not interpolate if bottom of cell is below bed topography
+               if (ksup < nOceanLayers) then
+                  if (zOcean(ksup + 1) >= bedTopography(iCell)) then
+                     kinf = ksup + 1
+                  else ! Do not interpolate if bottom of cell is below bed topography
+                     kinf = ksup
+                  endif
+               else
                   kinf = ksup
                endif
                 
@@ -1295,7 +1299,7 @@ module li_iceshelf_melt
                      err = ior(err, 1)
                   endif
                endif
-               if (kinf <= nOceanLayers) then
+               if ((kinf > 0) .and. (kinf <= nOceanLayers)) then
                   if (TFocean(kinf, iCell) == invalid_value_TF) then
                      call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
                         "kinf=$i TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
