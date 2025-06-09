@@ -752,10 +752,8 @@ subroutine gwd_precalc_rhoi(ncol, ngwv, dt, tend_level, pmid, pint, t, gwut, ubm
 
   ! Calculate tendency on each constituent.
   do m = 1, size(q,3)
-
      call gw_diff_tend(ncol, pver, kbotbg, ktop, q(:,:,m), dt, &
           decomp, qtgw(:,:,m))
-
   enddo
 
   ! Calculate tendency from diffusing dry static energy (dttdf).
