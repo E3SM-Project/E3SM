@@ -639,4 +639,3 @@ temperature, reflecting leaf surface energy balance.
 ::: {#Figure PHS Flow Diagram}
 ![Flow diagram of leaf flux calculations](phs_iteration_schematic.*)
 :::
-

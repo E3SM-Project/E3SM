@@ -20,7 +20,6 @@ $$
 = \left( q_{rain} + q_{sno} - E_{v} - E_{g} - q_{over} - q_{h2osfc} - q_{drai} - q_{rgwl} - q_{snwcp,\, ice} \right) \Delta t
 \end{aligned}
 $$
-<p align="right"><strong>(1)</strong></p>
 
 where $q_{rain}$ is the liquid part of precipitation, $q_{sno}$ is the
 solid part of precipitation, $E_{v}$ is ET from vegetation (Chapter
