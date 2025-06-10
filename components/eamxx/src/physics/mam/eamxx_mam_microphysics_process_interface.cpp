@@ -163,7 +163,7 @@ void MAMMicrophysics::set_grids(
 
   // Diagnostic fluxes          
   const FieldLayout vector2d_nmodes =
-      grid_->get_2d_vector_layout(nmodes, "mam4::gas_chemistry::gas_pcnst");
+      grid_->get_2d_vector_layout(nmodes, "nmodes");
   add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
   add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
 
