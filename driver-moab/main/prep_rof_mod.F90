@@ -166,7 +166,7 @@ contains
 
    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, &
-      iMOAB_ComputeScalarProjectionWeights, iMOAB_GetMeshInfo, iMOAB_ComputeCoverageMesh
+      iMOAB_ComputeScalarProjectionWeights, iMOAB_GetMeshInfo, iMOAB_MigrateMapMesh
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -372,15 +372,6 @@ contains
                mapper_Fl2r%src_context = lnd(1)%cplcompid
                mapper_Fl2r%intx_context = rof(1)%cplcompid
             else
-
-               ! compute the LND coverage mesh here on coupler pes
-               ! LND mesh was redistributed to cover target (ROF) partition
-               ierr = iMOAB_ComputeCoverageMesh( mblxid, mbrxid, mbintxlr )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' cannot compute source LND coverage mesh for ROF'
-                  call shr_sys_abort(subname//' ERROR in computing LND-ROF coverage')
-               endif
-
                ! if we are not loading maps from disk, compute the intersection mesh between
                ! LND and ROF meshes
                if (compute_maps_online_l2r) then
@@ -393,30 +384,29 @@ contains
                      write(logunit,*) 'iMOAB intersection between LND and ROF with id:', idintx
                   end if
 #ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 3 .and. compute_maps_online_l2r) then
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing LND-ROF intersection mesh file '
-                     call shr_sys_abort(subname//' ERROR in writing LND-ROF intersection mesh file ')
+                  wopts = C_NULL_CHAR
+                  call shr_mpi_commrank( mpicom_CPLID, rank )
+                  if (rank .lt. 3 .and. compute_maps_online_l2r) then
+                     write(lnum,"(I0.2)")rank !
+                     outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                     ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in writing LND-ROF intersection mesh file '
+                        call shr_sys_abort(subname//' ERROR in writing LND-ROF intersection mesh file ')
+                     endif
                   endif
-               endif
 #endif
+                  ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the
+                ! lnd for the intx LND-ROF context (coverage)
+                  type1 = 3 ! land is FV now on coupler side
+                  type2 = 3;
+                  ierr = iMOAB_ComputeCommGraph( mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             lnd(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing comm graph for second hop, LND-ROF'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, LND-ROF')
+                  endif
                end if
-
-               ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the
-               ! lnd for the intx LND-ROF context (coverage)
-               type1 = 3 ! land is FV now on coupler side
-               type2 = 3;
-               ierr = iMOAB_ComputeCommGraph( mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          lnd(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, LND-ROF'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, LND-ROF')
-               endif
                ! now take care of the mapper
                if ( mapper_Fl2r%src_mbid .gt. -1 ) then
                   if (iamroot_CPLID) then
@@ -469,6 +459,15 @@ contains
                   call moab_map_init_rcfile( mblxid, mbrxid, mbintxlr, type1, &
                         'seq_maps.rc', 'lnd2rof_fmapname:', 'lnd2rof_fmaptype:',samegrid_lr, &
                         wgtIdl2r, 'mapper_Fl2r MOAB initialization', esmf_map_flag)
+
+                  ! this creates a par comm graph between mblxid and mbintxlr, with ids lnd(1)%cplcompid
+                  ierr = iMOAB_MigrateMapMesh (mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, &
+                       mpigrp_CPLID, type1, lnd(1)%cplcompid, idintx)
+
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in migrating lnd mesh for map lnd c2 rof '
+                     call shr_sys_abort(subname//' ERROR in migrating lnd mesh for map lnd c2 rof ')
+                  endif
                end if
             end if ! if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0))
          endif ! samegrid_lr
@@ -563,14 +562,6 @@ contains
               call shr_sys_abort(subname//' ERROR in registering ATM-ROF mesh intersection context')
             endif
 
-            ! compute the OCN coverage mesh here on coupler pes
-            ! ATM mesh was redistributed to cover target (ROF) partition
-            ierr = iMOAB_ComputeCoverageMesh( mbaxid, mbrxid, mbintxar )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' cannot compute source ATM coverage mesh for ROF'
-               call shr_sys_abort(subname//' ERROR in computing ATM-ROF coverage')
-            endif
-
             ! if we are not loading maps from disk, compute the intersection mesh between
             ! ATM and ROF meshes
             if (compute_maps_online_a2r) then
@@ -595,23 +586,22 @@ contains
                   endif
                endif
 #endif
+               ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
+               ! atm for the intersection of ATM-ROF context (coverage)
+               call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
+               if (atm_pg_active) then
+                  type1 = 3; !  FV for both rof and atm; FV-CGLL does not work anyway
+               else
+                  type1 = 1 ! this does not work anyway in this direction
+               endif
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          atm(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ATM-ROF'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-ROF')
+               endif
             end if
-
-            ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
-            ! atm for the intersection of ATM-ROF context (coverage)
-            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
-            if (atm_pg_active) then
-              type1 = 3; !  FV for both rof and atm; FV-CGLL does not work anyway
-            else
-              type1 = 1 ! this does not work anyway in this direction
-            endif
-            type2 = 3;
-            ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                        atm(1)%cplcompid, idintx)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing comm graph for second hop, ATM-ROF'
-               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-ROF')
-            endif
             ! now take care of the mapper
             if ( mapper_Fa2r%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
@@ -677,10 +667,17 @@ contains
 
             else
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-
                call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
                      'seq_maps.rc', 'atm2rof_fmapname:', 'atm2rof_fmaptype:',samegrid_ar, &
                      wgtIda2r, 'mapper_Fa2r MOAB initialization', esmf_map_flag)
+                ! this creates a par comm graph between mblxid and mbintxlr, with ids lnd(1)%cplcompid
+               ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, &
+                     mpigrp_CPLID, type1, atm(1)%cplcompid, idintx)
+
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in migrating atm mesh for map atm c2 rof '
+                  call shr_sys_abort(subname//' ERROR in migrating atm mesh for map atm c2 rof ')
+               endif
             end if
 
          end if ! if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0))

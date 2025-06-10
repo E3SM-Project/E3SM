@@ -13,8 +13,6 @@ module prep_ocn_mod
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
 
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
-!   use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
-!   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context;
   use seq_comm_mct,     only: mbrxid   ! iMOAB id of moab rof migrated to couple pes
   use seq_comm_mct,     only: mbintxro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -209,7 +207,7 @@ contains
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
-      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers, iMOAB_ComputeCoverageMesh
+      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -265,7 +263,7 @@ contains
 
     integer                  :: rmapid, rmapid2  ! external id to identify the moab app ; 2 is for rof in ocean context (coverage)
     integer                  :: type_grid !
-    integer                  :: context_id, direction
+    integer                  :: context_id
     character*32             :: prefix_output ! for writing a coverage file for debugging
     integer                  :: rank_on_cpl ! just for debugging
 ! these are just to zero out r2x fields on ocean
@@ -439,7 +437,9 @@ contains
             mapper_Fa2o%src_context = atm(1)%cplcompid
             mapper_Fa2o%weight_identifier = wgtIda2o_conservative
             mapper_Fa2o%mbname = 'mapper_Fa2o'
-
+            ! now take care of the mapper
+            mapper_Fa2o%intx_context = idintx
+            !! updated mapper_Fa2o --
             ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
             ! atm for the intx atm-ocn context (coverage)
             call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
@@ -447,24 +447,15 @@ contains
             ! next, let us compute the ATM and OCN data transfer
             if (.not. samegrid_ao) then ! not a data OCN model
 
-               ! for bilinear maps, we need to have a layer of ghosts on source
-               nghlay = 1  ! number of ghost layers
-               nghlay_tgt = 0
-               ierr   = iMOAB_SetMapGhostLayers( mbintxao, nghlay, nghlay_tgt )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in setting the number of ghost layers'
-                  call shr_sys_abort(subname//' error in setting the number of ghost layers')
-               endif
-
-               ! compute the ATM coverage mesh here on coupler pes
-               ! ATM mesh was redistributed to cover target (OCN) partition
-               ierr = iMOAB_ComputeCoverageMesh( mbaxid, mboxid, mbintxao )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' cannot compute source ATM coverage mesh for OCN'
-                  call shr_sys_abort(subname//' ERROR in computing ATM-OCN coverage')
-               endif
-
                if (compute_maps_online_a2o) then
+                  ! for bilinear maps, we need to have a layer of ghosts on source
+                  nghlay = 1  ! number of ghost layers
+                  nghlay_tgt = 0
+                  ierr   = iMOAB_SetMapGhostLayers( mbintxao, nghlay, nghlay_tgt )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in setting the number of ghost layers'
+                     call shr_sys_abort(subname//' error in setting the number of ghost layers')
+                  endif
                   ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mboxid, mbintxao )
                   if (ierr .ne. 0) then
@@ -474,12 +465,32 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection completed between ATM and OCN with id:', idintx
                   end if
+                  if (atm_pg_active) then
+                     type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
+                  else
+                     type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
+                  endif
+                  type2 = 3;  ! FV mesh on coupler OCN
+                  ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             atm(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing comm graph for second hop, ATM-OCN'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-OCN')
+                  endif
+#ifdef MOABDEBUG
+                  wopts = C_NULL_CHAR
+                  call shr_mpi_commrank( mpicom_CPLID, rank )
+                  if (rank .lt. 5 .and. compute_maps_online_a2o) then
+                     write(lnum,"(I0.2)")rank !
+                     outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                     ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in writing intx file '
+                        call shr_sys_abort(subname//' ERROR in writing intx file ')
+                     endif
+                  endif
+#endif
                end if
-
-               ! now take care of the mapper
-               mapper_Fa2o%intx_context = idintx
-               !! updated mapper_Fa2o --
-
                ! To project fields from ATM to OCN grid, we need to define
                ! ATM a2x fields to OCN grid on coupler side
                tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
@@ -490,7 +501,6 @@ contains
                   write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
                endif
-
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
@@ -554,34 +564,18 @@ contains
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
                         wgtIda2o_bilinear, 'mapper_Sa2o moab initialization', esmf_map_flag)
-               endif
 
-               if (atm_pg_active) then
-                  type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
-               else
-                  type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
-               endif
-               type2 = 3;  ! FV mesh on coupler OCN
-               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          atm(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, ATM-OCN'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-OCN')
-               endif
+                  context_id = idintx
+                  ! again, one coverage set and coverage graph for 2 different maps
+                  ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, &
+                       mpigrp_CPLID, type1, atm(1)%cplcompid, context_id)
 
-#ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 5 .and. compute_maps_online_a2o) then
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
                   if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing intx file '
-                     call shr_sys_abort(subname//' ERROR in writing intx file ')
+                     write(logunit,*) subname,' error in migrating atm mesh for map atm c2 ocn '
+                     call shr_sys_abort(subname//' ERROR in migrating atm mesh for map atm c2 ocn ')
                   endif
+
                endif
-#endif
             else ! if (samegrid_ao)
 
                ! ATM and OCN components use the same mesh and DoF numbering (OCN is a subset of ATM);
@@ -748,27 +742,6 @@ contains
              write(logunit,*) subname,' error in registering rof 2 ocn moab map '
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
           endif
- ! integer, public :: mboxid   ! iMOAB id for mpas ocean already migrated mesh to coupler pes
-          ! this is a special rof mesh redistribution, for the ocean context
-          ! it will be used to project from rof to ocean
-          ! the mesh will be migrated, to be able to do the second hop
-         !  appname = "ROF_OCOU"//C_NULL_CHAR
-         !  ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
-         !  rmapid2 = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
-         !  ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid2, mbrxoid)
-         !  if (ierr .ne. 0) then
-         !     write(logunit,*) subname,' error in registering rof on coupler in ocean context '
-         !     call shr_sys_abort(subname//' ERROR in registering  rof on coupler in ocean context ')
-         !  endif
-          ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not
-          ! needed to be on joint comm anymore for the second hop
-
-          ! need to compute coverage of rof over ocean, and comm graph for sending from rof to rof over ocean
-          ierr = iMOAB_ComputeCoverageMesh( mbrxid, mboxid, mbintxro )
-          if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in compute coverage mesh rof for ocean'
-              call shr_sys_abort(subname//' ERROR in compute coverage mesh rof for ocean ')
-          endif
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing MOAB mapper_Rr2o_liq'
@@ -779,44 +752,20 @@ contains
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                wgtIdr2o_conservative, 'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
-          ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type_grid, &
-             type_grid, rof(1)%cplcompid, rmapid )
-          if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in compute graph rof - rof cov for ocean'
-              call shr_sys_abort(subname//' ERROR in compute graph rof - rof cov for ocean ')
-         endif
-         !  it read on the coupler side, from file, the scrip mosart, that has a full mesh;
-         !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid (this will be like coverage mesh,
-         !    it will cover ocean target per process)
-         !  map between rof 2 ocn is in  mbrmapro ;
-         ! after this, the sending of tags for second hop (ocn context) will use the new par comm graph,
-         !  that has more precise info, that got created
-
-         ! type1 = 3 ! fv mesh nowadays
-         ! direction = 1 !
-         ! context_id = ocn(1)%cplcompid
-         ! this creates a par comm graph between mbrxid and mbrxoid, with ids rof(1)%cplcompid, context ocn(1)%cplcompid
+         type1 = 3 ! fv mesh nowadays
+         context_id = rmapid ! ocn(1)%cplcompid
+         ! this creates a par comm graph between mbrxid and mbintxro, with ids rof(1)%cplcompid, rmapid (rmapid is 100*src+tgt)
          ! this will be used in send/receive mappers
-         ! ierr = iMOAB_MigrateMapMesh (mbrxid, mbrmapro, mbrxoid, mpicom_CPLID, mpigrp_CPLID, &
-         !    mpigrp_CPLID, type1, rof(1)%cplcompid, context_id, direction)
+         ierr = iMOAB_MigrateMapMesh (mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, &
+            mpigrp_CPLID, type1, rof(1)%cplcompid, context_id)
 
-         ! if (ierr .ne. 0) then
-         !    write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
-         !    call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
-         ! endif
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
+            call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
+         endif
          ! if (iamroot_CPLID)  then
          !    write(logunit,*) subname,' migrated mesh for map rof 2 ocn '
          ! endif
-         if (mbrxid .ge. 0) then ! we are on coupler side pes
-            tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
-            tagtype = 1 ! dense, double
-            numco = 1 ! only 1 component DoF per node
-            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB'
-               call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
-            endif
-         endif
 
          if (mboxid .ge. 0) then ! we are on coupler side pes, for ocean mesh
             tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
@@ -854,19 +803,6 @@ contains
          endif
          deallocate (tmparray)
 
-         ! now we have to populate the map with the right moab attributes, so that it does the right projection
-#ifdef MOABDEBUG
-         if (mbrxid.ge.0) then  ! we are on coupler PEs
-            call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
-            if (rank_on_cpl .lt. 4) then
-               prefix_output = "rof_cov"//CHAR(0)
-               ierr = iMOAB_WriteLocalMesh(mbrxid, prefix_output)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in writing coverage mesh rof 2 ocn '
-               endif
-            endif
-         endif
-#endif
 ! now take care of the mapper for MOAB mapper_Rr2o_liq
             if ( mapper_Rr2o_liq%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
@@ -875,7 +811,7 @@ contains
                 endif
             endif
             mapper_Rr2o_liq%src_mbid = mbrxid
-            mapper_Rr2o_liq%tgt_mbid = mboxid ! this is special, it will really need this coverage type mesh
+            mapper_Rr2o_liq%tgt_mbid = mboxid ! this is similar to a regular intx scenario
             mapper_Rr2o_liq%intx_mbid = mbintxro
             mapper_Rr2o_liq%src_context = rof(1)%cplcompid
             !mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
@@ -902,14 +838,12 @@ contains
                write(logunit,F00) 'Initializing MOAB mapper_Rr2o_ice same as mapper_Rr2o_liq'
             end if
             mapper_Rr2o_ice%src_mbid = mbrxid
-            mapper_Rr2o_ice%tgt_mbid = mboxid ! special
+            mapper_Rr2o_ice%tgt_mbid = mboxid  
             mapper_Rr2o_ice%intx_mbid = mbintxro
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
-            !mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
             mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
             mapper_Rr2o_ice%weight_identifier = wgtIdr2o_conservative
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
-            ! mapper_Rr2o_ice%read_map = .true.
 #endif
           if (flood_present) then
              if (iamroot_CPLID) then
@@ -926,10 +860,9 @@ contains
                 write(logunit,F00) 'Initializing MOAB mapper_Fr2o'
              end if
                mapper_Fr2o%src_mbid = mbrxid
-               mapper_Fr2o%tgt_mbid = mboxid ! special
+               mapper_Fr2o%tgt_mbid = mboxid 
                mapper_Fr2o%intx_mbid = mbintxro
                mapper_Fr2o%src_context = rof(1)%cplcompid
-               !mapper_Fr2o%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
                mapper_Fr2o%intx_context = rmapid ! read map is the same context as intersection now
                mapper_Fr2o%weight_identifier = wgtIdr2o_conservative
                mapper_Fr2o%mbname = 'mapper_Fr2o'
@@ -2943,7 +2876,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(mct_avect), pointer :: r2x_rx
     character(*), parameter  :: subname = '(prep_ocn_calc_r2x_ox)'
     !---------------------------------------------------------------
-
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCpl_Bef_r2x_ox_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
        r2x_rx => component_get_c2x_cx(rof(eri))
@@ -2957,6 +2897,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        endif
     enddo
     call t_drvstopf  (trim(timer))
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = 'OcnCpl_r2x_ox_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
 
   end subroutine prep_ocn_calc_r2x_ox
 

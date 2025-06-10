@@ -470,6 +470,7 @@ contains
     use iso_c_binding
     !   character(1024)         :: domain_file        ! file containing domain info (set my input)
     use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
+    use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
 #endif
@@ -551,18 +552,6 @@ contains
          ! project now aream on ocean (from atm)
 #endif
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
-
-#ifdef HAVE_MOAB
-#ifdef MOABDEBUG
-         ierr = iMOAB_WriteMesh(mboxid, trim('recMeshOcnWithArea.h5m'//C_NULL_CHAR), &
-                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing ocean mesh coupler '
-            call shr_sys_abort(subname//' ERROR in writing ocean mesh coupler ')
-         endif
-#endif
-#endif
-
           
        else
           gsmap_s => component_get_gsmap_cx(ocn(1)) ! gsmap_ox
@@ -644,6 +633,40 @@ contains
 
        endif
     endif
+#ifdef MOABDEBUG
+     if(mbaxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mbaxid, trim('cplAtmWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing atm mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing atm mesh coupler ')
+         endif
+     endif
+     if(mblxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mblxid, trim('cplLndWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing lnd mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+         endif
+     endif
+     if(mboxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mboxid, trim('cplOcnWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocn mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing ocn mesh coupler ')
+         endif
+     endif
+     if(mbrxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mbrxid, trim('cplRofWithAream.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing rof mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing rof mesh coupler ')
+         endif
+     endif
+#endif
 
   end subroutine component_init_aream
 
@@ -734,18 +757,22 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    integer :: mpi_tag
    character(*), parameter :: subname = '(component_init_areacor_moab)'
    character(CXX)          :: tagname
+   character(CXX)   :: comment
    integer                 :: tagtype, numco,  tagindex, lsize, i, j, arrsize, ierr, nfields
    real (kind=r8) , allocatable :: areas (:,:), factors(:,:), vals(:,:) ! 2 tags values, area, aream,
-   real (kind=r8)  :: rarea, raream, rmask, fact
+   real (kind=r8)  :: rarea, raream, rmask, fact, rmin1, rmax1, rmin, rmax
    integer     nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
    type(mct_list) :: temp_list  ! used to count number of fields
+   integer :: mpicom
+   logical :: iamroot
+   character(len=*),parameter :: F0R = "(2A,2g23.15,A )"
    !---------------------------------------------------------------
 
    if (comp(1)%iamin_cplcompid) then
       tagname='aream'//C_NULL_CHAR
       ! bring on the comp side the aream from maps
       ! (it is either computed by mapping routine or read from mapping files)
-      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname)
+      call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname, context_exch='aream')
 
       ! For only component pes
       if (comp(1)%iamin_compid) then
@@ -795,6 +822,23 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
            call shr_sys_abort(subname//' cannot set correction area factors  ')
          endif
 
+! print the computed values for area factors
+         rmin1 = minval(factors(:,1))
+         rmax1 = maxval(factors(:,1))
+         mpicom = comp(1)%mpicom_compid
+         iamroot= comp(1)%iamroot_compid
+         call shr_mpi_min(rmin1,rmin,mpicom)
+         call shr_mpi_max(rmax1,rmax,mpicom)
+         comment = 'areafact_'//trim(comp(1)%name)
+         if (iamroot) write(logunit,F0R) trim(subname),' : min/max mdl2drv ',rmin,rmax,trim(comment)
+
+         rmin1 = minval(factors(:,2))
+         rmax1 = maxval(factors(:,2))
+         call shr_mpi_min(rmin1,rmin,mpicom)
+         call shr_mpi_max(rmax1,rmax,mpicom)
+         if (iamroot) write(logunit,F0R) trim(subname),' : min/max drv2mdl ',rmin,rmax,trim(comment)
+         if (iamroot) call shr_sys_flush(logunit)
+
           ! Area correct component initialization output fields
           ! need to multiply fluxes (correct them) with mdl2drv (factors(i,1))
           ! so get all fluxes (tags) multiply with factor(i,1), according to mask
@@ -836,7 +880,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
       endif
        ! send data to coupler exchange ? everything, not only fluxes ?
-      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields)
+      call component_exch_moab(comp(1), mbccid, mbcxid, 0, seq_flds_c2x_fields, context_exch='areacor')
    endif
 
   end subroutine component_init_areacor_moab
