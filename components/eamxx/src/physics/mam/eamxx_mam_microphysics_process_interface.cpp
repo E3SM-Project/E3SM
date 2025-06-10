@@ -162,7 +162,6 @@ void MAMMicrophysics::set_grids(
   add_field<Required>("SW_flux_dn", scalar3d_int, W / m2, grid_name);
 
   // Diagnostic fluxes          
-  constexpr int gas_pcnst = mam4::gas_chemistry::gas_pcnst;
   const FieldLayout vector2d_nmodes =
       grid_->get_2d_vector_layout(nmodes, "mam4::gas_chemistry::gas_pcnst");
   add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
@@ -768,7 +767,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   }
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  constexpr int nmodes    = mam_coupling::num_aero_modes();
 
   const auto &extfrc   = extfrc_;
   const auto &forcings = forcings_;
@@ -796,7 +794,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
-
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphyscs
@@ -911,8 +908,8 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        Real aqso4_flx_col[nmodes] = {};  // deposition flux of so4 [mole/mole/s]
-        Real aqh2so4_flx_col[nmodes] = {};  // deposition flux of h2so4 [mole/mole/s]
+        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
+        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
         Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
@@ -941,10 +938,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         // behavior but we should look into it)
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
-        });
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nmodes), [&](int m) {
-           aqso4_flx(icol, m) = aqso4_flx_col[m];
-           aqh2so4_flx(icol, m) = aqh2so4_flx_col[m];
         });
       });  // parallel_for for the column loop
   Kokkos::fence();
