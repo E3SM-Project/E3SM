@@ -227,7 +227,7 @@ subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
 
   ! Set phase speeds as reference speeds plus the wind speed at the source
   ! level.
-  c = spread(cref, 1, ncol) + spread(abs(ubi(:,kbot)),2,2*ngwv+1)
+  c = spread(cref, 1, ncol) + spread(abs(ubi(:,kbot)),2,2*pgwv+1)
 
 end subroutine gw_cm_src
 
