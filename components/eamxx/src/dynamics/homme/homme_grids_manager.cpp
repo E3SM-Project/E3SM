@@ -20,7 +20,7 @@
 #include "homme_dimensions.hpp"
 #include "PhysicalConstants.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
+#include <ekat_std_utils.hpp>
 
 namespace scream
 {
@@ -83,7 +83,7 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
       return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
-    ekat::error::runtime_abort("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
+    EKAT_ERROR_MSG("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
   }
   return nullptr;
 }
@@ -147,7 +147,6 @@ void HommeGridsManager::build_dynamics_grid () {
   const int nlev   = get_nlev_f90();
 
   auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
-  dyn_grid->setSelfPointer(dyn_grid);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
   const Units rad (Units::nondimensional(),"rad");
@@ -215,7 +214,6 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   const int nlcols = get_num_local_columns_f90 (pg_code % 10);
 
   auto phys_grid = std::make_shared<PointGrid>(name,nlcols,nlev,m_comm);
-  phys_grid->setSelfPointer(phys_grid);
 
   // Create the gids, coords, area views
   using namespace ShortFieldTagsNames;

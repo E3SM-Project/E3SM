@@ -7,7 +7,7 @@
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "examples/all-sky/mo_garand_atmos_io.h"
 
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_test_utils.hpp>
 
 #include <cmath>
 #include <mpi.h>

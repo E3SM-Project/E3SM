@@ -5,7 +5,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <limits>

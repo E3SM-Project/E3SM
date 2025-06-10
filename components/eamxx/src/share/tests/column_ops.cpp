@@ -1,9 +1,10 @@
 #include <catch2/catch.hpp>
 
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "share/util/eamxx_column_ops.hpp"
+
+#include <ekat_kokkos_types.hpp>
+#include <ekat_subview_utils.hpp>
+#include <ekat_arch.hpp>
 
 namespace {
 

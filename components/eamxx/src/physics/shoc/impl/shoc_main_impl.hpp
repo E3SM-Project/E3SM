@@ -3,7 +3,8 @@
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <iomanip>
 
@@ -21,13 +22,15 @@ Int Functions<S,D>::shoc_init(
   const Int&                  ntop_shoc,
   const view_1d<const Spack>& pref_mid)
 {
+  using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
   // This function calculates the maximum number of levels
   // in pbl from surface
 
-  using ExeSpace = typename KT::ExeSpace;
   view_1d<Int> npbl_d("npbl",1);
 
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1);
+  const auto policy = TPF::get_default_team_policy(1, 1);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     const Scalar pblmaxp = SC::pblmaxp;
@@ -626,10 +629,11 @@ Int Functions<S,D>::shoc_main(
 
 #ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   // SHOC main loop
   const auto nlev_packs = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 

@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 
+#include "physics_test_read_write_helpers.hpp"
 #include "physics/share/physics_functions.hpp"
 #include "physics/share/physics_saturation_impl.hpp"
 #include "physics_unit_tests_common.hpp"
@@ -8,10 +9,8 @@
 #include "share/eamxx_session.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <thread>
 #include <array>
@@ -105,8 +104,8 @@ struct UnitWrap::UnitTest<D>::TestSaturation
   {}
 
   Int generate_baseline (const std::string& filename) {
-    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "w"));
-    EKAT_REQUIRE_MSG( fid, "generate_baseline can't write " << filename);
+    std::ofstream ofile(filename,std::ios::binary);
+    EKAT_REQUIRE_MSG( ofile.good(), "generate_baseline can't write " + filename + "\n");
 
     for (auto p : params_) {
       ParamSet ps = p;
@@ -129,15 +128,15 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       auto d_host = Kokkos::create_mirror_view(d_dev);
       Kokkos::deep_copy(d_host,d_dev);
 
-      write(fid, d_host[0]); // Save the fields to the baseline file.
+      write(ofile, d_host[0]); // Save the fields to the baseline file.
     }
 
     return 0;
   }
 
   Int run_and_cmp (const std::string& filename, const Scalar& tol) {
-    auto fid = ekat::FILEPtr(fopen(filename.c_str(), "r"));
-    EKAT_REQUIRE_MSG( fid, "generate_baseline can't read " << filename);
+    std::ifstream ifile(filename);
+    EKAT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read " + filename + "\n");
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto p : params_) {
@@ -145,7 +144,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       OutputData ref;
       ParamSet ps = p;
       std::cout << "--- checking physics saturation case # " << case_num << std::endl;
-      read(fid, ref);
+      read(ifile, ref);
 
       Kokkos::View<OutputData*> d_dev("",1);
       Kokkos::parallel_for(1,
@@ -214,28 +213,28 @@ struct UnitWrap::UnitTest<D>::TestSaturation
 
   std::vector<ParamSet> params_;
 
-  static void write (const ekat::FILEPtr& fid, const OutputData& d) {
-    ekat::write(&d.sat_ice_fp, 1, fid);
-    ekat::write(&d.sat_liq_fp, 1, fid);
-    ekat::write(&d.mix_ice_fr, 1, fid);
-    ekat::write(&d.mix_liq_fr, 1, fid);
+  static void write (std::ofstream& ofile, const OutputData& d) {
+    impl::write_scalars(ofile, d.sat_ice_fp);
+    impl::write_scalars(ofile, d.sat_liq_fp);
+    impl::write_scalars(ofile, d.mix_ice_fr);
+    impl::write_scalars(ofile, d.mix_liq_fr);
 
-    ekat::write(&d.sat_ice_mkp, 1, fid);
-    ekat::write(&d.sat_liq_mkp, 1, fid);
-    ekat::write(&d.mix_ice_mkr, 1, fid);
-    ekat::write(&d.mix_liq_mkr, 1, fid);
+    impl::write_scalars(ofile, d.sat_ice_mkp);
+    impl::write_scalars(ofile, d.sat_liq_mkp);
+    impl::write_scalars(ofile, d.mix_ice_mkr);
+    impl::write_scalars(ofile, d.mix_liq_mkr);
   }
 
-  static void read (const ekat::FILEPtr& fid, OutputData& d) {
-    ekat::read(&d.sat_ice_fp, 1, fid);
-    ekat::read(&d.sat_liq_fp, 1, fid);
-    ekat::read(&d.mix_ice_fr, 1, fid);
-    ekat::read(&d.mix_liq_fr, 1, fid);
+  static void read (std::ifstream& ifile, OutputData& d) {
+    impl::read_scalars(ifile, d.sat_ice_fp);
+    impl::read_scalars(ifile, d.sat_liq_fp);
+    impl::read_scalars(ifile, d.mix_ice_fr);
+    impl::read_scalars(ifile, d.mix_liq_fr);
 
-    ekat::read(&d.sat_ice_mkp, 1, fid);
-    ekat::read(&d.sat_liq_mkp, 1, fid);
-    ekat::read(&d.mix_ice_mkr, 1, fid);
-    ekat::read(&d.mix_liq_mkr, 1, fid);
+    impl::read_scalars(ifile, d.sat_ice_mkp);
+    impl::read_scalars(ifile, d.sat_liq_mkp);
+    impl::read_scalars(ifile, d.mix_ice_mkr);
+    impl::read_scalars(ifile, d.mix_liq_mkr);
   }
 
   static Int compare (const Scalar& tol,

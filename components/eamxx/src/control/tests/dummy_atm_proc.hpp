@@ -2,8 +2,6 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "ekat/ekat_pack.hpp"
-
 namespace scream {
 
 // === A dummy atm process, on Physics grid === //

@@ -7,8 +7,8 @@
 #include <array>
 #include <string>
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_lin_interp.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_lin_interp.hpp>
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"

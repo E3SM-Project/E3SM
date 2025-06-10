@@ -1,8 +1,8 @@
 #include "eamxx_trcmix.hpp"
 #include "physics_constants.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_math_utils.hpp>
 
 #include <cmath>
 
@@ -50,7 +50,7 @@ void trcmix(
     {"cfc12",{rmwf12*f12vmr, 0.4000, 0.00222, 0.5   , 0.024444 }}
   };
 
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlevs);
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ncols, nlevs);
 
   if (name == "o2" || name == "co2") {
     const auto val = name == "o2" ? C::o2mmr : rmwco2 * co2vmr;

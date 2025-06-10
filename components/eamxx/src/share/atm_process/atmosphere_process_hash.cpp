@@ -2,7 +2,8 @@
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_array_utils.hpp"
 #include "share/util/eamxx_bfbhash.hpp"
-#include "ekat/ekat_assert.hpp"
+
+#include <ekat_assert.hpp>
 
 #include <cstdint>
 #include <iomanip>

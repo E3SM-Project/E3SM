@@ -15,12 +15,13 @@ FILE_TEMPLATES = {
 f"""#include "catch2/catch.hpp"
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/{phys}/{phys}_functions.hpp"
 #include "physics/{phys}/tests/infra/{phys}_test_data.hpp"
 
 #include "{phys}_unit_tests_common.hpp"
+
+#include <ekat_pack.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {{
 namespace {phys} {{
@@ -1903,7 +1904,7 @@ f"""struct {struct_name}{inheritance} {{
             vals_d(btemp_d_1[0]);
         <BLANKLINE>
           const Int nk_pack = ekat::npack<Spack>(nlev);
-          const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);
+          const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(shcol, nk_pack);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
             const Int i = team.league_rank();
         <BLANKLINE>
@@ -2111,7 +2112,7 @@ f"""struct {struct_name}{inheritance} {{
             # 4) Get nk_pack and policy, launch kernel
             #
             impl += "  const Int nk_pack = ekat::npack<Spack>(nlev);\n"
-            impl += "  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nk_pack);\n"
+            impl += "  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(shcol, nk_pack);\n"
             impl += "  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {\n"
             impl += "    const Int i = team.league_rank();\n\n"
 
