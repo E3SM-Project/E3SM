@@ -3582,7 +3582,7 @@
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
+    <MPILIBS>mpich,mpich1024</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SM_Dec/performance_archive</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -3623,6 +3623,8 @@
       <modules>
         <command name="load">cmake/3.30.5</command>
         <command name="load">oneapi/release/2025.0.5</command>
+      </modules>
+      <modules mpilib="mpich1024">
         <command name="load">mpich-config/collective-tuning/1024</command>
       </modules>
     </module_system>
