@@ -433,9 +433,6 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const int  num_levs           = m_num_levs;
   const int  num_cols           = m_num_cols;
 
-  // calculate hybrid_ref_pmid_bot outside the loop (see Sa_ptem calculation)
-  const auto hybrid_ref_pmid_bot = PC::P0 * ( hybm(num_levs-1) + hyam(num_levs-1) );
-
   // Preprocess exports
   auto export_source = m_export_source;
   const auto setup_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
@@ -498,6 +495,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // To accomplish this we can calculate theta using the "hybrid reference pressure"
       // of the lowest mid-point level. This is calculated similar to how we get pressure
       // from the hybrid coefficients, except we replace the sfc pressure with P0.
+      const auto hybrid_ref_pmid_bot = PC::P0 * ( hybm(num_levs-1) + hyam(num_levs-1) );
       Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), hybrid_ref_pmid_bot);
     }
 
