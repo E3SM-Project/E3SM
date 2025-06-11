@@ -320,6 +320,9 @@ void test_exports(const FieldManager& fm,
   const int ncols = fm.get_grid()->get_num_local_dofs();
   const int nlevs = fm.get_grid()->get_num_vertical_levels();
 
+  const auto& hyam = fm.get_grid()->get_geometry_data("hyam").get_view<const Real*>();
+  const auto& hybm = fm.get_grid()->get_geometry_data("hybm").get_view<const Real*>();
+
   KokkosTypes<DefaultDevice>::view_2d<Real> dz   ("dz   ", ncols, nlevs);
   KokkosTypes<DefaultDevice>::view_2d<Real> z_mid("z_mid", ncols, nlevs);
   KokkosTypes<DefaultDevice>::view_2d<Real> z_int("z_int", ncols, nlevs+1);
@@ -344,9 +347,6 @@ void test_exports(const FieldManager& fm,
     const auto dz_i              = ekat::subview(dz,             i);
     const auto z_int_i           = ekat::subview(z_int,          i);
     const auto z_mid_i           = ekat::subview(z_mid,          i);
-
-    const auto& hyam             = m_grid->get_geometry_data("hyam").get_view<const Real*>();
-    const auto& hybm             = m_grid->get_geometry_data("hybm").get_view<const Real*>();
 
     const auto hybrid_ref_pmid_bot = PC::P0 * ( hybm(nlevs-1) + hyam(nlevs-1) );
 
