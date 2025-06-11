@@ -381,8 +381,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const auto& sfc_flux_sw_net      = get_field_in("sfc_flux_sw_net" ).get_view<const Real*>();
   const auto& sfc_flux_lw_dn       = get_field_in("sfc_flux_lw_dn"  ).get_view<const Real*>();
 
-  const auto& hyam                 = m_grid->get_geometry_data("hyam").get_view<const Spack*>();
-  const auto& hybm                 = m_grid->get_geometry_data("hybm").get_view<const Spack*>();
+  const auto& hyam                 = m_grid->get_geometry_data("hyam").get_view<const Real*>();
+  const auto& hybm                 = m_grid->get_geometry_data("hybm").get_view<const Real*>();
 
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
@@ -433,11 +433,8 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const int  num_levs           = m_num_levs;
   const int  num_cols           = m_num_cols;
 
-  // hyam and hybm are vertical-only so scalarize them before the loop over columns
-  const auto s_hyam = ekat::scalarize(hyam);
-  const auto s_hybm = ekat::scalarize(hybm);
-  // Also, calculate hybrid_ref_pmid_bot outside the loop (see Sa_ptem calculation)
-  const auto hybrid_ref_pmid_bot = PC::P0 * ( s_hybm(num_levs-1) + s_hyam(num_levs-1) );
+  // calculate hybrid_ref_pmid_bot outside the loop (see Sa_ptem calculation)
+  const auto hybrid_ref_pmid_bot = PC::P0 * ( hybm(num_levs-1) + hyam(num_levs-1) );
 
   // Preprocess exports
   auto export_source = m_export_source;
