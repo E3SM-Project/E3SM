@@ -345,6 +345,11 @@ void test_exports(const FieldManager& fm,
     const auto z_int_i           = ekat::subview(z_int,          i);
     const auto z_mid_i           = ekat::subview(z_mid,          i);
 
+    const auto& hyam             = m_grid->get_geometry_data("hyam").get_view<const Real*>();
+    const auto& hybm             = m_grid->get_geometry_data("hybm").get_view<const Real*>();
+
+    const auto hybrid_ref_pmid_bot = PC::P0 * ( hybm(nlevs-1) + hyam(nlevs-1) );
+
     // Compute vertical layer thickness
     PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
     team.team_barrier();
@@ -361,7 +366,7 @@ void test_exports(const FieldManager& fm,
     const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(nlevs-1),z_mid_i(nlevs-1));
 
     Sa_z(i)       = z_mid_i(nlevs-1);
-    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), p_mid_i(nlevs-1));
+    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), hybrid_ref_pmid_bot);
     Sa_dens(i)    = PF::calculate_density(pseudo_density_i(nlevs-1), dz_i(nlevs-1));
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(nlevs), phis(i));
 
