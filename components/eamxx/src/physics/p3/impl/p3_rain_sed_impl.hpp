@@ -11,6 +11,7 @@ namespace p3 {
  * this file, #include p3_functions.hpp instead.
  */
 
+
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
