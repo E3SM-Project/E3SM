@@ -25,6 +25,7 @@ module subgridAveMod
 
   integer, parameter :: unity = 0, urbanf = 1, urbans = 2
   integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+  integer, parameter :: tgu_unity = 1, tgu_level = 2  ! TKT for TGU 2 uses the topounit fraction in calculating gridcell level valus
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: p2c   ! Perform an average pfts to columns
@@ -77,10 +78,14 @@ module subgridAveMod
   interface p2t
      module procedure p2t_1d
      module procedure p2t_2d
+	 module procedure p2t_1d_gpu
+     module procedure p2t_2d_gpu
   end interface
   interface c2t
      module procedure c2t_1d
      module procedure c2t_2d
+	 module procedure c2t_1d_gpu
+     module procedure c2t_2d_gpu
   end interface
   interface l2t
      module procedure l2t_1d
@@ -104,10 +109,16 @@ module subgridAveMod
 
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: build_scale_l2g
-  private :: create_scale_l2g_lookup
+!  private :: build_scale_l2g
+!  private :: build_scale_l2g_gpu
+!  private :: create_scale_l2g_lookup
   private :: build_scale_l2t
   private :: create_scale_l2t_lookup
+  private :: build_scale_t2g  
+  private :: build_scale_t2g_gpu
+  private :: create_scale_l2t_lookup_gpu
+  private :: build_scale_l2t_gpu
+!  private :: create_scale_l2g_lookup_gpu
   
   ! WJS (10-14-11): TODO:
   !
@@ -561,7 +572,7 @@ contains
   end subroutine p2l_2d
 
   !-----------------------------------------------------------------------
-  subroutine p2g_1d(bounds, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
+  subroutine p2g_1d(bounds, parr, garr, p2c_scale_type, c2l_scale_type, l2t_scale_type,t2g_scale_type)   ! TKT modified for TGU
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from pfts to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -572,21 +583,26 @@ contains
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
     character(len=*), intent(in) :: p2c_scale_type ! scale factor type for averaging
     character(len=*), intent(in) :: c2l_scale_type ! scale factor type for averaging
-    character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
+    character(len=*), intent(in) :: l2t_scale_type ! scale factor type for averaging  ! TKT for TGU changed to l2t_scale_type
+	character(len=*), intent(in) :: t2g_scale_type ! scale factor type for averaging  ! TKT added for TGU
     !
     !  !LOCAL VARIABLES:
-    integer  :: p,c,l,g,index                   ! indices
+    integer  :: p,c,l,g,t,index                   ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: scale_p2c(bounds%begp:bounds%endp) ! scale factor
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor 
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
 
     ! Enforce expected array sizes
-
-    call build_scale_l2g(bounds, l2g_scale_type, &
-         scale_l2g)
+    
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
+	
+    call build_scale_l2t(bounds, l2t_scale_type, &
+         scale_l2t)
 
     call create_scale_c2l(bounds,c2l_scale_type,scale_c2l(bounds%begc:bounds%endc))
 
@@ -598,17 +614,18 @@ contains
        write(iulog,*)'p2g_1d error: scale type ',c2l_scale_type,' not supported'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-
+	
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do p = bounds%begp,bounds%endp
        if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
           c = veg_pp%column(p)
           l = veg_pp%landunit(p)
-          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+		  t = veg_pp%topounit(p)
+          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
              g = veg_pp%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * veg_pp%wtgcell(p)
              sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
           end if
        end if
@@ -630,7 +647,7 @@ contains
   end subroutine p2g_1d
 
   !-----------------------------------------------------------------------
-  subroutine p2g_1d_gpu(bounds, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
+  subroutine p2g_1d_gpu(bounds, parr, garr, p2c_scale_type, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from pfts to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -641,19 +658,25 @@ contains
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
     integer , intent(in) :: p2c_scale_type ! scale factor type for averaging
     integer , intent(in) :: c2l_scale_type ! scale factor type for averaging |||  unity = 0, urbanf = 1, urbans = 2
-    integer , intent(in) :: l2g_scale_type ! unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
-    !
+    integer , intent(in) :: l2t_scale_type ! unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    integer , intent(in) :: t2g_scale_type ! scale factor type for averaging
+
+!
     !  !LOCAL VARIABLES:
-    integer  :: p,c,l,g,index                   ! indices
+    integer  :: p,c,l,g,t,index                   ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: scale_p2c(bounds%begp:bounds%endp) ! scale factor
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
 
-    call build_scale_l2g_gpu(bounds, l2g_scale_type, &
-         scale_l2g)
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
+	
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t)
 
     if (c2l_scale_type == unity) then
        do c = bounds%begc,bounds%endc
@@ -711,10 +734,11 @@ contains
        if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
           c = veg_pp%column(p)
           l = veg_pp%landunit(p)
-          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+		  t = veg_pp%topounit(p)
+          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(l) /= spval) then
              g = veg_pp%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+             garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * veg_pp%wtgcell(p)
              sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
           end if
        end if
@@ -729,14 +753,14 @@ contains
        end if
     end do
     if (found) then
-       print *,'p2g_1d error: sumwt is greater than 1.0 at g= ',index
+       print *,'p2g_1d_gpu error: sumwt is greater than 1.0 at g= ',index
     end if
 
   end subroutine p2g_1d_gpu
 
 
   !-----------------------------------------------------------------------
-  subroutine p2g_2d(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
+  subroutine p2g_2d(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from pfts to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -750,22 +774,27 @@ contains
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
     character(len=*), intent(in) :: p2c_scale_type     ! scale factor type for averaging
     character(len=*), intent(in) :: c2l_scale_type     ! scale factor type for averaging
-    character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
+    character(len=*), intent(in) :: l2t_scale_type     ! scale factor type for averaging
+	character(len=*), intent(in) :: t2g_scale_type     ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,p,c,l,g,index                     ! indices
+    integer  :: j,p,c,l,g,t,index                     ! indices
     logical  :: found                                  ! temporary for error check
     real(r8) :: scale_p2c(bounds%begp:bounds%endp)     ! scale factor
     real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
     ! Enforce expected array sizes
     SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp, num2d/)), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(garr) == (/bounds%endg, num2d/)), errMsg(__FILE__, __LINE__))
+	
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g(bounds, l2g_scale_type, &
-         scale_l2g)
+    call build_scale_l2t(bounds, l2t_scale_type, &
+         scale_l2t)
 
     call create_scale_c2l(bounds,c2l_scale_type, scale_c2l(bounds%begc:bounds%endc))
 
@@ -785,10 +814,11 @@ contains
           if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
              c = veg_pp%column(p)
              l = veg_pp%landunit(p)
-             if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+			 t = veg_pp%topounit(p)
+             if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
                 g = veg_pp%gridcell(p)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * veg_pp%wtgcell(p)
                 sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
              end if
           end if
@@ -811,7 +841,7 @@ contains
   end subroutine p2g_2d
 
   !-----------------------------------------------------------------------
-  subroutine p2g_2d_gpu(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2g_scale_type)
+  subroutine p2g_2d_gpu(bounds, num2d, parr, garr, p2c_scale_type, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     ! !DESCRIPTION:
     !$acc routine seq
     ! Perfrom subgrid-average from pfts to gridcells.
@@ -826,21 +856,27 @@ contains
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
     integer, intent(in) :: p2c_scale_type     ! scale factor type for averaging
     integer, intent(in) :: c2l_scale_type     ! scale factor type for averaging
-    integer, intent(in) :: l2g_scale_type     ! scale factor type for averaging
-    !
+    integer, intent(in) :: l2t_scale_type     ! scale factor type for averaging
+    integer, intent(in) :: t2g_scale_type ! scale factor type for averaging
+
+!
     ! !LOCAL VARIABLES:
-    integer  :: j,p,c,l,g,index                     ! indices
+    integer  :: j,p,c,l,g,t,index                     ! indices
     logical  :: found                                  ! temporary for error check
     real(r8) :: scale_p2c(bounds%begp:bounds%endp)     ! scale factor
     real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
 
     ! Enforce expected array sizes
+	
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g_gpu(bounds, l2g_scale_type, &
-         scale_l2g)
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t)
 
     if (c2l_scale_type == unity) then
        do c = bounds%begc,bounds%endc
@@ -905,10 +941,11 @@ contains
           if (veg_pp%active(p) .and. veg_pp%wtgcell(p) /= 0._r8) then
              c = veg_pp%column(p)
              l = veg_pp%landunit(p)
-             if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+			 t = veg_pp%topounit(p)
+             if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
                 g = veg_pp%gridcell(p)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2g(l) * veg_pp%wtgcell(p)
+                garr(g,j) = garr(g,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * veg_pp%wtgcell(p)
                 sumwt(g) = sumwt(g) + veg_pp%wtgcell(p)
              end if
           end if
@@ -1042,7 +1079,7 @@ contains
 
   end subroutine c2l_2d
   !-----------------------------------------------------------------------
-  subroutine c2g_1d(bounds, carr, garr, c2l_scale_type, l2g_scale_type)
+  subroutine c2g_1d(bounds, carr, garr, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from columns to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -1052,18 +1089,23 @@ contains
     real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
     character(len=*), intent(in) :: c2l_scale_type ! scale factor type for averaging
-    character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
+    character(len=*), intent(in) :: l2t_scale_type ! scale factor type for averaging
+	character(len=*), intent(in) :: t2g_scale_type ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: c,l,g,index                     ! indices
+    integer  :: c,l,g,t,index                     ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
+	
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g(bounds, l2g_scale_type, &
-         scale_l2g)
+    call build_scale_l2t(bounds, l2t_scale_type, &
+         scale_l2t)
 
     call create_scale_c2l(bounds,c2l_scale_type, scale_c2l(bounds%begc:bounds%endc))
 
@@ -1072,10 +1114,11 @@ contains
     do c = bounds%begc,bounds%endc
        if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
           l = col_pp%landunit(c)
-          if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+		  t = col_pp%topounit(c)
+          if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
              g = col_pp%gridcell(c)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+             garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * col_pp%wtgcell(c)
              sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
           end if
        end if
@@ -1096,7 +1139,7 @@ contains
 
   end subroutine c2g_1d
   !-----------------------------------------------------------------------
-  subroutine c2g_1d_gpu(bounds, carr, garr, c2l_scale_type, l2g_scale_type)
+  subroutine c2g_1d_gpu(bounds, carr, garr, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from columns to gridcells.
@@ -1107,18 +1150,24 @@ contains
     real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
     integer , intent(in) :: c2l_scale_type  !! unity = 0, urbanf = 1, urbans = 2
-    integer , intent(in) :: l2g_scale_type  !!natveg = 3, veg =4, ice=5, nonurb=6, lake=7
-    !
+    integer , intent(in) :: l2t_scale_type  !!natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    integer , intent(in) :: t2g_scale_type ! scale factor type for averaging    
+
+!
     ! !LOCAL VARIABLES:
-    integer  :: c,l,g,index                     ! indices
+    integer  :: c,l,g,t,index                     ! indices
     logical  :: found                              ! temporary for error check
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
+	
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g_gpu(bounds, l2g_scale_type, &
-         scale_l2g)
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t)
 
     call create_scale_c2l_gpu(bounds,c2l_scale_type, scale_c2l)
 
@@ -1127,10 +1176,11 @@ contains
     do c = bounds%begc,bounds%endc
        if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
           l = col_pp%landunit(c)
-          if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+		  t = col_pp%topounit(c)
+          if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
              g = col_pp%gridcell(c)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+             garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * col_pp%wtgcell(c)
              sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
           end if
        end if
@@ -1154,7 +1204,7 @@ contains
   end subroutine c2g_1d_gpu
 
   !-----------------------------------------------------------------------
-  subroutine c2g_2d(bounds, num2d, carr, garr, c2l_scale_type, l2g_scale_type)
+  subroutine c2g_2d(bounds, num2d, carr, garr, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from columns to gridcells.
     ! Averaging is only done for points that are not equal to "spval".
@@ -1165,18 +1215,23 @@ contains
     real(r8), intent(in)  :: carr( bounds%begc: , 1: ) ! input column array
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
     character(len=*), intent(in) :: c2l_scale_type     ! scale factor type for averaging
-        character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
+    character(len=*), intent(in) :: l2t_scale_type     ! scale factor type for averaging
+	character(len=*), intent(in) :: t2g_scale_type     ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,g,l,index                       ! indices
+    integer  :: j,c,g,l,t,index                       ! indices
     logical  :: found                                  ! temporary for error check
     real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
+	
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g(bounds, l2g_scale_type, &
-         scale_l2g)
+    call build_scale_l2t(bounds, l2t_scale_type, &
+         scale_l2t)
 
     call create_scale_c2l(bounds, c2l_scale_type, scale_c2l(bounds%begc:bounds%endc))
 
@@ -1186,10 +1241,11 @@ contains
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
              l = col_pp%landunit(c)
-             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+			 t = col_pp%topounit(c)
+             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
                 g = col_pp%gridcell(c)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+                garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * col_pp%wtgcell(c)
                 sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
              end if
           end if
@@ -1212,7 +1268,7 @@ contains
   end subroutine c2g_2d
 
   !-----------------------------------------------------------------------
-  subroutine c2g_2d_gpu(bounds, num2d, carr, garr, c2l_scale_type, l2g_scale_type)
+  subroutine c2g_2d_gpu(bounds, num2d, carr, garr, c2l_scale_type, l2t_scale_type, t2g_scale_type)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from columns to gridcells.
@@ -1224,18 +1280,24 @@ contains
     real(r8), intent(in)  :: carr( bounds%begc: , 1: ) ! input column array
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
     integer , intent(in)  :: c2l_scale_type
-    integer , intent(in)  :: l2g_scale_type ! unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
-    !
+    integer , intent(in)  :: l2t_scale_type ! unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    integer , intent(in) :: t2g_scale_type ! scale factor type for averaging    
+
+!
     ! !LOCAL VARIABLES:
-    integer  :: j,c,g,l,index                       ! indices
+    integer  :: j,c,g,l,t,index                       ! indices
     logical  :: found                                  ! temporary for error check
     real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
+	
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g_gpu(bounds, l2g_scale_type, &
-         scale_l2g)
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t)
 
    call create_scale_c2l_gpu(bounds,c2l_scale_type, scale_c2l)
 
@@ -1245,10 +1307,11 @@ contains
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
              l = col_pp%landunit(c)
-             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2g(l) /= spval) then
+			 t = col_pp%topounit(c)
+             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_t2g(l) /= spval .and. scale_t2g(t) /= spval) then
                 g = col_pp%gridcell(c)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2g(l) * col_pp%wtgcell(c)
+                garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * col_pp%wtgcell(c)
                 sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
              end if
           end if
@@ -1270,7 +1333,7 @@ contains
   end subroutine c2g_2d_gpu
 
   !-----------------------------------------------------------------------
-  subroutine l2g_1d(bounds, larr, garr, l2g_scale_type)
+  subroutine l2g_1d(bounds, larr, garr, l2t_scale_type, t2g_scale_type)
     !
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from landunits to gridcells.
@@ -1280,25 +1343,32 @@ contains
     type(bounds_type), intent(in) :: bounds
     real(r8), intent(in)  :: larr( bounds%begl: )  ! input landunit array
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
-    character(len=*), intent(in) :: l2g_scale_type ! scale factor type for averaging
+    character(len=*), intent(in) :: l2t_scale_type ! scale factor type for averaging
+	character(len=*), intent(in) :: t2g_scale_type ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: l,g,index                       ! indices
+    integer  :: l,g,t,index                       ! indices
     logical  :: found                              ! temporary for error check
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
-    call build_scale_l2g(bounds, l2g_scale_type, &
-         scale_l2g(bounds%begl:bounds%endl))
+	
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
+	
+    call build_scale_l2t(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
 
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do l = bounds%begl,bounds%endl
        if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
-          if (larr(l) /= spval .and. scale_l2g(l) /= spval) then
+          if (larr(l) /= spval .and. scale_l2t(l) /= spval) then
              g = lun_pp%gridcell(l)
+			 t = lun_pp%topounit(l)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + larr(l) * scale_l2g(l) * lun_pp%wtgcell(l)
+             garr(g) = garr(g) + larr(l) * scale_l2t(l) * scale_t2g(t) * lun_pp%wtgcell(l)
              sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
           end if
        end if
@@ -1320,7 +1390,7 @@ contains
   end subroutine l2g_1d
 
   !-----------------------------------------------------------------------
-  subroutine l2g_2d(bounds, num2d, larr, garr, l2g_scale_type)
+  subroutine l2g_2d(bounds, num2d, larr, garr, l2t_scale_type, t2g_scale_type)
     !
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from landunits to gridcells.
@@ -1331,28 +1401,34 @@ contains
     integer , intent(in)  :: num2d                     ! size of second dimension
     real(r8), intent(in)  :: larr( bounds%begl: , 1: ) ! input landunit array
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
-    character(len=*), intent(in) :: l2g_scale_type     ! scale factor type for averaging
+    character(len=*), intent(in) :: l2t_scale_type     ! scale factor type for averaging
+	character(len=*), intent(in) :: t2g_scale_type     ! scale factor type for averaging
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,g,l,index                         ! indices
+    integer  :: j,g,l,t,index                         ! indices
     integer  :: max_lu_per_gcell                       ! max landunits per gridcell; on the fly
     logical  :: found                                  ! temporary for error check
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
+	
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g(bounds, l2g_scale_type, &
-         scale_l2g(bounds%begl:bounds%endl))
+    call build_scale_l2t(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
 
     garr(bounds%begg : bounds%endg, :) = spval
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do l = bounds%begl,bounds%endl
           if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
-             if (larr(l,j) /= spval .and. scale_l2g(l) /= spval) then
+             if (larr(l,j) /= spval .and. scale_l2t(l) /= spval) then
                 g = lun_pp%gridcell(l)
+				t = lun_pp%topounit(l)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + larr(l,j) * scale_l2g(l) * lun_pp%wtgcell(l)
+                garr(g,j) = garr(g,j) + larr(l,j) * scale_l2t(l) * scale_t2g(t) * lun_pp%wtgcell(l)
                 sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
              end if
           end if
@@ -1374,9 +1450,8 @@ contains
 
   end subroutine l2g_2d
 
-
   !-----------------------------------------------------------------------
-  subroutine l2g_1d_gpu(bounds, larr, garr, l2g_scale_type)
+  subroutine l2g_1d_gpu(bounds, larr, garr, l2t_scale_type, t2g_scale_type)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from landunits to gridcells.
@@ -1386,25 +1461,32 @@ contains
     type(bounds_type), intent(in) :: bounds
     real(r8), intent(in)  :: larr( bounds%begl: )  ! input landunit array
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
-    integer, intent(in) :: l2g_scale_type ! scale factor type for averaging
-    !
+    integer, intent(in) :: l2t_scale_type ! scale factor type for averaging
+    integer, intent(in) :: t2g_scale_type     ! scale factor type for averaging    
+!
     ! !LOCAL VARIABLES:
-    integer  :: l,g,index                       ! indices
+    integer  :: l,g,t,index                       ! indices
     logical  :: found                              ! temporary for error check
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
-    call build_scale_l2g_gpu(bounds, l2g_scale_type, &
-         scale_l2g(bounds%begl:bounds%endl))
+	
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
+	
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
 
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
     do l = bounds%begl,bounds%endl
        if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
-          if (larr(l) /= spval .and. scale_l2g(l) /= spval) then
+          if (larr(l) /= spval .and. scale_l2t(l) /= spval) then
              g = lun_pp%gridcell(l)
+			 t = lun_pp%topounit(l)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
-             garr(g) = garr(g) + larr(l) * scale_l2g(l) * lun_pp%wtgcell(l)
+             garr(g) = garr(g) + larr(l) * scale_l2t(l) * scale_t2g(t) * lun_pp%wtgcell(l)
              sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
           end if
        end if
@@ -1419,13 +1501,13 @@ contains
        end if
     end do
     if (found) then
-       print *, 'l2g_1d error: sumwt is greater than 1.0 at g= ',index
+       print *, 'l2g_1d_gpu error: sumwt is greater than 1.0 at g= ',index
     end if
 
   end subroutine l2g_1d_gpu
 
   !-----------------------------------------------------------------------
-  subroutine l2g_2d_gpu(bounds, num2d, larr, garr, l2g_scale_type)
+  subroutine l2g_2d_gpu(bounds, num2d, larr, garr, l2t_scale_type, t2g_scale_type)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from landunits to gridcells.
@@ -1436,28 +1518,34 @@ contains
     integer , intent(in)  :: num2d                     ! size of second dimension
     real(r8), intent(in)  :: larr( bounds%begl: , 1: ) ! input landunit array
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
-    integer, intent(in) :: l2g_scale_type     ! scale factor type for averaging
-    !
+    integer, intent(in) :: l2t_scale_type     ! scale factor type for averaging
+    integer, intent(in) :: t2g_scale_type     ! scale factor type for averaging    
+!
     ! !LOCAL VARIABLES:
-    integer  :: j,g,l,index                         ! indices
+    integer  :: j,g,l,t,index                         ! indices
     integer  :: max_lu_per_gcell                       ! max landunits per gridcell; on the fly
     logical  :: found                                  ! temporary for error check
-    real(r8) :: scale_l2g(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+	real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
+	
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
-    call build_scale_l2g_gpu(bounds, l2g_scale_type, &
-         scale_l2g(bounds%begl:bounds%endl))
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
 
     garr(bounds%begg : bounds%endg, :) = spval
     do j = 1,num2d
        sumwt(bounds%begg : bounds%endg) = 0._r8
        do l = bounds%begl,bounds%endl
           if (lun_pp%active(l) .and. lun_pp%wtgcell(l) /= 0._r8) then
-             if (larr(l,j) /= spval .and. scale_l2g(l) /= spval) then
+             if (larr(l,j) /= spval .and. scale_l2t(l) /= spval) then
                 g = lun_pp%gridcell(l)
+                t = lun_pp%topounit(l)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
-                garr(g,j) = garr(g,j) + larr(l,j) * scale_l2g(l) * lun_pp%wtgcell(l)
+                garr(g,j) = garr(g,j) + larr(l,j) * scale_l2t(l) * scale_t2g(t) * lun_pp%wtgcell(l)
                 sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
              end if
           end if
@@ -1476,65 +1564,8 @@ contains
        end if
     end do
 
-  end subroutine l2g_2d_gpu
-  
-  
-  !-----------------------------------------------------------------------
-  subroutine build_scale_l2g(bounds, l2g_scale_type, scale_l2g)
-    ! !DESCRIPTION:
-    ! Fill the scale_l2g(bounds%begl:bounds%endl) array with appropriate values for the given l2g_scale_type.
-    ! This array can later be used to scale each landunit in forming grid cell averages.
-    !
-    ! !USES:
-    use landunit_varcon, only : max_lunit
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
-    character(len=*), intent(in)  :: l2g_scale_type            ! scale factor type for averaging
-    real(r8)        , intent(out) :: scale_l2g( bounds%begl: ) ! scale factor
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: scale_lookup(max_lunit) ! scale factor for each landunit type
-    integer  :: l                       ! index
-    !-----------------------------------------------------------------------
-
-     call create_scale_l2g_lookup(l2g_scale_type, scale_lookup)
-
-     do l = bounds%begl,bounds%endl
-        scale_l2g(l) = scale_lookup(lun_pp%itype(l))
-     end do
-
-  end subroutine build_scale_l2g
-  !-----------------------------------------------------------------------
-  subroutine build_scale_l2g_gpu(bounds, l2g_scale_type, scale_l2g)
-    !$acc routine seq
-    ! !DESCRIPTION:
-    ! Fill the scale_l2g(bounds%begl:bounds%endl) array with appropriate values for the given l2g_scale_type.
-    ! This array can later be used to scale each landunit in forming grid cell averages.
-    !
-    ! !USES:
-    use landunit_varcon, only : max_lunit
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
-    !character(len=*), intent(in)  :: l2g_scale_type            ! scale factor type for averaging
-    integer , intent(in)    :: l2g_scale_type ! unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
-    real(r8)        , intent(out) :: scale_l2g( bounds%begl: ) ! scale factor
-    !
-    ! !LOCAL VARIABLES:
-    real(r8) :: scale_lookup(max_lunit) ! scale factor for each landunit type
-    integer  :: l                       ! index
-    !-----------------------------------------------------------------------
-
-
-     call create_scale_l2g_lookup_gpu(l2g_scale_type, scale_lookup)
-
-     do l = bounds%begl,bounds%endl
-        scale_l2g(l) = scale_lookup(lun_pp%itype(l))
-     end do
-
-  end subroutine build_scale_l2g_gpu
-
+  end subroutine l2g_2d_gpu  
+ 
   !-----------------------------------------------------------------------
   subroutine build_scale_l2t(bounds, l2t_scale_type, scale_l2t)
     !
@@ -1564,75 +1595,13 @@ contains
      end do
 
   end subroutine build_scale_l2t
-  
-  !-----------------------------------------------------------------------
-  subroutine create_scale_l2g_lookup(l2g_scale_type, scale_lookup)
-    ! DESCRIPTION:
-    ! Create a lookup array, scale_lookup(1..max_lunit), which gives the scale factor for
-    ! each landunit type depending on l2g_scale_type
-    !
-    ! !USES:
-    use landunit_varcon, only : istsoil, istcrop, istice, istice_mec, istdlak
-    use landunit_varcon, only : isturb_MIN, isturb_MAX, max_lunit
-    !
-    ! !ARGUMENTS:
-    character(len=*), intent(in)  :: l2g_scale_type           ! scale factor type for averaging
-    real(r8)   , intent(out) :: scale_lookup(max_lunit)  ! scale factor for each landunit type
-    !-----------------------------------------------------------------------
-
-     ! ------------ WJS (10-14-11): IMPORTANT GENERAL NOTES ------------
-     !
-     ! Since scale_l2g is not currently included in the sumwt accumulations, you need to
-     ! be careful about the scale values you use. Values of 1 and spval are safe
-     ! (including having multiple landunits with value 1), but only use other values if
-     ! you know what you are doing! For example, using a value of 0 is NOT the correct way
-     ! to exclude a landunit from the average, because the normalization will be done
-     ! incorrectly in this case: instead, use spval to exclude a landunit from the
-     ! average. Similarly, using a value of 2 is NOT the correct way to give a landunit
-     ! double relative weight in general, because the normalization won't be done
-     ! correctly in this case, either.
-     !
-     ! In the longer-term, I believe that the correct solution to this problem is to
-     ! include scale_l2g (and the other scale factors) in the sumwt accumulations
-     ! (e.g., sumwt = sumwt + wtgcell * scale_p2c * scale_c2l * scale_l2g), but that
-     ! requires some more thought to (1) make sure that is correct, and (2) make sure it
-     ! doesn't break the urban scaling.
-     !
-     ! -----------------------------------------------------------------
-
-
-     ! Initialize scale_lookup to spval for all landunits. Thus, any landunit that keeps
-     ! the default value will be excluded from grid cell averages.
-     scale_lookup(:) = spval
-
-     if (trim(l2g_scale_type) == 'unity') then
-        scale_lookup(:) = 1.0_r8
-     else if (trim(l2g_scale_type) == 'natveg') then
-        scale_lookup(istsoil) = 1.0_r8
-     else if (trim(l2g_scale_type) == 'veg') then
-        scale_lookup(istsoil) = 1.0_r8
-        scale_lookup(istcrop) = 1.0_r8
-     else if (trim(l2g_scale_type) == 'ice') then
-        scale_lookup(istice) = 1.0_r8
-        scale_lookup(istice_mec) = 1.0_r8
-     else if (trim(l2g_scale_type) == 'nonurb') then
-        scale_lookup(:) = 1.0_r8
-        scale_lookup(isturb_MIN:isturb_MAX) = spval
-     else if (trim(l2g_scale_type) == 'lake') then
-        scale_lookup(istdlak) = 1.0_r8
-     else
-        write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
-        call endrun(msg=errMsg(__FILE__, __LINE__))
-     end if
-
-  end subroutine create_scale_l2g_lookup
-  
+ 
   !-----------------------------------------------------------------------
   subroutine create_scale_l2t_lookup(l2t_scale_type, scale_lookup)
     ! 
     ! DESCRIPTION:
     ! Create a lookup array, scale_lookup(1..max_lunit), which gives the scale factor for
-    ! each landunit type depending on l2t_scale_type for the topounit based structure the same way to l2g_scale_type TKT
+    ! each landunit type depending on l2t_scale_type for the topounit based structure TKT
     !
     ! !USES:
     use landunit_varcon, only : istsoil, istcrop, istice, istice_mec, istdlak
@@ -1744,6 +1713,81 @@ contains
   end subroutine p2t_1d
 
   !-----------------------------------------------------------------------
+  subroutine p2t_1d_gpu(bounds, parr, tarr, p2c_scale_type, c2l_scale_type, l2t_scale_type)
+  
+  !$acc routine seq
+    !
+    ! !DESCRIPTION:
+    ! Perfrom subgrid-average from pfts to topounits.
+    ! Averaging is only done for points that are not equal to "spval".
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds        
+    real(r8), intent(in)  :: parr( bounds%begp: )  ! input pft array
+    real(r8), intent(out) :: tarr( bounds%begt: )  ! output topounits array
+    integer , intent(in) :: p2c_scale_type ! scale factor type for averaging
+    integer , intent(in) :: c2l_scale_type ! scale factor type for averaging
+    integer , intent(in) :: l2t_scale_type ! scale factor type for averaging
+    !
+    !  !LOCAL VARIABLES:
+    integer  :: p,c,l,t,index                   ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: scale_p2c(bounds%begp:bounds%endp) ! scale factor
+    real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: sumwt(bounds%begt:bounds%endt)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
+
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
+
+    ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
+    call create_scale_c2l_gpu(bounds, c2l_scale_type, &
+         scale_c2l(bounds%begc:bounds%endc))
+    
+    if (p2c_scale_type == unity) then
+       do p = bounds%begp,bounds%endp
+          scale_p2c(p) = 1.0_r8
+       end do
+    else
+       write(iulog,*)'p2t_1d error: scale type ',p2c_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    tarr(bounds%begt : bounds%endt) = spval
+    sumwt(bounds%begt : bounds%endt) = 0._r8
+    do p = bounds%begp,bounds%endp
+       if (veg_pp%active(p) .and. veg_pp%wttopounit(p) /= 0._r8) then
+          c = veg_pp%column(p)
+          l = veg_pp%landunit(p)
+          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
+             t = veg_pp%topounit(p)
+             if (sumwt(t) == 0._r8) tarr(t) = 0._r8
+             tarr(t) = tarr(t) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * veg_pp%wttopounit(p)
+             sumwt(t) = sumwt(t) + veg_pp%wttopounit(p)
+          end if
+       end if
+    end do
+    found = .false.
+    do t = bounds%begt, bounds%endt
+       if (sumwt(t) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = t
+       else if (sumwt(t) /= 0._r8) then
+          tarr(t) = tarr(t)/sumwt(t)
+       end if
+    end do
+    if (found) then
+       write(iulog,*)'p2t_1d_gpu error: sumwt is greater than 1.0 at t= ',index
+       call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine p2t_1d_gpu
+  !-----------------------------------------------------------------------
   subroutine p2t_2d(bounds, num2d, parr, tarr, p2c_scale_type, c2l_scale_type, l2t_scale_type)
     !
     ! !DESCRIPTION:
@@ -1822,6 +1866,87 @@ contains
 
   end subroutine p2t_2d
 
+  !-----------------------------------------------------------------------
+  subroutine p2t_2d_gpu(bounds, num2d, parr, tarr, p2c_scale_type, c2l_scale_type, l2t_scale_type)
+  
+  !$acc routine seq
+  !
+    ! !DESCRIPTION:
+    ! Perfrom subgrid-average from pfts to gridcells.
+    ! Averaging is only done for points that are not equal to "spval".
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds            
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: parr( bounds%begp: , 1: ) ! input pft array
+    real(r8), intent(out) :: tarr( bounds%begt: , 1: ) ! output gridcell array
+    integer , intent(in) :: p2c_scale_type     ! scale factor type for averaging
+    integer , intent(in) :: c2l_scale_type     ! scale factor type for averaging
+    integer , intent(in) :: l2t_scale_type     ! scale factor type for averaging
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,p,c,l,t,index                     ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: scale_p2c(bounds%begp:bounds%endp)     ! scale factor
+    real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: sumwt(bounds%begt:bounds%endt)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp, num2d/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt, num2d/)), errMsg(__FILE__, __LINE__))
+
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
+
+    ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
+    call create_scale_c2l_gpu(bounds, c2l_scale_type, &
+         scale_c2l(bounds%begc:bounds%endc))
+    
+    if (p2c_scale_type == unity) then
+       do p = bounds%begp,bounds%endp
+          scale_p2c(p) = 1.0_r8
+       end do
+    else
+       write(iulog,*)'p2t_2d error: scale type ',p2c_scale_type,' not supported'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
+
+    tarr(bounds%begt : bounds%endt, :) = spval
+    do j = 1,num2d
+       sumwt(bounds%begt : bounds%endt) = 0._r8
+       do p = bounds%begp,bounds%endp 
+          if (veg_pp%active(p) .and. veg_pp%wttopounit(p) /= 0._r8) then
+             c = veg_pp%column(p)
+             l = veg_pp%landunit(p)
+             if (parr(p,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
+                t = veg_pp%topounit(p)
+                if (sumwt(t) == 0._r8) tarr(t,j) = 0._r8
+                tarr(t,j) = tarr(t,j) + parr(p,j) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * veg_pp%wttopounit(p)
+                sumwt(t) = sumwt(t) + veg_pp%wttopounit(p)
+             end if
+          end if
+       end do
+       found = .false.
+       do t = bounds%begt, bounds%endt
+          if (sumwt(t) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index = t
+          else if (sumwt(t) /= 0._r8) then
+             tarr(t,j) = tarr(t,j)/sumwt(t)
+          end if
+       end do
+       if (found) then
+          write(iulog,*)'p2t_2d_gpu error: sumwt gt 1.0 at t/sumwt = ',index,sumwt(index)
+          call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+  end subroutine p2t_2d_gpu
+  
   !-----------------------------------------------------------------------
   subroutine c2t_1d(bounds, carr, tarr, c2l_scale_type, l2t_scale_type)
     !
@@ -1950,6 +2075,135 @@ contains
   end subroutine c2t_2d
 
   !-----------------------------------------------------------------------
+  subroutine c2t_1d_gpu(bounds, carr, tarr, c2l_scale_type, l2t_scale_type)
+  !$acc routine seq  
+  !
+    ! !DESCRIPTION:
+    ! Perfrom subgrid-average from columns to topounits.
+    ! Averaging is only done for points that are not equal to "spval".
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds        
+    real(r8), intent(in)  :: carr( bounds%begc: )  ! input column array
+    real(r8), intent(out) :: tarr( bounds%begt: )  ! output topounit array
+	integer , intent(in) :: c2l_scale_type  !! unity = 0, urbanf = 1, urbans = 2
+    integer , intent(in) :: l2t_scale_type  !!natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: c,l,t,index                     ! indices
+    logical  :: found                              ! temporary for error check
+    real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
+    real(r8) :: sumwt(bounds%begt:bounds%endt)     ! sum of weights
+    !------------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
+
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
+
+    ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
+    call create_scale_c2l_gpu(bounds, c2l_scale_type, &
+         scale_c2l(bounds%begc:bounds%endc))
+    
+    tarr(bounds%begt : bounds%endt) = spval
+    sumwt(bounds%begt : bounds%endt) = 0._r8
+    do c = bounds%begc,bounds%endc
+       if (col_pp%active(c) .and. col_pp%wttopounit(c) /= 0._r8) then
+          l = col_pp%landunit(c)
+          if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
+             t = col_pp%wttopounit(c)
+             if (sumwt(t) == 0._r8) tarr(t) = 0._r8
+             tarr(t) = tarr(t) + carr(c) * scale_c2l(c) * scale_l2t(l) * col_pp%wttopounit(c)
+             sumwt(t) = sumwt(t) + col_pp%wttopounit(c)
+          end if
+       end if
+    end do
+    found = .false.
+    do t = bounds%begt, bounds%endt
+       if (sumwt(t) > 1.0_r8 + 1.e-6_r8) then
+          found = .true.
+          index = t
+       else if (sumwt(t) /= 0._r8) then
+          tarr(t) = tarr(t)/sumwt(t)
+       end if
+    end do
+    if (found) then
+       write(iulog,*)'c2t_1d_gpu error: sumwt is greater than 1.0 at t= ',index
+       call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine c2t_1d_gpu
+
+  !-----------------------------------------------------------------------
+  subroutine c2t_2d_gpu(bounds, num2d, carr, tarr, c2l_scale_type, l2t_scale_type)
+    !$acc routine seq
+    !
+    ! !DESCRIPTION:
+    ! Perfrom subgrid-average from columns to topounits.
+    ! Averaging is only done for points that are not equal to "spval".
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds            
+    integer , intent(in)  :: num2d                     ! size of second dimension
+    real(r8), intent(in)  :: carr( bounds%begc: , 1: ) ! input column array
+    real(r8), intent(out) :: tarr( bounds%begt: , 1: ) ! output gridcell array
+    integer , intent(in) :: c2l_scale_type  !! unity = 0, urbanf = 1, urbans = 2
+    integer , intent(in) :: l2t_scale_type  !!natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: j,c,t,l,index                       ! indices
+    logical  :: found                                  ! temporary for error check
+    real(r8) :: scale_c2l(bounds%begc:bounds%endc)     ! scale factor
+    real(r8) :: scale_l2t(bounds%begl:bounds%endl)     ! scale factor
+    real(r8) :: sumwt(bounds%begt:bounds%endt)         ! sum of weights
+    !------------------------------------------------------------------------
+
+    ! Enforce expected array sizes
+    SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc, num2d/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(tarr) == (/bounds%endt, num2d/)), errMsg(__FILE__, __LINE__))
+
+    call build_scale_l2t_gpu(bounds, l2t_scale_type, &
+         scale_l2t(bounds%begl:bounds%endl))
+
+    ! Build scale_c2l: TekluTesfa@PNNL created a new subroutine to remove repretitive code
+    call create_scale_c2l_gpu(bounds, c2l_scale_type, &
+         scale_c2l(bounds%begc:bounds%endc))
+    
+    tarr(bounds%begt : bounds%endt,:) = spval
+    do j = 1,num2d
+       sumwt(bounds%begt : bounds%endt) = 0._r8
+       do c = bounds%begc,bounds%endc 
+          if (col_pp%active(c) .and. col_pp%wttopounit(c) /= 0._r8) then
+             l = col_pp%landunit(c)
+             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
+                t = col_pp%wttopounit(c)
+                if (sumwt(t) == 0._r8) tarr(t,j) = 0._r8
+                tarr(t,j) = tarr(t,j) + carr(c,j) * scale_c2l(c) * scale_l2t(l) * col_pp%wttopounit(c)
+                sumwt(t) = sumwt(t) + col_pp%wttopounit(c)
+             end if
+          end if
+       end do
+       found = .false.
+       do t = bounds%begt, bounds%endt
+          if (sumwt(t) > 1.0_r8 + 1.e-6_r8) then
+             found = .true.
+             index = t
+          else if (sumwt(t) /= 0._r8) then
+             tarr(t,j) = tarr(t,j)/sumwt(t)
+          end if
+       end do
+       if (found) then
+          write(iulog,*)'c2t_2d_gpu error: sumwt is greater than 1.0 at t= ',index
+          call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+       end if
+    end do
+
+  end subroutine c2t_2d_gpu
+  
+  !-----------------------------------------------------------------------
   subroutine l2t_1d(bounds, larr, tarr, l2t_scale_type)
     !
     ! !DESCRIPTION:
@@ -2064,72 +2318,6 @@ contains
   end subroutine l2t_2d
 
   !-----------------------------------------------------------------------
-  subroutine create_scale_l2g_lookup_gpu(l2g_scale_type, scale_lookup)
-    !$acc routine seq
-    ! DESCRIPTION:
-    ! Create a lookup array, scale_lookup(1..max_lunit), which gives the scale factor for
-    ! each landunit type depending on l2g_scale_type
-    !
-    ! !USES:
-    use landunit_varcon, only : istsoil, istcrop, istice, istice_mec, istdlak
-    use landunit_varcon, only : isturb_MIN, isturb_MAX, max_lunit
-    !
-    ! !ARGUMENTS:
-    !character(len=*), intent(in)  :: l2g_scale_type           ! scale factor type for averaging
-    integer    , intent(in) :: l2g_scale_type  !unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
-    real(r8)   , intent(out) :: scale_lookup(max_lunit)  ! scale factor for each landunit type
-    !-----------------------------------------------------------------------
-
-     ! ------------ WJS (10-14-11): IMPORTANT GENERAL NOTES ------------
-     !
-     ! Since scale_l2g is not currently included in the sumwt accumulations, you need to
-     ! be careful about the scale values you use. Values of 1 and spval are safe
-     ! (including having multiple landunits with value 1), but only use other values if
-     ! you know what you are doing! For example, using a value of 0 is NOT the correct way
-     ! to exclude a landunit from the average, because the normalization will be done
-     ! incorrectly in this case: instead, use spval to exclude a landunit from the
-     ! average. Similarly, using a value of 2 is NOT the correct way to give a landunit
-     ! double relative weight in general, because the normalization won't be done
-     ! correctly in this case, either.
-     !
-     ! In the longer-term, I believe that the correct solution to this problem is to
-     ! include scale_l2g (and the other scale factors) in the sumwt accumulations
-     ! (e.g., sumwt = sumwt + wtgcell * scale_p2c * scale_c2l * scale_l2g), but that
-     ! requires some more thought to (1) make sure that is correct, and (2) make sure it
-     ! doesn't break the urban scaling.
-     !
-     ! -----------------------------------------------------------------
-
-
-     ! Initialize scale_lookup to spval for all landunits. Thus, any landunit that keeps
-     ! the default value will be excluded from grid cell averages.
-     scale_lookup(:) = spval
-
-     if (l2g_scale_type == unity) then
-        scale_lookup(:) = 1.0_r8
-     else if (l2g_scale_type == natveg) then
-        scale_lookup(istsoil) = 1.0_r8
-     else if (l2g_scale_type == veg) then
-        scale_lookup(istsoil) = 1.0_r8
-        scale_lookup(istcrop) = 1.0_r8
-     else if (l2g_scale_type == ice) then
-        scale_lookup(istice) = 1.0_r8
-        scale_lookup(istice_mec) = 1.0_r8
-     else if (l2g_scale_type == nonurb) then
-        scale_lookup(:) = 1.0_r8
-        scale_lookup(isturb_MIN:isturb_MAX) = spval
-     else if (l2g_scale_type == lake) then
-        scale_lookup(istdlak) = 1.0_r8
-     else
-#ifndef _OPENACC             
-        write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
-        call endrun(msg=errMsg(__FILE__, __LINE__))
-#endif 
-     end if
-
-  end subroutine create_scale_l2g_lookup_gpu
-
-  !-----------------------------------------------------------------------
   subroutine t2g_1d(bounds, tarr, garr, t2g_scale_type)
     !
     ! !DESCRIPTION:
@@ -2148,10 +2336,9 @@ contains
     real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
-    ! for now, assume that this scale type is always 'unity'
-    do t = bounds%begt,bounds%endt
-       scale_t2g(t) = 1.0_r8
-    end do
+    
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
@@ -2201,10 +2388,9 @@ contains
     real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
-    ! for now, assume that this scale type is always 'unity'
-    do t = bounds%begt,bounds%endt
-       scale_t2g(t) = 1.0_r8
-    end do
+    
+	call build_scale_t2g(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
     garr(bounds%begg : bounds%endg, :) = spval
     do j = 1,num2d
@@ -2237,7 +2423,7 @@ contains
   end subroutine t2g_2d
 
   !-----------------------------------------------------------------------
-  subroutine t2g_1d_gpu(bounds, tarr, garr)
+  subroutine t2g_1d_gpu(bounds, tarr, garr,t2g_scale_type)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from topounits to gridcells.
@@ -2247,6 +2433,7 @@ contains
     type(bounds_type), intent(in) :: bounds
     real(r8), intent(in)  :: tarr( bounds%begt: )  ! input topounit array
     real(r8), intent(out) :: garr( bounds%begg: )  ! output gridcell array
+	integer :: t2g_scale_type
     !
     ! !LOCAL VARIABLES:
     integer  :: t,g,index                       ! indices
@@ -2254,10 +2441,9 @@ contains
     real(r8) :: scale_t2g(bounds%begt:bounds%endt) ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)     ! sum of weights
     !------------------------------------------------------------------------
-    ! for now, assume that this scale type is always 'unity'
-    do t = bounds%begt,bounds%endt
-       scale_t2g(t) = 1.0_r8
-    end do
+    t2g_scale_type = 0
+	call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
     garr(bounds%begg : bounds%endg) = spval
     sumwt(bounds%begg : bounds%endg) = 0._r8
@@ -2287,7 +2473,7 @@ contains
   end subroutine t2g_1d_gpu
 
   !-----------------------------------------------------------------------
-  subroutine t2g_2d_gpu(bounds, num2d, tarr, garr)
+  subroutine t2g_2d_gpu(bounds, num2d, tarr, garr,t2g_scale_type)
     !$acc routine seq
     ! !DESCRIPTION:
     ! Perfrom subgrid-average from topounits to gridcells.
@@ -2298,6 +2484,7 @@ contains
     integer , intent(in)  :: num2d                     ! size of second dimension
     real(r8), intent(in)  :: tarr( bounds%begt: , 1: ) ! input topounit array
     real(r8), intent(out) :: garr( bounds%begg: , 1: ) ! output gridcell array
+	integer :: t2g_scale_type
     !
     ! !LOCAL VARIABLES:
     integer  :: j,g,t,index                         ! indices
@@ -2305,10 +2492,9 @@ contains
     real(r8) :: scale_t2g(bounds%begt:bounds%endt)     ! scale factor
     real(r8) :: sumwt(bounds%begg:bounds%endg)         ! sum of weights
     !------------------------------------------------------------------------
-    ! for now, assume that this scale type is always 'unity'
-    do t = bounds%begt,bounds%endt
-       scale_t2g(t) = 1.0_r8
-    end do
+	t2g_scale_type = 0
+    call build_scale_t2g_gpu(bounds, t2g_scale_type, &  ! TKT for TGU
+         scale_t2g)
 
     garr(bounds%begg : bounds%endg, :) = spval
     do j = 1,num2d
@@ -2333,7 +2519,7 @@ contains
           end if
        end do
        if (found) then
-          print *, 't2g_2d error: sumwt is greater than 1.0 at g= ',index,' lev= ',j
+          print *, 't2g_2d_gpu error: sumwt is greater than 1.0 at g= ',index,' lev= ',j
        end if
     end do
 
@@ -2450,6 +2636,166 @@ contains
         end if
 
       end subroutine create_scale_c2l_gpu
+	  
+	  !-----------------------------------------------------------------------
+  subroutine build_scale_l2t_gpu(bounds, l2t_scale_type, scale_l2t)
+    !$acc routine seq
+    ! !DESCRIPTION:
+    ! Fill the scale_l2t(bounds%begl:bounds%endl) array with appropriate values for the given l2t_scale_type.
+    ! This array can later be used to scale each landunit in forming topounit averages.
+    !
+    ! !USES:
+    use landunit_varcon, only : max_lunit
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds
+    integer , intent(in)    :: l2t_scale_type ! unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    real(r8)        , intent(out) :: scale_l2t( bounds%begl: ) ! scale factor
+    !
+    ! !LOCAL VARIABLES:
+    real(r8) :: scale_lookup(max_lunit) ! scale factor for each landunit type
+    integer  :: l                       ! index
+    !-----------------------------------------------------------------------
 
 
+     call create_scale_l2t_lookup_gpu(l2t_scale_type, scale_lookup)
+
+     do l = bounds%begl,bounds%endl
+        scale_l2t(l) = scale_lookup(lun_pp%itype(l))
+     end do
+
+  end subroutine build_scale_l2t_gpu
+
+  !-----------------------------------------------------------------------
+  subroutine create_scale_l2t_lookup_gpu(l2t_scale_type, scale_lookup)
+    !$acc routine seq
+    ! DESCRIPTION:
+    ! Create a lookup array, scale_lookup(1..max_lunit), which gives the scale factor for
+    ! each landunit type depending on l2g_scale_type
+    !
+    ! !USES:
+    use landunit_varcon, only : istsoil, istcrop, istice, istice_mec, istdlak
+    use landunit_varcon, only : isturb_MIN, isturb_MAX, max_lunit
+    !
+    ! !ARGUMENTS:
+    !character(len=*), intent(in)  :: l2g_scale_type           ! scale factor type for averaging
+    integer    , intent(in) :: l2t_scale_type  !unity =0, natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+    real(r8)   , intent(out) :: scale_lookup(max_lunit)  ! scale factor for each landunit type
+    !-----------------------------------------------------------------------
+
+     ! ------------ WJS (10-14-11): IMPORTANT GENERAL NOTES ------------
+     !
+     ! Since scale_l2t is not currently included in the sumwt accumulations, you need to
+     ! be careful about the scale values you use. Values of 1 and spval are safe
+     ! (including having multiple landunits with value 1), but only use other values if
+     ! you know what you are doing! For example, using a value of 0 is NOT the correct way
+     ! to exclude a landunit from the average, because the normalization will be done
+     ! incorrectly in this case: instead, use spval to exclude a landunit from the
+     ! average. Similarly, using a value of 2 is NOT the correct way to give a landunit
+     ! double relative weight in general, because the normalization won't be done
+     ! correctly in this case, either.
+     !
+     ! In the longer-term, I believe that the correct solution to this problem is to
+     ! include scale_l2t (and the other scale factors) in the sumwt accumulations
+     ! (e.g., sumwt = sumwt + wtgcell * scale_p2c * scale_c2l * scale_l2t), but that
+     ! requires some more thought to (1) make sure that is correct, and (2) make sure it
+     ! doesn't break the urban scaling.
+     !
+     ! -----------------------------------------------------------------
+
+
+     ! Initialize scale_lookup to spval for all landunits. Thus, any landunit that keeps
+     ! the default value will be excluded from grid cell averages.
+     scale_lookup(:) = spval
+
+     if (l2t_scale_type == unity) then
+        scale_lookup(:) = 1.0_r8
+     else if (l2t_scale_type == natveg) then
+        scale_lookup(istsoil) = 1.0_r8
+     else if (l2t_scale_type == veg) then
+        scale_lookup(istsoil) = 1.0_r8
+        scale_lookup(istcrop) = 1.0_r8
+     else if (l2t_scale_type == ice) then
+        scale_lookup(istice) = 1.0_r8
+        scale_lookup(istice_mec) = 1.0_r8
+     else if (l2t_scale_type == nonurb) then
+        scale_lookup(:) = 1.0_r8
+        scale_lookup(isturb_MIN:isturb_MAX) = spval
+     else if (l2t_scale_type == lake) then
+        scale_lookup(istdlak) = 1.0_r8
+     else
+#ifndef _OPENACC             
+        write(iulog,*)'scale_l2t_lookup_array error: scale type ',l2t_scale_type,' not supported'
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+#endif 
+     end if
+
+  end subroutine create_scale_l2t_lookup_gpu
+  
+	  !-----------------------------------------------------------------------
+  subroutine build_scale_t2g(bounds, t2g_scale_type, scale_t2g)  ! TKT for TGU
+    !
+    ! !DESCRIPTION:
+    ! Fill the scale_t2g(bounds%begt:bounds%endt) array with appropriate values for the given t2g_scale_type for the topounit based structure
+    ! This array can later be used to scale each topounit in forming grid cell averages.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds                    
+    character(len=*), intent(in)  :: t2g_scale_type            ! scale factor type for averaging
+    real(r8)        , intent(out) :: scale_t2g( bounds%begt: ) ! scale factor 
+    !
+    ! !LOCAL VARIABLES:    
+    integer  :: t                       ! index
+    !-----------------------------------------------------------------------
+     
+    SHR_ASSERT_ALL((ubound(scale_t2g) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
+
+	if (t2g_scale_type == 'unity') then 
+	   do t = bounds%begt,bounds%endt  
+          scale_t2g(t) = 1.0_r8
+       end do
+	else
+	   do t = bounds%begt,bounds%endt  
+         scale_t2g(t) = top_pp%wtgcell(t)
+      end do
+    end if
+	
+  end subroutine build_scale_t2g
+  
+  !-----------------------------------------------------------------------
+  subroutine build_scale_t2g_gpu(bounds, t2g_scale_type, scale_t2g)  ! TKT for TGU
+    !$acc routine seq
+    !
+    ! !DESCRIPTION:
+    ! Fill the scale_t2g(bounds%begt:bounds%endt) array with appropriate values for the given t2g_scale_type for the topounit based structure
+    ! This array can later be used to scale each topounit in forming grid cell averages.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds                    
+    !character(len=*), intent(in)  :: t2g_scale_type            ! scale factor type for averaging
+	integer, intent(in)  :: t2g_scale_type            ! scale factor type for averaging
+    real(r8)        , intent(out) :: scale_t2g( bounds%begt: ) ! scale factor 
+    !
+    ! !LOCAL VARIABLES:    
+    integer  :: t                       ! index
+    !-----------------------------------------------------------------------
+     
+    SHR_ASSERT_ALL((ubound(scale_t2g) == (/bounds%endt/)), errMsg(__FILE__, __LINE__))
+
+	if (t2g_scale_type == 1) then 
+	   do t = bounds%begt,bounds%endt  
+          scale_t2g(t) = 1.0_r8
+       end do
+	else
+	   do t = bounds%begt,bounds%endt  
+         scale_t2g(t) = top_pp%wtgcell(t)
+      end do
+    end if
+	
+  end subroutine build_scale_t2g_gpu
+  
 end module subgridAveMod

@@ -114,31 +114,31 @@ contains
     this%sed_p_ero_col(begc:endc) = spval
     call hist_addfld1d (fname='SED_P_ERO',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope rainfall-driven erosion', &
-         ptr_col=this%sed_p_ero_col, l2g_scale_type='veg', &
+         ptr_col=this%sed_p_ero_col, l2t_scale_type='veg', &
          default='inactive')
 
     this%sed_q_ero_col(begc:endc) = spval
     call hist_addfld1d (fname='SED_Q_ERO',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope runoff-driven erosion', &
-         ptr_col=this%sed_q_ero_col, l2g_scale_type= 'veg', &
+         ptr_col=this%sed_q_ero_col, l2t_scale_type= 'veg', &
          default='inactive')
 
     this%sed_ero_col(begc:endc) = spval
     call hist_addfld1d (fname='SED_ERO',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope total erosion', &
-         ptr_col=this%sed_ero_col, l2g_scale_type= 'veg', &
+         ptr_col=this%sed_ero_col, l2t_scale_type= 'veg', &
          default='inactive')
 
     this%sed_crop_ero_col(begc:endc) = spval
     call hist_addfld1d (fname='SED_CROP_ERO',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope cropland erosion', &
-         ptr_col=this%sed_crop_ero_col, l2g_scale_type= 'veg', &
+         ptr_col=this%sed_crop_ero_col, l2t_scale_type= 'veg', &
          default='inactive')
 
     this%sed_yld_col(begc:endc) = spval
     call hist_addfld1d (fname='SED_YLD',  units='kg/m^2/s',  &
          avgflag='A', long_name='hillslope total sediment yield', &
-         ptr_col=this%sed_yld_col, l2g_scale_type= 'veg', &
+         ptr_col=this%sed_yld_col, l2t_scale_type= 'veg', &
          default='inactive')
 
   end subroutine InitHistory

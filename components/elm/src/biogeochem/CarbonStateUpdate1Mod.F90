@@ -19,6 +19,8 @@ module CarbonStateUpdate1Mod
 
   use GridcellDataType        , only : grc_cs, c13_grc_cs, c14_grc_cs
   use GridcellDataType        , only : grc_cf, c13_grc_cf, c14_grc_cf
+  use TopounitDataType        , only : top_cs, c13_top_cs, c14_top_cs
+  use TopounitDataType        , only : top_cf, c13_top_cf, c14_top_cf
   use ColumnDataType          , only : column_carbon_state, column_carbon_flux
   use ColumnDataType          , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType          , only : col_cf, c13_col_cf, c14_col_cf
@@ -55,7 +57,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: c   ! column index
     integer  :: fc  ! column filter index
-    integer  :: g   ! gridcell index
+    integer  :: g, t   ! gridcell and topounit indices
     integer  :: j   ! level index
 
     if (.not.use_fates) then
@@ -75,6 +77,25 @@ contains
             c14_grc_cs%seedc(g) = c14_grc_cs%seedc(g) &
                - c14_grc_cf%dwt_seedc_to_leaf(g)     * dt &
                - c14_grc_cf%dwt_seedc_to_deadstem(g) * dt
+          end if
+       end do
+	   
+	   ! TKT for TGU
+	   do t = bounds%begt, bounds%endt
+          top_cs%seedc(t) = grc_cs%seedc(t) &
+               - top_cf%dwt_seedc_to_leaf(t)     * dt &
+               - top_cf%dwt_seedc_to_deadstem(t) * dt
+
+          if (use_c13) then
+            c13_top_cs%seedc(t) = c13_top_cs%seedc(t) &
+               - c13_top_cf%dwt_seedc_to_leaf(t)     * dt &
+               - c13_top_cf%dwt_seedc_to_deadstem(t) * dt
+          end if
+
+          if (use_c14) then
+            c14_top_cs%seedc(t) = c14_top_cs%seedc(t) &
+               - c14_top_cf%dwt_seedc_to_leaf(t)     * dt &
+               - c14_top_cf%dwt_seedc_to_deadstem(t) * dt
           end if
        end do
 

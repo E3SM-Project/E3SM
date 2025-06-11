@@ -22,10 +22,11 @@ module dynConsBiogeophysMod
   use TotalWaterAndHeatMod, only : AdjustDeltaHeatForDeltaLiq
   use TotalWaterAndHeatMod, only : heat_base_temp
   use elm_varcon        , only : tfrz, cpliq
-  use subgridAveMod     , only : p2c, c2g
+  use subgridAveMod     , only : p2c, c2g, c2t, tgu_level
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
   use elm_varcon        , only : spval
   use GridcellDataType  , only : grc_es, grc_ef, grc_ws, grc_wf
+  use TopounitDataType  , only : top_es, top_ef, top_ws, top_wf
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
   use VegetationType    , only : veg_pp
@@ -77,21 +78,31 @@ contains
              liq1 => grc_ws%liq1 ,&
              ice1 => grc_ws%ice1 ,&
              heat1 => grc_es%heat1 ,&
-             liquid_water_temp1 => grc_es%liquid_water_temp1 &
+             liquid_water_temp1 => grc_es%liquid_water_temp1, &
+			 
+			 ! TKT for TGU level
+			 liq1_tgu => top_ws%liq1 ,&
+             ice1_tgu => top_ws%ice1 ,&
+             heat1_tgu => top_es%heat1_tgu ,&
+             liquid_water_temp1_tgu => top_es%liquid_water_temp2_tgu &
              )
     call dyn_water_content(bounds,                                        &
          num_nolakec, filter_nolakec,                                     &
          num_lakec, filter_lakec,                                         &
          soilhydrology_vars, lakestate_vars,             &
          liquid_mass = liq1(bounds%begg:bounds%endg), &
-         ice_mass    = ice1(bounds%begg:bounds%endg))
+         ice_mass    = ice1(bounds%begg:bounds%endg), &
+		 liquid_mass_tgu = liq1_tgu(bounds%begt:bounds%endt), &
+         ice_mass_tgu    = ice1_tgu(bounds%begt:bounds%endt))
 
     call dyn_heat_content( bounds,                                        &
          num_nolakec, filter_nolakec,                                     &
          num_lakec, filter_lakec,                                         &
          urbanparams_vars, soilstate_vars, soilhydrology_vars,            &
          heat_grc = heat1(bounds%begg:bounds%endg),  &
-         liquid_water_temp_grc = liquid_water_temp1(bounds%begg:bounds%endg))
+         liquid_water_temp_grc = liquid_water_temp1(bounds%begg:bounds%endg), &
+		 heat_top = heat1_tgu(bounds%begt:bounds%endt),  &
+         liquid_water_temp_top = liquid_water_temp1_tgu(bounds%begt:bounds%endt))
     end associate
 
   end subroutine dyn_hwcontent_init
@@ -123,11 +134,15 @@ contains
 
     !
     ! !LOCAL VARIABLES:
-    integer  :: begg, endg
-    integer  :: g     ! grid cell index
+    integer  :: begg, endg, begt, endt
+    integer  :: g, t     ! grid cell index and tgu index
     real(r8) :: delta_liq(bounds%begg:bounds%endg)  ! change in gridcell h2o liq content
     real(r8) :: delta_ice(bounds%begg:bounds%endg)  ! change in gridcell h2o ice content
     real(r8) :: delta_heat(bounds%begg:bounds%endg) ! change in gridcell heat content
+	! TKT for TGU level
+	real(r8) :: delta_liq_tgu(bounds%begt:bounds%endt)  ! change in topounit h2o liq content
+    real(r8) :: delta_ice_tgu(bounds%begt:bounds%endt)  ! change in topounit h2o ice content
+    real(r8) :: delta_heat_tgu(bounds%begt:bounds%endt) ! change in topounit heat content
     !---------------------------------------------------------------------------
 
     associate( &
@@ -137,24 +152,40 @@ contains
              liq2 => grc_ws%liq2 ,&
              ice2 => grc_ws%ice2 ,&
              heat2 => grc_es%heat2 ,&
-             liquid_water_temp2 => grc_es%liquid_water_temp2 &
+             liquid_water_temp2 => grc_es%liquid_water_temp2, &
+			 
+			 ! TKT for TGU level
+			 liq1_tgu => top_ws%liq1 ,&
+             ice1_tgu => top_ws%ice1 ,&
+             heat1_tgu => top_es%heat1_tgu ,&
+             liq2_tgu => top_ws%liq2 ,&
+             ice2_tgu => top_ws%ice2 ,&
+             heat2_tgu => top_es%heat2_tgu ,&
+             liquid_water_temp2_tgu => top_es%liquid_water_temp2_tgu &
              )
     begg = bounds%begg
     endg = bounds%endg
+	! TKT for the TGU level
+	begt = bounds%begt
+    endt = bounds%endt
 
     call dyn_water_content(bounds, &
          num_nolakec, filter_nolakec, &
          num_lakec, filter_lakec, &
          soilhydrology_vars, lakestate_vars, &
          liquid_mass = liq2(bounds%begg:bounds%endg), &
-         ice_mass    = ice2(bounds%begg:bounds%endg))
+         ice_mass    = ice2(bounds%begg:bounds%endg), &
+		 liquid_mass_tgu = liq2_tgu(bounds%begt:bounds%endt), &
+         ice_mass_tgu    = ice2_tgu(bounds%begt:bounds%endt))
 
     call dyn_heat_content( bounds,                                &
          num_nolakec, filter_nolakec, &
          num_lakec, filter_lakec, &
          urbanparams_vars, soilstate_vars, soilhydrology_vars, &
          heat_grc = heat2(bounds%begg:bounds%endg), &
-         liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg))
+         liquid_water_temp_grc = liquid_water_temp2(bounds%begg:bounds%endg), &
+		 heat_top = heat2_tgu(bounds%begt:bounds%endt), &
+         liquid_water_temp_top = liquid_water_temp2_tgu(bounds%begt:bounds%endt))
 
     if (get_for_testing_zero_dynbal_fluxes()) then
        do g = begg, endg
@@ -170,6 +201,23 @@ contains
           grc_wf%qflx_liq_dynbal (g) = delta_liq(g)/dtime
           grc_wf%qflx_ice_dynbal (g) = delta_ice(g)/dtime
           grc_ef%eflx_dynbal    (g) = delta_heat(g)/dtime
+       end do
+    end if
+	! TKT for TGU level
+	if (get_for_testing_zero_dynbal_fluxes()) then
+       do t = begt, endt
+          delta_liq_tgu(t) = 0._r8
+          delta_ice_tgu(t) = 0._r8
+          delta_heat_tgu(t) = 0._r8
+      end do
+    else
+       do t = begt, endt
+          delta_liq_tgu(t)  = liq2_tgu(t) - liq1_tgu(t)
+          delta_ice_tgu(t)  = ice2_tgu(t) - ice1_tgu(t)
+          delta_heat_tgu(t) = heat2_tgu(t) - heat1_tgu(t)
+          top_wf%qflx_liq_dynbal (t) = delta_liq_tgu(t)/dtime
+          top_wf%qflx_ice_dynbal (t) = delta_ice_tgu(t)/dtime
+          top_ef%eflx_dynbal    (t) = delta_heat_tgu(t)/dtime
        end do
     end if
     !call AdjustDeltaHeatForDeltaLiq( &
@@ -201,7 +249,7 @@ contains
        num_nolakec, filter_nolakec, &
        num_lakec, filter_lakec, &
        soilhydrology_vars,  lakestate_vars, &
-       liquid_mass, ice_mass)
+       liquid_mass, ice_mass,liquid_mass_tgu,ice_mass_tgu)
     !
     ! !DESCRIPTION:
     ! Compute gridcell total liquid and ice water contents
@@ -217,6 +265,10 @@ contains
     type(lakestate_type)     , intent(in)    :: lakestate_vars
     real(r8)                 , intent(out)   :: liquid_mass( bounds%begg: ) ! kg m-2
     real(r8)                 , intent(out)   :: ice_mass( bounds%begg: )    ! kg m-2
+	
+	! TKT for TGU level
+	real(r8)                 , intent(out)   :: liquid_mass_tgu( bounds%begt: ) ! kg m-2
+    real(r8)                 , intent(out)   :: ice_mass_tgu( bounds%begt: )    ! kg m-2
     !
     ! !LOCAL VARIABLES:
     real(r8) :: liquid_mass_col(bounds%begc:bounds%endc) ! kg m-2
@@ -238,14 +290,27 @@ contains
          carr = liquid_mass_col(bounds%begc:bounds%endc), &
          garr = liquid_mass(bounds%begg:bounds%endg), &
          c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         l2t_scale_type = 0,t2g_scale_type=tgu_level )
 
     call c2g(bounds, &
          carr = ice_mass_col(bounds%begc:bounds%endc), &
          garr = ice_mass(bounds%begg:bounds%endg), &
          c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         l2t_scale_type = 0,t2g_scale_type=tgu_level )
+	
+	! TKT for TGU
+	call c2t(bounds, &
+         carr = liquid_mass_col(bounds%begc:bounds%endc), &
+         tarr = liquid_mass_tgu(bounds%begt:bounds%endt), &
+         c2l_scale_type = 0, &
+         l2t_scale_type = 0 )
 
+    call c2t(bounds, &
+         carr = ice_mass_col(bounds%begc:bounds%endc), &
+         tarr = ice_mass_tgu(bounds%begt:bounds%endt), &
+         c2l_scale_type = 0, &
+         l2t_scale_type = 0 )
+	
   end subroutine dyn_water_content
 
 
@@ -254,7 +319,7 @@ contains
        num_nolakec, filter_nolakec, &
        num_lakec, filter_lakec, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, &
-       heat_grc, liquid_water_temp_grc)
+       heat_grc, liquid_water_temp_grc, heat_top, liquid_water_temp_top)
     ! !DESCRIPTION:
     ! Compute grid-level heat and water content to track conservation with respect to
     ! dynamic land cover.
@@ -277,10 +342,13 @@ contains
 
     real(r8)                 , intent(out) :: heat_grc( bounds%begg: ) ! total heat content for each grid cell [J/m^2]
     real(r8)                 , intent(out) :: liquid_water_temp_grc( bounds%begg: ) ! weighted average liquid water temperature for each grid cell (K)
+	! TKT for TGU level
+	real(r8)                 , intent(out) :: heat_top( bounds%begt: ) ! total heat content for each topounit [J/m^2]
+    real(r8)                 , intent(out) :: liquid_water_temp_top( bounds%begt: ) ! weighted average liquid water temperature for each topounit (K)
 
     !
     ! !LOCAL VARIABLES:
-    integer  :: g
+    integer  :: g, t
 
     real(r8) :: heat_col(bounds%begc:bounds%endc)  ! sum of heat content for all columns [J/m^2]
     real(r8) :: heat_liquid_col(bounds%begc:bounds%endc) ! sum of heat content for all columns: liquid water, excluding latent heat [J/m^2]
@@ -288,6 +356,10 @@ contains
 
     real(r8) :: heat_liquid_grc(bounds%begg:bounds%endg) ! heat_liquid_col averaged to grid cell [J/m^2]
     real(r8) :: cv_liquid_grc(bounds%begg:bounds%endg) ! cv_liquid_col averaged to grid cell [J/(m^2 K)]
+	
+	! TKT for TGU level
+	real(r8) :: heat_liquid_top(bounds%begt:bounds%endt) ! heat_liquid_col averaged to grid cell [J/m^2]
+    real(r8) :: cv_liquid_top(bounds%begt:bounds%endt) ! cv_liquid_col averaged to grid cell [J/(m^2 K)]
     !-------------------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -314,19 +386,19 @@ contains
          carr = heat_col(bounds%begc:bounds%endc), &
          garr = heat_grc(bounds%begg:bounds%endg), &
          c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         l2t_scale_type = 0,t2g_scale_type=tgu_level )
 
     call c2g(bounds, &
          carr = heat_liquid_col(bounds%begc:bounds%endc), &
          garr = heat_liquid_grc(bounds%begg:bounds%endg), &
          c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         l2t_scale_type = 0,t2g_scale_type=tgu_level )
 
     call c2g(bounds, &
          carr = cv_liquid_col(bounds%begc:bounds%endc), &
          garr = cv_liquid_grc(bounds%begg:bounds%endg), &
          c2l_scale_type = 0, &
-         l2g_scale_type = 0)
+         l2t_scale_type = 0,t2g_scale_type=tgu_level )
 
     do g = bounds%begg, bounds%endg
        if (cv_liquid_grc(g) > 0._r8) then
@@ -337,7 +409,36 @@ contains
           liquid_water_temp_grc(g) = tfrz
        end if
     end do
+	
+	! TKT for TGU
+	call c2t(bounds, &
+         carr = heat_col(bounds%begc:bounds%endc), &
+         tarr = heat_top(bounds%begt:bounds%endt), &
+         c2l_scale_type = 0, &
+         l2t_scale_type = 0 )
 
+    call c2t(bounds, &
+         carr = heat_liquid_col(bounds%begc:bounds%endc), &
+         tarr = heat_liquid_top(bounds%begt:bounds%endt), &
+         c2l_scale_type = 0, &
+         l2t_scale_type = 0)
+
+    call c2t(bounds, &
+         carr = cv_liquid_col(bounds%begc:bounds%endc), &
+         tarr = cv_liquid_top(bounds%begt:bounds%endt), &
+         c2l_scale_type = 0, &
+         l2t_scale_type = 0 )
+
+    do t = bounds%begt, bounds%endt
+       if (cv_liquid_top(t) > 0._r8) then
+          liquid_water_temp_top(t) = &
+               (heat_liquid_top(t) / cv_liquid_top(t)) + heat_base_temp
+       else
+          ! 0 or negative water mass in this grid cell: set an arbitrary temperature
+          liquid_water_temp_top(t) = tfrz
+       end if
+    end do
+	
   end subroutine dyn_heat_content
 
 end module dynConsBiogeophysMod

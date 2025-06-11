@@ -279,7 +279,7 @@ contains
 
     do l = bounds%begl,bounds%endl
        t = lun_pp%topounit(l)
-       lun_pp%active(l) = is_active_l(l)
+       lun_pp%active(l) = is_active_l(l)	   
        if (lun_pp%active(l) .and. .not. lun_pp%itype(l) == istice_mec .and. .not. lun_pp%itype(l) == istsoil .and. .not. top_pp%active(t)) then
           write(iulog,*) trim(subname),' ERROR: active landunit found on inactive topounit', &
                          'at l = ', l, ', t = ', t

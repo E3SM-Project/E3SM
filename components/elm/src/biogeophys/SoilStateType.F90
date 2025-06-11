@@ -229,7 +229,7 @@ contains
     end if
     call hist_addfld2d (fname='SMP',  units='mm', type2d='levgrnd',  &
          avgflag='A', long_name='soil matric potential (vegetated landunits only)', &
-         ptr_col=this%smp_l_col, set_spec=spval, l2g_scale_type='veg', default=active)
+         ptr_col=this%smp_l_col, set_spec=spval, l2t_scale_type='veg', default=active)
 
     if (use_cn) then
        this%bsw_col(begc:endc,:) = spval
@@ -283,7 +283,7 @@ contains
     this%hk_l_col(begc:endc,:) = spval
     call hist_addfld2d (fname='HK',  units='mm/s', type2d='levgrnd',  &
          avgflag='A', long_name='hydraulic conductivity (vegetated landunits only)', &
-         ptr_col=this%hk_l_col, set_spec=spval, l2g_scale_type='veg', default='inactive')
+         ptr_col=this%hk_l_col, set_spec=spval, l2t_scale_type='veg', default='inactive')
 
     this%soilalpha_col(begc:endc) = spval
     call hist_addfld1d (fname='SoilAlpha',  units='1',  &

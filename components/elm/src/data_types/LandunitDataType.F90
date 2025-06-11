@@ -99,7 +99,7 @@ contains
     this%t_building(begl:endl) = spval
      call hist_addfld1d(fname='TBUILD', units='K',  &
           avgflag='A', long_name='internal urban building temperature', &
-           ptr_lunit=this%t_building, set_nourb=spval, l2g_scale_type='unity')
+           ptr_lunit=this%t_building, set_nourb=spval, l2t_scale_type='unity')
 
     !-----------------------------------------------------------------------
     ! cold-start initial conditions for lun_es

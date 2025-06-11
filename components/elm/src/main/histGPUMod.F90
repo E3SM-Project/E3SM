@@ -19,6 +19,7 @@ module histGPUMod
   integer , private, parameter :: no_snow_unset = no_snow_MIN - 1 ! flag specifying that field is NOT a multi-layer snow field
   integer , parameter :: unity = 0, urbanf = 1, urbans = 2
   integer , parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+  integer , parameter :: tgu_unity = 1, tgu_level = 2
 
   !!mappings that hold the tape and field position in the CPU tapes
   !!for a given field on the gpu tape
@@ -45,8 +46,8 @@ module histGPUMod
      integer,pointer :: hpindex   =>null()   ! history pointer index
      integer, pointer :: p2c_scale_type => null() ! scale factor when averaging pft to column
      integer, pointer :: c2l_scale_type => null() ! scale factor when averaging column to landunit
-     integer, pointer :: l2g_scale_type => null() ! scale factor when averaging landunit to gridcell
-     character(len=8), pointer :: t2g_scale_type => null() ! scale factor when averaging topounit to gridcell
+	 integer, pointer :: l2t_scale_type => null() ! scale factor when averaging landunit to topounit
+     integer, pointer :: t2g_scale_type => null() ! scale factor when averaging topounit to gridcell
      integer, pointer :: no_snow_behavior => null()        ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
      !
      character(len=1), pointer  :: avgflag => null()   ! time averaging flag
@@ -128,7 +129,7 @@ contains
         allocate(tape_gpu%hlist(field)%hpindex         )
         allocate(tape_gpu%hlist(field)%p2c_scale_type  )
         allocate(tape_gpu%hlist(field)%c2l_scale_type  )
-        allocate(tape_gpu%hlist(field)%l2g_scale_type  )
+		allocate(tape_gpu%hlist(field)%l2t_scale_type  )
         allocate(tape_gpu%hlist(field)%t2g_scale_type  )
         allocate(tape_gpu%hlist(field)%no_snow_behavior)
         tape_gpu%hlist(field)%name       = tape(t)%hlist(f)%field%name
@@ -159,24 +160,29 @@ contains
             tape_gpu%hlist(field)%c2l_scale_type = urbans
         end if
 
-        if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'unity') then
-           tape_gpu%hlist(field)%l2g_scale_type = unity
-        else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'natveg') then
-           tape_gpu%hlist(field)%l2g_scale_type = natveg
-        else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'veg') then
-           tape_gpu%hlist(field)%l2g_scale_type = veg
-        else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'ice') then
-           tape_gpu%hlist(field)%l2g_scale_type = ice
-        else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'nonurb') then
-           tape_gpu%hlist(field)%l2g_scale_type = nonurb
-        else if (trim(tape(t)%hlist(f)%field%l2g_scale_type) == 'lake') then
-           tape_gpu%hlist(field)%l2g_scale_type = lake
+		if (trim(tape(t)%hlist(f)%field%l2t_scale_type) == 'unity') then    ! TKT for TGU
+           tape_gpu%hlist(field)%l2t_scale_type = unity
+        else if (trim(tape(t)%hlist(f)%field%l2t_scale_type) == 'natveg') then
+           tape_gpu%hlist(field)%l2t_scale_type = natveg
+        else if (trim(tape(t)%hlist(f)%field%l2t_scale_type) == 'veg') then
+           tape_gpu%hlist(field)%l2t_scale_type = veg
+        else if (trim(tape(t)%hlist(f)%field%l2t_scale_type) == 'ice') then
+           tape_gpu%hlist(field)%l2t_scale_type = ice
+        else if (trim(tape(t)%hlist(f)%field%l2t_scale_type) == 'nonurb') then
+           tape_gpu%hlist(field)%l2t_scale_type = nonurb
+        else if (trim(tape(t)%hlist(f)%field%l2t_scale_type) == 'lake') then
+           tape_gpu%hlist(field)%l2t_scale_type = lake
         else
-           print *, "scale_l2g_lookup_array : scale type  not supported   ",tape(t)%hlist(f)%field%l2g_scale_type
+           print *, "scale_l2t_lookup_array : scale type  not supported   ",tape(t)%hlist(f)%field%l2t_scale_type
            stop
         end if
+		
+		if(trim(tape(t)%hlist(f)%field%t2g_scale_type) =='unity') then  ! TKT for TGU
+            tape_gpu%hlist(field)%t2g_scale_type = tgu_unity
+        elseif(trim(tape(t)%hlist(f)%field%t2g_scale_type) =='topounit')Then
+            tape_gpu%hlist(field)%t2g_scale_type = tgu_level
+        end if
 
-        tape_gpu%hlist(field)%t2g_scale_type   = tape(t)%hlist(f)%field%t2g_scale_type
         tape_gpu%hlist(field)%no_snow_behavior = tape(t)%hlist(f)%field%no_snow_behavior
         field = field + 1
       end do
@@ -250,7 +256,7 @@ contains
     !
     ! !USES:
     use subgridAveMod   , only : p2g, c2g, l2g, t2g
-    use subgridAveMod   , only : unity, urbanf, urbans, natveg
+    use subgridAveMod   , only : unity, urbanf, urbans, natveg, tgu_unity, tgu_level
     use subgridAveMod   , only : natveg, veg,ice,nonurb,lake
     use landunit_varcon , only : istice_mec
 
@@ -280,7 +286,8 @@ contains
       type1d_out     =>  tape_gpu%hlist(f)%type1d_out    ,&
       p2c_scale_type =>  tape_gpu%hlist(f)%p2c_scale_type,&
       c2l_scale_type =>  tape_gpu%hlist(f)%c2l_scale_type,&
-      l2g_scale_type =>  tape_gpu%hlist(f)%l2g_scale_type,&
+	  l2t_scale_type =>  tape_gpu%hlist(f)%l2t_scale_type,&
+	  t2g_scale_type =>  tape_gpu%hlist(f)%t2g_scale_type,&
       field          =>  elmptr_rs(hpindex)%ptr &
       )
     ! set variables to check weights when allocate all pfts
@@ -296,26 +303,26 @@ contains
           call p2g(bounds, &
                field(bounds%begp:bounds%endp), &
                field_gcell(bounds%begg:bounds%endg), &
-               p2c_scale_type, c2l_scale_type, l2g_scale_type)
+               p2c_scale_type, c2l_scale_type, l2t_scale_type, t2g_scale_type)
 
           map2gcell = .true.
        else if (type1d == namec) then
           call c2g(bounds, &
                field(bounds%begc:bounds%endc), &
                field_gcell(bounds%begg:bounds%endg), &
-               c2l_scale_type, l2g_scale_type)
+               c2l_scale_type, l2t_scale_type, t2g_scale_type)
 
           map2gcell = .true.
        else if (type1d == namel) then
           call l2g(bounds, &
                field(bounds%begl:bounds%endl), &
                field_gcell(bounds%begg:bounds%endg), &
-               l2g_scale_type)
+               l2t_scale_type, t2g_scale_type)
           map2gcell = .true.
        else if (type1d == namet) then
           call t2g(bounds, &
                field(bounds%begt:bounds%endt), &
-               field_gcell(bounds%begg:bounds%endg))
+               field_gcell(bounds%begg:bounds%endg), t2g_scale_type)
           map2gcell = .true.
        end if
     end if
@@ -513,7 +520,8 @@ end subroutine hist_update_hbuf_field_1d_gpu
     type1d_out          =>  tape_gpu%hlist(f)%type1d_out      ,&
     p2c_scale_type      =>  tape_gpu%hlist(f)%p2c_scale_type  ,&
     c2l_scale_type      =>  tape_gpu%hlist(f)%c2l_scale_type  ,&
-    l2g_scale_type      =>  tape_gpu%hlist(f)%l2g_scale_type  ,&
+	l2t_scale_type      =>  tape_gpu%hlist(f)%l2t_scale_type  ,&
+	t2g_scale_type      =>  tape_gpu%hlist(f)%t2g_scale_type  ,&
     no_snow_behavior    =>  tape_gpu%hlist(f)%no_snow_behavior,&
     field               =>  elmptr_ra(hpindex)%ptr &
     )
@@ -555,24 +563,24 @@ end subroutine hist_update_hbuf_field_1d_gpu
           call p2g(bounds, num2d, &
                field(bounds%begp:bounds%endp,:), &
                field_gcell(bounds%begg:bounds%endg, :), &
-               p2c_scale_type, c2l_scale_type, l2g_scale_type)
+               p2c_scale_type, c2l_scale_type, l2t_scale_type, t2g_scale_type)
           map2gcell = .true.
        else if (type1d == namec) then
           call c2g(bounds, num2d, &
                field(bounds%begc:bounds%endc,:), &
                field_gcell(bounds%begg:bounds%endg, :), &
-               c2l_scale_type, l2g_scale_type)
+               c2l_scale_type, l2t_scale_type, t2g_scale_type)
           map2gcell = .true.
        else if (type1d == namel) then
           call l2g(bounds, num2d, &
                field(bounds%begl:bounds%endl,:), &
                field_gcell(bounds%begg:bounds%endg, :), &
-               l2g_scale_type)
+               l2t_scale_type, t2g_scale_type)
           map2gcell = .true.
        else if (type1d == namet) then
           call t2g(bounds, num2d, &
                field(bounds%begt:bounds%endt,:), &
-               field_gcell(bounds%begg:bounds%endg, :))
+               field_gcell(bounds%begg:bounds%endg, :), t2g_scale_type)
           map2gcell = .true.
        end if
     end if

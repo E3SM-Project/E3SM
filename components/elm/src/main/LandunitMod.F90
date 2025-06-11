@@ -47,8 +47,10 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                                         values(idx) = real( lun_pp%gridcell (l))
-    idx = idx + 1;                                         values(idx) =       lun_pp%wtgcell  (l)
+	idx = idx + 1;                                         values(idx) = real( lun_pp%topounit (l)) ! TKT TGUs
+    idx = idx + 1;                                         values(idx) =       lun_pp%wttopounit  (l) ! TKT TGUs
+	idx = idx + 1;                                         values(idx) = real( lun_pp%gridcell (l))
+    idx = idx + 1;                                         values(idx) =       lun_pp%wtgcell  (l)	
     idx = idx + 1;                                         values(idx) = real( lun_pp%coli     (l))
     idx = idx + 1;                                         values(idx) = real( lun_pp%colf     (l))
     idx = idx + 1;                                         values(idx) = real( lun_pp%ncolumns (l))
@@ -101,8 +103,10 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                           lun_pp%gridcell     (l) = int(values(idx))
-    idx = idx + 1;                           lun_pp%wtgcell      (l) =     values(idx)
+    idx = idx + 1;                           lun_pp%topounit     (l) = int(values(idx)) ! TKT 
+    idx = idx + 1;                           lun_pp%wttopounit      (l) =     values(idx)	! TTK
+	idx = idx + 1;                           lun_pp%gridcell     (l) = int(values(idx))
+    idx = idx + 1;                           lun_pp%wtgcell      (l) =     values(idx)		
     idx = idx + 1;                           lun_pp%coli         (l) = int(values(idx))
     idx = idx + 1;                           lun_pp%colf         (l) = int(values(idx))
     idx = idx + 1;                           lun_pp%ncolumns     (l) = int(values(idx))
@@ -135,7 +139,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(out)       :: nvalues
 
-    nvalues = 20
+    nvalues = 22  !TKT changed from 20 to 22 due to TGUs
 
   end subroutine NumValuesPerLandunit
 

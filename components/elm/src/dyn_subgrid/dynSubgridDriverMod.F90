@@ -354,9 +354,9 @@ contains
       icemask_grc => glc2lnd_vars%icemask_grc &
       )
     !SHR_ASSERT(bounds_clump%level == BOUNDS_LEVEL_CLUMP, subname // ': argument must be CLUMP-level bounds')
-
+   
     call update_landunit_weights(bounds_clump)
-
+	
     call compute_higher_order_weights(bounds_clump)
 
     ! Here: filters are re-made

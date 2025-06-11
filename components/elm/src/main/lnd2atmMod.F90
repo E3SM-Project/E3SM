@@ -49,6 +49,7 @@ module lnd2atmMod
 
   integer, parameter :: unity = 0, urbanf = 1, urbans = 2
   integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+  integer, parameter :: tgu_unity = 1, tgu_level = 2
   !------------------------------------------------------------------------
 
 contains
@@ -92,7 +93,7 @@ contains
     call c2g(bounds, &
          h2osno    (bounds%begc:bounds%endc) , &
          h2osno_grc(bounds%begg:bounds%endg)    , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity)
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     do g = bounds%begg,bounds%endg
        h2osno_grc(g) = h2osno_grc(g)/1000._r8
@@ -101,22 +102,22 @@ contains
     call c2g(bounds, nlevgrnd, &
          h2osoi_vol    (bounds%begc:bounds%endc,:), &
          h2osoi_vol_grc(bounds%begg:bounds%endg,:)    , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity)
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, numrad, &
          albd_patch(bounds%begp:bounds%endp,:) , &
          albd_grc  (bounds%begg:bounds%endg,:) , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, numrad, &
          albi_patch(bounds%begp:bounds%endp,:) , &
          albi_grc  (bounds%begg:bounds%endg,:) , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          eflx_lwrad_out     (bounds%begp:bounds%endp), &
          eflx_lwrad_out_grc (bounds%begg:bounds%endg), &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     do g = bounds%begg,bounds%endg
        lnd2atm_vars%t_rad_grc(g) = sqrt(sqrt(eflx_lwrad_out_grc(g)/sb))
@@ -127,7 +128,7 @@ contains
        call p2t(bounds, &
             eflx_lwrad_out (bounds%begp:bounds%endp), &
             top_es%eflx_lwrad_out_topo      (bounds%begt:bounds%endt), &
-            p2c_scale_type='unity', c2l_scale_type= 'urbanf', l2t_scale_type='unity')
+            p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity)
     
        do t = bounds%begt,bounds%endt
           top_es%t_rad(t) = sqrt(sqrt(top_es%eflx_lwrad_out_topo(t)/sb))   
@@ -250,57 +251,57 @@ contains
     call p2g(bounds, &
          t_ref2m    (bounds%begp:bounds%endp), &
          t_ref2m_grc(bounds%begg:bounds%endg), &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          q_ref2m    (bounds%begp:bounds%endp) , &
          q_ref2m_grc(bounds%begg:bounds%endg)      , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          u10_elm_patch(bounds%begp:bounds%endp) , &
          u_ref10m_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          u10_with_gusts_elm_patch(bounds%begp:bounds%endp) , &
          u_ref10m_with_gusts_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          taux     (bounds%begp:bounds%endp), &
          taux_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          tauy     (bounds%begp:bounds%endp)     , &
          tauy_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          qflx_evap_tot    (bounds%begp:bounds%endp)     , &
          qflx_evap_tot_grc(bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          fsa_patch(bounds%begp:bounds%endp) , &
          fsa_grc  (bounds%begg:bounds%endg)  , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          fv_patch(bounds%begp:bounds%endp) , &
          fv_grc  (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g(bounds, &
          ram1_patch(bounds%begp:bounds%endp) , &
          ram1_grc  (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call p2g( bounds, &
          eflx_sh_tot     (bounds%begp:bounds%endp) , &
          eflx_sh_tot_grc (bounds%begg:bounds%endg)     , &
-         p2c_scale_type=unity,c2l_scale_type=urbanf,l2g_scale_type=unity)
+         p2c_scale_type=unity,c2l_scale_type=urbanf,l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     do g = bounds%begg, bounds%endg
        eflx_sh_tot_grc(g) =  eflx_sh_tot_grc(g) - grc_ef%eflx_dynbal(g)
@@ -309,13 +310,13 @@ contains
     call p2g(bounds, &
          eflx_lh_tot    (bounds%begp:bounds%endp), &
          eflx_lh_tot_grc(bounds%begg:bounds%endg)      , &
-         p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     if (use_cn .or. use_fates) then
        call c2g(bounds, &
             nee    (bounds%begc:bounds%endc)   , &
             nee_grc(bounds%begg:bounds%endg)   , &
-            c2l_scale_type= unity, l2g_scale_type=unity)
+            c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
        if (use_lch4) then
           if (.not. ch4offline) then
@@ -342,7 +343,7 @@ contains
        call p2g(bounds, n_drydep, &
             velocity_patch(bounds%begp:bounds%endp,:) , &
             ddvel_grc     (bounds%begg:bounds%endg,:)   , &
-            p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+            p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
     endif
 
     ! voc emission flux
@@ -350,14 +351,14 @@ contains
        call p2g(bounds, shr_megan_mechcomps_n, &
             vocemis_vars%vocflx_patch, &
             lnd2atm_vars%flxvoc_grc  , &
-            p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+            p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
     end if
 
     ! dust emission flux
     call p2g(bounds, ndst, &
          flx_mss_vrt_dst_patch(bounds%begp:bounds%endp,:), &
          flxdst_grc           (bounds%begg:bounds%endg,:), &
-         p2c_scale_type=unity, c2l_scale_type= unity, l2g_scale_type=unity)
+         p2c_scale_type=unity, c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
 
     ! ch4 flux
@@ -365,7 +366,7 @@ contains
        call c2g( bounds,     &
             ch4_surf_flux_tot_col(bounds%begc:bounds%endc) , &
             flux_ch4_grc         (bounds%begg:bounds%endg) , &
-            c2l_scale_type= unity, l2g_scale_type=unity )
+            c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
     end if
 
     ! nh3 flux
@@ -373,7 +374,7 @@ contains
        call c2g(bounds,     &
             nh3_total (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_nh3_grc  (bounds%begg:bounds%endg), &
-            c2l_scale_type= unity, l2g_scale_type=unity)
+            c2l_scale_type= unity, l2t_scale_type=unity, t2g_scale_type=tgu_level)
     end if
 
     !----------------------------------------------------
@@ -383,7 +384,7 @@ contains
     call c2g( bounds, &
          qflx_runoff    (bounds%begc:bounds%endc) , &
          qflx_rofliq_grc(bounds%begg:bounds%endg)  , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     do g = bounds%begg, bounds%endg
        qflx_rofliq_grc(g) = qflx_rofliq_grc(g) - grc_wf%qflx_liq_dynbal(g)
@@ -392,42 +393,42 @@ contains
     call c2g( bounds, &
          qflx_surf           (bounds%begc:bounds%endc)   , &
          qflx_rofliq_qsur_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g( bounds, &
          qflx_h2osfc_surf     (bounds%begc:bounds%endc)  , &
          qflx_rofliq_qsurp_grc(bounds%begg:bounds%endg)  , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g( bounds, &
          qflx_irr_demand    (bounds%begc:bounds%endc)   , &
          qflx_irr_demand_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g( bounds, &
          qflx_drain          (bounds%begc:bounds%endc)   , &
          qflx_rofliq_qsub_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g( bounds, &
          qflx_drain_perched   (bounds%begc:bounds%endc)  , &
          qflx_rofliq_qsubp_grc(bounds%begg:bounds%endg)  , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g( bounds, &
          qflx_qrgwl          (bounds%begc:bounds%endc)         , &
          qflx_rofliq_qgwl_grc(bounds%begg:bounds%endg)    , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g( bounds, &
          qflx_snwcp_ice (bounds%begc:bounds%endc)     ,  &
          qflx_rofice_grc(bounds%begg:bounds%endg)     ,  &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     call c2g(bounds,  &
               coszen_col (bounds%begc:bounds%endc), &
               coszen_str (bounds%begg:bounds%endg), &
-              c2l_scale_type= urbanf, l2g_scale_type=unity)
+              c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
 
     do g = bounds%begg, bounds%endg
        qflx_rofice_grc(g) = qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)
@@ -439,13 +440,13 @@ contains
           call c2g( bounds, & 
                      qflx_h2orof_drain(bounds%begc:bounds%endc)     , &
                      qflx_h2orof_drain_grc(bounds%begg:bounds%endg) , &
-                     c2l_scale_type=unity,l2g_scale_type=unity )
+                     c2l_scale_type=unity,l2t_scale_type=unity, t2g_scale_type=tgu_level)
     endif
 
     call c2g( bounds, &
          col_ws%wslake_col(bounds%begc:bounds%endc), &
          lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level )
 
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb
@@ -455,7 +456,7 @@ contains
     call c2g( bounds, &
          endwb(bounds%begc:bounds%endc) , &
          tws  (bounds%begg:bounds%endg) , &
-         c2l_scale_type= urbanf, l2g_scale_type=unity )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level)
     do g = bounds%begg, bounds%endg
        tws(g) = tws(g) + atm2lnd_vars%volr_grc(g) / grc_pp%area(g) * 1.e-3_r8
     enddo
@@ -464,19 +465,19 @@ contains
     call c2g( bounds, &
          t_grnd    (bounds%begc:bounds%endc)   , &
          t_grnd_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbans, l2g_scale_type=unity )
+         c2l_scale_type= urbans, l2t_scale_type=unity, t2g_scale_type=tgu_level )
 
     !do lvl = -nlevsno+1, nlevgrnd
         call c2g( bounds, nlevgrnd+nlevsno, &
             t_soisno    (bounds%begc:bounds%endc,:), &
             t_soisno_grc(bounds%begg:bounds%endg,:), &
-            c2l_scale_type= urbans, l2g_scale_type=unity )
+            c2l_scale_type= urbans, l2t_scale_type=unity, t2g_scale_type=tgu_level )
     !enddo
 
     call c2g( bounds, &
          zwt_col(bounds%begc:bounds%endc)   , &
          zwt_grc(bounds%begg:bounds%endg)   , &
-         c2l_scale_type= urbans, l2g_scale_type=unity )
+         c2l_scale_type= urbans, l2t_scale_type=unity, t2g_scale_type=tgu_level )
 
     do g = bounds%begg,bounds%endg
        ! TODO temperary treatment in case weird values after c2g
@@ -492,7 +493,7 @@ contains
     call c2g( bounds, &
          sedflux_vars%sed_yld_col(bounds%begc:bounds%endc), &
          lnd2atm_vars%qflx_rofmud_grc(bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+         c2l_scale_type= urbanf, l2t_scale_type=unity, t2g_scale_type=tgu_level )
     
     end associate
   end subroutine lnd2atm

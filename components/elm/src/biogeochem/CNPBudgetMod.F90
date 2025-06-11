@@ -9,8 +9,6 @@ module CNPBudgetMod
   use atm2lndType         , only : atm2lnd_type
   use lnd2atmType         , only : lnd2atm_type
   use spmdMod             , only : masterproc
-  use GridcellDataType    , only : grc_ws
-  use ColumnDataType      , only : col_ws
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
   use ColumnDataType      , only : column_carbon_state, col_cf 
@@ -1077,10 +1075,11 @@ contains
 
   !-----------------------------------------------------------------------
 
-  subroutine CNPBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs)
+  subroutine CNPBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs, top_cs)
     !
     use GridcellDataType, only : gridcell_carbon_state
     use ColumnDataType  , only : column_carbon_state
+	use TopounitDataType, only : topounit_carbon_state
     !
     implicit none
     !
@@ -1088,18 +1087,20 @@ contains
     type(bounds_type)          , intent(in)    :: bounds
     type(column_carbon_state)  , intent(in)    :: col_cs
     type(gridcell_carbon_state), intent(inout) :: grc_cs
+	type(topounit_carbon_state), intent(inout) :: top_cs
 
-    call CBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs)
+    call CBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs, top_cs)
 
   end subroutine CNPBudget_SetBeginningMonthlyStates
 
 
   !-----------------------------------------------------------------------
 
-  subroutine CNPBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
+  subroutine CNPBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs, top_cs)
     !
     use GridcellDataType, only : gridcell_carbon_state
     use ColumnDataType  , only : column_carbon_state
+	use TopounitDataType, only : topounit_carbon_state
     !
     implicit none
     !
@@ -1107,25 +1108,27 @@ contains
     type(bounds_type)          , intent(in)    :: bounds
     type(column_carbon_state)  , intent(in)    :: col_cs
     type(gridcell_carbon_state), intent(inout) :: grc_cs
+	type(topounit_carbon_state), intent(inout) :: top_cs
 
-    call CBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
+    call CBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs, top_cs)
 
   end subroutine CNPBudget_SetEndingMonthlyStates
 
   !-----------------------------------------------------------------------
-  subroutine CBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs)
+  subroutine CBudget_SetBeginningMonthlyStates(bounds, col_cs, grc_cs, top_cs)
     !
     ! !DESCRIPTION:
     ! Set grid-level carbon states at the beginning of a month
     !
     ! !USES:
-    use subgridAveMod    , only : p2c, c2g
+    use subgridAveMod    , only : p2c, c2g,c2t
     use elm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon    , only : icol_road_perv, icol_road_imperv
     use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
+	use TopounitDataType , only : topounit_carbon_state
     use ColumnDataType   , only : column_carbon_state
     !
     !
@@ -1133,6 +1136,7 @@ contains
     type(bounds_type), intent(in)    :: bounds
     type(column_carbon_state)  , intent(in)    :: col_cs
     type(gridcell_carbon_state), intent(inout) :: grc_cs
+	type(topounit_carbon_state), intent(inout) :: top_cs
     !
     ! !LOCAL VARIABLES:
     integer :: year_prev, month_prev, day_prev, sec_prev
@@ -1140,7 +1144,8 @@ contains
 
     associate(                                          &
          begcb             =>    col_cs%begcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
-         tcs_month_beg_grc =>    grc_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
+         tcs_month_beg_grc =>    grc_cs%tcs_month_beg , & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the begining of a month
+		 tcs_month_beg_top =>    top_cs%tcs_month_beg   & ! Output: [real(r8) (:)   ]  topounit-level carbon mass at the begining of a month
          )
 
       ! Get current and previous dates to determine if a new month started
@@ -1152,7 +1157,12 @@ contains
          call c2g( bounds, &
               begcb(bounds%begc:bounds%endc), &
               tcs_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'unity', l2g_scale_type='unity' )
+              c2l_scale_type= 'unity', l2t_scale_type='unity',t2g_scale_type='topounit' )
+		 
+		 call c2t( bounds, &
+              begcb(bounds%begc:bounds%endc), &
+              tcs_month_beg_top(bounds%begt:bounds%endt), &
+              c2l_scale_type= 'unity', l2t_scale_type='unity')
       endif
 
     end associate
@@ -1160,13 +1170,13 @@ contains
   end subroutine CBudget_SetBeginningMonthlyStates
 
   !-----------------------------------------------------------------------
-  subroutine CBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs)
+  subroutine CBudget_SetEndingMonthlyStates(bounds, col_cs, grc_cs, top_cs)
     !
     ! !DESCRIPTION:
     ! Set grid-level carbon states at the beginning of a month
     !
     ! !USES:
-    use subgridAveMod    , only : p2c, c2g
+    use subgridAveMod    , only : p2c, c2g, c2t
     use elm_varpar       , only : nlevgrnd, nlevsoi, nlevurb
     use elm_varcon       , only : spval
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
@@ -1174,12 +1184,14 @@ contains
     use elm_time_manager , only : get_curr_date, get_prev_date, get_nstep
     use GridcellDataType , only : gridcell_carbon_state
     use ColumnDataType   , only : column_carbon_state
+	use TopounitDataType , only : topounit_carbon_state
     !
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)    :: bounds
     type(column_carbon_state)  , intent(in)    :: col_cs
     type(gridcell_carbon_state), intent(inout) :: grc_cs
+	type(topounit_carbon_state), intent(inout) :: top_cs
     !
     ! !LOCAL VARIABLES:
     integer :: year, month, day, sec
@@ -1187,7 +1199,8 @@ contains
 
     associate(                                          &
          endcb             =>    col_cs%endcb         , & ! Input : [real(r8) (:)   ]  carbon mass begining of the time step
-         tcs_month_end_grc =>    grc_cs%tcs_month_end   & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the ending of a month
+         tcs_month_end_grc =>    grc_cs%tcs_month_end ,  & ! Output: [real(r8) (:)   ]  grid-level carbon mass at the ending of a month
+		 tcs_month_end_top =>    top_cs%tcs_month_end   & ! Output: [real(r8) (:)   ]  topounit-level carbon mass at the ending of a month
          )
 
       ! Get current dates to determine if a new month started
@@ -1200,7 +1213,12 @@ contains
          call c2g( bounds, &
               endcb(bounds%begc:bounds%endc), &
               tcs_month_end_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'unity', l2g_scale_type='unity' )
+              c2l_scale_type= 'unity', l2t_scale_type='unity',t2g_scale_type='topounit' )
+		 
+		 call c2t( bounds, &
+              endcb(bounds%begc:bounds%endc), &
+              tcs_month_end_grc(bounds%begg:bounds%endg), &
+              c2l_scale_type= 'unity', l2t_scale_type='unity' )
       else
          tcs_month_end_grc(bounds%begg:bounds%endg) = spval
       endif

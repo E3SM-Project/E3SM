@@ -16,14 +16,15 @@ module dynFATESLandUseChangeMod
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use elm_varcon            , only : grlnd
   use elm_varctl            , only : iulog
+  use topounit_varcon       , only : max_topounits
 
   implicit none
 
   private
 
-  real(r8), allocatable, public :: landuse_transitions(:,:)
-  real(r8), allocatable, public :: landuse_states(:,:)
-  real(r8), allocatable, public :: landuse_harvest(:,:)
+  real(r8), allocatable, public :: landuse_transitions(:,:,:)  ! TKT changed to 3d for TGU
+  real(r8), allocatable, public :: landuse_states(:,:,:)
+  real(r8), allocatable, public :: landuse_harvest(:,:,:)
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
@@ -122,7 +123,7 @@ contains
 
     ! !LOCAL VARIABLES
     integer :: varnum, i      ! counter for harvest variables
-    integer :: landuse_shape(1)  ! land use shape
+    integer :: landuse_shape(2)  ! land use shape  ! TKT changed to landuse_shape(2) from landuse_shape(1) for TGUs
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
     real(r8), allocatable :: this_data(:) ! data for a single harvest variable
@@ -133,15 +134,15 @@ contains
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     ! Allocate and initialize the land use arrays
-    allocate(landuse_states(num_landuse_state_vars,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_states(num_landuse_state_vars,max_topounits,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_states'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_transitions(num_landuse_transition_vars,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_transitions(num_landuse_transition_vars,max_topounits,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_harvest(num_landuse_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_harvest(num_landuse_harvest_vars,max_topounits,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_harvest'//errMsg(__FILE__, __LINE__))
     end if
@@ -161,7 +162,8 @@ contains
 
           ! Get initial land use data from the fates luh2 timeseries dataset
           num_points = (bounds%endg - bounds%begg + 1)
-          landuse_shape(1) = num_points ! Does this need an explicit array shape to be passed to the constructor?
+          ! landuse_shape(1) = num_points ! Does this need an explicit array shape to be passed to the constructor?
+		  landuse_shape = [num_points,max_topounits]  ! TKT for TGUs
           do varnum = 1, num_landuse_transition_vars
              landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
                   dyn_file=dynFatesLandUse_file, varname=landuse_transition_varnames(varnum), &
@@ -223,7 +225,7 @@ contains
     integer                     :: varnum
     integer                     :: i
     logical                     :: init_flag
-    real(r8), allocatable       :: this_data(:)
+    real(r8), allocatable       :: this_data(:,:)   !TKT changed to 2d for TGU
     character(len=*), parameter :: subname = 'dynFatesLandUseInterp'
     !-----------------------------------------------------------------------
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
@@ -238,25 +240,25 @@ contains
 
     if (dynFatesLandUse_file%time_info%is_before_time_series() .and. .not.(init_flag)) then
        ! Reset the land use transitions to zero for safety
-       landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
-       landuse_states(1:num_landuse_state_vars,bounds%begg:bounds%endg) = 0._r8
-       landuse_harvest(1:num_landuse_harvest_vars,bounds%begg:bounds%endg) = 0._r8
+       landuse_transitions(1:num_landuse_transition_vars,max_topounits,bounds%begg:bounds%endg) = 0._r8
+       landuse_states(1:num_landuse_state_vars,max_topounits,bounds%begg:bounds%endg) = 0._r8
+       landuse_harvest(1:num_landuse_harvest_vars,max_topounits,bounds%begg:bounds%endg) = 0._r8
     else
        ! Right now we don't account for the topounits
-       allocate(this_data(bounds%begg:bounds%endg))
+       allocate(this_data(1:max_topounits,bounds%begg:bounds%endg))
        do varnum = 1, num_landuse_transition_vars
           call landuse_transition_vars(varnum)%get_current_data(this_data)
-          landuse_transitions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+          landuse_transitions(varnum,:,bounds%begg:bounds%endg) = this_data(1:max_topounits,bounds%begg:bounds%endg)
        end do
        do varnum = 1, num_landuse_state_vars
           call landuse_state_vars(varnum)%get_current_data(this_data)
-          landuse_states(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+          landuse_states(varnum,:,bounds%begg:bounds%endg) = this_data(1:max_topounits,bounds%begg:bounds%endg)
        end do
        if (trim(fates_harvest_mode) .eq. fates_harvest_luh_area .or. &
            trim(fates_harvest_mode) .eq. fates_harvest_luh_mass) then
           do varnum = 1, num_landuse_harvest_vars
              call landuse_harvest_vars(varnum)%get_current_data(this_data)
-             landuse_harvest(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+             landuse_harvest(varnum,:,bounds%begg:bounds%endg) = this_data(1:max_topounits,bounds%begg:bounds%endg)
           end do
        end if
        deallocate(this_data)

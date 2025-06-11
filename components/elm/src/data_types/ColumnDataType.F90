@@ -1141,13 +1141,13 @@ contains
     data2dptr => this%t_soisno(:,1:nlevgrnd)
      call hist_addfld2d (fname='TSOI',  units='K', type2d='levgrnd', &
           avgflag='A', long_name='soil temperature (vegetated landunits only)', &
-           standard_name='soil_temperature',ptr_col=data2dptr, l2g_scale_type='veg')
+           standard_name='soil_temperature',ptr_col=data2dptr, l2t_scale_type='veg')
 
     this%t_soisno(begc:endc,:) = spval
      data2dptr => this%t_soisno(:,1:nlevgrnd)
      call hist_addfld2d (fname='TSOI_ICE',  units='K', type2d='levgrnd', &
           avgflag='A', long_name='soil temperature (ice landunits only)', &
-           ptr_col=data2dptr, l2g_scale_type='ice')
+           ptr_col=data2dptr, l2t_scale_type='ice')
 
     this%t_h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='TH2OSFC',  units='K',  &
@@ -1192,7 +1192,7 @@ contains
     this%hc_soi(begc:endc) = spval
      call hist_addfld1d (fname='HCSOI',  units='MJ/m2',  &
           avgflag='A', long_name='soil heat content', &
-           ptr_col=this%hc_soi, set_lake=spval, set_urb=spval, l2g_scale_type='veg')
+           ptr_col=this%hc_soi, set_lake=spval, set_urb=spval, l2t_scale_type='veg')
 
     this%hc_soisno(begc:endc) = spval
      call hist_addfld1d (fname='HC',  units='MJ/m2',  &
@@ -1462,22 +1462,22 @@ contains
 
     call hist_addfld2d (fname='SOILLIQ',  units='kg/m2', type2d='levgrnd', &
          avgflag='A', long_name='soil liquid water (vegetated landunits only)', &
-         ptr_col=this%h2osoi_liq, l2g_scale_type='veg')
+         ptr_col=this%h2osoi_liq, l2t_scale_type='veg')
 
     this%h2osoi_liq(begc:endc,:) = spval
     call hist_addfld2d (fname='SOILLIQ_ICE',  units='kg/m2', type2d='levgrnd', &
          avgflag='A', long_name='soil liquid water (ice landunits only)', &
-         ptr_col=this%h2osoi_liq, l2g_scale_type='ice')
+         ptr_col=this%h2osoi_liq, l2t_scale_type='ice')
 
     this%h2osoi_ice(begc:endc,:) = spval
     call hist_addfld2d (fname='SOILICE',  units='kg/m2', type2d='levgrnd', &
          avgflag='A', long_name='soil ice (vegetated landunits only)', &
-         ptr_col=this%h2osoi_ice, l2g_scale_type='veg')
+         ptr_col=this%h2osoi_ice, l2t_scale_type='veg')
 
     this%h2osoi_ice(begc:endc,:) = spval
         call hist_addfld2d (fname='SOILICE_ICE',  units='kg/m2', type2d='levgrnd', &
         avgflag='A', long_name='soil ice (ice landunits only)', &
-        ptr_col=this%h2osoi_ice, l2g_scale_type='ice')
+        ptr_col=this%h2osoi_ice, l2t_scale_type='ice')
 
     this%h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='H2OSFC',  units='mm',  &
@@ -1487,7 +1487,7 @@ contains
     this%h2osoi_vol(begc:endc,:) = spval
      call hist_addfld2d (fname='H2OSOI',  units='mm3/mm3', type2d='levgrnd', &
           avgflag='A', long_name='volumetric soil water (vegetated landunits only)', &
-           ptr_col=this%h2osoi_vol, l2g_scale_type='veg')
+           ptr_col=this%h2osoi_vol, l2t_scale_type='veg')
 
     this%bw(begc:endc,-nlevsno+1:0) = spval
     data2dptr => this%bw(:,-nlevsno+1:0)
@@ -1515,7 +1515,7 @@ contains
     call hist_addfld1d (fname='SOILWATER_10CM',  units='kg/m2', &
          avgflag='A', long_name='soil liquid water + ice in top 10cm of soil (veg landunits only)', &
          standard_name='mass_content_of_water_in_soil_layer',ptr_col=this%h2osoi_liqice_10cm,  &
-         set_urb=spval, set_lake=spval, l2g_scale_type='veg')
+         set_urb=spval, set_lake=spval, l2t_scale_type='veg')
 
      call hist_addfld1d (fname='H2OSNO',  units='mm',  &
           avgflag='A', long_name='snow depth (liquid water)', &
@@ -1539,7 +1539,7 @@ contains
     this%int_snow(begc:endc) = spval
      call hist_addfld1d (fname='INT_SNOW',  units='mm',  &
           avgflag='A', long_name='accumulated swe (vegetated landunits only)', &
-           ptr_col=this%int_snow, l2g_scale_type='veg')
+           ptr_col=this%int_snow, l2t_scale_type='veg')
 
     this%snow_depth(begc:endc) = spval
      call hist_addfld1d (fname='SNOW_DEPTH',  units='m',  &
@@ -1555,7 +1555,7 @@ contains
        this%snow_persistence(begc:endc) = spval
         call hist_addfld1d (fname='SNOW_PERSISTENCE',  units='seconds',  &
              avgflag='I', long_name='Length of time of continuous snow cover (nat. veg. landunits only)', &
-              ptr_col=this%snow_persistence, l2g_scale_type='natveg')
+              ptr_col=this%snow_persistence, l2t_scale_type='natveg')
     end if
 
     if (use_fan) then
@@ -1563,7 +1563,7 @@ contains
        call hist_addfld1d ( &
          fname='SOILWATERTEND_TSL',  units='kg/m2/s', &
          avgflag='A', long_name='Tendency of soil water in the topmost soil layer', &
-         ptr_col=this%h2osoi_tend_tsl_col, l2g_scale_type='veg', &
+         ptr_col=this%h2osoi_tend_tsl_col, l2t_scale_type='veg', &
          default='inactive')
     end if
  
@@ -5853,32 +5853,32 @@ contains
             this%qflx_glcice(begc:endc) = spval
              call hist_addfld1d (fname='QICE',  units='mm/s',  &
                   avgflag='A', long_name='ice growth/melt (with active GLC/MECs)', &
-                   ptr_col=this%qflx_glcice, l2g_scale_type='ice')
+                   ptr_col=this%qflx_glcice, l2t_scale_type='ice')
 
             this%qflx_glcice_frz(begc:endc) = spval
              call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
                   avgflag='A', long_name='ice growth (with active GLC/MECs)', &
-                   ptr_col=this%qflx_glcice_frz, l2g_scale_type='ice')
+                   ptr_col=this%qflx_glcice_frz, l2t_scale_type='ice')
 
             this%qflx_glcice_melt(begc:endc) = spval
              call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
                   avgflag='A', long_name='ice melt (with active GLC/MECs)', &
-                   ptr_col=this%qflx_glcice_melt, l2g_scale_type='ice')
+                   ptr_col=this%qflx_glcice_melt, l2t_scale_type='ice')
     else 
              this%qflx_glcice_diag(begc:endc) = spval
              call hist_addfld1d (fname='QICE',  units='mm/s',  &
                   avgflag='A', long_name='diagnostic ice growth/melt (no active GLC/MECs)', &
-                   ptr_col=this%qflx_glcice_diag, l2g_scale_type='ice')
+                   ptr_col=this%qflx_glcice_diag, l2t_scale_type='ice')
 
             this%qflx_glcice_frz_diag(begc:endc) = spval
              call hist_addfld1d (fname='QICE_FRZ',  units='mm/s',  &
                   avgflag='A', long_name='diagnostic ice growth (no active GLC/MECs)', &
-                   ptr_col=this%qflx_glcice_frz_diag, l2g_scale_type='ice')
+                   ptr_col=this%qflx_glcice_frz_diag, l2t_scale_type='ice')
 
             this%qflx_glcice_melt_diag(begc:endc) = spval
              call hist_addfld1d (fname='QICE_MELT',  units='mm/s',  &
                   avgflag='A', long_name='diagnostic ice melt (no active GLC/MECs)', &
-                   ptr_col=this%qflx_glcice_melt_diag, l2g_scale_type='ice')
+                   ptr_col=this%qflx_glcice_melt_diag, l2t_scale_type='ice')
    end if
 
 

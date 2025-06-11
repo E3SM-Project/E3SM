@@ -139,7 +139,12 @@ module elm_driver
   use GridcellDataType       , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType       , only : grc_ns, grc_nf
   use GridcellDataType       , only : grc_ps, grc_pf
+  use TopounitType           , only : top_pp
   use TopounitDataType       , only : top_as, top_af
+  use TopounitDataType       , only : top_cs, c13_top_cs, c14_top_cs
+  use TopounitDataType       , only : top_cf, c13_top_cf, c14_top_cf
+  use TopounitDataType       , only : top_ns, top_nf
+  use TopounitDataType       , only : top_ps, top_pf
   use LandunitType           , only : lun_pp
   use ColumnType             , only : col_pp
   use ColumnDataType         , only : col_es, col_ef, col_ws, col_wf
@@ -220,7 +225,7 @@ contains
     ! !LOCAL VARIABLES:
     integer              :: nstep                   ! time step number
     real(r8)             :: dtime                   ! land model time step (sec)
-    integer              :: nc, c, p, l, g          ! indices
+    integer              :: nc, c, p, l, g, t          ! indices
     integer              :: nclumps                 ! number of clumps on this processor
     integer              :: yrp1                    ! year (0, ...) for nstep+1
     integer              :: monp1                   ! month (1, ..., 12) for nstep+1
@@ -379,11 +384,13 @@ contains
           call veg_cs%ZeroDwt(bounds_clump)
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
-             call c13_col_cf%ZeroDWT(bounds_clump)
+             call c13_col_cf%ZeroDWT(bounds_clump)			 
+			 call c13_top_cf%ZeroDWT(bounds_clump)  ! TKT for TGU             
           end if
           if (use_c14) then
              call c14_grc_cf%ZeroDWT(bounds_clump)
              call c14_col_cf%ZeroDWT(bounds_clump)
+			 call c14_top_cf%ZeroDWT(bounds_clump)  ! TKT for TGU
           end if
           call veg_ns%ZeroDWT(bounds_clump)
           call veg_ps%ZeroDWT(bounds_clump)
@@ -398,6 +405,11 @@ contains
           call col_nf%ZeroDWT(bounds_clump)
           call grc_pf%ZeroDWT(bounds_clump)
           call col_pf%ZeroDWT(bounds_clump)
+		  
+		  call top_cf%ZeroDWT(bounds_clump)   ! TKT for TGU
+          call top_nf%ZeroDWT(bounds_clump)
+          call top_pf%ZeroDWT(bounds_clump)
+          		  
           call t_stopf('cnpzero')
        end if
 
@@ -602,7 +614,7 @@ contains
        if (do_budgets) then
           call WaterBudget_SetBeginningMonthlyStates(bounds_clump )
           if (use_cn) then
-             call CNPBudget_SetBeginningMonthlyStates(bounds_clump, col_cs, grc_cs)
+             call CNPBudget_SetBeginningMonthlyStates(bounds_clump, col_cs, grc_cs, top_cs)
           endif
        endif
 
@@ -1328,7 +1340,7 @@ contains
        if (do_budgets) then
           call WaterBudget_SetEndingMonthlyStates(bounds_clump)
           if (use_cn) then
-             call CNPBudget_SetEndingMonthlyStates(bounds_clump, col_cs, grc_cs)
+             call CNPBudget_SetEndingMonthlyStates(bounds_clump, col_cs, grc_cs, top_cs)
           endif
        endif
 

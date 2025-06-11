@@ -127,7 +127,7 @@ contains
        
        ! For each gridcell in clump, create the correct number of topounits       
        do gdc = bounds_clump%begg, bounds_clump%endg
-          call set_topounit(gdc, ti, ldomain%num_tunits_per_grd(gdc) )
+          call set_topounit(gdc, ti, ldomain%num_tunits_per_grd(gdc), ldomain%latc(gdc), ldomain%lonc(gdc) )
        end do
 
        ! With all topounits defined, next place landunits
@@ -247,7 +247,7 @@ contains
   end subroutine initGridcells
 
   !----------------------------------------------------------------------
-  subroutine set_topounit(gdc, ti, num_tunits_per_grd ) 
+  subroutine set_topounit(gdc, ti, num_tunits_per_grd, grc_lat, grc_lon ) 
     !
     ! !DESCRIPTION:
     ! Initialize each topounit for a gridcell.
@@ -261,7 +261,7 @@ contains
     integer, intent(in) :: num_tunits_per_grd
     ! !LOCAL VARIABLES
     integer :: topounit, ntopos,topo_ind, num_topo_tmp,tmp_tpu
-    real(r8) :: wttopounit2gridcell, elv, slp                  ! topounit weight on gridcell, elevation and slope
+    real(r8) :: wttopounit2gridcell, elv, slp, grc_lat, grc_lon                  ! topounit weight on gridcell, elevation and slope
     integer :: asp                                             ! aspect
     logical :: is_tpu_active                                   ! Check if topounit is active
      
@@ -289,7 +289,7 @@ contains
        slp = slp_tunit(gdc,topounit) !grc_pp%tslope(gdc,topounit) 
        asp = asp_tunit(gdc,topounit) !grc_pp%taspect(gdc,topounit) 
        topo_ind = topounit
-       call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,topo_ind=topo_ind,is_tpu_active = is_tpu_active)
+       call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp,grc_lat=grc_lat,grc_lon=grc_lon,topo_ind=topo_ind,is_tpu_active = is_tpu_active)
     end do
  
   end subroutine set_topounit  

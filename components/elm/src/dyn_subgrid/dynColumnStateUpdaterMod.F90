@@ -231,7 +231,7 @@ contains
              natveg_template_col => this%natveg_template_col &
                )
     do c = bounds%begc, bounds%endc
-      this%cwtgcell_old(c) = col_pp%wtgcell(c)
+      this%cwtgcell_old(c) = col_pp%wttopounit(c) ! TKT from col_pp%wtgcell(c) to col_pp%wttopounit(c)
     end do
 
     call template_col_from_natveg_array(bounds, active_col(bounds%begc:bounds%endc), &
@@ -265,7 +265,7 @@ contains
 
     this%any_changes(clump_index) = .false.
     do c = bounds%begc, bounds%endc
-       this%cwtgcell_new(c)     = col_pp%wtgcell(c)
+       this%cwtgcell_new(c)     = col_pp%wttopounit(c) ! TKT from col_pp%wtgcell(c) to col_pp%wttopounit(c)
        this%area_gained_col(c)  = this%cwtgcell_new(c) - this%cwtgcell_old(c)
        if (this%area_gained_col(c) /= 0._r8) then
           this%any_changes(clump_index) = .true.

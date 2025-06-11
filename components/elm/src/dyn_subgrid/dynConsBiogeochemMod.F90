@@ -19,6 +19,7 @@ module dynConsBiogeochemMod
   use CNStateType              , only : cnstate_type
   use GridcellDataType         , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType         , only : grc_nf, grc_pf
+  use TopounitDataType         , only : top_cf, top_pf, top_nf, c13_top_cf, c14_top_cf
   use LandunitType             , only : lun_pp
   use ColumnType               , only : col_pp
   use ColumnDataType           , only : column_carbon_state, column_nitrogen_state
@@ -94,7 +95,7 @@ contains
 
     !
     ! !LOCAL VARIABLES:
-    integer   :: p,c,l,g,j,fp               ! indices
+    integer   :: p,c,l,g,j,fp,t               ! indices
     integer   :: ier                           ! error code
     real(r8)  :: dwt                           ! change in pft weight (relative to column)
     real(r8)  :: dwt_leafc_seed(1:num_soilp_with_inactive) ! pft-level mass gain due to seeding of new area
@@ -422,16 +423,25 @@ contains
     do fp = 1, num_soilp_with_inactive
        p = filter_soilp_with_inactive(fp)
        g = veg_pp%gridcell(p)
+	   t = veg_pp%topounit(p)              ! TKT added for the TGU
 
        ! C fluxes
        veg_cf%dwt_seedc_to_leaf(p) = dwt_leafc_seed(fp)/dt
        grc_cf%dwt_seedc_to_leaf(g)   = &
             grc_cf%dwt_seedc_to_leaf(g) + &
             veg_cf%dwt_seedc_to_leaf(p)
+		
+	   top_cf%dwt_seedc_to_leaf(t)   = &           ! TKT added for the TGU
+            top_cf%dwt_seedc_to_leaf(t) + &
+            veg_cf%dwt_seedc_to_leaf(p)
 
        veg_cf%dwt_seedc_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
        grc_cf%dwt_seedc_to_deadstem(g)   = &
             grc_cf%dwt_seedc_to_deadstem(g) + &
+            veg_cf%dwt_seedc_to_deadstem(p)
+			
+	   top_cf%dwt_seedc_to_deadstem(t)   = &         ! TKT added for the TGU
+            top_cf%dwt_seedc_to_deadstem(t) + &
             veg_cf%dwt_seedc_to_deadstem(p)
 
        if ( use_c13 ) then
@@ -439,10 +449,18 @@ contains
           c13_grc_cf%dwt_seedc_to_leaf(g)   = &
                c13_grc_cf%dwt_seedc_to_leaf(g) + &
                c13_veg_cf%dwt_seedc_to_leaf(p)
+			   
+		  c13_top_cf%dwt_seedc_to_leaf(t)   = &           ! TKT added for the TGU
+               c13_top_cf%dwt_seedc_to_leaf(t) + &
+               c13_veg_cf%dwt_seedc_to_leaf(p)
 
           c13_veg_cf%dwt_seedc_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
           c13_grc_cf%dwt_seedc_to_deadstem(g)   = &
                c13_grc_cf%dwt_seedc_to_deadstem(g) + &
+               c13_veg_cf%dwt_seedc_to_deadstem(p)
+			   
+		  c13_top_cf%dwt_seedc_to_deadstem(t)   = &         ! TKT added for the TGU
+               c13_top_cf%dwt_seedc_to_deadstem(t) + &
                c13_veg_cf%dwt_seedc_to_deadstem(p)
        endif
 
@@ -451,10 +469,18 @@ contains
           c14_grc_cf%dwt_seedc_to_leaf(g)   = &
                c14_grc_cf%dwt_seedc_to_leaf(g) + &
                c14_veg_cf%dwt_seedc_to_leaf(p)
+			   
+		  c14_top_cf%dwt_seedc_to_leaf(t)   = &             ! TKT added for the TGU
+               c14_top_cf%dwt_seedc_to_leaf(t) + &
+               c14_veg_cf%dwt_seedc_to_leaf(p)
 
           c14_veg_cf%dwt_seedc_to_deadstem(p) = dwt_deadstemc_seed(fp)/dt
           c14_grc_cf%dwt_seedc_to_deadstem(g)   = &
                c14_grc_cf%dwt_seedc_to_deadstem(g) + &
+               c14_veg_cf%dwt_seedc_to_deadstem(p)
+			   
+		  c14_top_cf%dwt_seedc_to_deadstem(t)   = &          ! TKT added for the TGU
+               c14_top_cf%dwt_seedc_to_deadstem(t) + &
                c14_veg_cf%dwt_seedc_to_deadstem(p)
        endif
 
@@ -463,10 +489,18 @@ contains
        grc_nf%dwt_seedn_to_leaf(g)     = &
             grc_nf%dwt_seedn_to_leaf(g) + &
             veg_nf%dwt_seedn_to_leaf(p)
+			
+	   top_nf%dwt_seedn_to_leaf(t)     = &              ! TKT added for the TGU
+            top_nf%dwt_seedn_to_leaf(t) + &
+            veg_nf%dwt_seedn_to_leaf(p)
 
        veg_nf%dwt_seedn_to_deadstem(p) = dwt_deadstemn_seed(fp)/dt
        grc_nf%dwt_seedn_to_deadstem(g)   = &
             grc_nf%dwt_seedn_to_deadstem(g) + &
+            veg_nf%dwt_seedn_to_deadstem(p)
+			
+	   top_nf%dwt_seedn_to_deadstem(t)   = &              ! TKT added for the TGU
+            top_nf%dwt_seedn_to_deadstem(t) + &
             veg_nf%dwt_seedn_to_deadstem(p)
 
 
@@ -474,22 +508,37 @@ contains
        grc_nf%dwt_seedn_to_npool(g)   = &
             grc_nf%dwt_seedn_to_npool(g) + &
             veg_nf%dwt_seedn_to_npool(p)
+			
+	   top_nf%dwt_seedn_to_npool(t)   = &                  ! TKT added for the TGU
+            top_nf%dwt_seedn_to_npool(t) + &
+            veg_nf%dwt_seedn_to_npool(p)
 
        ! P fluxes
        veg_pf%dwt_seedp_to_leaf(p)   = dwt_leafp_seed(fp)/dt
        grc_pf%dwt_seedp_to_leaf(g)     = &
             grc_pf%dwt_seedp_to_leaf(g) + &
             veg_pf%dwt_seedp_to_leaf(p)
+			
+	   top_pf%dwt_seedp_to_leaf(t)     = &              ! TKT added for the TGU
+            top_pf%dwt_seedp_to_leaf(t) + &
+            veg_pf%dwt_seedp_to_leaf(p)
 
        veg_pf%dwt_seedp_to_deadstem(p) = dwt_deadstemp_seed(fp)/dt
        grc_pf%dwt_seedp_to_deadstem(g)   = &
             grc_pf%dwt_seedp_to_deadstem(g) + &
             veg_pf%dwt_seedp_to_deadstem(p)
-
+			
+	   top_pf%dwt_seedp_to_deadstem(t)   = &             ! TKT added for the TGU
+            top_pf%dwt_seedp_to_deadstem(t) + &
+            veg_pf%dwt_seedp_to_deadstem(p)
 
        veg_pf%dwt_seedp_to_ppool(p) = dwt_npool_seed(fp)/dt
        grc_pf%dwt_seedp_to_ppool(g)   = &
             grc_pf%dwt_seedp_to_ppool(g) + &
+            veg_pf%dwt_seedp_to_ppool(p)
+			
+	   top_pf%dwt_seedp_to_ppool(t)   = &                 ! TKT added for the TGU
+            top_pf%dwt_seedp_to_ppool(t) + &
             veg_pf%dwt_seedp_to_ppool(p)
 
     end do
@@ -671,6 +720,7 @@ contains
        p = filter_soilp_with_inactive(fp)
        c = veg_pp%column(p)
        g = veg_pp%gridcell(p)
+	   t = veg_pp%topounit(p)           ! TKT for TGU
 
        ! column-level fluxes are accumulated as positive fluxes.
        ! column-level C flux updates
@@ -681,9 +731,11 @@ contains
 
        veg_cf%dwt_prod10c_gain(p) = - prod10_cflux(fp)/dt
        grc_cf%dwt_prod10c_gain(g)   = grc_cf%dwt_prod10c_gain(g) + veg_cf%dwt_prod10c_gain(p)
+	   top_cf%dwt_prod10c_gain(t)   = top_cf%dwt_prod10c_gain(t) + veg_cf%dwt_prod10c_gain(p)                ! TKT for TGU
 
        veg_cf%dwt_prod100c_gain(p) = - prod100_cflux(fp)/dt
        grc_cf%dwt_prod100c_gain(g)   = grc_cf%dwt_prod100c_gain(g) + veg_cf%dwt_prod100c_gain(p)
+	   top_cf%dwt_prod100c_gain(t)   = top_cf%dwt_prod100c_gain(t) + veg_cf%dwt_prod100c_gain(p)          ! TKT for TGU
 
        veg_cf%dwt_crop_productc_gain(p) = - crop_product_cflux(fp)/dt
 
@@ -696,9 +748,11 @@ contains
 
           c13_veg_cf%dwt_prod10c_gain(p) = - prod10_c13flux(fp)/dt
           c13_grc_cf%dwt_prod10c_gain(g)   = c13_grc_cf%dwt_prod10c_gain(g) + c13_veg_cf%dwt_prod10c_gain(p)
+		  c13_top_cf%dwt_prod10c_gain(t)   = c13_top_cf%dwt_prod10c_gain(t) + c13_veg_cf%dwt_prod10c_gain(p)          ! TKT for TGU
 
           c13_veg_cf%dwt_prod100c_gain(p) = - prod100_c13flux(fp)/dt
           c13_grc_cf%dwt_prod100c_gain(g)   = c13_grc_cf%dwt_prod100c_gain(g) + c13_veg_cf%dwt_prod100c_gain(p)
+		  c13_top_cf%dwt_prod100c_gain(t)   = c13_top_cf%dwt_prod100c_gain(t) + c13_veg_cf%dwt_prod100c_gain(p)     ! TKT for TGU
 
           c13_veg_cf%dwt_crop_productc_gain(p) = - crop_product_c13flux(fp)/dt
 
@@ -713,9 +767,11 @@ contains
 
           c14_veg_cf%dwt_prod10c_gain(p) = - prod10_c14flux(fp)/dt
           c14_grc_cf%dwt_prod10c_gain(g)   = c14_grc_cf%dwt_prod10c_gain(g) + c14_veg_cf%dwt_prod10c_gain(p)
+		  c14_top_cf%dwt_prod10c_gain(t)   = c14_top_cf%dwt_prod10c_gain(t) + c14_veg_cf%dwt_prod10c_gain(p)        ! TKT for TGU
 
           c14_veg_cf%dwt_prod100c_gain(p) = - prod100_c14flux(fp)/dt
           c14_grc_cf%dwt_prod100c_gain(g)   = c14_grc_cf%dwt_prod100c_gain(g) + c14_veg_cf%dwt_prod100c_gain(p)
+		  c14_top_cf%dwt_prod100c_gain(t)   = c14_top_cf%dwt_prod100c_gain(t) + c14_veg_cf%dwt_prod100c_gain(p)            ! TKT for TGU        
 
           c14_veg_cf%dwt_crop_productc_gain(p) = - crop_product_c14flux(fp)/dt
 
@@ -729,9 +785,11 @@ contains
 
        veg_nf%dwt_prod10n_gain(p) = -prod10_nflux(fp)/dt
        grc_nf%dwt_prod10n_gain(g)   = grc_nf%dwt_prod10n_gain(g) + veg_nf%dwt_prod10n_gain(p)
+	   top_nf%dwt_prod10n_gain(t)   = top_nf%dwt_prod10n_gain(t) + veg_nf%dwt_prod10n_gain(p)             ! TKT for TGU
 
        veg_nf%dwt_prod100n_gain(p)= -prod100_nflux(fp)/dt
        grc_nf%dwt_prod100n_gain(g)  = grc_nf%dwt_prod100n_gain(g) + veg_nf%dwt_prod100n_gain(p)
+	   top_nf%dwt_prod100n_gain(t)  = top_nf%dwt_prod100n_gain(t) + veg_nf%dwt_prod100n_gain(p)          ! TKT for TGU
 
        veg_nf%dwt_crop_productn_gain(p) = -crop_product_nflux(fp)/dt
 
@@ -744,9 +802,11 @@ contains
 
        veg_pf%dwt_prod10p_gain(p) = -prod10_pflux(fp)/dt
        grc_pf%dwt_prod10p_gain(g)   = grc_pf%dwt_prod10p_gain(g) + veg_pf%dwt_prod10p_gain(p)
+	   top_pf%dwt_prod10p_gain(t)   = top_pf%dwt_prod10p_gain(t) + veg_pf%dwt_prod10p_gain(p)              ! TKT for TGU
 
        veg_pf%dwt_prod100p_gain(p)= -prod100_pflux(fp)/dt
        grc_pf%dwt_prod100p_gain(g)  = grc_pf%dwt_prod100p_gain(g) + veg_pf%dwt_prod100p_gain(p)
+	   top_pf%dwt_prod100p_gain(t)  = top_pf%dwt_prod100p_gain(t) + veg_pf%dwt_prod100p_gain(p)          ! TKT for TGU
 
        veg_pf%dwt_crop_productp_gain(p) = -crop_product_pflux(fp)/dt
 
@@ -755,6 +815,7 @@ contains
     do fp = 1, num_soilp_with_inactive
        p = filter_soilp_with_inactive(fp)
        g = veg_pp%gridcell(p)
+	   t = veg_pp%topounit(p)                 ! TKT for TGU
 
        ! Note that patch-level fluxes are stored per unit GRIDCELL area - thus, we don't
        ! need to multiply by the patch's gridcell weight when translating patch-level
@@ -764,12 +825,20 @@ contains
        grc_cf%dwt_conv_cflux(g) = &
             grc_cf%dwt_conv_cflux(g) + &
             veg_cf%dwt_conv_cflux(p)
+			
+	   top_cf%dwt_conv_cflux(t) = &                         ! TKT for TGU
+            top_cf%dwt_conv_cflux(t) + &
+            veg_cf%dwt_conv_cflux(p)
 
        if ( use_c13 ) then
           ! C13 column-level flux updates
           c13_veg_cf%dwt_conv_cflux(p) = -conv_c13flux(fp)/dt
           c13_grc_cf%dwt_conv_cflux(g) = &
                c13_grc_cf%dwt_conv_cflux(g) + &
+               c13_veg_cf%dwt_conv_cflux(p)
+		  
+		  c13_top_cf%dwt_conv_cflux(t) = &                       ! TKT for TGU
+               c13_top_cf%dwt_conv_cflux(t) + &
                c13_veg_cf%dwt_conv_cflux(p)
        endif
 
@@ -779,16 +848,28 @@ contains
           c14_grc_cf%dwt_conv_cflux(g) = &
                c14_grc_cf%dwt_conv_cflux(g) + &
                c14_veg_cf%dwt_conv_cflux(p)
+			   
+		  c14_top_cf%dwt_conv_cflux(t) = &                       ! TKT for TGU
+               c14_top_cf%dwt_conv_cflux(t) + &
+               c14_veg_cf%dwt_conv_cflux(p)
        endif
 
        veg_nf%dwt_conv_nflux(p) = -conv_nflux(fp)/dt
        grc_nf%dwt_conv_nflux(g) = &
             grc_nf%dwt_conv_nflux(g) + &
             veg_nf%dwt_conv_nflux(p)
+			
+	   top_nf%dwt_conv_nflux(t) = &                              ! TKT for TGU
+            top_nf%dwt_conv_nflux(t) + &
+            veg_nf%dwt_conv_nflux(p)
 
        veg_pf%dwt_conv_pflux(p) = -conv_pflux(fp)/dt
        grc_pf%dwt_conv_pflux(g) = &
             grc_pf%dwt_conv_pflux(g) + &
+            veg_pf%dwt_conv_pflux(p)
+			
+	   top_pf%dwt_conv_pflux(t) = &                              ! TKT for TGU
+            top_pf%dwt_conv_pflux(t) + &
             veg_pf%dwt_conv_pflux(p)
 
     end do

@@ -709,7 +709,7 @@ contains
          call c2g( bounds, &
               begwb(bounds%begc:bounds%endc), &
               tws_month_beg_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+              c2l_scale_type= 'urbanf', l2t_scale_type = 'unity',t2g_scale_type='topounit' )
       endif
 
     end associate
@@ -746,7 +746,7 @@ contains
          call c2g( bounds, &
               endwb(bounds%begc:bounds%endc), &
               tws_month_end_grc(bounds%begg:bounds%endg), &
-              c2l_scale_type= 'urbanf', l2g_scale_type='unity')
+              c2l_scale_type= 'urbanf', l2t_scale_type = 'unity',t2g_scale_type='topounit' )
       else
          tws_month_end_grc(bounds%begg:bounds%endg) = spval
       end if

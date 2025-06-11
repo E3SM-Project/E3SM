@@ -79,7 +79,7 @@ module dynHarvestMod
   ! this flag is accessed only if namelist do_harvest is TRUE
 
   integer, public, parameter    :: wood_harvest_units = 2    ! 1 = area fraction, 2 = carbon
-  real(r8), allocatable, public :: harvest_rates(:,:) ! harvest rates
+  real(r8), allocatable, public :: harvest_rates(:,:,:) ! harvest rates ! TKT changed to 3d
   logical, private              :: do_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
 
@@ -104,7 +104,7 @@ contains
     
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
-    integer :: harvest_shape(1)  ! harvest shape 
+    integer :: harvest_shape(2)  ! harvest shape  ! TKT changed from harvest_shape(1) harvest_shape(2)
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
     
@@ -113,8 +113,8 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
-    harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
+    allocate(harvest_rates(num_harvest_vars,max_topounits,bounds%begg:bounds%endg),stat=ier)  ! TKT added max_topounits
+    harvest_rates(:,:,bounds%begg:bounds%endg) = 0._r8                                        ! TKT added ,:
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
     end if
@@ -125,7 +125,8 @@ contains
     ! Get initial harvest data
     if (use_cn .or. use_fates) then
        num_points = (bounds%endg - bounds%begg + 1)
-       harvest_shape(1) = num_points
+       ! harvest_shape(1) = num_points 
+	   harvest_shape = [max_topounits,num_points]    !TKT changed to indlude topounit dimension
        do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
                dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
@@ -162,7 +163,7 @@ contains
     
     ! !LOCAL VARIABLES:
     integer               :: varnum       ! counter for harvest variables
-    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
+    real(r8), allocatable :: this_data(:,:) ! data for a single harvest variable ! TKT changed to 2d
     character(len=*), parameter :: subname = 'dynHarvest_interp_harvest_types'
     !-----------------------------------------------------------------------
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
@@ -170,7 +171,7 @@ contains
     ! input harvest data for current year are stored in year+1 in the file
     call dynHarvest_file%time_info%set_current_year_get_year(1)
     if (use_cn .or. use_fates) then
-       harvest_rates(1:num_harvest_vars,bounds%begg:bounds%endg) = 0._r8
+       harvest_rates(1:num_harvest_vars,bounds%begg:bounds%endg, max_topounits) = 0._r8
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
@@ -181,10 +182,10 @@ contains
           ! year of the file for all years past the end of this specified time series.
           do_harvest = .true.
           ! Right now we don't account for the topounit in plant harvest
-          allocate(this_data(bounds%begg:bounds%endg))
+          allocate(this_data(bounds%begg:bounds%endg,max_topounits))   ! TKT introduced max_topounits
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
-             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+             harvest_rates(varnum,bounds%begg:bounds%endg,:) = this_data(bounds%begg:bounds%endg,:)  ! TKT changed to 2d
           end do
           deallocate(this_data)
        end if
@@ -383,7 +384,7 @@ contains
          if (do_harvest) then
             am = 0._r8
             do varnum = 1, num_harvest_vars
-               am = am + harvest_rates(varnum,g)
+               am = am + harvest_rates(varnum,g,ti)  ! TKT added ti
             end do
             m  = am/(days_per_year * secspday)
          else

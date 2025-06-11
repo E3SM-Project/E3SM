@@ -54,8 +54,11 @@ module elm_instMod
   use GridcellDataType           , only : grc_cf, c13_grc_cf, c14_grc_cf
   use GridcellDataType           , only : grc_ns, grc_nf
   use GridcellDataType           , only : grc_ps, grc_pf
+  use TopounitDataType           , only : top_ps, top_pf, top_ns, top_nf, top_cf, top_cs, top_es, top_ef, top_ws, top_wf
+  use TopounitDataType           , only : c13_top_cs, c14_top_cs, c13_top_cf, c14_top_cf
   use GridcellType               , only : grc_pp
   use LandunitType               , only : lun_pp
+  use TopounitType               , only : top_pp
   use LandunitDataType           , only : lun_es, lun_ef, lun_ws
   use ColumnType                 , only : col_pp
   use ColumnDataType             , only : col_es, col_ef, col_ws, col_wf
@@ -153,11 +156,13 @@ contains
     integer               :: begp, endp
     integer               :: begc, endc
     integer               :: begl, endl
+	integer               :: begt, endt
     integer               :: begg, endg
 
     begp = bounds_proc%begp; endp = bounds_proc%endp
     begc = bounds_proc%begc; endc = bounds_proc%endc
     begl = bounds_proc%begl; endl = bounds_proc%endl
+	begt = bounds_proc%begt; endt = bounds_proc%endt
     begg = bounds_proc%begg; endg = bounds_proc%endg
 
 
@@ -172,15 +177,18 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call grc_cs%Init(begg, endg, carbon_type='c12')
+	   call top_cs%Init(begt, endt, carbon_type='c12')
        call col_cs%Init(begc, endc, carbon_type='c12', ratio=1._r8)
 
        if (use_c13) then
           call c13_grc_cs%Init(begg, endg,carbon_type='c13')
+		  call c13_top_cs%Init(begt, endt,carbon_type='c13')
           call c13_col_cs%Init(begc, endc, carbon_type='c13', ratio=c13ratio, &
                c12_carbonstate_vars=col_cs)
        end if
        if (use_c14) then
           call c14_grc_cs%Init(begg, endg,carbon_type='c14')
+		  call c14_top_cs%Init(begt, endt,carbon_type='c14')
           call c14_col_cs%Init(begc, endc, carbon_type='c14', ratio=c14ratio, &
                c12_carbonstate_vars=col_cs)
        end if
@@ -190,27 +198,34 @@ contains
        ! associate statements (nag compiler complains otherwise)
 
        call grc_cf%Init(begg, endg, carbon_type='c12')
+	   call top_cf%Init(begt, endt, carbon_type='c12')
        call col_cf%Init(begc, endc, carbon_type='c12')
 
        if (use_c13) then
           call c13_grc_cf%Init(begg, endg, carbon_type='c13')
+		  call c13_top_cf%Init(begt, endt, carbon_type='c13')
           call c13_col_cf%Init(begc, endc, carbon_type='c13')
        end if
        if (use_c14) then
           call c14_grc_cf%Init(begg, endg, carbon_type='c14')
+		  call c14_top_cf%Init(begt, endt, carbon_type='c14')
           call c14_col_cf%Init(begc, endc, carbon_type='c14')
        end if
 
        call grc_ns%Init(begg, endg)
+	   call top_ns%Init(begt, endt)
        call col_ns%Init(begc, endc, col_cs)
 
        call grc_nf%Init(begg, endg)
+	   call top_nf%Init(begt, endt)
        call col_nf%Init(begc, endc)
 
        call grc_ps%Init(begg, endg)
+	   call top_ps%Init(begt, endt)
        call col_ps%Init(begc, endc, col_cs)
 
        call grc_pf%Init(begg, endg)
+	   call top_pf%Init(begt, endt)
        call col_pf%Init(begc, endc)
 
        if(use_betr)then
@@ -405,6 +420,7 @@ contains
     ! Initialization of public data types
 
     call grc_es%Init(bounds_proc%begg_all, bounds_proc%endg_all)
+	call top_es%Init(bounds_proc%begt_all, bounds_proc%endt_all)
     call lun_es%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_es%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_es%Init(bounds_proc%begp_all, bounds_proc%endp_all)
@@ -420,6 +436,7 @@ contains
          col_es%t_soisno(begc:endc, -nlevsno+1:) )
 
     call grc_ws%Init(bounds_proc%begg_all, bounds_proc%endg_all)
+	call top_ws%Init(bounds_proc%begt_all, bounds_proc%endt_all)
     call lun_ws%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, &
          h2osno_col(begc:endc),                    &
@@ -430,6 +447,7 @@ contains
     call waterflux_vars%init(bounds_proc)
 
     call grc_wf%Init(bounds_proc%begg_all, bounds_proc%endg_all, bounds_proc)
+	call top_wf%Init(bounds_proc%begt_all, bounds_proc%endt_all, bounds_proc)
     call col_wf%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_wf%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
@@ -440,6 +458,7 @@ contains
     call energyflux_vars%init(bounds_proc, col_es%t_grnd(begc:endc))
 
     call grc_ef%Init(bounds_proc%begg_all, bounds_proc%endg_all)
+	call top_ef%Init(bounds_proc%begt_all, bounds_proc%endt_all)
     call lun_ef%Init(bounds_proc%begl_all, bounds_proc%endl_all)
     call col_ef%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_ef%Init(bounds_proc%begp_all, bounds_proc%endp_all)

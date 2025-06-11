@@ -64,6 +64,23 @@ module dynPatchStateUpdaterMod
      ! (dwt / pwtgcell_new) from last call to set_new_weights; only valid for growing
      ! patches
      real(r8), pointer :: growing_new_fraction(:) => null()
+	 
+	 !! TKT for TGU levels
+	 !real(r8), pointer :: pwttgu_old(:) => null() ! old patch weights on the gridcell
+     !real(r8), pointer :: pwttgu_new(:) => null()! new patch weights on the gridcell
+
+     !real(r8), pointer :: cwttgu_old(:) => null()! old column weights on the gridcell
+
+     !! (pwtgcell_new - pwtgcell_old) from last call to set_new_weights
+     !real(r8), pointer :: dwttgu(:) => null()
+
+     !! (pwtgcell_old / pwtgcell_new) from last call to set_new_weights; only valid for
+     !! growing patches
+     !real(r8), pointer :: growing_old_fraction_tgu(:) => null()
+
+     !! (dwt / pwtgcell_new) from last call to set_new_weights; only valid for growing
+     !! patches
+     !real(r8), pointer :: growing_new_fraction_tgu(:) => null()
 
    contains
      ! Public routines
@@ -140,6 +157,20 @@ contains
     this%growing_old_fraction(:) = spval
     allocate(this%growing_new_fraction(begp:endp))
     this%growing_new_fraction(:) = spval
+	
+	!! TKT for TGU level
+	!allocate(this%pwttgu_old(begp:endp))
+    !this%pwttgu_old(:) = spval
+    !allocate(this%pwttgu_new(begp:endp))
+    !this%pwttgu_new(:) = spval
+    !allocate(this%cwttgu_old(begc:endc))
+    !this%cwttgu_old(:) = spval
+    !allocate(this%dwttgu(begp:endp))
+    !this%dwttgu(:) = spval
+    !allocate(this%growing_old_fraction_tgu(begp:endp))
+    !this%growing_old_fraction_tgu(:) = spval
+    !allocate(this%growing_new_fraction_tgu(begp:endp))
+    !this%growing_new_fraction_tgu(:) = spval
 
   end function constructor
 
@@ -168,8 +199,12 @@ contains
 
     do p = bounds%begp, bounds%endp
        c = veg_pp%column(p)
-       this%pwtgcell_old(p) = veg_pp%wtgcell(p)
-       this%cwtgcell_old(c) = col_pp%wtgcell(c)
+       this%pwtgcell_old(p) = veg_pp%wttopounit(p) ! TKT from veg_pp%wtgcell(p) to veg_pp%wttopounit(p)
+       this%cwtgcell_old(c) = col_pp%wttopounit(c) ! TKT from col_pp%wtgcell(c) to col_pp%wttopounit(c)
+	   
+	   !! TKT for TGU level
+	   !this%pwttgu_old(p) = veg_pp%wttopounit(p)
+       !this%cwttgu_old(c) = col_pp%wttopounit(c)
     end do
 
   end subroutine set_old_patch_weights
@@ -193,7 +228,7 @@ contains
     !-----------------------------------------------------------------------
 
     do p = bounds%begp, bounds%endp
-       this%pwtgcell_new(p) = veg_pp%wtgcell(p)
+       this%pwtgcell_new(p) = veg_pp%wttopounit(p) ! TKT from veg_pp%wtgcell(p) to veg_pp%wttopounit(p)
        this%dwt(p)          = this%pwtgcell_new(p) - this%pwtgcell_old(p)
        if (this%dwt(p) > 0._r8) then
           this%growing_old_fraction(p) = this%pwtgcell_old(p)/ this%pwtgcell_new(p)
@@ -205,6 +240,20 @@ contains
           this%growing_old_fraction(p) = 1._r8
           this%growing_new_fraction(p) = 0._r8
        end if
+	   
+	   !! TKT for TGU level
+	   !this%pwttgu_new(p) = veg_pp%wttopounit(p)
+       !this%dwttgu(p)          = this%pwttgu_new(p) - this%pwttgu_old(p)
+       !if (this%dwttgu(p) > 0._r8) then
+       !   this%growing_old_fraction_tgu(p) = this%pwttgu_old(p)/ this%pwttgu_new(p)
+       !   this%growing_new_fraction_tgu(p) = this%dwttgu(p)         / this%pwttgu_new(p)
+       !else
+       !   ! These values are unused in this case, but set them to something reasonable for
+       !   ! safety. (We could set them to NaN, but that requires a more expensive
+       !   ! subroutine call, using the shr_infnan_mod infrastructure.)
+       !   this%growing_old_fraction_tgu(p) = 1._r8
+       !   this%growing_new_fraction_tgu(p) = 0._r8
+       !end if
     end do
 
   end subroutine set_new_patch_weights
@@ -246,7 +295,7 @@ contains
     ! flux_out_col_area or flux_out_grc_area, but it is okay to provide both, or to
     ! provide neither if you don't need to track the flux out from this state variable.
     real(r8), intent(inout), optional :: flux_out_grc_area
-
+	
     ! If provided, this gives some 'seed' amount added to the state in the area into
     ! which each growing patch grows. The value is ignored for patches that are either
     ! constant or shrinking in area.
@@ -286,6 +335,28 @@ contains
               var * (this%dwt(p) / this%cwtgcell_old(c))
       end if
     end if
+	
+	!! TKT for TGU level
+	!if (this%dwttgu(p) > 0._r8) then
+    !  var = var * this%growing_old_fraction_tgu(p)
+    !  if (present(seed)) then
+    !     var = var + seed * this%growing_new_fraction_tgu(p)
+    !     if (present(seed_addition)) then
+    !        seed_addition = seed_addition + seed * this%dwttgu(p)
+    !     end if
+    !  end if
+
+    !else if (this%dwttgu(p) < 0._r8) then
+    !  if (present(flux_out_grc_area)) then
+    !     flux_out_grc_area = flux_out_grc_area + var * this%dwttgu(p)
+    !  end if
+    !  if (present(flux_out_col_area)) then
+    !     ! No need to check for divide by 0 here: If dwt < 0 then we must have had
+    !     ! cwtgcell_old > 0.
+    !     flux_out_col_area = flux_out_col_area + &
+    !          var * (this%dwttgu(p) / this%cwttgu_old(c))
+    !  end if
+    !end if
 
   end subroutine update_patch_state
 

@@ -88,6 +88,8 @@ contains
     curc = 0
     curl = 0
     do p = bounds%begp,bounds%endp
+	   ! TKT debugging comments
+	   write(iulog,*) 'TKT: p, curc = ', p, curc
        if (veg_pp%column(p) /= curc) then
           curc = veg_pp%column(p)
           if (curc < bounds%begc .or. curc > bounds%endc) then
@@ -112,6 +114,8 @@ contains
 
     curl = 0
     do c = bounds%begc,bounds%endc
+	   ! TKT debugging comments
+	   write(iulog,*) 'TKT: c, curl = ', c, curl
        if (col_pp%landunit(c) /= curl) then
           curl = col_pp%landunit(c)
           if (curl < bounds%begl .or. curl > bounds%endl) then
@@ -128,6 +132,8 @@ contains
     ! previous monotonic down pointers
     curg = 0
     do t = bounds%begt,bounds%endt
+	   ! TKT debugging comments
+	   write(iulog,*) 'TKT: t, curg = ', t, curg
        if (top_pp%gridcell(t) /= curg) then
           curg = top_pp%gridcell(t)
           if (curg < bounds%begg .or. curg > bounds%endg) then
@@ -138,6 +144,8 @@ contains
        endif
        grc_pp%topf(curg) = t
        grc_pp%ntopounits(curg) = grc_pp%topf(curg) - grc_pp%topi(curg) + 1
+	   ! TKT debugging comments
+	   write(iulog,*) 'TKT: ntopounits, grc_pp%topi(curg), grc_pp%topf(curg)  = ', grc_pp%ntopounits(curg), grc_pp%topi(curg), grc_pp%topf(curg)
     enddo
 
     ! Determine landunit_indices: indices into landunit-level arrays for each grid cell.
@@ -145,9 +153,12 @@ contains
     ! Preliminary implementation of topounits: leave this unchanged, but will only work 
     ! for max_topounits = 1
     grc_pp%landunit_indices(:,bounds%begg:bounds%endg) = ispval
+	write(iulog,*) 'TKT: bounds%begg, bounds%endg, size(top_pp%landunit_indices) = ', bounds%begg, bounds%endg, size(grc_pp%landunit_indices) ! TKT
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
        curg = lun_pp%gridcell(l)
+	   ! TKT debugging comments
+	   write(iulog,*) 'TKT: l, ltype, curg = ', l, ltype, curg
        if (curg < bounds%begg .or. curg > bounds%endg) then
           write(iulog,*) 'elm_ptrs_compdown ERROR: gridcell landunit_indices ', l,curg,bounds%begg,bounds%endg
           call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
@@ -168,10 +179,13 @@ contains
     ! Note that landunits not present in a given topounit are set to ispval.
     curt = 0
     top_pp%landunit_indices(:,bounds%begt:bounds%endt) = ispval
+	write(iulog,*) 'TKT: bounds%begt, bounds%endt, size(top_pp%landunit_indices) = ', bounds%begt, bounds%endt, size(top_pp%landunit_indices) ! TKT
     do l = bounds%begl,bounds%endl
        ltype = lun_pp%itype(l)
        curt = lun_pp%topounit(l)
-       if (curt < bounds%begt .or. curg > bounds%endt) then
+	   ! TKT debugging comments
+	   write(iulog,*) 'TKT: l, ltype, curt = ', l, ltype, curt
+       if (curt < bounds%begt .or. curt > bounds%endt) then ! TKT changed curg > bounds%endt to curt > bounds%endt
           write(iulog,*) 'elm_ptrs_compdown ERROR: topounit landunit_indices ', l,curt,bounds%begt,bounds%endt
           call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
@@ -226,10 +240,24 @@ contains
     if (masterproc) write(iulog,*) '---elm_ptrs_check:'
 
     !--- check index ranges ---
+	error = .false.
+	write(iulog,*) 'TKT: begg, endg = ', begg, endg !TKT
+    do g = begg, endg
+       do ltype = 1, max_lunit
+          l = grc_pp%landunit_indices(ltype, g)
+		  write(iulog,*) 'TKT: l, ltype, g = ', l, ltype, g
+          if (l /= ispval) then
+             if (l < begl .or. l > endl) error = .true.
+          end if
+       end do
+    end do
+	
     error = .false.
+	write(iulog,*) 'TKT: begt, endt = ', begt, endt !TKT
     do t = begt, endt
        do ltype = 1, max_lunit
           l = top_pp%landunit_indices(ltype, t)
+		  write(iulog,*) 'TKT: l, ltype, t = ', l, ltype, t
           if (l /= ispval) then
              if (l < begl .or. l > endl) error = .true.
           end if
@@ -387,7 +415,7 @@ contains
   end subroutine elm_ptrs_check
 
   !-----------------------------------------------------------------------
-  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp,topo_ind,is_tpu_active)
+  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp,topo_ind,grc_lat,grc_lon,is_tpu_active)
     !
     ! !DESCRIPTION:
     ! Add an entry in the topounit-level arrays. ti gives the index of the last topounit
@@ -399,7 +427,7 @@ contains
     integer  , intent(in)    :: gi           ! gridcell index on which this topounit should be placed 
     real(r8) , intent(in)    :: wtgcell      ! weight of the topounit relative to the gridcell
     real(r8) , intent(in)    :: elv          ! topounit elevation
-    real(r8) , intent(in)    :: slp          ! topounit slope
+    real(r8) , intent(in)    :: slp, grc_lat, grc_lon          ! topounit slope, lat and lon
     integer , intent(in)    :: asp           ! topounit aspect
     integer , intent(in)    :: topo_ind      ! topounit index in the grid
     logical , intent(in)    :: is_tpu_active
@@ -411,6 +439,8 @@ contains
     ti = ti + 1
 
     top_pp%gridcell(ti) = gi
+	top_pp%grc_latdeg(ti) = grc_lat
+	top_pp%grc_londeg(ti) = grc_lon
     top_pp%wtgcell(ti) = wtgcell
     top_pp%elevation(ti) = elv
     top_pp%slope(ti) = slp

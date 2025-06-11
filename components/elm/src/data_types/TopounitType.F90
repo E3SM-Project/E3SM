@@ -22,9 +22,11 @@ module TopounitType
   type, public :: topounit_physical_properties
 
     ! indices and weights for higher subgrid level (gridcell)
-    integer , pointer :: gridcell   (:) => null() ! index into gridcell level quantities
-    integer , pointer :: topo_grc_ind   (:) => null() ! index of topounit in the grid
-    real(r8), pointer :: wtgcell    (:) => null() ! weight (relative to gridcell)
+    integer , pointer :: gridcell      (:) => null() ! index into gridcell level quantities
+	real(r8), pointer :: grc_latdeg    (:) => null() ! latitude (degrees) of the gridcell
+    real(r8), pointer :: grc_londeg    (:) => null() ! longitude (degrees) of the gridcell
+    integer , pointer :: topo_grc_ind  (:) => null() ! index of topounit in the grid
+    real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell)
 
     ! Starting and ending indices for all subgrid types below the landunit level
     integer , pointer :: lndi       (:) => null() ! beginning landunit index for each topounit
@@ -72,6 +74,8 @@ module TopounitType
     integer, intent(in) :: endt   ! ending topographic unit index
 
     allocate(this%gridcell  (begt:endt)) ; this%gridcell  (:) = ispval
+	allocate(this%grc_latdeg   (begt:endt)) ; this%grc_latdeg   (:) = spval
+	allocate(this%grc_londeg   (begt:endt)) ; this%grc_londeg   (:) = spval	
     allocate(this%topo_grc_ind  (begt:endt)) ; this%topo_grc_ind  (:) = ispval
     allocate(this%wtgcell   (begt:endt)) ; this%wtgcell   (:) = spval
     allocate(this%lndi      (begt:endt)) ; this%lndi      (:) = ispval
@@ -103,6 +107,8 @@ module TopounitType
     class(topounit_physical_properties) :: this
 
     deallocate(this%gridcell    )
+	deallocate(this%grc_latdeg     )
+	deallocate(this%grc_londeg     )
     deallocate(this%topo_grc_ind    )
     deallocate(this%wtgcell     )
     deallocate(this%lndi        )

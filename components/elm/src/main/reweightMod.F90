@@ -48,7 +48,7 @@ contains
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
 
     call set_active(bounds)
-    call check_weights(bounds, active_only=.false.)
+    call check_weights(bounds, active_only=.false.) 
     call check_weights(bounds, active_only=.true.)
     call setFilters(bounds, icemask_grc(bounds%begg:bounds%endg))
 

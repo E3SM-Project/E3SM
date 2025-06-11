@@ -146,7 +146,7 @@ contains
     ! !LOCAL VARIABLES:
     !-----------------------------------------------------------------------
 
-    if (col_pp%wtgcell(c_new) > 0._r8) then
+    if (col_pp%wttopounit(c_new) > 0._r8) then  ! TKT changed from col_pp%wtgcell to col_pp%wttopounit
 
        write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
        write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'

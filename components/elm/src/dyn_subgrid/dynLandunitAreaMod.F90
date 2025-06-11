@@ -67,10 +67,15 @@ contains
          else
             landunit_weights(ltype) = lun_pp%wttopounit(l)
          end if
+		 ! TKT debugging comments:
+!		 write(iulog,*) trim('update_landunit_weights'),' TKT ==> current landunit_weights of ltype ',l,' in topounit ',t,' is: ',landunit_weights(ltype)
        end do
 
        ! Adjust weights so they sum to 100%
        call update_landunit_weights_one_topounit(landunit_weights)
+	   
+	   ! TKT debugging comments:
+!		write(iulog,*) trim('update_landunit_weights_one_topounit '),'TKT ==> updated landunit_weights in topounit ',t,' are: ',landunit_weights
 
        ! Put the new landunit weights back into lun_pp%wttopounit
        do ltype = 1, max_lunit

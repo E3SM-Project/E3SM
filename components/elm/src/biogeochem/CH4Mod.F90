@@ -1311,7 +1311,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use subgridAveMod      , only : p2c, c2g
+    use subgridAveMod      , only : p2c, c2g, tgu_level
     use elm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
     use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat
@@ -1902,15 +1902,15 @@ contains
       ! Now average up to gridcell for fluxes
       call c2g( bounds, &
            ch4_oxid_tot(begc:endc), ch4co2f(begg:endg),        &
-           c2l_scale_type= 0, l2g_scale_type=0 )
+           c2l_scale_type= 0, l2t_scale_type=0,t2g_scale_type=tgu_level )
 
       call c2g( bounds, &
            ch4_prod_tot(begc:endc), ch4prodg(begg:endg),       &
-           c2l_scale_type= 0, l2g_scale_type=0 )
+           c2l_scale_type= 0, l2t_scale_type=0,t2g_scale_type=tgu_level )
 
       call c2g( bounds, &
            nem_col(begc:endc), nem_grc(begg:endg),               &
-           c2l_scale_type= 0, l2g_scale_type=0 )
+           c2l_scale_type= 0, l2t_scale_type=0,t2g_scale_type=tgu_level )
 
     end associate
 

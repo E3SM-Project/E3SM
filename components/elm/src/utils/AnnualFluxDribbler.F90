@@ -62,8 +62,8 @@ module AnnualFluxDribbler
   use abortutils       , only : endrun
   use shr_kind_mod     , only : r8 => shr_kind_r8
   use decompMod        , only : bounds_type, get_beg, get_end
-  use decompMod        , only : BOUNDS_SUBGRID_GRIDCELL, BOUNDS_SUBGRID_PATCH
-  use elm_varcon       , only : secspday, nameg, namep
+  use decompMod        , only : BOUNDS_SUBGRID_GRIDCELL, BOUNDS_SUBGRID_TOPOUNIT, BOUNDS_SUBGRID_PATCH
+  use elm_varcon       , only : secspday, nameg, namep, namet
   use elm_time_manager , only : get_days_per_year, get_step_size_real, is_beg_curr_year
   use elm_time_manager , only : get_curr_yearfrac, get_prev_yearfrac, get_prev_date
   use elm_time_manager , only : is_first_step
@@ -122,6 +122,7 @@ module AnnualFluxDribbler
 
   public :: annual_flux_dribbler_gridcell  ! Creates an annual_flux_dribbler_type object at the gridcell-level
   public :: annual_flux_dribbler_patch     ! Creates an annual_flux_dribbler_type object at the patch-level
+  public :: annual_flux_dribbler_topounit
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -175,6 +176,44 @@ contains
 
   end function annual_flux_dribbler_gridcell
 
+  !-----------------------------------------------------------------------
+  function annual_flux_dribbler_topounit(bounds, name, units, allows_non_annual_delta) &
+       result(this)
+    !
+    ! !DESCRIPTION:
+    ! Creates an annual_flux_dribbler_type object at the topounit-level
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    type(annual_flux_dribbler_type) :: this   ! function result
+    type(bounds_type), intent(in)   :: bounds
+    character(len=*) , intent(in)   :: name   ! name of this object, used for i/o
+    character(len=*) , intent(in)   :: units  ! units metadata - should be state units, not flux (i.e., NOT per-second)
+
+    ! If allows_non_annual_delta is .false., then an error check is performed for each
+    ! call to set_curr_delta, ensuring that the delta is 0 at all times other than the
+    ! first time step of the year. This is just provided as a convenient sanity check -
+    ! to ensure that the code is behaving as expected. (However, non-zero deltas are
+    ! always allowed on the first step of the run.)
+    !
+    ! If allows_non_annual_delta is not provided, it is assumed to be .true.
+    logical, intent(in), optional :: allows_non_annual_delta
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'annual_flux_dribbler_topounit'
+    !-----------------------------------------------------------------------
+
+    this%dim1name = 'topounit'
+    this%name_subgrid = namet
+    this%bounds_subgrid_level = BOUNDS_SUBGRID_TOPOUNIT
+
+    call this%allocate_and_initialize_data(bounds)
+    call this%set_metadata(name, units, allows_non_annual_delta)
+
+  end function annual_flux_dribbler_topounit
+  
   !-----------------------------------------------------------------------
   function annual_flux_dribbler_patch(bounds, name, units, allows_non_annual_delta) &
        result(this)
