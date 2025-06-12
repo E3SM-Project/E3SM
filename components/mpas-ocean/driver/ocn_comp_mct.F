@@ -185,6 +185,7 @@ contains
 
     type (mpas_pool_type), pointer :: meshPool, statePool, &
                                       forcingPool, &
+                                      ecosysFrazilForcingPool, &
                                       averagePool, scratchPool
 
     logical :: exists
@@ -221,6 +222,7 @@ contains
     character(len=StrKIND), pointer :: tempCharConfig
 
     logical, pointer :: config_use_ecosysTracers
+    logical, pointer :: config_use_ecosys_frazil_tendencies
     logical, pointer :: config_use_CFCTracers
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
@@ -752,6 +754,8 @@ contains
     call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
     ! Build forcing arrays.
+    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+    call mpas_pool_get_config(domain % configs, 'config_use_ecosys_frazil_tendencies', config_use_ecosys_frazil_tendencies)
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -761,6 +765,11 @@ contains
 
         call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
         call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
+        if (config_use_ecosysTracers .and. config_use_ecosys_frazil_tendencies) then
+           call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
+           call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
+              ecosysFrazilForcingPool,ierr)
+        end if
         call mpas_timer_start("land_ice_build_arrays", .false.)
         call ocn_surface_land_ice_fluxes_build_arrays(meshPool, forcingPool, scratchPool, &
                                                       statePool, err=ierr)
@@ -779,7 +788,6 @@ contains
     call mpas_timer_stop('io_shortwave')
 
     ! read initial data required for ecosys forcing
-    call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
     if (config_use_ecosysTracers) then
         call mpas_timer_start('io_ecosys',.false.)
         call ocn_get_ecosysData(domain_ptr % streamManager, domain, domain % clock, .true.)
@@ -1006,6 +1014,7 @@ contains
       type (block_type), pointer :: block_ptr
 
       type (mpas_pool_type), pointer :: meshPool, statePool, forcingPool, averagePool, scratchPool
+      type (mpas_pool_type), pointer :: ecosysFrazilForcingPool
 
       type (MPAS_Time_Type) :: currTime
       type (domain_type), pointer :: domain_ptr
@@ -1015,6 +1024,7 @@ contains
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
+      logical, pointer :: config_use_ecosys_frazil_tendencies
       logical, pointer :: config_use_CFCTracers
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
@@ -1113,6 +1123,8 @@ contains
          block_ptr => block_ptr % next
       end do
 
+      call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+      call mpas_pool_get_config(domain % configs, 'config_use_ecosys_frazil_tendencies', config_use_ecosys_frazil_tendencies)
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
       ! This integration loop continues for a single coupling interval.
@@ -1131,6 +1143,11 @@ contains
 
             call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
+            if (config_use_ecosysTracers .and. config_use_ecosys_frazil_tendencies) then
+               call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
+               call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
+                  ecosysFrazilForcingPool, ierr)
+            end if
             call mpas_timer_start("land_ice_build_arrays", .false.)
             call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                           forcingPool, scratchPool, statePool, ierr)
@@ -1168,7 +1185,6 @@ contains
          call mpas_timer_stop('io_shortwave')
 
          ! read next time level data required for ecosys forcing
-         call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
          if (config_use_ecosysTracers) then
            call mpas_timer_start('io_ecosys',.false.)
            call ocn_get_ecosysData(domain % streamManager, domain, domain_ptr % clock, .false.)
