@@ -381,6 +381,9 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
   const auto& sfc_flux_sw_net      = get_field_in("sfc_flux_sw_net" ).get_view<const Real*>();
   const auto& sfc_flux_lw_dn       = get_field_in("sfc_flux_lw_dn"  ).get_view<const Real*>();
 
+  const auto& hyam                 = m_grid->get_geometry_data("hyam").get_view<const Real*>();
+  const auto& hybm                 = m_grid->get_geometry_data("hybm").get_view<const Real*>();
+
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
@@ -487,7 +490,13 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
     }
 
     if (export_source(idx_Sa_ptem)==FROM_MODEL) {
-      Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
+      // For consistent flux calculations within the component coupler we need to provide
+      // theta based on an exner function that evaluates to 1 at the bottom interface.
+      // To accomplish this we can calculate theta using the "hybrid reference pressure"
+      // of the lowest mid-point level. This is calculated similar to how we get pressure
+      // from the hybrid coefficients, except we replace the sfc pressure with P0.
+      const auto hybrid_ref_pmid_bot = PC::P0 * ( hybm(num_levs-1) + hyam(num_levs-1) );
+      Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), hybrid_ref_pmid_bot);
     }
 
     if (export_source(idx_Sa_pbot)==FROM_MODEL) {
