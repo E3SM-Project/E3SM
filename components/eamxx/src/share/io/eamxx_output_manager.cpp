@@ -497,9 +497,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     // If we write output, reset local views
-    if (is_output_step) {
+    if (is_output_step and m_avg_type!=OutputAvgType::Instant) {
       for (auto& it : m_output_streams) {
-        it->reset_dev_views();
+        it->reset_scorpio_fields();
       }
     }
 

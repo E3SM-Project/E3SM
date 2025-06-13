@@ -401,9 +401,11 @@ setup_horiz_remappers (const RemapData& data)
         "  - iop_lon: " << data.iop_lon << "\n");
     // Create grid for IO and load lat/lon field in IO grid from any data file
     auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
-    auto lat_f = data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout());
-    auto lon_f = data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout());
-    AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,{lat_f,lon_f});
+    std::vector<Field> latlon = {
+      data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout()),
+      data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout())
+    };
+    AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,latlon);
     latlon_reader.read_variables();
 
     // Create IOP remappers
@@ -497,13 +499,16 @@ setup_vert_remapper (const RemapData& data)
     auto layout = m_grid_after_hremap->get_vertical_layout(true);
     auto nondim = ekat::units::Units::nondimensional();
     DataType real_t = DataType::RealType;
-    auto hyam = m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE);
-    auto hybm = m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE);
-    AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,{hyam,hybm},true);
+    std::vector<Field> fields = {
+      m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE),
+      m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE)
+    };
+    AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
     hvcoord_reader.read_variables();
   } else if (m_vr_type==Static1D) {
     // Can load p now, since it's static
-    AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,{p_data.alias(data.pname)},true);
+    std::vector<Field> fields = {p_data.alias(data.pname)};
+    AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
     p_data_reader.read_variables();
   }
   vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);

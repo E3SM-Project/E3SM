@@ -54,9 +54,9 @@ struct CombineViewsHelper {
   void operator() (int i) const {
     if constexpr (use_fill)
       if constexpr (N==0)
-        combine_and_fill<CM>(rhs(),lhs(),fill_val,alpha,beta);
+        fill_aware_combine<CM>(rhs(),lhs(),fill_val,alpha,beta);
       else
-        combine_and_fill<CM>(rhs(i),lhs(i),fill_val,alpha,beta);
+        fill_aware_combine<CM>(rhs(i),lhs(i),fill_val,alpha,beta);
     else
       if constexpr (N==0)
         combine<CM>(rhs(),lhs(),alpha,beta);
@@ -67,7 +67,7 @@ struct CombineViewsHelper {
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j) const {
     if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j),lhs(i,j),fill_val,alpha,beta);
+      fill_aware_combine<CM>(rhs(i,j),lhs(i,j),fill_val,alpha,beta);
     else
       combine<CM>(rhs(i,j),lhs(i,j),alpha,beta);
   }
@@ -75,7 +75,7 @@ struct CombineViewsHelper {
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k) const {
     if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k),lhs(i,j,k),fill_val,alpha,beta);
+      fill_aware_combine<CM>(rhs(i,j,k),lhs(i,j,k),fill_val,alpha,beta);
     else
       combine<CM>(rhs(i,j,k),lhs(i,j,k),alpha,beta);
   }
@@ -83,7 +83,7 @@ struct CombineViewsHelper {
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l) const {
     if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k,l),lhs(i,j,k,l),fill_val,alpha,beta);
+      fill_aware_combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),fill_val,alpha,beta);
     else
       combine<CM>(rhs(i,j,k,l),lhs(i,j,k,l),alpha,beta);
   }
@@ -91,7 +91,7 @@ struct CombineViewsHelper {
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m) const {
     if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),fill_val,alpha,beta);
+      fill_aware_combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),fill_val,alpha,beta);
     else
       combine<CM>(rhs(i,j,k,l,m),lhs(i,j,k,l,m),alpha,beta);
   }
@@ -99,7 +99,7 @@ struct CombineViewsHelper {
   KOKKOS_INLINE_FUNCTION
   void operator() (int i, int j, int k, int l, int m, int n) const {
     if constexpr (use_fill)
-      combine_and_fill<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),fill_val,alpha,beta);
+      fill_aware_combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),fill_val,alpha,beta);
     else
       combine<CM>(rhs(i,j,k,l,m,n),lhs(i,j,k,l,m,n),alpha,beta);
   }

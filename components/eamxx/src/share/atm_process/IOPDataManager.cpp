@@ -311,9 +311,11 @@ setup_io_info(const std::string& file_name,
     auto grid = create_point_grid(grid_name,nc_file_ncols,nlevs,m_comm);
 
     // Read lat/lon fields from dile
-    auto lat = grid->create_geometry_data("lat",grid->get_2d_scalar_layout());
-    auto lon = grid->create_geometry_data("lon",grid->get_2d_scalar_layout());
-    AtmosphereInput latlon_reader (file_name,grid,{lat,lon});
+    std::vector<Field> latlon = {
+      grid->create_geometry_data("lat",grid->get_2d_scalar_layout()),
+      grid->create_geometry_data("lon",grid->get_2d_scalar_layout())
+    };
+    AtmosphereInput latlon_reader (file_name,grid,latlon);
     latlon_reader.read_variables();
 
     m_io_grids[grid_name] = grid;

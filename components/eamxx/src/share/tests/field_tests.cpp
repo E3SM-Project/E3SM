@@ -512,18 +512,9 @@ TEST_CASE("field_mgr", "") {
   REQUIRE_THROWS(field_mgr.get_field("field1", "grid3")); // Wrong grid
 
   // Check that the groups names are in the header. While at it, make sure that case insensitive works fine.
-  auto has_group = [](const ekat::WeakPtrSet<const FieldGroupInfo>& groups,
-                      const std::string& name)->bool {
-    for (auto it : groups) {
-      if (it.lock()->m_group_name==name) {
-        return true;
-      }
-    }
-    return false;
-  };
-  REQUIRE (has_group(f2_1.get_header().get_tracking().get_groups_info(),"gRouP_1"));
-  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_2"));
-  REQUIRE (has_group(f1_2.get_header().get_tracking().get_groups_info(),"Group_1"));
+  REQUIRE (ekat::contains(f2_1.get_header().get_tracking().get_groups_names(),"gRouP_1"));
+  REQUIRE (ekat::contains(f1_2.get_header().get_tracking().get_groups_names(),"Group_2"));
+  REQUIRE (ekat::contains(f1_2.get_header().get_tracking().get_groups_names(),"Group_1"));
 
   // Check that correct grids requested groups
   REQUIRE (field_mgr.has_group("group_1", "grid1"));
@@ -877,6 +868,42 @@ TEST_CASE ("update") {
 
       f2.scale(f3);
       REQUIRE (views_are_equal(f1, f2));
+    }
+  }
+
+  SECTION ("max-min") {
+    SECTION ("real") {
+      Field one = f_real.clone();
+      Field two = f_real.clone();
+      one.deep_copy(1.0);
+      two.deep_copy(2.0);
+
+      Field f1 = one.clone();
+      Field f2 = two.clone();
+      f1.max(f2);
+      REQUIRE (views_are_equal(f1, f2));
+
+      Field f3 = one.clone();
+      Field f4 = two.clone();
+      f4.min(f3);
+      REQUIRE (views_are_equal(f3, f4));
+    }
+
+    SECTION ("int") {
+      Field one = f_int.clone();
+      Field two = f_int.clone();
+      one.deep_copy(1);
+      two.deep_copy(2);
+
+      Field f1 = one.clone();
+      Field f2 = two.clone();
+      f1.max(f2);
+      REQUIRE (views_are_equal(f1, f2));
+
+      Field f3 = one.clone();
+      Field f4 = two.clone();
+      f4.min(f3);
+      REQUIRE (views_are_equal(f3, f4));
     }
   }
 
