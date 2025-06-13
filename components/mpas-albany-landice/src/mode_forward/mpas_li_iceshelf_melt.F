@@ -1196,7 +1196,6 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: basinNumber
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: areaCell
-      real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
       integer, parameter :: maxNumBasins = 32
       integer, dimension(:), pointer :: cellMask, indexToCellID
@@ -1221,7 +1220,6 @@ module li_iceshelf_melt
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -1274,15 +1272,7 @@ module li_iceshelf_melt
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
 
-               if (ksup < nOceanLayers) then
-                  if (zOcean(ksup + 1) >= bedTopography(iCell)) then
-                     kinf = ksup + 1
-                  else ! Do not interpolate if bottom of cell is below bed topography
-                     kinf = ksup
-                  endif
-               else
-                  kinf = ksup
-               endif
+               kinf = ksup + 1
                 
                !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/), &
                !        intArgs=(/kinf/))
@@ -1299,7 +1289,7 @@ module li_iceshelf_melt
                      err = ior(err, 1)
                   endif
                endif
-               if ((kinf > 0) .and. (kinf <= nOceanLayers)) then
+               if (kinf <= nOceanLayers) then
                   if (TFocean(kinf, iCell) == invalid_value_TF) then
                      call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean. " // &
                         "kinf=$i TFocean(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
@@ -1316,9 +1306,6 @@ module li_iceshelf_melt
                   ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
                   TFdraft(iCell) = TFocean(nOceanLayers, iCell) - &
                      (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
-               elseif (kinf == ksup) then
-                  !only use TF from just above bed topography if on deepest ocean layer
-                  TFdraft(iCell) = TFocean(ksup,iCell)
                else
                   ! for depths between the first and last layer centers, linearly interpolate
                   TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
