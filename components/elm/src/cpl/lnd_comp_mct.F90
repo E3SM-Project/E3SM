@@ -1149,7 +1149,7 @@ contains
     end do
     tagname=trim(seq_flds_l2x_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices only, from now on
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm(1,1) )
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm )
     if (ierr > 0 )  &
        call shr_sys_abort( sub//' Error: fail to set moab l2x '// trim(seq_flds_l2x_fields) )
 

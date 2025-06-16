@@ -331,7 +331,7 @@ contains
        ! set those fields to 0 in moab
        r2x_rm = 0._r8
        ent_type = 0 ! rof is point cloud on this side
-       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1))
+       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
 
@@ -350,7 +350,7 @@ contains
 
        ! set those fields to 0 in moab
        x2r_rm = 0._r8
-       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1))
+       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
   ! also load initial data to moab tags, fill with some initial data
