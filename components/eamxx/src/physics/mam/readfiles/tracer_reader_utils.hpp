@@ -10,6 +10,8 @@
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_time_interpolation.hpp"
 
 namespace scream::mam_coupling {
 
@@ -95,6 +97,7 @@ struct TracerTimeState {
   // Whether the timestate has been initialized.
   // The current month
   int current_month = -1;
+  int current_interval_idx = -1;
   // Julian Date for the beginning of the month, as defined in
   //           /src/share/util/eamxx_time_stamp.hpp
   // See this file for definition of Julian Date.
@@ -103,10 +106,70 @@ struct TracerTimeState {
   Real t_now;
   // Number of days in the current month, cast as a Real
   Real days_this_month;
-};  // TricerTimeState
+};  // TracerTimeState
+
+inline scream::util::TimeStamp convert_date(const int date) {
+  constexpr int ten_thousand = 10000;
+  constexpr int one_hundred = 100;
+
+  int year = date / ten_thousand;
+  int month = (date - year * ten_thousand) / one_hundred;
+  int day = date - year * ten_thousand - month * one_hundred;
+
+  return scream::util::TimeStamp(year, month, day, 0, 0, 0);
+}
+
+struct TracerTimeSlice {
+  scream::util::TimeStamp time;
+  int time_index;
+};
+
+// Converts raw YYYYMMDD date integers into sorted TimeStamp-index pairs.
+// Assumes yearly periodicity for now.
+// NOTE: Consider adding support for transient data. 
+struct TracerTimeDatabase {
+  std::vector<TracerTimeSlice> slices;
+  scream::util::TimeLine timeline = scream::util::TimeLine::YearlyPeriodic;
+
+  void build(const std::vector<int>& raw_dates) {
+    slices.clear();
+    for (int i = 0; i < raw_dates.size(); ++i) {
+      slices.push_back({ convert_date(raw_dates[i]), i });
+    }
+    std::sort(slices.begin(), slices.end(), [](const auto& a, const auto& b) {
+      return a.time < b.time;
+    });
+  }
+
+  int size() const {
+    return slices.size();
+  }
+
+  int get_next_idx(int idx) const {
+    return (idx + 1) % slices.size();
+  }
+  
+  // Finds the interval [t_i, t_{i+1}) that contains ts. Assumes cyclic behavior.
+  int find_interval(const util::TimeStamp& ts) const {
+    EKAT_REQUIRE_MSG(size() >= 2, "Time database has fewer than 2 time slices.");
+
+    for (int i = 0; i < slices.size(); ++i) {
+      int j = get_next_idx(i);
+      util::TimeInterval interval(slices[i].time, slices[j].time, timeline);
+      if (interval.contains(ts)) {
+        return i;
+      }
+    }
+
+    EKAT_ERROR_MSG("TracerTimeDatabase::find_interval - no interval contains timestamp "
+                   + ts.to_string() + ". Check time coverage.");
+    return -1;
+  }
+}; // TracerTimeDatabase
 
 struct TracerData {
   TracerData() = default;
+  TracerTimeDatabase time_db;
   TracerData(const int ncol, const int nlev, const int nvars) {
     init(ncol, nlev, nvars);
   }
@@ -194,16 +257,6 @@ Real linear_interp(const Real &x0, const Real &x1, const Real &t) {
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
 
-// time[3]={year,month, day}
-inline util::TimeStamp convert_date(const int date) {
-  constexpr int ten_thousand = 10000;
-  constexpr int one_hundred  = 100;
-
-  int year  = date / ten_thousand;
-  int month = (date - year * ten_thousand) / one_hundred;
-  int day   = date - year * ten_thousand - month * one_hundred;
-  return util::TimeStamp(year, month, day, 0, 0, 0);
-}
 // FIXME: This function is not implemented in eamxx.
 // FIXME: Assumes 365 days/year, 30 days/month;
 // NOTE: that this assumption is mainly used for plotting.
@@ -291,51 +344,104 @@ inline Real chlorine_loading_advance(const util::TimeStamp &ts,
 // It reads variables that are not time-dependent and independent of columns (no
 // MPI involved here). We also obtain the offset_time_index using a date
 // (cyclical_ymd) as input. We initialize a few members of tracer_data.
-inline void setup_tracer_data(TracerData &tracer_data,             // out
-                              const std::string &trace_data_file,  // in
-                              const int cyclical_ymd)              // in
+inline void init_monthly_time_offset(TracerData& tracer_data,
+                                     const std::string& file,
+                                     const int cyclical_ymd) {
+  const int nlevs_time = scorpio::get_dimlen(file, "time");
+  int cyclical_ymd_index = -1;
+
+  for (int itime = 0; itime < nlevs_time; ++itime) {
+    int date;
+    scorpio::read_var(file, "date", &date, itime);
+    if (date >= cyclical_ymd) {
+      cyclical_ymd_index = itime;
+      break;
+    }
+  }
+
+  EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0,
+      "Error! Model time (" + std::to_string(cyclical_ymd) +
+      ") is not within tracer time period.");
+  
+  tracer_data.offset_time_index_ = cyclical_ymd_index;
+}
+
+// Builds internal timeline database and computes intervals.
+inline void init_irregular_time_database(TracerData& tracer_data,
+                                         const std::string& file,
+                                         const int cyclical_ymd) {
+  const int nlevs_time = scorpio::get_dimlen(file, "time");
+  std::vector<int> dates;
+
+  for (int itime = 0; itime < nlevs_time; ++itime) {
+    int date;
+    scorpio::read_var(file, "date", &date, itime);
+    dates.push_back(date);
+  }
+
+  tracer_data.time_db.build(dates);
+
+  auto ts_model = convert_date(cyclical_ymd);
+  const int interval = tracer_data.time_db.find_interval(ts_model);
+  
+  EKAT_REQUIRE_MSG(interval >= 0,
+    "Error! Model time (" + std::to_string(cyclical_ymd) +
+    ") is not within the tracer time range.");
+}
+
+inline void setup_tracer_data(TracerData &tracer_data,
+                              const std::string &trace_data_file,
+                              const int cyclical_ymd)
 {
+
+  using namespace scream::mam_coupling;
   scorpio::register_file(trace_data_file, scorpio::Read);
-  if(not scorpio::has_time_dim(trace_data_file)) {
+
+  if (not scorpio::has_time_dim(trace_data_file)) {
     scorpio::mark_dim_as_time(trace_data_file, "time");
   }
-  // by default, I am assuming a zonal file.
-  TracerFileType tracer_file_type = ZONAL;
 
+  // Default assumption
+  TracerFileType tracer_file_type = ZONAL;
   int nlevs_data = -1;
-  if(scorpio::has_var(trace_data_file, "lev")) {
+
+  if (scorpio::has_var(trace_data_file, "lev")) {
     nlevs_data = scorpio::get_dimlen(trace_data_file, "lev");
   }
+
   const bool has_altitude = scorpio::has_var(trace_data_file, "altitude");
 
   // This type of files use altitude (zi) for vertical interpolation
-  if(has_altitude) {
-    nlevs_data       = scorpio::get_dimlen(trace_data_file, "altitude");
+  if (has_altitude) {
+    nlevs_data = scorpio::get_dimlen(trace_data_file, "altitude");
     tracer_file_type = ELEVATED_EMISSIONS;
   }
-  EKAT_REQUIRE_MSG(
-      nlevs_data != -1,
-      "Error: The file does not contain either lev or altitude.   \n");
+
+  EKAT_REQUIRE_MSG(nlevs_data != -1,
+    "Error: The file does not contain either lev or altitude.   \n");
 
   const int ncols_data = scorpio::get_dimlen(trace_data_file, "ncol");
 
   // This type of files use model pressure (pmid) for vertical interpolation
-  if(scorpio::has_var(trace_data_file, "PS")) {
+  if (scorpio::has_var(trace_data_file, "PS")) {
     tracer_file_type = FORMULA_PS;
+
     view_1d_host hyam_h("hyam_h", nlevs_data);
     view_1d_host hybm_h("hybm_h", nlevs_data);
 
     scorpio::read_var(trace_data_file, "hyam", hyam_h.data());
     scorpio::read_var(trace_data_file, "hybm", hybm_h.data());
+
     view_1d hyam("hyam", nlevs_data);
     view_1d hybm("hybm", nlevs_data);
     Kokkos::deep_copy(hyam, hyam_h);
     Kokkos::deep_copy(hybm, hybm_h);
+
     tracer_data.hyam = hyam;
     tracer_data.hybm = hybm;
   }
 
-  if(tracer_file_type == ZONAL) {
+  if (tracer_file_type == ZONAL) {
     view_1d_host levs_h("levs_h", nlevs_data);
     view_1d levs("levs", nlevs_data);
     scorpio::read_var(trace_data_file, "lev", levs_h.data());
@@ -343,43 +449,31 @@ inline void setup_tracer_data(TracerData &tracer_data,             // out
     tracer_data.zonal_levs_ = levs;
   }
 
-  if(tracer_file_type == ELEVATED_EMISSIONS) {
-    const int nilevs_data =
-        scorpio::get_dimlen(trace_data_file, "altitude_int");
+  if (tracer_file_type == ELEVATED_EMISSIONS) {
+    const int nilevs_data = scorpio::get_dimlen(trace_data_file, "altitude_int");
     view_1d_host altitude_int_host("altitude_int_host", nilevs_data);
-    view_1d altitude_int = view_1d("altitude_int", nilevs_data);
-    scorpio::read_var(trace_data_file, "altitude_int",
-                      altitude_int_host.data());
+    view_1d altitude_int("altitude_int", nilevs_data);
+
+    scorpio::read_var(trace_data_file, "altitude_int", altitude_int_host.data());
     Kokkos::deep_copy(altitude_int, altitude_int_host);
+
     tracer_data.altitude_int_ = altitude_int;
   }
-  // time index
-  {
-    const int nlevs_time   = scorpio::get_dimlen(trace_data_file, "time");
-    int cyclical_ymd_index = -1;
-    for(int itime = 0; itime < nlevs_time; ++itime) {
-      int date;
-      scorpio::read_var(trace_data_file, "date", &date, itime);
-      if(date >= cyclical_ymd) {
-        cyclical_ymd_index = itime;
-        break;
-      }
-    }  // end itime
 
-    EKAT_REQUIRE_MSG(cyclical_ymd_index >= 0, "Error! Current model time (" +
-                                                  std::to_string(cyclical_ymd) +
-                                                  ") is not within " +
-                                                  "Tracer time period.\n");
-
-    tracer_data.offset_time_index_ = cyclical_ymd_index;
+  // Time initialization logic — delegated to helpers above
+  if (tracer_file_type == ELEVATED_EMISSIONS) {
+    init_irregular_time_database(tracer_data, trace_data_file, cyclical_ymd);
+  } else {
+    init_monthly_time_offset(tracer_data, trace_data_file, cyclical_ymd);
   }
 
   scorpio::release_file(trace_data_file);
-  tracer_data.file_type     = tracer_file_type;
-  tracer_data.nlevs_data    = nlevs_data;
-  tracer_data.ncols_data    = ncols_data;
+  tracer_data.file_type = tracer_file_type;
+  tracer_data.nlevs_data = nlevs_data;
+  tracer_data.ncols_data = ncols_data;
   tracer_data.has_altitude_ = has_altitude;
-}
+} // setup_tracer_data
+
 inline std::shared_ptr<AbstractRemapper> create_horiz_remapper(
     const std::shared_ptr<const AbstractGrid> &model_grid,
     const std::string &trace_data_file, const std::string &map_file,
@@ -494,52 +588,131 @@ inline void update_tracer_data_from_file(
   }
 
 }  // update_tracer_data_from_file
-inline void update_tracer_timestate(
-    const std::shared_ptr<AtmosphereInput> &scorpio_reader,
-    const util::TimeStamp &ts, AbstractRemapper &tracer_horiz_interp,
-    TracerTimeState &time_state, TracerData &data_tracer) {
-  // Now we check if we have to update the data that changes monthly
-  // NOTE:  This means that tracer external forcing assumes monthly data to
-  // update.  Not
-  //        any other frequency.
-  const auto month = ts.get_month() - 1;  // Make it 0-based
-  if(month != time_state.current_month) {
-    const auto tracer_data = data_tracer.data;
-    const int nvars        = data_tracer.nvars_;
-    const auto ps          = data_tracer.ps;
 
-    // Update the tracer external forcing time state information
+inline void update_monthly_timestate(
+    const std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    const util::TimeStamp& ts,
+    AbstractRemapper& tracer_horiz_interp,
+    TracerTimeState& time_state,
+    TracerData& data_tracer)
+{
+  const auto month = ts.get_month() - 1;  // 0-based month
+
+  if (month != time_state.current_month) {
+    const int nvars = data_tracer.nvars_;
+    const auto& ps = data_tracer.ps;
+    auto& data = data_tracer.data;
+
     time_state.current_month   = month;
     time_state.t_beg_month     = ts.curr_month_beg().frac_of_year_in_days();
     time_state.days_this_month = ts.days_in_curr_month();
+    time_state.t_now           = ts.frac_of_year_in_days();
 
-    // Copy spa_end'data into spa_beg'data, and read in the new spa_end
-    for(int ivar = 0; ivar < nvars; ++ivar) {
-      Kokkos::deep_copy(tracer_data[TracerDataIndex::BEG][ivar],
-                        tracer_data[TracerDataIndex::END][ivar]);
+    for (int ivar = 0; ivar < nvars; ++ivar) {
+      Kokkos::deep_copy(data[TracerDataIndex::BEG][ivar],
+                        data[TracerDataIndex::END][ivar]);
     }
 
-    if(data_tracer.file_type == FORMULA_PS) {
+    if (data_tracer.file_type == FORMULA_PS) {
       Kokkos::deep_copy(ps[TracerDataIndex::BEG], ps[TracerDataIndex::END]);
     }
 
-    // Following SPA to time-interpolate data in MAM4xx
-    // Assume the data is saved monthly and cycles in one year
-    // Add offset_time_index to support cases where data is saved
-    // from other periods of time.
-    // Update the tracer external forcing data for this month and next month
-    // Start by copying next months data to this months data structure.
-    // NOTE: If the timestep is bigger than monthly this could cause the wrong
-    // values
-    //       to be assigned.  A timestep greater than a month is very unlikely
-    //       so we will proceed.
     int next_month =
-        data_tracer.offset_time_index_ + (time_state.current_month + 1) % 12;
+        data_tracer.offset_time_index_ + (month + 1) % 12;
     update_tracer_data_from_file(scorpio_reader, next_month,
                                  tracer_horiz_interp, data_tracer);
   }
+}
 
-}  // END update_tracer_timestate
+// Loads time slice data before and after current timestamp (ts), 
+// and prepares interpolation state. First call initializes both BEG and END.
+inline void update_irregular_timestate(
+    const std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    const util::TimeStamp& ts,
+    AbstractRemapper& tracer_horiz_interp,
+    TracerTimeState& time_state,
+    TracerData& data_tracer)
+{
+  const auto& db = data_tracer.time_db;
+  int beg_idx = db.find_interval(ts);
+  int end_idx = db.get_next_idx(beg_idx);
+
+  auto t_beg_ts = db.slices[beg_idx].time;
+  auto t_end_ts = db.slices[end_idx].time;
+
+  Real t_beg = t_beg_ts.frac_of_year_in_days();
+  Real t_end = t_end_ts.frac_of_year_in_days();
+  Real t_now = ts.frac_of_year_in_days();
+
+  int days_in_year = t_beg_ts.days_in_curr_year();
+  if (t_now < t_beg) t_now += days_in_year;
+
+  Real delta_t = t_end - t_beg;
+  if (delta_t < 0) delta_t += days_in_year;
+
+  bool first_time = (time_state.current_interval_idx < 0);
+  if (first_time || beg_idx != time_state.current_interval_idx) {
+    if (!first_time) {
+      for (int ivar = 0; ivar < data_tracer.nvars_; ++ivar) {
+        Kokkos::deep_copy(
+            data_tracer.data[TracerDataIndex::BEG][ivar],
+            data_tracer.data[TracerDataIndex::END][ivar]);
+      }
+
+      if (data_tracer.file_type == FORMULA_PS) {
+        Kokkos::deep_copy(data_tracer.ps[TracerDataIndex::BEG],
+                          data_tracer.ps[TracerDataIndex::END]);
+      }
+    } else {
+      // On first call, initialize BEG from file; otherwise, copy END to BEG.
+      update_tracer_data_from_file(
+          scorpio_reader,
+          db.slices[beg_idx].time_index,
+          tracer_horiz_interp,
+          data_tracer);
+
+      for (int ivar = 0; ivar < data_tracer.nvars_; ++ivar) {
+        Kokkos::deep_copy(
+            data_tracer.data[TracerDataIndex::BEG][ivar],
+            data_tracer.data[TracerDataIndex::END][ivar]);
+      }
+
+      if (data_tracer.file_type == FORMULA_PS) {
+        Kokkos::deep_copy(data_tracer.ps[TracerDataIndex::BEG],
+                          data_tracer.ps[TracerDataIndex::END]);
+      }
+    }
+
+    update_tracer_data_from_file(
+        scorpio_reader,
+        db.slices[end_idx].time_index,
+        tracer_horiz_interp,
+        data_tracer);
+
+    time_state.current_interval_idx = beg_idx;
+  }
+
+  time_state.t_beg_month = t_beg;
+  time_state.t_now = t_now;
+  time_state.days_this_month = delta_t;
+}
+
+// Uses appropriate time update routine based on file type.
+inline void update_tracer_timestate(
+    const std::shared_ptr<AtmosphereInput>& scorpio_reader,
+    const util::TimeStamp& ts,
+    AbstractRemapper& tracer_horiz_interp,
+    TracerTimeState& time_state,
+    TracerData& data_tracer)
+{
+  if (data_tracer.file_type == ELEVATED_EMISSIONS) {
+    update_irregular_timestate(scorpio_reader, ts, tracer_horiz_interp,
+                               time_state, data_tracer);
+  } else {
+    update_monthly_timestate(scorpio_reader, ts, tracer_horiz_interp,
+                             time_state, data_tracer);
+  }
+}
 
 // This function is based on the SPA::perform_time_interpolation function.
 inline void perform_time_interpolation(const TracerTimeState &time_state,

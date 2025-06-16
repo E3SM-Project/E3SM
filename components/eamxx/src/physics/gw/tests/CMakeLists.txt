@@ -4,6 +4,15 @@ add_subdirectory(infra)
 
 set(GW_TESTS_SRCS
     gw_gwd_compute_tendencies_from_stress_divergence_tests.cpp
+    gw_gw_prof_tests.cpp
+    gw_momentum_energy_conservation_tests.cpp
+    gw_gwd_compute_stress_profiles_and_diffusivities_tests.cpp
+    gw_gwd_project_tau_tests.cpp
+    gw_gwd_precalc_rhoi_tests.cpp
+    gw_gw_drag_prof_tests.cpp
+    gw_gw_front_project_winds_tests.cpp
+    gw_gw_front_gw_sources_tests.cpp
+    gw_gw_cm_src_tests.cpp
 ) # GW_TESTS_SRCS
 
 # All tests should understand the same baseline args

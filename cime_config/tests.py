@@ -148,6 +148,8 @@ _TESTS = {
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis20.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.BGWCYCL1850.allactive-gis20km",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
+            "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
+            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             )
         },
 
@@ -300,10 +302,6 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-freshwater_tracers",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             "ERS_Ld5_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
-            # OCN/GLC 3d TF coupling GIS test:
-            "ERS_Ld5.TL319_oQU240wLI_gis4to40.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
-            # OCN/GLC 3d TF coupling AIS test:
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_FOLISIO_JRA1p5.mpaso-jra_1958",
             "SMS_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.mpaso-frazil_ice_porosity",
             )
         },
@@ -701,24 +699,31 @@ _TESTS = {
     },
 
     "e3sm_eamxx_v1" : {
-        "time"    : "03:00:00",
-        "inherit" : ("e3sm_eamxx_v1_lowres", "e3sm_eamxx_v1_medres", "e3sm_eamxx_v1_mpassi"),
+        "inherit" : ("e3sm_eamxx_v1_lowres", "e3sm_eamxx_v1_lowres_debug",
+                     "e3sm_eamxx_v1_medres", "e3sm_eamxx_v1_mpassi_debug"),
     },
-
+    "e3sm_eamxx_v1_release" : { # same as e3sm_eamxx_v1 but without debug tests
+        "inherit" : ("e3sm_eamxx_v1_lowres",
+                     "e3sm_eamxx_v1_medres"),
+    },
 
     "e3sm_eamxx_v1_lowres" : {
         "time"  : "01:00:00",
         "inherit" : ("e3sm_eamxx_mam4xx_lowres"),
         "tests" : (
-            "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2",
-            "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.eamxx-output-preset-3",
             "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-4",
-            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-rad_frequency_2--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_p3--eamxx-output-preset-5",
             "ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels_shoc--eamxx-output-preset-5",
-            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
+            )
+    },
+    "e3sm_eamxx_v1_lowres_debug" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
+            "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero.eamxx-output-preset-3",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-rad_frequency_2--eamxx-output-preset-5",
             )
     },
 
@@ -765,7 +770,7 @@ _TESTS = {
             )
     },
 
-    "e3sm_eamxx_v1_mpassi" : {
+    "e3sm_eamxx_v1_mpassi_debug" : {
         "time"  : "01:00:00",
         "tests" : (
          #  "ERP_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",

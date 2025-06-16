@@ -515,6 +515,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8) :: flux_fullact            ! flux of activated aerosol fraction assuming 100% activation (cm/s)
   real(r8) :: dmc
   real(r8) :: ssmc
+  real(r8) :: so4mc
+  real(r8) :: mommc
+  real(r8) :: bcmc
+  real(r8) :: pommc
+  real(r8) :: soamc
+  real(r8) :: wght
   real(r8) :: dgnum_aitken
 
 ! bulk aerosol variables
@@ -2036,9 +2042,32 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     dmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_idx)      &
                                   +aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_idx))
                     ssmc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_idx)      &
-                                  +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx))  
+                                  +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx)) 
+                    so4mc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_so4_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_so4_idx,aero%mode_coarse_idx)) 
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+                    mommc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_mom_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_mom_idx,aero%mode_coarse_idx))
+#endif 
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+                    bcmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_bc_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_bc_idx,aero%mode_coarse_idx))
+                    pommc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_pom_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_pom_idx,aero%mode_coarse_idx))
+                    soamc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_soa_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_soa_idx,aero%mode_coarse_idx))
+#endif
                     if (dmc > 0._r8) then
-                        dst_num = dmc/(ssmc + dmc) *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         & 
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+                       wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
+                       wght = dmc/(ssmc + dmc + so4mc + mommc)
+#elif (defined RAIN_EVAP_TO_COARSE_AERO)
+                       wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
+#else
+                       wght = dmc/(ssmc + dmc + so4mc)
+#endif
+                       dst_num = wght *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         &
                                   + aero%numg_a(i,k,aero%mode_coarse_idx))*0.5_r8*rho(i,k)*1.0e-6_r8
                     else 
                        dst_num = 0.0_r8
@@ -2237,13 +2266,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     !  use size '3' for dust coarse mode...
                     !  scale by dust fraction in coarse mode
 
-                    dmc  = 0.5_r8*(aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_idx)     &
-                                  +aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_idx))
-                    ssmc = 0.5_r8*(aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx)     &
-                                  +aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_idx)) 
                     if (dmc > 0.0_r8) then
-                        nacon3 = dmc/(ssmc + dmc) * (aero%numg_a(i,k,aero%mode_coarse_idx)     &
-                                 + aero%numg_a(i,k-1,aero%mode_coarse_idx))*0.5_r8*rho(i,k)
+                        nacon3 = dst_num*tcnt*1.0e6_r8
                     end if
 
                  else if (aero%scheme == 'bulk') then

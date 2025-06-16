@@ -77,6 +77,15 @@ struct UnitWrap {
 
     // Put struct decls here
     struct TestGwdComputeTendenciesFromStressDivergence;
+    struct TestGwProf;
+    struct TestMomentumEnergyConservation;
+    struct TestGwdComputeStressProfilesAndDiffusivities;
+    struct TestGwdProjectTau;
+    struct TestGwdPrecalcRhoi;
+    struct TestGwDragProf;
+    struct TestGwFrontProjectWinds;
+    struct TestGwFrontGwSources;
+    struct TestGwCmSrc;
   }; // UnitWrap
 };
 

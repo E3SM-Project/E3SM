@@ -235,7 +235,7 @@ contains
       call shr_sys_abort(subname//' ERROR in loading map file')
     endif
    if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(2A,I6,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
+      write(logunit,'(2A,I12,4A)') subname,'Result: iMOAB map app ID, maptype, mapfile = ', &
          mbintx,' ',trim(maptype),' ',trim(mapfile), ', identifier: ', trim(sol_identifier)
       call shr_sys_flush(logunit)
    endif
@@ -328,6 +328,7 @@ end subroutine moab_map_init_rcfile
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
       iMOAB_GetIntTagStorage, iMOAB_ApplyScalarProjectionWeights, &
       iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
+    use seq_comm_mct, only : num_moab_exports
 
     implicit none
     !-----------------------------------------------------
@@ -438,7 +439,7 @@ end subroutine moab_map_init_rcfile
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
-                  nfields,  ' fldlist_moab=', trim(fldlist_moab)
+                  nfields,  ' fldlist_moab=', trim(fldlist_moab), ' moab step ', num_moab_exports
             call shr_sys_flush(logunit)
          endif
 #endif
@@ -496,7 +497,7 @@ end subroutine moab_map_init_rcfile
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
-              ' mbpresent=', mbpresent, ' mbnorm=', mbnorm
+              ' mbpresent=', mbpresent, ' mbnorm=', mbnorm, ' moab step:', num_moab_exports
             call shr_sys_flush(logunit)
          endif
 #endif
@@ -550,7 +551,8 @@ end subroutine moab_map_init_rcfile
             endif
 #ifdef MOABDEBUG
             if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' set norm8wt 1  on source with app id: ', mapper%src_mbid
+               write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' set norm8wt 1  on source with app id: ', &
+                   mapper%src_mbid, ' moab step:', num_moab_exports
                call shr_sys_flush(logunit)
             endif
 #endif
@@ -584,7 +586,8 @@ end subroutine moab_map_init_rcfile
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB projection mapper: ', mapper%mbname, ' normalize nfields=', &
-               nfields, ' arrsize_src on root:', arrsize_src, ' shape(targtags_ini)=', shape(targtags_ini)
+               nfields, ' arrsize_src on root:', arrsize_src, ' shape(targtags_ini)=', shape(targtags_ini), &
+               ' moab step:', num_moab_exports
             call shr_sys_flush(logunit)
          endif
 #endif
@@ -613,7 +616,7 @@ end subroutine moab_map_init_rcfile
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
-               mapper%mbname, trim(fldlist_moab)
+               mapper%mbname, trim(fldlist_moab), ' moab step:', num_moab_exports
          endif
 #endif
          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
@@ -634,7 +637,8 @@ end subroutine moab_map_init_rcfile
 
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab), &
+               ' moab step:', num_moab_exports
             call shr_sys_flush(logunit)
          endif
 #endif

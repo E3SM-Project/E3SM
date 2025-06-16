@@ -156,12 +156,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   // because we automatically added these fields.
   const std::map<std::string, std::pair<Real, Real>> ranges_optics = {
       // optics
-      {"pseudo_density_dry", {-1e10, 1e10}},  // FIXME
-      {"aero_g_sw", {-1e10, 1e10}},           // FIXME
-      {"aero_ssa_sw", {-1e10, 1e10}},         // FIXME
-      {"aero_tau_lw", {-1e10, 1e10}},         // FIXME
-      {"aero_tau_sw", {-1e10, 1e10}},         // FIXME
-      {"aodvis", {-1e10, 1e10}}               // FIXME
+      {"pseudo_density_dry", {0, 5e3}},  // FIXME
+      {"aero_g_sw", {-0.1, 1}},          // FIXME
+      {"aero_ssa_sw", {0, 1}},           // FIXME
+      {"aero_tau_lw", {-1e-4, 2}},       // FIXME
+      {"aero_tau_sw", {-1e-4, 10}},      // FIXME
+      {"aodvis", {0, 25}}                // FIXME
   };
   set_ranges_process(ranges_optics);
   add_interval_checks();

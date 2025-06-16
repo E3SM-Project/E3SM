@@ -79,6 +79,9 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   }
 
   m_ngas = m_gas_names.size();
+
+  // Determine rad timestep, specified as number of atm steps
+  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 }
 
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -198,7 +201,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
-  add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
   add_field<Computed>("cldmed"        , scalar2d, nondim, grid_name);
@@ -219,6 +221,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d, micron, grid_name);
   add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d, micron, grid_name);
 
+  // This field is needed for restart
+  Field rad_heating_pdel (FieldIdentifier("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name));
+  rad_heating_pdel.allocate_view();
+  add_internal_field(rad_heating_pdel);
+
   // Translation of variables from EAM
   // --------------------------------------------------------------
   // EAM name | EAMXX name       | Description
@@ -230,12 +237,19 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
+
+  // We need to ensure that these fields are added to the RESTART group,
+  // since the cpl will need them at every step, and rrtmgp may not run
+  // the 1st step after restart (depending on rad freq).
+  // NOTE: technically, we know rad freq, so we *could* avoid adding them
+  //       to the rest file if rad_freq=1. But a) that is not common at high
+  //       res anyways, and b) that could prevent changing rad_freq upon restart
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name, "RESTART");
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -244,6 +258,9 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     add_field<Computed>("ice_flux",   scalar2d, m/s,     grid_name);
     add_field<Computed>("heat_flux",  scalar2d, W/m2,    grid_name);
   }
+
+  // Working fields that we also want for diagnostic output
+  add_field<Computed>("cosine_solar_zenith_angle", scalar2d, nondim, grid_name);
 
   // Load bands bounds from coefficients files and compute the band centerpoint.
   // Store both in the grid (if not already present)
@@ -310,8 +327,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d arrays
-  m_buffer.mu0_k = decltype(m_buffer.mu0_k)(mem, m_col_chunk_size);
-  mem += m_buffer.mu0_k.size();
   m_buffer.sfc_alb_dir_vis_k = decltype(m_buffer.sfc_alb_dir_vis_k)(mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dir_vis_k.size();
   m_buffer.sfc_alb_dir_nir_k = decltype(m_buffer.sfc_alb_dir_nir_k)(mem, m_col_chunk_size);
@@ -328,8 +343,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_flux_dif_vis_k.size();
   m_buffer.sfc_flux_dif_nir_k = decltype(m_buffer.sfc_flux_dif_nir_k)(mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dif_nir_k.size();
-  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_col_chunk_size);
-  mem += m_buffer.cosine_zenith.size();
 
   // 2d arrays
   m_buffer.p_lay_k = decltype(m_buffer.p_lay_k)(mem, m_col_chunk_size, m_nlay);
@@ -453,11 +466,8 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
-void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
+void RRTMGPRadiation::initialize_impl(const RunType run_type) {
   using PC = scream::physics::Constants<Real>;
-
-  // Determine rad timestep, specified as number of atm steps
-  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 
   // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
@@ -532,6 +542,13 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
     Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
   }
+
+  // Ensure rad_heating_pdel is recognized as initialized by the driver
+  auto& rad_heating = get_internal_field("rad_heating_pdel");
+  rad_heating.get_header().get_tracking().update_time_stamp(start_of_step_ts());
+
+  m_force_run_on_next_step = run_type==RunType::Initial or
+    m_params.get("force_run_after_restart",false);
 }
 
 // =========================================================================================
@@ -597,7 +614,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_lw_clrsky_flux_dn = get_field_out("LW_clrsky_flux_dn").get_view<Real**>();
   auto d_lw_clnsky_flux_up = get_field_out("LW_clnsky_flux_up").get_view<Real**>();
   auto d_lw_clnsky_flux_dn = get_field_out("LW_clnsky_flux_dn").get_view<Real**>();
-  auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
+  auto d_rad_heating_pdel = get_internal_field("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
   auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
@@ -638,8 +655,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
-  auto ts = start_of_step_ts();
-  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
+  auto ts = end_of_step_ts();
+  auto update_rad = m_force_run_on_next_step or scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
@@ -723,6 +740,9 @@ void RRTMGPRadiation::run_impl (const double dt) {
       }
     }
 
+    // Get solar zenith angle device view
+    auto d_mu0 = get_field_out("cosine_solar_zenith_angle").get_view<Real*>();
+
     // Loop over each chunk of columns
     for (int ic=0; ic<m_num_col_chunks; ++ic) {
       const int beg  = m_col_chunk_beg[ic];
@@ -734,7 +754,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
       // must be layout right
       ulrreal2dk d_tint = ulrreal2dk(m_buffer.d_tint.data(), m_col_chunk_size, m_nlay+1);
       ulrreal2dk d_dz   = ulrreal2dk(m_buffer.d_dz.data(), m_col_chunk_size, m_nlay);
-      auto d_mu0 = m_buffer.cosine_zenith;
       ConvertToRrtmgpSubview conv = {beg, ncol};
       TIMED_INLINE_KERNEL(init_views,
 
@@ -797,6 +816,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto cld_tau_lw_bnd_k  = conv.subview3d(m_buffer.cld_tau_lw_bnd_k);
       auto cld_tau_sw_gpt_k  = conv.subview3d(m_buffer.cld_tau_sw_gpt_k);
       auto cld_tau_lw_gpt_k  = conv.subview3d(m_buffer.cld_tau_lw_gpt_k);
+      auto mu0_k = conv.subview1d(d_mu0);
                    );
 
       // Set gas concs to "view" only the first ncol columns
@@ -808,7 +828,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         // Determine the cosine zenith angle
         // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
         //       deep copied to a device view.
-        auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
+        auto h_mu0 = Kokkos::create_mirror_view(mu0_k);
         if (m_fixed_solar_zenith_angle > 0) {
           for (int i=0; i<ncol; i++) {
             h_mu0(i) = m_fixed_solar_zenith_angle;
@@ -821,7 +841,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
             h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
           }
         }
-        Kokkos::deep_copy(d_mu0,h_mu0);
+        Kokkos::deep_copy(mu0_k,h_mu0);
 
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         TIMED_KERNEL(
@@ -1008,7 +1028,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         ncol, m_nlay,
         p_lay_k, t_lay_k, p_lev_k, t_lev_k,
         m_gas_concs_k,
-        sfc_alb_dir_k, sfc_alb_dif_k, d_mu0,
+        sfc_alb_dir_k, sfc_alb_dif_k, mu0_k,
         lwp_k, iwp_k, rel_k, rei_k, cldfrac_tot_k,
         aero_tau_sw_k, aero_ssa_sw_k, aero_g_sw_k, aero_tau_lw_k,
         cld_tau_sw_bnd_k, cld_tau_lw_bnd_k,
@@ -1211,6 +1231,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
     });
   }
 
+  m_force_run_on_next_step = false;
 }
 // =========================================================================================
 

@@ -226,6 +226,8 @@ subroutine vd_lu_solve(pcols, pver,   ncol, &
   ! Main Computation Begins !
   ! ----------------------- !
 
+  zf = 0.0_r8
+
   ! Calculate zf(k). Terms zf(k) and ze(k) are required in solution of
   ! tridiagonal matrix defined by implicit diffusion equation.
   ! Note that only levels ntop through nbot need be solved for.
@@ -276,6 +278,12 @@ pure function lu_decomp_alloc(ncol, pver) result(new_decomp)
   allocate(new_decomp%cc(ncol,pver))
   allocate(new_decomp%dnom(ncol,pver))
   allocate(new_decomp%ze(ncol,pver))
+
+  ! Initialize to zero
+  new_decomp%ca   = 0.0_r8
+  new_decomp%cc   = 0.0_r8
+  new_decomp%dnom = 0.0_r8
+  new_decomp%ze   = 0.0_r8
 
 end function lu_decomp_alloc
 

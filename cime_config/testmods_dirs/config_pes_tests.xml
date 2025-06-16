@@ -229,16 +229,16 @@
   <grid name="oi%IcoswISC30.*">
     <mach name="anvil">
       <pes compset=".*DATM.+MPASSI.+MPASO.+DROF.+_SESP$" pesize="any">
-        <comment>tests+anvil: --compset GMPAS-JRA1p5-DIB-PISMF, 8 nodes</comment>
+        <comment>tests+anvil: --compset GMPAS-JRA1p5-DIB-PISMF, 12 nodes</comment>
         <ntasks>
-          <ntasks_atm>-8</ntasks_atm>
-          <ntasks_lnd>-8</ntasks_lnd>
-          <ntasks_rof>-8</ntasks_rof>
-          <ntasks_ice>-8</ntasks_ice>
-          <ntasks_ocn>-8</ntasks_ocn>
-          <ntasks_cpl>-8</ntasks_cpl>
-          <ntasks_glc>-8</ntasks_glc>
-          <ntasks_wav>-8</ntasks_wav>
+          <ntasks_atm>-12</ntasks_atm>
+          <ntasks_lnd>-12</ntasks_lnd>
+          <ntasks_rof>-12</ntasks_rof>
+          <ntasks_ice>-12</ntasks_ice>
+          <ntasks_ocn>-12</ntasks_ocn>
+          <ntasks_cpl>-12</ntasks_cpl>
+          <ntasks_glc>-12</ntasks_glc>
+          <ntasks_wav>-12</ntasks_wav>
         </ntasks>
       </pes>
     </mach>
