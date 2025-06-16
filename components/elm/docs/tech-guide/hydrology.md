@@ -730,23 +730,25 @@ $$
 \end{array}
 $$
 
-where $\overline{\Theta}_{ice} = \Theta(\overline{\theta}_{ice})$
+where $\overline{\Theta}\_{ice} = \Theta(\overline{\theta}\_{ice})$
 `7.86`{.interpreted-text role="eq"},
-$\overline{\theta}_{ice} = 0.5\left(\theta_{ice\, i-1} +\theta_{ice\, i} \right)$,
-$\overline{\theta}_{liq} = 0.5\left(\theta_{liq\, i-1} +\theta_{liq\, i} \right)$,
+$\overline{\theta}\_{ice} = 0.5\left(\theta_{ice\, i-1} +\theta_{ice\, i} \right)$,
+$\overline{\theta}\_{liq} = 0.5\left(\theta_{liq\, i-1} +\theta_{liq\, i} \right)$,
 and
-$\overline{\theta}_{sat} = 0.5\left(\theta_{sat,\, i-1} +\theta_{sat,\, i} \right)$
+$\overline{\theta}\_{sat} = 0.5\left(\theta_{sat,\, i-1} +\theta_{sat,\, i} \right)$
 
 and
 
-$$\begin{array}{l}
-{\frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta_{liq,\, i} }
-= \frac{\partial k\left[z_{h,\, i} \right]}{\partial \theta_{liq,\, i+1} }
-= \left(2B_{i} +3\right) \ \overline{\Theta}_{ice} \ k_{sat} \left[z_{h,\, i} \right] \ \left[\frac{\overline{\theta}_{liq}}{\overline{\theta}_{sat}} \right]^{2B_{i} +2} \left(\frac{0.5}{\overline{\theta}_{sat}} \right)} \end{array}.$$
+$$
+\begin{array}{l}
+{\frac{\partial k\left[z_{h,i} \right]}{\partial \theta_{liq,i}}
+= \frac{\partial k\left[z_{h,i} \right]}{\partial \theta_{liq,i+1}}
+= \left(2B_{i} +3\right) \, \overline{\Theta}\_{ice} \ k_{sat} \left[z_{h,i} \right] 
+\ \left(\frac{\overline{\theta}\_{liq}}{\overline{\theta}\_{sat}} \right)^{2B_{i} +2} \left(\frac{0.5}{\overline{\theta}_{sat}} \right)} \end{array}.$$
 
 where
-$\overline{\theta}_{liq} = 0.5\left(\theta_{\, i} +\theta_{\, i+1} \right)$,
-$\overline{\theta}_{sat} = 0.5\left(\theta_{sat,\, i} +\theta_{sat,\, i+1} \right)$.
+$\overline{\theta}\_{liq} = 0.5\left(\theta_{\, i} +\theta_{\, i+1} \right)$,
+$\overline{\theta}\_{sat} = 0.5\left(\theta_{sat,\, i} +\theta_{sat,\, i+1} \right)$.
 
 #### Equation set for layer $i=1$
 
