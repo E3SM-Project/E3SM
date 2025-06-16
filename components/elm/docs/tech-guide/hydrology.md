@@ -471,7 +471,7 @@ used a power law form
 
 $$\Theta_{ice} = 10^{-\Omega F_{ice} }$$
 
-where $\Omega = 6$and $F_{ice} = \frac{\theta_{ice} }{\theta_{sat} }$ is
+where $\Omega = 6$ and $F_{ice} = \frac{\theta_{ice} }{\theta_{sat} }$ is
 the ice-filled fraction of the pore space.
 
 Because the hydraulic properties of mineral and organic soil may differ
@@ -630,24 +630,26 @@ E_{v}^{t} = \sum_{j=1}^{n_{\text{pft}}} \left( E_{v,j}^{t} \cdot \text{wt}_j \ri
 $$
 
 where $npft$ is the number of PFTs sharing a soil column,
-$\left(E_{v}^{t} \right)_{j}$ is the transpiration from the $j^{th}$ PFT
-on the column, and $\left(wt\right)_{j}$ is the relative area of the
+$\left(E_{v}^{t} \right)\_{j}$ is the transpiration from the $j^{th}$ PFT
+on the column, and $\left(wt\right)\_{j}$ is the relative area of the
 $j^{th}$ PFT with respect to the column. The effective root fraction
 $r_{e,\, i}$ is also a column-level quantity that is a weighted sum over
 all PFTs. The weighting depends on the per unit area transpiration of
 each PFT and its relative area as
 
-$$r_{e,\, i} =\frac{\sum_{j=1}^{npft}\left(r_{e,\, i} \right)_{j} \left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}  }{\sum_{j=1}^{npft}\left(E_{v}^{t} \right)_{j} \left(wt\right)_{j}  }$$
+$$r_{e,i} = \frac{\sum_{j=1}^{npft} (r_{e,i})\_j (E_v^t)\_j (wt)\_j}{\sum_{j=1}^{npft} (E_v^t)\_j (wt)\_j}$$
 
-where $\left(r_{e,\, i} \right)_{j}$ is the effective root fraction for
+where $\left(r_{e,i} \right)_{j}$ is the effective root fraction for
 the $j^{th}$ PFT
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 \begin{array}{lr}
-\left(r_{e,\, i} \right)_{j} =\frac{\left(r_{i} \right)_{j} \left(w_{i} \right)_{j} }{\left(\beta_{t} \right)_{j} } & \qquad \left(\beta_{t} \right)_{j} >0 \\
-\left(r_{e,\, i} \right)_{j} =0 & \qquad \left(\beta_{t} \right)_{j} =0
+\left(r_{e,i} \right)\_{j} = \frac{\left(r_{i} \right)\_{j} \left(w_{i} \right)\_{j}}{\left(\beta_{t} \right)\_{j}} & \qquad \left(\beta_{t} \right)\_{j} > 0 \\
+\left(r_{e,i} \right)\_{j} = 0 & \qquad \left(\beta_{t} \right)_{j} = 0
 \end{array}
-\end{aligned}$$
+\end{aligned}
+$$
 
 and $\left(r_{i} \right)_{j}$ is the fraction of roots in layer $i$
 (Chapter `rst_Stomatal Resistance and Photosynthesis`{.interpreted-text
@@ -718,10 +720,15 @@ $0.01\, \theta_{sat,\, i} \le \theta_{\, i} \le \theta_{sat,\, i}$.
 The derivatives of the hydraulic conductivity at the layer interface are
 derived from `7.85`{.interpreted-text role="eq"}
 
-$$\begin{array}{l}
-{\frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta_{liq,\, i-1} }
-= \frac{\partial k\left[z_{h,\, i-1} \right]}{\partial \theta_{liq,\, i} }
-= \left(2B_{i-1} +3\right) \ \overline{\Theta}_{ice} \ k_{sat} \left[z_{h,\, i-1} \right] \ \left[\frac{\overline{\theta}_{liq}}{\overline{\theta}_{sat}} \right]^{2B_{i-1} +2} \left(\frac{0.5}{\overline{\theta}_{sat}} \right)} \end{array}$$
+$$
+\begin{array}{l}
+\frac{\partial k\left[z_{h,i-1} \right]}{\partial \theta_{liq,i-1}} 
+= \frac{\partial k\left[z_{h,i-1} \right]}{\partial \theta_{liq,i}} 
+= \left(2B_{i-1} + 3\right) \, \overline{\Theta}\_{ice} \, k_{sat}\left[z_{h,i-1} \right] 
+\left( \frac{\overline{\theta}\_{liq}}{\overline{\theta}\_{sat}} \right)^{2B_{i-1} + 2} 
+\left( \frac{0.5}{\overline{\theta}_{sat}} \right)
+\end{array}
+$$
 
 where $\overline{\Theta}_{ice} = \Theta(\overline{\theta}_{ice})$
 `7.86`{.interpreted-text role="eq"},
