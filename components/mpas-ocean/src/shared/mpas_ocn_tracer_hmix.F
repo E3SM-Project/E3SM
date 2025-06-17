@@ -91,7 +91,7 @@ contains
       !-----------------------------------------------------------------
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
-      real (kind=RKIND), dimension(:), intent(in), optional :: &
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          RediKappa
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
