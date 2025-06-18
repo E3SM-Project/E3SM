@@ -347,14 +347,17 @@ contains
     ! set the global ids
     !  ldecomp%gdc2glo(beg:end) = eglobal_ids(:)
 
+    ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
+    allocate(gindex(beg:end))
     allocate(lcid(lns))
+    print *, "Rank: ", iam, " beg: ", beg, ", end: ", end
     lcid(:) = 0
     ! now let us arrange owned elements first and ghosted elements in the end
     oind = beg
     !gind = beg + neoproc ! offset by owned elements on the process
     cid = 1 ! starting clump id
     offset = clump_ncells(1)
-    do n = 1, neoproc
+    do n = 1, neproc
       ! if (eproc_ownership(n) /= iam) then
       !    ! found a ghosted element
       !    ldecomp%gdc2glo(gind) = eglobal_ids(n)
@@ -366,9 +369,18 @@ contains
       !    lcid(eglobal_ids(n)) = eproc_ownership(n) + 1 !oind
       !    oind = oind + 1
       ! end if
+      if (eproc_ownership(n) /= iam) then
+         cycle
+      end if
 
       ! found an owned element
       ldecomp%gdc2glo(oind) = eglobal_ids(n)
+      if (iam == 0) then
+         print *, "Root: oind: ", oind, ", GID: ", eglobal_ids(n), ", owner: ", eproc_ownership(n)
+      end if
+
+      ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
+      gindex(oind) = eglobal_ids(n)
       ! lcid(eglobal_ids(n)) = iam + 1 !oind
       if (n > offset) then
          cid = cid + 1
@@ -390,8 +402,6 @@ contains
     !! global->local>map (global_id) -> returns local_id
 
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
-    allocate(gindex(beg:end))
-    gindex(:) = ldecomp%gdc2glo(:)
     lsize = end-beg+1
     gsize = lni * lnj
     call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsize, gsize)
