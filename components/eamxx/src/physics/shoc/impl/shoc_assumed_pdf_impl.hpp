@@ -238,6 +238,13 @@ void Functions<S,D>::shoc_assumed_pdf(
       // Compute SGS cloud fraction
       shoc_cldfrac(k) = ekat::min(1, a*C1 + (1 - a)*C2);
 
+     // Compute cond and evap tendencies
+      if (extra_diags) {
+        auto dum     = ekat::max(0, a * ql1 + (1 - a) * ql2);
+        shoc_cond(k) = ekat::max(0, (dum - shoc_ql(k)) / dtime);
+        shoc_evap(k) = ekat::max(0, (shoc_ql(k) - dum) / dtime);
+      } 
+
       // Compute SGS liquid water mixing ratio
       shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));
 
@@ -245,13 +252,6 @@ void Functions<S,D>::shoc_assumed_pdf(
       shoc_assumed_pdf_compute_cloud_liquid_variance(a, s1, ql1, C1, std_s1,
                                                      s2, ql2, C2, std_s2, shoc_ql(k),
                                                      shoc_ql2(k));
-
-      // Compute cond and evap tendencies
-      if (extra_diags) {
-        auto dum     = ekat::max(0, a * ql1 + (1 - a) * ql2);
-        shoc_cond(k) = ekat::max(0, (dum - shoc_ql(k)) / dtime);
-        shoc_evap(k) = ekat::max(0, (shoc_ql(k) - dum) / dtime);
-      }
 
       // Compute liquid water flux
       shoc_assumed_pdf_compute_liquid_water_flux(a, w1_1, w_first, ql1, w1_2, ql2, wqls(k));
