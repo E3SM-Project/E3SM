@@ -1338,7 +1338,7 @@ contains
     if (ierr > 0 )  &
         call endrun('Error: fail to load the domain file for land model')
 
-    nghostlayers = 0 ! TODO: if more than 1-halo layers are needed in ELM, change this value
+    nghostlayers = 1  ! TODO: if more than 1-halo layers are needed in ELM, change this value
     if (masterproc) &
         write(iulog,*) "ELM-MOAB: generating ", nghostlayers, " ghost layers"
 
