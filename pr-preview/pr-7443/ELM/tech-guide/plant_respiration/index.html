@@ -3663,14 +3663,14 @@
 
 <h1 id="1-plant-respiration">1. Plant respiration</h1>
 <h2 id="11-autotrophic-respiration">1.1 Autotrophic Respiration</h2>
-<p>The model treats maintenance and growth respiration processes separately [Lavigne and Ryan, 1997; Sprugel, et al., 1995] <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>.</p>
+<p>The model treats maintenance and growth respiration processes separately (Lavigne and Ryan, 1997<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup>; Sprugel, et al., 1995<sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>).</p>
 <h3 id="111-maintenance-respiration">1.1.1 Maintenance Respiration</h3>
-<p>Maintenance respiration (MR) is a function of temperature and tissue N concentration Ryan, 1991<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup> for live biomass (excludes dead stem and coarse root pools) Thornton and Rosenbloom, 2005<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>.
+<p>Maintenance respiration (MR) is a function of temperature and tissue N concentration (Ryan, 1991<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>) for live biomass (excludes dead stem and coarse root pools) (Thornton and Rosenbloom, 2005<sup id="fnref:4"><a class="footnote-ref" href="#fn:4">4</a></sup>).
 Rates for aboveground pools are based on the prognostic 2-meter air temperature, and rates for belowground pools (fine and coarse roots) depend on fractional rooting distribution with depth and the associated prognostic soil temperatures.</p>
 <p>Implemented in subroutine: <code>MaintenanceResp</code></p>
 <div class="arithmatex">\[
 \begin{equation}
-F^C_{mr,leaf} = (lmr_{sun} \times lai_{sun} + lmr_{sha} \times lai_{sha}) \times C_{umolC02\_to\_gC}
+F^C_{mr,leaf} = (lmr_{sun} \times lai_{sun} + lmr_{sha} \times lai_{sha}) \times C_{umolCO2\_to\_gC}
 \end{equation}
 \]</div>
 <div class="arithmatex">\[
@@ -3688,7 +3688,7 @@ mr = F^C_{mr,leaf} + F^C_{mr,livestem} + F^C_{mr,livecroot} + F^C_{mr,grain} + F
 \end{equation}
 \]</div>
 <h3 id="112-growth-respiration">1.1.2 Growth Respiration</h3>
-<p>Growth respiration is calculated as the parameter <span class="arithmatex">\(gr_{perc}\)</span>, times the total carbon in new growth on a given timestep, based on construction costs for a range of woody and non-woody tissues Larcher, 1995<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>.</p>
+<p>Growth respiration is calculated as the parameter <span class="arithmatex">\(gr_{perc}\)</span>, times the total carbon in new growth on a given timestep, based on construction costs for a range of woody and non-woody tissues (Larcher, 1995<sup id="fnref:5"><a class="footnote-ref" href="#fn:5">5</a></sup>).</p>
 <p>Implemented in subroutine: <code>GrowthResp</code></p>
 <div class="arithmatex">\[
 \begin{eqnarray}
