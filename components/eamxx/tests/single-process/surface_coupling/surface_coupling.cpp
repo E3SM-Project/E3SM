@@ -361,9 +361,15 @@ void test_exports(const FieldManager& fm,
     const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(nlevs-1),z_mid_i(nlevs-1));
 
     Sa_z(i)       = z_mid_i(nlevs-1);
-    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), p_mid_i(nlevs-1));
     Sa_dens(i)    = PF::calculate_density(pseudo_density_i(nlevs-1), dz_i(nlevs-1));
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(nlevs), phis(i));
+
+    // WARNING - THE FOLLOWING IS A HACK
+    // To make the flux calculations within the component coupler consistent with EAM we need to
+    // provide theta based on an exner function that evaluates to 1 at the bottom interface.
+    // To accomplish this we calculate a theta that replaces the reference pressure (P0) for exner
+    // with the pressure of the lowest interface level => p_int_i(nlevs)
+    Sa_ptem(i) = T_mid_i(nlevs-1) / pow( p_mid_i(nlevs-1)/p_int_i(nlevs), PC::RD*PC::INV_CP);
 
     if (not called_directly_after_init) {
       Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
