@@ -1,6 +1,7 @@
 # 1. Carbon, nitrogen, and phosphorus allocation
 
 E3SM is fully prognostic for all carbon, nitrogen, and phosphorus state variables in the vegetation, litter, and soil organic matter pools.
+At each model time step and for each PFT occupying a soil column, the carbon available for allocation to new growth ($F^C_{avail}$) is calculated. The carbon available is then allocated to new plant growth.
 
 ## 1.1 Carbon available for new growth
 
@@ -51,7 +52,7 @@ $$
 
 Implemented in subroutine: `Allocation1_PlantNPDemand`
 
-Total plant nitrogen and phosphorus demand for new growth is estimated as:
+Total plant nitrogen and phosphorus demand for each time step is calculated from carbon allometry and nitrogen and phosphorus concentrations for each tissue type (specified by PFT).
 
 $$
 \begin{equation}
