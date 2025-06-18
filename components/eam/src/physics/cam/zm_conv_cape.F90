@@ -16,6 +16,9 @@ module zm_conv_cape
 
    public :: compute_dilute_cape ! calculate convective available potential energy (CAPE) with dilute parcel ascent
 
+   ! Only public for testing
+   public :: find_mse_max        ! find level of max moist static energy for parcel initialization
+
    real(r8), parameter :: lcl_pressure_threshold     = 600._r8   ! if LCL pressure is lower => no convection and cape is zero
    real(r8), parameter :: ull_upper_launch_pressure  = 600._r8   ! upper search limit for unrestricted launch level (ULL)
    real(r8), parameter :: pergro_rhd_threshold       = -1.e-4_r8 ! MSE difference threshold for perturbation growth test

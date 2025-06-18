@@ -44,7 +44,7 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
    !----------------------------------------------------------------------------
    ! Purpose: initialize quantities for ZM convection scheme
    !----------------------------------------------------------------------------
-   use zm_conv_types, only: zm_const_set_to_global
+   use zm_conv_types, only: zm_const_set_to_global, zm_param_print
    !----------------------------------------------------------------------------
    ! Arguments
    integer, intent(in)           :: limcnv_in       ! top interface level limit for convection

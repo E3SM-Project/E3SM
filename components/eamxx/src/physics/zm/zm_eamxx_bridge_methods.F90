@@ -6,45 +6,10 @@ module zm_eamxx_bridge_methods
   private
   !-----------------------------------------------------------------------------
   ! public methods copied from EAM
-  ! public :: zm_eamxx_bridge_methods_init
   public :: cldfrc_fice
-  !-----------------------------------------------------------------------------
 
 !===================================================================================================
 contains
-
-!===================================================================================================
-
-! subroutine zm_eamxx_bridge_methods_init(zm_const)
-!   use zm_conv_types,   only: zm_const_t
-!   !-----------------------------------------------------------------------------
-!   ! Arguments
-!   type(zm_const_t), intent(in) :: zm_const ! derived type to hold ZM constants
-!   !-----------------------------------------------------------------------------
-!   ! Local variables
-!   ! integer :: status
-!   !-----------------------------------------------------------------------------
-!   ! copy ZM constants to local constants
-!   ! epsilo  = zm_const%epsilo
-!   ! gravit  = zm_const%grav
-!   ! latice  = zm_const%latice
-!   ! latvap  = zm_const%latvap
-!   ! tmelt   = zm_const%tfreez
-!   ! rair    = zm_const%rdair
-!   ! cpwv    = zm_const%cpwv
-!   ! cpliq   = zm_const%cpliq
-!   ! rh2o    = zm_const%rh2o
-!   ! cpair   = zm_const%cpair
-!   !-----------------------------------------------------------------------------
-!   ! ! copied from wv_saturation.F90
-!   ! plenest = ceiling(tmax-tmin) + 2
-!   ! ! Allocate SVP table.
-!   ! allocate(estbl(plenest), stat=status)
-!   ! omeps  = 1.0_r8 - epsilo
-!   !-----------------------------------------------------------------------------
-!   return
-! end subroutine zm_eamxx_bridge_methods_init
-
 !===================================================================================================
 
 ! Copied from cloud_fraction.F90 (and adjusted indentation)

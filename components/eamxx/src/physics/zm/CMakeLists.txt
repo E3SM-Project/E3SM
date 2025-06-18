@@ -1,16 +1,6 @@
 set(PATH_TO_LEGACY_ZM ${SCREAM_BASE_DIR}/../eam/src/physics/cam/)
 
-
-# components/eam/src/physics/cam/zm_conv.F90 components/eam/src/physics/cam/zm_conv_cape.F90 components/eam/src/physics/cam/zm_aero_type.F90 components/eam/src/physics/cam/zm_conv_types.F90 components/eam/src/physics/cam/zm_conv_util.F90 components/eam/src/physics/cam/zm_microphysics_state.F90
-
-# components/eam/src/physics/cam/zm_conv.F90
-# components/eam/src/physics/cam/zm_conv_cape.F90
-# components/eam/src/physics/cam/zm_aero_type.F90
-# components/eam/src/physics/cam/zm_conv_types.F90
-# components/eam/src/physics/cam/zm_conv_util.F90
-# components/eam/src/physics/cam/zm_microphysics_state.F90
-
-set(ZM_SRCS
+set(ZM_F90_SRCS
   # ----------------------------------------------------------------------------
   # EAMxx side bridge modules
   ${CMAKE_CURRENT_SOURCE_DIR}/zm_eamxx_bridge_main.F90
@@ -27,7 +17,7 @@ set(ZM_SRCS
   ${PATH_TO_LEGACY_ZM}/zm_aero_type.F90
   ${PATH_TO_LEGACY_ZM}/zm_microphysics_state.F90
   # ----------------------------------------------------------------------------
-  # files we don't want to bridge yet - or ever
+  # files we may want to bridge later
   # ${PATH_TO_LEGACY_ZM}/zm_transport.F90
   # ${PATH_TO_LEGACY_ZM}/zm_aero.F90
   # ${PATH_TO_LEGACY_ZM}/zm_microphysics.F90
@@ -38,22 +28,27 @@ set(ZM_SRCS
   # shared fotran modules
   ${SCREAM_BASE_DIR}/../../share/util/shr_sys_mod.F90
   ${SCREAM_BASE_DIR}/../../share/util/shr_kind_mod.F90
-  ${SCREAM_BASE_DIR}/../../share/util/shr_assert_mod.F90
-  # ${SCREAM_BASE_DIR}/../../share/util/shr_log_mod.F90
-  # ${SCREAM_BASE_DIR}/../../share/util/shr_abort_mod.F90
-  # ${SCREAM_BASE_DIR}/../../share/util/shr_taskmap_mod.F90
-  # ${SCREAM_BASE_DIR}/../../cime/CIME/non_py/src/timing/perf_mod.F90
+  ${SCREAM_BASE_DIR}/../../share/util/shr_assert_mod.F90.in
   # ----------------------------------------------------------------------------
   # misc other fotran modules
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/wv_sat_methods.F90
-  # ${SCREAM_BASE_DIR}/../eam/src/physics/cam/ppgrid.F90
-  # ${SCREAM_BASE_DIR}/../eam/src/control/physconst.F90
   ${SCREAM_BASE_DIR}/../eam/src/utils/cam_abortutils.F90
   ${SCREAM_BASE_DIR}/../eam/src/control/cam_logfile.F90
   ${SCREAM_BASE_DIR}/../eam/src/control/mpishorthand.F
-  # ${SCREAM_BASE_DIR}/../eam/src/utils/spmd_utils.F90
-  
+  # ----------------------------------------------------------------------------
 )
+
+set(ZM_CXX_SRCS
+  # ----------------------------------------------------------------------------
+  # C++/EAMxx atomsphere process for ZM
+  eamxx_zm_process_interface.cpp
+)
+
+# set(ZM_HEADERS
+#   # shoc.hpp
+#   eamxx_zm_process_interface.hpp
+#   # shoc_constants.hpp
+# )
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
@@ -61,7 +56,8 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
   )
 endif()
 
-add_library(zm ${ZM_SRCS})
+add_library(zm ${ZM_F90_SRCS} ${ZM_CXX_SRCS})
+
 set_target_properties(zm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )

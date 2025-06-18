@@ -33,14 +33,6 @@ use zm_eamxx_bridge_physconst, only: epsilo, &
                                      cpair,  &
                                      tmelt,  &
                                      h2otrip
-! use shr_kind_mod, only: r8 => shr_kind_r8
-! use physconst,    only: epsilo, &
-!                         latvap, &
-!                         latice, &
-!                         rh2o,   &
-!                         cpair,  &
-!                         tmelt,  &
-!                         h2otrip
 
 use wv_sat_methods, only: &
      svp_to_qsat => wv_sat_svp_to_qsat
@@ -51,7 +43,6 @@ save
 
 ! Public interfaces
 ! Namelist, initialization, finalization
-! public wv_sat_readnl
 public wv_sat_init
 public wv_sat_final
 
@@ -109,75 +100,11 @@ real(r8), parameter :: tboil = 373.16_r8
        -8.95963532403e-03_r8, &
        -7.78053686625e-05_r8 /)
 
-!   --- Degree 6 approximation ---
-!  real(r8) :: pcf(6) = (/ &
-!       7.63285250063e-02, &
-!       5.86048427932e+00, &
-!       4.38660831780e-01, &
-!       1.37898276415e-02, &
-!       2.14444472424e-04, &
-!       1.36639103771e-06 /)
-
 contains
 
 !---------------------------------------------------------------------
 ! ADMINISTRATIVE FUNCTIONS
 !---------------------------------------------------------------------
-
-! subroutine wv_sat_readnl(nlfile)
-!   !------------------------------------------------------------------!
-!   ! Purpose:                                                         !
-!   !   Get runtime options for wv_saturation.                         !
-!   !------------------------------------------------------------------!
-
-!   use wv_sat_methods, only: wv_sat_get_scheme_idx, &
-!                             wv_sat_valid_idx, &
-!                             wv_sat_set_default
-
-!   use spmd_utils,      only: masterproc
-!   use namelist_utils,  only: find_group_name
-!   use units,           only: getunit, freeunit
-!   use mpishorthand
-!   use cam_abortutils,      only: endrun
-
-!   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
-   
-!   ! Local variables
-!   integer :: unitn, ierr
-
-!   character(len=32) :: wv_sat_scheme = "GoffGratch"
-
-!   character(len=*), parameter :: subname = 'wv_sat_readnl'
-
-!   namelist /wv_sat_nl/ wv_sat_scheme
-!   !-----------------------------------------------------------------------------
-
-!   if (masterproc) then
-!      unitn = getunit()
-!      open( unitn, file=trim(nlfile), status='old' )
-!      call find_group_name(unitn, 'wv_sat_nl', status=ierr)
-!      if (ierr == 0) then
-!         read(unitn, wv_sat_nl, iostat=ierr)
-!         if (ierr /= 0) then
-!            call endrun(subname // ':: ERROR reading namelist')
-!            return
-!         end if
-!      end if
-!      close(unitn)
-!      call freeunit(unitn)
-
-!   end if
-
-! #ifdef SPMD
-!   call mpibcast(wv_sat_scheme, len(wv_sat_scheme) , mpichar, 0, mpicom)
-! #endif
-
-!   if (.not. wv_sat_set_default(wv_sat_scheme)) then
-!      call endrun('wv_sat_readnl :: Invalid wv_sat_scheme.')
-!      return
-!   end if
-
-! end subroutine wv_sat_readnl
 
 subroutine wv_sat_init
   !------------------------------------------------------------------!
