@@ -567,6 +567,7 @@
     
     <batch_system MACH="polaris" type="pbspro">
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
+      <jobid_pattern>(\d+)\.polaris-pbs</jobid_pattern>
       <directives>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
