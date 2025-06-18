@@ -1,7 +1,7 @@
 # Detect the installed nanobind package and import it into CMake
 find_package(Python COMPONENTS Interpreter Development REQUIRED)
 execute_process(
-  COMMAND "${PYTHON_EXECUTABLE}" -m nanobind --cmake_dir
+  COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
   OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
 find_package(nanobind REQUIRED)
 find_package(mpi4py REQUIRED)
