@@ -1781,17 +1781,9 @@ contains
     call seq_flds_add(o2x_states,"So_ssh")
     call seq_flds_add(x2r_states,"So_ssh")
     call seq_flds_add(o2x_states_to_rof,"So_ssh")
-    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,'So_ssh')
-    longname = 'Sea surface height'
-    stdname  = 'sea_surface_height'
-    units    = 'm'
-    attname  = 'So_ssh'
-    call metadata_set(attname, longname, stdname, units)
-
-    ! ocn -> lnd one-way coupling
-    call seq_flds_add(o2x_states,"So_ssh")
-    call seq_flds_add(x2l_states,"So_ssh")
+    call seq_flds_add(x2l_states,"So_ssh") ! ocn -> lnd one-way coupling
     call seq_flds_add(o2x_states_to_lnd,"So_ssh")
+    if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,'So_ssh')
     longname = 'Sea surface height'
     stdname  = 'sea_surface_height'
     units    = 'm'
