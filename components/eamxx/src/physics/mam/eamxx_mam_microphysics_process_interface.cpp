@@ -593,7 +593,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy =
        ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
@@ -964,6 +964,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
+        // Diagnostic Output: qgcm_tendaa, qqcwgcm_tendaa
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
@@ -980,7 +981,7 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays, 
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays,
 	    dvel_col, dflx_col, progs);
 
         team.team_barrier();
@@ -991,6 +992,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
+
       });  // parallel_for for the column loop
   Kokkos::fence();
 
