@@ -6,8 +6,9 @@ module RDycoreSpmdMod
 
   logical, public :: masterproc ! proc 0 logical for printing msgs
   integer, public :: iam        ! processor rank
-  logical, public :: npes       ! number of processors
-  integer, public :: mpicom     ! communicator group
+  integer, public :: npes       ! number of processors
+  integer, public :: mpicom_rof ! communicator group
+  integer, public :: ROFID      ! mct compid
 
   ! Public methods
   public RDycoreSpmdInit
@@ -22,10 +23,10 @@ contains
     !
     integer :: ierr
 
-    mpicom = mpicom_local
+    mpicom_rof = mpicom_local
 
     ! Determine rank
-    call mpi_comm_rank(mpicom, iam, ierr)
+    call mpi_comm_rank(mpicom_rof, iam, ierr)
 
     ! Determine my rank
     if (iam == 0) then
@@ -35,7 +36,7 @@ contains
     end if
 
     ! Get number of processors
-    call mpi_comm_size(mpicom, npes, ierr)
+    call mpi_comm_size(mpicom_rof, npes, ierr)
 
   end subroutine RDycoreSpmdInit
 
