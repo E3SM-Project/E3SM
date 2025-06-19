@@ -3115,6 +3115,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_ecosysTracers_iron_solubility_file" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, use iron solubility field read in from a file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_ecosysTracers_diagnostic_fields_level1" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, make variables in ecosysDiagFieldsLevel1 available for output
