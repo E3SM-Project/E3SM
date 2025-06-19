@@ -6,7 +6,7 @@
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = .
-BUILDDIR      = _build
+BUILDDIR      = /global/cfs/cdirs/e3sm/www/sbrus/pgrad
 
 # Put it first so that "make" without argument is like "make help".
 help:

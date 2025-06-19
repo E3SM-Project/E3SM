@@ -3,8 +3,11 @@
 
 
 ## 1 Overview
-The pressure gradient will be responsible for computing the horizontal gradients of both the pressure and geopotential terms for the non-Boussinesq primative equations implemented in Omega.
-In the non-Boussinesq model, the vertical coordinate will be pressure as opposed to height.
+The pressure gradient will be responsible for computing the horizontal gradients of both the pressure and geopotential terms for the non-Boussinesq primitive equations implemented in Omega.
+In the non-Boussinesq model, the conserved quantity is mass rather than volume.
+In Omega the prognostic variable $\tilde{h}$ is a pseudo thickness, rather than geometric thickness in m as in a Boussinesq model.
+ Some non-Boussinesq models are written in pressure coordinates (e.g. [de Szoeke and Samelson 2002](https://journals.ametsoc.org/view/journals/phoc/32/7/1520-0485_2002_032_2194_tdbtba_2.0.co_2.xml).
+ However, Omega is written in general vertical coordinates and can reference either pressure $p$ or distance $z$ in the vertical.
 In a pure pressure coordinate the pressure gradient term disappears (since the pressure does not vary along lines of constant pressure), just as how the geopotential term disappears in a pure z coordinate model.
 However, similar to MPAS-Ocean's support for tilted height coordinates, Omega will allow for tilted pressure coordinates.
 This means that Omega will need to compute both the pressure and geopotential gradients.
@@ -18,66 +21,99 @@ This will allow for the use of a $p^\star$ coordinate, which functions similarly
 
 ### 2.2 Requirement: Initial support for a simple centered pressure gradient
 
-For initial global cases without ice shelf cavities, the pressure and geopotential gradients will be computed with a simple centered difference approximation. In later versions of Omega, one ore more  high-order pressure gradients will be implemented and will replace the centered approach in production runs.
+For initial global cases without ice shelf cavities, the pressure and geopotential gradients will be computed with a simple centered difference approximation. In later versions of Omega, one or more  high-order pressure gradients will be implemented and will replace the centered approach in production runs.
 However, the centered pressure gradient will remain an option for use in idealized testing.
 
 ### 2.3 Requirement: Flexibility to support a high-order pressure gradient
 The centered pressure gradient will be insufficient for future versions of Omega that include ice shelf cavities and high resolution shelf breaks.
 The pressure gradient framework should be flexible enough to support a high-order pressure gradient in the future.
+The high order pressure gradient will be similar to [Adcroft et al. 2008](https://doi.org/10.1016/j.ocemod.2008.02.001).
 
 ### 2.4 Requirement: Flexibility to support tidal forcing and sea level change
 In later versions of Omega, the pressure gradient will need to be able to include tidal forcing in the geopotential term.
 These tidal forcings include both the tidal potential and the self attraction and loading terms.
-Additionally, other changes to the geoid
+Additionally, other long-term changes to the geoid can be included in the geopotential.
 
-### 2.5 Requirement: Pressure gradient for barotropic mode
+### 2.5 Disired: Pressure gradient for barotropic mode
 
 For split barotropic-baroclinic timestepping, the pressure gradient should provide the bottom pressure gradient tendency in the barotropic mode.
+This will be added in a future version when split time stepping is implemented.
 
 ### Desired:
 
 ## 3 Algorithmic Formulation
-The non-Boussinesq momentum equation is
-$$ \frac{D \mathbf{u}_h}{D t } + f\boldsymbol{k}\times \mathbf{u}_h + \left(v\nabla_A p + \nabla_A \phi \right) = \boldsymbol{\mathcal{F}}. $$
+### 3.1 Centered Pressure Gradient
+In the layered non-Boussinesq [momentum equation](OmegaV1GoverningEqns.md#discrete-momentum) solved in Omega, the pressure gradient tendency term for edge $e$ and level $k$, $T^p_{e,k}$, includes the gradient of the pressure and the gradient of the geopotential,
 
-where $\mathbf{u}_h$ is the horizontal velocity, $f$ is the Coriolis parameter, $v = \frac{1}{\rho}$ is the specific volume, $\rho = \rho(T,S,p)$ is the density, $p$ is the hydrostatic pressure, $\phi$ is the geopotential, and $\boldsymbol{\mathcal{F}}$ are the dissipative terms.
-The operator $\nabla_A$ is the gradient along a constant surface, $A$, and the total derivative is
+$$
+T^p_{e,k} = -\left[ \alpha_{i,k} \right]_e \nabla p_{i,k} - \nabla \Phi_{i,k},
+$$
 
-$$ \frac{D \mathbf{u}_h}{D t } = \left( \frac{\partial}{\partial t} \right)_A  + \mathbf{u}_h\cdot \nabla_A + \omega\frac{\partial}{\partial A}, $$
-
-where $\omega$ is the cross coordinate flow.
-In the layered non-Boussinesq equations, the prognostic variable is the pressure thickness $h_k$, so that the geometric thickness (in meters) is a diagnostic variable defined as:
-
-$$ \Delta z_k = v_k h_k. $$
-
-The pressure at vertical cell interfaces is the found by summing the pressure thicknesses:
-
-$$ p_{K+1/2} = p_{surf} + g\sum_{k=1}^K h_k. $$
-
-The geopotential at vertical cell integrates is found by summing the pressure thicknesses multiplied by the specific volume:
-
-$$ \phi_{K+1/2} = g\left(z_b + \sum_{k=K}^{N} v_k h_k\right), $$
-
-where $z_b$ is the (positive-up) bottom depth.
-
+where the second term is necessary to account for tilted layers that occur when using a general vertical coordinate.
+In this equation, $\alpha_{i,k}$ is the specific volume for cell $i$ at the mid-point of level $k$, $p_{i,k}$ is the pressure, and $\Phi_{i,k}$ is the geopotential.
 The discrete gradient operator at an edge is:
 
-$$ \nabla {(\cdot)} = \frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i} (\cdot)_i $$
+$$
+ \nabla {(\cdot)} = \frac{1}{d_e} \sum_{i\in CE(e)} -n_{e,i} (\cdot)_i
+$$
 
 where $d_e$ is the distance between cell centers, $CE(e)$ are the cells on edge $e$, and $n_{e,i}$ is the sign of the edge normal with respect to cell $i$.
-Therefore the centered pressure gradient will be calculated as:
+The horizontal averaging operator is:
 
-$$ T^p_k = \frac{1}{d_e} \left( \widehat{v}_{k,e} \sum_{i \in CE(e)} n_{e,i} \overline{p}_{k,i} + \sum_{i\in CE(e)} n_{e,i} \overline{\phi}_{k,i}\right), $$
+$$
+ [\cdot]_e = \frac{1}{2}\sum_{i\in CE(e)} (\cdot)_i
+$$
 
-$$ = \frac{1}{d_e} \left(  \sum_{i \in CE(e)} n_{e,i} \left( \widehat{v}_{k,e}\overline{p}_{k,i} + \overline{\phi}_{k,i} \right) \right), $$
+Therefore, the centered pressure gradient will be calculated as:
 
-with the vertical averaging operator defined as:
+$$
+ T^p_{e,k} = \frac{1}{d_e} \left( [\alpha_{i,k}]_e \sum_{i \in CE(e)} n_{e,i} p_{k,i} + \sum_{i\in CE(e)} n_{e,i} \Phi_{k,i}\right),
+$$
 
-$$ \overline{(\cdot)} = \frac{1}{2} \left((\cdot)_{k+1/2} + (\cdot)_{k-1/2} \right)$$
+$$
+ = \frac{1}{d_e} \left(  \sum_{i \in CE(e)} n_{e,i} \left( [\alpha_{i,k}]_ep_{k,i} + \Phi_{k,i} \right) \right),
+$$
 
-and the horizontal averaging operator:
+### 3.2 Barotropic Pressure Gradient
 
-$$\widehat{(\cdot)} = \frac{1}{2} \left( (\cdot)_{i=1} + (\cdot)_{i=2}\right)$$
+When split baroclinic-barotropic time stepping is implemented in the future, the barotropic pressure gradient will be calculated by the pressure gradient class.
+The barotropic pressure gradient is found by depth integrating the pressure gradient.
+The pressure is
+
+$$
+p(z) = p_b - g \int^z_{-h} \rho dz^\prime,
+$$
+
+where $p_b$ is the bottom pressure.
+The bottom pressure is the sum of the atmospheric surface pressure, $p_s$, and the pressure contribution of the water column:
+
+$$
+p(z) &=  p_s + g\int_{-h}^\eta \rho dz - g \int^z_{-h} \rho dz^\prime, \\
+     &=  p_s + g\rho_0\widetilde{H} - g \int^z_{-h} \rho dz^\prime,
+$$
+
+where the total water column pseudo height is expressed by
+
+$$
+\widetilde{H} = \int_{-h}^\eta \frac{\rho}{\rho_0} dz.
+$$
+
+$\widetilde{H}$ is the prognositc variable in the barotropic continuity equation.
+The vertical integral of the pressure gradient is
+
+$$
+\frac{1}{\rho_0\widetilde{H}}\int^\eta_{-h} \nabla p dz &= \frac{1}{\rho_0\widetilde{H}}\int^\eta_{-h} \nabla \left( p_s + g\rho_0 \widetilde{H} - g \int^z_{-h} \rho dz^\prime \right) dz, \\
+                           &= \frac{H}{\rho_0\widetilde{H}}\nabla p_s + \frac{gH}{\widetilde{H}}\nabla \widetilde{H} - \frac{g}{\rho_0\widetilde{H}} \int_{-h}^\eta \left( \nabla \int_{-h}^z \rho dz^\prime\right) dz,
+$$
+
+where the height of the water column is represented by $H$.
+The $1/\rho_0\widetilde{H}$ factor comes vertically integrating the material derivative and expressing the resulting barotropic momentum equation in non-conservative form.
+
+Therefore, the barotorpic pressure gradient term is discretized as:
+
+$$
+\overline{T}_e^p = g\left[ \frac{H_i}{\widetilde{H}_i} \right]_e\sum_{i \in CE(e)} n_{e,i}\widetilde{H}_e
+$$
 
 ## 4 Design
 
@@ -88,8 +124,9 @@ The `PressureGradient` class will be used to perform the horizontal gradients of
 class PressureGrad{
     public:
     private:
+        std::unique_ptr<PressureGrad> OmegaPressureGrad;
         PressureGradCentered CenteredPGrad;
-        PressureGradHighOrder HighOrderPGrad;
+        PressureGradHighOrder HighOrderPGrad; // To be implemented later
         PressureGradType PressureGradChoice;
         I4 NVertLevels;
         I4 NChuncks;
@@ -116,9 +153,9 @@ The functions to compute the centered and high order pressure gradient terms wil
 ```c++
 class PressureGrad{
     public:
-        static PressureGrad *create();
+        static PressureGrad *init();
+        static PressureGrad *get();
         void computePressureGrad();
-        void computePressureGradBtr();
     private:
 
 }
@@ -130,31 +167,25 @@ The constructor will be responsible for storing any static mesh information as p
 PressureGrad::PressureGrad(const HorzMesh *Mesh, int NVertLevels, Config *Options);
 ```
 
-The create method will take the same arguments as the constructor plus a name.
-It calls the constructor to create a new pressure gradient instance, and put it in the static map of all pressure gradients.
-It will return a pointer to the newly created object.
-```c++
-PressureGrad *PressureGrad::create(const std::string &Name, const HorzMesh *Mesh, int NVertLevels, Config *Options);
-```
-
 #### 4.2.2 Initialization
 
-The init method will create the default pressure gradient and return an error code:
+The init method will create the pressure gradient and return an error code:
 ```c++
 int PressureGrad::init();
 ```
+It calls the constructor to create a new pressure gradient instance, producing a static managed (unique) pointer to the single instance.
 
 #### 4.2.3 Retrieval
 
-There will be methods for getting the default and non-default pressure gradient instances:
+There will be a method for getting a pointer to the pressure gradient instance:
 ```c++
-PressureGrad *PressureGrad::getDefault();
-PressureGrad *PressureGrad::get(const std::string &Name);
+PressureGrad *PressureGrad::get();
 ```
 
 #### 4.2.4 Computation
 
 The public `computePressureGrad` method will rely on private methods for each specific pressure gradient option (centered and high order).
+Note that the functors called by `computePressureGrad` are responsible for computing the sum of the pressure gradient and geopotential gradient accumulated in the `Tend` output array.
 ```c++
 void PressureGrad::computePressureGrad(const Array2DReal &Tend,
                                        const Array2DReal &Pressure,
@@ -179,11 +210,8 @@ OMEGA_SCOPE(LocHighOrderPGrad, HighOrderPGrad)
 #### 4.2.5 Destruction and removal
 
 No operations are needed in the destructor.
-The erase method will remove a named pressure gradient instance, whereas the clear method will remove all of
-them.
-Both will call the destructor in the process.
+The clear method will remove the pressure gradient instance, calling the destructor in the process.
 ```c++
-void PressureGrad::erase(const std::string &Name);
 void PressureGrad::clear();
 ```
 
