@@ -386,14 +386,14 @@
       <mask>WCAtl12to45E2r4</mask>
     </model_grid>
 
-    <model_grid alias="T62_SOwISC12to60E2r4" compset="(DATM|XATM|SATM)">
+    <model_grid alias="T62_SOwISC12to60E3r3" compset="(DATM|XATM|SATM)">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
-      <grid name="ocnice">SOwISC12to60E2r4</grid>
+      <grid name="ocnice">SOwISC12to60E3r3</grid>
       <grid name="rof">rx1</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>SOwISC12to60E2r4</mask>
+      <mask>SOwISC12to30E3r3</mask>
     </model_grid>
 
     <model_grid alias="T62_ECwISC30to60E2r1" compset="(DATM|XATM|SATM)">

@@ -174,7 +174,7 @@ contains
 !      real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:,:), allocatable :: pressureAdjustedForLandIce 
 
-      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraft
+      real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD
       real (kind=RKIND), dimension(:), pointer :: dGradientMLD, landIcePressure
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: interp_local
@@ -212,7 +212,7 @@ contains
 
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-         call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+         ! landIceDraftForSsh is present in diagnostics variables
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
@@ -284,11 +284,11 @@ contains
                !$omp end do
                !$omp end parallel
 
-               if (associated(landIceDraft) ) then
+               if (associated(landIceDraftForSsh) ) then
                   !$omp parallel
                   !$omp do schedule(runtime)
                   do iCell = 1, nCells
-                     tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))
+                     tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraftForSsh(iCell))
                   end do
                   !$omp end do
                   !$omp end parallel
@@ -350,11 +350,11 @@ contains
          !$omp end parallel
 
          !normalize MLD to top of ice cavity
-         if (associated(landIceDraft) ) then
+         if (associated(landIceDraftForSsh) ) then
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
-             tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))
+             tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraftForSsh(iCell))
            end do
            !$omp end do
            !$omp end parallel
@@ -415,11 +415,11 @@ contains
          !$omp end do
          !$omp end parallel
 
-         if (associated(landIceDraft) ) then
+         if (associated(landIceDraftForSsh) ) then
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
-             dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))
+             dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraftForSsh(iCell))
            end do
            !$omp end do
            !$omp end parallel
