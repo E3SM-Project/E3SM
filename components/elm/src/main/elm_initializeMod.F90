@@ -1,5 +1,5 @@
 module elm_initializeMod
-
+#define MOABDEBUG
   !-----------------------------------------------------------------------
   ! Performs land model initialization
   !
@@ -1311,7 +1311,7 @@ contains
    !      call endrun('Error: cannot create ELM-MOAB mesh when ldomain%nv < 3.')
 
     topodim = 2 ! topological dimension = 2: manifold mesh on the sphere
-    bridgedim = 0 ! use vertices = 0 as the bridge (other options: edges = 1)
+    bridgedim = 1 ! use vertices = 0 as the bridge (other options: edges = 1)
     nghostlayers = 0 ! initialize to zero (default)
 
     ! next define MOAB app for the ghosted one
@@ -1366,19 +1366,26 @@ contains
     ! set the local size to the total elements
     lsz = nelem(3)
 
+    entity_types(:) = 1 ! default: Element-based tags
+
     ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
     !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
     tagtype = 0 ! dense, integer
     numco = 1
-    tagname='GLOBAL_ID:partition:mask'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numco, tag_indices(1) )
+    tagname='GLOBAL_ID'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(1) )
     if (ierr > 0 )  &
-      call endrun('Error: fail to retrieve GLOBAL_ID:partition tag ')
+      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
+
+    ! let us synchronize global ID tag so that ghosted elements receive the data as well
+   !  ierr = iMOAB_SynchronizeTags(mlndghostid, 3, tag_indices(1), entity_types(1))
+   !  if (ierr > 0 )  &
+   !    call endrun('Error: fail to synchronize element tags for ELM ')
 
     !  Define and Set Fraction on each mesh
     tagname='frac:area:aream'//C_NULL_CHAR
     tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco,  tag_indices(4) )
+    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(2) )
     if (ierr > 0 )  &
       call endrun('Error: fail to create frac:area:aream tags')
 
@@ -1392,8 +1399,6 @@ contains
     !   data(i+2*lsz) = data(i+lsz)             ! aream = model area
     ! enddo
 
-    entity_types(:) = 1 ! default: Element-based tags
-
     ! set the values on the internal mesh, halo values aren't set
     ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
     ! if (ierr > 0 )  &
@@ -1404,18 +1409,16 @@ contains
     !   call endrun('Error: fail to update mesh info ')
 
     ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
-    ! entity_types(:) = 1 ! default: Element-based tags
-    ! entity_types(1) = 0 ! Vertex-based tags
-    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to synchronize vertex tags for ELM ')
+    entity_types(1) = 0 ! Vertex tag for GLOBAL_ID
+    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to synchronize vertex tags for ELM ')
 
-    ! ! synchronize: GLOBAL_ID, frac, area, aream tags defined on elements
-    ! ! in the ghost layers
-    ! entity_types(1) = 1 ! Element-based tags
-    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 8, tag_indices, entity_types)
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to synchronize element tags for ELM ')
+    ! ! synchronize: GLOBAL_ID tag defined on elements in the ghost layers
+    entity_types(1) = 1 ! Element tag for GLOBAL_ID
+    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to synchronize element tags for ELM ')
 
     ! deallocate(data)
 
@@ -1430,4 +1433,5 @@ contains
   end subroutine init_moab_land_internal
 #endif
 
+#undef MOABDEBUG
 end module elm_initializeMod
