@@ -22,6 +22,9 @@ module rof_comp_mct
                               index_r2x_Flrr_flood,   index_r2x_Flrr_volr,   &
                               index_r2x_Flrr_volrmch, index_r2x_Flrr_supply, &
                               index_r2x_Flrr_deficit
+  use rdycoreMod      , only: inst_name, inst_suffix, inst_index
+  use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit
+  use RDycoreIO
 
   !
   ! !PUBLIC TYPES:
@@ -41,15 +44,7 @@ module rof_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
 
-  integer(IN)            :: mpicom_rof          ! mpi communicator
-  integer(IN)            :: my_task             ! my task in mpi communicator mpicom
-  integer                :: npes                ! number of tasks in mpi communicator mpicom
-  integer                :: inst_index          ! number of current instance (ie. 1)
   integer                :: lsize    
-  character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)            :: logunit_rof         ! logging unit number
-  integer(IN)            :: rofid               ! mct comp id
 
   ! temporary for reading mosart file and making dummy domain
   integer :: nlatg, nlong, gsize       ! size of runoff data and number of grid cells
@@ -62,7 +57,6 @@ module rof_comp_mct
   integer, allocatable :: pe_loc(:)    ! for gsmap initialization
 
   character(*), parameter :: F00   = "('(rof_comp_init) ',8a)"
-  integer     , parameter :: master_task=0 ! task number of master task
   character(*), parameter :: subName = "(rof_init_mct) "
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,15 +91,16 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap_rof
     type(mct_gGrid),         pointer :: dom_r        ! runoff model domain
+    integer           :: shrlogunit                ! original log unit
+    integer           :: shrloglev                 ! original log level
+    integer           :: ierr                      ! error code
+    integer           :: mpicom_loc                ! local mpi communicator
+    logical           :: read_restart              ! start from restart
+    logical           :: exists                    ! true if file exists
     logical           :: rof_present               ! flag
     logical           :: rof_prognostic            ! flag
     logical           :: rofice_present            ! flag
     logical           :: flood_present             ! flag
-    integer           :: shrlogunit                ! original log unit
-    integer           :: shrloglev                 ! original log level
-    logical           :: read_restart              ! start from restart
-    logical           :: exists                    ! true if file exists
-    integer           :: ierr                      ! error code
 
     character(CL)     :: filePath ! generic file path
     character(CL)     :: fileName ! generic file name
@@ -122,13 +117,16 @@ CONTAINS
     ! Set cdata pointers
     call seq_cdata_setptrs(cdata, &
          id=rofid, &
-         mpicom=mpicom_rof, &
+         mpicom=mpicom_loc, &
          gsMap=gsMap_rof, &
          dom=dom_r, &
          infodata=infodata)
 
     ! Determine attribute vector indices
     call rof_cpl_indices_set()
+
+    ! Initialize RDycore MPI communicator
+    call RDycoreSpmdInit(mpicom_loc)
 
     ! Obtain infodata variables
     call seq_infodata_getData(infodata, &
@@ -139,12 +137,12 @@ CONTAINS
     inst_index  = seq_comm_inst(rofid)
     inst_suffix = seq_comm_suffix(rofid)
 
-    ! Determine communicator group
-    call mpi_comm_rank(mpicom_rof, my_task, ierr)
+    ! Initialize RDycore pio
+    call ncd_pio_init()
 
     !--- open log file ---
     call shr_file_getLogUnit (shrlogunit)
-    if (my_task == master_task) then
+    if (masterproc) then
        inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
        if (exists) then
           logunit_rof = shr_file_getUnit()
@@ -158,9 +156,9 @@ CONTAINS
     call shr_file_getLogLevel(shrloglev)
     call shr_file_setLogUnit (logunit_rof)
 
-    if (my_task == master_task) then
+    if (masterproc) then
        write(logunit_rof,*) ' RDycore npes = ', npes
-       write(logunit_rof,*) ' RDycore my_task  = ', my_task
+       write(logunit_rof,*) ' RDycore iam  = ', iam
        write(logunit_rof,*) ' inst_name = ', trim(inst_name)
     endif
 
@@ -209,7 +207,7 @@ CONTAINS
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
-    if (my_task == master_task) write(logunit_rof,F00) 'rof_comp_init done'
+    if (masterproc) write(logunit_rof,F00) 'rof_comp_init done'
     call shr_sys_flush(logunit_rof)
 
     call shr_file_setLogUnit (shrlogunit)
@@ -368,7 +366,7 @@ CONTAINS
     allocate(data(lsize))
 
     ! Determine global gridpoint number attribute, GlobGridNum, which is set automatically by MCT
-    call mct_gsMap_orderedPoints(gsMap_rof, my_task, idata)
+    call mct_gsMap_orderedPoints(gsMap_rof, iam, idata)
     call mct_gGrid_importIAttr(dom_rof,'GlobGridNum',idata,lsize)
 
     ! Initialize attribute vector with special value
@@ -381,8 +379,8 @@ CONTAINS
     call mct_gGrid_importRAttr(dom_rof,"mask" ,data,lsize)
 
     ! TODO - Fill in correct values for domain components
-    lstart = start(my_task+1)
-    lstop  = start(my_task+1) + length(my_task+1) - 1
+    lstart = start(iam+1)
+    lstop  = start(iam+1) + length(iam+1) - 1
 
     ni = 0
     do n = lstart, lstop
@@ -459,20 +457,20 @@ CONTAINS
     !---------------------------------------------------------------------------
 
       do n = 1, lsize
-        r2x_r%rattr(index_r2x_Forr_rofl,n)    = float(my_task)
-        r2x_r%rattr(index_r2x_Forr_rofi,n)    = float(my_task)
-        r2x_r%rattr(index_r2x_Flrr_flood,n)   = float(my_task)
-        r2x_r%rattr(index_r2x_Flrr_volr,n)    = float(my_task)
-        r2x_r%rattr(index_r2x_Flrr_volrmch,n) = float(my_task)
-        r2x_r%rattr(index_r2x_Flrr_supply,n)  = float(my_task)
-        r2x_r%rattr(index_r2x_Flrr_deficit,n) = float(my_task)
+        r2x_r%rattr(index_r2x_Forr_rofl,n)    = float(iam)
+        r2x_r%rattr(index_r2x_Forr_rofi,n)    = float(iam)
+        r2x_r%rattr(index_r2x_Flrr_flood,n)   = float(iam)
+        r2x_r%rattr(index_r2x_Flrr_volr,n)    = float(iam)
+        r2x_r%rattr(index_r2x_Flrr_volrmch,n) = float(iam)
+        r2x_r%rattr(index_r2x_Flrr_supply,n)  = float(iam)
+        r2x_r%rattr(index_r2x_Flrr_deficit,n) = float(iam)
       enddo
 
   end subroutine rof_export_mct
 
 !====================================================================================
 
-  subroutine  rof_read_mosart()
+  subroutine  rof_read_mosart0()
 
     use shr_mpi_mod
     !---------------------------------------------------------------------------
@@ -501,7 +499,7 @@ CONTAINS
     filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/mosart/MOSART_global_half_20180721a.nc'
 
     ! read file only from master_task
-    if (my_task == master_task) then
+    if (masterproc) then
        status = nf90_open(trim(filename_rof), NF90_NOWRITE, ncid)
 
        ! read in data dimensions
@@ -542,7 +540,7 @@ CONTAINS
     allocate(areac(gsize))
 
     ! read in lat, lon, and area only on master_task
-    if (my_task == master_task) then
+    if (masterproc) then
        allocate(area1D(lat))
        status = nf90_inq_varid(ncid, "lat", varid)
        status = nf90_get_var(ncid, varid, lat1D)
@@ -576,11 +574,98 @@ CONTAINS
        end do
     end do
 
-    if (my_task == master_task) then
+    if (masterproc) then
        write(logunit_rof,*) 'Read lat1D ', minval(lat1D), maxval(lat1D)
        write(logunit_rof,*) 'Read lon1D ', minval(lon1D), maxval(lon1D)
        write(logunit_rof,*) 'Read area  ', minval(area),  maxval(area)
     end if
+
+    deallocate(lat1D)
+    deallocate(lon1D)
+    deallocate(area)
+
+    return
+
+  end subroutine rof_read_mosart0
+!====================================================================================
+
+  subroutine  rof_read_mosart()
+
+    use shr_mpi_mod
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Send the runoff model export state to the coupler
+    ! convert from m3/s to kg/m2s
+    !
+    ! ARGUMENTS:
+    implicit none
+    !
+    ! LOCAL VARIABLES
+    integer :: i, j, count, ier
+    logical :: found, isgrid2d
+    character(len=128) :: filename_rof
+    character(len=*),parameter :: subname = '(rof_read_mosart) '
+    integer, parameter :: RKIND = selected_real_kind(13)
+    real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D, area1D
+    real(kind=RKIND), dimension(:,:), allocatable :: area
+    type(file_desc_t) :: ncid                 ! netcdf file id
+
+    !---------------------------------------------------------------------------
+
+    ! open mosart file
+    filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/mosart/MOSART_global_half_20180721a.nc'
+
+    if (masterproc) then
+       write(logunit_rof,*) 'Read in MOSART file name: ',trim(filename_rof)
+       call shr_sys_flush(logunit_rof)
+    endif
+
+    call ncd_pio_openfile(ncid, trim(filename_rof), 0)
+
+    call ncd_inqfdims(ncid, isgrid2d, nlong, nlatg, gsize)
+
+    if (masterproc) then
+       write(logunit_rof,*) 'Values for lon/lat: ', nlong, nlatg, gsize
+       write(logunit_rof,*) 'Successfully read MOSART dimensions'
+       if (isgrid2d) then
+        write(logunit_rof,*) 'MOSART input is 2d'
+       else
+        write(logunit_rof,*) 'MOSART input is 1d'
+       endif
+       call shr_sys_flush(logunit_rof)
+    endif
+
+    ! allocate arrays
+    allocate(lat1D(nlatg))
+    allocate(lon1D(nlong))
+    allocate(area(nlatg,nlong))
+    allocate(lonc(gsize))
+    allocate(latc(gsize))
+    allocate(areac(gsize))
+
+    ! read the mesh data
+    call ncd_io(ncid=ncid, varname='lon', flag='read', data=lon1D, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART longitudes')
+    if (masterproc) write(logunit_rof,*) 'Read lon ',minval(lon1D),maxval(lon1D)
+
+    call ncd_io(ncid=ncid, varname='lat', flag='read', data=lat1D, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART latitudes')
+    if (masterproc) write(logunit_rof,*) 'Read lat ',minval(lat1D),maxval(lat1D)
+
+    call ncd_io(ncid=ncid, varname='area', flag='read', data=area, readvar=found)
+    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART area')
+    if (masterproc) write(logunit_rof,*) 'Read area ',minval(area),maxval(area)
+
+    ! load 2d data into 1d arrays
+    count = 0
+    do j = 1, nlong
+       do i = 1, nlatg
+         count = count + 1
+         latc(count)  = lat1D(i)
+         lonc(count)  = lon1D(j)
+         areac(count) = area(i,j)
+       end do
+    end do
 
     deallocate(lat1D)
     deallocate(lon1D)
