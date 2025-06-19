@@ -284,7 +284,7 @@ contains
                mapper_Fr2l%tgt_mbid = mblxid
                mapper_Fr2l%src_context = rof(1)%cplcompid
                mapper_Fr2l%intx_context = lnd(1)%cplcompid
-            else
+            else  ! samegrid_lr is false. Bi-grid case
               if (compute_maps_online_r2l) then
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbrxid, mblxid, mbintxrl )
                   if (ierr .ne. 0) then
@@ -318,7 +318,7 @@ contains
                     write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
                   endif
-              endif
+              endif ! (compute_maps_online_r2l)
               ! now take care of the mapper
               if ( mapper_Fr2l%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
@@ -334,8 +334,6 @@ contains
               mapper_Fr2l%weight_identifier = wgtIdr2l
               mapper_Fr2l%mbname = 'mapper_Fr2l'
 
-              ! because we will project fields from rof to lnd grid, we need to define
-              !  the r2x fields to lnd grid on coupler side
               if (compute_maps_online_r2l) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   dm1 = "fv"//C_NULL_CHAR
@@ -367,7 +365,7 @@ contains
                     write(logunit,*) subname,' error in computing rl weights '
                     call shr_sys_abort(subname//' ERROR in computing rl weights ')
                   endif
-              else
+              else ! read maps
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   call moab_map_init_rcfile( mbrxid, mblxid, mbintxrl, type1, &
                         'seq_maps.rc', 'rof2lnd_fmapname:', 'rof2lnd_fmaptype:',samegrid_lr, &
@@ -380,9 +378,11 @@ contains
                      write(logunit,*) subname,' error in migrating rof mesh for map rof c2 lnd '
                      call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 lnd')
                   endif
-              endif
+              endif ! compute or read mape
 
-            endif
+            endif ! samegrid_lr or not
+              ! because we will project fields from rof to lnd grid, we need to define
+              !  the r2x fields to lnd grid on coupler side
             tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 !
@@ -414,10 +414,10 @@ contains
             endif
             deallocate (tmparray)
 
-         end if ! if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
+         end if !((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
 ! endif HAVE_MOAB
 #endif
-       end if
+       end if ! rof_c2_lnd
        call shr_sys_flush(logunit)
 
        if (atm_c2_lnd) then
