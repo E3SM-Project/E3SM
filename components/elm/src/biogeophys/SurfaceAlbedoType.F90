@@ -765,36 +765,6 @@ contains
          long_name='down diffuse flux below veg per unit diffuse flux', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ftii_patch)
 
-    call restartvar(ncid=ncid, flag=flag, varname='fd_top_adjust', xtype=ncd_double,  &
-         dim1name='pft', dim2name='numrad', switchdim=.true., &
-         long_name='sub-grid topographic factor for direct radiation', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%fd_top_adjust)
-         
-    call restartvar(ncid=ncid, flag=flag, varname='fi_top_adjust', xtype=ncd_double,  &
-         dim1name='pft', dim2name='numrad', switchdim=.true., &
-         long_name='sub-grid topographic factor for diffuse radiation', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%fi_top_adjust)
-
-    call restartvar(ncid=ncid, flag=flag, varname='f_dir', xtype=ncd_double,  &
-         dim1name='pft', dim2name='numrad', switchdim=.true., &
-         long_name='sub-grid topographic factor for direct radiation', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%f_dir)
-         
-    call restartvar(ncid=ncid, flag=flag, varname='f_rdir', xtype=ncd_double,  &
-         dim1name='pft', dim2name='numrad', switchdim=.true., &
-         long_name='sub-grid topographic factor for reflected-direct radiation', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%f_rdir)
-
-    call restartvar(ncid=ncid, flag=flag, varname='f_dif', xtype=ncd_double,  &
-         dim1name='pft', dim2name='numrad', switchdim=.true., &
-         long_name='sub-grid topographic factor for diffuse radiation', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%f_dif)
-         
-    call restartvar(ncid=ncid, flag=flag, varname='f_rdif', xtype=ncd_double,  &
-         dim1name='pft', dim2name='numrad', switchdim=.true., &
-         long_name='sub-grid topographic factor for reflected-diffuse radiation', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%f_rdif)
-
     !--------------------------------
     ! variables needed for SNICAR
     !--------------------------------
