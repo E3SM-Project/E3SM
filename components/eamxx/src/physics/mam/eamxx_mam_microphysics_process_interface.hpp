@@ -60,6 +60,57 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // Finalize
   void finalize_impl(){/*Do nothing*/};
 
+  void process_diagnostic_tendencies(view_3d &qgcm_tendaa, view_3d &qqcwgcm_tendaa,
+                                  const Kokkos::Array<Real, mam_coupling::gas_pcnst()> &adv_mass,
+                                  const const_view_1d &pdel, const int ncol, const int nlev) {
+    // HACK: these are placeholders until we establish a way of requesting diagnostic output
+    // flag: write the full columns of mean tracer mixing ratios
+    constexpr bool write_full_col_gas_spec = true;
+    // flag: write the column-integrated tendencies
+    constexpr bool write_coltend_gas_spec = true;
+    const int gas_pcnst = mam_coupling::gas_pcnst();
+    const int nq = mam4::microphysics::nqtendaa();
+    const int nqqcw = mam4::microphysics::nqqcwtendaa();
+
+    if (write_full_col_gas_spec) {
+      // TODO: write out qgcm_tendaa and qqcwgcm_tendaa...
+    }
+
+    if (write_coltend_gas_spec) {
+      using physconst = scream::physics::Constants<Real>;
+      static constexpr Real gravity = physconst::gravit;
+      static constexpr Real mw_dry_air = physconst::MWdry;
+      // first calculate the tendencies
+      view_2d q_coltendaa("diag_tends", gas_pcnst, nq);
+      view_2d qqcw_coltendaa("diag_tends-cw", gas_pcnst, nqqcw);
+      Kokkos::deep_copy(q_coltendaa, 0.0);
+      Kokkos::deep_copy(qqcw_coltendaa, 0.0);
+
+      // TODO: can probably do this using vert_contract.hpp, though the messiness
+      // of the weights could mean it's not worth it
+      Kokkos::parallel_for("calc_diagnostic_tendencies",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {nlev, gas_pcnst, nq}),
+        KOKKOS_LAMBDA(const int k, const int spec, const int itend) {
+          Real pdel_fac = pdel(k) / gravity;
+          // const auto q_k = ekat::subview(qgcm_tendaa, k);
+          q_coltendaa(spec, itend) = q_coltendaa(spec, itend)
+              + qgcm_tendaa(k, spec, itend) * pdel_fac * (adv_mass[spec] / mw_dry_air);
+      });
+      // NOTE: looping over the third dimension (nqqcw) may be pointless
+      // here because nqqcw == 1 appears to be hard-coded
+      Kokkos::parallel_for("calc_diagnostic_tendencies",
+        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {nlev, gas_pcnst, nqqcw}),
+        KOKKOS_LAMBDA(const int k, const int spec, const int itend) {
+          Real pdel_fac = pdel(k) / gravity;
+          // const auto q_k = ekat::subview(qqcwgcm_tendaa, k);
+          qqcw_coltendaa(spec, itend) = qqcw_coltendaa(spec, itend)
+              + qqcwgcm_tendaa(k, spec, itend) * pdel_fac * (adv_mass[spec] / mw_dry_air);
+      });
+
+      // TODO: write q_coltendaa and qqcw_coltendaa out...
+    }
+  }
+
  private:
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
