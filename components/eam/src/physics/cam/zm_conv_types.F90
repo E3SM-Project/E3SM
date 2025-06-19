@@ -19,6 +19,7 @@ module zm_conv_types
 !===================================================================================================
 
 type :: zm_const_t
+   real(r8) :: pi      ! 3.14159...
    real(r8) :: grav    ! gravitational acceleration      [m/s2]
    real(r8) :: boltz   ! Boltzmann's constant            [J/K/molecule]
    real(r8) :: avogad  ! Avogadro's number               [molecules/kmole]
@@ -49,6 +50,11 @@ type :: zm_param_t
    real(r8) :: dmpdz           = unset_r8    ! fractional mass entrainment rate [1/m]
    real(r8) :: tiedke_add      = unset_r8    ! tunable temperature perturbation
    integer  :: mx_bot_lyr_adj  = unset_int   ! bot layer index adjustment for launch level search
+   logical  :: mcsp_enabled    = .false.     ! flag for mesoscale coherent structure parameterization (MSCP)
+   real(r8) :: mcsp_t_coeff    = 0           ! MCSP coefficient for temperature tendencies
+   real(r8) :: mcsp_q_coeff    = 0           ! MCSP coefficient for specific humidity tendencies
+   real(r8) :: mcsp_u_coeff    = 0           ! MCSP coefficient for zonal momentum tendencies
+   real(r8) :: mcsp_v_coeff    = 0           ! MCSP coefficient for meridional momentum tendencies
 end type zm_param_t
 
 !===================================================================================================
@@ -59,10 +65,11 @@ subroutine zm_const_set_to_global(zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: set zm_const using global values from physconst/shr_const_mod
    !----------------------------------------------------------------------------
-   use physconst, only: gravit,rair,cpair,cpwv,cpliq,rh2o,tmelt,latvap,latice,epsilo
+   use physconst, only: pi,gravit,rair,cpair,cpwv,cpliq,rh2o,tmelt,latvap,latice,epsilo
    !----------------------------------------------------------------------------
    type(zm_const_t), intent(inout) :: zm_const
    !----------------------------------------------------------------------------
+   zm_const%pi       = pi
    zm_const%grav     = gravit
    zm_const%rdair    = rair
    zm_const%cpair    = cpair
@@ -85,6 +92,7 @@ subroutine zm_const_set_for_testing(zm_const)
    !----------------------------------------------------------------------------
    type(zm_const_t), intent(inout) :: zm_const
    !----------------------------------------------------------------------------
+   zm_const%pi       = 3.14159265358979323846_R8
    zm_const%grav     = 9.80616_r8
    zm_const%boltz    = 1.38065e-23_r8
    zm_const%avogad   = 6.02214e26_r8
@@ -118,9 +126,15 @@ subroutine zm_param_mpi_broadcast(zm_param)
    call mpibcast(zm_param%tiedke_add,        1, mpir8,  0, mpicom)
    call mpibcast(zm_param%dmpdz,             1, mpir8,  0, mpicom)
    call mpibcast(zm_param%num_cin,           1, mpiint, 0, mpicom)
+   call mpibcast(zm_param%limcnv,            1, mpiint, 0, mpicom)
    call mpibcast(zm_param%mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
    call mpibcast(zm_param%tpert_fix,         1, mpilog, 0, mpicom)
    call mpibcast(zm_param%tpert_fac,         1, mpir8,  0, mpicom)
+   call mpibcast(zm_param%mcsp_enabled,      1, mpilog, 0, mpicom)
+   call mpibcast(zm_param%mcsp_t_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(zm_param%mcsp_q_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(zm_param%mcsp_u_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(zm_param%mcsp_v_coeff,      1, mpir8,  0, mpicom)
 end subroutine zm_param_mpi_broadcast
 
 !===================================================================================================
