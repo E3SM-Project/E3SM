@@ -762,11 +762,14 @@ contains
 !
 !> \brief   computes a tracer tendences from frazil within the ocean
 !> \author  Nicole Jeffery
-!> \date    11/26/2024
+!> \date    04/24/2025
 !> \details
-!>  This routine computes a tracer tendencies for ecosys tracers due to  frazil ice
+!>  This routine computes tracer tendencies for ecosys tracers due to frazil ice
 !>  Tendencies are retrieved by calling ocn_frazil_forcing_ecosys      
-!
+!>  This implementation currently releases the total ecosys concentration of accumulated
+!>  internal frazil into the surface ocean layer because the sea ice model computes
+!>  the ecosys frazil flux from the ocean surface ecosys concentration and the
+!>  frazil mass flux.      
 !-----------------------------------------------------------------------
 
    subroutine ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
@@ -803,8 +806,13 @@ contains
       !
       !-----------------------------------------------------------------
       type (mpas_pool_type), pointer :: tracersPool
-      
+
       real (kind=RKIND), dimension(:,:,:), pointer :: frazilEcosysTracersTendency
+      real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
+      real (kind=RKIND), dimension(:,:), pointer :: frazilTemperatureTendency
+      real (kind=RKIND), dimension(:,:), pointer :: frazilSalinityTendency
+      real (kind=RKIND), dimension(:), pointer :: frazilSurfacePressure
+      real (kind=RKIND), dimension(:), pointer :: lowSalinityFrazilIce
       integer, dimension(:), pointer :: landIceMask, landIceFloatingMask
 
       integer :: iCell, k, nCells, nTracersEcosys, n
@@ -814,12 +822,22 @@ contains
 
       type (MPAS_timeInterval_type) :: timeStep
 
-      real (kind=RKIND) :: newFrazilIceThickness
+      real (kind=RKIND) :: newFrazilIceThickness, newThicknessWeightedSaltContent
       real (kind=RKIND) :: sumNewFrazilIceThickness, newThicknessWeightedEcosysContent
       real (kind=RKIND) :: meltedFrazilIceThickness, meltedThicknessWeightedEcosysContent
       real (kind=RKIND) :: oceanFreezingTemperature
+      real (kind=RKIND) :: sumNewThicknessWeightedSaltContent
+      real (kind=RKIND) :: meltedThicknessWeightedSaltContent
+      real (kind=RKIND) :: frazilSalinity
       real (kind=RKIND) :: frazilEcosys ! ecosys concentration of frazil ice
 
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassOld
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityOld
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassOld
+      real (kind=RKIND), pointer, dimension(:)     :: frazilIceFreshwaterFlux
       real (kind=RKIND), pointer, dimension(:)     :: ssh
       real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
       real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
@@ -847,7 +865,7 @@ contains
       ! if frazil is not enabled, return
       if(.not. frazilFormationOn) return
 
-      call mpas_timer_start("ecosys frazil source-sink")
+      call mpas_timer_start("frazil")
 
       ! get pool pointers
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
@@ -869,11 +887,23 @@ contains
       ! get arrays
       ! note: state information is used to produce tendencies, so always grab "new" time level
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassOld, 1)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityOld, 1)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassOld, 1)
       ! Don't need this because it's always zero.  Frazil ecosys tracers are expelled at the surface
       !call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEcosys', accumulatedFrazilIceEcosysNew, 2)
       !call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEcosys', accumulatedFrazilIceEcosysOld, 1)
       call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
+      call mpas_pool_get_array(forcingPool, 'frazilTemperatureTendency', frazilTemperatureTendency)
+      call mpas_pool_get_array(forcingPool, 'frazilSalinityTendency', frazilSalinityTendency)
+      call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'lowSalinityFrazilIce', lowSalinityFrazilIce)
+      call mpas_pool_get_array(forcingPool, 'frazilIceFreshwaterFlux', frazilIceFreshwaterFlux)
       call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, 1)
       call mpas_pool_get_array(ecosysFrazilForcingPool, 'frazilEcosysTracersTendency', frazilEcosysTracersTendency)
       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
@@ -887,7 +917,13 @@ contains
       allocate (sumNewThicknessWeightedEcosysContent(nTracersEcosys))
 
       ! initialize frazil tendency fields
+      frazilTemperatureTendency = 0.0_RKIND
+      frazilSalinityTendency = 0.0_RKIND
+      frazilLayerThicknessTendency = 0.0_RKIND
       frazilEcosysTracersTendency(:,:,:) = 0.0_RKIND
+
+      ! initialize frazil salinity conservation field
+      lowSalinityFrazilIce = 0.0_RKIND
 
       ! frazil fields are needed only over 0 and 1 halos
       nCells = nCellsArray( 2 )
@@ -896,10 +932,11 @@ contains
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(underFloatingLandIce, underLandIce, kBottomFrazil, columnTemperatureMin, k, sumNewFrazilIceThickness, &
+      !$omp         sumNewThicknessWeightedSaltContent, frazilSalinity, newThicknessWeightedSaltContent, &
       !$omp         sumNewThicknessWeightedEcosysContent, oceanFreezingTemperature, potential, &
       !$omp         freezingEnergy, meltingEnergy, frazilEcosys, newFrazilIceThickness, &
       !$omp         newThicknessWeightedEcosysContent, meltedFrazilIceThickness, &
-      !$omp         meltedThicknessWeightedEcosysContent, n)
+      !$omp         meltedThicknessWeightedEcosysContent, meltedThicknessWeightedSaltContent, n)
       do iCell=1,nCells
 
         underLandIce = .false.
@@ -948,9 +985,9 @@ contains
         ! test min temperature agains max freezing temperature to see if we should even consider creating frazil
         if (columnTemperatureMin > config_frazil_maximum_freezing_temperature) cycle
 
-
         ! initialize the sum of new frazil ice created
         sumNewFrazilIceThickness = 0.0_RKIND
+        sumNewThicknessWeightedSaltContent = 0.0_RKIND
         sumNewThicknessWeightedEcosysContent(:) = 0.0_RKIND
 
         ! loop from maximum depth of frazil creation to surface
@@ -969,14 +1006,41 @@ contains
 
           if (freezingEnergy > 0) then
 
+             ! get frazil salinity
+             if (underLandIce) then
+               frazilSalinity = usePorosity * config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell)
+             else
+               frazilSalinity = usePorosity * config_frazil_ice_porosity * activeTracers(indexSalinity, k, iCell) &
+                  + config_frazil_sea_ice_reference_salinity * (1 - usePorosity)
+             end if
+             frazilSalinity = min( frazilSalinity, activeTracers(indexSalinity, k, iCell) )
+
              ! new frazil ice formation measured in meters
              newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_ice_density)
 
              ! limit the frazil formed appropriately
              newFrazilIceThickness = min(newFrazilIceThickness, layerThickness(k,iCell) * config_frazil_fractional_thickness_limit)
 
+             ! Determine new salt in frazil
+             newThicknessWeightedSaltContent = newFrazilIceThickness * frazilSalinity
+
+             ! compute tendency to thickness, temperature and salinity
+             ! layerTendency is scaled so that mass of ice created == mass of ocean water removed
+
+             ! layer thickness decreased due to creation of frazil
+             ! note: -- this has to be density (not rho_sw) to keep buoyancy equal
+             frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_density / density(k,iCell) / dt
+
+             ! salt is extracted with the frazil
+             frazilSalinityTendency(k,iCell) = - newThicknessWeightedSaltContent / dt
+
+             ! ocean fluid temperature is warmed due to creation of frazil
+             frazilTemperatureTendency(k,iCell) =  + ( newFrazilIceThickness * config_frazil_heat_of_fusion &
+                                               * config_frazil_ice_density ) / (config_specific_heat_sea_water * rho_sw) / dt
+
              ! keep track of sum of frazil ice
              sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
+             sumNewThicknessWeightedSaltContent = sumNewThicknessWeightedSaltContent + newThicknessWeightedSaltContent
 
              do n = 1, nTracersEcosys
                 frazilEcosys = (config_frazil_ice_porosity*usePorosity + (1-usePorosity)) * ecosysTracers(n, k, iCell)
@@ -1007,6 +1071,25 @@ contains
                meltedFrazilIceThickness = min(meltedFrazilIceThickness, layerThickness(k,iCell) &
                                        * config_frazil_fractional_thickness_limit)
 
+               ! assign some salt to the melted ice
+               meltedThicknessWeightedSaltContent = meltedFrazilIceThickness &
+                                                 * ( sumNewThicknessWeightedSaltContent / sumNewFrazilIceThickness )
+
+               ! compute tendency to thickness, temperature and salinity
+
+               ! layer thickness increases due to melting of frazil
+               ! note -- scaling by local ocean density to mimimize surface pressure forcing errors
+               frazilLayerThicknessTendency(k,iCell) = + meltedFrazilIceThickness * config_frazil_ice_density &
+                                                    / density(k,iCell) / dt
+
+               ! salt is released into ocean with the melting frazil
+               frazilSalinityTendency(k,iCell) = + meltedThicknessWeightedSaltContent/ dt
+
+               ! ocean fluid temperature is cooled due to melting of frazil
+               frazilTemperatureTendency(k,iCell) = - ( meltedFrazilIceThickness * config_frazil_heat_of_fusion &
+                                                 * config_frazil_ice_density ) / (config_specific_heat_sea_water * rho_sw) &
+                                                 / dt
+
                do n = 1, nTracersEcosys
 
                   ! assign some ecosys tracer to the melted ice
@@ -1018,7 +1101,9 @@ contains
 
                   ! keep track of new frazil ice
                   sumNewThicknessWeightedEcosysContent(n) = max(0.0_RKIND,sumNewThicknessWeightedEcosysContent(n) - meltedThicknessWeightedEcosysContent)
-              end do
+               end do
+
+              sumNewThicknessWeightedSaltContent = max(0.0_RKIND,sumNewThicknessWeightedSaltContent - meltedThicknessWeightedSaltContent)
               sumNewFrazilIceThickness = max(0.0_RKIND,sumNewFrazilIceThickness - meltedFrazilIceThickness)
 
             endif  ! if (sumNewFrazilIceThickness > 0.0_RKIND)
@@ -1027,8 +1112,44 @@ contains
 
         enddo                    ! do k=kBottom,minLevelCell,-1
        
+        ! accumulate frazil mass to column total
+        ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
+        accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
+           * config_frazil_ice_density
+
+        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
+           (1-usePorosity) * sumNewThicknessWeightedSaltContent
+
+        !NJ: Assume frazil salinity is the coupling salinity
+        if ( underLandIce ) then
+           ! frazilIceFreshwaterFlux forms part of the landIceFreshwaterFluxTotal computed in surface land ice fluxes
+           frazilIceFreshwaterFlux(iCell) = - (sumNewFrazilIceThickness * config_frazil_ice_density) / dt
+           ! accumulate frazil formed under land ice in case we're not coupling and we need to keep track of it
+           ! for freshwater budgets
+           accumulatedLandIceFrazilMassNew(iCell) = accumulatedLandIceFrazilMassOld(iCell) &
+                                                  + sumNewFrazilIceThickness * config_frazil_ice_density
+           ! There is no accumulatedLandIceFrazilSalinity because it is always 0
+           frazilSalinity = 0.0_RKIND
+        else
+           frazilSalinity = config_frazil_sea_ice_reference_salinity
+        end if
+
+        !Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
         if (sumNewFrazilIceThickness > 0.0_RKIND) then
-            do n = 1, nTracersEcosys
+           if (usePorosity .ge. 1) then
+              newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
+              if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
+                 !Warning: salt conservation error. Track with lowSalinityFrazilIce
+                 lowSalinityFrazilIce(iCell) = newThicknessWeightedSaltContent - sumNewThicknessWeightedSaltContent
+                 accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + max(0.0_RKIND, sumNewThicknessWeightedSaltContent)
+              else
+              !salt expelled at the surface
+                 frazilSalinityTendency(minLevelCell(iCell),iCell) = frazilSalinityTendency(minLevelCell(iCell),iCell) + &
+                   max(0.0_RKIND,(sumNewThicknessWeightedSaltContent -  newThicknessWeightedSaltContent) ) / dt
+                   accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + newThicknessWeightedSaltContent
+              endif
+           endif !usePorosity
+           do n = 1, nTracersEcosys
                !NJ: Sea ice computes it's own frazil ecosys concentration from the surface ocean
                !For now, expel all ecosys at the surface
                newThicknessWeightedEcosysContent = 0.0_RKIND
@@ -1042,8 +1163,18 @@ contains
       !$omp end do
       !$omp end parallel
 
+      if ( config_frazil_use_surface_pressure ) then
+        !$omp parallel
+        !$omp do schedule(runtime)
+        do iCell = 1, nCells
+           frazilSurfacePressure(iCell) = accumulatedFrazilIceMassNew(iCell) * gravity
+        end do
+        !$omp end do
+        !$omp end parallel
+      end if
+
       deallocate (sumNewThicknessWeightedEcosysContent)
-      call mpas_timer_stop("ecosys frazil source-sink")
+      call mpas_timer_stop("frazil")
 
    end subroutine ocn_frazil_forcing_build_ecosys_arrays!}}}
 

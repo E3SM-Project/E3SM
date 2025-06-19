@@ -769,11 +769,12 @@ contains
         call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
         call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
-        call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
         if (config_use_ecosysTracers .and. config_use_ecosys_frazil_tendencies) then
            call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
            call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
               ecosysFrazilForcingPool,ierr)
+        else
+           call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
         end if
         call mpas_timer_start("land_ice_build_arrays", .false.)
         call ocn_surface_land_ice_fluxes_build_arrays(meshPool, forcingPool, scratchPool, &
@@ -1152,11 +1153,12 @@ contains
             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
             call ocn_forcing_build_fraction_absorbed_array(meshPool, statePool, forcingPool, ierr, 1)
-            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
             if (config_use_ecosysTracers .and. config_use_ecosys_frazil_tendencies) then
                call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
                call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
                   ecosysFrazilForcingPool, ierr)
+            else
+               call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
             end if
             call mpas_timer_start("land_ice_build_arrays", .false.)
             call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
