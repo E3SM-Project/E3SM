@@ -161,7 +161,7 @@ void MAMMicrophysics::set_grids(
   // Downwelling solar flux at the surface [w/m2]
   add_field<Required>("SW_flux_dn", scalar3d_int, W / m2, grid_name);
 
-  // Diagnostic fluxes          
+  // Diagnostic fluxes
   const FieldLayout vector2d_nmodes =
       grid_->get_2d_vector_layout(nmodes, "nmodes");
   add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
@@ -468,7 +468,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
-  
+
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -563,8 +563,12 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 void MAMMicrophysics::run_impl(const double dt) {
   const int ncol = ncol_;
   const int nlev = nlev_;
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
+  //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
+  // This interface hangs with this team size. Therefore,
+  // let's use a team size of nlev.
+  haero::ThreadTeamPolicy policy(ncol, nlev);
+  // const auto policy =
+      // ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
@@ -625,7 +629,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const const_view_1d snow_depth_land =
       get_field_in("snow_depth_land").get_view<const Real *>();
 
-  // Constituent fluxes 
+  // Constituent fluxes
   view_2d aqso4_flx = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
   view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
 
@@ -958,7 +962,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
-  Kokkos::parallel_for("transpose_extfrc", 
+  Kokkos::parallel_for("transpose_extfrc",
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
