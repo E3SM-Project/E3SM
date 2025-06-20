@@ -1781,8 +1781,10 @@ contains
     call seq_flds_add(o2x_states,"So_ssh")
     call seq_flds_add(x2r_states,"So_ssh")
     call seq_flds_add(o2x_states_to_rof,"So_ssh")
-    call seq_flds_add(x2l_states,"So_ssh") ! ocn -> lnd one-way coupling
-    call seq_flds_add(o2x_states_to_lnd,"So_ssh")
+    if (ocn_lnd_one_way) then
+      call seq_flds_add(x2l_states,"So_ssh") ! ocn -> lnd one-way coupling
+      call seq_flds_add(o2x_states_to_lnd,"So_ssh")
+    endif
     if (wav_ocn_coup .ne. 'none') call seq_flds_add(x2w_states,'So_ssh')
     longname = 'Sea surface height'
     stdname  = 'sea_surface_height'
@@ -1790,14 +1792,16 @@ contains
     attname  = 'So_ssh'
     call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(o2x_states,"So_frac_h2oocn")
-    call seq_flds_add(x2l_states,"So_frac_h2oocn")
-    call seq_flds_add(o2x_states_to_lnd,"So_frac_h2oocn")
-    longname = 'Oceanic inundation fraction'
-    stdname  = 'oceanic_inundation_fraction'
-    units    = '-'
-    attname  = 'So_frac_h2oocn'
-    call metadata_set(attname, longname, stdname, units)
+    if (ocn_lnd_one_way) then
+      call seq_flds_add(o2x_states,"So_frac_h2oocn")
+      call seq_flds_add(x2l_states,"So_frac_h2oocn")
+      call seq_flds_add(o2x_states_to_lnd,"So_frac_h2oocn")
+      longname = 'Oceanic inundation fraction'
+      stdname  = 'oceanic_inundation_fraction'
+      units    = '-'
+      attname  = 'So_frac_h2oocn'
+      call metadata_set(attname, longname, stdname, units)
+    endif
 
     ! Meridional sea surface slope
     call seq_flds_add(o2x_states,"So_dhdy")
