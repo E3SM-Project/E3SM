@@ -25,6 +25,9 @@ contains
     ! !DESCRIPTION:
     ! Finalize land surface model
     !
+#ifdef HAVE_MOAB
+    use MOABGridType, only : elm_moab_finalize
+#endif
 #ifdef USE_PETSC_LIB
 #include <petsc/finclude/petsc.h>
 #endif
@@ -37,6 +40,10 @@ contains
     ! !ARGUMENTS
     implicit none
     !
+
+#ifdef HAVE_MOAB
+    call elm_moab_finalize()
+#endif
 
 #ifdef USE_PETSC_LIB
     PetscErrorCode        :: ierr

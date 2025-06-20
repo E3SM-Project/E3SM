@@ -34,13 +34,12 @@ module MOABGridType
   ! save
   private
   !
-  public :: initialize
-  public :: load_grid_file
-  public :: finalize
+  public :: elm_moab_initialize
+  public :: elm_moab_load_grid_file
+  public :: elm_moab_finalize
   !
   integer :: mlndghostid     ! ID of the MOAB ELM application with ghost-cell regions
 
-  !integer n
   ! local variables to fill in data
   ! retrieve everything we need from land domain mct_ldom
   ! number of vertices is the size of land domain
@@ -76,7 +75,7 @@ module MOABGridType
 
 contains
 
-  subroutine initialize()
+  subroutine elm_moab_initialize()
 
     integer       :: LNDGHOSTID ! id of the ghosted land app
     character*32  :: appname
@@ -99,23 +98,23 @@ contains
        write(iulog,*) " "
     endif
 
-  end subroutine initialize
+  end subroutine elm_moab_initialize
 
-  subroutine load_grid_file(meshfile)
-    use elm_varctl  ,  only : iulog, fatmlndfrc  ! for messages and domain file name
+  subroutine elm_moab_load_grid_file(meshfile)
 
+    use elm_varctl  ,  only : iulog  ! for messages and domain file name
     integer   ::  ierr
-    character*100, intent(in) :: meshfile
+    character(1024), intent(in) :: meshfile
     integer tagtype, numco !, mbtype, block_ID
     integer :: num_components !, mbtype, block_ID
-    character*100  :: outfile, wopts
-    character(CXX) :: tagname ! hold all fields
+    character(1024)  :: outfile, wopts
+    character(1024) :: tagname ! hold all fields
     integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
     integer, dimension(5) :: entity_type
     real(r8), pointer :: data(:)  ! temporary
 
     if(masterproc) &
-        write(iulog,*) "MOABGridType%load_grid_file: reading mesh file: ", trim(meshfile)
+        write(iulog,*) "elm_moab_load_grid_file(): reading mesh file: ", trim(meshfile)
 
     ! load the mesh file
     ierr = iMOAB_LoadMesh( mlndghostid, trim(meshfile)//C_NULL_CHAR, &
@@ -125,7 +124,7 @@ contains
         call endrun('load_grid_file: fail to load the domain file for land model')
 
     if (masterproc) &
-        write(iulog,*) "MOABGridType%load_grid_file: generating ", nghostlayers, " ghost layers"
+        write(iulog,*) "elm_moab_load_grid_file(): generating ", nghostlayers, " ghost layers"
 
     ! After the ghost cell exchange, the halo regions are computed and
     ! mesh info will get updated correctly so that we can query the data
@@ -133,7 +132,7 @@ contains
                                         nghostlayers, &     ! number of ghost layers
                                         bridgedim )         ! bridge dimension (vertex=0)
     if (ierr > 0)  &
-        call endrun('MOABGridType%load_grid_file: failed to generate the ghost layer entities')
+        call endrun('elm_moab_load_grid_file(): failed to generate the ghost layer entities')
 
 #ifdef MOABDEBUG
       ! write out the full repartitioned mesh file to disk, in parallel
@@ -141,13 +140,13 @@ contains
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
       if (ierr > 0 )  &
-        call endrun('MOABGridType%load_grid_file: failed to write the land mesh file')
+        call endrun('elm_moab_load_grid_file(): failed to write the land mesh file')
 #endif
 
     ! let us get some information about the partitioned mesh and print
     ierr = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
     if (ierr > 0 )  &
-      call endrun('MOABGridType%load_grid_file: failed to get mesh info ')
+      call endrun('elm_moab_load_grid_file(): failed to get mesh info ')
 
     ! set the local size (owned, ghosted) and total entity list (vertices/elements)
     nvoproc = nverts(1)  ! owned vertices
@@ -160,13 +159,13 @@ contains
 
     ! now consolidate/reduce data to root and print information
     ! not really necessary for actual code -- for verbose info only
-    ! TODO: combine the calls
+    ! TODO: combine the Allreduce calls
     call MPI_Allreduce(nvoproc, nvg, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     call MPI_Allreduce(neoproc, neg, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     if (masterproc) then
-      write(iulog, *)  "MOABGridType%load_grid_file(): Number of gridcell vertices: owned=", nvoproc, &
+      write(iulog, *)  "elm_moab_load_grid_file()(): Number of gridcell vertices: owned=", nvoproc, &
                         ", ghosted=", nvgproc, ", global=", nvg
-      write(iulog, *)  "MOABGridType%load_grid_file(): Number of gridcell elements: owned=", neoproc, &
+      write(iulog, *)  "elm_moab_load_grid_file()(): Number of gridcell elements: owned=", neoproc, &
                         ", ghosted=", negproc, ", global=", neg
     endif
 
@@ -256,18 +255,17 @@ contains
         call endrun('Error: fail to write ELM local meshes in h5m format')
 #endif
 
-  end subroutine load_grid_file
-
+  end subroutine elm_moab_load_grid_file
 
   !------------------------------------------------------------------------
-  subroutine finalize()
-    !------------------------------------------------------------------------
+  subroutine elm_moab_finalize()
+  !------------------------------------------------------------------------
 
     deallocate(globid)
     deallocate(eowner)
     deallocate(sblock)
 
-  end subroutine finalize
+  end subroutine elm_moab_finalize
 
 end module MOABGridType
 #endif
