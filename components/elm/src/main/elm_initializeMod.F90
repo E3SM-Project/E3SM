@@ -51,9 +51,6 @@ module elm_initializeMod
   !-----------------------------------------------------------------------
 #ifdef HAVE_MOAB
   private :: init_moab_land_internal   ! create the full MOAB mesh representation of ELM domain
-  integer :: mlndghostid     ! ID of the MOAB ELM application with ghost-cell regions
-  integer , private :: mblsize, totalmbls
-  integer :: nrecv, totalmblsimp
 
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
   real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
@@ -218,7 +215,7 @@ contains
 #ifdef HAVE_MOAB
     case ("moab")
       !call decompInit_lnd_moab(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
-      call decompInit_moab(mlndghostid, ni, nj, amask)
+      call decompInit_moab(ni, nj, amask)
       deallocate(amask)
 #endif
     case ("round_robin")
@@ -1279,156 +1276,13 @@ contains
     use spmdmod  , only: masterproc, mpicom
     use controlMod
     use mpi
-    use iMOAB  , only: iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
-    iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
-    iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
-    iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+    use MOABGridType, only : initialize, load_grid_file
 
-   !  type(bounds_type) , intent(in)  :: bounds
-   !  integer , intent(in) :: LNDID ! id of the land app
-    integer :: LNDGHOSTID ! id of the ghosted land app
-    integer :: mpigrp_lndcmp ! coupler pes
+    ! initialize the MOAB structures as needed for ELM
+    call initialize()
 
-    integer lsz !  keep local size
-    integer n, nghostlayers ! number of ghost layer regions
-    ! local variables to fill in data
-    ! retrieve everything we need from land domain mct_ldom
-    ! number of vertices is the size of land domain
-    real(r8), pointer :: data(:)  ! temporary
-    integer   dims, i, ierr
-    integer tagtype, numco !, mbtype, block_ID
-    character*100 outfile, wopts
-    character(CXX) ::  tagname ! hold all fields
-    character*32  appname
-    ! TODO: should size it to the number of actual fields we want to exchange
-    ! between ghost layers on the component side
-    integer, dimension(100) :: tag_indices
-    integer, dimension(100) ::  entity_types
-    integer :: topodim, bridgedim
-    integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
-
-   !  if (ldomain%nv < 3)  &
-   !      call endrun('Error: cannot create ELM-MOAB mesh when ldomain%nv < 3.')
-
-    topodim = 2 ! topological dimension = 2: manifold mesh on the sphere
-    bridgedim = 1 ! use vertices = 0 as the bridge (other options: edges = 1)
-    nghostlayers = 0 ! initialize to zero (default)
-
-    ! next define MOAB app for the ghosted one
-    ! We do this so that coupling does not have to deal with halos
-    appname="LNDMBGHOST"//C_NULL_CHAR
-    LNDGHOSTID = 55120!(LNDID*10)
-    ierr = iMOAB_RegisterApplication(appname, mpicom, LNDGHOSTID, mlndghostid)
-    if (ierr > 0 )  &
-       call endrun('Error: cannot register ELM-MOAB halo application')
-    if(masterproc) then
-       write(iulog,*) " "
-       write(iulog,*) "register MOAB application:", trim(appname), "  mlndghostid=", mlndghostid
-       write(iulog,*) " "
-    endif
-
-    if(masterproc) then
-        write(iulog,*) "MOAB is going to read the domain file:", trim(fatmlndfrc)
-    endif
-
-    ierr = iMOAB_LoadMesh( mlndghostid, trim(fatmlndfrc)//C_NULL_CHAR, &
-                          "PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;REPARTITION"//C_NULL_CHAR, &
-                          nghostlayers )
-    if (ierr > 0 )  &
-        call endrun('Error: fail to load the domain file for land model')
-
-    nghostlayers = 1  ! TODO: if more than 1-halo layers are needed in ELM, change this value
-    if (masterproc) &
-        write(iulog,*) "ELM-MOAB: generating ", nghostlayers, " ghost layers"
-
-    ! After the ghost cell exchange, the halo regions are computed and
-    ! mesh info will get updated correctly so that we can query the data
-    ierr = iMOAB_DetermineGhostEntities(mlndghostid, topodim, & ! topological dimension
-                                        nghostlayers, &     ! number of ghost layers
-                                        bridgedim )         ! bridge dimension (vertex=0)
-    if (ierr > 0)  &
-        call endrun('Error: failed to generate the ghost layer entities')
-
-#ifdef MOABDEBUG
-      ! write out the full repartitioned mesh file to disk, in parallel
-      outfile = 'wholeLndGhost.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(mlndghostid, outfile, wopts)
-      if (ierr > 0 )  &
-        call endrun('Error: fail to write the land mesh file')
-#endif
-
-    ! let us get some information about the partitioned mesh and print
-    ierr = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
-    if (ierr > 0 )  &
-      call endrun('Error: failed to get mesh info ')
-
-    ! set the local size to the total elements
-    lsz = nelem(3)
-
-    entity_types(:) = 1 ! default: Element-based tags
-
-    ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
-    !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
-    tagtype = 0 ! dense, integer
-    numco = 1
-    tagname='GLOBAL_ID'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(1) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
-
-    ! let us synchronize global ID tag so that ghosted elements receive the data as well
-   !  ierr = iMOAB_SynchronizeTags(mlndghostid, 3, tag_indices(1), entity_types(1))
-   !  if (ierr > 0 )  &
-   !    call endrun('Error: fail to synchronize element tags for ELM ')
-
-    !  Define and Set Fraction on each mesh
-    tagname='frac:area:aream'//C_NULL_CHAR
-    tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(2) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create frac:area:aream tags')
-
-    ! use data array as a data holder
-    ! Note that loop bounds are typical for locally owned points
-    ! allocate(data(lsz*3))
-    ! do i = 1, lsz
-    !   n = i-1 + bounds%begg
-    !   data(i) = ldomain%frac(n)               ! frac = area fractions
-    !   data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
-    !   data(i+2*lsz) = data(i+lsz)             ! aream = model area
-    ! enddo
-
-    ! set the values on the internal mesh, halo values aren't set
-    ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to set frac:area:aream tag ')
-
-    ! ierr = iMOAB_UpdateMeshInfo( mlndghostid )
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to update mesh info ')
-
-    ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
-    entity_types(1) = 0 ! Vertex tag for GLOBAL_ID
-    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to synchronize vertex tags for ELM ')
-
-    ! ! synchronize: GLOBAL_ID tag defined on elements in the ghost layers
-    entity_types(1) = 1 ! Element tag for GLOBAL_ID
-    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to synchronize element tags for ELM ')
-
-    ! deallocate(data)
-
-#ifdef MOABDEBUG
-      ! write out the local mesh file to disk (np tasks produce np files)
-      outfile = 'elm_local_mesh'//CHAR(0)
-      ierr = iMOAB_WriteLocalMesh(mlndghostid, trim(outfile))
-      if (ierr > 0 )  &
-        call endrun('Error: fail to write ELM local meshes in h5m format')
-#endif
+    ! load the mesh file for ELM
+    call load_grid_file(fatmlndfrc)
 
   end subroutine init_moab_land_internal
 #endif
