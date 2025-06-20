@@ -1245,11 +1245,26 @@ void RRTMGPRadiation::run_impl (const double dt) {
     "cldfrac_tot_at_cldtop",
     "cdnc_at_cldtop",
     "eff_radius_qc_at_cldtop",
-    "eff_radius_qi_at_cldtop"
+    "eff_radius_qi_at_cldtop",
+    "cosine_solar_zenith_angle"
   };
 
   for (auto& name : rad_computed_fields) {
     auto f = get_field_out(name);
+    f.get_header().set_extra_data("radiation_ran",update_rad);
+    if (not update_rad) {
+      f.deep_copy(constants::DefaultFillValue<Real>().value);
+    }
+  }
+
+  // Also need to fill computed gas volume mixing ratios
+  for (auto& name : m_gas_names) {
+    // We read o3 in as a vmr already. Also, n2 and co are currently set
+    // as a constant value, read from file during init. Skip these.
+    if (name=="o3" or name == "n2" or name == "co") continue;
+    // The rest are computed by RRTMGP from prescribed surface values, but only when rad updates.
+    // Set to fillvalue here when rad does not run for consistency across restart between update steps
+    auto f = get_field_out(name + "_volume_mix_ratio");
     f.get_header().set_extra_data("radiation_ran",update_rad);
     if (not update_rad) {
       f.deep_copy(constants::DefaultFillValue<Real>().value);
