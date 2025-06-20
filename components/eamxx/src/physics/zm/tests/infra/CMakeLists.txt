@@ -1,7 +1,6 @@
 set(INFRA_SRCS
   zm_iso_c.f90
   zm_test_data.cpp
-  zm_test_data_functions.cpp
 )
 
 add_library(zm_test_infra ${INFRA_SRCS})

@@ -14,7 +14,7 @@ module zm_eamxx_bridge_params
   !-----------------------------------------------------------------------------
   ! public variables
   integer, public, parameter :: r8 = c_real
-  
+  integer, public, parameter :: btype = c_bool
   logical, public :: masterproc
 
   integer, public :: pcols

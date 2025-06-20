@@ -99,8 +99,9 @@ struct zm_data_find_mse_max : public PhysicsTestData {
   Int  pver;
   Int  ncol;
   Int  num_msg;
-  Int  *msemax_top_k;
   bool pergro_active;
+
+  Int  *msemax_top_k;
   Real *temperature;
   Real *zmid;
   Real *sp_humidity;
@@ -136,24 +137,18 @@ struct zm_data_find_mse_max : public PhysicsTestData {
     : PhysicsTestData(
         // dims: group by type and shape.
         {
-          {pcols_},                  // msemax_top_k  (Int, 1D)
-          {pcols_, pver_},           // temperature   (Real, 2D)
-          {pcols_, pver_},           // zmid          (Real, 2D)
-          {pcols_, pver_},           // sp_humidity   (Real, 2D)
-          {pcols_},                  // msemax_klev   (Int, 1D)
-          {pcols_}                   // mse_max_val   (Real, 1D)
+          {pcols_, pver_},           // (Real, 2D)
+          {pcols_},                  // (Real, 1D)
+          {pcols_}                   // (Int, 1D)
         },
         // reals: group pointers by shape, in order of appearance above
         {
-          {&temperature},            // (pcols, pver)
-          {&zmid},                   // (pcols, pver)
-          {&sp_humidity},            // (pcols, pver)
-          {&mse_max_val}             // (pcols)
+          {&temperature, &zmid, &sp_humidity}, // (pcols, pver)
+          {&mse_max_val}                       // (pcols)
         },
         // ints: group pointers by shape, in order of appearance above
         {
-          {&msemax_top_k},           // (pcols)
-          {&msemax_klev}             // (pcols)
+          {&msemax_top_k, &msemax_klev}        // (pcols)
         },
         // bools: if you have 1D bool arrays, list here (none in this case)
         {}

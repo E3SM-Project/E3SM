@@ -37,7 +37,7 @@ extern "C" {
 } // extern "C" : end _c decls
 
 
-void zm_test_find_mse_max(zm_data_find_mse_max& d){
+void zm_find_mse_max(zm_data_find_mse_max& d){
   d.transpose<ekat::TransposeDirection::c2f>();
   zm_find_mse_max_c( d.pcols,
                      d.ncol,

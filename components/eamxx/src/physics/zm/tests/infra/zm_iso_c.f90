@@ -121,12 +121,12 @@ subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_a
   use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
   !-----------------------------------------------------------------------------
   ! Interface Arguments
-  integer(kind=c_int),                       intent(in) :: pcols           ! number of atmospheric columns (max)
+  integer(kind=c_int), value,                intent(in) :: pcols           ! number of atmospheric columns (max)
   integer(kind=c_int), value,                intent(in) :: ncol            ! number of atmospheric columns (actual)
   integer(kind=c_int), value,                intent(in) :: pver            ! number of mid-point vertical levels
-  integer(kind=c_int),                       intent(in) :: num_msg         ! number of missing moisture levels at the top of model
+  integer(kind=c_int), value,                intent(in) :: num_msg         ! number of missing moisture levels at the top of model
   integer(kind=c_int), dimension(ncol),      intent(in) :: msemax_top_k    ! upper limit index of max MSE search
-  logical(kind=c_bool),                      intent(in) :: pergro_active   ! flag for perturbation growth test (pergro)
+  logical(kind=c_bool),value,                intent(in) :: pergro_active   ! flag for perturbation growth test (pergro)
   real(kind=c_real),   dimension(ncol,pver), intent(in) :: temperature     ! environement temperature
   real(kind=c_real),   dimension(ncol,pver), intent(in) :: zmid            ! height/altitude at mid-levels
   real(kind=c_real),   dimension(ncol,pver), intent(in) :: sp_humidity     ! specific humidity
@@ -136,11 +136,13 @@ subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_a
   ! Local Variables
   type(zm_const_t) :: zm_const ! derived type to hold ZM constants
   type(zm_param_t) :: zm_param ! derived type to hold ZM tunable parameters
+  logical :: pergro_active_f
   !-----------------------------------------------------------------------------
   call zm_param_set_for_testing(zm_param)
   call zm_const_set_for_testing(zm_const)
   !-----------------------------------------------------------------------------
-  call find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active, temperature, zmid, sp_humidity, zm_const, zm_param, msemax_klev, mse_max_val )
+  pergro_active_f = pergro_active
+  call find_mse_max( pcols, ncol, pver, num_msg, msemax_top_k, pergro_active_f, temperature, zmid, sp_humidity, zm_const, zm_param, msemax_klev, mse_max_val )
   !-----------------------------------------------------------------------------
 end subroutine zm_find_mse_max_c
 

@@ -78,7 +78,7 @@ struct UnitWrap::UnitTest<D>::Test_zm_find_mse_max : public UnitWrap::UnitTest<D
         d.read(Base::m_fid);
       }
     }
-    
+
     // Get data from test
     for (auto& d : test_data) { zm_find_mse_max(d); }
 
