@@ -88,9 +88,6 @@ contains
     integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
     integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
     ! MOAB data
-    !integer, allocatable :: eglobal_ids(:), eproc_ownership(:), eblock_ids(:)
-    !integer :: nvproc, neproc, nvoproc, neoproc, nvgproc, negproc, ngv, nge ! local and global mesh information
-    !integer            :: cell_begg, cell_endg              ! temporary
     integer            :: count                         ! temporary
     integer            :: ncells_per_clump              ! number of grid cells per clump
     integer            :: remainder                     ! temporary
@@ -102,7 +99,6 @@ contains
     integer, allocatable   :: thread_count(:)               ! temporary
     integer            :: offset                        ! temporary
     integer            :: cowner                        ! clump owner
-    integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
     !------------------------------------------------------------------------------
 
     lns = lni * lnj
@@ -120,42 +116,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-   !  ! let us get some information about the partitioned mesh and print
-   !  ier = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
-   !  if (ier > 0 )  &
-   !    call endrun('Error: failed to get mesh info ')
-
-   !  ! set the local size (owned, ghosted) and total entity list (vertices/elements)
-   !  nvoproc = nverts(1) ! owned vertices
-   !  nvgproc = nverts(2) ! ghosted vertices
-   !  nvproc = nverts(3)  ! owned + ghosted vertices
-   !  neoproc = nelem(1) ! owned elements
-   !  negproc = nelem(2) ! ghosted elements
-   !  neproc = nelem(3)   ! owned + ghosted elements
-   !  proc_offset = 0  ! initialize proc_offset
-
-   !  ! now consolidate/reduce data to root and print information
-   !  ! not really necessary for actual code -- for verbose info only
-   !  call MPI_Allreduce(nvoproc, ngv, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-   !  call MPI_Allreduce(neoproc, nge, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-   !  if (masterproc) then
-   !    write(iulog, *)  "decompInit_moab(): Number of gridcell vertices: owned=", nvoproc, &
-   !                      ", ghosted=", nvgproc, ", global=", ngv
-   !    write(iulog, *)  "decompInit_moab(): Number of gridcell elements: owned=", neoproc, &
-   !                      ", ghosted=", negproc, ", global=", nge
-   !  endif
-
-   !  ! Determine the cell id offset on each processor
-   !  call MPI_Scan(neoproc, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-   !  if (ier /= 0) then
-   !     write(iulog,*) 'decompInit_moab(): MPI_Scan error failed to get proc_offset'
-   !     call endrun(msg=errMsg(__FILE__, __LINE__))
-   !  endif
-
-         ! proc_offset = proc_offset - neoproc
-         ! cell_begg = proc_offset
-         !! cell_endg = cell_begg + neproc ! beginning + local-owned + local-ghosted
-
     ! allocate and initialize procinfo (from decompMod.F90) and clumps
     ! beg and end indices initialized for simple addition of cells later
     allocate(procinfo%cid(clump_pproc), stat=ier)
@@ -165,7 +125,7 @@ contains
     endif
     procinfo%nclumps = clump_pproc
     procinfo%cid(:)  = -1
-    procinfo%ncells  = neoproc
+    procinfo%ncells  = neoproc ! owned elements in the current task
     procinfo%ntunits  = 0
     procinfo%nlunits = 0
     procinfo%ncols   = 0
@@ -248,31 +208,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-   !  if (numg /= lns) then
-   !     write(iulog,*) trim(subname) // '(): Only implimented for numg == lns '
-   !     call endrun(msg=errMsg(__FILE__, __LINE__))
-   !  end if
-
-   !  allocate(eglobal_ids(neproc), stat=ier)
-   !  if (ier /= 0) then
-   !     write(iulog,*) 'decompInit_moab(): allocation error for eglobal_ids'
-   !     call endrun(msg=errMsg(__FILE__, __LINE__))
-   !  end if
-   !  allocate(eproc_ownership(neproc), stat=ier)
-   !  if (ier /= 0) then
-   !     write(iulog,*) 'decompInit_moab(): allocation error for eproc_ownership'
-   !     call endrun(msg=errMsg(__FILE__, __LINE__))
-   !  end if
-   !  allocate(eblock_ids(neproc), stat=ier)
-   !  if (ier /= 0) then
-   !     write(iulog,*) 'decompInit_moab(): allocation error for eblock_ids'
-   !     call endrun(msg=errMsg(__FILE__, __LINE__))
-   !  end if
-   !  ier = iMOAB_GetVisibleElementsInfo( mlndghostid, neproc, &
-   !                   eglobal_ids, eproc_ownership, eblock_ids )
-   !  if (ier > 0 )  &
-   !    call endrun('Error: fail to query information for visible elements')
-
     ! assign clumps to proc round robin
    !  cid = (iam+1)*clump_pproc
    !  do n = cid,cid+clump_pproc
@@ -297,11 +232,10 @@ contains
     allocate (clump_begg        (clump_pproc          ))
     allocate (clump_endg        (clump_pproc          ))
 
-    print *, 'clump_pproc = ', clump_pproc, '; npes = ', npes, '; procinfo%begg = ', procinfo%begg, '; procinfo%endg = ', procinfo%endg
+    ! print *, 'clump_pproc = ', clump_pproc, '; npes = ', npes, '; procinfo%begg = ', procinfo%begg, '; procinfo%endg = ', procinfo%endg
 
     allocate (local_clump_info  (1:3*clump_pproc      ))
-     allocate (global_clump_info (1:3*clump_pproc*npes ))
-   !  allocate (global_clump_info (1:800 )) ! for now hardcode it.
+    allocate (global_clump_info (1:3*clump_pproc*npes ))
     allocate (thread_count      (1:npes               ))
 
     clump_ncells(:) = ncells_per_clump
@@ -333,9 +267,9 @@ contains
        clumps(m)%endg   = global_clump_info((cowner-1)*3 + thread_count(cowner)*3 + 3)
        thread_count(cowner) = thread_count(cowner) + 1
 
-       if (iam .eq. 0) then
-          print *, 'cowner: ', cowner, '; clumps(m)%ncells = ', clumps(m)%ncells, ' clumps(m)%begg = ', clumps(m)%begg, ' clumps(m)%endg = ', clumps(m)%endg, ' thread_count(cowner) = ', thread_count(cowner)
-       end if
+      !  if (iam .eq. 0) then
+      !     print *, 'cowner: ', cowner, '; clumps(m)%ncells = ', clumps(m)%ncells, ' clumps(m)%begg = ', clumps(m)%begg, ' clumps(m)%endg = ', clumps(m)%endg, ' thread_count(cowner) = ', thread_count(cowner)
+      !  end if
 
     enddo
 
@@ -389,9 +323,7 @@ contains
          cid = cid + 1
          offset = offset + clump_ncells(cid)
       end if
-      ! lcid(globid(n)) = iam * clump_pproc + cid !oind
       lcid(globid(n)) = eowner(n) + 1
-      ! lcid(globid(n)) = mod(globid(n)-1,npes)
       oind = oind + 1
     enddo
 
@@ -409,8 +341,6 @@ contains
     gsize = lni * lnj
     call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsize, gsize)
     deallocate(gindex)
-
-    !deallocate(eglobal_ids, eproc_ownership, eblock_ids)
 
     ! Diagnostic output
     if (masterproc) then
@@ -2584,13 +2514,13 @@ contains
       ! call ScatterDataG2L(ldomain_lateral%ugrid, &
       !      nblocks, ndata_send, data_send, ndata_recv, data_recv)
 
-      ! ! Get number of ghost quantites at all subgrid categories
-      ! procinfo%ncells_ghost    = ldomain_lateral%ugrid%ngrid_ghost
-      ! procinfo%ntunits_ghost   = 0
-      ! procinfo%nlunits_ghost   = 0
-      ! procinfo%ncols_ghost     = 0
-      ! procinfo%npfts_ghost     = 0
-      ! procinfo%nCohorts_ghost  = 0
+      ! Get number of ghost quantites at all subgrid categories
+      procinfo%ncells_ghost    = negproc !ldomain_lateral%ugrid%ngrid_ghost
+      procinfo%ntunits_ghost   = 0
+      procinfo%nlunits_ghost   = 0
+      procinfo%ncols_ghost     = 0
+      procinfo%npfts_ghost     = 0
+      procinfo%nCohorts_ghost  = 0
 
       ! ighost_beg = ldomain_lateral%ugrid%ngrid_local   + 1
       ! ighost_end = ldomain_lateral%ugrid%ngrid_ghosted
@@ -2602,6 +2532,9 @@ contains
       !    procinfo%npfts_ghost    = procinfo%npfts_ghost    + data_recv((ighost-1)*nblocks + 4)
       !    procinfo%ncohorts_ghost = procinfo%ncohorts_ghost + data_recv((ighost-1)*nblocks + 5)
       ! enddo
+
+      procinfo%begg_ghost      = procinfo%endg + 1
+      procinfo%endg_ghost      = procinfo%endg + procinfo%ncells_ghost
 
       ! Set 'begin' index for subgrid categories
       procinfo%begg_all        = procinfo%begg
