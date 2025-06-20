@@ -11,9 +11,7 @@
 namespace scream {
 namespace zm {
 
-  void zm_test_data_generate_profile( Int ncol, Int pver, Real *zmid, Real *temperature, Real *sp_humidity );
-  // void zm_test_data_generate_profile( Int ncol, Int pver, Real* zmid, Real* temperature, Real* sp_humidity );
-  // void zm_test_data_generate_profile( Int ncol, Int pver, Real &zmid, Real &temperature, Real &sp_humidity );
+  void zm_test_data_generate_profile( std::mt19937_64 engine, Int ncol, Int pver, Real* zmid, Real* temperature, Real* sp_humidity );
 
 }  // namespace zm
 }  // namespace scream

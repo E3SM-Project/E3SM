@@ -18,7 +18,7 @@ struct UnitWrap::UnitTest<D>::Test_zm_find_mse_max : public UnitWrap::UnitTest<D
 
   void run_bfb()
   {
-    // auto engine = Base::get_engine();
+    auto engine = Base::get_engine();
 
     // Set up baseline data
     zm_data_find_mse_max baseline_data[] = {
@@ -40,7 +40,7 @@ struct UnitWrap::UnitTest<D>::Test_zm_find_mse_max : public UnitWrap::UnitTest<D
         //   d.zmid[index] = 0;
         // }
       }
-      zm_test_data_generate_profile( d.ncol, d.pver, d.zmid, d.temperature, d.sp_humidity );
+      zm_test_data_generate_profile( engine, d.ncol, d.pver, d.zmid, d.temperature, d.sp_humidity );
     }
 
     // std::uniform_real_distribution<Real> lapse_rate_t(3.0, 9.0);

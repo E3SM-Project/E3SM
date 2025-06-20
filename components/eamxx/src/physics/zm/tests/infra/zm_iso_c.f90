@@ -124,7 +124,7 @@ subroutine zm_find_mse_max_c( pcols, ncol, pver, num_msg, msemax_top_k, pergro_a
   integer(kind=c_int),                       intent(in) :: pcols           ! number of atmospheric columns (max)
   integer(kind=c_int), value,                intent(in) :: ncol            ! number of atmospheric columns (actual)
   integer(kind=c_int), value,                intent(in) :: pver            ! number of mid-point vertical levels
-  integer(kind=c_real),                      intent(in) :: num_msg         ! number of missing moisture levels at the top of model
+  integer(kind=c_int),                       intent(in) :: num_msg         ! number of missing moisture levels at the top of model
   integer(kind=c_int), dimension(ncol),      intent(in) :: msemax_top_k    ! upper limit index of max MSE search
   logical(kind=c_bool),                      intent(in) :: pergro_active   ! flag for perturbation growth test (pergro)
   real(kind=c_real),   dimension(ncol,pver), intent(in) :: temperature     ! environement temperature
