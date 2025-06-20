@@ -46,7 +46,7 @@ module decompInitMod
 contains
 !------------------------------------------------------------------------------
 #ifdef HAVE_MOAB
-  subroutine decompInit_moab(mlndghostid, lni,lnj,amask)
+  subroutine decompInit_moab(lni,lnj,amask)
     !
     ! !DESCRIPTION:
     ! This subroutine initializes the land surface decomposition into a clump
@@ -57,6 +57,8 @@ contains
     use elm_varctl, only : nsegspc
     !use mpi
 
+    use MOABGridType
+
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
     iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
     !
@@ -64,7 +66,7 @@ contains
     implicit none
 
 #include "mpif.h"
-    integer , intent(in) :: mlndghostid
+    !integer , intent(in) :: mlndghostid
     integer , intent(in) :: amask(:)
     integer , intent(in) :: lni,lnj   ! domain global size
     !
@@ -86,9 +88,9 @@ contains
     integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
     integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
     ! MOAB data
-    integer, allocatable :: eglobal_ids(:), eproc_ownership(:), eblock_ids(:)
-    integer :: nvproc, neproc, nvoproc, neoproc, nvgproc, negproc, ngv, nge ! local and global mesh information
-    integer            :: cell_id_offset, cell_begg, cell_endg              ! temporary
+    !integer, allocatable :: eglobal_ids(:), eproc_ownership(:), eblock_ids(:)
+    !integer :: nvproc, neproc, nvoproc, neoproc, nvgproc, negproc, ngv, nge ! local and global mesh information
+    !integer            :: cell_begg, cell_endg              ! temporary
     integer            :: count                         ! temporary
     integer            :: ncells_per_clump              ! number of grid cells per clump
     integer            :: remainder                     ! temporary
@@ -118,40 +120,41 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! let us get some information about the partitioned mesh and print
-    ier = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
-    if (ier > 0 )  &
-      call endrun('Error: failed to get mesh info ')
+   !  ! let us get some information about the partitioned mesh and print
+   !  ier = iMOAB_GetMeshInfo(mlndghostid, nverts, nelem, nblocks, nsbc, ndbc)
+   !  if (ier > 0 )  &
+   !    call endrun('Error: failed to get mesh info ')
 
-    ! set the local size (owned, ghosted) and total entity list (vertices/elements)
-    nvoproc = nverts(1) ! owned vertices
-    nvgproc = nverts(2) ! ghosted vertices
-    nvproc = nverts(3)  ! owned + ghosted vertices
-    neoproc = nelem(1) ! owned elements
-    negproc = nelem(2) ! ghosted elements
-    neproc = nelem(3)   ! owned + ghosted elements
-    cell_id_offset = 0  ! initialize cell_id_offset
+   !  ! set the local size (owned, ghosted) and total entity list (vertices/elements)
+   !  nvoproc = nverts(1) ! owned vertices
+   !  nvgproc = nverts(2) ! ghosted vertices
+   !  nvproc = nverts(3)  ! owned + ghosted vertices
+   !  neoproc = nelem(1) ! owned elements
+   !  negproc = nelem(2) ! ghosted elements
+   !  neproc = nelem(3)   ! owned + ghosted elements
+   !  proc_offset = 0  ! initialize proc_offset
 
-    ! now consolidate/reduce data to root and print information
-    ! not really necessary for actual code -- for verbose info only
-    call MPI_Allreduce(nvoproc, ngv, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    call MPI_Allreduce(neoproc, nge, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    if (masterproc) then
-      write(iulog, *)  "decompInit_moab(): Number of gridcell vertices: owned=", nvoproc, &
-                        ", ghosted=", nvgproc, ", global=", ngv
-      write(iulog, *)  "decompInit_moab(): Number of gridcell elements: owned=", neoproc, &
-                        ", ghosted=", negproc, ", global=", nge
-    endif
+   !  ! now consolidate/reduce data to root and print information
+   !  ! not really necessary for actual code -- for verbose info only
+   !  call MPI_Allreduce(nvoproc, ngv, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+   !  call MPI_Allreduce(neoproc, nge, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+   !  if (masterproc) then
+   !    write(iulog, *)  "decompInit_moab(): Number of gridcell vertices: owned=", nvoproc, &
+   !                      ", ghosted=", nvgproc, ", global=", ngv
+   !    write(iulog, *)  "decompInit_moab(): Number of gridcell elements: owned=", neoproc, &
+   !                      ", ghosted=", negproc, ", global=", nge
+   !  endif
 
-    ! Determine the cell id offset on each processor
-    call MPI_Scan(neoproc, cell_id_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    if (ier /= 0) then
-       write(iulog,*) 'decompInit_moab(): MPI_Scan error failed to get cell_id_offset'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    endif
-   !  cell_id_offset = cell_id_offset - neoproc
-   !  cell_begg = cell_id_offset
-   !  cell_endg = cell_begg + neproc ! beginning + local-owned + local-ghosted
+   !  ! Determine the cell id offset on each processor
+   !  call MPI_Scan(neoproc, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+   !  if (ier /= 0) then
+   !     write(iulog,*) 'decompInit_moab(): MPI_Scan error failed to get proc_offset'
+   !     call endrun(msg=errMsg(__FILE__, __LINE__))
+   !  endif
+
+         ! proc_offset = proc_offset - neoproc
+         ! cell_begg = proc_offset
+         !! cell_endg = cell_begg + neproc ! beginning + local-owned + local-ghosted
 
     ! allocate and initialize procinfo (from decompMod.F90) and clumps
     ! beg and end indices initialized for simple addition of cells later
@@ -250,38 +253,38 @@ contains
    !     call endrun(msg=errMsg(__FILE__, __LINE__))
    !  end if
 
-    allocate(eglobal_ids(neproc), stat=ier)
-    if (ier /= 0) then
-       write(iulog,*) 'decompInit_moab(): allocation error for eglobal_ids'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(eproc_ownership(neproc), stat=ier)
-    if (ier /= 0) then
-       write(iulog,*) 'decompInit_moab(): allocation error for eproc_ownership'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    allocate(eblock_ids(neproc), stat=ier)
-    if (ier /= 0) then
-       write(iulog,*) 'decompInit_moab(): allocation error for eblock_ids'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    ier = iMOAB_GetVisibleElementsInfo( mlndghostid, neproc, &
-                     eglobal_ids, eproc_ownership, eblock_ids )
-    if (ier > 0 )  &
-      call endrun('Error: fail to query information for visible elements')
+   !  allocate(eglobal_ids(neproc), stat=ier)
+   !  if (ier /= 0) then
+   !     write(iulog,*) 'decompInit_moab(): allocation error for eglobal_ids'
+   !     call endrun(msg=errMsg(__FILE__, __LINE__))
+   !  end if
+   !  allocate(eproc_ownership(neproc), stat=ier)
+   !  if (ier /= 0) then
+   !     write(iulog,*) 'decompInit_moab(): allocation error for eproc_ownership'
+   !     call endrun(msg=errMsg(__FILE__, __LINE__))
+   !  end if
+   !  allocate(eblock_ids(neproc), stat=ier)
+   !  if (ier /= 0) then
+   !     write(iulog,*) 'decompInit_moab(): allocation error for eblock_ids'
+   !     call endrun(msg=errMsg(__FILE__, __LINE__))
+   !  end if
+   !  ier = iMOAB_GetVisibleElementsInfo( mlndghostid, neproc, &
+   !                   eglobal_ids, eproc_ownership, eblock_ids )
+   !  if (ier > 0 )  &
+   !    call endrun('Error: fail to query information for visible elements')
 
     ! assign clumps to proc round robin
    !  cid = (iam+1)*clump_pproc
    !  do n = cid,cid+clump_pproc
-   !    ! clumps(n)%owner = eproc_ownership(n) ! store the process that owns the cell
-   !    ! procinfo%cid(cid) = eglobal_ids(n)   ! store the global ID of the cell
+   !    ! clumps(n)%owner = eowner(n) ! store the process that owns the cell
+   !    ! procinfo%cid(cid) = globid(n)   ! store the global ID of the cell
    !    clumps(n)%owner = iam     ! store the process that owns the clump
    !    procinfo%cid(n-cid+1) = n   ! store the global clump ID
    !  enddo
 
     ! set the begginning and end range for the local array space
-    procinfo%begg = cell_id_offset - neoproc + 1
-    procinfo%endg = cell_id_offset ! beginning + local-owned + local-ghosted
+    procinfo%begg = proc_offset - neoproc + 1
+    procinfo%endg = proc_offset ! beginning + local-owned + local-ghosted
 
     !
     ! Compute information about all clumps on all processors
@@ -345,12 +348,11 @@ contains
     end if
 
     ! set the global ids
-    !  ldecomp%gdc2glo(beg:end) = eglobal_ids(:)
+    !  ldecomp%gdc2glo(beg:end) = globid(:)
 
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
     allocate(gindex(beg:end))
     allocate(lcid(lns))
-    print *, "Rank: ", iam, " beg: ", beg, ", end: ", end
     lcid(:) = 0
     ! now let us arrange owned elements first and ghosted elements in the end
     oind = beg
@@ -358,37 +360,38 @@ contains
     cid = 1 ! starting clump id
     offset = clump_ncells(1)
     do n = 1, neproc
-      ! if (eproc_ownership(n) /= iam) then
+      ! if (eowner(n) /= iam) then
       !    ! found a ghosted element
-      !    ldecomp%gdc2glo(gind) = eglobal_ids(n)
-      !    lcid(eglobal_ids(n)) = eproc_ownership(n) + 1 !gind
+      !    ldecomp%gdc2glo(gind) = globid(n)
+      !    lcid(globid(n)) = eowner(n) + 1 !gind
       !    gind = gind + 1
       ! else
       !    ! found an owned element
-      !    ldecomp%gdc2glo(oind) = eglobal_ids(n)
-      !    lcid(eglobal_ids(n)) = eproc_ownership(n) + 1 !oind
+      !    ldecomp%gdc2glo(oind) = globid(n)
+      !    lcid(globid(n)) = eowner(n) + 1 !oind
       !    oind = oind + 1
       ! end if
-      if (eproc_ownership(n) /= iam) then
+
+      ! if (iam == 0) then
+      !    print *, "Root: oind: ", oind, ", GID: ", globid(n), ", owner: ", eowner(n)
+      ! end if
+      if (eowner(n) /= iam) then
          cycle
       end if
 
       ! found an owned element
-      ldecomp%gdc2glo(oind) = eglobal_ids(n)
-      if (iam == 0) then
-         print *, "Root: oind: ", oind, ", GID: ", eglobal_ids(n), ", owner: ", eproc_ownership(n)
-      end if
+      ldecomp%gdc2glo(oind) = globid(n)
 
       ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
-      gindex(oind) = eglobal_ids(n)
-      ! lcid(eglobal_ids(n)) = iam + 1 !oind
+      gindex(oind) = globid(n)
+      ! lcid(globid(n)) = iam + 1 !oind
       if (n > offset) then
          cid = cid + 1
          offset = offset + clump_ncells(cid)
       end if
-      ! lcid(eglobal_ids(n)) = iam * clump_pproc + cid !oind
-      lcid(eglobal_ids(n)) = eproc_ownership(n) + 1
-      ! lcid(eglobal_ids(n)) = mod(eglobal_ids(n)-1,npes)
+      ! lcid(globid(n)) = iam * clump_pproc + cid !oind
+      lcid(globid(n)) = eowner(n) + 1
+      ! lcid(globid(n)) = mod(globid(n)-1,npes)
       oind = oind + 1
     enddo
 
@@ -407,7 +410,7 @@ contains
     call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsize, gsize)
     deallocate(gindex)
 
-    deallocate(eglobal_ids, eproc_ownership, eblock_ids)
+    !deallocate(eglobal_ids, eproc_ownership, eblock_ids)
 
     ! Diagnostic output
     if (masterproc) then
@@ -415,7 +418,7 @@ contains
        write(iulog,*)'   longitude points               = ',lni
        write(iulog,*)'   latitude points                = ',lnj
        write(iulog,*)'   total number of active land gridcells = ',numg
-       write(iulog,*)'   total number of global MOAB gridcells = ',nge
+       write(iulog,*)'   total number of global MOAB gridcells = ',neg
        write(iulog,*)' Decomposition Characteristics'
        write(iulog,*)'   clumps per process             = ',clump_pproc
        write(iulog,*)' gsMap Characteristics'
@@ -2438,6 +2441,14 @@ contains
     ! !USES:
     use elm_varctl           , only : lateral_connectivity
     use subgridMod           , only : subgrid_get_gcellinfo
+
+#ifdef HAVE_MOAB
+    use MOABGridType
+
+    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
+   iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+#endif
+
 #ifdef USE_PETSC_LIB
     use domainLateralMod     , only : ldomain_lateral
     use UnstructuredGridType , only : ScatterDataG2L
@@ -2465,6 +2476,9 @@ contains
     real(r8), pointer            :: data_recv(:)
     integer                      :: ndata_send
     integer                      :: ndata_recv
+#ifdef HAVE_MOAB
+    !integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
+#endif
     character(len=32), parameter :: subname = 'decompInit_ghosts'
 
     if (.not.lateral_connectivity) then
@@ -2513,12 +2527,100 @@ contains
 
     else
 
-#ifndef USE_PETSC_LIB
+#if defined(HAVE_MOAB)
 
-    call endrun(msg='ERROR ' // trim(subname) //': decompInit_ghosts requires '//&
-         'PETSc, but the code was compiled without -DUSE_PETSC_LIB')
+      call get_proc_bounds(begg, endg)
 
-#else
+
+      ! Approach:
+      ! 1) For a global PETSc vector, save the number of subgrid
+      !    quantities for each grid cell.
+      ! 2) Scatter the global PETSc vector to a local PETSc vector
+      ! 3) Finally count the number of subgrid quantities for all
+      !    ghost grid cells in the local PETSc vector
+
+      !nblocks = 5 ! topo + lun + col + pft + cohort
+
+      ! ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
+      ! ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+
+      ! allocate(data_send(ndata_send))
+      ! allocate(data_recv(ndata_recv))
+
+      ! data_send(:) = 0.d0
+
+      ! ! Save information about number of subgrid categories for
+      ! ! local grid cells
+
+      ! do anumg = begg,endg
+      !    ln  = anumg
+      !    if(max_topounits > 1) then
+      !       if (present(glcmask)) then
+      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+      !               ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+      !       else
+      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+      !               ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+      !       endif
+      !    else
+      !       if (present(glcmask)) then
+      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+      !               ncohorts=icohorts, glcmask=glcmask(ln))
+      !       else
+      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+      !               ncohorts=icohorts )
+      !       endif
+      !    endif
+
+      !    data_send((anumg-begg)*nblocks + 1) = itunits
+      !    data_send((anumg-begg)*nblocks + 2) = ilunits
+      !    data_send((anumg-begg)*nblocks + 3) = icols
+      !    data_send((anumg-begg)*nblocks + 4) = ipfts
+      !    data_send((anumg-begg)*nblocks + 5) = icohorts
+
+      ! enddo
+
+      ! ! Scatter: Global-to-Local
+      ! call ScatterDataG2L(ldomain_lateral%ugrid, &
+      !      nblocks, ndata_send, data_send, ndata_recv, data_recv)
+
+      ! ! Get number of ghost quantites at all subgrid categories
+      ! procinfo%ncells_ghost    = ldomain_lateral%ugrid%ngrid_ghost
+      ! procinfo%ntunits_ghost   = 0
+      ! procinfo%nlunits_ghost   = 0
+      ! procinfo%ncols_ghost     = 0
+      ! procinfo%npfts_ghost     = 0
+      ! procinfo%nCohorts_ghost  = 0
+
+      ! ighost_beg = ldomain_lateral%ugrid%ngrid_local   + 1
+      ! ighost_end = ldomain_lateral%ugrid%ngrid_ghosted
+
+      ! do ighost = ighost_beg, ighost_end
+      !    procinfo%ntunits_ghost  = procinfo%ntunits_ghost  + data_recv((ighost-1)*nblocks + 1)
+      !    procinfo%nlunits_ghost  = procinfo%nlunits_ghost  + data_recv((ighost-1)*nblocks + 2)
+      !    procinfo%ncols_ghost    = procinfo%ncols_ghost    + data_recv((ighost-1)*nblocks + 3)
+      !    procinfo%npfts_ghost    = procinfo%npfts_ghost    + data_recv((ighost-1)*nblocks + 4)
+      !    procinfo%ncohorts_ghost = procinfo%ncohorts_ghost + data_recv((ighost-1)*nblocks + 5)
+      ! enddo
+
+      ! Set 'begin' index for subgrid categories
+      procinfo%begg_all        = procinfo%begg
+      procinfo%begt_all        = procinfo%begt
+      procinfo%begl_all        = procinfo%begl
+      procinfo%begc_all        = procinfo%begc
+      procinfo%begp_all        = procinfo%begp
+      procinfo%begCohort_all   = procinfo%begCohort
+
+      ! Set 'end' index for subgrid categories
+      procinfo%endg_all        = procinfo%endg      + procinfo%ncells_ghost
+      procinfo%endt_all        = procinfo%endt      + procinfo%ntunits_ghost
+      procinfo%endl_all        = procinfo%endl      + procinfo%nlunits_ghost
+      procinfo%endc_all        = procinfo%endc      + procinfo%ncols_ghost
+      procinfo%endp_all        = procinfo%endp      + procinfo%npfts_ghost
+      procinfo%endCohort_all   = procinfo%endCohort + procinfo%nCohorts_ghost
+
+#elif defined(USE_PETSC_LIB)
+
        call get_proc_bounds(begg, endg)
 
        ! Approach:
@@ -2607,6 +2709,10 @@ contains
        procinfo%endc_all        = procinfo%endc      + procinfo%ncols_ghost
        procinfo%endp_all        = procinfo%endp      + procinfo%npfts_ghost
        procinfo%endCohort_all   = procinfo%endCohort + procinfo%nCohorts_ghost
+
+#else
+         call endrun(msg='ERROR ' // trim(subname) //': decompInit_ghosts requires '//&
+              'either MOAB or PETSc, but the code was compiled without -DHAVE_MOAB or -DUSE_PETSC_LIB')
 
 #endif
 
