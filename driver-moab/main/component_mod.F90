@@ -1299,7 +1299,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       endif
       do i=1,comp%mblsize
          do j=1,nfields
-            vals(i,j) = factors(i) * vals(i,j)
+            vals(i,j) = vals(i,j) * factors(i)
          enddo
       enddo
 
