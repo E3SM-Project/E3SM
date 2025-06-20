@@ -50,7 +50,7 @@ module elm_initializeMod
   public :: initialize2  ! Phase two initialization
   !-----------------------------------------------------------------------
 #ifdef HAVE_MOAB
-  private :: init_moab_land_internal   ! create the full MOAB mesh representation of ELM domain
+  private :: elm_moab_interface_init   ! create the full MOAB mesh representation of ELM domain
 
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
   real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
@@ -203,7 +203,7 @@ contains
     ! Now let us create that MOAB app that represents the full ELM mesh
     ! ------------------------------------------------------------------------
 #ifdef HAVE_MOAB
-    call init_moab_land_internal()
+    call elm_moab_interface_init()
 #endif
 
     ! ------------------------------------------------------------------------
@@ -1265,26 +1265,17 @@ contains
   end subroutine elm_petsc_init
 
 #ifdef HAVE_MOAB
-  subroutine init_moab_land_internal()!(bounds)
-    use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
-    use shr_kind_mod     , only : CXX => SHR_KIND_CXX
-    use spmdMod     , only: iam  ! rank on the land communicator
-    use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
-    use elm_varcon  , only: re
-    use shr_const_mod, only: SHR_CONST_PI
-    use elm_varctl  ,  only : iulog, fatmlndfrc  ! for messages and domain file name
-    use spmdmod  , only: masterproc, mpicom
-    use controlMod
-    use mpi
-    use MOABGridType, only : initialize, load_grid_file
+  subroutine elm_moab_interface_init()!(bounds)
+    use elm_varctl  ,  only : fatmlndfrc  ! for messages and domain file name
+    use MOABGridType, only : elm_moab_initialize, elm_moab_load_grid_file
 
     ! initialize the MOAB structures as needed for ELM
-    call initialize()
+    call elm_moab_initialize()
 
     ! load the mesh file for ELM
-    call load_grid_file(fatmlndfrc)
+    call elm_moab_load_grid_file(fatmlndfrc)
 
-  end subroutine init_moab_land_internal
+  end subroutine elm_moab_interface_init
 #endif
 
 #undef MOABDEBUG
