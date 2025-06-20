@@ -1914,30 +1914,11 @@ subroutine  copy_aream_from_area(mbappid)
        target_id = target_id + 200
     endif
     if (mbAPPid1 .ge. 0) then !  we are on the sending pes
-#ifdef MOABDEBUG
-       if (direction .eq. 0 ) then
-          dir = 'c2x'
-       else
-          dir = 'x2c'
-       endif
-       write(lnum,"(I0.2)") num_moab_exports
-       if (present(context_exch)) then
-          outfile = comp%ntype//'_src_'//trim(context_exch)//'_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-       else
-          outfile = comp%ntype//'_src_'//trim(dir)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-       endif
-       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-       ierr = iMOAB_WriteMesh(mbAPPid1, trim(outfile), trim(wopts))
-       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot write file '// outfile)
-       endif
-#endif
        ! basically, use the initial partitioning
        ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
        if (ierr .ne. 0) then
           call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
        endif
-
     endif
     if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
        ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
