@@ -509,6 +509,9 @@
 <config_flux_limiter>'monotonic'</config_flux_limiter>
 <config_remap_limiter>'monotonic'</config_remap_limiter>
 <config_thickness_flux_type>'centered'</config_thickness_flux_type>
+<config_use_spatially_variable_upwind>.false.</config_use_spatially_variable_upwind>
+<config_spatially_variable_upwind_hmin>5.0</config_spatially_variable_upwind_hmin>
+<config_spatially_variable_upwind_hmax>10.0</config_spatially_variable_upwind_hmax>
 
 <!-- bottom_drag -->
 <config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
