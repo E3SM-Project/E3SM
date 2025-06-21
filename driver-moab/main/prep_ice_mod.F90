@@ -235,11 +235,6 @@ contains
             mapper_SFo2i%src_context = ocn(1)%cplcompid
             mapper_SFo2i%intx_context = ice(1)%cplcompid
             mapper_SFo2i%mbname = 'mapper_SFo2i'
-
-            if(mapper_SFo2i%copy_only) then
-               call seq_map_set_type(mapper_SFo2i, mboxid, 1) ! type is cells
-            endif
-
          endif
 #endif
        endif

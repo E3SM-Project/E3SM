@@ -31,7 +31,7 @@ module prep_ocn_mod
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
-  use seq_map_mod        !  will have also moab_map_init_rcfile , seq_map_set_type
+  use seq_map_mod        !  will have also moab_map_init_rcfile 
   use seq_flds_mod
   use t_drv_timers_mod
   use mct_mod
@@ -711,11 +711,6 @@ contains
             mapper_SFi2o%src_context = ice(1)%cplcompid
             mapper_SFi2o%intx_context = ocn(1)%cplcompid
             mapper_SFi2o%mbname = 'mapper_SFi2o'
-
-            if(mapper_SFi2o%copy_only) then
-               call seq_map_set_type(mapper_SFi2o, mbixid, 1) ! type is cells
-            endif
-
          endif
 #endif
        endif ! if (ice_present)

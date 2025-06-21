@@ -668,7 +668,7 @@ contains
    endif
    !  set all tags to 0 in one method
    ent_type = 1! cells
-   ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
+   ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om )
    if ( ierr /= 0 ) then
       write(ocnLogUnit,*) 'Fail to set MOAB fields '
    endif
@@ -684,7 +684,7 @@ contains
       call mpas_log_write('cannot define tags for MOAB x2o fields ' // trim(seq_flds_x2o_fields), MPAS_LOG_ERR)
    endif
    !  set all tags to 0 in one method
-   ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls_r , ent_type, x2o_om(1, 1) )
+   ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls_r , ent_type, x2o_om )
    if ( ierr /= 0 ) then
       write(ocnLogUnit,*) 'Fail to set MOAB fields '
    endif
@@ -4785,7 +4785,7 @@ contains
       ent_type = 1 ! cells
       !  set all tags in one method
       tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
+      ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om)
       if ( ierr /= 0 ) then
          write(ocnLogUnit,*) 'Fail to set o2x MOAB fields '
       endif

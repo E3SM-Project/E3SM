@@ -165,7 +165,7 @@ contains
        allocate(tagValues(arrSize) )
        ent_type = 1 ! cell type
        tagValues = 0._r8
-       ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues(1))
+       ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues)
        deallocate(tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
