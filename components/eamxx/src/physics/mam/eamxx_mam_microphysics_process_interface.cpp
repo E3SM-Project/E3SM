@@ -566,7 +566,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
   // This interface hangs with this team size. Therefore,
   // let's use a team size of nlev.
-  haero::ThreadTeamPolicy policy(ncol, nlev);
+  haero::ThreadTeamPolicy policy(ncol, Kokkos::AUTO());
   // const auto policy =
       // ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
 
