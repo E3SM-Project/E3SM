@@ -2,6 +2,8 @@
 ---
 filename_prefix: model_output_baseline
 averaging_type: average
+track_avg_cnt: true
+fill_threshold: 0.25
 fields:
   physics_gll:
     field_names:
@@ -80,6 +82,6 @@ fields:
       - vtheta_dp_dyn
       - dp3d_dyn
 output_control:
-  frequency: 1
-  frequency_units: nmins
+  frequency: 3
+  frequency_units: nsteps
 ...
