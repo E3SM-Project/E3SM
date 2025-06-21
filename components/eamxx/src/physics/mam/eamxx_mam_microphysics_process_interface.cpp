@@ -566,9 +566,13 @@ void MAMMicrophysics::run_impl(const double dt) {
   //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
   // This interface hangs with this team size. Therefore,
   // let's use a team size of nlev.
-  haero::ThreadTeamPolicy policy(ncol, Kokkos::AUTO());
-  // const auto policy =
-      // ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
+#ifdef EKAT_ENABLE_GPU
+       const int team_size=nlev;
+#else
+       const int team_size=1;
+#endif  
+  const auto policy =
+       ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
