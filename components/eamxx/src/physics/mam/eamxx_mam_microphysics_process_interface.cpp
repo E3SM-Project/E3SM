@@ -7,7 +7,7 @@
 #include "readfiles/photo_table_utils.cpp"
 
 namespace scream {
-
+// DUMMY COMMENT
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
                                  const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params), aero_config_() {
