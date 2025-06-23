@@ -17,11 +17,12 @@ module rof_comp_mct
   use shr_file_mod    , only: shr_file_setlogunit, shr_file_setloglevel, shr_file_setio
   use shr_file_mod    , only: shr_file_freeunit
   use shr_const_mod   , only: SHR_CONST_REARTH
+  use perf_mod        , only: t_startf, t_stopf, t_barrierf
   use rof_cpl_indices , only: rof_cpl_indices_set, &
                               index_r2x_Forr_rofl,    index_r2x_Forr_rofi,   &
                               index_r2x_Flrr_flood,   index_r2x_Flrr_volr,   &
                               index_r2x_Flrr_volrmch, index_r2x_Flrr_supply, &
-                              index_r2x_Flrr_deficit
+                              index_r2x_Flrr_deficit, index_x2r_So_ssh
   use rdycoreMod      , only: inst_name, inst_suffix, inst_index
   use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit
   use RDycoreIO
@@ -239,7 +240,18 @@ CONTAINS
 
     !EOP
     !-------------------------------------------------------------------------------
+
+    ! Map MCT datatype to rof data
+    call t_startf ('lc_rof_import')
+    call rof_import_mct( x2r )
+    call t_stopf ('lc_rof_import')
+
+    !TODO: run rdycore code
+
+    ! Map rof data to MCT datatype
+    call t_startf ('lc_rof_export')
     call rof_export_mct( r2x )
+    call t_stopf ('lc_rof_export')
 
   end subroutine rof_run_mct
 
@@ -431,8 +443,20 @@ CONTAINS
     type(mct_aVect), intent(inout) :: x2r_r
     !
     ! LOCAL VARIABLES
+    integer :: n
+    real(kind=R8), dimension(:), allocatable :: ssh
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
+
+    allocate(ssh(lsize))
+    if (index_x2r_So_ssh>0) then
+      do n = 1, lsize
+         ssh(n) = x2r_r%rAttr(index_x2r_So_ssh,n)
+      enddo
+    end if
+
+    if (masterproc) write(logunit_rof,*) 'Import ssh ',minval(ssh),maxval(ssh)
+    deallocate(ssh)
 
   end subroutine rof_import_mct
 
