@@ -183,6 +183,8 @@ void MAMMicrophysics::set_grids(
   // layout for Constituent fluxes
   FieldLayout scalar2d_pcnst =
       grid_->get_2d_vector_layout(mam4::pcnst, "num_phys_constituents");
+  FieldLayout scalar2d_gas_pcnst =
+      grid_->get_2d_vector_layout( mam_coupling::gas_pcnst(), "num_gas_constituents");
 
   // Constituent fluxes of species in [kg/m2/s]
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
@@ -196,6 +198,11 @@ void MAMMicrophysics::set_grids(
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
   add_field<Computed>("mam4_external_forcing", scalar3d_extcnt, kg / m3 / s, grid_name);
+
+  // Register computed fields for tendencies due to gas phase chemistry
+  // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
+  diagnostic_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_gas_phase_chemistry", false);
+  add_field<Computed>("mixing_ratio_tendency_due_to_gas_phase_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -378,7 +385,6 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMicrophysics."
                    " Used memory: "
-                       << std::to_string(used_mem)
                        << "."
                           " Requested memory: "
                        << std::to_string(requested_buffer_size_in_bytes())
@@ -637,6 +643,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d aqso4_flx = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
   view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
 
+  // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
+  view_3d dvmrdt;
+  if (diagnostic_dvmrdt_)
+    dvmrdt = get_field_out("mixing_ratio_tendency_due_to_gas_phase_chemistry").get_view<Real ***>();
+
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
   auto linoz_o3_clim = buffer_.scratch[0];
@@ -802,6 +813,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
+  const bool diagnostic_dvmrdt = diagnostic_dvmrdt_;
+
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphyscs
@@ -874,6 +887,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
+	mam4 diagnostic_arrays diag_arrays;
+        if (diagnostic_dvmrdt)
+  	  auto diag_arrays.dvmrdt = ekat::subview(dvmrdt, icol);
+
         // Wind speed at the surface
         const Real wind_speed =
             haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
@@ -937,7 +954,8 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays, 
+	    dvel_col, dflx_col, progs);
 
         team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
