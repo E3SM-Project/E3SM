@@ -202,7 +202,8 @@ void MAMMicrophysics::set_grids(
   // Register computed fields for tendencies due to gas phase chemistry
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   diagnostic_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_gas_phase_chemistry", false);
-  add_field<Computed>("mixing_ratio_tendency_due_to_gas_phase_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
+  if (diagnostic_dvmrdt_)
+    add_field<Computed>("mixing_ratio_tendency_due_to_gas_phase_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
