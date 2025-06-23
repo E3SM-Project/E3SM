@@ -126,6 +126,7 @@ module subgridAveMod
 
 contains
 
+  !-----------------------------------------------------------------------
   subroutine p2c_1d (bounds, parr, carr, p2c_scale_type)
      ! !DESCRIPTION:
      ! Perfrom subgrid-average from pfts to columns.
@@ -172,7 +173,7 @@ contains
         end if
      end do
 
-     if (err_col) then
+     if (err_col .ne. 0) then
         write(iulog,*)'p2c_1d error: sumwt is greater than 1.0'
         call endrun(decomp_index=err_col, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
      end if
