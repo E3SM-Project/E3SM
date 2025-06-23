@@ -32,7 +32,7 @@ module zm_conv
    type(zm_param_t), public :: zm_param ! derived type to hold ZM tunable parameters
    !----------------------------------------------------------------------------
    ! private variables
-   real(r8), parameter :: capelmt      = 70._r8  ! threshold value for cape for deep convection
+   real(r8), parameter :: capelmt      = 70._r8  ! threshold value of cape for deep convection
    real(r8), parameter :: trigdcapelmt = 0._r8   ! threshold value of dcape for deep convection
 
 !===================================================================================================
@@ -59,8 +59,6 @@ subroutine zm_convi(limcnv_in, no_deep_pbl_in)
 
    ! set zm_const using global values
    call zm_const_set_to_global(zm_const)
-
-   call zm_param_print(zm_param)
 
    !----------------------------------------------------------------------------
    return
@@ -1893,8 +1891,7 @@ subroutine cldprp(lchnk   , zm_const, &
             expnum(i) = hmn(i,mx(i)) - (hsat(i,k-1)*(zf(i,k)-z(i,k)) + &
                         hsat(i,k)* (z(i,k-1)-zf(i,k)))/(z(i,k-1)-z(i,k))
          end if
-         if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. &
-       k1(i,k) > expnum(i)*dz(i,k)) then
+         if ((expdif(i) > 100._r8 .and. expnum(i) > 0._r8) .and. k1(i,k) > expnum(i)*dz(i,k)) then
             ftemp(i) = expnum(i)/k1(i,k)
             f(i,k) = ftemp(i) + i2(i,k)/k1(i,k)*ftemp(i)**2 + &
                      (2._r8*i2(i,k)**2-k1(i,k)*i3(i,k))/k1(i,k)**2* &
