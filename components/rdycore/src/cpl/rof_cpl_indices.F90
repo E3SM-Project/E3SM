@@ -22,6 +22,7 @@ module rof_cpl_indices
   integer, public :: index_x2r_Flrl_Tqsur  = 0    ! lnd->rof Temperature of surface runoff
   integer, public :: index_x2r_Flrl_Tqsub  = 0    ! lnd->rof Temperature of subsurface runoff
   integer, public :: index_x2r_coszen_str  = 0    ! lnd->rof Cosine of Zenith
+  integer, public :: index_x2r_So_ssh      = 0    ! ocn->rof ssh from ocean
   integer, public :: nflds_x2r = 0
 
 ! rof to driver
@@ -64,6 +65,7 @@ contains
     index_x2r_Flrl_demand = mct_avect_indexra(avtmp,'Flrl_demand')
     index_x2r_Flrl_Tqsur  = mct_avect_indexra(avtmp,'Flrl_Tqsur')
     index_x2r_Flrl_Tqsub  = mct_avect_indexra(avtmp,'Flrl_Tqsub')
+    index_x2r_So_ssh      = mct_avect_indexra(avtmp,'So_ssh')
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 

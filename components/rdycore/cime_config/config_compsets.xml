@@ -19,4 +19,9 @@
     <lname>2000_DATM%QIA_DLND%GPCC_SICE_SOCN_RDYCORE_SGLC_SWAV</lname>
   </compset>
 
+  <compset>
+    <alias>RDSGPCCO</alias>
+    <lname>2000_DATM%QIA_DLND%GPCC_SICE_DOCN%DOM_RDYCORE_SGLC_SWAV</lname>
+  </compset>
+
 </compsets>
