@@ -229,7 +229,7 @@ subroutine phys_grid_ctem_init
    call addfld('VTHzm', (/'lev'/), 'A','K m s-1', "Zonal-Mean Meridional Heat Flux i.e. zonal_mean(v'theta')", gridname='ctem_zavg_phys')
    call addfld('WTHzm', (/'lev'/), 'A','K Pa s-1',"Zonal-Mean Vertical Heat Flux i.e. zonal_mean(w'theta')", gridname='ctem_zavg_phys')
    call addfld('UVzm',  (/'lev'/), 'A','m2 s-2',  "Zonal-Mean Meridional Flux of Zonal Momentum i.e. zonal_mean(u'v')", gridname='ctem_zavg_phys')
-   call addfld('UWzm',  (/'lev'/), 'A','Pa m s-2',"Zonal-Mean Vertical Flux of Zonal Momentum zonal_mean(u'w')", gridname='ctem_zavg_phys')
+   call addfld('UWzm',  (/'lev'/), 'A','Pa m s-2',"Zonal-Mean Vertical Flux of Zonal Momentum i.e. zonal_mean(u'w')", gridname='ctem_zavg_phys')
 
 end subroutine phys_grid_ctem_init
 
@@ -324,9 +324,9 @@ subroutine phys_grid_ctem_diags(phys_state)
    do lchnk = begchunk,endchunk
       ncol = phys_state(lchnk)%ncol
       do k = 1,pver
-         ! u'v' = (uv)zm - uzm*vzm
+         ! zmean(u'v') = zmean(uv) - zmean(u)*zmean(v)
          ! NOTE - the previous method involved explicitly calcalating the the perturbations from
-         ! the zonal mean (i.e. u-uzm), but this was found to be the source of excessive noise
+         ! the zonal mean (i.e. u - zonal_mean(u) ), but this was found to be the source of excessive noise
          ! in the diagnostic outputs. The new method yields much smoother results.
          uvp(:ncol,k,lchnk)  =  uvzm(:ncol,k,lchnk) - uzm(:ncol,k,lchnk) *  vzm(:ncol,k,lchnk)
          uwp(:ncol,k,lchnk)  =  uwzm(:ncol,k,lchnk) - uzm(:ncol,k,lchnk) *  wzm(:ncol,k,lchnk)
