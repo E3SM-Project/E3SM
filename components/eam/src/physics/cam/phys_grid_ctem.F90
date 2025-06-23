@@ -326,8 +326,8 @@ subroutine phys_grid_ctem_diags(phys_state)
       do k = 1,pver
          ! zmean(u'v') = zmean(uv) - zmean(u)*zmean(v)
          ! NOTE - the previous method involved explicitly calcalating the the perturbations from
-         ! the zonal mean (i.e. u - zmean(u) ), but this was found to be the source of excessive noise
-         ! in the diagnostic outputs. The new method yields much smoother results.
+         ! the zonal mean (i.e. u - zmean(u) ), but this was found to be the source of excessive
+         ! noise in the diagnostic outputs. The new method yields much smoother results.
          uvp(:ncol,k,lchnk)  =  uvzm(:ncol,k,lchnk) - uzm(:ncol,k,lchnk) *  vzm(:ncol,k,lchnk)
          uwp(:ncol,k,lchnk)  =  uwzm(:ncol,k,lchnk) - uzm(:ncol,k,lchnk) *  wzm(:ncol,k,lchnk)
          vthp(:ncol,k,lchnk) = vthzm(:ncol,k,lchnk) - vzm(:ncol,k,lchnk) * thzm(:ncol,k,lchnk)
