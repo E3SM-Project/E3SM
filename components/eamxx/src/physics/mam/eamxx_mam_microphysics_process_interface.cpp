@@ -201,9 +201,12 @@ void MAMMicrophysics::set_grids(
 
   // Register computed fields for tendencies due to gas phase chemistry
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  diagnostic_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_gas_phase_chemistry", false);
-  if (diagnostic_dvmrdt_)
+  diagnostic_gs_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_gas_phase_chemistry", false);
+  if (diagnostic_gs_dvmrdt_)
     add_field<Computed>("mixing_ratio_tendency_due_to_gas_phase_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
+  diagnostic_aq_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_aqueous_chemistry", false);
+  if (diagnostic_aq_dvmrdt_)
+    add_field<Computed>("mixing_ratio_tendency_due_to_aqueous_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -645,9 +648,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  view_3d dvmrdt;
-  if (diagnostic_dvmrdt_)
-    dvmrdt = get_field_out("mixing_ratio_tendency_due_to_gas_phase_chemistry").get_view<Real ***>();
+  view_3d gs_dvmrdt, aq_dvmrdt;
+  if (diagnostic_gs_dvmrdt_)
+    gs_dvmrdt = get_field_out("mixing_ratio_tendency_due_to_gas_phase_chemistry").get_view<Real ***>();
+  if (diagnostic_aq_dvmrdt_)
+    aq_dvmrdt = get_field_out("mixing_ratio_tendency_due_to_aqueous_chemistry").get_view<Real ***>();
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -814,7 +819,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
-  const bool diagnostic_dvmrdt = diagnostic_dvmrdt_;
+  const bool diagnostic_gs_dvmrdt = diagnostic_gs_dvmrdt_;
+  const bool diagnostic_aq_dvmrdt = diagnostic_aq_dvmrdt_;
 
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
@@ -888,9 +894,9 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
-	mam4 diagnostic_arrays diag_arrays;
-        if (diagnostic_dvmrdt)
-  	  auto diag_arrays.dvmrdt = ekat::subview(dvmrdt, icol);
+	mam4::DiagnosticArrays diag_arrays;
+        if (diagnostic_gs_dvmrdt) diag_arrays.gs_dvmrdt = ekat::subview(gs_dvmrdt, icol);
+        if (diagnostic_aq_dvmrdt) diag_arrays.aq_dvmrdt = ekat::subview(aq_dvmrdt, icol);
 
         // Wind speed at the surface
         const Real wind_speed =
