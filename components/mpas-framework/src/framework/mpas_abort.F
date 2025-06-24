@@ -29,6 +29,10 @@ module mpas_abort
       use mpas_kind_types, only : StrKIND
       use mpas_io_units, only : mpas_new_unit
       use mpas_threading, only : mpas_threading_get_thread_num
+
+#ifdef coupled
+      use shr_sys_mod, only : shr_sys_abort
+#endif
    
 #ifdef _MPI
 #ifndef NOMPIMOD
@@ -93,10 +97,14 @@ module mpas_abort
       end if
    
       if (.not. local_deferredAbort) then
-#ifdef _MPI
-         call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
+#ifdef coupled
+      call shr_sys_abort('MPAS framework abort')
 #else
-         stop
+  #ifdef _MPI
+      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
+  #else
+      stop
+  #endif
 #endif
       end if
    
