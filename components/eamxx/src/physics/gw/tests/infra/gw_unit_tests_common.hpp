@@ -92,6 +92,7 @@ struct UnitWrap {
     struct TestGwConvectGwSources;
     struct TestGwBeresSrc;
     struct TestGwEdiff;
+    struct TestGwDiffTend;
   }; // UnitWrap
 };
 

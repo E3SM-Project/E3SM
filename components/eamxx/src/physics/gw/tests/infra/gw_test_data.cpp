@@ -60,6 +60,8 @@ void gw_beres_src_c(Int ncol, Int ngwv, Real* lat, Real* u, Real* v, Real* netdt
 
 void gw_ediff_c(Int ncol, Int ngwv, Int kbot, Int ktop, Int* tend_level, Real* gwut, Real* ubm, Real* nm, Real* rho, Real dt, Real gravit, Real* pmid, Real* rdpm, Real* c, Real* egwdffi, Real *decomp_ca, Real *decomp_cc, Real *decomp_dnom, Real *decomp_ze);
 
+void gw_diff_tend_c(Int ncol, Int kbot, Int ktop, Real* q, Real dt, Real *decomp_ca, Real *decomp_cc, Real *decomp_dnom, Real *decomp_ze, Real* dq);
+
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -207,6 +209,14 @@ void gw_ediff(GwEdiffData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_ediff_c(d.ncol, d.ngwv, d.kbot, d.ktop, d.tend_level, d.gwut, d.ubm, d.nm, d.rho, d.dt, GWC::gravit, d.pmid, d.rdpm, d.c, d.egwdffi, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_diff_tend(GwDiffTendData& d)
+{
+  gw_init(d.init);
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_diff_tend_c(d.ncol, d.kbot, d.ktop, d.q, d.dt, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.dq);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

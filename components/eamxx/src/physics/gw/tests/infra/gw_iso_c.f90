@@ -308,4 +308,23 @@ contains
     call decomp%finalize()
 
   end subroutine gw_ediff_c
+
+  subroutine gw_diff_tend_c(ncol, kbot, ktop, q, dt, decomp_ca, decomp_cc, decomp_dnom, decomp_ze, dq) bind(C)
+    use gw_common, only : pver
+    use gw_diffusion, only : gw_diff_tend
+    use vdiff_lu_solver, only: lu_decomp
+
+    integer(kind=c_int) , value, intent(in) :: ncol, kbot, ktop
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: q
+    real(kind=c_real) , value, intent(in) :: dt
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: decomp_ca, decomp_cc, decomp_dnom, decomp_ze
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: dq
+
+    type(lu_decomp) :: decomp
+    decomp = lu_decomp(ncol, pver)
+
+    call gw_diff_tend(ncol, pver, kbot, ktop, q, dt, decomp, dq)
+
+    call decomp%finalize()
+  end subroutine gw_diff_tend_c
 end module gw_iso_c

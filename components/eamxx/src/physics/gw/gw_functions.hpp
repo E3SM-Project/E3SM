@@ -399,6 +399,18 @@ struct Functions
     const uview_1d<const Spack>& c,
     // Outputs
     const uview_1d<Spack>& egwdffi);
+
+  KOKKOS_FUNCTION
+  static void gw_diff_tend(
+    // Inputs
+    const Int& ncol,
+    const Int& pver,
+    const Int& kbot,
+    const Int& ktop,
+    const uview_1d<const Spack>& q,
+    const Spack& dt,
+      // Outputs
+    const uview_1d<Spack>& dq);
 }; // struct Functions
 
 } // namespace gw
@@ -424,5 +436,6 @@ struct Functions
 # include "impl/gw_gw_convect_gw_sources_impl.hpp"
 # include "impl/gw_gw_beres_src_impl.hpp"
 # include "impl/gw_gw_ediff_impl.hpp"
+# include "impl/gw_gw_diff_tend_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

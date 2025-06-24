@@ -611,6 +611,30 @@ struct GwEdiffData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwEdiffData, 5, ncol, ngwv, kbot, ktop, dt);
 };
 
+struct GwDiffTendData : public PhysicsTestData {
+  // Inputs
+  Int ncol, kbot, ktop;
+  Real *q;
+  Real dt;
+  Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze;
+  GwInit init;
+
+  // Outputs
+  Real *dq;
+
+  GwDiffTendData(Int ncol_, Int kbot_, Int ktop_, Real dt_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver}
+    },
+    {
+      {&q, &dq, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze}
+    }),
+    ncol(ncol_), kbot(kbot_), ktop(ktop_), dt(dt_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwDiffTendData, 4, ncol, kbot, ktop, dt);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
@@ -628,6 +652,7 @@ void gw_storm_speed(GwStormSpeedData& d);
 void gw_convect_gw_sources(GwConvectGwSourcesData& d);
 void gw_beres_src(GwBeresSrcData& d);
 void gw_ediff(GwEdiffData& d);
+void gw_diff_tend(GwDiffTendData& d);
 
 extern "C" { // _f function decls
 }
