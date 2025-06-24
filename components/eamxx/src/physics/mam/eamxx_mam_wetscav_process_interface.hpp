@@ -121,6 +121,12 @@ class MAMWetscav : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
+
+  Real sol_facti_cloud_borne_ = 0;
+  Real sol_factic_cloud_borne_ = 0;
+  Real sol_factb_below_cloud_ = 0;
+  Real f_act_conv_below_cloud_ = 0;
+
 };  // class MAMWetscav
 
 }  // namespace scream
