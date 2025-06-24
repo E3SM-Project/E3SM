@@ -10,6 +10,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "physics/share/physics_constants.hpp"
+#include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -75,7 +76,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     auto p = m_helper_pressure_fields["p_data"];
     p.deep_copy(p_beg);
     p.update(p_end,alpha,1-alpha);
-  } else if (m_vr_type==Dynamic3DRef) {
+  } else if (m_vr_type==Dynamic3DRef or m_vr_type==MAM4xx ) {
     // The surface pressure field is THE LAST registered in the horiz remappers
     const auto ps_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
     const auto ps_end = m_horiz_remapper_end->get_tgt_field(m_nfields);
@@ -136,7 +137,7 @@ update_end_fields ()
     fields.push_back(m_horiz_remapper_end->get_src_field(i));
   }
 
-  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
+  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef or m_vr_type==MAM4xx ) {
     // We also need to read the src pressure profile
     fields.push_back(m_horiz_remapper_end->get_src_field(m_nfields));
   }
@@ -461,15 +462,6 @@ setup_vert_remapper (const RemapData& data)
     }
   };
 
-  auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
-
-  vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
-  vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
-
-  // Set the mask value only if needed. RemapData has a default that is invalid for VerticalRemapper
-  if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
-    vremap->set_mask_value(data.mask_value);
-  }
 
   // Setup vertical pressure profiles (which can add 1 extra field to hremap)
   // NOTES:
@@ -486,7 +478,7 @@ setup_vert_remapper (const RemapData& data)
   if (m_vr_type==Dynamic3D) {
     // We load a full 3d profile, so p_file IS p_data
     m_helper_pressure_fields ["p_file"] = p_data.alias(data.pname);
-  } else if (m_vr_type==Dynamic3DRef) {
+  } else if (m_vr_type==Dynamic3DRef or m_vr_type==MAM4xx ) {
     // We load the surface pressure, and reconstruct p_data via p=ps*hybm(k) + p0*hyam(k)
     auto& ps = m_helper_pressure_fields ["p_file"];
     ps = Field(FieldIdentifier(data.pname,m_grid_after_hremap->get_2d_scalar_layout(),ekat::units::Pa,m_grid_after_hremap->name()));
@@ -505,6 +497,52 @@ setup_vert_remapper (const RemapData& data)
     // Can load p now, since it's static
     AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,{p_data.alias(data.pname)},true);
     p_data_reader.read_variables();
+  }
+  if (m_vr_type==MAM4xx) {
+    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid);
+    vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
+    vremap->set_target_pressure(data.pmid);
+    m_vert_remapper = vremap;
+    return;
+  }
+
+  if (m_vr_type==MAM4_ZONAL) {
+    auto layout = m_grid_after_hremap->get_vertical_layout(true);
+    auto nondim = ekat::units::Units::nondimensional();
+    auto levs_field = m_grid_after_hremap->create_geometry_data("lev",layout,nondim);
+    AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,{levs_field},true);
+    p_data_reader.read_variables();
+    auto p_v  = p_data.get_view<Real **>();
+    auto levs = levs_field.get_view<const Real*>();
+    const int nlevs_data = layout.dims().back();
+    const int ncols = m_model_grid->get_num_local_dofs();
+    Kokkos::parallel_for(
+      "pressure_computation",
+      Kokkos::MDRangePolicy<Kokkos::Rank<2> >({0, 0}, {ncols, nlevs_data}),
+      KOKKOS_LAMBDA(const int icol, const int kk) {
+        // mbar->pascals
+        // FIXME: Does EAMxx have a better method to
+        // convert units?"
+        p_v(icol, kk) = levs(kk) * 100;
+    });
+
+    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid);
+    vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
+    vremap->set_target_pressure(data.pmid);
+    m_vert_remapper = vremap;
+    return;
+  }
+
+
+
+  auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
+
+  vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
+  vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
+
+  // Set the mask value only if needed. RemapData has a default that is invalid for VerticalRemapper
+  if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
+    vremap->set_mask_value(data.mask_value);
   }
   vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);
   vremap->set_target_pressure(data.pmid,data.pint);
@@ -525,7 +563,7 @@ void DataInterpolation::register_fields_in_remappers ()
     m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));
     m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name()));
   }
-  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
+  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef or m_vr_type==MAM4xx) {
     const auto& data_p = m_helper_pressure_fields["p_file"];
     m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_beg->get_src_grid()->name()));
     m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_end->get_src_grid()->name()));
