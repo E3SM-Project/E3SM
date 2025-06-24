@@ -62,7 +62,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
  private:
   // Create diagnostic if output_mixing_ratio_tendency_due_to_gas_phase_chemistry is true
-  bool diagnostic_dvmrdt_ = false;
+  bool diagnostic_gs_dvmrdt_ = false;
+  // Create diagnostic if output_mixing_ratio_tendency_due_to_aqueous_chemistry is true
+  bool diagnostic_aq_dvmrdt_ = false;
 
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
