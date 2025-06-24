@@ -161,6 +161,12 @@ void MAMMicrophysics::set_grids(
   // Downwelling solar flux at the surface [w/m2]
   add_field<Required>("SW_flux_dn", scalar3d_int, W / m2, grid_name);
 
+  // Diagnostic fluxes
+  const FieldLayout vector2d_nmodes =
+      grid_->get_2d_vector_layout(nmodes, "nmodes");
+  add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
+  add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
+
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
   // ---------------------------------------------------------------------
@@ -444,7 +450,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"ps", {-1e10, 1e10}},                    // FIXME
       {"sfc_alb_dir_vis", {-1e10, 1e10}},       // FIXME
       {"snow_depth_land", {-1e10, 1e10}},       // FIXME
-      {"surf_radiative_T", {-1e10, 1e10}}       // FIXME
+      {"surf_radiative_T", {-1e10, 1e10}},      // FIXME
+      {"dqdt_so4_aqueous_chemistry", {-1e10, 1e10}},      // FIXME
+      {"dqdt_h2so4_uptake", {-1e10, 1e10}}       // FIXME
   };
   set_ranges_process(ranges_microphysics);
   add_interval_checks();
@@ -460,7 +468,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // ---------------------------------------------------------------
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
-  
+
   // FIXME: we are using cldfrac_tot in other mam4xx process.
   dry_atm_.cldfrac = get_field_in("cldfrac_liq").get_view<const Real **>();
   // FIXME: phis is not populated by populate_wet_and_dry_atm.
@@ -555,8 +563,16 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 void MAMMicrophysics::run_impl(const double dt) {
   const int ncol = ncol_;
   const int nlev = nlev_;
+  //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
+  // This interface hangs with this team size. Therefore,
+  // let's use a team size of nlev.
+#ifdef EKAT_ENABLE_GPU
+       const int team_size=nlev;
+#else
+       const int team_size=1;
+#endif  
   const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol, nlev);
+       ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
@@ -616,6 +632,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Snow depth on land [m]
   const const_view_1d snow_depth_land =
       get_field_in("snow_depth_land").get_view<const Real *>();
+
+  // Constituent fluxes
+  view_2d aqso4_flx = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
+  view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -756,9 +776,9 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto zenith_angle = acos_cosine_zenith_;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-  const auto &extfrc               = extfrc_;
-  const auto &forcings             = forcings_;
-  constexpr int extcnt             = mam4::gas_chemistry::extcnt;
+  const auto &extfrc   = extfrc_;
+  const auto &forcings = forcings_;
+  constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
   Real adv_mass_kg_per_moles[gas_pcnst];
@@ -782,7 +802,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
-
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
   // loop over atmosphere columns and compute aerosol microphyscs
@@ -897,6 +916,8 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
+        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
+        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
         Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
@@ -916,7 +937,7 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, dvel_col, dflx_col, progs);
 
         team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
@@ -926,7 +947,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
-
       });  // parallel_for for the column loop
   Kokkos::fence();
 
@@ -946,7 +966,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
-  Kokkos::parallel_for("transpose_extfrc", 
+  Kokkos::parallel_for("transpose_extfrc",
     Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
