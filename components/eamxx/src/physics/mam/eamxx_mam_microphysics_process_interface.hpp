@@ -4,6 +4,7 @@
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_coupling.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
+#include <share/field/field_utils.hpp>
 
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
@@ -60,61 +61,14 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // Finalize
   void finalize_impl(){/*Do nothing*/};
 
-  void process_diagnostic_tendencies(view_3d &qgcm_tendaa, view_3d &qqcwgcm_tendaa,
-                                  const Kokkos::Array<Real, mam_coupling::gas_pcnst()> &adv_mass,
-                                  const const_view_1d &pdel, const int ncol, const int nlev) {
-    // HACK: these are placeholders until we establish a way of requesting diagnostic output
-    // flag: write the full columns of mean tracer mixing ratios
-    constexpr bool write_full_col_gas_spec = true;
-    // flag: write the column-integrated tendencies
-    constexpr bool write_coltend_gas_spec = true;
-    const int gas_pcnst = mam_coupling::gas_pcnst();
-    const int nq = mam4::microphysics::nqtendaa();
-    const int nqqcw = mam4::microphysics::nqqcwtendaa();
-
-    if (write_full_col_gas_spec) {
-      // TODO: write out qgcm_tendaa and qqcwgcm_tendaa...
-    }
-
-    if (write_coltend_gas_spec) {
-      using physconst = scream::physics::Constants<Real>;
-      static constexpr Real gravity = physconst::gravit;
-      static constexpr Real mw_dry_air = physconst::MWdry;
-      // first calculate the tendencies
-      view_2d q_coltendaa("diag_tends", gas_pcnst, nq);
-      view_2d qqcw_coltendaa("diag_tends-cw", gas_pcnst, nqqcw);
-      Kokkos::deep_copy(q_coltendaa, 0.0);
-      Kokkos::deep_copy(qqcw_coltendaa, 0.0);
-
-      // TODO: can probably do this using vert_contract.hpp, though the messiness
-      // of the weights could mean it's not worth it
-      Kokkos::parallel_for("calc_diagnostic_tendencies",
-        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {nlev, gas_pcnst, nq}),
-        KOKKOS_LAMBDA(const int k, const int spec, const int itend) {
-          Real pdel_fac = pdel(k) / gravity;
-          // const auto q_k = ekat::subview(qgcm_tendaa, k);
-          q_coltendaa(spec, itend) = q_coltendaa(spec, itend)
-              + qgcm_tendaa(k, spec, itend) * pdel_fac * (adv_mass[spec] / mw_dry_air);
-      });
-      // NOTE: looping over the third dimension (nqqcw) may be pointless
-      // here because nqqcw == 1 appears to be hard-coded
-      Kokkos::parallel_for("calc_diagnostic_tendencies",
-        Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {nlev, gas_pcnst, nqqcw}),
-        KOKKOS_LAMBDA(const int k, const int spec, const int itend) {
-          Real pdel_fac = pdel(k) / gravity;
-          // const auto q_k = ekat::subview(qqcwgcm_tendaa, k);
-          qqcw_coltendaa(spec, itend) = qqcw_coltendaa(spec, itend)
-              + qqcwgcm_tendaa(k, spec, itend) * pdel_fac * (adv_mass[spec] / mw_dry_air);
-      });
-
-      // TODO: write q_coltendaa and qqcw_coltendaa out...
-    }
-  }
-
  private:
   // Output extra mam4xx diagnostics.
   bool extra_mam4_aero_microphys_diags_ = false;
 
+  // number of species involved in gas phase chemistry (gases + aerosols)
+  static constexpr int num_gas_spec_ = mam_coupling::gas_pcnst();
+  // number of species with external forcing
+  static constexpr int extcnt_ = mam4::gas_chemistry::extcnt;
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
@@ -214,6 +168,17 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
+  void set_vert_contraction_weights(view_2d wts, const Kokkos::Array<Real, num_gas_spec_> adv_mass,
+                                    const const_view_1d pdel, const int nlev) {
+    using physconst = scream::physics::Constants<Real>;
+    static constexpr Real gravity = physconst::gravit;
+    static constexpr Real mw_dry_air = physconst::MWdry;
+    Kokkos::parallel_for("calc_diagnostic_tendencies",
+      Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {nlev, num_gas_spec_}),
+      KOKKOS_LAMBDA(const int k, const int spec) {
+        wts(k, spec) = pdel(k) / gravity * adv_mass[spec] / mw_dry_air;
+    });
+  }
 };  // MAMMicrophysics
 
 }  // namespace scream
