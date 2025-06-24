@@ -88,8 +88,8 @@ subroutine zm_conv_readnl(nlfile)
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'zm_conv_readnl'
 
-   real(r8), parameter :: unset_r8     = huge(1.0_r8)
-   integer , parameter :: unset_int    = huge(1)
+   real(r8), parameter :: unset_r8  = huge(1.0_r8)
+   integer , parameter :: unset_int = huge(1)
 
    real(r8) :: zmconv_tau                    = unset_r8
    real(r8) :: zmconv_alfa                   = unset_r8
@@ -247,7 +247,7 @@ subroutine zm_conv_init(pref_edge)
    use phys_control,            only: phys_deepconv_pbl, phys_getopts
    use physics_buffer,          only: pbuf_get_index
    use rad_constituents,        only: rad_cnst_get_info
-   use zm_conv,                 only: zm_param
+   use zm_conv,                 only: zm_const, zm_param
    use zm_conv_types,           only: zm_const_print, zm_param_print
    use zm_conv_mcsp,            only: zm_conv_mcsp_init
    use zm_microphysics,         only: zm_mphyi
