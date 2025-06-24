@@ -44,6 +44,7 @@ add_library(mam
   readfiles/vertical_remapper_mam4.cpp
   eamxx_mam_generic_process_interface.cpp
   eamxx_mam_microphysics_process_interface.cpp
+  eamxx_mam_interpolation_microphysics_process_interface.cpp
   ${SCREAM_BASE_DIR}/src/physics/rrtmgp/shr_orb_mod_c2f.F90
   eamxx_mam_optics_process_interface.cpp
   eamxx_mam_dry_deposition_process_interface.cpp
