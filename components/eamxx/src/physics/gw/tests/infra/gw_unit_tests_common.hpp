@@ -90,6 +90,7 @@ struct UnitWrap {
     struct TestGwHeatingDepth;
     struct TestGwStormSpeed;
     struct TestGwConvectGwSources;
+    struct TestGwBeresSrc;
   }; // UnitWrap
 };
 

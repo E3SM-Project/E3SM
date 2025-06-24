@@ -261,4 +261,24 @@ contains
 
     call gw_convect_gw_sources(ncol, ngwv, lat, hdepth_min, hdepth, mini, maxi, netdt, uh, storm_speed, maxq0, umin, umax, tau)
   end subroutine gw_convect_gw_sources_c
+
+  subroutine gw_beres_src_c(ncol, ngwv, lat, u, v, netdt, zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, hdepth, maxq0_out, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old) bind(C)
+    use gw_common, only : pver, pgwv
+    use gw_convect, only : gw_beres_src
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv
+    real(kind=c_real) , intent(in), dimension(ncol) :: lat
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: u, v, zm
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: netdt
+    integer(kind=c_int) , intent(out), dimension(ncol) :: src_level, tend_level
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: ubm
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
+    real(kind=c_real) , intent(out), dimension(ncol) :: xv, yv, hdepth, maxq0_out
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv) :: c
+    real(kind=c_real) , value, intent(in) :: maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min
+    logical(kind=c_bool) , value, intent(in) :: use_gw_convect_old
+
+    call gw_beres_src(ncol, ngwv, lat, u, v, netdt, zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, hdepth, maxq0_out, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old)
+  end subroutine gw_beres_src_c
 end module gw_iso_c

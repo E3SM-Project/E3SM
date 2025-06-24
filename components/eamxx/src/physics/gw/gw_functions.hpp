@@ -348,6 +348,36 @@ struct Functions
     const uview_1d<const Spack>& umax,
     // Outputs
     const uview_1d<Spack>& tau);
+
+  KOKKOS_FUNCTION
+  static void gw_beres_src(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const uview_1d<const Spack>& lat,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    const uview_1d<const Spack>& netdt,
+    const uview_1d<const Spack>& zm,
+    // Outputs
+    const uview_1d<Int>& src_level,
+    const uview_1d<Int>& tend_level,
+    const uview_1d<Spack>& tau,
+    const uview_1d<Spack>& ubm,
+    const uview_1d<Spack>& ubi,
+    const uview_1d<Spack>& xv,
+    const uview_1d<Spack>& yv,
+    const uview_1d<Spack>& c,
+    const uview_1d<Spack>& hdepth,
+    const uview_1d<Spack>& maxq0_out,
+    // Inputs
+    const Spack& maxq0_conversion_factor,
+    const Spack& hdepth_scaling_factor,
+    const Spack& hdepth_min,
+    const Spack& storm_speed_min,
+    const bool& use_gw_convect_old);
 }; // struct Functions
 
 } // namespace gw
@@ -371,5 +401,6 @@ struct Functions
 # include "impl/gw_gw_heating_depth_impl.hpp"
 # include "impl/gw_gw_storm_speed_impl.hpp"
 # include "impl/gw_gw_convect_gw_sources_impl.hpp"
+# include "impl/gw_gw_beres_src_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

@@ -539,6 +539,43 @@ struct GwConvectGwSourcesData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwConvectGwSourcesData, 3, ncol, ngwv, hdepth_min);
 };
 
+struct GwBeresSrcData : public PhysicsTestData {
+  // Inputs
+  Int ncol, ngwv;
+  Real *lat, *u, *v, *netdt, *zm;
+  Real maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min;
+  bool use_gw_convect_old;
+  GwConvectInitData init;
+
+  // Outputs
+  Int *src_level, *tend_level;
+  Real *tau, *ubm, *ubi, *xv, *yv, *c, *hdepth, *maxq0_out;
+
+  GwBeresSrcData(Int ncol_, Int ngwv_, Real maxq0_conversion_factor_, Real hdepth_scaling_factor_, Real hdepth_min_, Real storm_speed_min_, bool use_gw_convect_old_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_},
+      {ncol_, init_.init.pver},
+      {ncol_, init_.init.pgwv*2 + 1, init_.init.pver + 1},
+      {ncol_, init_.init.pver + 1},
+      {ncol_, init_.init.pgwv*2 + 1},
+      {ncol_}
+    },
+    {
+      {&lat, &xv, &yv, &hdepth, &maxq0_out},
+      {&u, &v, &zm, &ubm, &netdt},
+      {&tau},
+      {&ubi},
+      {&c}
+    },
+    {
+      {&src_level, &tend_level}
+    }),
+    ncol(ncol_), ngwv(ngwv_), maxq0_conversion_factor(maxq0_conversion_factor_), hdepth_scaling_factor(hdepth_scaling_factor_), hdepth_min(hdepth_min_), storm_speed_min(storm_speed_min_), use_gw_convect_old(use_gw_convect_old_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwBeresSrcData, 7, ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
@@ -554,6 +591,7 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d);
 void gw_heating_depth(GwHeatingDepthData& d);
 void gw_storm_speed(GwStormSpeedData& d);
 void gw_convect_gw_sources(GwConvectGwSourcesData& d);
+void gw_beres_src(GwBeresSrcData& d);
 
 extern "C" { // _f function decls
 }
