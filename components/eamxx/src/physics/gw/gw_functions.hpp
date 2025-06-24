@@ -378,6 +378,27 @@ struct Functions
     const Spack& hdepth_min,
     const Spack& storm_speed_min,
     const bool& use_gw_convect_old);
+
+  KOKKOS_FUNCTION
+  static void gw_ediff(
+    // Inputs
+    const Int& ncol,
+    const Int& pver,
+    const Int& ngwv,
+    const Int& kbot,
+    const Int& ktop,
+    const uview_1d<const Int>& tend_level,
+    const uview_1d<const Spack>& gwut,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Spack>& nm,
+    const uview_1d<const Spack>& rho,
+    const Spack& dt,
+    const Spack& gravit,
+    const uview_1d<const Spack>& pmid,
+    const uview_1d<const Spack>& rdpm,
+    const uview_1d<const Spack>& c,
+    // Outputs
+    const uview_1d<Spack>& egwdffi);
 }; // struct Functions
 
 } // namespace gw
@@ -402,5 +423,6 @@ struct Functions
 # include "impl/gw_gw_storm_speed_impl.hpp"
 # include "impl/gw_gw_convect_gw_sources_impl.hpp"
 # include "impl/gw_gw_beres_src_impl.hpp"
+# include "impl/gw_gw_ediff_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

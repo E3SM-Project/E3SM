@@ -18,6 +18,7 @@ set(GW_TESTS_SRCS
     gw_gw_storm_speed_tests.cpp
     gw_gw_convect_gw_sources_tests.cpp
     gw_gw_beres_src_tests.cpp
+    gw_gw_ediff_tests.cpp
 ) # GW_TESTS_SRCS
 
 # All tests should understand the same baseline args

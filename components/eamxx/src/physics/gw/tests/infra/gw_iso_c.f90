@@ -281,4 +281,31 @@ contains
 
     call gw_beres_src(ncol, ngwv, lat, u, v, netdt, zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, hdepth, maxq0_out, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old)
   end subroutine gw_beres_src_c
+
+  subroutine gw_ediff_c(ncol, ngwv, kbot, ktop, tend_level, gwut, ubm, nm, rho, dt, gravit, pmid, rdpm, c, egwdffi, decomp_ca, decomp_cc, decomp_dnom, decomp_ze) bind(C)
+    use gw_common, only : pver
+    use gw_diffusion, only : gw_ediff
+    use vdiff_lu_solver, only: lu_decomp
+
+    integer(kind=c_int) , value, intent(in) :: ncol, ngwv, kbot, ktop
+    integer(kind=c_int) , intent(in), dimension(ncol) :: tend_level
+    real(kind=c_real) , intent(in), dimension(ncol, pver, -ngwv:ngwv) :: gwut
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: ubm, nm, pmid, rdpm
+    real(kind=c_real) , intent(in), dimension(ncol, pver+1) :: rho
+    real(kind=c_real) , value, intent(in) :: dt, gravit
+    real(kind=c_real) , intent(in), dimension(ncol, -ngwv:ngwv) :: c
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: egwdffi
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: decomp_ca, decomp_cc, decomp_dnom, decomp_ze
+
+    type(lu_decomp) :: decomp
+
+    call gw_ediff(ncol, pver, ngwv, kbot, ktop, tend_level, gwut, ubm, nm, rho, dt, gravit, pmid, rdpm, c, egwdffi, decomp)
+    decomp_ca = decomp%ca
+    decomp_cc = decomp%cc
+    decomp_dnom = decomp%dnom
+    decomp_ze = decomp%ze
+
+    call decomp%finalize()
+
+  end subroutine gw_ediff_c
 end module gw_iso_c
