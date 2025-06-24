@@ -93,6 +93,7 @@ struct UnitWrap {
     struct TestGwBeresSrc;
     struct TestGwEdiff;
     struct TestGwDiffTend;
+    struct TestGwOroSrc;
   }; // UnitWrap
 };
 

@@ -327,4 +327,28 @@ contains
 
     call decomp%finalize()
   end subroutine gw_diff_tend_c
+
+  subroutine gw_oro_init_c() bind(C)
+    use gw_oro, only : gw_oro_init
+
+    call gw_oro_init()
+  end subroutine gw_oro_init_c
+
+  subroutine gw_oro_src_c(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
+    use gw_common, only : pver, pgwv
+    use gw_oro, only : gw_oro_src
+
+    integer(kind=c_int) , value, intent(in) :: ncol
+    real(kind=c_real) , intent(in), dimension(ncol, pver) :: u, v, t, pmid, dpm, zm, nm
+    real(kind=c_real) , intent(in), dimension(ncol) :: sgh
+    real(kind=c_real) , intent(in), dimension(ncol, 0:pver) :: pint
+    integer(kind=c_int) , intent(out), dimension(ncol) :: src_level, tend_level
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv, 0:pver) :: tau
+    real(kind=c_real) , intent(out), dimension(ncol, pver) :: ubm
+    real(kind=c_real) , intent(out), dimension(ncol, 0:pver) :: ubi
+    real(kind=c_real) , intent(out), dimension(ncol) :: xv, yv
+    real(kind=c_real) , intent(out), dimension(ncol, -pgwv:pgwv) :: c
+
+    call gw_oro_src(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c)
+  end subroutine gw_oro_src_c
 end module gw_iso_c

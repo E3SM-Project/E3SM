@@ -30,6 +30,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/gw_gw_beres_src.cpp
     eti/gw_gw_ediff.cpp
     eti/gw_gw_diff_tend.cpp
+    eti/gw_gw_oro_src.cpp
   ) # GW ETI SRCS
 endif()
 

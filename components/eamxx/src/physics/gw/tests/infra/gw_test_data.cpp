@@ -62,6 +62,10 @@ void gw_ediff_c(Int ncol, Int ngwv, Int kbot, Int ktop, Int* tend_level, Real* g
 
 void gw_diff_tend_c(Int ncol, Int kbot, Int ktop, Real* q, Real dt, Real *decomp_ca, Real *decomp_cc, Real *decomp_dnom, Real *decomp_ze, Real* dq);
 
+void gw_oro_init_c();
+
+void gw_oro_src_c(Int ncol, Real* u, Real* v, Real* t, Real* sgh, Real* pmid, Real* pint, Real* dpm, Real* zm, Real* nm, Int* src_level, Int* tend_level, Real* tau, Real* ubm, Real* ubi, Real* xv, Real* yv, Real* c);
+
 } // extern "C" : end _c decls
 
 // Wrapper around gw_init
@@ -217,6 +221,15 @@ void gw_diff_tend(GwDiffTendData& d)
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gw_diff_tend_c(d.ncol, d.kbot, d.ktop, d.q, d.dt, d.decomp_ca, d.decomp_cc, d.decomp_dnom, d.decomp_ze, d.dq);
+  d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gw_oro_src(GwOroSrcData& d)
+{
+  gw_init(d.init);
+  gw_oro_init_c();
+  d.transpose<ekat::TransposeDirection::c2f>();
+  gw_oro_src_c(d.ncol, d.u, d.v, d.t, d.sgh, d.pmid, d.pint, d.dpm, d.zm, d.nm, d.src_level, d.tend_level, d.tau, d.ubm, d.ubi, d.xv, d.yv, d.c);
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 

@@ -635,6 +635,41 @@ struct GwDiffTendData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwDiffTendData, 4, ncol, kbot, ktop, dt);
 };
 
+struct GwOroSrcData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real *u, *v, *t, *sgh, *pmid, *pint, *dpm, *zm, *nm;
+  GwInit init;
+
+  // Outputs
+  Int *src_level, *tend_level;
+  Real *tau, *ubm, *ubi, *xv, *yv, *c;
+
+  GwOroSrcData(Int ncol_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver},
+      {ncol_},
+      {ncol_, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1},
+      {ncol_}
+    },
+    {
+      {&u, &v, &t, &pmid, &dpm, &zm, &nm, &ubm},
+      {&sgh, &xv, &yv},
+      {&pint, &ubi},
+      {&tau},
+      {&c}
+    },
+    {
+      {&src_level, &tend_level}
+    }),
+    ncol(ncol_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwOroSrcData, 1, ncol);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
@@ -653,6 +688,7 @@ void gw_convect_gw_sources(GwConvectGwSourcesData& d);
 void gw_beres_src(GwBeresSrcData& d);
 void gw_ediff(GwEdiffData& d);
 void gw_diff_tend(GwDiffTendData& d);
+void gw_oro_src(GwOroSrcData& d);
 
 extern "C" { // _f function decls
 }

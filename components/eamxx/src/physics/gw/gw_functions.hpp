@@ -411,6 +411,31 @@ struct Functions
     const Spack& dt,
       // Outputs
     const uview_1d<Spack>& dq);
+
+  KOKKOS_FUNCTION
+  static void gw_oro_src(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& sgh,
+    const uview_1d<const Spack>& pmid,
+    const uview_1d<const Spack>& pint,
+    const uview_1d<const Spack>& dpm,
+    const uview_1d<const Spack>& zm,
+    const uview_1d<const Spack>& nm,
+    // Outputs
+    const uview_1d<Int>& src_level,
+    const uview_1d<Int>& tend_level,
+    const uview_1d<Spack>& tau,
+    const uview_1d<Spack>& ubm,
+    const uview_1d<Spack>& ubi,
+    const uview_1d<Spack>& xv,
+    const uview_1d<Spack>& yv,
+    const uview_1d<Spack>& c);
 }; // struct Functions
 
 } // namespace gw
@@ -437,5 +462,6 @@ struct Functions
 # include "impl/gw_gw_beres_src_impl.hpp"
 # include "impl/gw_gw_ediff_impl.hpp"
 # include "impl/gw_gw_diff_tend_impl.hpp"
+# include "impl/gw_gw_oro_src_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
