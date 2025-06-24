@@ -773,8 +773,8 @@ contains
                      canopystate_vars                                    , &
                      cnstate_vars, crop_vars, dt)
          endif 
-      end if
         call t_stop_lnd(event)
+      end if
       !------------------------------------------------------------------
 
     if(use_pflotran.and.pf_cmode) then
