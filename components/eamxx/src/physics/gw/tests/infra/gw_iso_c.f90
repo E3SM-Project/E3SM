@@ -331,7 +331,9 @@ contains
   subroutine gw_oro_init_c() bind(C)
     use gw_oro, only : gw_oro_init
 
-    call gw_oro_init()
+    character(len=128) :: errstring
+
+    call gw_oro_init(errstring)
   end subroutine gw_oro_init_c
 
   subroutine gw_oro_src_c(ncol, u, v, t, sgh, pmid, pint, dpm, zm, nm, src_level, tend_level, tau, ubm, ubi, xv, yv, c) bind(C)
