@@ -361,6 +361,7 @@
       <value compset="_EAM.*_ELM.*MPASO">day</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">day</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">day</value>
+      <value compset="_MALI">year</value>
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
@@ -374,6 +375,7 @@
       <value compset="_SATM">48</value>
       <value compset="_XATM">48</value>
       <value compset="_EAM.*">48</value>
+      <value compset="_EAM.*_MALI">17520</value>
       <value compset="_DATM">48</value>
       <value compset="_EAM\d+%WCBC">144</value>
       <value compset="_EAM\d+%WCMX">288</value>
@@ -389,9 +391,11 @@
       <value compset="_MPASO">48</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*_MPAS.*_MALI">17520</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
+      <value compset="_DATM.*_SLND.*MPAS.*_MALI" grid="oi%oQU240wLI">4380</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU120">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oEC60to30v3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%ECwISC30to60E1r2">48</value>
@@ -402,8 +406,11 @@
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%EC30to60E2r2">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%WC14to60E2r3">48</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%IcoswISC30E3r5">48</value>
+      <value compset="_DATM.*_SLND.*MPAS.*_MALI" grid="oi%IcoswISC30E3r5">17520</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%SOwISC12to30E3r3">48</value>
+      <value compset="_DATM.*_SLND.*MPAS.*_MALI" grid="oi%SOwISC12to30E3r3">17520</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%SOwISC12to30E3r4">48</value>
+      <value compset="_DATM.*_SLND.*MPAS.*_MALI" grid="oi%SOwISC12to30E3r4">17520</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS30to10v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS18to6v3">96</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oRRS15to5">96</value>
@@ -513,14 +520,18 @@
       <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
+      <value compset="_MPASO.*_MALI" grid="oi%oQU240wLI">4380</value>
       <value compset="_MPASO" grid="oi%oQU120">24</value>
       <value compset="_MPASO" grid="oi%oEC60to30v3">48</value>
       <value compset="_MPASO" grid="oi%ECwISC30to60E1r2">48</value>
       <value compset="_MPASO" grid="oi%EC30to60E2r2">48</value>
       <value compset="_MPASO" grid="oi%WC14to60E2r3">48</value>
       <value compset="_MPASO" grid="oi%IcoswISC30E3r5">48</value>
+      <value compset="_MPASO.*_MALI" grid="oi%IcoswISC30E3r5">17520</value>
       <value compset="_MPASO" grid="oi%SOwISC12to30E3r3">48</value>
+      <value compset="_MPASO.*_MALI" grid="oi%SOwISC12to30E3r3">17520</value>
       <value compset="_MPASO" grid="oi%SOwISC12to30E3r4">48</value>
+      <value compset="_MPASO.*_MALI" grid="oi%SOwISC12to30E3r4">17520</value>
       <value compset="_MPASO" grid="oi%oRRS30to10v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS18to6v3">48</value>
       <value compset="_MPASO" grid="oi%oRRS15to5">96</value>
@@ -538,12 +549,12 @@
 
   <entry id="GLC_NCPL">
     <type>integer</type>
-    <default_value>1</default_value>
+    <default_value>73</default_value>
     <values match="last">
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">73</value>
       <value compset="_EAM.*_ELM.*MPASO">1</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">1</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">1</value>
@@ -588,7 +599,7 @@
       <value compset="_DLND.*_CISM\d">1</value>
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
-      <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DATM.*_SLND.*MPASO.*_MALI">365</value>
       <value compset="_EAM.*_ELM.*MPASO">8</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
