@@ -109,16 +109,16 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::vector<Real> chlorine_values_;
   std::vector<int> chlorine_time_secs_;
   view_3d photo_rates_;
-
+#ifdef USE_OLD_LINOZ_FILE_READ
   // invariants members
   mam_coupling::TracerTimeState trace_time_state_;
   std::shared_ptr<AtmosphereInput> TracerDataReader_;
   std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
   mam_coupling::TracerData tracer_data_;
-  view_3d invariants_;
   std::string oxid_file_name_;
   view_2d cnst_offline_[4];
-
+#endif
+  view_3d invariants_;
   // linoz reader
 #ifdef USE_OLD_LINOZ_FILE_READ
   mam_coupling::TracerTimeState linoz_time_state_;
