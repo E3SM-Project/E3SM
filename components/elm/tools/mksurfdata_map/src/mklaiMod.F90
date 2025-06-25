@@ -90,11 +90,17 @@ subroutine mklai(ldomain, mapfname, datfname, ndiag, ncido)
   real(r8), allocatable :: mhgtb_i(:,:)     ! monthly height (bottom) in
   real(r8), allocatable :: mask_src(:)      ! input grid: mask (0, 1)
   integer,  pointer     :: laimask(:,:)     ! lai+sai output mask for each plant function type
+  integer,  allocatable :: pft_index(:)     ! PFT index for each grid cell
+  real(r8), allocatable :: mlai_i_tmp(:)    ! monthly lai in
+  real(r8), allocatable :: msai_i_tmp(:)    ! monthly sai in
+  real(r8), allocatable :: mhgtt_i_tmp(:)   ! monthly height (top) in
+  real(r8), allocatable :: mhgtb_i_tmp(:)   ! monthly height (bottom) in
+
   real(r8) :: garea_i                       ! input  grid: global area
   real(r8) :: garea_o                       ! output grid: global area
   integer  :: mwts                          ! number of weights
   integer  :: ni,no,ns_i,ns_o               ! indices
-  integer  :: k,l,n,m                       ! indices
+  integer  :: i,k,l,n,m                     ! indices
   integer  :: ncidi,dimid,varid             ! input netCDF id's
   integer  :: ndimsi,ndimso                 ! netCDF dimension sizes 
   integer  :: dimids(4)                     ! netCDF dimension ids
@@ -103,6 +109,7 @@ subroutine mklai(ldomain, mapfname, datfname, ndiag, ncido)
   integer  :: ntim                          ! number of input time samples
   integer  :: ier                           ! error status
   real(r8) :: relerr = 0.00001              ! max error: sum overlap wts ne 1
+  logical  :: use_pft_index                 ! whether to use PFT index
   character(len=256) :: name                ! name of attribute
   character(len=256) :: unit                ! units of attribute
   character(len= 32) :: subname = 'mklai'
@@ -129,11 +136,16 @@ subroutine mklai(ldomain, mapfname, datfname, ndiag, ncido)
   call check_ret(nf_inq_dimid(ncidi, 'time', dimid), subname)
   call check_ret(nf_inq_dimlen(ncidi, dimid, ntim), subname)
 
-  if (numpft_i /= numpft+1) then
-     write(6,*)'MKLAI: parameter numpft+1= ',numpft+1, &
-          'does not equal input dataset numpft= ',numpft_i
-     stop
+  if (numpft_i == 1) then
+     use_pft_index = .true.
+  else
+     if (numpft_i /= numpft+1) then
+        write(6,*)'MKLAI: parameter numpft+1= ',numpft+1, &
+             'does not equal input dataset numpft= ',numpft_i
+        stop
+     endif
   endif
+
   if (ntim /= 12) then
      write(6,*)'MKLAI: must have 12 time samples on input data'
      call abort()
@@ -207,6 +219,18 @@ subroutine mklai(ldomain, mapfname, datfname, ndiag, ncido)
      call check_ret(nf_inq_dimlen(ncido, dimids(2), leno(2)), subname)
   end if
 
+  if (use_pft_index) then
+     allocate(pft_index(ns_i) , &
+          mlai_i_tmp(ns_i)    , &
+          msai_i_tmp(ns_i)    , &
+          mhgtt_i_tmp(ns_i)   , &
+          mhgtb_i_tmp(ns_i)   , stat=ier)
+     call check_ret(nf_inq_varid (ncidi, 'NAT_PFT_INDEX', varid), subname)
+     call check_ret(nf_get_vara_int (ncidi, varid, begi(1:ndimsi-2), leni(1:ndimsi-2), &
+          pft_index), subname)
+  endif
+
+
   ! Loop over months 
 
   do m = 1, ntim
@@ -237,13 +261,36 @@ subroutine mklai(ldomain, mapfname, datfname, ndiag, ncido)
   
      ! Loop over pft types to do mapping
 
-     do l = 0,numpft
+     if (.not.use_pft_index) then
+        do l = 0,numpft
+           mask_src(:) = 1._r8
+           call gridmap_areaave(tgridmap, mlai_i(:,l) , mlai_o(:,l) , nodata=0._r8, mask_src=mask_src)
+           call gridmap_areaave(tgridmap, msai_i(:,l) , msai_o(:,l) , nodata=0._r8, mask_src=mask_src)
+           call gridmap_areaave(tgridmap, mhgtt_i(:,l), mhgtt_o(:,l), nodata=0._r8, mask_src=mask_src)
+           call gridmap_areaave(tgridmap, mhgtb_i(:,l), mhgtb_o(:,l), nodata=0._r8, mask_src=mask_src)
+       enddo
+     else
         mask_src(:) = 1._r8 
-        call gridmap_areaave(tgridmap, mlai_i(:,l) , mlai_o(:,l) , nodata=0._r8, mask_src=mask_src)
-        call gridmap_areaave(tgridmap, msai_i(:,l) , msai_o(:,l) , nodata=0._r8, mask_src=mask_src)
-        call gridmap_areaave(tgridmap, mhgtt_i(:,l), mhgtt_o(:,l), nodata=0._r8, mask_src=mask_src)
-        call gridmap_areaave(tgridmap, mhgtb_i(:,l), mhgtb_o(:,l), nodata=0._r8, mask_src=mask_src)
-     enddo
+        do l = 0, numpft
+           do i = 1, ns_i
+              if (l == pft_index(ns_i)) then
+                 mlai_i_tmp(i)  = mlai_i(i,0)
+                 msai_i_tmp(i)  = msai_i(i,0)
+                 mhgtt_i_tmp(i) = mhgtt_i(i,0)
+                 mhgtb_i_tmp(i) = mhgtb_i(i,0)
+              else
+                 mlai_i_tmp(i)  = 0._r8
+                 msai_i_tmp(i)  = 0._r8
+                 mhgtt_i_tmp(i) = 0._r8
+                 mhgtb_i_tmp(i) = 0._r8
+              end if
+           enddo
+           call gridmap_areaave(tgridmap, mlai_i_tmp(:) , mlai_o(:,l) , nodata=0._r8, mask_src=mask_src)
+           call gridmap_areaave(tgridmap, msai_i_tmp(:) , msai_o(:,l) , nodata=0._r8, mask_src=mask_src)
+           call gridmap_areaave(tgridmap, mhgtt_i_tmp(:), mhgtt_o(:,l), nodata=0._r8, mask_src=mask_src)
+           call gridmap_areaave(tgridmap, mhgtb_i_tmp(:), mhgtb_o(:,l), nodata=0._r8, mask_src=mask_src)
+        enddo
+     endif
 
      ! Determine laimask
      
@@ -371,6 +418,9 @@ subroutine mklai(ldomain, mapfname, datfname, ndiag, ncido)
 
   deallocate(mlai_i,msai_i,mhgtt_i,mhgtb_i,&
              mask_src,mlai_o,msai_o,mhgtt_o,mhgtb_o,laimask)
+  if (use_pft_index) then
+     deallocate(pft_index, mlai_i_tmp, msai_i_tmp, mhgtt_i_tmp, mhgtb_i_tmp)
+  end if
   call gridmap_clean(tgridmap)
   call domain_clean(tdomain) 
 
