@@ -3,6 +3,7 @@
 // impl namespace for some driver level functions for microphysics
 
 #include "share/util/eamxx_data_interpolation.hpp"
+#include "readfiles/tracer_reader_utils.hpp"
 
 namespace scream {
 
@@ -84,9 +85,11 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
 
   auto pmid = get_field_in("p_mid");
 
-  util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  // in format YYYYMMDD
+  const int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
+  util::TimeStamp ref_ts_oxid= mam_coupling::convert_date(oxid_ymd);
   m_data_interpolation = std::make_shared<DataInterpolation>(grid_,elevated_fields);
-  m_data_interpolation->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts);
+  m_data_interpolation->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts_oxid);
 
   const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -98,6 +101,11 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
   m_data_interpolation->setup_remappers (remap_data);
   m_data_interpolation->init_data_interval (start_of_step_ts());
   // linoz
+
+  // in format YYYYMMDD
+  const int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
+  util::TimeStamp ref_ts_linoz = mam_coupling::convert_date(linoz_cyclical_ymd);
+  // util::TimeStamp ref_ts_linoz (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
   const auto m_linoz_file_name = m_params.get<std::string>("mam4_linoz_file_name");
   const std::string linoz_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -108,7 +116,7 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   m_data_interpolation_linoz = std::make_shared<DataInterpolation>(grid_,linoz_fields);
-  m_data_interpolation_linoz->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, ref_ts);
+  m_data_interpolation_linoz->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, ref_ts_linoz);
   DataInterpolation::RemapData remap_data_linoz;
   remap_data_linoz.hremap_file = linoz_map_file=="none" ? "" : linoz_map_file;
   remap_data_linoz.vr_type = DataInterpolation::MAM4_ZONAL;
