@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: mam4_aero_microphys_standalone_output
+filename_prefix: mam4_interpolation_aero_microphys_standalone_output
 averaging_type: instant
 fields:
   physics:

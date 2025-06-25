@@ -50,13 +50,16 @@ set_target_pressure (const Field& p)
   m_tgt_pmid=p;
 }
 void VerticalRemapperMAM4::
+set_vremap_type(const VertRemapType& vremp_type)
+{
+  m_vremap_type=vremp_type;
+}
+
+void VerticalRemapperMAM4::
 apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
                              const Field& p_src, const Field& p_tgt) const
 {
-
-  const auto p_src_c = p_src.get_view<const Real **>();
   const auto p_tgt_c = p_tgt.get_view<const Real **>();
-
   const auto datain = f_src.get_view<Real **>();
   const auto dataout =  f_tgt.get_view<Real **>();
 
@@ -70,7 +73,13 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncols, nlevs_tgt);
 
-  Kokkos::parallel_for(
+
+  if (m_vremap_type== MAM4_PSRef) {
+
+    const int unit_factor_pin=1;
+    const auto p_src_c = p_src.get_view<const Real **>();
+
+    Kokkos::parallel_for(
       "vert_interp", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol = team.league_rank();
@@ -80,8 +89,26 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
         const auto dataout_at_icol = ekat::subview(dataout, icol);
         mam4::vertical_interpolation::vert_interp(
             team, levsiz, nlevs_tgt, pin_at_icol, pmid_at_icol, datain_at_icol,
-            dataout_at_icol);
+            dataout_at_icol, unit_factor_pin);
           });
+  } else if (m_vremap_type== MAM4_ZONAL)
+  {
+    // unit conversion from mbar->pascals
+    const int unit_factor_pin=100;
+    const auto p_src_c = p_src.get_view<const Real *>();
+
+    Kokkos::parallel_for(
+      "vert_interp", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const int icol = team.league_rank();
+        const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
+        const auto datain_at_icol  = ekat::subview(datain, icol);
+        const auto dataout_at_icol = ekat::subview(dataout, icol);
+        mam4::vertical_interpolation::vert_interp(
+            team, levsiz, nlevs_tgt, p_src_c, pmid_at_icol, datain_at_icol,
+            dataout_at_icol, unit_factor_pin);
+          });
+  }
 
 }
 
