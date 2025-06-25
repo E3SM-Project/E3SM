@@ -15,9 +15,11 @@ class VerticalRemapperMAM4 : public AbstractRemapper
 {
 public:
 
-// Use fixed value as mask value
-  // VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
-  //                   const std::string& map_file);
+  enum VertRemapType {
+    None,
+    MAM4_PSRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
+    MAM4_ZONAL,
+  };
 
   VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
                     const grid_ptr_type& tgt_grid);
@@ -26,6 +28,7 @@ public:
 
   void set_source_pressure (const Field& p);
   void set_target_pressure (const Field& p);
+  void set_vremap_type (const VertRemapType&  vremp_type);
 
 protected:
 
@@ -37,7 +40,6 @@ public:
 #endif
   void apply_vertical_interpolation (const Field& f_src, const Field& f_tgt,
                                      const Field& p_src, const Field& p_tgt) const;
-
 
 protected:
 
@@ -55,12 +57,8 @@ protected:
 
   // Vertical profile fields, both for source and target
   Field                 m_src_pmid;
-  // Field                 m_src_pint;
   Field                 m_tgt_pmid;
-  // Field                 m_tgt_pint;
-
-  // bool m_src_int_same_as_mid = false;
-  // bool m_tgt_int_same_as_mid = false;
+  VertRemapType            m_vremap_type;
 };
 
 } // namespace scream

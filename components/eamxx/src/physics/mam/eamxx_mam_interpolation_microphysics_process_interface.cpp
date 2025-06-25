@@ -92,7 +92,7 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
         m_params.get<std::string>("aero_microphys_remap_file", "");
   DataInterpolation::RemapData remap_data;
   remap_data.hremap_file = extfrc_map_file=="none" ? "" : extfrc_map_file;
-  remap_data.vr_type = DataInterpolation::MAM4xx;
+  remap_data.vr_type = DataInterpolation::MAM4_PSRef;
   remap_data.pname = "PS";
   remap_data.pmid = pmid;
   m_data_interpolation->setup_remappers (remap_data);
