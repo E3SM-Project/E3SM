@@ -60,7 +60,7 @@ struct UnitWrap::UnitTest<D>::TestGwHeatingDepth : public UnitWrap::UnitTest<D>:
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine, { {d.zm, {5000., 21000.}} });
+      d.randomize(engine, { {d.zm, {5000., 21000.}},  {d.netdt, {1.432438750782E-06, 1.432438750782E-04}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
