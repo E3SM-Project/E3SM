@@ -10,6 +10,8 @@
 #include <mam4xx/mam4.hpp>
 #include <string>
 
+#define USE_OLD_LINOZ_FILE_READ
+
 namespace scream {
 
 // The process responsible for handling MAM4 aerosol microphysics. The AD
@@ -102,7 +104,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // surface albedo: shortwave, direct
   const_view_1d d_sfc_alb_dir_vis_;
 
-  mam_coupling::TracerTimeState linoz_time_state_;
+
   view_2d work_photo_table_;
   std::vector<Real> chlorine_values_;
   std::vector<int> chlorine_time_secs_;
@@ -118,11 +120,13 @@ class MAMMicrophysics final : public MAMGenericInterface {
   view_2d cnst_offline_[4];
 
   // linoz reader
+#ifdef USE_OLD_LINOZ_FILE_READ
+  mam_coupling::TracerTimeState linoz_time_state_;
   std::shared_ptr<AtmosphereInput> LinozDataReader_;
   std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
   mam_coupling::TracerData linoz_data_;
   std::string linoz_file_name_;
-
+#endif
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
   mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
