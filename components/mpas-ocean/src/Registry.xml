@@ -1048,6 +1048,16 @@
 			possible_values=".true. or .false."
 		/>
 	</nml_record>
+	<nml_record name="land_ice" mode="init;forward">
+		<nml_option name="config_land_ice_draft_mode" type="character" default_value="pressure-dependent"
+					description="Selects the mode in which land-ice draft is computed."
+					possible_values="'data,'pressure-dependent'"
+		/>
+		<nml_option name="config_land_ice_rho_ocean" type="real" default_value="1028.0" units="kg m^-3"
+					description="ocean density used to calculate landIceDraft at floatation (assumed constant and uniform). Should be consistent with MALI's config_ocean_density when used to determine grounding line location. This is an alternative to the coupler variable effectiveDensityInLandIce which is not currently used."
+					possible_values="Any positive real number"
+		/>
+	</nml_record>
 	<nml_record name="land_ice_fluxes" mode="init;forward">
 		<nml_option name="config_land_ice_flux_mode" type="character" default_value="off"
 					description="Selects the mode in which land-ice fluxes are computed."
@@ -3461,6 +3471,10 @@
 			packages="topographicWaveDragPKG"
 		/>
 		<!-- diagnostic fields for land-ice fluxes -->
+		<var name="landIceDraftForSsh" type="real" dimensions="nCells Time" units="m"
+			description="The elevation of the interface between land ice and the ocean that is used to correct the SSH gradient passed to MPAS-SeaIce and may be used for wetting-and-drying."
+			packages="landIcePressurePKG"
+		/>
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
 			packages="landIceFluxesPKG"
