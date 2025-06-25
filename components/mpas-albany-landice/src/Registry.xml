@@ -128,6 +128,10 @@
 			    description="If true, reset thickness to values at previous timestep after advection occurs. This is used for spinning up tracer fields such as damage.  When this is true, geometry changes from surface and basal mass balance (grounded or floating) and facemelting are not retained, but changes from calving are."
 			    possible_values=".true. or .false."
                 />
+		<nml_option name="config_smb_source" type="character" default_value="file" units="unitless"
+			    description="Source of surface mass balance used by sfcMassBal variable.  'file' uses whatever value has been read into the sfcMassBal field from an input or forcing file. 'coupler' uses a value passed from the E3SM coupler.  The option 'coupler' behaves the same as 'file' when MALI is run in standalone mode."
+			    possible_values="'file' or 'coupler'"
+                />
         <nml_option name="config_zero_sfcMassBalApplied_over_bare_land" type="logical" default_value=".true." units="unitless"
                     description="Mask to zero out sfcMassBalApplied in regions where there is no ice at the timestep."
                     possible_values=".true. or .false."
