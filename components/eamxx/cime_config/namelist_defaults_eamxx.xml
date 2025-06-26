@@ -200,11 +200,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols">false</use_hetfrz_classnuc>
-      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM.*MAM4xx">true</use_hetfrz_classnuc>
-      <do_prescribed_ccn COMPSET=".*SCREAM.*MAM4xx">false</do_prescribed_ccn>
+      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM%MAM4xx.*">true</use_hetfrz_classnuc>
+      <do_prescribed_ccn COMPSET=".*SCREAM%MAM4xx.*">false</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
-      <do_predict_nc COMPSET=".*SCREAM.*MAM4xx">true</do_predict_nc>
+      <do_predict_nc COMPSET=".*SCREAM%MAM4xx.*">true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
@@ -557,7 +557,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mac_aero_mic inherit="atm_proc_group">
       <atm_procs_list>shoc,cld_fraction,spa,p3</atm_procs_list>
       <atm_procs_list hgrid=".*pg2">tms,shoc,cld_fraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
@@ -586,7 +586,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM.*MAM4xx">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
@@ -607,18 +607,18 @@ be lost if SCREAM_HACK_XML is not enabled.
   <initial_conditions>
     <filename type="file">UNSET</filename>
     <filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</filename>
-    <filename hgrid="ne4np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
+    <filename hgrid="ne4np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
     <filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</filename>
     <filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
     <filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
-    <filename hgrid="ne30np4" nlev="72" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
+    <filename hgrid="ne30np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
     <filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
     <filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
     <filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
-    <filename hgrid="ne256np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
+    <filename hgrid="ne256np4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
     <filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</filename>
     <filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</filename>
-    <filename hgrid="ne1024np4" ntracers="41">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
+    <filename hgrid="ne1024np4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
     <filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</filename>
     <filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
     <filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</filename>
