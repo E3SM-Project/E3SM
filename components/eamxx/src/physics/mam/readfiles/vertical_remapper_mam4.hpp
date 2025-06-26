@@ -22,13 +22,13 @@ public:
   };
 
   VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
-                    const grid_ptr_type& tgt_grid);
+                        const grid_ptr_type& tgt_grid,
+                        const VertRemapType& vremp_type);
 
   ~VerticalRemapperMAM4 () = default;
 
   void set_source_pressure (const Field& p);
   void set_target_pressure (const Field& p);
-  void set_vremap_type (const VertRemapType&  vremp_type);
 
 protected:
 
