@@ -102,8 +102,10 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   auto lat = m_io_grid->create_geometry_data("lat",m_io_grid->get_2d_scalar_layout(),nondim);
   auto lon = m_io_grid->create_geometry_data("lon",m_io_grid->get_2d_scalar_layout(),nondim);
 
+  std::vector<Field> latlon = {lat,lon};
+
   // Read from file
-  AtmosphereInput file_reader(m_filename, m_io_grid, {lat,lon});
+  AtmosphereInput file_reader(m_filename, m_io_grid, latlon);
   file_reader.read_variables();
   file_reader.finalize();
 
