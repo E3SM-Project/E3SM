@@ -254,7 +254,18 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
   // Create separate remapper for initial_conditions
   m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
-}
+
+  // Layout for 2D (1d horiz X 1d vertical) variable
+  const auto& grid_name = m_phys_grid->name();
+  // Boundary flux fields for energy and mass conservation checks
+  if (has_energy_fixer()) {
+    add_field<Computed>("vapor_flux", pg_scalar2d, kg/(m2*s), grid_name);
+    add_field<Computed>("water_flux", pg_scalar2d, m/s,     grid_name);
+    add_field<Computed>("ice_flux",   pg_scalar2d, m/s,     grid_name);
+    add_field<Computed>("heat_flux",  pg_scalar2d, W/m2,    grid_name);
+  }
+
+}//set_grids
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
@@ -468,7 +479,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Initialize Rayleigh friction variables
   rayleigh_friction_init();
-}
+
+}//initialize_impl
 
 void HommeDynamics::run_impl (const double dt)
 {
@@ -747,11 +759,21 @@ void HommeDynamics::homme_post_process (const double dt) {
       // Store T at end of the dyn timestep (to back out tendencies later)
       T_prev(ilev) = T_val;
     });
-  });
+  }); //op()
 
   // Apply Rayleigh friction to update temperature and horiz_winds
   rayleigh_friction_apply(dt);
-}
+
+  if (has_energy_fixer()) {
+
+      get_field_out("vapor_flux").deep_copy(0);
+      get_field_out("ice_flux").deep_copy(0);
+      get_field_out("water_flux").deep_copy(0);
+      get_field_out("heat_flux").deep_copy(0);
+
+  }; //if fixer
+
+}//homme_post_proc
 
 void HommeDynamics::
 create_helper_field (const std::string& name,
