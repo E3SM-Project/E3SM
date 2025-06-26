@@ -19,7 +19,7 @@ module RtmMod
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
-                               inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
+                               inst_index, inst_suffix, inst_name, wrmflag, inundflag, bifurcflag, max_downstream, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_budget, &
                                isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
@@ -34,7 +34,7 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
+  use RunoffMod       , only : RunoffInit, ValidateBifurcationPoints, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
                                SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
@@ -183,6 +183,8 @@ contains
     real(r8) :: lrtmarea                      ! tmp local sum of area
     real(r8),allocatable :: tempr(:,:)        ! temporary buffer
     integer ,allocatable :: itempr(:,:)       ! temporary buffer
+    integer ,allocatable :: itempr_3d(:,:,:)  ! temporary buffer for multi-dimensional dnID
+    integer :: ndims, actual_downstream_size  ! for NetCDF dimension checking
     integer ,allocatable :: idxocn(:)         ! downstream ocean outlet cell
     integer ,allocatable :: nupstrm(:)        ! number of upstream cells including own cell
     integer ,allocatable :: pocn(:)           ! pe number assigned to basin
@@ -250,7 +252,7 @@ contains
 
 !global (glo), temporary
     integer , pointer :: ID0_global(:)  ! local ID index
-    integer , pointer :: dnID_global(:) ! downstream ID based on ID0
+    integer , pointer :: dnID_global(:,:) ! downstream IDs based on ID0 (gridcell, max_downstream)
     integer , pointer :: nUp_global(:)  ! number of upstream units
     integer , pointer :: nUp_dstrm_global(:)  ! number of units flowing into the downstream unit
     real(r8), pointer :: area_global(:) ! area
@@ -636,7 +638,7 @@ contains
     ! reading the routing parameters
     allocate ( &
               ID0_global(rtmlon*rtmlat), area_global(rtmlon*rtmlat), &
-              dnID_global(rtmlon*rtmlat), nUp_global(rtmlon*rtmlat), nUp_dstrm_global(rtmlon*rtmlat),&
+              dnID_global(rtmlon*rtmlat, max_downstream), nUp_global(rtmlon*rtmlat), nUp_dstrm_global(rtmlon*rtmlat),&
               stat=ier)
     if (ier /= 0) then
        write(iulog,*) subname, ' : Allocation error for ID0_global'
@@ -708,16 +710,84 @@ contains
     end do
     if (masterproc) write(iulog,*) 'ID ',minval(itempr),maxval(itempr)
 
-    call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
-    if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
-    if (masterproc) write(iulog,*) 'Read dnID ',minval(itempr),maxval(itempr)
-    do j=1,rtmlat
-    do i=1,rtmlon
-       n = (j-1)*rtmlon + i
-       dnID_global(n) = itempr(i,j)
-    end do
-    end do
-    if (masterproc) write(iulog,*) 'dnID ',minval(itempr),maxval(itempr)
+    ! Initialize dnID_global with missing values
+    dnID_global(:,:) = -999
+
+    if (bifurcflag) then
+       if (isgrid2d) then
+          ! For structured mesh: try 3D dnID(lon, lat, downstream)
+          allocate(itempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
+          if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for itempr_3d')
+          
+          call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr_3d, readvar=found)
+          if (found) then
+             if (masterproc) write(iulog,*) 'Read 3D structured dnID(lon,lat,downstream), min=',minval(itempr_3d),' max=',maxval(itempr_3d)
+             do k=1,max_downstream
+             do j=1,rtmlat
+             do i=1,rtmlon
+                n = (j-1)*rtmlon + i
+                dnID_global(n,k) = itempr_3d(i,j,k)
+             end do
+             end do
+             end do
+          else
+             ! Fall back to 2D dnID reading for backward compatibility
+             if (masterproc) write(iulog,*) '3D dnID not found, reading 2D structured dnID for backward compatibility'
+             call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
+             if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
+             do j=1,rtmlat
+             do i=1,rtmlon
+                n = (j-1)*rtmlon + i
+                dnID_global(n,1) = itempr(i,j)  ! Put in first position
+             end do
+             end do
+          endif
+          deallocate(itempr_3d)
+       else
+          ! For unstructured mesh: still use 3D dnID but with different NetCDF structure
+          allocate(itempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
+          if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for itempr_3d')
+          
+          call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr_3d, readvar=found)
+          if (found) then
+             if (masterproc) write(iulog,*) 'Read 3D unstructured dnID, min=',minval(itempr_3d),' max=',maxval(itempr_3d)
+             do k=1,max_downstream
+             do j=1,rtmlat
+             do i=1,rtmlon
+                n = (j-1)*rtmlon + i
+                dnID_global(n,k) = itempr_3d(i,j,k)
+             end do
+             end do
+             end do
+          else
+             ! Fall back to 2D dnID reading for backward compatibility
+             if (masterproc) write(iulog,*) '3D dnID not found, reading 2D unstructured dnID for backward compatibility'
+             call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
+             if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
+             do j=1,rtmlat
+             do i=1,rtmlon
+                n = (j-1)*rtmlon + i
+                dnID_global(n,1) = itempr(i,j)  ! Put in first position
+             end do
+             end do
+          endif
+          deallocate(itempr_3d)
+       endif
+    else
+       ! Original dnID reading when bifurcflag = false (handle both mesh types)
+       call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
+       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
+       if (masterproc) write(iulog,*) 'Read dnID ',minval(itempr),maxval(itempr)
+       
+       ! Both mesh types use the same indexing pattern
+       do j=1,rtmlat
+       do i=1,rtmlon
+          n = (j-1)*rtmlon + i
+          dnID_global(n,1) = itempr(i,j)  ! Put in first position for consistency
+       end do
+       end do
+    endif
+    if (masterproc) write(iulog,*) 'dnID processed'
 
     if (data_bgc_fluxes_to_ocean_flag) then
 
@@ -878,26 +948,33 @@ contains
        call shr_sys_abort(subname//' ERROR IDkey incomplete')
     endif
     do n=1,rtmlon*rtmlat
-       if (dnID_global(n) > 0 .and. dnID_global(n) <= rtmlon*rtmlat) then
-          if (IDkey(dnID_global(n)) > 0 .and. IDkey(dnID_global(n)) <= rtmlon*rtmlat) then
-             dnID_global(n) = IDkey(dnID_global(n))
-          else
-             write(iulog,*) subname,' ERROR bad IDkey',n,dnID_global(n),IDkey(dnID_global(n))
-             call shr_sys_abort(subname//' ERROR bad IDkey')
+       ! Update primary downstream ID and all bifurcation IDs using IDkey
+       do k=1,max_downstream
+          if (dnID_global(n,k) > 0 .and. dnID_global(n,k) <= rtmlon*rtmlat) then
+             if (IDkey(dnID_global(n,k)) > 0 .and. IDkey(dnID_global(n,k)) <= rtmlon*rtmlat) then
+                dnID_global(n,k) = IDkey(dnID_global(n,k))
+             else
+                write(iulog,*) subname,' ERROR bad IDkey',n,k,dnID_global(n,k),IDkey(dnID_global(n,k))
+                call shr_sys_abort(subname//' ERROR bad IDkey')
+             endif
           endif
-       endif
+       end do
     enddo
     
     nUp_global = 0
     nUp_dstrm_global = 0
+    ! Count upstream connections for all downstream cells (including bifurcation targets)
     do n=1,rtmlon*rtmlat
-       if(dnID_global(n) > 0  .and. dnID_global(n) <= rtmlon*rtmlat) then
-              nUp_global(dnID_global(n)) =  nUp_global(dnID_global(n)) + 1
-       end if
+       do k=1,max_downstream
+          if(dnID_global(n,k) > 0  .and. dnID_global(n,k) <= rtmlon*rtmlat) then
+             nUp_global(dnID_global(n,k)) = nUp_global(dnID_global(n,k)) + 1
+          end if
+       end do
     enddo
     do n=1,rtmlon*rtmlat
-       if(dnID_global(n) > 0  .and. dnID_global(n) <= rtmlon*rtmlat) then
-           nUp_dstrm_global(n) = nUp_global(dnID_global(n))
+       ! Use primary downstream for nUp_dstrm_global (backward compatibility)
+       if(dnID_global(n,1) > 0  .and. dnID_global(n,1) <= rtmlon*rtmlat) then
+           nUp_dstrm_global(n) = nUp_global(dnID_global(n,1))
        end if
     enddo
     deallocate(ID0_global)
@@ -974,13 +1051,13 @@ contains
 
     gmask = 2    ! assume ocean point
     do n=1,rtmlon*rtmlat         ! mark all downstream points as outlet
-       nr = dnID_global(n)
+       nr = dnID_global(n,1)  ! Use primary downstream for mask calculation
        if ((nr > 0) .and. (nr <= rtmlon*rtmlat)) then
           gmask(nr) = 3          ! <- nr
        end if
     enddo
     do n=1,rtmlon*rtmlat         ! now mark all points with downstream points as land
-       nr = dnID_global(n)
+       nr = dnID_global(n,1)  ! Use primary downstream for mask calculation
        if ((nr > 0) .and. (nr <= rtmlon*rtmlat)) then
           gmask(n) = 1           ! <- n
        end if
@@ -1042,7 +1119,7 @@ contains
           g = 0
           do while (abs(gmask(n)) == 1 .and. g < rtmlon*rtmlat)  ! follow downstream
              nupstrm(n) = nupstrm(n) + 1
-             n = dnID_global(n)
+             n = dnID_global(n,1)  ! Use primary downstream for upstream tracking
              g = g + 1
           end do
           if (gmask(n) == 3) then           ! found ocean outlet 
@@ -1050,16 +1127,16 @@ contains
              idxocn(nr) = n                 ! set ocean outlet or nr to n
           elseif (abs(gmask(n)) == 1) then  ! no ocean outlet, warn user, ignore cell
              write(iulog,*) subname,' ERROR closed basin found', &
-               g,nr,gmask(nr),dnID_global(nr), &
-               n,gmask(n),dnID_global(n)
+               g,nr,gmask(nr),dnID_global(nr,1), &
+               n,gmask(n),dnID_global(n,1)
              call shr_sys_abort(subname//' ERROR closed basin found')
           elseif (gmask(n) == 2) then
              write(iulog,*) subname,' ERROR found invalid ocean cell ',nr
              call shr_sys_abort(subname//' ERROR found invalid ocean cell')
           else 
              write(iulog,*) subname,' ERROR downstream cell is unknown', &
-               g,nr,gmask(nr),dnID_global(nr), &
-               n,gmask(n),dnID_global(n)
+               g,nr,gmask(nr),dnID_global(nr,1), &
+               n,gmask(n),dnID_global(n,1)
              call shr_sys_abort(subname//' ERROR downstream cell is unknown')
           endif
        elseif (gmask(n) >= 2) then  ! ocean, give to self
@@ -1459,17 +1536,57 @@ contains
        rtmCTL%outletg(nr) = idxocn(n)
        rtmCTL%area(nr) = area_global(n)
        lrtmarea = lrtmarea + rtmCTL%area(nr)
-       if (dnID_global(n) <= 0) then
+       ! Set up primary downstream (backward compatibility)
+       if (dnID_global(n,1) <= 0) then
           rtmCTL%dsig(nr) = 0
        else
-          if (rglo2gdc(dnID_global(n)) == 0) then
+          if (rglo2gdc(dnID_global(n,1)) == 0) then
              write(iulog,*) subname,' ERROR glo2gdc dnID_global ',&
-                  nr,n,dnID_global(n),rglo2gdc(dnID_global(n))
+                  nr,n,dnID_global(n,1),rglo2gdc(dnID_global(n,1))
              call shr_sys_abort(subname//' ERROT glo2gdc dnID_global')
           endif
           cnt = cnt + 1
-          rtmCTL%dsig(nr) = dnID_global(n)
-          rtmCTL%iDown(nr) = rglo2gdc(dnID_global(n))
+          rtmCTL%dsig(nr) = dnID_global(n,1)
+          rtmCTL%iDown(nr) = rglo2gdc(dnID_global(n,1))
+       endif
+
+       ! Set up bifurcation connectivity if enabled
+       if (bifurcflag) then
+          ! Count valid downstream connections and detect bifurcation
+          rtmCTL%num_downstream(nr) = 0
+          do k=1,max_downstream
+             if (dnID_global(n,k) > 0 .and. dnID_global(n,k) <= rtmlon*rtmlat) then
+                rtmCTL%num_downstream(nr) = rtmCTL%num_downstream(nr) + 1
+                rtmCTL%dsig_all(nr,k) = dnID_global(n,k)
+                rtmCTL%iDown_all(nr,k) = rglo2gdc(dnID_global(n,k))
+             else
+                rtmCTL%dsig_all(nr,k) = 0
+                rtmCTL%iDown_all(nr,k) = 0
+             endif
+          end do
+          
+          ! Set bifurcation flag
+          rtmCTL%is_bifurc(nr) = (rtmCTL%num_downstream(nr) > 1)
+          
+          ! Set equal split ratios for now (50-50 for 2-way, 33-33-33 for 3-way, etc.)
+          if (rtmCTL%is_bifurc(nr)) then
+             do k=1,rtmCTL%num_downstream(nr)
+                rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
+             end do
+          else
+             rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
+             do k=2,max_downstream
+                rtmCTL%bifurc_ratio(nr,k) = 0.0_r8
+             end do
+          endif
+       else
+          ! For non-bifurcation mode, set defaults
+          rtmCTL%num_downstream(nr) = 1
+          rtmCTL%is_bifurc(nr) = .false.
+          rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
+          do k=2,max_downstream
+             rtmCTL%bifurc_ratio(nr,k) = 0.0_r8
+          end do
        endif
        rtmCTL%nUp_dstrm(nr) = nUp_dstrm_global(n)
        if (data_bgc_fluxes_to_ocean_flag) then
@@ -1497,6 +1614,9 @@ contains
             end if
         end do
     enddo
+    
+    ! Validate bifurcation points after all data structures are populated
+    call ValidateBifurcationPoints()
     
     deallocate(gmask)
     deallocate(rglo2gdc)

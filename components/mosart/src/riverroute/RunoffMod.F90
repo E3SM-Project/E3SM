@@ -11,7 +11,8 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag
+  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag, &
+                               bifurcflag, max_downstream
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -43,11 +44,16 @@ module RunoffMod
      real(r8), pointer :: area(:)          ! area of cell
      integer , pointer :: mask(:)          ! general mask of cell 1=land, 2=ocean, 3=outlet
      integer , pointer :: gindex(:)        ! global index consistent with map file
-     integer , pointer :: dsig(:)          ! downstream index, global index
+     integer , pointer :: dsig(:)          ! downstream index, global index (primary downstream for compatibility)
+     integer , pointer :: dsig_all(:,:)    ! all downstream indices from NetCDF file (i,j) where j=1:max_downstream
+     integer , pointer :: num_downstream(:) ! number of downstream connections per cell (1 for normal, >1 for bifurcation)
+     real(r8), pointer :: bifurc_ratio(:,:) ! bifurcation split ratios (i,j) where j=1:max_downstream  
+     logical , pointer :: is_bifurc(:)      ! flag indicating bifurcation points
      integer , pointer :: outletg(:)       ! outlet index, global index
      real(r8), pointer :: rmask(:)         ! general mask of cell 1=land, 2=ocean, 3=outlet
      real(r8), pointer :: rgindex(:)       ! global index consistent with map file
-     real(r8), pointer :: rdsig(:)         ! downstream index, global index
+     real(r8), pointer :: rdsig(:)         ! downstream index, global index (primary downstream for compatibility)
+     real(r8), pointer :: rdsig_all(:,:)   ! all downstream indices from NetCDF file (real version)
      real(r8), pointer :: routletg(:)      ! outlet index, global index
 
      !    - global 
@@ -59,7 +65,8 @@ module RunoffMod
      !    - local
      integer           :: begr,endr        ! local start/stop indices
      integer           :: lnumr            ! local number of cells
-     integer , pointer :: iDown(:)         ! downstream index, local index
+     integer , pointer :: iDown(:)         ! downstream index, local index (primary downstream for compatibility)
+     integer , pointer :: iDown_all(:,:)   ! all downstream indices (local version)
      integer , pointer :: nUp(:)           ! number of upstream units, maximum 8
      integer , pointer :: nUp_dstrm(:)      ! number of units flowing into the downstream units, maximum 8
      integer , pointer :: iUp(:,:)         ! indices of upstream units, local
@@ -543,6 +550,7 @@ module RunoffMod
   type (runoff_flow) , public :: rtmCTL
 
   public :: RunoffInit
+  public :: ValidateBifurcationPoints
 
 contains
 
@@ -630,6 +638,12 @@ contains
              rtmCTL%qdem(begr:endr,nt_rtm),       & 
              rtmCTL%yr_nt1(begr:endr),            &
              rtmCTL%ssh(begr:endr),               &
+             rtmCTL%dsig_all(begr:endr,max_downstream), &
+             rtmCTL%rdsig_all(begr:endr,max_downstream), &
+             rtmCTL%iDown_all(begr:endr,max_downstream), &
+             rtmCTL%num_downstream(begr:endr),    &
+             rtmCTL%bifurc_ratio(begr:endr,max_downstream), &
+             rtmCTL%is_bifurc(begr:endr),         &
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
@@ -659,6 +673,14 @@ contains
     rtmCTL%iUp(:,:) = 0
     rtmCTL%nUp(:) = 0
     rtmCTL%nUp_dstrm(:) = 0
+    
+    ! Initialize bifurcation arrays
+    rtmCTL%dsig_all(:,:) = -999
+    rtmCTL%rdsig_all(:,:) = -999.0_r8
+    rtmCTL%iDown_all(:,:) = 0
+    rtmCTL%num_downstream(:) = 1  ! Default to 1 downstream connection
+    rtmCTL%bifurc_ratio(:,:) = 0.0_r8
+    rtmCTL%is_bifurc(:) = .false.
     
     rtmCTL%runoff(:,:)     = 0._r8
     rtmCTL%runofflnd(:,:)  = spval
@@ -731,5 +753,95 @@ contains
     end if
 
   end subroutine RunoffInit
+
+!-----------------------------------------------------------------------
+
+  subroutine ValidateBifurcationPoints()
+    !
+    ! !DESCRIPTION:
+    ! Validate bifurcation points for consistency and safety
+    !
+    ! !USES:
+    use shr_sys_mod, only : shr_sys_abort
+    use RtmSpmd, only : masterproc
+    !
+    ! !LOCAL VARIABLES:
+    integer :: i, j, k, downstream_id, num_invalid, num_circular, num_bifurc
+    logical :: is_valid, has_circular
+    character(len=*), parameter :: subname = 'ValidateBifurcationPoints'
+    !-----------------------------------------------------------------------
+
+    if (.not. bifurcflag) return  ! Skip validation if bifurcation disabled
+
+    num_invalid = 0
+    num_circular = 0 
+    num_bifurc = 0
+
+    ! Check each cell for bifurcation validity
+    do i = rtmCTL%begr, rtmCTL%endr
+       if (rtmCTL%is_bifurc(i)) then
+          num_bifurc = num_bifurc + 1
+          is_valid = .true.
+          
+          ! Check that all downstream connections are valid
+          do j = 1, rtmCTL%num_downstream(i)
+             downstream_id = rtmCTL%dsig_all(i,j)
+             
+             ! Check for missing downstream connections
+             if (downstream_id <= 0 .or. downstream_id == -999) then
+                if (masterproc) then
+                   write(iulog,*) trim(subname), ' ERROR: Invalid downstream ID ', &
+                        downstream_id, ' for bifurcation point ', rtmCTL%gindex(i), ' connection ', j
+                end if
+                is_valid = .false.
+                num_invalid = num_invalid + 1
+             end if
+             
+             ! Check for self-referencing (immediate circular reference)
+             if (downstream_id == rtmCTL%gindex(i)) then
+                if (masterproc) then
+                   write(iulog,*) trim(subname), ' ERROR: Self-referencing downstream for bifurcation point ', &
+                        rtmCTL%gindex(i)
+                end if
+                is_valid = .false.
+                num_circular = num_circular + 1
+             end if
+          end do
+          
+          ! Check that bifurcation ratios sum to 1.0 (within tolerance)
+          if (abs(sum(rtmCTL%bifurc_ratio(i,1:rtmCTL%num_downstream(i))) - 1.0_r8) > 1.e-6_r8) then
+             if (masterproc) then
+                write(iulog,*) trim(subname), ' ERROR: Bifurcation ratios do not sum to 1.0 for point ', &
+                     rtmCTL%gindex(i), ' sum = ', sum(rtmCTL%bifurc_ratio(i,1:rtmCTL%num_downstream(i)))
+             end if
+             is_valid = .false.
+             num_invalid = num_invalid + 1
+          end if
+       end if
+    end do
+
+    ! Report validation results
+    if (masterproc) then
+       write(iulog,*) trim(subname), ': Validated ', num_bifurc, ' bifurcation points'
+       if (num_invalid > 0) then
+          write(iulog,*) trim(subname), ' ERROR: Found ', num_invalid, ' invalid bifurcation configurations'
+       end if
+       if (num_circular > 0) then
+          write(iulog,*) trim(subname), ' ERROR: Found ', num_circular, ' circular reference errors'
+       end if
+    end if
+
+    ! Abort if any validation errors found
+    if (num_invalid > 0 .or. num_circular > 0) then
+       call shr_sys_abort(trim(subname)//' ERROR: Bifurcation validation failed')
+    end if
+
+    if (masterproc .and. num_bifurc > 0) then
+       write(iulog,*) trim(subname), ': All bifurcation points passed validation'
+    end if
+
+  end subroutine ValidateBifurcationPoints
+
+!-----------------------------------------------------------------------
 
 end module RunoffMod
