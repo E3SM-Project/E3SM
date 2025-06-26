@@ -115,7 +115,8 @@ contains
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: seedMask, growMask, connectedMarineMask, altConnectedMarineMask
       real (kind=RKIND), dimension(:,:,:), pointer :: oceanField
-
+      integer, dimension(:), allocatable :: alteredCells
+      integer, dimension(:), allocatable :: alteredCellsIter
       ! No init is needed.
       err = 0
       err_tmp = 0
@@ -434,45 +435,73 @@ contains
          ! locations. Otherwise, these cells are given an invalid_TF value that
          ! could result in runaway melting.
 
+         allocate(alteredCells(nCells))
+         alteredCells(:) = 0
+         
+         allocate(alteredCellsIter(nCells))
+         alteredCellsIter(:) = 0
+
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
                do iLayer = 1, nISMIP6OceanLayers 
-                  if (orig3dOceanMask(iLayer,iCell) /= 1) then
-                     
+                  if ( ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell) ) then
+                  
                      if (config_calculate_thermal_forcing) then
                         ! for ice-dammed inland seas, assume default salinity, and back-calculate sea temperature to ensure zero thermal forcing
                         oceanSalinity(iLayer,iCell) = default_salinity
                         oceanTemperature(iLayer,iCell) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
                      endif
                      ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
-                    
-                     ! Repeat for neighbors. GL melt is calculated from TF in
-                     ! first cell inside GL.
-                     do iNeighbor = 1, nEdgesOnCell(iCell)
-                        jCell = cellsOnCell(iNeighbor,iCell)
-                        if (config_calculate_thermal_forcing) then
-                           ! no need to change if not already designated as
-                           ! ocean cell
-                           if (oceanSalinity(iLayer,jCell) /= 0) then 
-                              oceanSalinity(iLayer,jCell) = default_salinity
-                           endif
-                           if (oceanTemperature(iLayer,jCell) /= 0) then
-                              oceanTemperature(iLayer,jCell) = (gamma1 * oceanSalinity(iLayer,jCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
-                           endif
-                        endif
-                        ismip6shelfMelt_3dThermalForcing(iLayer,jCell) = 0.0_RKIND
-                     enddo
-
                   endif
                enddo
+               alteredCellsIter(iCell) = 1
             endif
          enddo
-         call mpas_timer_start("halo_updates")
-         call mpas_dmpar_field_halo_exch(domain,'oceanSalinity')
-         call mpas_dmpar_field_halo_exch(domain,'oceanTemperature')
-         call mpas_dmpar_field_halo_exch(domain,'ismip6shelfMelt_3dThermalForcing')
-         call mpas_timer_stop("halo_updates")
+         
+         do iter = 1, nCellsExtra
+            ! Iterate through neighboring cells and alter neighbors within
+            ! config_ocean_data_extrap_ncells_extra that have ice and are
+            ! below sea level. GL melt is calculated from TF in first cell inside
+            ! GL, and we need a buffer zone in case the glacier retreats to invalid
+            ! TF values in the interior.
 
+            alteredCells = alteredCellsIter
+            alteredCellsIter(:) = 0
+            do iCell = 1, nCells
+               if (alteredCells(iCell) == 1) then
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                     jCell = cellsOnCell(iNeighbor,iCell)
+                     do iLayer = 1, nISMIP6OceanLayers
+                        if ( (thickness(jCell) > 0) .and. (bedTopography(jCell) < 0) ) then
+                           if (config_calculate_thermal_forcing) then
+                              ! no need to change if not already designated as
+                              ! ocean cell
+                              if ( (oceanSalinity(iLayer,jCell) == invalid_value_TF) .and. & 
+                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then 
+                                 oceanSalinity(iLayer,jCell) = default_salinity
+                              endif
+                              if ( (oceanTemperature(iLayer,jCell) == invalid_value_TF) .and. &
+                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then 
+                                 oceanTemperature(iLayer,jCell) = (gamma1 * oceanSalinity(iLayer,jCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+                              endif
+                           endif
+                           if ( (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) == invalid_value_TF) .and. &
+                                 (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then 
+                              ismip6shelfMelt_3dThermalForcing(iLayer,jCell) = 0.0_RKIND
+                           endif
+                        endif
+                     enddo
+                     alteredCellsIter(iCell) = 1
+                  enddo
+               endif
+            enddo
+            call mpas_timer_start("halo_updates")
+            call mpas_dmpar_field_halo_exch(domain,'oceanSalinity')
+            call mpas_dmpar_field_halo_exch(domain,'oceanTemperature')
+            call mpas_dmpar_field_halo_exch(domain,'ismip6shelfMelt_3dThermalForcing')
+            call mpas_timer_stop("halo_updates")
+         enddo
+      
       endif
    !--------------------------------------------------------------------
 
