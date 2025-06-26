@@ -787,10 +787,7 @@ program mksurfdat
             nfert_o=nfert, pfert_o=pfert)
     end if
 
-    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'SINSL_SINAS', ndiag=ndiag, top_o=sinsl_sinas, nodata=0.0_r8)
-    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'SINSL_COSAS', ndiag=ndiag, top_o=sinsl_cosas, nodata=0.0_r8)
-    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'SKY_VIEW', ndiag=ndiag, top_o=sky_view, nodata=1.0_r8)
-    call mktoprad(ldomain, mapfname=map_ftoprad, datfname=mksrf_ftoprad, varname = 'TERRAIN_CONFIG', ndiag=ndiag, top_o=terrain_config, nodata=0.0_r8)
+    call mktoprad(ldomain, map_ftoprad, mksrf_ftoprad, sinsl_sinas, sinsl_cosas, sky_view, terrain_config)
 
 
     do n = 1,ns_o

@@ -43,7 +43,7 @@ contains
 ! !IROUTINE: mktoprad
 !
 ! !INTERFACE:
-subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
+subroutine mktoprad(ldomain, mapfname, datfname, sinsl_sinas_o, sinsl_cosas_o, sky_view_o, terrain_config_o)
 !
 ! !DESCRIPTION:
 ! Make topography data for TOP solar radiation parameterization
@@ -60,10 +60,10 @@ subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
   type(domain_type), intent(in) :: ldomain
   character(len=*)  , intent(in) :: mapfname  ! input mapping file name
   character(len=*)  , intent(in) :: datfname  ! input data file name
-  integer           , intent(in) :: ndiag     ! unit number for diag out
-  character(len=*)  , intent(in) :: varname   ! topo variable name
-  real(r8)          , intent(out):: top_o(:)  ! output topography data
-  real(r8)          , intent(in) :: nodata    ! default value
+  real(r8)          , intent(out):: sinsl_sinas_o(:)  ! output topography data
+  real(r8)          , intent(out):: sinsl_cosas_o(:)  ! output topography data
+  real(r8)          , intent(out):: sky_view_o(:)  ! output topography data
+  real(r8)          , intent(out):: terrain_config_o(:)  ! output topography data
 !
 !
 ! !CALLED FROM:
@@ -78,7 +78,10 @@ subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
   type(domain_type)     :: tdomain            ! local domain
   type(gridmap_type)    :: tgridmap           ! local gridmap
 
-  real(r8), allocatable :: top_i(:)           ! input top variable
+  real(r8), allocatable :: sinsl_sinas_i(:)
+  real(r8), allocatable :: sinsl_cosas_i(:)
+  real(r8), allocatable :: sky_view_i(:)
+  real(r8), allocatable :: terrain_config_i(:)
   real(r8), allocatable :: mask_i(:)          ! input grid: mask (0, 1)
   integer  :: ns_i,ns_o                       ! indices
   integer  :: k,l,n,m,ni                      ! indices
@@ -103,15 +106,27 @@ subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
   call domain_read(tdomain,datfname)
 
   ns_i = tdomain%ns
-  allocate(top_i(ns_i), stat=ier)
+  allocate(sinsl_sinas_i(ns_i), sinsl_cosas_i(ns_i), sky_view_i(ns_i), terrain_config_i(ns_i), stat=ier)
   if (ier /= 0) then
      write(6,*)'mktoprad allocation error'; call abort()
   end if
 
   write (6,*) 'Open topography file: ', trim(datfname)
   call check_ret(nf_open(datfname, 0, ncidi), subname)
-  call check_ret(nf_inq_varid (ncidi, trim(varname), varid), subname)
-  call check_ret(nf_get_var_double (ncidi, varid, top_i), subname)
+
+  call check_ret(nf_inq_varid (ncidi, 'SINSL_SINAS', varid), subname)
+  call check_ret(nf_get_var_double (ncidi, varid, sinsl_sinas_i), subname)
+
+  call check_ret(nf_inq_varid (ncidi, 'SINSL_COSAS', varid), subname)
+  call check_ret(nf_get_var_double (ncidi, varid, sinsl_cosas_i), subname)
+
+  call check_ret(nf_inq_varid (ncidi, 'SKY_VIEW', varid), subname)
+  call check_ret(nf_get_var_double (ncidi, varid, sky_view_i), subname)
+
+  call check_ret(nf_inq_varid (ncidi, 'TERRAIN_CONFIG', varid), subname)
+  call check_ret(nf_get_var_double (ncidi, varid, terrain_config_i), subname)
+
+
   call check_ret(nf_close(ncidi), subname)
 
   ! set mask as 0 when topo data is filled value: -9999
@@ -122,7 +137,7 @@ subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
   
   mask_i(:) = 1._r8
   do ni = 1,ns_i
-      if (top_i(ni) < -1000._r8) then
+      if (sinsl_sinas_i(ni) < -1000._r8 .or. sinsl_cosas_i(ni) < -1000._r8 .or. sky_view_i(ni) < -1000._r8 .or. terrain_config_i(ni) < -1000._r8) then
          mask_i(ni) = 0._r8
      end if
   enddo
@@ -134,15 +149,21 @@ subroutine mktoprad(ldomain, mapfname, datfname, varname, ndiag, top_o, nodata)
   call domain_checksame( tdomain, ldomain, tgridmap )
 
   ! Determine top_o on output grid
-  top_o(:) = nodata
+  sinsl_sinas_o(:)    = 0._r8
+  sinsl_cosas_o(:)    = 0._r8
+  sky_view_o(:)       = 1._r8
+  terrain_config_o(:) = 0._r8
 
-  call gridmap_areaave(tgridmap, top_i, top_o, nodata=nodata, mask_src=mask_i)
+  call gridmap_areaave(tgridmap, sinsl_sinas_i   , sinsl_sinas_o   , nodata=0._r8, mask_src=mask_i)
+  call gridmap_areaave(tgridmap, sinsl_cosas_i   , sinsl_cosas_o   , nodata=0._r8, mask_src=mask_i)
+  call gridmap_areaave(tgridmap, sky_view_i      , sky_view_o      , nodata=1._r8, mask_src=mask_i)
+  call gridmap_areaave(tgridmap, terrain_config_i, terrain_config_o, nodata=0._r8, mask_src=mask_i)
 
   ! Deallocate dynamic memory
 
   call domain_clean(tdomain)
   call gridmap_clean(tgridmap)
-  deallocate (top_i)
+  deallocate (sinsl_sinas_i, sinsl_cosas_i, sky_view_i, terrain_config_i)
   deallocate (mask_i)
 
   write (6,*) 'Successfully made topography parameters'
