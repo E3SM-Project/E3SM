@@ -532,6 +532,9 @@ contains
     ! DESCRIPTION:
     ! Finalize rof surface model
     !
+#ifdef HAVE_MOAB
+    use seq_comm_mct,     only : mrofid ! id of moab rof app
+#endif
     ! ARGUMENTS:
     implicit none
     type(ESMF_Clock) , intent(inout) :: EClock    ! Input synchronization clock from driver
@@ -543,7 +546,9 @@ contains
    ! fill this in
 #ifdef HAVE_MOAB
     ! deallocate moab fields array
+    if (mrofid > 0) then
       deallocate (r2x_rm)
+    endif
 #endif
   end subroutine rof_final_mct
 
