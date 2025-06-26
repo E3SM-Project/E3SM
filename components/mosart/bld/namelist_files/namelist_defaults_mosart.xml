@@ -25,6 +25,7 @@ for the CLM data in the CESM distribution
 <do_budget>0</do_budget>
 <data_bgc_fluxes_to_ocean_flag>.false.</data_bgc_fluxes_to_ocean_flag>
 <rstraflag>.false.</rstraflag>
+<bifurcflag>.false.</bifurcflag>
 <rinittemp>283.15</rinittemp>
 <ngeom>50</ngeom>
 <nlayers>30</nlayers>
