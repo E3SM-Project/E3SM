@@ -499,10 +499,11 @@ setup_vert_remapper (const RemapData& data)
     p_data_reader.read_variables();
   }
   if (m_vr_type==MAM4_PSRef) {
-    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid);
+    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid,
+      VerticalRemapperMAM4::VertRemapType::MAM4_PSRef);
     vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
     vremap->set_target_pressure(data.pmid);
-    vremap->set_vremap_type(VerticalRemapperMAM4::VertRemapType::MAM4_PSRef);
+    // vremap->set_vremap_type(VerticalRemapperMAM4::VertRemapType::MAM4_PSRef);
     m_vert_remapper = vremap;
     return;
   }
@@ -513,8 +514,9 @@ setup_vert_remapper (const RemapData& data)
     auto levs_field = m_grid_after_hremap->create_geometry_data("lev",layout,mbar);
     AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,{levs_field},true);
     p_data_reader.read_variables();
-    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid);
-    vremap->set_vremap_type (VerticalRemapperMAM4::VertRemapType::MAM4_ZONAL);
+    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid,
+       VerticalRemapperMAM4::VertRemapType::MAM4_ZONAL);
+    // vremap->set_vremap_type (VerticalRemapperMAM4::VertRemapType::MAM4_ZONAL);
     vremap->set_source_pressure (levs_field);
     vremap->set_target_pressure(data.pmid);
     m_vert_remapper = vremap;
