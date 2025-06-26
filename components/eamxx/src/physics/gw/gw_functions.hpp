@@ -282,6 +282,160 @@ struct Functions
     const uview_1d<Spack>& xv,
     const uview_1d<Spack>& yv,
     const uview_1d<Spack>& c);
+
+  KOKKOS_FUNCTION
+  static void gw_convect_project_winds(
+    // Inputs
+    const Int& pver,
+    const Int& ncol,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    // Outputs
+    const uview_1d<Spack>& xv,
+    const uview_1d<Spack>& yv,
+    const uview_1d<Spack>& ubm,
+    const uview_1d<Spack>& ubi);
+
+  KOKKOS_FUNCTION
+  static void gw_heating_depth(
+    // Inputs
+    const Int& pver,
+    const Int& ncol,
+    const Spack& maxq0_conversion_factor,
+    const Spack& hdepth_scaling_factor,
+    const bool& use_gw_convect_old,
+    const uview_1d<const Spack>& zm,
+    const uview_1d<const Spack>& netdt,
+    // Outputs
+    const uview_1d<Int>& mini,
+    const uview_1d<Int>& maxi,
+    const uview_1d<Spack>& hdepth,
+    const uview_1d<Spack>& maxq0_out,
+    const uview_1d<Spack>& maxq0);
+
+  KOKKOS_FUNCTION
+  static void gw_storm_speed(
+    // Inputs
+    const Int& pver,
+    const Int& ncol,
+    const Spack& storm_speed_min,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Int>& mini,
+    const uview_1d<const Int>& maxi,
+    // Outputs
+    const uview_1d<Int>& storm_speed,
+    const uview_1d<Spack>& uh,
+    const uview_1d<Spack>& umin,
+    const uview_1d<Spack>& umax);
+
+  KOKKOS_FUNCTION
+  static void gw_convect_gw_sources(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const uview_1d<const Spack>& lat,
+    const Spack& hdepth_min,
+    const uview_1d<const Spack>& hdepth,
+    const uview_1d<const Int>& mini,
+    const uview_1d<const Int>& maxi,
+    const uview_1d<const Spack>& netdt,
+    const uview_1d<const Spack>& uh,
+    const uview_1d<const Int>& storm_speed,
+    const uview_1d<const Spack>& maxq0,
+    const uview_1d<const Spack>& umin,
+    const uview_1d<const Spack>& umax,
+    // Outputs
+    const uview_1d<Spack>& tau);
+
+  KOKKOS_FUNCTION
+  static void gw_beres_src(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const Int& ngwv,
+    const uview_1d<const Spack>& lat,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    const uview_1d<const Spack>& netdt,
+    const uview_1d<const Spack>& zm,
+    // Outputs
+    const uview_1d<Int>& src_level,
+    const uview_1d<Int>& tend_level,
+    const uview_1d<Spack>& tau,
+    const uview_1d<Spack>& ubm,
+    const uview_1d<Spack>& ubi,
+    const uview_1d<Spack>& xv,
+    const uview_1d<Spack>& yv,
+    const uview_1d<Spack>& c,
+    const uview_1d<Spack>& hdepth,
+    const uview_1d<Spack>& maxq0_out,
+    // Inputs
+    const Spack& maxq0_conversion_factor,
+    const Spack& hdepth_scaling_factor,
+    const Spack& hdepth_min,
+    const Spack& storm_speed_min,
+    const bool& use_gw_convect_old);
+
+  KOKKOS_FUNCTION
+  static void gw_ediff(
+    // Inputs
+    const Int& ncol,
+    const Int& pver,
+    const Int& ngwv,
+    const Int& kbot,
+    const Int& ktop,
+    const uview_1d<const Int>& tend_level,
+    const uview_1d<const Spack>& gwut,
+    const uview_1d<const Spack>& ubm,
+    const uview_1d<const Spack>& nm,
+    const uview_1d<const Spack>& rho,
+    const Spack& dt,
+    const Spack& gravit,
+    const uview_1d<const Spack>& pmid,
+    const uview_1d<const Spack>& rdpm,
+    const uview_1d<const Spack>& c,
+    // Outputs
+    const uview_1d<Spack>& egwdffi);
+
+  KOKKOS_FUNCTION
+  static void gw_diff_tend(
+    // Inputs
+    const Int& ncol,
+    const Int& pver,
+    const Int& kbot,
+    const Int& ktop,
+    const uview_1d<const Spack>& q,
+    const Spack& dt,
+      // Outputs
+    const uview_1d<Spack>& dq);
+
+  KOKKOS_FUNCTION
+  static void gw_oro_src(
+    // Inputs
+    const Int& pver,
+    const Int& pgwv,
+    const Int& ncol,
+    const uview_1d<const Spack>& u,
+    const uview_1d<const Spack>& v,
+    const uview_1d<const Spack>& t,
+    const uview_1d<const Spack>& sgh,
+    const uview_1d<const Spack>& pmid,
+    const uview_1d<const Spack>& pint,
+    const uview_1d<const Spack>& dpm,
+    const uview_1d<const Spack>& zm,
+    const uview_1d<const Spack>& nm,
+    // Outputs
+    const uview_1d<Int>& src_level,
+    const uview_1d<Int>& tend_level,
+    const uview_1d<Spack>& tau,
+    const uview_1d<Spack>& ubm,
+    const uview_1d<Spack>& ubi,
+    const uview_1d<Spack>& xv,
+    const uview_1d<Spack>& yv,
+    const uview_1d<Spack>& c);
 }; // struct Functions
 
 } // namespace gw
@@ -301,5 +455,13 @@ struct Functions
 # include "impl/gw_gw_front_project_winds_impl.hpp"
 # include "impl/gw_gw_front_gw_sources_impl.hpp"
 # include "impl/gw_gw_cm_src_impl.hpp"
+# include "impl/gw_gw_convect_project_winds_impl.hpp"
+# include "impl/gw_gw_heating_depth_impl.hpp"
+# include "impl/gw_gw_storm_speed_impl.hpp"
+# include "impl/gw_gw_convect_gw_sources_impl.hpp"
+# include "impl/gw_gw_beres_src_impl.hpp"
+# include "impl/gw_gw_ediff_impl.hpp"
+# include "impl/gw_gw_diff_tend_impl.hpp"
+# include "impl/gw_gw_oro_src_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

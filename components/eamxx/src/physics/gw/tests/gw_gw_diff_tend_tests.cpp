@@ -13,7 +13,7 @@ namespace gw {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D>::Base {
+struct UnitWrap::UnitTest<D>::TestGwDiffTend : public UnitWrap::UnitTest<D>::Base {
 
   void run_bfb()
   {
@@ -32,28 +32,16 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
       d.randomize(engine);
     }
 
-    // Set up front init data
-    GwFrontInitData front_init_data[] = {
-                // taubgnd,  frontgfc_in, kfront_in, init
-      GwFrontInitData(  .1,           .4,        10, init_data[0]),
-      GwFrontInitData(  .2,           .5,        11, init_data[1]),
-      GwFrontInitData(  .3,           .6,        12, init_data[2]),
-      GwFrontInitData(  .4,           .7,        13, init_data[3]),
-    };
-
-    for (auto& d : front_init_data) {
-      d.randomize(engine);
-    }
-
     // Set up inputs
-    GwFrontGwSourcesData baseline_data[] = {
-      GwFrontGwSourcesData(2, 10, 3, front_init_data[0]),
-      GwFrontGwSourcesData(3, 11, 4, front_init_data[1]),
-      GwFrontGwSourcesData(4, 12, 5, front_init_data[2]),
-      GwFrontGwSourcesData(5, 13, 6, front_init_data[3]),
+    GwDiffTendData baseline_data[] = {
+      // ncol, kbot, ktop, dt
+      GwDiffTendData(5, 20, 59, 0.1, init_data[0]),
+      GwDiffTendData(6, 21, 58, 0.2, init_data[1]),
+      GwDiffTendData(7, 22, 57, 0.3, init_data[2]),
+      GwDiffTendData(8, 23, 56, 0.4, init_data[3]),
     };
 
-    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwFrontGwSourcesData);
+    static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwDiffTendData);
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
@@ -63,11 +51,11 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
 
     // Create copies of data for use by test. Needs to happen before read calls so that
     // inout data is in original state
-    GwFrontGwSourcesData test_data[] = {
-      GwFrontGwSourcesData(baseline_data[0]),
-      GwFrontGwSourcesData(baseline_data[1]),
-      GwFrontGwSourcesData(baseline_data[2]),
-      GwFrontGwSourcesData(baseline_data[3]),
+    GwDiffTendData test_data[] = {
+      GwDiffTendData(baseline_data[0]),
+      GwDiffTendData(baseline_data[1]),
+      GwDiffTendData(baseline_data[2]),
+      GwDiffTendData(baseline_data[3]),
     };
 
     // Read baseline data
@@ -79,17 +67,17 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
 
     // Get data from test
     for (auto& d : test_data) {
-      gw_front_gw_sources(d);
+      gw_diff_tend(d);
     }
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
-        GwFrontGwSourcesData& d_baseline = baseline_data[i];
-        GwFrontGwSourcesData& d_test = test_data[i];
-        for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
+        GwDiffTendData& d_baseline = baseline_data[i];
+        GwDiffTendData& d_test = test_data[i];
+        for (Int k = 0; k < d_baseline.total(d_baseline.dq); ++k) {
+          REQUIRE(d_baseline.total(d_baseline.dq) == d_test.total(d_test.dq));
+          REQUIRE(d_baseline.dq[k] == d_test.dq[k]);
         }
 
       }
@@ -109,9 +97,9 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
 
 namespace {
 
-TEST_CASE("gw_front_gw_sources_bfb", "[gw]")
+TEST_CASE("gw_diff_tend_bfb", "[gw]")
 {
-  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwFrontGwSources;
+  using TestStruct = scream::gw::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGwDiffTend;
 
   TestStruct t;
   t.run_bfb();

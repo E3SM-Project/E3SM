@@ -399,6 +399,277 @@ struct GwCmSrcData : public PhysicsTestData {
   PTD_STD_DEF_INIT(GwCmSrcData, 3, ncol, ngwv, kbot);
 };
 
+struct GwConvectInitData : public PhysicsTestData{
+  // Inputs
+  Int maxh, maxuh;
+  Real plev_src_wind;
+  Real *mfcc_in;
+  GwInit init;
+
+  GwConvectInitData(Int maxh_, Int maxuh_, Real plev_src_wind_, GwInit init_) :
+    PhysicsTestData({
+      {maxh_, maxuh_*2 + 1, init_.pgwv*2 + 1}
+    },
+    {
+      {&mfcc_in}
+    }),
+    maxh(maxh_), maxuh(maxuh_), plev_src_wind(plev_src_wind_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwConvectInitData, 3, maxh, maxuh, plev_src_wind);
+};
+
+struct GwConvectProjectWindsData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real *u, *v;
+  GwConvectInitData init;
+
+  // Outputs
+  Real *xv, *yv, *ubm, *ubi;
+
+  GwConvectProjectWindsData(Int ncol_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_, init_.init.pver},
+      {ncol_},
+      {ncol_, init_.init.pver + 1}
+    },
+    {
+      {&u, &v, &ubm},
+      {&xv, &yv},
+      {&ubi}
+    }),
+    ncol(ncol_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwConvectProjectWindsData, 1, ncol);
+};
+
+struct GwHeatingDepthData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real maxq0_conversion_factor, hdepth_scaling_factor;
+  bool use_gw_convect_old;
+  Real *zm, *netdt;
+  GwConvectInitData init;
+
+  // Outputs
+  Int *mini, *maxi;
+  Real *hdepth, *maxq0_out, *maxq0;
+
+  GwHeatingDepthData(Int ncol_, Real maxq0_conversion_factor_, Real hdepth_scaling_factor_, bool use_gw_convect_old_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_, init_.init.pver},
+      {ncol_},
+      {ncol_}
+    },
+    {
+      {&zm, &netdt},
+      {&hdepth, &maxq0_out, &maxq0}
+    },
+    {
+      {&mini, &maxi}
+    }),
+    ncol(ncol_), maxq0_conversion_factor(maxq0_conversion_factor_), hdepth_scaling_factor(hdepth_scaling_factor_), use_gw_convect_old(use_gw_convect_old_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwHeatingDepthData, 4, ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old);
+};
+
+struct GwStormSpeedData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real storm_speed_min;
+  Real *ubm;
+  Int *mini, *maxi;
+  GwConvectInitData init;
+
+  // Outputs
+  Int *storm_speed;
+  Real *uh, *umin, *umax;
+
+  GwStormSpeedData(Int ncol_, Real storm_speed_min_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_, init_.init.pver},
+      {ncol_},
+      {ncol_}
+    },
+    {
+      {&ubm},
+      {&uh, &umin, &umax}
+    },
+    {
+      {&mini, &maxi, &storm_speed}
+    }),
+    ncol(ncol_), storm_speed_min(storm_speed_min_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwStormSpeedData, 2, ncol, storm_speed_min);
+};
+
+struct GwConvectGwSourcesData : public PhysicsTestData {
+  // Inputs
+  Int ncol, ngwv;
+  Real *lat, *hdepth, *netdt, *uh, *maxq0, *umin, *umax;
+  Real hdepth_min;
+  Int *mini, *maxi, *storm_speed;
+  GwConvectInitData init;
+
+  // Outputs
+  Real *tau;
+
+  GwConvectGwSourcesData(Int ncol_, Int ngwv_, Real hdepth_min_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_},
+      {ncol_, init_.init.pver},
+      {ncol_, init_.init.pgwv*2 + 1, init_.init.pver + 1},
+      {ncol_}
+    },
+    {
+      {&lat, &hdepth, &uh, &maxq0, &umin, &umax},
+      {&netdt},
+      {&tau}
+    },
+    {
+      {&mini, &maxi, &storm_speed}
+    }),
+    ncol(ncol_), ngwv(ngwv_), hdepth_min(hdepth_min_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwConvectGwSourcesData, 3, ncol, ngwv, hdepth_min);
+};
+
+struct GwBeresSrcData : public PhysicsTestData {
+  // Inputs
+  Int ncol, ngwv;
+  Real *lat, *u, *v, *netdt, *zm;
+  Real maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min;
+  bool use_gw_convect_old;
+  GwConvectInitData init;
+
+  // Outputs
+  Int *src_level, *tend_level;
+  Real *tau, *ubm, *ubi, *xv, *yv, *c, *hdepth, *maxq0_out;
+
+  GwBeresSrcData(Int ncol_, Int ngwv_, Real maxq0_conversion_factor_, Real hdepth_scaling_factor_, Real hdepth_min_, Real storm_speed_min_, bool use_gw_convect_old_, GwConvectInitData init_) :
+    PhysicsTestData({
+      {ncol_},
+      {ncol_, init_.init.pver},
+      {ncol_, init_.init.pgwv*2 + 1, init_.init.pver + 1},
+      {ncol_, init_.init.pver + 1},
+      {ncol_, init_.init.pgwv*2 + 1},
+      {ncol_}
+    },
+    {
+      {&lat, &xv, &yv, &hdepth, &maxq0_out},
+      {&u, &v, &zm, &ubm, &netdt},
+      {&tau},
+      {&ubi},
+      {&c}
+    },
+    {
+      {&src_level, &tend_level}
+    }),
+    ncol(ncol_), ngwv(ngwv_), maxq0_conversion_factor(maxq0_conversion_factor_), hdepth_scaling_factor(hdepth_scaling_factor_), hdepth_min(hdepth_min_), storm_speed_min(storm_speed_min_), use_gw_convect_old(use_gw_convect_old_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwBeresSrcData, 7, ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old);
+};
+
+struct GwEdiffData : public PhysicsTestData {
+  // Inputs
+  Int ncol, ngwv, kbot, ktop;
+  Int *tend_level;
+  Real *gwut, *ubm, *nm, *rho, *pmid, *rdpm, *c;
+  Real dt;
+  GwInit init;
+
+  // Outputs
+  Real *egwdffi;
+  Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze;
+
+  GwEdiffData(Int ncol_, Int ngwv_, Int kbot_, Int ktop_, Real dt_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver, 2*ngwv_ + 1},
+      {ncol_, init_.pver},
+      {ncol_, init_.pver + 1},
+      {ncol_, 2*ngwv_ + 1},
+      {ncol_}
+    },
+    {
+      {&gwut},
+      {&ubm, &nm, &pmid, &rdpm, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze},
+      {&rho, &egwdffi},
+      {&c}
+    },
+    {
+      {&tend_level}
+    }),
+    ncol(ncol_), ngwv(ngwv_), kbot(kbot_), ktop(ktop_), dt(dt_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwEdiffData, 5, ncol, ngwv, kbot, ktop, dt);
+};
+
+struct GwDiffTendData : public PhysicsTestData {
+  // Inputs
+  Int ncol, kbot, ktop;
+  Real *q;
+  Real dt;
+  Real *decomp_ca, *decomp_cc, *decomp_dnom, *decomp_ze;
+  GwInit init;
+
+  // Outputs
+  Real *dq;
+
+  GwDiffTendData(Int ncol_, Int kbot_, Int ktop_, Real dt_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver}
+    },
+    {
+      {&q, &dq, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze}
+    }),
+    ncol(ncol_), kbot(kbot_), ktop(ktop_), dt(dt_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwDiffTendData, 4, ncol, kbot, ktop, dt);
+};
+
+struct GwOroSrcData : public PhysicsTestData {
+  // Inputs
+  Int ncol;
+  Real *u, *v, *t, *sgh, *pmid, *pint, *dpm, *zm, *nm;
+  GwInit init;
+
+  // Outputs
+  Int *src_level, *tend_level;
+  Real *tau, *ubm, *ubi, *xv, *yv, *c;
+
+  GwOroSrcData(Int ncol_, GwInit init_) :
+    PhysicsTestData({
+      {ncol_, init_.pver},
+      {ncol_},
+      {ncol_, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1, init_.pver + 1},
+      {ncol_, init_.pgwv*2 + 1},
+      {ncol_}
+    },
+    {
+      {&u, &v, &t, &pmid, &dpm, &zm, &nm, &ubm},
+      {&sgh, &xv, &yv},
+      {&pint, &ubi},
+      {&tau},
+      {&c}
+    },
+    {
+      {&src_level, &tend_level}
+    }),
+    ncol(ncol_), init(init_)
+  {}
+
+  PTD_STD_DEF_INIT(GwOroSrcData, 1, ncol);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
@@ -410,6 +681,14 @@ void gw_drag_prof(GwDragProfData& d);
 void gw_front_project_winds(GwFrontProjectWindsData& d);
 void gw_front_gw_sources(GwFrontGwSourcesData& d);
 void gw_cm_src(GwCmSrcData& d);
+void gw_convect_project_winds(GwConvectProjectWindsData& d);
+void gw_heating_depth(GwHeatingDepthData& d);
+void gw_storm_speed(GwStormSpeedData& d);
+void gw_convect_gw_sources(GwConvectGwSourcesData& d);
+void gw_beres_src(GwBeresSrcData& d);
+void gw_ediff(GwEdiffData& d);
+void gw_diff_tend(GwDiffTendData& d);
+void gw_oro_src(GwOroSrcData& d);
 
 extern "C" { // _f function decls
 }

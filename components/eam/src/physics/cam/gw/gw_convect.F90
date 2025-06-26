@@ -17,6 +17,11 @@ save
 
 public :: gw_convect_init
 public :: gw_beres_src
+! Only public for bridging/testing
+public :: gw_convect_project_winds
+public :: gw_heating_depth
+public :: gw_storm_speed
+public :: gw_convect_gw_sources
 
 ! Dimension for heating depth.
 integer :: maxh
@@ -42,14 +47,19 @@ subroutine gw_convect_init( plev_src_wind, mfcc_in, errstring)
   real(r8), intent(in) :: mfcc_in(:,:,:)       ! Source spectra to keep as table
   character(len=*), intent(out) :: errstring   ! Report any errors from this routine
   integer :: ierr
+#ifndef SCREAM_CONFIG_IS_CMAKE
   integer :: k
+#endif
 
   errstring = ""
 
-#ifndef SCREAM_CONFIG_IS_CMAKE
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  ! Just set k_src_wind to pver
+  k_src_wind = pver
+#else
   do k = 0, pver
-    if ( pref_edge(k+1) < plev_src_wind ) k_src_wind = k+1
- end do
+     if ( pref_edge(k+1) < plev_src_wind ) k_src_wind = k+1
+  end do
 #endif
 
 #ifndef SCREAM_CONFIG_IS_CMAKE
