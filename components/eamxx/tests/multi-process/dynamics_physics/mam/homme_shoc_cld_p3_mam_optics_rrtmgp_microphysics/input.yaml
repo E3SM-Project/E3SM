@@ -1,0 +1,152 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+  mass_column_conservation_error_tolerance: 1e-3
+  energy_column_conservation_error_tolerance: 1e-4
+  column_conservation_checks_fail_handling_type: warning
+  property_check_data_fields: [phis]
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+initial_conditions:
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  #precip_liq_surf_mass: 0.0
+  #precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+  phis : 1.0
+  pbl_height: 1.0
+  #These should come from the input file
+  dgnum: [1.246662106183775E-007, 4.081134799487888E-008, 1.103139143795796E-006, 1.000000011686097E-007]
+  dgnumwet: [2.367209731605067E-007, 6.780643470563889E-008, 3.028011448344027E-006, 1.000000096285154E-007]
+  wetdens: [1038.67760516297, 1046.20002003441, 1031.74623165457, 1086.79731859184]
+  nevapr: 0.0
+  precip_total_tend: 0.0
+  surf_radiative_T: 288.0
+  ps: 105000.0
+  horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
+  precip_liq_surf_mass: 0.1
+  precip_ice_surf_mass: 0.1
+  snow_depth_land: 0.01
+  fraction_landuse: 0.0
+  SW_flux_dn: 500.0
+  constituent_fluxes: 0.0
+
+atmosphere_processes:
+  atm_procs_list: [homme,physics]
+  schedule_type: sequential
+  homme:
+    moisture: moist
+  physics:
+    atm_procs_list: [mac_mic,mam4_optics,rrtmgp, mam4_interpolation_aero_microphys, mam4_aero_microphys]
+    schedule_type: sequential
+    type: group
+    mac_mic:
+      atm_procs_list: [shoc,cld_fraction,p3]
+      schedule_type: sequential
+      type: group
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+      p3:
+        do_prescribed_ccn: false
+        enable_column_conservation_checks: true
+        max_total_ni: 740.0e3
+      shoc:
+        enable_column_conservation_checks: true
+        lambda_low: 0.001
+        lambda_high: 0.08
+        lambda_slope: 2.65
+        lambda_thresh: 0.02
+        thl2tune: 1.0
+        qw2tune: 1.0
+        qwthl2tune: 1.0
+        w2tune: 1.0
+        length_fac: 0.5
+        c_diag_3rd_mom: 7.0
+        coeff_kh: 0.1
+        coeff_km: 0.1
+        shoc_1p5tke: false
+
+    mam4_optics:
+      mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
+      mam4_mode2_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode2_rrtmg_c20240206.nc
+      mam4_mode3_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode3_rrtmg_aeronetdust_c20240206.nc
+      mam4_mode4_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode4_rrtmg_c20240206.nc
+      mam4_water_refindex_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/water_refindex_rrtmg_c20240206.nc
+      mam4_soa_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ocphi_rrtmg_c20240206.nc
+      mam4_dust_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/dust_aeronet_rrtmg_c20240206.nc
+      mam4_nacl_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ssam_rrtmg_c20240206.nc
+      mam4_so4_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/sulfate_rrtmg_c20240206.nc
+      mam4_pom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
+      mam4_bc_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
+      mam4_mom_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/poly_rrtmg_c20240206.nc
+
+    rrtmgp:
+      column_chunk_size: 123
+      active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      enable_column_conservation_checks: true
+
+    mam4_interpolation_aero_microphys:
+      aero_microphys_remap_file: none
+      create_fields_interval_checks: false
+      enable_postcondition_checks: true
+      enable_precondition_checks: true
+      internal_diagnostics_level: 0
+      mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
+      mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
+      mam4_linoz_ymd: 20100101
+      mam4_oxid_ymd: 20150101
+      number_of_subcycles: 1
+      repair_log_level: trace
+
+    mam4_aero_microphys:
+      mam4_do_cond: true
+      mam4_do_newnuc: true
+      mam4_do_coag: true
+      mam4_do_rename: true
+      mam4_o3_tau: 172800.0
+      mam4_o3_sfc: 3.0E-008
+      mam4_o3_lbl: 4
+      mam4_psc_T : 193.0
+      mam4_linoz_ymd : 20100101
+      mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
+      mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
+      mam4_oxid_ymd : 20150101
+      mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
+      mam4_chlorine_loading_ymd : 20100101
+      mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc
+      mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
+      elevated_emiss_ymd : 20100101
+      mam4_so2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726.nc
+      mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_season_wes_file : ${SCREAM_DATA_DIR}/mam4xx/drydep/season_wes.nc
+      create_fields_interval_checks: true
+
+grids_manager:
+  type: homme
+  physics_grid_type: gll
+  dynamics_namelist_file_name: namelist.nl
+  vertical_coordinate_filename: IC_FILE
+
+# The parameters for I/O control
+scorpio:
+  output_yaml_files: ["output.yaml"]
+...
