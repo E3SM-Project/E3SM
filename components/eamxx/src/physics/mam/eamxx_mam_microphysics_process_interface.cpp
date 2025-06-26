@@ -523,8 +523,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   add_postcondition_check<Interval>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
   add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
   */
-#ifdef USE_OLD_LINOZ_FILE_READ
   {
+#ifdef USE_OLD_LINOZ_FILE_READ
     // climatology data for linear stratospheric chemistry
     auto linoz_o3_clim = buffer_.scratch[0];  // ozone (climatology) [vmr]
     auto linoz_o3col_clim =
@@ -542,6 +542,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     auto linoz_cariolle_pscs =
         buffer_.scratch[7];  // Cariolle parameter for PSC loss of ozone [1/s]
 
+#endif
     auto ts = start_of_step_ts();
     std::string linoz_chlorine_file =
         m_params.get<std::string>("mam4_linoz_chlorine_file");
@@ -550,7 +551,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
         linoz_chlorine_file, ts, chlorine_loading_ymd, chlorine_values_,
         chlorine_time_secs_);
   }  // LINOZ
-#endif
   init_temporary_views();
   // FIXME : why are we only using nlev_ instead of ncol_xnlev?
   cmfdqr_ = view_1d("cmfdqr_", nlev_);
