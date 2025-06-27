@@ -183,8 +183,8 @@ void MAMMicrophysics::set_grids(
   // layout for Constituent fluxes
   FieldLayout scalar2d_pcnst =
       grid_->get_2d_vector_layout(mam4::pcnst, "num_phys_constituents");
-  FieldLayout scalar2d_num_gas_aerosol_constituents =
-      grid_->get_2d_vector_layout( mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
+  FieldLayout scalar3d_num_gas_aerosol_constituents =
+      grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
   // Constituent fluxes of species in [kg/m2/s]
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
@@ -203,8 +203,8 @@ void MAMMicrophysics::set_grids(
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   extra_mam4_diags_ = m_params.get<bool>("extra_mam4_diags", false);
   if (extra_mam4_diags_) {
-    add_field<Computed>("tendency_gas_phase_chemistry", scalar2d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
-    add_field<Computed>("tendency_aqueous_chemistry", scalar2d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    add_field<Computed>("tendency_gas_phase_chemistry", scalar3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    add_field<Computed>("tendency_aqueous_chemistry", scalar3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -649,8 +649,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
   if (extra_mam4_diags_) {
-    gas_phase_chemistry_dvmrdt = get_field_out("tendency_due_to_gas_phase_chemistry").get_view<Real ***>();
-    aqueous_chemistry_dvmrdt = get_field_out("tendency_due_to_aqueous_chemistry").get_view<Real ***>();
+    gas_phase_chemistry_dvmrdt = get_field_out("tendency_gas_phase_chemistry").get_view<Real ***>();
+    aqueous_chemistry_dvmrdt = get_field_out("tendency_aqueous_chemistry").get_view<Real ***>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -894,8 +894,8 @@ void MAMMicrophysics::run_impl(const double dt) {
 
 	mam4::MicrophysDiagnosticArrays diag_arrays;
         if (extra_mam4_diags) {
-	  diag_arrays.gs_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
-	  diag_arrays.aq_dvmrdt = ekat::subview(aqueous_chemistry_dvmrdt, icol);
+	  diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
+	  diag_arrays.aqueous_chemistry_dvmrdt = ekat::subview(aqueous_chemistry_dvmrdt, icol);
 	}
 
         // Wind speed at the surface
