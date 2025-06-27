@@ -1237,9 +1237,8 @@
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="se"                                           > 1.0E-6 </zmconv_ke>
 
-<zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
-<zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
-<zmconv_trig_ull_only                                                 >.false. </zmconv_trig_ull_only>
+<zmconv_trig_dcape                                                    >.false. </zmconv_trig_dcape>
+<zmconv_trig_ull                                                      >.false. </zmconv_trig_ull>
 <zmconv_tiedke_add                                                    >0.5D0   </zmconv_tiedke_add>
 <zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
@@ -1938,7 +1937,8 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6D0  </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="chemuci_linozv3_mam5_vbs"> 0.55D0 </seasalt_emis_scale>
 <dms_emis_scale phys="default"> 2.0D0 </dms_emis_scale>
-<zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
+<zmconv_trig_dcape phys="default"> .true. </zmconv_trig_dcape>
+<zmconv_trig_ull phys="default"> .true. </zmconv_trig_ull>
 <zmconv_c0_lnd phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_ocn>
 <zmconv_alfa phys="default"> 0.14D0     </zmconv_alfa>

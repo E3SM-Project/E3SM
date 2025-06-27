@@ -84,7 +84,8 @@
 <!-- Revised and new tunable parameters for v2 -->
 
 <clubb_ipdf_call_placement> 2         </clubb_ipdf_call_placement>
-<zmconv_trigdcape_ull    > .true.     </zmconv_trigdcape_ull>
+<zmconv_trig_dcape       > .true.     </zmconv_trig_dcape>
+<zmconv_trig_ull         > .true.     </zmconv_trig_ull>
 <cld_sed                 > 1.0D0      </cld_sed>
 <effgw_beres             > 0.35       </effgw_beres>
 <gw_convect_hcf          > 12.5       </gw_convect_hcf>

@@ -18,8 +18,7 @@ module zm_conv_intr
    use rad_constituents,      only: rad_cnst_get_info, rad_cnst_get_mode_num, rad_cnst_get_aer_mmr
    use rad_constituents,      only: rad_cnst_get_aer_props, rad_cnst_get_mode_props
    use ndrop_bam,             only: ndrop_bam_init
-   use zm_conv,               only: zm_conv_evap, zm_convr, trigdcape_ull, trig_dcape_only
-   use zm_conv,               only: zm_microp
+   use zm_conv,               only: zm_conv_evap, zm_convr
    use zm_transport,          only: zm_transport_tracer, zm_transport_momentum
    use zm_aero,               only: zm_aero_t
    use zm_microphysics_state, only: zm_microp_st
@@ -29,6 +28,7 @@ module zm_conv_intr
    save
 
    ! public methods
+   public :: zm_conv_readnl    ! read zmconv_nl namelist
    public :: zm_conv_register  ! register fields in physics buffer
    public :: zm_conv_init      ! initialize donner_deep module
    public :: zm_conv_tend      ! return tendencies
@@ -71,6 +71,126 @@ module zm_conv_intr
 contains
 !===================================================================================================
 
+subroutine zm_conv_readnl(nlfile)
+   !----------------------------------------------------------------------------
+   ! Purpose: read namelist parameters for ZM deep convection
+   !----------------------------------------------------------------------------
+   use namelist_utils,  only: find_group_name
+   use units,           only: getunit, freeunit
+   use zm_conv,         only: zm_const, zm_param
+   use zm_conv_types,   only: zm_param_mpi_broadcast
+   use mpishorthand
+   !----------------------------------------------------------------------------
+   ! Arguments
+   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+   !----------------------------------------------------------------------------
+   ! Local variables
+   integer :: unitn, ierr
+   character(len=*), parameter :: subname = 'zm_conv_readnl'
+
+   real(r8), parameter :: unset_r8  = huge(1.0_r8)
+   integer , parameter :: unset_int = huge(1)
+
+   real(r8) :: zmconv_tau                    = unset_r8
+   real(r8) :: zmconv_alfa                   = unset_r8
+   real(r8) :: zmconv_ke                     = unset_r8
+   real(r8) :: zmconv_dmpdz                  = unset_r8
+   logical  :: zmconv_tpert_fix              = .false.
+   real(r8) :: zmconv_tp_fac                 = unset_r8
+   real(r8) :: zmconv_tiedke_add             = unset_r8
+   real(r8) :: zmconv_c0_lnd                 = unset_r8
+   real(r8) :: zmconv_c0_ocn                 = unset_r8
+   integer  :: zmconv_cape_cin               = unset_int
+   integer  :: zmconv_mx_bot_lyr_adj         = unset_int
+   logical  :: zmconv_trig_dcape             = .false.
+   logical  :: zmconv_trig_ull               = .false.
+   logical  :: zmconv_clos_dyn_adj           = .false.
+   logical  :: zmconv_microp                 = .false.
+   real(r8) :: zmconv_auto_fac               = unset_r8
+   real(r8) :: zmconv_accr_fac               = unset_r8
+   real(r8) :: zmconv_micro_dcs              = unset_r8
+   real(r8) :: zmconv_MCSP_heat_coeff        = 0._r8
+   real(r8) :: zmconv_MCSP_moisture_coeff    = 0._r8
+   real(r8) :: zmconv_MCSP_uwind_coeff       = 0._r8
+   real(r8) :: zmconv_MCSP_vwind_coeff       = 0._r8
+   !----------------------------------------------------------------------------
+   namelist /zmconv_nl/ zmconv_tau, zmconv_alfa, zmconv_ke, zmconv_dmpdz,  &
+            zmconv_tpert_fix, zmconv_tp_fac, zmconv_tiedke_add, &
+            zmconv_c0_lnd, zmconv_c0_ocn,  & 
+            zmconv_cape_cin, zmconv_mx_bot_lyr_adj,  &
+            zmconv_trig_dcape, zmconv_trig_ull, zmconv_clos_dyn_adj, &
+            zmconv_microp, zmconv_auto_fac, zmconv_accr_fac, zmconv_micro_dcs, &
+            zmconv_MCSP_heat_coeff, zmconv_MCSP_moisture_coeff, &
+            zmconv_MCSP_uwind_coeff, zmconv_MCSP_vwind_coeff
+   !----------------------------------------------------------------------------
+
+   if (masterproc) then
+      unitn = getunit()
+      open( unitn, file=trim(nlfile), status='old' )
+      call find_group_name(unitn, 'zmconv_nl', status=ierr)
+      if (ierr == 0) then
+         read(unitn, zmconv_nl, iostat=ierr)
+         if (ierr /= 0) then
+            call endrun(subname // ':: ERROR reading namelist')
+         end if
+      end if
+      close(unitn)
+      call freeunit(unitn)
+
+      ! set zm_param values
+      zm_param%tau             = zmconv_tau
+      zm_param%ke              = zmconv_ke
+      zm_param%dmpdz           = zmconv_dmpdz
+      zm_param%tpert_fix       = zmconv_tpert_fix
+      zm_param%tpert_fac       = zmconv_tp_fac
+      zm_param%tiedke_add      = zmconv_tiedke_add
+      zm_param%c0_lnd          = zmconv_c0_lnd
+      zm_param%c0_ocn          = zmconv_c0_ocn
+      zm_param%num_cin         = zmconv_cape_cin
+      zm_param%mx_bot_lyr_adj  = zmconv_mx_bot_lyr_adj
+      zm_param%trig_dcape      = zmconv_trig_dcape
+      zm_param%trig_ull        = zmconv_trig_ull
+      zm_param%clos_dyn_adj    = zmconv_clos_dyn_adj
+      
+      ! ZM microphysics parameters
+      zm_param%zm_microp       = zmconv_microp
+      zm_param%auto_fac        = zmconv_auto_fac
+      zm_param%accr_fac        = zmconv_accr_fac
+      zm_param%micro_dcs       = zmconv_micro_dcs
+
+      ! mesoscale coherent structure parameterization (MCSP) parameters
+      zm_param%mcsp_t_coeff = zmconv_MCSP_heat_coeff
+      zm_param%mcsp_q_coeff = zmconv_MCSP_moisture_coeff
+      zm_param%mcsp_u_coeff = zmconv_MCSP_uwind_coeff
+      zm_param%mcsp_v_coeff = zmconv_MCSP_vwind_coeff
+      if ( abs(zm_param%mcsp_t_coeff)>0._r8 .or. abs(zm_param%mcsp_q_coeff)>0._r8 .or. &
+           abs(zm_param%mcsp_u_coeff)>0._r8 .or. abs(zm_param%mcsp_v_coeff)>0._r8 ) then
+         zm_param%mcsp_enabled = .true.
+      else
+         zm_param%mcsp_enabled = .false.
+      end if
+
+      if ( zmconv_alfa /= unset_r8 ) then
+         zm_param%alfa = zmconv_alfa
+      else
+         zm_param%alfa = 0.1_r8
+      end if
+
+   end if ! masterproc
+
+   !----------------------------------------------------------------------------
+   ! Broadcast namelist variables
+#ifdef SPMD
+   call zm_param_mpi_broadcast(zm_param)
+#endif
+
+   !----------------------------------------------------------------------------
+   return
+
+end subroutine zm_conv_readnl
+
+!===================================================================================================
+
 subroutine zm_conv_register
    !----------------------------------------------------------------------------
    ! Purpose: register fields with the physics buffer
@@ -78,6 +198,7 @@ subroutine zm_conv_register
    use physics_buffer,  only: pbuf_add_field, dtype_r8
    use misc_diagnostics,only: dcape_diags_register
    use zm_microphysics, only: zm_microphysics_register
+   use zm_conv,         only: zm_param
    implicit none
 
    integer idx
@@ -95,7 +216,7 @@ subroutine zm_conv_register
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)
 
    ! previous time step data for DCAPE calculation
-   if (trigdcape_ull .or. trig_dcape_only) then
+   if (zm_param%trig_dcape) then
       call pbuf_add_field('T_STAR','global',dtype_r8,(/pcols,pver/), t_star_idx)
       call pbuf_add_field('Q_STAR','global',dtype_r8,(/pcols,pver/), q_star_idx)
    end if
@@ -106,7 +227,7 @@ subroutine zm_conv_register
    call pbuf_add_field('DIFZM', 'physpkg', dtype_r8, (/pcols,pver/), difzm_idx)
 
    ! Only add the number conc fields if the microphysics is active.
-   if (zm_microp) call zm_microphysics_register()
+   if (zm_param%zm_microp) call zm_microphysics_register()
 
    ! Register variables for dCAPE diagnosis and decomposition
    call dcape_diags_register( pcols )
@@ -126,7 +247,8 @@ subroutine zm_conv_init(pref_edge)
    use phys_control,            only: phys_deepconv_pbl, phys_getopts
    use physics_buffer,          only: pbuf_get_index
    use rad_constituents,        only: rad_cnst_get_info
-   use zm_conv,                 only: zm_param
+   use zm_conv,                 only: zm_const, zm_param
+   use zm_conv_types,           only: zm_const_print, zm_param_print
    use zm_conv_mcsp,            only: zm_conv_mcsp_init
    use zm_microphysics,         only: zm_mphyi
    use zm_aero,                 only: zm_aero_init
@@ -230,6 +352,15 @@ subroutine zm_conv_init(pref_edge)
    no_deep_pbl = phys_deepconv_pbl()
    call zm_convi( limcnv, no_deep_pbl_in=no_deep_pbl )
 
+   !----------------------------------------------------------------------------
+   ! print information about ZM configuration to the log file
+
+   call zm_const_print(zm_const)
+   call zm_param_print(zm_param)
+
+   !----------------------------------------------------------------------------
+   ! get pbuf indices
+
    dp_flxprc_idx   = pbuf_get_index('DP_FLXPRC')
    dp_flxsnw_idx   = pbuf_get_index('DP_FLXSNW')
    dp_cldliq_idx   = pbuf_get_index('DP_CLDLIQ')
@@ -246,7 +377,7 @@ subroutine zm_conv_init(pref_edge)
    icimrdp_idx     = pbuf_get_index('ICIMRDP')
 
    ! Initialization for convective microphysics
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
 
       call zm_microphysics_history_init()
 
@@ -411,7 +542,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
 
    !----------------------------------------------------------------------------
 
-   if (zm_microp) call zm_microp_st_alloc(microp_st)
+   if (zm_param%zm_microp) call zm_microp_st_alloc(microp_st)
 
    !----------------------------------------------------------------------------
    ! Initialize stuff
@@ -449,7 +580,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call pbuf_get_field(pbuf, difzm_idx,         dif)
 
    ! DCAPE-ULL
-   if (trigdcape_ull .or. trig_dcape_only) then
+   if (zm_param%trig_dcape) then
       call pbuf_get_field(pbuf, t_star_idx, t_star)
       call pbuf_get_field(pbuf, q_star_idx, q_star)
       if ( is_first_step()) then
@@ -458,7 +589,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       end if
    end if
 
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
       call pbuf_get_field(pbuf, dnlfzm_idx, dnlf)
       call pbuf_get_field(pbuf, dnifzm_idx, dnif)
       call pbuf_get_field(pbuf, dsfzm_idx,  dsf)
@@ -476,7 +607,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call pbuf_get_field(pbuf, lambdadpcu_idx, lambdadpcu)
    call pbuf_get_field(pbuf, mudpcu_idx,     mudpcu)
 
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
       if (nmodes > 0) then
 
          ! Associate pointers with the modes and species that affect the climate (list 0)
@@ -510,7 +641,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                   lambdadpcu, microp_st, wuc )
    call t_stopf ('zm_convr')
 
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver) + dif(1:ncol,1:pver) + dsf(1:ncol,1:pver)
    else
       dlftot(1:ncol,1:pver) = dlf(1:ncol,1:pver)
@@ -651,7 +782,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('PRECCDZM', prec,               pcols, lchnk )
    call outfld('PRECZ   ', prec,               pcols, lchnk )
 
-   if (zm_microp) call zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, dnlf, dnif, frz )
+   if (zm_param%zm_microp) call zm_microphysics_history_out( lchnk, ncol, microp_st, prec, dlf, dif, dnlf, dnif, frz )
 
    ! add tendency from this process to tend from other processes here
    call physics_ptend_sum(ptend_loc,ptend_all, ncol)
@@ -733,7 +864,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call physics_state_dealloc(state1)
    call physics_ptend_dealloc(ptend_loc)
 
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
       call zm_microp_st_dealloc(microp_st)
    else
       deallocate(dnlf, dnif, dsf, dnsf)
