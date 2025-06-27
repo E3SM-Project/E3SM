@@ -1400,6 +1400,8 @@ module li_iceshelf_melt
                     applyToFloating, applyToGroundingLine, err)
 
       use li_calving
+      use li_constants, only: oceanFreezingTempDepthDependence
+
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -1566,7 +1568,7 @@ module li_iceshelf_melt
                   enddo
 
                elseif ( (config_TF_vertical_calc == 'seafloor') .or. (.not. config_calculate_thermal_forcing) ) then
-                  ! Calculate thermal forcing based solely on bedTopography. Default ISMIP6 method and ISMIP6melt are equivalent
+                  ! Define 2d TF at seafloor
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
                      if (bedTopography(iCell) < 0.0_RKIND) then
@@ -1582,9 +1584,8 @@ module li_iceshelf_melt
                         
                         ! For all other bed depths, interpolate linearly between layers above and below bed depth.
                         else
-                           TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
-                                           (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
-                                           (zOcean(kk-1) - zOcean(kk))
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1,iCell) + & 
+                                   ((zOcean(kk-1) - bedTopography(iCell)) * oceanFreezingTempDepthDependence)
                         endif
                      endif
                   enddo

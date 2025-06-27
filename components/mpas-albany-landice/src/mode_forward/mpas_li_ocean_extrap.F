@@ -785,7 +785,8 @@ contains
          ! This ensures partial cells with cell centers below bed topography are accounted for. 
 
             if ( (validOceanMask(iLayer,iCell) == 0) .and. (validOceanMask(iLayer-1,iCell) == 1) &
-                    .and. (availOceanMask(iLayer-1,iCell) == 1) ) then
+                    .and. (availOceanMask(iLayer-1,iCell) == 1) .and. &
+                    (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then
                   do iField = 1, nFields
                      if (oceanField(iField,iLayer-1,iCell) > 1.0e6_RKIND) then
                         ! raise error if an invalid ocean data value is used
@@ -806,8 +807,8 @@ contains
                         endif
                      endif
                   enddo
-                  !Only update validOceanMask if cell is defined in availOceanMask
-                  if (availOceanMask(iLayer,iCell) == 1) then
+                  ! update validOceanMask if above bed topography
+                  if (ismip6shelfMelt_zOcean(iLayer) > bedTopography(iCell)) then
                      validOceanMask(iLayer,iCell) = 1
                      newMaskCountLocalAccum = newMaskCountLocalAccum + 1
                   endif
