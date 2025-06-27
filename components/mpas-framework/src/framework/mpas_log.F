@@ -846,11 +846,7 @@ module mpas_log
       deallocate(mpas_log_info % outputLog)
       deallocate(mpas_log_info)
 
-#ifdef _MPI
-      call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
-#else
-      stop
-#endif
+      call mpas_dmpar_global_abort()
 
    !--------------------------------------------------------------------
    end subroutine log_abort
