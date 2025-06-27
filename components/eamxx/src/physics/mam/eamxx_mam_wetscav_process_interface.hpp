@@ -121,11 +121,17 @@ class MAMWetscav : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
+  // sol_facti_cloud_borne_ is in-cloud scavenging fraction
+  Real sol_facti_cloud_borne_ = 1.00;
 
-  Real sol_facti_cloud_borne_ = 0;
-  Real sol_factic_cloud_borne_ = 0;
-  Real sol_factb_below_cloud_ = 0;
-  Real f_act_conv_below_cloud_ = 0;
+  // sol_factic_cloud_borne_ is in-cloud convective scavenging fraction
+  Real sol_factic_cloud_borne_ = 0.00;
+
+  // sol_factb_below_cloud_ is below-cloud scavenging fraction
+  Real sol_factb_below_cloud_ = 0.03;
+
+  // f_act_conv_below_cloud_ is convection activation fraction
+  Real f_act_conv_below_cloud_ = 0.40;
 
 };  // class MAMWetscav
 

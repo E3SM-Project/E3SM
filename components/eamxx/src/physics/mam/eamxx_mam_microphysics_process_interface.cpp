@@ -998,7 +998,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
         mam4::MicrophysDiagnosticArrays diag_arrays;
-
         if (extra_mam4_aero_microphys_diags) {
           diag_arrays.dqdt_so4_aqueous_chemistry = ekat::subview(dqdt_so4_aqueous_chemistry, icol);
           diag_arrays.dqdt_h2so4_uptake          = ekat::subview(dqdt_h2so4_uptake, icol);
@@ -1014,8 +1013,6 @@ void MAMMicrophysics::run_impl(const double dt) {
           diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
           diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
         }
-
-
         // Wind speed at the surface
         const Real wind_speed =
             haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
