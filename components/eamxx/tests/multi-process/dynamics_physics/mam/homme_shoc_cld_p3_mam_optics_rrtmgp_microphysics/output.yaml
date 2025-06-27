@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: homme_shoc_cld_p3_mam_optics_rrtmgp
+filename_prefix: homme_shoc_cld_p3_mam_optics_rrtmgp_microphysics
 averaging_type: instant
 fields:
   physics_gll:
