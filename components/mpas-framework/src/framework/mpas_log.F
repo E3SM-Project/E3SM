@@ -846,7 +846,7 @@ module mpas_log
       deallocate(mpas_log_info % outputLog)
       deallocate(mpas_log_info)
 
-      call mpas_dmpar_global_abort('Log_abort')
+      call mpas_dmpar_global_abort()
 
    !--------------------------------------------------------------------
    end subroutine log_abort

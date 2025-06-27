@@ -48,7 +48,7 @@ module mpas_abort
 #endif
 #endif
    
-      character(len=*), intent(in) :: mesg !< Input: Abort message
+      character(len=*), intent(in), optional :: mesg !< Input: Abort message
       logical, intent(in), optional :: deferredAbort !< Input: Defer call to abort until later
    
       integer :: threadNum
@@ -67,33 +67,35 @@ module mpas_abort
          local_deferredAbort = .false.
       end if
    
-      threadNum = mpas_threading_get_thread_num()
+      if (present(mesg)) then
+         threadNum = mpas_threading_get_thread_num()
    
 #ifdef _MPI
-      call MPI_Comm_rank(MPI_COMM_WORLD, my_proc_id, mpi_ierr)
-      call MPI_Comm_size(MPI_COMM_WORLD, nprocs, mpi_ierr)
-      if (nprocs < 1E4) then
-         write(errorFile,fmt='(a,i4.4,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E5) then
-         write(errorFile,fmt='(a,i5.5,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E6) then
-         write(errorFile,fmt='(a,i6.6,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E7) then
-         write(errorFile,fmt='(a,i7.7,a)') 'log.', my_proc_id, '.abort'
-      else if (nprocs < 1E8) then
-         write(errorFile,fmt='(a,i8.8,a)') 'log.', my_proc_id, '.abort'
-      else
-         write(errorFile,fmt='(a,i9.9,a)') 'log.', my_proc_id, '.abort'
-      end if
+         call MPI_Comm_rank(MPI_COMM_WORLD, my_proc_id, mpi_ierr)
+         call MPI_Comm_size(MPI_COMM_WORLD, nprocs, mpi_ierr)
+         if (nprocs < 1E4) then
+            write(errorFile,fmt='(a,i4.4,a)') 'log.', my_proc_id, '.abort'
+         else if (nprocs < 1E5) then
+            write(errorFile,fmt='(a,i5.5,a)') 'log.', my_proc_id, '.abort'
+         else if (nprocs < 1E6) then
+            write(errorFile,fmt='(a,i6.6,a)') 'log.', my_proc_id, '.abort'
+         else if (nprocs < 1E7) then
+            write(errorFile,fmt='(a,i7.7,a)') 'log.', my_proc_id, '.abort'
+         else if (nprocs < 1E8) then
+            write(errorFile,fmt='(a,i8.8,a)') 'log.', my_proc_id, '.abort'
+         else
+            write(errorFile,fmt='(a,i9.9,a)') 'log.', my_proc_id, '.abort'
+         end if
 #else
-      errorFile = 'log.abort'
+         errorFile = 'log.abort'
 #endif
    
-      if ( threadNum == 0 ) then
-         call mpas_new_unit(errorUnit)
-         open(unit=errorUnit, file=trim(errorFile), form='formatted', position='append')
-         write(errorUnit,*) trim(mesg)
-         close(errorUnit)
+         if ( threadNum == 0 ) then
+            call mpas_new_unit(errorUnit)
+            open(unit=errorUnit, file=trim(errorFile), form='formatted', position='append')
+            write(errorUnit,*) trim(mesg)
+            close(errorUnit)
+         end if
       end if
    
       if (.not. local_deferredAbort) then
