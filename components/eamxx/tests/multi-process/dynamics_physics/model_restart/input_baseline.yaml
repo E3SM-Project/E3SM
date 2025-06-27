@@ -5,7 +5,7 @@ driver_options:
 
 time_stepping:
   time_step: 30
-  number_of_steps: 2
+  number_of_steps: 3
   run_t0: 2023-01-01-00000  # YYYY-MM-DD-XXXXX
   case_t0: 2023-01-01-00000  # YYYY-MM-DD-XXXXX
 
@@ -63,6 +63,7 @@ atmosphere_processes:
       rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
       rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+      rad_frequency: 3
 
 grids_manager:
   type: homme
