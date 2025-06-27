@@ -188,14 +188,42 @@ void MAMMicrophysics::set_grids(
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
                      grid_name);
 
+  // FIXME: moved this to class
   // Number of externally forced chemical species
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+  // constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-  FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
+  FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt_, "ext_cnt");
 
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
   add_field<Computed>("mam4_external_forcing", scalar3d_extcnt, kg / m3 / s, grid_name);
+
+  // extents are [ncol, nlev, gas_pcnst, nq<...>]
+  FieldLayout tensor3d_gas_tend =
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_},
+                                  {"num_gas_spec", "num_gas_tend_"});
+  FieldLayout tensor3d_gas_tend_cw =
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_cw_},
+                                  {"num_gas_spec", "num_gas_tend_cw_"});
+  FieldLayout tensor2d_gas_tend =
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_},
+                                  {"num_gas_spec", "num_gas_tend_"});
+  FieldLayout tensor2d_gas_tend_cw =
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_cw_},
+                                  {"num_gas_spec", "num_gas_tend_cw_"});
+  FieldLayout vector3d_gas_tend = grid_->get_3d_vector_layout(true, num_gas_spec_, "num_gas_spec");
+
+  // fields for holding diagnostic quantities relating to gas-species tendencies
+  // NOTE: denoting this as non-dimensional because the original fortran MAM used these to store
+  // different "tracer mixing ratios" that could be [mol/mol], [#/kmol], etc.
+  // consider breaking this into separate 3D-vector fields?
+  add_field<Computed>("gas_spec_tendencies", tensor3d_gas_tend, nondim, grid_name);
+  add_field<Computed>("gas_spec_tendencies_cw", tensor3d_gas_tend_cw, nondim, grid_name);
+  // these are the column-integrated fields returned by vert_contraction()
+  add_field<Computed>("col_int_gas_spec_tend", tensor2d_gas_tend, nondim, grid_name);
+  add_field<Computed>("col_int_gas_spec_tend_cw", tensor2d_gas_tend_cw, nondim, grid_name);
+  // and finally, the weights used by vert_contraction()
+  add_field<Computed>("wts_gas_spec_tends", vector3d_gas_tend, nondim, grid_name);
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -387,7 +415,8 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 int MAMMicrophysics::get_len_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  // FIXME: moved this to class
+  // constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -398,13 +427,19 @@ int MAMMicrophysics::get_len_temporary_views() {
   // invariants_
   work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
-  work_len += ncol_ * nlev_ * extcnt;
+  work_len += ncol_ * nlev_ * extcnt_;
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+  // gas_spec_tend_col
+  work_len += nlev_ * num_gas_spec_ * num_gas_tend_;
+  // gas_spec_tend_cw_col
+  work_len += nlev_ * num_gas_spec_ * num_gas_tend_cw_;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  // FIXME: moved this to class
+  // constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
@@ -416,8 +451,13 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   invariants_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
-  extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
-  work_ptr += ncol_ * nlev_ * extcnt;
+  extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt_);
+  work_ptr += ncol_ * nlev_ * extcnt_;
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+  gas_spec_tend_col_ = view_3d(work_ptr, nlev_, num_gas_spec_, num_gas_tend_);
+  work_ptr += nlev_ * num_gas_spec_ * num_gas_tend_;
+  gas_spec_tend_cw_col_ = view_3d(work_ptr, nlev_, num_gas_spec_, num_gas_tend_cw_);
+  work_ptr += nlev_ * num_gas_spec_ * num_gas_tend_cw_;
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -570,7 +610,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy =
        ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
@@ -774,18 +814,18 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }
   const auto zenith_angle = acos_cosine_zenith_;
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
 
-  const auto &extfrc   = extfrc_;
-  const auto &forcings = forcings_;
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+  const auto &extfrc               = extfrc_;
+  const auto &forcings             = forcings_;
+  // FIXME: moved this to class
+  // constexpr int extcnt             = mam4::gas_chemistry::extcnt;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
-  Real adv_mass_kg_per_moles[gas_pcnst];
+  Real adv_mass_kg_per_moles[num_gas_spec_];
   // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
   // the device.
-  int clsmap_4[gas_pcnst], permute_4[gas_pcnst];
-  for(int i = 0; i < gas_pcnst; ++i) {
+  int clsmap_4[num_gas_spec_], permute_4[num_gas_spec_];
+  for(int i = 0; i < num_gas_spec_; ++i) {
     // NOTE: state_q is kg/kg-dry-air; adv_mass is in g/mole.
     // Convert adv_mass to kg/mole as vmr_from_mmr function uses
     // molec_weight_dry_air with kg/mole units
@@ -802,9 +842,23 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
+
+  Kokkos::Array<Real, num_gas_spec_> molar_mass_g_per_mol_tmp;
+  for (int i = 0; i < num_gas_spec_; ++i) {
+    molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
+  }
+
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+  auto gas_spec_tend = get_field_out("gas_spec_tendencies");
+  auto gas_spec_tend_v = gas_spec_tend.get_view<Real****>();
+  auto gas_spec_tend_cw = get_field_out("gas_spec_tendencies_cw");
+  auto gas_spec_tend_cw_v = gas_spec_tend_cw.get_view<Real****>();
+  auto gas_spec_tend_wts = get_field_out("wts_gas_spec_tends");
+  auto gas_spec_tend_wts_v = gas_spec_tend_wts.get_view<Real***>();
+
   //NOTE: we need to initialize photo_rates_
-  Kokkos::deep_copy(photo_rates_,0.0);
-  // loop over atmosphere columns and compute aerosol microphyscs
+  Kokkos::deep_copy(photo_rates_, 0.0);
+  // loop over atmosphere columns and compute aerosol microphysics
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -827,9 +881,9 @@ void MAMMicrophysics::run_impl(const double dt) {
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
         const auto invariants_icol = ekat::subview(invariants, icol);
-        mam4::mo_setext::Forcing forcings_in[extcnt];
+        mam4::mo_setext::Forcing forcings_in[extcnt_];
 
-        for(int i = 0; i < extcnt; ++i) {
+        for(int i = 0; i < extcnt_; ++i) {
           const int nsectors       = forcings[i].nsectors;
           const int frc_ndx        = forcings[i].frc_ndx;
           const auto file_alt_data = forcings[i].file_alt_data;
@@ -915,12 +969,24 @@ void MAMMicrophysics::run_impl(const double dt) {
             }
           }
         }
+
+        // NOTE: we use these temporary views so that we can pass a column-view
+        // the way mam4xx expects it--the level index in the final dimension.
+        // This also means that mam4xx can subview into it by level and keep it
+        // layout-right
+        // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+        const auto &gas_spec_tend_col = gas_spec_tend_col_;
+        const auto &gas_spec_tend_cw_col = gas_spec_tend_cw_col_;
+
         // These output values need to be put somewhere:
-        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
-        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
-        Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
-        Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
+        // deposition flux of so4 [mole/mole/s]
+        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);
+        // deposition flux of h2so4 [mole/mole/s]
+        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);
+        Real dflx_col[num_gas_spec_] = {};  // deposition velocity [1/cm/s]
+        Real dvel_col[num_gas_spec_] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
+        // Diagnostic Output: gas_spec_tend_col, gas_spec_tend_cw_col
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
@@ -937,9 +1003,19 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col,
+            dvel_col, dflx_col, gas_spec_tend_col, gas_spec_tend_cw_col, progs);
 
         team.team_barrier();
+        const auto gas_spec_tend_col_f = ekat::subview(gas_spec_tend_v, icol);
+        const auto gas_spec_tend_cw_col_f = ekat::subview(gas_spec_tend_cw_v, icol);
+        // shuffle the views from mam4xx into the corresponding field views
+        transpose_mam_gas_tend_view(gas_spec_tend_col, gas_spec_tend_col_f, nlev_, num_gas_tend_);
+        transpose_mam_gas_tend_view(gas_spec_tend_col, gas_spec_tend_col_f, nlev_, num_gas_tend_cw_);
+        const auto pdel_col = ekat::subview(dry_atm.p_del, icol);
+        auto wts_col = ekat::subview(gas_spec_tend_wts_v, icol);
+        set_vert_contraction_weights(wts_col, molar_mass_g_per_mol_tmp, pdel_col, nlev_);
+
         // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
@@ -950,6 +1026,14 @@ void MAMMicrophysics::run_impl(const double dt) {
       });  // parallel_for for the column loop
   Kokkos::fence();
 
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+  // the variables in these column-integrated tendencies correspond to these MAM diagnostics:
+  // ['<xyz>_sfgaex1', '<xyz>_sfgaex2', '<xyz>_sfnnuc1', '<xyz>_sfcoag1']
+  auto col_int_gas_spec_tend = get_field_out("col_int_gas_spec_tend");
+  auto col_int_gas_spec_tend_cw = get_field_out("col_int_gas_spec_tend_cw");
+  vert_contraction<Real>(col_int_gas_spec_tend, gas_spec_tend, gas_spec_tend_wts);
+  vert_contraction<Real>(col_int_gas_spec_tend_cw, gas_spec_tend_cw, gas_spec_tend_wts);
+
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
   // Avogadro's number [molecules/mol]
@@ -957,17 +1041,13 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Mapping from external forcing species index to physics constituent index
   // NOTE: These indices should match the species in extfrc_lst
   // TODO: getting rid of hard-coded indices
-  Kokkos::Array<int, extcnt> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
-  Kokkos::Array<Real, gas_pcnst> molar_mass_g_per_mol_tmp;
-  for (int i = 0; i < gas_pcnst; ++i) {
-    molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
-  }
+  Kokkos::Array<int, extcnt_> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
 
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
   Kokkos::parallel_for("transpose_extfrc",
-    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
+    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt_, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
       const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
