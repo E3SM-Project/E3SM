@@ -222,17 +222,17 @@ void MAMMicrophysics::set_grids(
 
   // extents are [ncol, nlev, gas_pcnst, nq<...>]
   FieldLayout tensor3d_gas_tend =
-      grid_->get_3d_tensor_layout(true, {num_gas_spec_, mam4::microphysics::nqtendaa()},
-                                  {"num_gas_spec", "nqtendaa"});
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_},
+                                  {"num_gas_spec", "num_gas_tend_"});
   FieldLayout tensor3d_gas_tend_cw =
-      grid_->get_3d_tensor_layout(true, {num_gas_spec_, mam4::microphysics::nqqcwtendaa()},
-                                  {"num_gas_spec", "nqqcwtendaa"});
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_cw_},
+                                  {"num_gas_spec", "num_gas_tend_cw_"});
   FieldLayout tensor2d_gas_tend =
-      grid_->get_3d_tensor_layout(true, {num_gas_spec_, mam4::microphysics::nqtendaa()},
-                                  {"num_gas_spec", "nqtendaa"});
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_},
+                                  {"num_gas_spec", "num_gas_tend_"});
   FieldLayout tensor2d_gas_tend_cw =
-      grid_->get_3d_tensor_layout(true, {num_gas_spec_, mam4::microphysics::nqqcwtendaa()},
-                                  {"num_gas_spec", "nqqcwtendaa"});
+      grid_->get_3d_tensor_layout(true, {num_gas_spec_, num_gas_tend_cw_},
+                                  {"num_gas_spec", "num_gas_tend_cw_"});
   FieldLayout vector3d_gas_tend = grid_->get_3d_vector_layout(true, num_gas_spec_, "num_gas_spec");
 
   // fields for holding diagnostic quantities relating to gas-species tendencies
@@ -246,16 +246,6 @@ void MAMMicrophysics::set_grids(
   add_field<Computed>("col_int_gas_spec_tend_cw", tensor2d_gas_tend_cw, nondim, grid_name);
   // and finally, the weights used by vert_contraction()
   add_field<Computed>("wts_gas_spec_tends", vector3d_gas_tend, nondim, grid_name);
-
-  // ===============================================================================================
-  // mam::microphysics wants the full column of these tendencies
-  // TODO: is it better for each column's threadTeam to have its own 3d view,
-  //       or subview into a 4d view that contains all 'ncol' columns of these?
-  // view_3d qgcm_tendaa("diag_tendency-col", nlev, num_gas_spec_, mam4::microphysics::nqtendaa());
-  // view_3d qqcwgcm_tendaa("diag_tendency_cw-col", nlev, num_gas_spec_, mam4::microphysics::nqqcwtendaa());
-  // Kokkos::deep_copy(qgcm_tendaa, 0.0);
-  // Kokkos::deep_copy(qqcwgcm_tendaa, 0.0);
-  // ===============================================================================================
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -460,6 +450,11 @@ int MAMMicrophysics::get_len_temporary_views() {
   work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
   work_len += ncol_ * nlev_ * extcnt_;
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+  // gas_spec_tend_col
+  work_len += nlev_ * num_gas_spec_ * num_gas_tend_;
+  // gas_spec_tend_cw_col
+  work_len += nlev_ * num_gas_spec_ * num_gas_tend_cw_;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
@@ -480,6 +475,11 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt_);
   work_ptr += ncol_ * nlev_ * extcnt_;
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+  gas_spec_tend_col_ = view_3d(work_ptr, nlev_, num_gas_spec_, num_gas_tend_);
+  work_ptr += nlev_ * num_gas_spec_ * num_gas_tend_;
+  gas_spec_tend_cw_col_ = view_3d(work_ptr, nlev_, num_gas_spec_, num_gas_tend_cw_);
+  work_ptr += nlev_ * num_gas_spec_ * num_gas_tend_cw_;
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -882,18 +882,17 @@ void MAMMicrophysics::run_impl(const double dt) {
     molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
   }
 
-  // these are computed in the column loop and used afterward, so declare here
-  // TODO: consider enabling/disabling this based on whether output is required--this would
-  // require another version of perform_atmospheric_chemistry_and_microphysics(), potentially
-  // templated on the forthcoming diagnostics struct
-  // nonetheless, skip for now
-  // Slice into the diagnostic fields to pass a single column to mam4xx::microphysics
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
   auto gas_spec_tend = get_field_out("gas_spec_tendencies");
+  auto gas_spec_tend_v = gas_spec_tend.get_view<Real****>();
   auto gas_spec_tend_cw = get_field_out("gas_spec_tendencies_cw");
+  auto gas_spec_tend_cw_v = gas_spec_tend_cw.get_view<Real****>();
   auto gas_spec_tend_wts = get_field_out("wts_gas_spec_tends");
+  auto gas_spec_tend_wts_v = gas_spec_tend_wts.get_view<Real***>();
+
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_, 0.0);
-  // loop over atmosphere columns and compute aerosol microphyscs
+  // loop over atmosphere columns and compute aerosol microphysics
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1013,12 +1012,13 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
 
-        auto gas_spec_tend_V = gas_spec_tend.get_view<Real****>();
-        auto gas_spec_tend_cw_V = gas_spec_tend_cw.get_view<Real****>();
-        auto gas_spec_tend_wts_V = gas_spec_tend_wts.get_view<Real***>();
-        // NOTE: these are called "qgcm_tendaa" and "qqcwgcm_tendaa" in mam4xx
-        auto gas_spec_tend_col = ekat::subview(gas_spec_tend_V, icol);
-        auto gas_spec_tend_cw_col = ekat::subview(gas_spec_tend_cw_V, icol);
+        // NOTE: we use these temporary views so that we can pass a column-view
+        // the way mam4xx expects it--the level index in the final dimension.
+        // This also means that mam4xx can subview into it by level and keep it
+        // layout-right
+        // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
+        const auto &gas_spec_tend_col = gas_spec_tend_col_;
+        const auto &gas_spec_tend_cw_col = gas_spec_tend_cw_col_;
 
         // These output values need to be put somewhere:
         const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
@@ -1050,12 +1050,17 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays,
-	    dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col,
+            dvel_col, dflx_col, gas_spec_tend_col, gas_spec_tend_cw_col, progs);
 
         team.team_barrier();
+        const auto gas_spec_tend_col_f = ekat::subview(gas_spec_tend_v, icol);
+        const auto gas_spec_tend_cw_col_f = ekat::subview(gas_spec_tend_cw_v, icol);
+        // shuffle the views from mam4xx into the corresponding field views
+        transpose_mam_gas_tend_view(gas_spec_tend_col, gas_spec_tend_col_f, nlev_, num_gas_tend_);
+        transpose_mam_gas_tend_view(gas_spec_tend_col, gas_spec_tend_col_f, nlev_, num_gas_tend_cw_);
         const auto pdel_col = ekat::subview(dry_atm.p_del, icol);
-        auto wts_col = ekat::subview(gas_spec_tend_wts_V, icol);
+        auto wts_col = ekat::subview(gas_spec_tend_wts_v, icol);
         set_vert_contraction_weights(wts_col, molar_mass_g_per_mol_tmp, pdel_col, nlev_);
 
         // Update constituent fluxes with gas drydep fluxes (dflx)
@@ -1068,6 +1073,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       });  // parallel_for for the column loop
   Kokkos::fence();
 
+  // TODO: DIAGNOSTIC - will eventually be fenced off by a flag
   // the variables in these column-integrated tendencies correspond to these MAM diagnostics:
   // ['<xyz>_sfgaex1', '<xyz>_sfgaex2', '<xyz>_sfnnuc1', '<xyz>_sfcoag1']
   auto col_int_gas_spec_tend = get_field_out("col_int_gas_spec_tend");

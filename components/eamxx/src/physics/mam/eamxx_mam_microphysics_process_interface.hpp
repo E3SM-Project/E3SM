@@ -167,8 +167,12 @@ class MAMMicrophysics final : public MAMGenericInterface {
   int get_len_temporary_views();
   void init_temporary_views();
   int len_temporary_views_{0};
+  view_3d gas_spec_tend_col_;
+  view_3d gas_spec_tend_cw_col_;
+  static constexpr int num_gas_tend_ = mam4::microphysics::nqtendaa();
+  static constexpr int num_gas_tend_cw_ = mam4::microphysics::nqqcwtendaa();
 
-  void set_vert_contraction_weights(view_2d wts, const Kokkos::Array<Real, num_gas_spec_> adv_mass,
+  void set_vert_contraction_weights(const view_2d wts, const Kokkos::Array<Real, num_gas_spec_> adv_mass,
                                     const const_view_1d pdel, const int nlev) {
     using physconst = scream::physics::Constants<Real>;
     static constexpr Real gravity = physconst::gravit;
@@ -177,6 +181,15 @@ class MAMMicrophysics final : public MAMGenericInterface {
       Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0,0}, {nlev, num_gas_spec_}),
       KOKKOS_LAMBDA(const int k, const int spec) {
         wts(k, spec) = pdel(k) / gravity * adv_mass[spec] / mw_dry_air;
+    });
+  }
+
+  void transpose_mam_gas_tend_view(const view_3d gt_col, const view_3d gt_col_f,
+                                   const int nlev, const int nsub) {
+    Kokkos::parallel_for("transpose_mam4_gas_tend",
+      Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {num_gas_spec_, nsub, nlev}),
+      KOKKOS_LAMBDA(const int spec, const int jsub, const int lvl) {
+        gt_col_f(spec, jsub, lvl) = gt_col(lvl, spec, jsub);
     });
   }
 };  // MAMMicrophysics
