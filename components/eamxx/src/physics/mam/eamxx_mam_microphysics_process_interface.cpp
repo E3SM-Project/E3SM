@@ -183,8 +183,8 @@ void MAMMicrophysics::set_grids(
   // layout for Constituent fluxes
   FieldLayout scalar2d_pcnst =
       grid_->get_2d_vector_layout(mam4::pcnst, "num_phys_constituents");
-  FieldLayout scalar2d_gas_pcnst =
-      grid_->get_2d_vector_layout( mam_coupling::gas_pcnst(), "num_gas_constituents");
+  FieldLayout scalar2d_num_gas_aerosol_constituents =
+      grid_->get_2d_vector_layout( mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
   // Constituent fluxes of species in [kg/m2/s]
   add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
@@ -201,12 +201,11 @@ void MAMMicrophysics::set_grids(
 
   // Register computed fields for tendencies due to gas phase chemistry
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  diagnostic_gs_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_gas_phase_chemistry", false);
-  if (diagnostic_gs_dvmrdt_)
-    add_field<Computed>("mixing_ratio_tendency_due_to_gas_phase_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
-  diagnostic_aq_dvmrdt_ = m_params.get<bool>("output_mixing_ratio_tendency_due_to_aqueous_chemistry", false);
-  if (diagnostic_aq_dvmrdt_)
-    add_field<Computed>("mixing_ratio_tendency_due_to_aqueous_chemistry", scalar2d_gas_pcnst, kg / kg / s, grid_name);
+  extra_mam4_diags_ = m_params.get<bool>("extra_mam4_diags", false);
+  if (extra_mam4_diags_) {
+    add_field<Computed>("tendency_gas_phase_chemistry", scalar2d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    add_field<Computed>("tendency_aqueous_chemistry", scalar2d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+  }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
@@ -648,11 +647,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  view_3d gs_dvmrdt, aq_dvmrdt;
-  if (diagnostic_gs_dvmrdt_)
-    gs_dvmrdt = get_field_out("mixing_ratio_tendency_due_to_gas_phase_chemistry").get_view<Real ***>();
-  if (diagnostic_aq_dvmrdt_)
-    aq_dvmrdt = get_field_out("mixing_ratio_tendency_due_to_aqueous_chemistry").get_view<Real ***>();
+  view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
+  if (extra_mam4_diags_) {
+    gas_phase_chemistry_dvmrdt = get_field_out("tendency_due_to_gas_phase_chemistry").get_view<Real ***>();
+    aqueous_chemistry_dvmrdt = get_field_out("tendency_due_to_aqueous_chemistry").get_view<Real ***>();
+  }
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -791,18 +790,18 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }
   const auto zenith_angle = acos_cosine_zenith_;
-  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
 
   const auto &extfrc   = extfrc_;
   const auto &forcings = forcings_;
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
-  Real adv_mass_kg_per_moles[gas_pcnst];
+  Real adv_mass_kg_per_moles[num_gas_aerosol_constituents];
   // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
   // the device.
-  int clsmap_4[gas_pcnst], permute_4[gas_pcnst];
-  for(int i = 0; i < gas_pcnst; ++i) {
+  int clsmap_4[num_gas_aerosol_constituents], permute_4[num_gas_aerosol_constituents];
+  for(int i = 0; i < num_gas_aerosol_constituents; ++i) {
     // NOTE: state_q is kg/kg-dry-air; adv_mass is in g/mole.
     // Convert adv_mass to kg/mole as vmr_from_mmr function uses
     // molec_weight_dry_air with kg/mole units
@@ -819,8 +818,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
-  const bool diagnostic_gs_dvmrdt = diagnostic_gs_dvmrdt_;
-  const bool diagnostic_aq_dvmrdt = diagnostic_aq_dvmrdt_;
+  const bool extra_mam4_diags  = extra_mam4_diags_;
 
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
@@ -894,9 +892,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
-	mam4::DiagnosticArrays diag_arrays;
-        if (diagnostic_gs_dvmrdt) diag_arrays.gs_dvmrdt = ekat::subview(gs_dvmrdt, icol);
-        if (diagnostic_aq_dvmrdt) diag_arrays.aq_dvmrdt = ekat::subview(aq_dvmrdt, icol);
+	mam4::MicrophysDiagnosticArrays diag_arrays;
+        if (extra_mam4_diags) {
+	  diag_arrays.gs_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
+	  diag_arrays.aq_dvmrdt = ekat::subview(aqueous_chemistry_dvmrdt, icol);
+	}
 
         // Wind speed at the surface
         const Real wind_speed =
@@ -942,8 +942,8 @@ void MAMMicrophysics::run_impl(const double dt) {
         // These output values need to be put somewhere:
         const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
         const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
-        Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
-        Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
+        Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
+        Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
@@ -983,8 +983,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   // NOTE: These indices should match the species in extfrc_lst
   // TODO: getting rid of hard-coded indices
   Kokkos::Array<int, extcnt> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
-  Kokkos::Array<Real, gas_pcnst> molar_mass_g_per_mol_tmp;
-  for (int i = 0; i < gas_pcnst; ++i) {
+  Kokkos::Array<Real, num_gas_aerosol_constituents> molar_mass_g_per_mol_tmp;
+  for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
     molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
   }
 
