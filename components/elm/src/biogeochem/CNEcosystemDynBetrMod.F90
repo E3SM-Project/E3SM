@@ -9,7 +9,7 @@ module CNEcosystemDynBetrMod
   ! be enabled gradually.
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
-  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
+  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot, use_fan
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
@@ -46,6 +46,7 @@ module CNEcosystemDynBetrMod
   use VegetationDataType        , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType        , only : veg_ns, veg_nf
   use VegetationDataType        , only : veg_ps, veg_pf
+  use FanUpdateMod              , only : fan_eval
 
   implicit none
 
@@ -178,9 +179,12 @@ module CNEcosystemDynBetrMod
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
-       call NitrogenDeposition(bounds, &
-            atm2lnd_vars, frictionvel_vars,  &
-            soilstate_vars, filter_soilc, num_soilc,dt )
+       call NitrogenDeposition(bounds, atm2lnd_vars)
+
+       if (use_fan) then
+          call fan_eval(bounds, num_soilc, filter_soilc, &
+             atm2lnd_vars, soilstate_vars, frictionvel_vars)
+       end if
        call t_stopf('CNDeposition')
 
        call t_startf('MaintenanceResp')

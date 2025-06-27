@@ -42,7 +42,6 @@ module subgridAveMod
   !! may consolidate once ELM port is finished
   interface p2c
      module procedure p2c_1d
-     module procedure p2c_1d_gpu
      module procedure p2c_2d
      module procedure p2c_2d_gpu
      module procedure p2c_1d_filter
@@ -129,120 +128,57 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine p2c_1d (bounds, parr, carr, p2c_scale_type)
-    !
-    ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to columns.
-    ! Averaging is only done for points that are not equal to "spval".
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in)  :: parr( bounds%begp: )         ! patch array
-    real(r8), intent(out) :: carr( bounds%begc: )         ! column array
-    character(len=*), intent(in) :: p2c_scale_type ! scale type
-    !
-    ! !LOCAL VARIABLES:
-    integer  :: p,c,index                       ! indices
-    real(r8) :: scale_p2c(bounds%begp:bounds%endp) ! scale factor for column->landunit mapping
-    logical  :: found                              ! temporary for error check
-    real(r8) :: sumwt(bounds%begc:bounds%endc)     ! sum of weights
-    !------------------------------------------------------------------------
+     ! !DESCRIPTION:
+     ! Perfrom subgrid-average from pfts to columns.
+     ! Averaging is only done for points that are not equal to "spval".
+     !
+     ! !ARGUMENTS:
+     type(bounds_type), intent(in) :: bounds
+     real(r8), intent(in)  :: parr( bounds%begp: )   ! patch array
+     real(r8), intent(out) :: carr(bounds%begc:)   ! column array
+     integer, intent(in) :: p2c_scale_type ! scale type
+     !
+     ! !LOCAL VARIABLES:
+     integer  :: p,c,index   ! indices
+     integer  :: err_col     ! column with error or 0
+     real(r8) :: sumwt, sum_arr ! sum of weights
+     real(r8) :: eps = 1.e-6_r8
+     !------------------------------------------------------------------------
 
-    ! Enforce expected array sizes
-    SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
+     ! Enforce expected array sizes
+     SHR_ASSERT_ALL((ubound(parr) == (/bounds%endp/)), errMsg(__FILE__, __LINE__))
+     SHR_ASSERT_ALL((ubound(carr) == (/bounds%endc/)), errMsg(__FILE__, __LINE__))
 
-    if (p2c_scale_type == 'unity') then
-       do p = bounds%begp,bounds%endp
-          scale_p2c(p) = 1.0_r8
-       end do
-    else
-      write(iulog,*)'p2c_2d error: scale type ',p2c_scale_type,' not supported'
-      call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
+     err_col = 0
 
-    carr(bounds%begc:bounds%endc) = spval
-    sumwt(bounds%begc:bounds%endc) = 0._r8
-    do p = bounds%begp,bounds%endp
-       if (veg_pp%active(p) .and. veg_pp%wtcol(p) /= 0._r8) then
-          if (parr(p) /= spval) then
-             c = veg_pp%column(p)
-             if (sumwt(c) == 0._r8) carr(c) = 0._r8
-             carr(c) = carr(c) + parr(p) * scale_p2c(p) * veg_pp%wtcol(p)
-             sumwt(c) = sumwt(c) + veg_pp%wtcol(p)
-          end if
-       end if
-    end do
-    found = .false.
-    do c = bounds%begc,bounds%endc
-       if (sumwt(c) > 1.0_r8 + 1.e-6_r8) then
-          found = .true.
-          index = c
-       else if (sumwt(c) /= 0._r8) then
-          carr(c) = carr(c)/sumwt(c)
-       end if
-    end do
-    if (found) then
-      write(iulog,*)'p2c_1d error: sumwt is greater than 1.0'
-      call endrun(decomp_index=index, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
-    end if
+     !$acc parallel loop independent gang worker default(present) &
+     !$acc& private(sumwt,sum_arr) copyout(err_col) reduction(max:err_col)
+     do c = bounds%begc, bounds%endc
+        sumwt = 0._r8
+        sum_arr = 0._r8
+        !$acc loop vector reduction(+:sumwt)
+        do p = col_pp%pfti(c), col_pp%pftf(c)
+           if (veg_pp%wtcol(p) .ne. 0._r8) then
+              sum_arr = sum_arr + parr(p) * veg_pp%wtcol(p)
+              sumwt = sumwt + veg_pp%wtcol(p)
+           end if
+        end do
+        carr(c) = sum_arr ! is this an issue for not being spval anymore?
+        if(sumwt > 1.0_r8 + eps) then 
+           err_col = c
+        elseif(sumwt /= 0._r8) then
+           carr(c) = carr(c)/sumwt
+        elseif(sumwt == 0._r8) then ! Is this check required?
+           carr(c) = spval
+        end if
+     end do
+
+     if (err_col .ne. 0) then
+        write(iulog,*)'p2c_1d error: sumwt is greater than 1.0'
+        call endrun(decomp_index=err_col, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+     end if
 
   end subroutine p2c_1d
-  !-----------------------------------------------------------------------
-  subroutine p2c_1d_gpu (bounds, parr, carr, p2c_scale_type)
-    !$acc routine seq
-    ! !DESCRIPTION:
-    ! Perfrom subgrid-average from pfts to columns.
-    ! Averaging is only done for points that are not equal to "spval".
-    !
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
-    real(r8), intent(in)  :: parr( bounds%begp: )         ! patch array
-    real(r8), intent(out) :: carr( bounds%begc: )         ! column array
-    integer, intent(in) :: p2c_scale_type ! scale type
-    !
-    ! !LOCAL VARIABLES:
-    integer  :: p,c,index                       ! indices
-    real(r8) :: scale_p2c(bounds%begp:bounds%endp) ! scale factor for column->landunit mapping
-    logical  :: found                              ! temporary for error check
-    real(r8) :: sumwt(bounds%begc:bounds%endc)     ! sum of weights
-    !------------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-
-    if (p2c_scale_type == unity) then
-       do p = bounds%begp,bounds%endp
-          scale_p2c(p) = 1.0_r8
-       end do
-    else
-       stop
-    end if
-
-    carr(bounds%begc:bounds%endc) = spval
-    sumwt(bounds%begc:bounds%endc) = 0._r8
-    do p = bounds%begp,bounds%endp
-       if (veg_pp%active(p) .and. veg_pp%wtcol(p) /= 0._r8) then
-          if (parr(p) /= spval) then
-             c = veg_pp%column(p)
-             if (sumwt(c) == 0._r8) carr(c) = 0._r8
-             carr(c) = carr(c) + parr(p) * scale_p2c(p) * veg_pp%wtcol(p)
-             sumwt(c) = sumwt(c) + veg_pp%wtcol(p)
-          end if
-       end if
-    end do
-    found = .false.
-    do c = bounds%begc,bounds%endc
-       if (sumwt(c) > 1.0_r8 + 1.e-6_r8) then
-          found = .true.
-          index = c
-       else if (sumwt(c) /= 0._r8) then
-          carr(c) = carr(c)/sumwt(c)
-       end if
-    end do
-    if (found) then
-      stop
-    end if
-
-  end subroutine p2c_1d_gpu
 
   !-----------------------------------------------------------------------
   subroutine p2c_2d (bounds, num2d, parr, carr, p2c_scale_type)
@@ -366,32 +302,35 @@ contains
   end subroutine p2c_2d_gpu
 
   !-----------------------------------------------------------------------
-  subroutine p2c_1d_filter (bounds, numfc, filterc,  pftarr, colarr)
-    !
-    ! !DESCRIPTION:
-    ! perform pft to column averaging for single level pft arrays
-    !
-    !$acc routine seq
-    ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds
+  subroutine p2c_1d_filter(bounds,numfc, filterc, pftarr, colarr)
+    !!
+    !! !DESCRIPTION:
+    !! perform pft to column averaging for single level pft arrays
+    !! Note: pftarr and colarr are the entire array for a processor
+    !!      not divisble by clumps
+    !!
+    !! !ARGUMENTS:
+    type(bounds_type) , intent(in)  :: bounds
     integer , intent(in)  :: numfc
     integer , intent(in)  :: filterc(numfc)
-    real(r8), intent(in)  :: pftarr( bounds%begp: )
-    real(r8), intent(out) :: colarr( bounds%begc: )
-    !type(column_physical_properties) , target :: col_pp
-
+    real(r8), intent(in)  :: pftarr(bounds%begp:)
+    real(r8), intent(out) :: colarr(bounds%begc:)
+    !
     ! !LOCAL VARIABLES:
     integer :: fc,c,p  ! indices
+    real(r8) :: sum_patch
     !-----------------------------------------------------------------------
 
-    ! Enforce expected array sizes
-
+    !$acc parallel loop independent gang worker private(c,sum_patch) &
+    !$acc default(present) create(sum_patch)
     do fc = 1,numfc
        c = filterc(fc)
-       colarr(c) = 0._r8
+       sum_patch = 0._r8
+       !$acc loop vector reduction(+:sum_patch)
        do p = col_pp%pfti(c), col_pp%pftf(c)
-          if (veg_pp%active(p)) colarr(c) = colarr(c) + pftarr(p) * veg_pp%wtcol(p)
+          if(veg_pp%wtcol(p)>0) sum_patch = sum_patch + pftarr(p) * veg_pp%wtcol(p)
        end do
+       colarr(c) = sum_patch
     end do
 
   end subroutine p2c_1d_filter
