@@ -1931,11 +1931,9 @@ contains
     gsize = num_cells_global
     lsize = num_cells_owned
     allocate(compDOF(lsize))
-!JW    cnt = 0
-!JW    do m = rtmCTL%begr, rtmCTL%endr
-!JW       cnt = cnt + 1
-!JW       compDOF(cnt) = rtmCTL%gindex(m)
-!JW    enddo
+    do m = 1, lsize
+      compDOF(m) = natural_id_cells_owned(m) + 1 ! converting 0-based IDs to 1-based
+    enddo
     if (debug > 1) then
        do m = 0,npes-1
           if (iam == m) then
