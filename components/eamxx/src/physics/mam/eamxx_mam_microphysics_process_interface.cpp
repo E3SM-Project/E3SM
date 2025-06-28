@@ -164,8 +164,12 @@ void MAMMicrophysics::set_grids(
   // Diagnostic fluxes
   const FieldLayout vector2d_nmodes =
       grid_->get_2d_vector_layout(nmodes, "nmodes");
-  add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
-  add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
+
+  extra_mam4_diags_ = m_params.get<bool>("extra_mam4_diags", false);
+  if (extra_mam4_diags_) {
+    add_field<Computed>("dqdt_so4_aqueous_chemistry_column_integrated_flux", vector2d_nmodes, kg/m2/s,  grid_name);
+    add_field<Computed>("dqdt_h2so4_aqueous_chemistry_column_integrated_flux", vector2d_nmodes, kg/m2/s,  grid_name);
+  }
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -451,7 +455,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"sfc_alb_dir_vis", {-1e10, 1e10}},       // FIXME
       {"snow_depth_land", {-1e10, 1e10}},       // FIXME
       {"surf_radiative_T", {-1e10, 1e10}},      // FIXME
-      {"dqdt_so4_aqueous_chemistry", {-1e10, 1e10}},      // FIXME
+      {"dqdt_so4_aqueous_chemistry_column_integrated_flux", {-1e10, 1e10}},      // FIXME
+      {"dqdt_h2so4_aqueous_chemistry_column_integrated_flux", {-1e10, 1e10}},      // FIXME
       {"dqdt_h2so4_uptake", {-1e10, 1e10}}       // FIXME
   };
   set_ranges_process(ranges_microphysics);
@@ -634,8 +639,12 @@ void MAMMicrophysics::run_impl(const double dt) {
       get_field_in("snow_depth_land").get_view<const Real *>();
 
   // Constituent fluxes
-  view_2d aqso4_flx = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
-  view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
+  view_2d aqso4_flx;
+  view_2d aqh2so4_flx;
+  if (extra_mam4_diags_) {
+    aqso4_flx = get_field_out("dqdt_so4_aqueous_chemistry_column_integrated_flux").get_view<Real **>();
+    aqh2so4_flx = get_field_out("dqdt_h2so4_aqueous_chemistry_column_integrated_flux").get_view<Real **>();
+  }
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -916,8 +925,12 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
-        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
+        mam4::MicrophysDiagnosticArrays diagnostic_arrays;
+        if (extra_mam4_diags_) {
+        // deposition flux of so4 [kg/m2/s] and deposition flux of h2so4 [kg/m2/s]
+          diagnostic_arrays.aqso4_column_integrated_flux = ekat::subview(aqso4_flx, icol);  
+          diagnostic_arrays.aqh2so4_column_integrated_flux = ekat::subview(aqh2so4_flx, icol);  
+        }
         Real dflx_col[gas_pcnst] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[gas_pcnst] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
@@ -937,7 +950,7 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, diagnostic_arrays, dvel_col, dflx_col, progs);
 
         team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
