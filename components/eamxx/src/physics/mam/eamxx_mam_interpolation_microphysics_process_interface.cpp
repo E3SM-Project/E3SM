@@ -175,7 +175,8 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
   const auto z_iface_view = z_iface.get_view<  Real **>();
   dry_atm_.z_iface=z_iface_view;
 
-  // std::string var_name="so2";
+  const std::string extfrc_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
   int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
 
   for(const auto &pair : m_elevated_emis_var_names) {
@@ -190,8 +191,7 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
     std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
     di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, ref_ts_vertical);
     DataInterpolation::RemapData remap_data_vertical;
-    // FIXME linoz_map_file
-    remap_data_vertical.hremap_file = linoz_map_file=="none" ? "" : linoz_map_file;
+    remap_data_vertical.hremap_file = extfrc_map_file=="none" ? "" : extfrc_map_file;
     remap_data_vertical.vr_type = DataInterpolation::MAM4_ELEVATED_EMISSIONS;
     remap_data_vertical.pname = "altitude_int";
     remap_data_vertical.pmid = z_iface;
