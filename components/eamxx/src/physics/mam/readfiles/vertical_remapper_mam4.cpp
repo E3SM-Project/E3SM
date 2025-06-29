@@ -109,6 +109,8 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
   {
       const auto src_x = p_src.get_view<const Real *>();
       const int pverp=nlevs_tgt+1;
+      //FIXME: get this values from grid.
+      constexpr int nlev = mam4::nlev;
       constexpr Real m2km    = 1e-3;
       Kokkos::parallel_for(
       "tracer_vert_interp_loop", policy,
@@ -119,7 +121,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
         // FIXME: Try to avoid copy of trg_x by modifying rebin
         // trg_x
-        Real trg_x[nlevs_tgt + 1];
+        Real trg_x[nlev + 1];
         // I am trying to do this:
         // model_z(1:pverp) = m2km * state(c)%zi(i,pverp:1:-1)
         for(int i = 0; i < pverp; ++i) {

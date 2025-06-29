@@ -10,8 +10,7 @@
 #include <mam4xx/mam4.hpp>
 #include <string>
 
-#define USE_OLD_LINOZ_FILE_READ
-// #define USE_OLD_VERTICAL_FILE_READ
+
 namespace scream {
 
 // The process responsible for handling MAM4 aerosol microphysics. The AD
