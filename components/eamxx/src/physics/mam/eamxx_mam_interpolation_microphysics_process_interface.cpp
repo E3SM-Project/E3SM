@@ -130,10 +130,8 @@ void MAMInterpolationMicrophysics::initialize_impl(const RunType run_type) {
   m_data_interpolation = std::make_shared<DataInterpolation>(grid_,elevated_fields);
   m_data_interpolation->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts_oxid);
 
-  const std::string extfrc_map_file =
-        m_params.get<std::string>("aero_microphys_remap_file", "");
   DataInterpolation::RemapData remap_data;
-  remap_data.hremap_file = extfrc_map_file=="none" ? "" : extfrc_map_file;
+  remap_data.hremap_file = oxid_map_file=="none" ? "" : oxid_map_file;
   remap_data.vr_type = DataInterpolation::MAM4_PSRef;
   remap_data.pname = "PS";
   remap_data.pmid = pmid;

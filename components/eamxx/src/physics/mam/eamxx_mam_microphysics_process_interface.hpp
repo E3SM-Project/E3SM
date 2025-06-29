@@ -11,7 +11,7 @@
 #include <string>
 
 #define USE_OLD_LINOZ_FILE_READ
-
+// #define USE_OLD_VERTICAL_FILE_READ
 namespace scream {
 
 // The process responsible for handling MAM4 aerosol microphysics. The AD
@@ -129,13 +129,16 @@ class MAMMicrophysics final : public MAMGenericInterface {
 #endif
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
+#ifdef USE_OLD_VERTICAL_FILE_READ
   mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
   std::vector<std::shared_ptr<AtmosphereInput>> ElevatedEmissionsDataReader_;
   std::vector<std::shared_ptr<AbstractRemapper>> ElevatedEmissionsHorizInterp_;
-  std::vector<std::string> extfrc_lst_;
   std::vector<mam_coupling::TracerData> elevated_emis_data_;
   std::map<std::string, std::string> elevated_emis_file_name_;
+#endif
+  std::vector<std::string> extfrc_lst_;
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
+
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
 
