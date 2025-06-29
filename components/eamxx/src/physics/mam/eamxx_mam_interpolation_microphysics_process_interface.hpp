@@ -43,7 +43,7 @@ class MAMInterpolationMicrophysics final : public MAMGenericInterface {
   // --------------------------------------------------------------------------
 
   // The name of the subcomponent
-  std::string name() const { return "mam_aero_microphysics"; }
+  std::string name() const { return "mam_interpolation_aero_microphysics"; }
 
   // grid
   void set_grids(
@@ -64,11 +64,22 @@ class MAMInterpolationMicrophysics final : public MAMGenericInterface {
 
  private:
 
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
+
   std::vector<std::string> m_var_names_oxi;
   std::shared_ptr<DataInterpolation>    m_data_interpolation;
 
   std::vector<std::string> m_var_names_linoz;
   std::shared_ptr<DataInterpolation>    m_data_interpolation_linoz;
+
+  std::map<std::string, std::vector<std::string>> m_elevated_emis_var_names;
+  std::vector<std::shared_ptr<DataInterpolation>> m_data_interpolation_vertical;
 
 };  // MAMInterpolationMicrophysics
 

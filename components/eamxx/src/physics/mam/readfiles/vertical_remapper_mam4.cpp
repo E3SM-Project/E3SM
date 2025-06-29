@@ -71,7 +71,6 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncols, nlevs_tgt);
 
-
   if (m_vremap_type== MAM4_PSRef) {
 
     const int unit_factor_pin=1;
@@ -106,6 +105,30 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
             team, levsiz, nlevs_tgt, p_src_c, pmid_at_icol, datain_at_icol,
             dataout_at_icol, unit_factor_pin);
           });
+  } else if (m_vremap_type == MAM4_ELEVATED_EMISSIONS)
+  {
+      const auto src_x = p_src.get_view<const Real *>();
+      const int pverp=nlevs_tgt+1;
+      constexpr Real m2km    = 1e-3;
+      Kokkos::parallel_for(
+      "tracer_vert_interp_loop", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const int icol = team.league_rank();
+        const auto datain_at_icol  = ekat::subview(datain, icol);
+        const auto dataout_at_icol = ekat::subview(dataout, icol);
+
+        // FIXME: Try to avoid copy of trg_x by modifying rebin
+        // trg_x
+        Real trg_x[nlevs_tgt + 1];
+        // I am trying to do this:
+        // model_z(1:pverp) = m2km * state(c)%zi(i,pverp:1:-1)
+        for(int i = 0; i < pverp; ++i) {
+          trg_x[pverp - i - 1] = m2km * p_tgt_c(icol, i);
+        }
+        team.team_barrier();
+        mam4::vertical_interpolation::rebin(team, levsiz, nlevs_tgt,
+                                            src_x, trg_x, datain_at_icol, dataout_at_icol);
+      });
   }
 
 }

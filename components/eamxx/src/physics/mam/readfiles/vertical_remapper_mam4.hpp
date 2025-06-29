@@ -19,6 +19,7 @@ public:
     None,
     MAM4_PSRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
     MAM4_ZONAL,
+    MAM4_ELEVATED_EMISSIONS,
   };
 
   VerticalRemapperMAM4 (const grid_ptr_type& src_grid,

@@ -390,9 +390,16 @@ setup_horiz_remappers (const RemapData& data)
       "Error! Cannot both use a hremap file and set iop lat/lon coordinates.\n");
 
   // Create hremap tgt grid
-  int nlevs_data = get_input_files_dimlen ("lev");
   int ncols_data = get_input_files_dimlen ("ncol");
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
+  int nlevs_data=0;
+  if (data.vr_type == MAM4_ELEVATED_EMISSIONS){
+    nlevs_data = get_input_files_dimlen ("altitude");
+    m_grid_after_hremap->reset_field_tag_name(ShortFieldTagsNames::LEV, "altitude");
+    m_grid_after_hremap->reset_field_tag_name(ShortFieldTagsNames::ILEV, "altitude_int");
+  } else {
+    nlevs_data = get_input_files_dimlen ("lev");
+  }
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
   if (data.has_iop) {
@@ -523,7 +530,19 @@ setup_vert_remapper (const RemapData& data)
     return;
   }
 
-
+  if (m_vr_type == MAM4_ELEVATED_EMISSIONS){
+    auto layout = m_grid_after_hremap->get_vertical_layout(false);
+    auto mbar = ekat::units::Units(100*ekat::units::Pa,"mbar");
+    auto altitude_int_field = m_grid_after_hremap->create_geometry_data("altitude_int",layout,mbar);
+    AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,{altitude_int_field},true);
+    p_data_reader.read_variables();
+    auto vremap = std::make_shared<VerticalRemapperMAM4>(m_grid_after_hremap, m_model_grid,
+       VerticalRemapperMAM4::VertRemapType::MAM4_ELEVATED_EMISSIONS);
+    vremap->set_source_pressure (altitude_int_field);
+    vremap->set_target_pressure(data.pmid);
+    m_vert_remapper = vremap;
+    return;
+  }
 
   auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
 
