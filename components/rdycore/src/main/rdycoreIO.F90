@@ -1524,7 +1524,7 @@ contains
     type(file_desc_t), intent(inout) :: ncid             ! netcdf file id
     character(len=*) , intent(in)    :: flag             ! 'read' or 'write'
     character(len=*) , intent(in)    :: varname          ! variable name
-    integer          , pointer       :: data(:)          ! local decomposition data
+    integer                          :: data(:)          ! local decomposition data
     character(len=*) , intent(in)    :: dim1name         ! dimension name
     integer          , optional, intent(in) :: nt        ! time sample index
     logical          , optional, intent(out):: readvar   ! true => variable is on initial dataset (read only)
@@ -1626,7 +1626,7 @@ contains
     type(file_desc_t), intent(inout) :: ncid             ! netcdf file id
     character(len=*) , intent(in)    :: flag             ! 'read' or 'write'
     character(len=*) , intent(in)    :: varname          ! variable name
-    logical          , pointer       :: data(:)          ! local decomposition data
+    logical          , intent(inout) :: data(:)          ! local decomposition data
     character(len=*) , intent(in)    :: dim1name         ! dimension name
     integer          , optional, intent(in) :: nt        ! time sample index
     logical          , optional, intent(out):: readvar   ! true => variable is on initial dataset (read only)
@@ -1742,7 +1742,7 @@ contains
     type(file_desc_t),intent(inout) :: ncid                 ! netcdf file id
     character(len=*), intent(in)  :: flag                   ! 'read' or 'write'
     character(len=*), intent(in)  :: varname                ! variable name
-    real(r8)        , pointer     :: data(:)                ! local decomposition data
+    real(r8)        , intent(inout) :: data(:)              ! local decomposition data
     character(len=*), intent(in)  :: dim1name               ! dimension name
     integer         , optional, intent(in) :: nt            ! time sample index
     logical         , optional, intent(out):: readvar       ! true => variable is on initial dataset (read only)
