@@ -890,6 +890,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   auto gas_spec_tend_wts = get_field_out("wts_gas_spec_tends");
   auto gas_spec_tend_wts_v = gas_spec_tend_wts.get_view<Real***>();
 
+  int extcnt = extcnt_;
+
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_, 0.0);
   // loop over atmosphere columns and compute aerosol microphysics
@@ -915,9 +917,9 @@ void MAMMicrophysics::run_impl(const double dt) {
             mam_coupling::aerosols_for_column(dry_aero, icol);
 
         const auto invariants_icol = ekat::subview(invariants, icol);
-        mam4::mo_setext::Forcing forcings_in[extcnt_];
+        mam4::mo_setext::Forcing forcings_in[extcnt];
 
-        for(int i = 0; i < extcnt_; ++i) {
+        for(int i = 0; i < extcnt; ++i) {
           const int nsectors       = forcings[i].nsectors;
           const int frc_ndx        = forcings[i].frc_ndx;
           const auto file_alt_data = forcings[i].file_alt_data;
