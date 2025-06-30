@@ -1070,6 +1070,9 @@ void HommeDynamics::restart_homme_state () {
 
   // Erase also qv_prev_phys (if we created it).
   m_helper_fields.erase("qv_prev_phys");
+
+  // Update the time stamp of the fields we inited in here (to avoid triggering invalid output in IO)
+  get_field_out("pseudo_density",pgn).get_header().get_tracking().update_time_stamp(start_of_step_ts());
 }
 
 void HommeDynamics::initialize_homme_state () {
@@ -1245,6 +1248,17 @@ void HommeDynamics::initialize_homme_state () {
 
   // Can clean up the IC remapper now.
   m_ic_remapper = nullptr;
+
+  // Update the time stamp of the fields we inited in here (to avoid triggering invalid output in IO)
+  get_field_out("pseudo_density",rgn).get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("v_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("dp3d_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("ps_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("phis_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  get_internal_field("vtheta_dp_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  if (not params.theta_hydrostatic_mode) {
+    get_internal_field("w_int_dyn").get_header().get_tracking().update_time_stamp(start_of_step_ts());
+  }
 }
 // =========================================================================================
 void HommeDynamics::
