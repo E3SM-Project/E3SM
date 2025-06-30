@@ -1841,7 +1841,9 @@ is the value of that variable from the *previous* time level!
           <var name="fluxGateEdgeMasksSigns" type="integer" dimensions="nFluxGates nEdges" units="unitless" default_value="1"
                description="sign of edge for flux gate calculations"
                />
-        </var_struct>
+	  <var name="fluxGateNames" type="text" dimensions="nFluxGates" units="unitless"
+	       description="name of region masks"
+	       />
 
 <!-- ======================================================================= -->
 
