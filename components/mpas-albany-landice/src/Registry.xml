@@ -913,8 +913,6 @@
 			<var name="waterFluxMask" packages="hydro"/>
                         <var name="passiveTracer2d"/>
 			<var name="damage"/>
-                        <var name="surfaceCrevasseDepth"/>
-                        <var name="crevasseWaterDepth"/>
 			<var name="calvingVelocityData"/>
 			<var name="damageMax"/>
                         <!-- these variables just for ISMIP6 forcing -->
