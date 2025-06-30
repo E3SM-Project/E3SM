@@ -1871,7 +1871,7 @@ module li_advection
       !-----------------------------------------------------------------
 
       integer, pointer :: &
-           nEdges,     & ! dnumber of locally owned edges
+           nEdges,     & ! number of edges
            nVertLevels        ! number of vertical layers
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -1907,7 +1907,7 @@ module li_advection
       ! initialize output variables
       minOfMaxAllowableDt = bigNumber
 
-      ! loop over local edges
+      ! loop over edges
       do iEdge = 1, nEdges
 
          if (li_mask_is_dynamic_ice(edgeMask(iEdge))) then
