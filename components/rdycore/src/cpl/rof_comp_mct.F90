@@ -660,9 +660,13 @@ CONTAINS
     endif
 
     ! allocate arrays
-    allocate(lat1D(nlatg))
-    allocate(lon1D(nlong))
-    allocate(area(nlatg,nlong))
+    if (isgrid2d) then
+       allocate(lon1D(nlong))
+       allocate(lat1D(nlatg))
+    else
+       allocate(lon1D(gsize))
+       allocate(lat1D(gsize))
+   endif
     allocate(lonc(gsize))
     allocate(latc(gsize))
     allocate(areac(gsize))
@@ -676,24 +680,27 @@ CONTAINS
     if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART latitudes')
     if (masterproc) write(logunit_rof,*) 'Read lat ',minval(lat1D),maxval(lat1D)
 
-    call ncd_io(ncid=ncid, varname='area', flag='read', data=area, readvar=found)
+    call ncd_io(ncid=ncid, varname='area', flag='read', data=areac, readvar=found)
     if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART area')
-    if (masterproc) write(logunit_rof,*) 'Read area ',minval(area),maxval(area)
+    if (masterproc) write(logunit_rof,*) 'Read area ',minval(areac),maxval(areac)
 
     ! load 2d data into 1d arrays
-    count = 0
-    do j = 1, nlong
-       do i = 1, nlatg
-         count = count + 1
-         latc(count)  = lat1D(i)
-         lonc(count)  = lon1D(j)
-         areac(count) = area(i,j)
+    if (isgrid2d) then
+       count = 0
+       do j = 1, nlong
+          do i = 1, nlatg
+             count = count + 1
+             latc(count)  = lat1D(i)
+             lonc(count)  = lon1D(j)
+          end do
        end do
-    end do
+    else
+       latc(:) = lat1D(:)
+       lonc(:) = lon1D(:)
+    endif
 
     deallocate(lat1D)
     deallocate(lon1D)
-    deallocate(area)
 
     return
 
