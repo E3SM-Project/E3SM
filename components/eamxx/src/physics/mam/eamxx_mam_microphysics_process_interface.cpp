@@ -128,17 +128,17 @@ void MAMMicrophysics::set_grids(
   constexpr int nmodes = mam4::AeroConfig::num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
-  FieldLayout scalar3d_mid_nmodes = grid_->get_3d_vector_layout(
+  FieldLayout vector3d_mid_nmodes = grid_->get_3d_vector_layout(
       true, nmodes, mam_coupling::num_modes_tag_name());
 
   // Geometric mean dry diameter for number distribution [m]
-  add_field<Required>("dgnum", scalar3d_mid_nmodes, m, grid_name);
+  add_field<Required>("dgnum", vector3d_mid_nmodes, m, grid_name);
   // Geometric mean wet diameter for number distribution [m]
-  add_field<Required>("dgnumwet", scalar3d_mid_nmodes, m, grid_name);
+  add_field<Required>("dgnumwet", vector3d_mid_nmodes, m, grid_name);
 
   constexpr auto m3 = pow(m, 3);
   // Wet density of interstitial aerosol [kg/m3]
-  add_field<Required>("wetdens", scalar3d_mid_nmodes, kg / m3, grid_name);
+  add_field<Required>("wetdens", vector3d_mid_nmodes, kg / m3, grid_name);
 
   // For fractional land use
   const FieldLayout vector2d_class =
@@ -181,30 +181,30 @@ void MAMMicrophysics::set_grids(
   add_fields_cloudborne_aerosol();
   //----------- Updated variables from other mam4xx processes ------------
   // layout for Constituent fluxes
-  FieldLayout scalar2d_pcnst =
+  FieldLayout vector2d_pcnst =
       grid_->get_2d_vector_layout(mam4::pcnst, "num_phys_constituents");
-  FieldLayout scalar3d_num_gas_aerosol_constituents =
+  FieldLayout vector3d_num_gas_aerosol_constituents =
       grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
   // Constituent fluxes of species in [kg/m2/s]
-  add_field<Updated>("constituent_fluxes", scalar2d_pcnst, kg / m2 / s,
+  add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
                      grid_name);
 
   // Number of externally forced chemical species
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-  FieldLayout scalar3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
+  FieldLayout vector3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
 
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
-  add_field<Computed>("mam4_external_forcing", scalar3d_extcnt, kg / m3 / s, grid_name);
+  add_field<Computed>("mam4_external_forcing", vector3d_extcnt, kg / m3 / s, grid_name);
 
   // Register computed fields for tendencies due to gas phase chemistry
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   extra_mam4_diags_ = m_params.get<bool>("extra_mam4_diags", false);
   if (extra_mam4_diags_) {
-    add_field<Computed>("tendency_gas_phase_chemistry", scalar3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
-    add_field<Computed>("tendency_aqueous_chemistry", scalar3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    add_field<Computed>("tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    add_field<Computed>("tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
