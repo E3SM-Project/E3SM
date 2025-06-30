@@ -21,14 +21,14 @@ atmosphere_processes:
    mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
    elevated_emiss_ymd : 20100101
    mam4_so2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726.nc
-   mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20240823.nc
-   mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20240823.nc
+   mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20250627.nc
    mam4_season_wes_file : ${SCREAM_DATA_DIR}/mam4xx/drydep/season_wes.nc
    create_fields_interval_checks: true
 grids_manager:

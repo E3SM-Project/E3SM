@@ -98,6 +98,42 @@ fields:
       - MeridionalVapFlux
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
+      # invariants
+      - O3
+      - OH
+      - NO3
+      - HO2
+      # linoz
+      - o3_clim
+      - o3col_clim
+      - t_clim
+      - PmL_clim
+      - dPmL_dO3
+      - dPmL_dT
+      - dPmL_dO3col
+      - cariolle_pscs
+      # vertical emissions
+      - BB_so2
+      - ENE_ELEV_so2
+      - IND_ELEV_so2
+      - contvolc_so2
+      - BB_so4_a1
+      - ENE_ELEV_so4_a1
+      - IND_ELEV_so4_a1
+      - contvolc_so4_a1
+      - contvolc_so4_a2
+      - BB_pom_a4
+      - BB_bc_a4
+      - num_a1_SO4_ELEV_BB_num_a1
+      - num_a1_SO4_ELEV_ENE_num_a1
+      - num_a1_SO4_ELEV_IND_num_a1
+      - num_a1_SO4_ELEV_contvolc_num_a1
+      - num_a2_SO4_ELEV_contvolc_num_a2
+      - num_a1_BC_ELEV_BB_num_a4
+      - num_a1_POM_ELEV_BB_num_a4
+      - SOAbb_src_soag
+      - SOAbg_src_soag
+      - SOAff_src_soag
   # GLL output for homme states. These
   # represent all current possible homme
   # states available.

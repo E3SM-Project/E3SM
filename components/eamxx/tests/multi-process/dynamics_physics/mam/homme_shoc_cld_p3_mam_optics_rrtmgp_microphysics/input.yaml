@@ -107,14 +107,15 @@ atmosphere_processes:
       mam4_oxid_ymd: 20150101
       elevated_emiss_ymd : 20100101
       mam4_so2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20240726.nc
-      mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20240823.nc
-      mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20240823.nc
+      mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20250627.nc
+
       number_of_subcycles: 1
       repair_log_level: trace
 
