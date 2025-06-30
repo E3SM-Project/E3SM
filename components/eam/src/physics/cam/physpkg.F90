@@ -3235,7 +3235,9 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   if(Nudge_Model) call nudging_timestep_init(phys_state)
 
   ! Update Transformed Eularian Mean (TEM) diagnostics
+  call t_startf('phys_grid_ctem_diags')
   call phys_grid_ctem_diags(phys_state)
+  call t_stopf('phys_grid_ctem_diags')
 
 end subroutine phys_timestep_init
 
