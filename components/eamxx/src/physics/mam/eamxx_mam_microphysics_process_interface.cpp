@@ -394,6 +394,7 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
   EKAT_REQUIRE_MSG(used_mem == requested_buffer_size_in_bytes(),
                    "Error! Used memory != requested memory for MAMMicrophysics."
                    " Used memory: "
+                       << std::to_string(used_mem)
                        << "."
                           " Requested memory: "
                        << std::to_string(requested_buffer_size_in_bytes())
@@ -654,8 +655,6 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
-  std::cout<< "extra_mam4_aero_microphys_diags_ BALLI= "
-           << extra_mam4_aero_microphys_diags_ << std::endl;
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
