@@ -1,13 +1,14 @@
 #ifndef MAM_AEROSOL_OPTICS_READ_TABLES_HPP
 #define MAM_AEROSOL_OPTICS_READ_TABLES_HPP
 
-#include "ekat/ekat_parameter_list.hpp"
 #include "mam_coupling.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/io/scorpio_input.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 // later to mam_coupling.hpp
 namespace scream::mam_coupling {

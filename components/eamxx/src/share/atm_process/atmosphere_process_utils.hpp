@@ -1,7 +1,7 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 #include <string>
 

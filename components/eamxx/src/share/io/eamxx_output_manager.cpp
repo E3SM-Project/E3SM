@@ -5,9 +5,9 @@
 #include "share/util/eamxx_timing.hpp"
 #include "share/eamxx_config.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <fstream>
 #include <memory>

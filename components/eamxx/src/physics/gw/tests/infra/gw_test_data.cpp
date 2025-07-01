@@ -1,9 +1,8 @@
 #include "gw_test_data.hpp"
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_math_utils.hpp>
+#include <ekat_kokkos_types.hpp>
+#include <ekat_assert.hpp>
 
 #include <random>
 

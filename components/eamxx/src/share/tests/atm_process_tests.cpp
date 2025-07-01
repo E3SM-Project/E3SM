@@ -13,10 +13,9 @@
 #include "share/grid/remap/inverse_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_scalar_traits.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_scalar_traits.hpp>
 
 namespace scream {
 

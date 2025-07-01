@@ -3,7 +3,7 @@
 
 #include "share/grid/remap/abstract_remapper.hpp"
 
-#include <ekat/util/ekat_lin_interp.hpp>
+#include <ekat_lin_interp.hpp>
 
 namespace scream
 {

@@ -6,9 +6,9 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_family_tracking.hpp"
 
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_string_utils.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>   // For std::weak_ptr
 #include <string>

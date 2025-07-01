@@ -8,7 +8,7 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat_yaml.hpp>
 
 #include <iostream>
 #include <iomanip>

@@ -15,9 +15,9 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 
 // EKAT headers
-#include <ekat/ekat_parse_yaml_file.hpp>
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_test_utils.hpp>
 
 // RRTMGP
 #include <mo_gas_concentrations.h>

@@ -3,8 +3,6 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include <ekat/ekat_pack.hpp>
-
 namespace scream
 {
 

@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/gw/gw_functions.hpp"
 #include "physics/gw/tests/infra/gw_test_data.hpp"
 
 #include "gw_unit_tests_common.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 namespace gw {

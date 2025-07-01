@@ -1,6 +1,7 @@
 #include <eamxx_pysession.hpp>
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_fpe.hpp>
 
 #include <filesystem>
 #include <pybind11/embed.h>

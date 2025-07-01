@@ -4,8 +4,8 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/atm_process/IOPDataManager.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_lin_interp.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_lin_interp.hpp>
 
 #include <numeric>
 

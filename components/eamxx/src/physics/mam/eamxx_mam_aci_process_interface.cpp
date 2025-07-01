@@ -6,7 +6,7 @@
 // For EKAT units package
 #include <physics/mam/physical_limits.hpp>
 
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_units.hpp>
 /*
 -----------------------------------------------------------------
 NOTES:

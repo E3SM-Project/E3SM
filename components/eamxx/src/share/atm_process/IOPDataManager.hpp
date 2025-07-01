@@ -7,10 +7,10 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_pack.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
 
 namespace scream {
 namespace control {

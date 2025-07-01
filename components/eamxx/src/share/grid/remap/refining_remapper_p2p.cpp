@@ -6,7 +6,7 @@
 #include "share/util/eamxx_utils.hpp"
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/ekat_pack_utils.hpp>
+#include <ekat_pack_utils.hpp>
 
 #include <numeric>
 

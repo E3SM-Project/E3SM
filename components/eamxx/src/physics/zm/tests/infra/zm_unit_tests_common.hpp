@@ -4,8 +4,9 @@
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "zm_functions.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
 #include "zm_test_data.hpp"
+
+#include <ekat_test_utils.hpp>
 
 #include <vector>
 #include <sstream>

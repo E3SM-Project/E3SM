@@ -9,6 +9,8 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
+#include <ekat_pack.hpp>
+
 namespace {
 
 using namespace scream;

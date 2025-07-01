@@ -1,12 +1,12 @@
 #ifndef SCREAM_ABSTRACT_GRID_HPP
 #define SCREAM_ABSTRACT_GRID_HPP
 
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "share/grid/grid_utils.hpp"
 #include "share/field/field_layout.hpp"
 #include "share/field/field.hpp"
 
-#include "ekat/mpi//ekat_comm.hpp"
+#include <ekat_std_enable_shared_from_this.hpp>
+#include <ekat_comm.hpp>
 
 #include <map>
 #include <list>

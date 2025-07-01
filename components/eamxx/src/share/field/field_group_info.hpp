@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_GROUP_INFO_HPP
 #define SCREAM_FIELD_GROUP_INFO_HPP
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <list>
 #include <map>
