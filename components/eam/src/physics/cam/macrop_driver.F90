@@ -23,7 +23,7 @@ module macrop_driver
   use perf_mod,          only: t_startf, t_stopf
   use cam_logfile,       only: iulog
   use cam_abortutils,    only: endrun
-  use zm_conv,       only: zm_microp
+  use zm_conv,       only: zm_param
 
   implicit none
   private
@@ -677,7 +677,7 @@ end subroutine macrop_driver_readnl
      ! This is the key procesure generating upper-level cirrus clouds.
      ! The unit of dlf : [ kg/kg/s ]
 
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
       call pbuf_get_field(pbuf, dlfzm_idx, dlfzm)
       call pbuf_get_field(pbuf, difzm_idx, difzm)
       call pbuf_get_field(pbuf, dsfzm_idx, dsfzm)
@@ -714,7 +714,7 @@ end subroutine macrop_driver_readnl
      ! here.
 
      if (do_detrain) then
-       if (zm_microp) then
+       if (zm_param%zm_microp) then
           ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
           ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
           ! The mass of a cloud droplet(ice particle) is calculated using mass=volume * density = [(4/3) * pi * r^3 ]* density.
@@ -741,7 +741,7 @@ end subroutine macrop_driver_readnl
                3._r8 * (                         dlf2(i,k)    *  dum1 ) / &
                (4._r8*3.14_r8*50.e-6_r8**3._r8*500._r8)     ! Shallow Convection
           ptend_loc%s(i,k)          = dlf(i,k) * dum1 * latice
-       end if ! zm_microp
+       end if ! zm_param%zm_microp
      else 
         ptend_loc%q(i,k,ixcldliq) = 0._r8
         ptend_loc%q(i,k,ixcldice) = 0._r8
@@ -778,7 +778,7 @@ end subroutine macrop_driver_readnl
           dpdlft  (i,k)             = 0._r8
           shdlft  (i,k)             = 0._r8
        else
-          if (zm_microp) then
+          if (zm_param%zm_microp) then
              dpdlfliq(i,k) =  dlfzm(i,k)
              dpdlfice(i,k) =  difzm(i,k) + dsfzm(i,k)
              dpdlft  (i,k) = 0._r8
