@@ -218,7 +218,7 @@ contains
 
    subroutine ocn_surface_bulk_forcing_vel( &
                                forcingPool, sfcStress, &
-                               sfcStressMag, err)!{{{
+                               sfcStressMag, normalVelocity, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -226,6 +226,9 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          forcingPool         !< [in] Forcing structure w/ sfc stresses
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalVelocity
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -247,13 +250,19 @@ contains
 
       integer ::         &
          iEdge, iCell,   &! loop indices for edge, cell loops
-         nCells, nEdges   ! number of cells, edges participating
+         nCells, nEdges, &! number of cells, edges participating
+         cell1, cell2
 
       real (kind=RKIND), dimension(:), pointer :: &
          windStressZonal, &! zonal wind stress from forcing
          windStressMerid, &! meridional wind stress from forcing
          meridWSEdge,     &! meridional wind stress avg to edge
-         zonalWSEdge       ! zonal wind stress averaged to edge
+         zonalWSEdge,     &! zonal wind stress averaged to edge
+         windSpeed10m,    &! 10m wind speed for eddy killing correction
+         iceFraction       ! sea ice fraction to mask the eddy killing correction
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         eddyKillingCorrection !variable to output for diagnostics of the correction
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -269,10 +278,12 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMerid)
+      call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+      call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
 
       !*** Transfer data to device
       !$acc enter data &
-      !$acc    copyin(windStressZonal, windStressMerid)
+      !$acc    copyin(windStressZonal, windStressMerid, windSpeed10m, iceFraction)
 
       !*** Forcing needed over halo regions
 
@@ -306,7 +317,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(angleEdge, sfcStress, &
-      !$acc            zonalWSEdge, meridWSEdge)
+      !$acc            zonalWSEdge, meridWSEdge, leadingCoeff)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
@@ -316,6 +327,21 @@ contains
                            cos(angleEdge(iEdge))*zonalWSEdge(iEdge) + &
                            sin(angleEdge(iEdge))*meridWSEdge(iEdge)
       end do
+
+      if (config_eddy_killing_correction_enable) then
+         leadingCoeff = -1.5_RKIND*config_eddy_killing_cd*config_eddy_killing_rhoa
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            u10m = 0.5_RKIND*(windSpeed10m(cell1) + windSpeed10m(cell2))
+            eddyKillingCorrection(iEdge) = 0.0_RKIND
+            if (iceFraction(cell1) < 0.05_RKIND .and. iceFraction(cell2) < 0.05_RKIND) then
+               eddyKillingCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)*u10m
+               sfcStress(iEdge) = sfcStress(iEdge) + eddyKillingCorrection(iEdge)
+            end if
+         end do
+      end if
+
 #ifndef MPAS_OPENACC
       !$omp end do
 #endif

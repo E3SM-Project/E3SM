@@ -454,6 +454,20 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
+	<nml_record name="eddy_killing_correction" mode="forward">
+		<nml_option name="config_eddy_killing_correction_enable" type="real" default_value=".false."
+					description="flag to enable the eddy killing corrections.  NOTE: this should only be used at for RRS6to18 resolution or finer"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_eddy_killing_cd" type="real" default_value="1.2e-3"
+					description="drag coefficient to use in the formulat to compute St"
+					possible_values="small positive values not too far from the default"
+		/>
+		<nml_option name="config_eddy_killing_rhoa" type="real" default_value="1.225" units="kg m^-3"
+					description="assumed near surface atmospheric density for computation of St"
+					possible_values="small positive numbers not far from the default"
+		/>
+	</nml_record>
 	<nml_record name="eddy_parameterization" mode="forward">
 		<nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
 					description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
@@ -4015,6 +4029,9 @@
 		/>
 		<var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^-1"
 			 description="Wind speed at 10 meter."
+		/>
+	    <var name="eddyKillingCorrection" type="real" dimensions="nEdges Time" units="m s^-2"
+			 description="Correction for high res FOSI runs"
 		/>
 
 		<!-- Waves coupling fields -->
