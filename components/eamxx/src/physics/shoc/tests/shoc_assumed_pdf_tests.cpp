@@ -427,7 +427,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : SDS_baseline) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -452,7 +452,7 @@ struct UnitWrap::UnitTest<D>::TestShocAssumedPdf : public UnitWrap::UnitTest<D>:
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        SDS_cxx[i].write(Base::m_fid);
+        SDS_cxx[i].write(Base::m_ofile);
       }
     }
   }
