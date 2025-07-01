@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-filename_prefix: model_output_baseline
+filename_prefix: model_output_${SUFFIX}
 averaging_type: average
 fields:
   physics_gll:
@@ -80,6 +80,8 @@ fields:
       - vtheta_dp_dyn
       - dp3d_dyn
 output_control:
-  frequency: 1
-  frequency_units: nmins
+  frequency: ${HIST_FREQ}
+  frequency_units: ${HIST_FREQ_UNITS}
+restart:
+  filename_prefix: model_output_base
 ...
