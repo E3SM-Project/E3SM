@@ -102,11 +102,11 @@ module mpas_abort
 #ifdef coupled
       call shr_sys_abort('MPAS framework abort')
 #else
-  #ifdef _MPI
+#ifdef _MPI
       call MPI_Abort(MPI_COMM_WORLD, mpi_errcode, mpi_ierr)
-  #else
+#else
       stop
-  #endif
+#endif
 #endif
       end if
    
