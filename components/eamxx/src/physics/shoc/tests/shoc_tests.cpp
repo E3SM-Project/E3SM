@@ -3,8 +3,6 @@
 #include "shoc_main_wrap.hpp"
 #include "shoc_ic_cases.hpp"
 
-#include "ekat/util/ekat_test_utils.hpp"
-
 namespace {
 
 TEST_CASE("FortranData", "shoc") {

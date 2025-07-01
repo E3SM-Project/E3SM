@@ -2,8 +2,8 @@
 
 #include "physics/tms/tms_functions.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 

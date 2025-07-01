@@ -1,11 +1,11 @@
-#include <ekat/ekat_assert.hpp>
 #include <physics/mam/eamxx_mam_optics_process_interface.hpp>
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
-#include "eamxx_config.h"  // for SCREAM_CIME_BUILD
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
+
+#include <ekat_assert.hpp>
 
 namespace scream {
 

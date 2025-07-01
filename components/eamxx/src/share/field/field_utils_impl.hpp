@@ -3,9 +3,9 @@
 
 #include "share/field/field.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
 
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_comm.hpp>
 
 #include <limits>
 #include <type_traits>

@@ -5,9 +5,9 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
-#include <ekat/util/ekat_lin_interp.hpp>
-#include <ekat/util/ekat_math_utils.hpp>
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_lin_interp.hpp>
+#include <ekat_math_utils.hpp>
 
 namespace scream
 {

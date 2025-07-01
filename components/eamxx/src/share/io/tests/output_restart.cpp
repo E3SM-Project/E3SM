@@ -17,9 +17,7 @@
 
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_parameter_list.hpp>
 
 #include <iostream>
 #include <iomanip>

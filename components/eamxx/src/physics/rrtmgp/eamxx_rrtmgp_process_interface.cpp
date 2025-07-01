@@ -10,7 +10,7 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 

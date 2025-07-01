@@ -1,7 +1,7 @@
 #include "atmosphere_surface_coupling_exporter.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <iomanip>
 

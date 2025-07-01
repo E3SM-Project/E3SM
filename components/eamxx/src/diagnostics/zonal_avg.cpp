@@ -2,7 +2,7 @@
 
 #include "share/field/field_utils.hpp"
 
-#include <ekat/util/ekat_math_utils.hpp>
+#include <ekat_math_utils.hpp>
 
 namespace scream {
 

@@ -1,7 +1,6 @@
-
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
 
 namespace scream {
 namespace p3 {

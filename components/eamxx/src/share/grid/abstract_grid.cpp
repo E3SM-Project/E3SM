@@ -2,7 +2,7 @@
 
 #include "share/field/field_utils.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <algorithm>
 #include <cstring>

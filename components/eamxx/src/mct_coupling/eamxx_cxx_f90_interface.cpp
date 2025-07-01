@@ -15,11 +15,12 @@
 #include "share/eamxx_config.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/logging/ekat_logger.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_yaml.hpp>
+#include <ekat_logger.hpp>
+#include <ekat_comm.hpp>
+#include <ekat_pack.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_fpe.hpp>
 
 #if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
 #include <hip/hip_runtime.h>

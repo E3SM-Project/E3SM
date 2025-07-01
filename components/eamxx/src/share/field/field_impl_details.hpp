@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_IMPL_DETAILS_HPP
 #define SCREAM_FIELD_IMPL_DETAILS_HPP
 
-#include <ekat/kokkos/ekat_kokkos_types.hpp>
+#include <ekat_kokkos_types.hpp>
 
 #include <vector>
 
