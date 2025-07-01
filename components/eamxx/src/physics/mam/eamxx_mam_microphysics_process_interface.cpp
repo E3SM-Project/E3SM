@@ -194,22 +194,21 @@ void MAMMicrophysics::set_grids(
   add_field<Computed>("mam4_external_forcing", vector3d_extcnt, kg / m3 / s, grid_name);
 
   // Diagnostic fluxes
-  extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
-  if (extra_mam4_aero_microphys_diags_) {
-  
   const FieldLayout vector2d_nmodes =
       grid_->get_2d_vector_layout(nmodes, "nmodes");
-
-  const FieldLayout vector3d_num_gas_aerosol_constituents =
-      grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
-
 
   // Register computed diagnostic fields
   add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
   add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
 
-  // Fields for tendencies due to gas phase chemistry
-  // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
+  // Diagnostic fields for aerosol microphysics
+  extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
+  if (extra_mam4_aero_microphys_diags_) {
+    const FieldLayout vector3d_num_gas_aerosol_constituents =
+        grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
+
+    // Fields for tendencies due to gas phase chemistry
+    // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
     add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
   }
