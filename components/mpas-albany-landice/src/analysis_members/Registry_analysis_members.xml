@@ -1,2 +1,3 @@
 #include "Registry_global_stats.xml"
 #include "Registry_regional_stats.xml"
+#include "Registry_flux_gates.xml"
