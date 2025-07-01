@@ -83,5 +83,5 @@ output_control:
   frequency: ${HIST_FREQ}
   frequency_units: ${HIST_FREQ_UNITS}
 restart:
-  filename_prefix: model_output_base
+  filename_prefix: model_output_base # Only really used by the rest run
 ...
