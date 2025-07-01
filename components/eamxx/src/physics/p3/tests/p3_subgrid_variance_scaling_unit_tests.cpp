@@ -48,7 +48,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
 	// Get baseline solution
 	// ----------------------------------
         if (this->m_baseline_action == COMPARE) {
-          ekat::read(&baseline_scaling, 1, Base::m_fid);
+          impl::read_scalars(Base::m_ifile,baseline_scaling);
         }
 
 	// Get C++ solution
@@ -74,7 +74,7 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
           REQUIRE(baseline_scaling == scaling_host(0) );
         }
         else if (this->m_baseline_action == GENERATE) {
-          ekat::write(&scaling_host(0), 1, Base::m_fid);
+          impl::write_scalars(Base::m_ofile,scaling_host(0));
         }
       } //end loop over relvar[j]
     } //end loop over expons[i]

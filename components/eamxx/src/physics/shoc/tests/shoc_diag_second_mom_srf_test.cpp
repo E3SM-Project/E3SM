@@ -127,7 +127,7 @@ struct UnitWrap::UnitTest<D>::TestSecondMomSrf : public UnitWrap::UnitTest<D>::B
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        cxx_data[i].write(Base::m_fid);
+        cxx_data[i].write(Base::m_ofile);
       }
     }
 #endif
