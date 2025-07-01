@@ -1013,9 +1013,8 @@ contains
          call marbl_instances(1)%interior_tendency_compute()
 
          if (marbl_instances(1)%StatusLog%labort_marbl) &
-!     maltrud ignore abort
-!          call mpas_log_write("WARNING: problem in MARBL interior_tendency_compute", MPAS_LOG_CRIT)
-! write(*,*)' IGNORING problem in MARBL interior_tendency_compute'
+! NJ: ignore abort for MARBL warnings. NOTE: problem needs debugging.
+!       call mpas_log_write("WARNING: problem in MARBL interior_tendency_compute", MPAS_LOG_CRIT)
         marbl_instances(1)%StatusLog%labort_marbl = .false.
         call marbl_instances(1)%StatusLog%erase()
 
@@ -1897,9 +1896,8 @@ contains
       call marbl_instances(1)%surface_flux_compute()
 
       if (marbl_instances(1)%StatusLog%labort_marbl) &
-! maltrud ignore abort warning
+! NJ: ignore abort for MARBL warnings. NOTE: problem needs debugging.
 !       call mpas_log_write("WARNING: problem in MARBL surface_flux_compute", MPAS_LOG_CRIT)
-! write(*,*)' IGNORING problem in MARBL surface_flux_compute'
         marbl_instances(1)%StatusLog%labort_marbl = .false.
         call marbl_instances(1)%StatusLog%erase()
 
