@@ -978,7 +978,13 @@ contains
       err = ior(err, err_tmp)
 
       ! calculate the depth-averaged flow parameter A
-      meanFlowParamA(:) = sum(layerThickness(:,:) * flowParamA(:,:), dim=1) / thickness(:)
+      do iCell = 1, nCells
+         if (thickness(iCell) > 0.0_RKIND) then
+            meanFlowParamA(iCell) = sum(layerThickness(:,iCell) * flowParamA(:,iCell)) / thickness(iCell)
+         else
+            meanFlowParamA(iCell) = 0.0_RKIND
+         endif
+      enddo
 
       ! calculate effective viscosity from strain rate and flow param.
       do iCell = 1, nCells
