@@ -264,6 +264,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
          eddyKillingCorrection !variable to output for diagnostics of the correction
 
+      real (kind=RKIND) :: u10m
+
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
