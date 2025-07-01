@@ -20,6 +20,9 @@ public:
     Static1D,     // Uses a constant 1d (vertical) pressure from input data
     Dynamic3D,    // Uses a time-dep 3d pressure from input data
     Dynamic3DRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
+    MAM4_PSRef,
+    MAM4_ZONAL,
+    MAM4_ELEVATED_EMISSIONS,
   };
 
   struct RemapData {

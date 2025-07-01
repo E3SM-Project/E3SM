@@ -108,6 +108,10 @@ else()
 endif()
 
 target_link_libraries(scream_share PUBLIC ekat pioc)
+# using mam4 vertical interpolation
+if (SCREAM_ENABLE_MAM)
+  target_link_libraries(scream_share PUBLIC mam)
+endif()
 target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
 )
