@@ -9,25 +9,25 @@
       
       
       
-        <link rel="prev" href="../code_structure/">
+        <link rel="prev" href="../variables/">
       
       
-        <link rel="next" href="../dev_testing/">
+        <link rel="next" href="../resources/clang-format_HOWTO/">
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
     
     
       
-        <title>Style Guide - E3SM</title>
+        <title>Templating - E3SM</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.342714a4.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
   
@@ -54,7 +54,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
   
@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#eamxx-c-style-guide" class="md-skip">
+        <a href="#templating" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -126,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Style Guide
+              Templating
             
           </span>
         </div>
@@ -249,7 +249,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -279,7 +279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -330,7 +330,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../.." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   
@@ -365,7 +365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../installation/" class="md-nav__link">
+      <a href="../../../../installation/" class="md-nav__link">
         
   
   
@@ -388,7 +388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../user-guide/" class="md-nav__link">
+      <a href="../../../../user-guide/" class="md-nav__link">
         
   
   
@@ -433,7 +433,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../dev-guide/" class="md-nav__link ">
+            <a href="../../../../dev-guide/" class="md-nav__link ">
               
   
   
@@ -468,7 +468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../dev-guide/adding-grid-support/" class="md-nav__link">
+      <a href="../../../../dev-guide/adding-grid-support/" class="md-nav__link">
         
   
   
@@ -593,7 +593,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../Data-Models/" class="md-nav__link ">
+            <a href="../../../../Data-Models/" class="md-nav__link ">
               
   
   
@@ -628,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
         
   
   
@@ -651,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-land/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-land/" class="md-nav__link">
         
   
   
@@ -674,7 +674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
         
   
   
@@ -731,7 +731,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/" class="md-nav__link ">
+            <a href="../../../../EAM/" class="md-nav__link ">
               
   
   
@@ -792,7 +792,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/user-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/user-guide/" class="md-nav__link ">
               
   
   
@@ -827,7 +827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
         
   
   
@@ -850,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
         
   
   
@@ -873,7 +873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
         
   
   
@@ -904,7 +904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/dev-guide/" class="md-nav__link">
+      <a href="../../../../EAM/dev-guide/" class="md-nav__link">
         
   
   
@@ -975,7 +975,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../EAM/tech-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/tech-guide/" class="md-nav__link ">
               
   
   
@@ -1010,7 +1010,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/homme/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/homme/" class="md-nav__link">
         
   
   
@@ -1033,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
         
   
   
@@ -1056,7 +1056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/p3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/p3/" class="md-nav__link">
         
   
   
@@ -1079,7 +1079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/clubb/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/clubb/" class="md-nav__link">
         
   
   
@@ -1102,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/zm/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/zm/" class="md-nav__link">
         
   
   
@@ -1125,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
         
   
   
@@ -1148,7 +1148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/orodrag/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/orodrag/" class="md-nav__link">
         
   
   
@@ -1171,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/mam/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/mam/" class="md-nav__link">
         
   
   
@@ -1194,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/vbs/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/vbs/" class="md-nav__link">
         
   
   
@@ -1217,7 +1217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/dust/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/dust/" class="md-nav__link">
         
   
   
@@ -1240,7 +1240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
         
   
   
@@ -1263,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
         
   
   
@@ -1286,7 +1286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/cosp/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/cosp/" class="md-nav__link">
         
   
   
@@ -1309,7 +1309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../EAM/tech-guide/armdiags/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/armdiags/" class="md-nav__link">
         
   
   
@@ -1376,7 +1376,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -1457,7 +1457,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../user/" class="md-nav__link ">
+            <a href="../../../user/" class="md-nav__link ">
               
   
   
@@ -1492,7 +1492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/eamxx_cases/" class="md-nav__link">
+      <a href="../../../user/eamxx_cases/" class="md-nav__link">
         
   
   
@@ -1515,7 +1515,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/model_configuration/" class="md-nav__link">
+      <a href="../../../user/model_configuration/" class="md-nav__link">
         
   
   
@@ -1538,7 +1538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/nudging/" class="md-nav__link">
+      <a href="../../../user/nudging/" class="md-nav__link">
         
   
   
@@ -1561,7 +1561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/clean_clear_sky/" class="md-nav__link">
+      <a href="../../../user/clean_clear_sky/" class="md-nav__link">
         
   
   
@@ -1584,7 +1584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/cosp/" class="md-nav__link">
+      <a href="../../../user/cosp/" class="md-nav__link">
         
   
   
@@ -1607,7 +1607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/rrm_eamxx/" class="md-nav__link">
+      <a href="../../../user/rrm_eamxx/" class="md-nav__link">
         
   
   
@@ -1630,7 +1630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/dp_eamxx/" class="md-nav__link">
+      <a href="../../../user/dp_eamxx/" class="md-nav__link">
         
   
   
@@ -1653,7 +1653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/pyeamxx/" class="md-nav__link">
+      <a href="../../../user/pyeamxx/" class="md-nav__link">
         
   
   
@@ -1676,7 +1676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/io_metadata/" class="md-nav__link">
+      <a href="../../../user/io_metadata/" class="md-nav__link">
         
   
   
@@ -1699,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/multi-instance-mvk/" class="md-nav__link">
+      <a href="../../../user/multi-instance-mvk/" class="md-nav__link">
         
   
   
@@ -1722,7 +1722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/eamxx_params/" class="md-nav__link">
+      <a href="../../../user/eamxx_params/" class="md-nav__link">
         
   
   
@@ -1767,7 +1767,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../user/diags/" class="md-nav__link ">
+            <a href="../../../user/diags/" class="md-nav__link ">
               
   
   
@@ -1802,7 +1802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/diags/field_contraction/" class="md-nav__link">
+      <a href="../../../user/diags/field_contraction/" class="md-nav__link">
         
   
   
@@ -1833,7 +1833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../user/presentations/" class="md-nav__link">
+      <a href="../../../user/presentations/" class="md-nav__link">
         
   
   
@@ -1918,7 +1918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_quickstart/" class="md-nav__link">
+      <a href="../../dev_quickstart/" class="md-nav__link">
         
   
   
@@ -1941,12 +1941,256 @@
   
   
     <li class="md-nav__item">
-      <a href="../code_structure/" class="md-nav__link">
+      <a href="../../code_structure/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     Code Structure and Organization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_3" id="__nav_3_3_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Style Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_3_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_3_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Style Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../style_guide_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Code Formatting Standards
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_3_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_3_3" id="__nav_3_3_3_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Code Style Standards
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_3_3_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_3_3_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Code Style Standards
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Types, Classes, Structures
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Functions and Methods
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../variables/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Variables
     
   </span>
   
@@ -1973,76 +2217,108 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Style Guide
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    Style Guide
+    Templating
     
   </span>
   
 
       </a>
       
-        
+    </li>
+  
 
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
   
   
   
     
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+    
       
-        <li class="md-nav__item">
-  <a href="#types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Types
-    </span>
-  </a>
-  
-</li>
+        
       
-        <li class="md-nav__item">
-  <a href="#functions-and-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      Functions and Methods
-    </span>
-  </a>
-  
-</li>
+    
+    
+    
       
-        <li class="md-nav__item">
-  <a href="#variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Variables
-    </span>
-  </a>
-  
-</li>
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
       
-    </ul>
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_3_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3_3_3_4" id="__nav_3_3_3_3_4_label" tabindex="0">
+            
   
-</nav>
+  
+  <span class="md-ellipsis">
+    Resources
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_3_3_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_3_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Resources
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../resources/clang-format_HOWTO/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    How-to Guide: clang-format
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -2084,7 +2360,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../dev_testing/" class="md-nav__link ">
+            <a href="../../dev_testing/" class="md-nav__link ">
               
   
   
@@ -2119,7 +2395,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_testing/testing_for_development/" class="md-nav__link">
+      <a href="../../dev_testing/testing_for_development/" class="md-nav__link">
         
   
   
@@ -2142,7 +2418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_testing/test_all_eamxx/" class="md-nav__link">
+      <a href="../../dev_testing/test_all_eamxx/" class="md-nav__link">
         
   
   
@@ -2165,7 +2441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_testing/full_model_testing/" class="md-nav__link">
+      <a href="../../dev_testing/full_model_testing/" class="md-nav__link">
         
   
   
@@ -2188,7 +2464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev_testing/ci_nightly/" class="md-nav__link">
+      <a href="../../dev_testing/ci_nightly/" class="md-nav__link">
         
   
   
@@ -2273,7 +2549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../kokkos_ekat/" class="md-nav__link">
+      <a href="../../kokkos_ekat/" class="md-nav__link">
         
   
   
@@ -2296,7 +2572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../field/" class="md-nav__link">
+      <a href="../../field/" class="md-nav__link">
         
   
   
@@ -2319,7 +2595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../grid/" class="md-nav__link">
+      <a href="../../grid/" class="md-nav__link">
         
   
   
@@ -2342,7 +2618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../processes/" class="md-nav__link">
+      <a href="../../processes/" class="md-nav__link">
         
   
   
@@ -2365,7 +2641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../io/" class="md-nav__link">
+      <a href="../../io/" class="md-nav__link">
         
   
   
@@ -2388,7 +2664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../TPLs/" class="md-nav__link">
+      <a href="../../TPLs/" class="md-nav__link">
         
   
   
@@ -2449,7 +2725,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../technical/" class="md-nav__link ">
+            <a href="../../../technical/" class="md-nav__link ">
               
   
   
@@ -2484,7 +2760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../technical/aerocom_cldtop/" class="md-nav__link">
+      <a href="../../../technical/aerocom_cldtop/" class="md-nav__link">
         
   
   
@@ -2549,7 +2825,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../ELM/" class="md-nav__link ">
+            <a href="../../../../ELM/" class="md-nav__link ">
               
   
   
@@ -2584,7 +2860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/user-guide/" class="md-nav__link">
+      <a href="../../../../ELM/user-guide/" class="md-nav__link">
         
   
   
@@ -2607,7 +2883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/dev-guide/" class="md-nav__link">
+      <a href="../../../../ELM/dev-guide/" class="md-nav__link">
         
   
   
@@ -2630,7 +2906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../ELM/tech-guide/" class="md-nav__link">
+      <a href="../../../../ELM/tech-guide/" class="md-nav__link">
         
   
   
@@ -2687,7 +2963,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MOSART/" class="md-nav__link ">
+            <a href="../../../../MOSART/" class="md-nav__link ">
               
   
   
@@ -2722,7 +2998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/user-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/user-guide/" class="md-nav__link">
         
   
   
@@ -2745,7 +3021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/dev-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/dev-guide/" class="md-nav__link">
         
   
   
@@ -2768,7 +3044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MOSART/tech-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/tech-guide/" class="md-nav__link">
         
   
   
@@ -2825,7 +3101,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MPAS-Ocean/" class="md-nav__link ">
+            <a href="../../../../MPAS-Ocean/" class="md-nav__link ">
               
   
   
@@ -2860,7 +3136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-Ocean/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/user-guide/" class="md-nav__link">
         
   
   
@@ -2883,7 +3159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
         
   
   
@@ -2906,7 +3182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
         
   
   
@@ -2965,7 +3241,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../MPAS-seaice/" class="md-nav__link ">
+            <a href="../../../../MPAS-seaice/" class="md-nav__link ">
               
   
   
@@ -3000,7 +3276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/user-guide/" class="md-nav__link">
         
   
   
@@ -3023,7 +3299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/tech-guide/" class="md-nav__link">
         
   
   
@@ -3046,7 +3322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/dev-guide/" class="md-nav__link">
         
   
   
@@ -3069,7 +3345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../MPAS-seaice/references/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/references/" class="md-nav__link">
         
   
   
@@ -3174,7 +3450,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../generate_domain_files/" class="md-nav__link ">
+            <a href="../../../../generate_domain_files/" class="md-nav__link ">
               
   
   
@@ -3334,41 +3610,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#types" class="md-nav__link">
-    <span class="md-ellipsis">
-      Types
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#functions-and-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      Functions and Methods
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Variables
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -3387,18 +3628,56 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamdeveloper/style_guide.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamdeveloper/style/templates.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="eamxx-c-style-guide">EAMxx C++ Style Guide</h1>
-<p>Here's our style guide. Let the holy wars begin!</p>
-<h2 id="types">Types</h2>
-<h2 id="functions-and-methods">Functions and Methods</h2>
-<h2 id="variables">Variables</h2>
+<h1 id="templating">Templating</h1>
+<ul>
+<li>Templating and polymorphism are arguably the most powerful features of C++,
+  but with great power comes great potential pain.<ul>
+<li>EAMxx makes extensive use of templates, throughout, and this is encouraged
+    but should be done judiciously.</li>
+<li>Adding complexity should only be done in service of improved
+    functionality or speed because these typically come at the price of
+    clarity and readability.</li>
+</ul>
+</li>
+<li>Template parameters should mostly obey the same naming conventions of the
+  type they correspond to.<ul>
+<li><code>lower_snake_case</code> for variables.<ul>
+<li>E.g., variables of integral types or objects.</li>
+</ul>
+</li>
+<li><code>UpperCamelCase</code> for types, classes, or structs.</li>
+<li>
+<p>However, terseness that follows EAMxx or Kokkos conventions can improve
+    readability, though favoring <strong><em>descriptiveness</em></strong> should be the default
+    case.</p>
+<ul>
+<li>
+<p>Take this <code>update()</code> function declaration as an example.</p>
+<div class="highlight"><pre><span></span><code><span class="k">template</span><span class="o">&lt;</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">atom_counter</span><span class="p">,</span><span class="w"> </span><span class="n">HostOrDevice</span><span class="w"> </span><span class="n">HD</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Device</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">ST</span><span class="o">&gt;</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">update</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Field</span><span class="w"> </span><span class="o">&amp;</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ST</span><span class="w"> </span><span class="n">alpha</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">ST</span><span class="w"> </span><span class="n">beta</span><span class="p">);</span>
+</code></pre></div>
+</li>
+<li>
+<p>The first template parameter is an integer-pointer that self-describes.</p>
+</li>
+<li>The second template parameter, <code>HD</code> (<code>enum</code> type), is
+    tersely-named but the type provides sufficient descriptive
+    information.</li>
+<li>The second and third template parameters, including <code>ST</code>
+    ("scalar type"), are standard conventions used throughout EAMxx, and
+    the abbreviation saves an enormous amount of space in aggregate.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 
 
 
@@ -3455,12 +3734,12 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.56ea9cef.min.js"></script>
       
-        <script src="../../../javascript/mathjax.js"></script>
+        <script src="../../../../javascript/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
