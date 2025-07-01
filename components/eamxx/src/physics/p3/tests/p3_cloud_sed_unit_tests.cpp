@@ -58,7 +58,7 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : csds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -89,7 +89,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      csds_cxx[i].write(Base::m_fid);
+      csds_cxx[i].write(Base::m_ofile);
     }
   }
 }

@@ -239,7 +239,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        cwdc[i].read(Base::m_fid);
+        cwdc[i].read(Base::m_ifile);
       }
     }
 
@@ -303,7 +303,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        cwdc_host(s).write(Base::m_fid);
+        cwdc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -346,7 +346,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        iwdc[i].read(Base::m_fid);
+        iwdc[i].read(Base::m_ifile);
       }
     }
 
@@ -411,7 +411,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        iwdc_host(s).write(Base::m_fid);
+        iwdc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -454,7 +454,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        rwdc[i].read(Base::m_fid);
+        rwdc[i].read(Base::m_ifile);
       }
     }
 
@@ -508,7 +508,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        rwdc_host(s).write(Base::m_fid);
+        rwdc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -645,7 +645,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        pupidc[i].read(Base::m_fid);
+        pupidc[i].read(Base::m_ifile);
       }
     }
 
@@ -754,7 +754,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitT
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        pupidc_host(s).write(Base::m_fid);
+        pupidc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -804,7 +804,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::U
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        gtspvd[i].read(Base::m_fid);
+        gtspvd[i].read(Base::m_ifile);
       }
     }
 
@@ -875,7 +875,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::U
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        gtspvd_host(s).write(Base::m_fid);
+        gtspvd_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -970,7 +970,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitT
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        pupldc[i].read(Base::m_fid);
+        pupldc[i].read(Base::m_ifile);
       }
     }
 
@@ -1056,7 +1056,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitT
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        pupldc_host(s).write(Base::m_fid);
+        pupldc_host(s).write(Base::m_ofile);
       }
     }
   }
@@ -1107,7 +1107,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap:
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        dc[i].read(Base::m_fid);
+        dc[i].read(Base::m_ifile);
       }
     }
 
@@ -1142,7 +1142,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap:
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int s = 0; s < max_pack_size; ++s) {
-        dc_host(s).write(Base::m_fid);
+        dc_host(s).write(Base::m_ofile);
       }
     }
   }
