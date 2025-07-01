@@ -19,6 +19,10 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm,
    */
   check_fields_intervals_ =
       m_params.get<bool>("create_fields_interval_checks", false);
+  sol_facti_cloud_borne_  = m_params.get<Real>("sol_facti_cloud_borne",  1.00);   
+  sol_factic_cloud_borne_ = m_params.get<Real>("sol_factic_cloud_borne", 0.00);
+  sol_factb_below_cloud_  = m_params.get<Real>("sol_factb_below_cloud",  0.03);
+  f_act_conv_below_cloud_ = m_params.get<Real>("f_act_conv_below_cloud", 0.40);
 }
 
 // ================================================================
@@ -427,7 +431,10 @@ void MAMWetscav::run_impl(const double dt) {
   const auto &calsize_data  = calsize_data_;
   const auto &scavimptblnum = scavimptblnum_;
   const auto &scavimptblvol = scavimptblvol_;
-
+  const Real sol_facti_cloud_borne  = sol_facti_cloud_borne_;   
+  const Real sol_factic_cloud_borne = sol_factic_cloud_borne_;
+  const Real sol_factb_below_cloud  = sol_factb_below_cloud_;
+  const Real f_act_conv_below_cloud = f_act_conv_below_cloud_;
   // Loop over atmosphere columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -477,6 +484,10 @@ void MAMWetscav::run_impl(const double dt) {
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
+            sol_facti_cloud_borne,
+            sol_factic_cloud_borne,
+            sol_factb_below_cloud,
+            f_act_conv_below_cloud,
             // inputs
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
