@@ -5,7 +5,7 @@
 
 #include "share/grid/remap/abstract_remapper.hpp"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 namespace Homme {
 class BoundaryExchange;

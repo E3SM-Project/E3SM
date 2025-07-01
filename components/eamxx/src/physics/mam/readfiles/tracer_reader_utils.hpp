@@ -2,7 +2,6 @@
 #define EAMXX_MAM_TRACER_READER_UTILS
 
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/util/ekat_lin_interp.hpp>
 
 #include "share/grid/point_grid.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
@@ -12,6 +11,8 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_time_interpolation.hpp"
+
+#include <ekat_lin_interp.hpp>
 
 namespace scream::mam_coupling {
 

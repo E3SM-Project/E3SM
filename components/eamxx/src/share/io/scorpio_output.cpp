@@ -8,9 +8,9 @@
 
 #include "diagnostics/register_diagnostics.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_std_utils.hpp>
 
 #include <numeric>
 #include <fstream>

@@ -14,11 +14,11 @@
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_std_utils.hpp>
 
 // The global variable fvphyshack is used to help the initial pgN implementation
 // work around some current AD constraints. Search the code for "fvphyshack" to

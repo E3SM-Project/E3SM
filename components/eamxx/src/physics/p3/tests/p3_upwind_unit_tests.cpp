@@ -7,7 +7,6 @@
 
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
 

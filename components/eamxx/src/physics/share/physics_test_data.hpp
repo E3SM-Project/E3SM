@@ -6,9 +6,9 @@
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_math_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <random>
 #include <vector>

@@ -17,9 +17,9 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/logging/ekat_logger.hpp"
-#include "ekat/util/ekat_math_utils.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_logger.hpp>
+#include <ekat_math_utils.hpp>
 
 #include "Kokkos_Random.hpp"
 

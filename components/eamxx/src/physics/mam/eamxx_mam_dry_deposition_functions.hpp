@@ -1,11 +1,11 @@
 #ifndef EAMXX_MAM_DRY_DEPOSITION_FUNCTIONS_HPP
 #define EAMXX_MAM_DRY_DEPOSITION_FUNCTIONS_HPP
 
-#include <ekat/kokkos/ekat_subview_utils.hpp>
 #include <mam4xx/aero_config.hpp>
 #include <mam4xx/convproc.hpp>
 #include <mam4xx/mam4.hpp>
 
+#include <ekat_subview_utils.hpp>
 namespace scream {
 
 namespace {

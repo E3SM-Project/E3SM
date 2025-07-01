@@ -10,8 +10,8 @@
 #include "share/eamxx_types.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 
-#include <ekat/ekat_parse_yaml_file.hpp>
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
@@ -462,7 +462,7 @@ TEST_CASE("surface-coupling", "") {
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
-  parse_yaml_file(fname,ad_params);
+  ekat::parse_yaml_file(fname,ad_params);
 
   // Parameters
   auto& ts          = ad_params.sublist("time_stepping");

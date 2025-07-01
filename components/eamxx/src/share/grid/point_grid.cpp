@@ -1,5 +1,4 @@
 #include "share/grid/point_grid.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 
 #include <numeric>

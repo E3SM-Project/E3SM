@@ -3,7 +3,7 @@
 
 #include "Context.hpp"
 
-#include "ekat/ekat_scalar_traits.hpp"
+#include <ekat_scalar_traits.hpp>
 
 // Homme includes
 #include "Types.hpp"

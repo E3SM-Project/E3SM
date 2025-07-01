@@ -2,7 +2,8 @@
 
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/eamxx_config.hpp"
-#include "ekat/ekat_assert.hpp"
+
+#include <ekat_assert.hpp>
 
 #include <limits>
 #include <numeric>

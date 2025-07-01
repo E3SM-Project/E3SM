@@ -13,8 +13,8 @@
 #include "share/grid/se_grid.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_pack_utils.hpp>
+#include <ekat_assert.hpp>
 
 namespace {
 
