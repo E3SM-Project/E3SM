@@ -201,10 +201,10 @@ void MAMMicrophysics::set_grids(
 
   // Register computed fields for tendencies due to gas phase chemistry
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
-  extra_mam4_diags_ = m_params.get<bool>("extra_mam4_diags", false);
-  if (extra_mam4_diags_) {
-    add_field<Computed>("tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
-    add_field<Computed>("tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+  extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
+  if (extra_mam4_aero_microphys_diags_) {
+    add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -648,9 +648,11 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
-  if (extra_mam4_diags_) {
-    gas_phase_chemistry_dvmrdt = get_field_out("tendency_gas_phase_chemistry").get_view<Real ***>();
-    aqueous_chemistry_dvmrdt = get_field_out("tendency_aqueous_chemistry").get_view<Real ***>();
+  std::cout<< "extra_mam4_aero_microphys_diags_ BALLI= "
+           << extra_mam4_aero_microphys_diags_ << std::endl;
+  if (extra_mam4_aero_microphys_diags_) {
+    gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
+    aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -818,7 +820,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int surface_lev        = nlev - 1;                 // Surface level
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
-  const bool extra_mam4_diags  = extra_mam4_diags_;
+  const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
 
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
@@ -892,11 +894,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
-	mam4::MicrophysDiagnosticArrays diag_arrays;
-        if (extra_mam4_diags) {
-	  diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
-	  diag_arrays.aqueous_chemistry_dvmrdt = ekat::subview(aqueous_chemistry_dvmrdt, icol);
-	}
+        mam4::MicrophysDiagnosticArrays diag_arrays;
+        if (extra_mam4_aero_microphys_diags) {
+	        diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
+	        diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
+	      }
 
         // Wind speed at the surface
         const Real wind_speed =
