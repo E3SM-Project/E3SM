@@ -1843,7 +1843,9 @@ is the value of that variable from the *previous* time level!
                />
 	  <var name="fluxGateNames" type="text" dimensions="nFluxGates" units="unitless"
 	       description="name of region masks"
-	       />
+               />
+	</var_struct>
+
 
 <!-- ======================================================================= -->
 
