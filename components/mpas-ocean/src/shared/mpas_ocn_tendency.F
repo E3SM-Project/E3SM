@@ -440,7 +440,7 @@ contains
       ! Compute bulk forcing surface stress
       call ocn_surface_bulk_forcing_vel( &
                                     forcingPool, sfcStress, &
-                                    sfcStressMag, err)
+                                    sfcStressMag, normalVelocity, err)
 
       ! Add top drag to surface stress
       call ocn_surface_land_ice_fluxes_vel( &
