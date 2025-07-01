@@ -303,7 +303,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_oxid_ymd type="integer" > 20150101 </mam4_oxid_ymd>
       <mam4_oxid_file_name  type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne30pg2/oxid_1.9x2.5_L26_1850-2015_ne30pg2_c20241009.nc</mam4_oxid_file_name>
       <mam4_oxid_file_name  hgrid="ne4np4.pg2" type="file" doc="File containing oxidants data">${DIN_LOC_ROOT}/atm/scream/mam4xx/invariants/ne4pg2/oxid_1.9x2.5_L26_1850-2015_ne4pg2_c20241009.nc</mam4_oxid_file_name>
-
+      <!--Elevated emissions-->
+      <elevated_emiss_ymd type="integer"> 20100101 </elevated_emiss_ymd>
       <!-- For all other grids -->
       <mam4_so2_elevated_emiss_file_name type="file" doc="elevated emissions for so2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so2_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so2_elevated_emiss_file_name>
       <mam4_so4_a1_elevated_emiss_file_name type="file" doc="elevated emissions for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/elevated/cmip6_mam4_so4_a1_elev_1x1_2010_clim_ne30pg2_c20241008.nc</mam4_so4_a1_elevated_emiss_file_name>
