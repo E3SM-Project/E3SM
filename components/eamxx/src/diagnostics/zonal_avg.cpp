@@ -4,15 +4,23 @@
 
 namespace scream {
 
-void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, const Field &weight,
-                                     const Field &lat, const ekat::Comm *comm) {
-  auto result_layout       = result.get_header().get_identifier().get_layout();
-  const int num_zonal_bins = result_layout.dim(0);
-  const int ncols          = field.get_header().get_identifier().get_layout().dim(0);
-  const Real lat_delta     = sp(180.0) / num_zonal_bins;
+// Utility to compute the contraction of a field along its column dimension.
+// This is equivalent to f_out = einsum('i,i...k->...k', weight, f_in).
+// The implementation is such that:
+// - all Field objects must be allocated
+// - the first dimension for field and weight and second dimension for
+//     bin_to_cols is for the columns (COL)
+// - the first dimension for result and bin_to_cols is for the zonal bins (CMP,"bin")
+// - field and result must be the same dimension, up to 3
+void compute_zonal_sum(const Field &result, const Field &field, const Field &weight,
+                        const Field &bin_to_cols, const ekat::Comm *comm) {
+  auto result_layout = result.get_header().get_identifier().get_layout();
+  auto bin_to_cols_layout = bin_to_cols.get_header().get_identifier().get_layout();
+  const int num_zonal_bins = bin_to_cols_layout.dim(0);
+  const int max_ncols_per_bin = bin_to_cols_layout.dim(1);
 
   auto weight_view = weight.get_view<const Real *>();
-  auto lat_view    = lat.get_view<const Real *>();
+  auto bin_to_cols_view = bin_to_cols.get_view<const Int **>();
   using KT         = ekat::KokkosTypes<DefaultDevice>;
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
@@ -21,42 +29,38 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, co
   case 1: {
     auto field_view        = field.get_view<const Real *>();
     auto result_view       = result.get_view<Real *>();
-    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins, ncols);
+    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins, max_ncols_per_bin);
     Kokkos::parallel_for(
-        "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
-          const int lat_i      = tm.league_rank();
-          const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
-          const Real lat_upper = lat_lower + lat_delta;
+        "compute_zonal_sum_" + field.name(), team_policy,
+        KOKKOS_LAMBDA(const TeamMember &tm) {
+          const int bin_i = tm.league_rank();
           Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, ncols),
-              [&](int i, Real &val) {
-                // TODO: check if tenary is ok here (if not, multiply by flag)
-                int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-                val += flag ? weight_view(i) * field_view(i) : sp(0.0);
+              Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
+              [&](int lcol_j, Real &val) {
+                const int col_i = bin_to_cols_view(bin_i, lcol_j);
+                val += weight_view(col_i) * field_view(col_i);
               },
-              result_view(lat_i));
+              result_view(bin_i));
         });
   } break;
   case 2: {
     const int d1           = result_layout.dim(1);
     auto field_view        = field.get_view<const Real **>();
     auto result_view       = result.get_view<Real **>();
-    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins * d1, ncols);
+    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins * d1, max_ncols_per_bin);
     Kokkos::parallel_for(
-        "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
+        "compute_zonal_sum_" + field.name(), team_policy,
+        KOKKOS_LAMBDA(const TeamMember &tm) {
           const int idx        = tm.league_rank();
           const int d1_i       = idx / num_zonal_bins;
-          const int lat_i      = idx % num_zonal_bins;
-          const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
-          const Real lat_upper = lat_lower + lat_delta;
+          const int bin_i      = idx % num_zonal_bins;
           Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, ncols),
-              [&](int i, Real &val) {
-                int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-                // TODO: check if tenary is ok here (if not, multiply by flag)
-                val += flag ? weight_view(i) * field_view(i, d1_i) : sp(0.0);
+              Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
+              [&](int lcol_j, Real &val) {
+                const int col_i = bin_to_cols_view(bin_i, lcol_j);
+                val += weight_view(col_i) * field_view(col_i, d1_i);
               },
-              result_view(lat_i, d1_i));
+              result_view(bin_i, d1_i));
         });
   } break;
   case 3: {
@@ -64,24 +68,21 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, co
     const int d2           = result_layout.dim(2);
     auto field_view        = field.get_view<const Real ***>();
     auto result_view       = result.get_view<Real ***>();
-    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins * d1 * d2, ncols);
+    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins * d1 * d2, max_ncols_per_bin);
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
           const int idx        = tm.league_rank();
           const int d1_i       = idx / (num_zonal_bins * d2);
           const int idx2       = idx % (num_zonal_bins * d2);
           const int d2_i       = idx2 / num_zonal_bins;
-          const int lat_i      = idx2 % num_zonal_bins;
-          const Real lat_lower = sp(-90.0) + lat_i * lat_delta;
-          const Real lat_upper = lat_lower + lat_delta;
+          const int bin_i      = idx2 % num_zonal_bins;
           Kokkos::parallel_reduce(
-              Kokkos::TeamVectorRange(tm, ncols),
-              [&](int i, Real &val) {
-                int flag = (lat_lower <= lat_view(i)) && (lat_view(i) < lat_upper);
-                // TODO: check if tenary is ok here (if not, multiply by flag)
-                val += flag ? weight_view(i) * field_view(i, d1_i, d2_i) : sp(0.0);
+              Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
+              [&](int lcol_j, Real &val) {
+                const int col_i = bin_to_cols_view(bin_i, lcol_j);
+                val += weight_view(col_i) * field_view(col_i, d1_i, d2_i);
               },
-              result_view(lat_i, d1_i, d2_i));
+              result_view(bin_i, d1_i, d2_i));
         });
   } break;
   default:
@@ -150,6 +151,73 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output = Field(diagnostic_id);
   m_diagnostic_output.allocate_view();
 
+  // allocate column counter
+  FieldLayout ncols_per_bin_layout({CMP}, {m_num_zonal_bins}, {"bin"});
+  FieldIdentifier ncols_per_bin_id("number of columns per bin",
+    ncols_per_bin_layout, FieldIdentifier::Units::nondimensional(),
+    field_id.get_grid_name(), DataType::IntType);
+  Field ncols_per_bin(ncols_per_bin_id);
+  ncols_per_bin.allocate_view();
+  ncols_per_bin.deep_copy(0);
+
+  // count how many columns are in each zonal bin
+  using KT         = ekat::KokkosTypes<DefaultDevice>;
+  using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
+  using TeamMember = typename TeamPolicy::member_type;
+  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  const int ncols      = field_layout.dim(COL);
+  const Real lat_delta = sp(180.0) / m_num_zonal_bins;
+  auto lat_view    = m_lat.get_view<const Real *>();
+  auto ncols_per_bin_view = ncols_per_bin.get_view<Int *>();
+  TeamPolicy team_policy = ESU::get_default_team_policy(m_num_zonal_bins, ncols);
+  Kokkos::parallel_for("count_columns_per_zonal_bin_" + field.name(),
+      team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
+        const int bin_i      = tm.league_rank();
+        const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
+        const Real lat_upper = lat_lower + lat_delta;
+        Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
+            [&](int col_i, Int &val) {
+              if ((lat_lower <= lat_view(col_i)) && (lat_view(col_i) < lat_upper))
+                val++;
+            },
+            ncols_per_bin_view(bin_i));
+      });
+
+  // determine maximum number of columns per bin & allocate bin to column map
+  using RangePolicy     = Kokkos::RangePolicy<Field::device_t::execution_space>;
+  Int max_ncols_per_bin = 0;
+  Kokkos::parallel_reduce(RangePolicy(0, m_num_zonal_bins),
+      [&](int bin_i, Int &val) {
+        if (ncols_per_bin_view(bin_i) > max_ncols_per_bin)
+          val = ncols_per_bin_view(bin_i);
+      },
+      Kokkos::Max<Int>(max_ncols_per_bin));
+  FieldLayout bin_to_cols_layout = ncols_per_bin_layout.append_dim({COL}, {1+max_ncols_per_bin});
+  FieldIdentifier bin_to_cols_id("columns in each zonal bin",
+    bin_to_cols_layout, FieldIdentifier::Units::nondimensional(),
+    field_id.get_grid_name(), DataType::IntType);
+  m_bin_to_cols = Field(bin_to_cols_id);
+  m_bin_to_cols.allocate_view();
+
+  // compute bin to column map, where the (i,j)-th entry is such that
+  //   - for j=0, the entry is the number of columns in the i-th zonal bin
+  //   - for j>0, the entry is a column index in the i-th zonal bin
+  auto bin_to_cols_view = m_bin_to_cols.get_view<Int **>();
+  Kokkos::parallel_for("assign_columns_to_zonal_bins_" + field.name(),
+      RangePolicy(0, m_num_zonal_bins), [&] (int bin_i) {
+        const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
+        const Real lat_upper = lat_lower + lat_delta;
+        bin_to_cols_view(bin_i, 0) = 0;
+        for (int col_i=0; col_i < ncols; col_i++)
+        {
+          if ((lat_lower <= lat_view(col_i)) && (lat_view(col_i) < lat_upper))
+          {
+            bin_to_cols_view(bin_i, 0) += 1;
+            bin_to_cols_view(bin_i, bin_to_cols_view(bin_i,0)) = col_i;
+          }
+        }
+      });
+
   // allocate zonal area
   const FieldIdentifier &area_id = m_scaled_area.get_header().get_identifier();
   FieldLayout zonal_area_layout({CMP}, {m_num_zonal_bins}, {"bin"});
@@ -164,13 +232,9 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   Field ones(ones_id);
   ones.allocate_view();
   ones.deep_copy(1.0);
-  compute_zonal_sum(zonal_area, m_scaled_area, ones, m_lat, &m_comm);
+  compute_zonal_sum(zonal_area, m_scaled_area, ones, m_bin_to_cols, &m_comm);
 
   // scale area by 1 / zonal area
-  using RangePolicy     = Kokkos::RangePolicy<Field::device_t::execution_space>;
-  const Real lat_delta  = sp(180.0) / m_num_zonal_bins;
-  const int ncols       = field_layout.dim(0);
-  auto lat_view         = m_lat.get_view<const Real *>();
   auto zonal_area_view  = zonal_area.get_view<const Real *>();
   auto scaled_area_view = m_scaled_area.get_view<Real *>();
   Kokkos::parallel_for(
@@ -183,7 +247,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
 void ZonalAvgDiag::compute_diagnostic_impl() {
   const auto &field = get_fields_in().front();
-  compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_lat, &m_comm);
+  compute_zonal_sum(m_diagnostic_output, field, m_scaled_area, m_bin_to_cols, &m_comm);
 }
 
 } // namespace scream
