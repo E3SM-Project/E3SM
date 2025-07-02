@@ -1,0 +1,6 @@
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+
+#------------------------------------------------------
+# Turn on extra diagnostics for aerosol microphysics
+#------------------------------------------------------
+ATMCHANGE extra_mam4_aero_microphys_diags="true" -b

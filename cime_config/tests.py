@@ -811,6 +811,7 @@ _TESTS = {
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
             "REP_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-compute_mam4xx_diags",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
             "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
             "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",

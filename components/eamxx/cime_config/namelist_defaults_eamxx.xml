@@ -297,6 +297,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx-Aerosol-Microphysics -->
     <mam4_aero_microphys inherit="mam4_atm_proc_base">
       <!--Aerosol Microphysics processes on/off switches -->
+      <extra_mam4_aero_microphys_diags type="logical" doc="Extra MAM4xx aerosol microphysics diagnostics">false</extra_mam4_aero_microphys_diags>
       <mam4_do_cond   type="logical" doc="Switch to enable aerosol microphysics condensation process">true</mam4_do_cond>
       <mam4_do_newnuc type="logical" doc="Switch to enable aerosol microphysics nucleation process">true</mam4_do_newnuc>
       <mam4_do_coag   type="logical" doc="Switch to enable aerosol microphysics coagulation process">true</mam4_do_coag>
