@@ -1507,7 +1507,7 @@ module li_iceshelf_melt
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', zBndsOcean)
 
                !Consolidate 3d profile to 2d depending on parameterization type
-               if ( (config_calculate_thermal_forcing) .and. (config_TF_vertical_calc == 'average' ) ) then
+               if (config_TF_vertical_calc == 'average' ) then
                   
                   ! Depth weighted average
                   TFocean(:) = 0.0_RKIND
@@ -1537,7 +1537,7 @@ module li_iceshelf_melt
                      endif
                   enddo
 
-               elseif ( (config_calculate_thermal_forcing) .and. (config_TF_vertical_calc == '200-500') ) then
+               elseif (config_TF_vertical_calc == '200-500') then
                   ! Depth-weighted average between 200-500m
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
@@ -1567,7 +1567,7 @@ module li_iceshelf_melt
                      endif
                   enddo
 
-               elseif ( (config_TF_vertical_calc == 'seafloor') .or. (.not. config_calculate_thermal_forcing) ) then
+               elseif (config_TF_vertical_calc == 'seafloor') then
                   ! Define 2d TF at seafloor
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
