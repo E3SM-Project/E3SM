@@ -52,7 +52,14 @@ module li_ocean_extrap
    real (kind=RKIND), parameter :: gamma2 = 8.8E-2
    real (kind=RKIND), parameter :: gamma3 = 7.61E-4
 
+   ! physical constraints on temp, salinity, and thermal forcing
    real (kind=RKIND), parameter :: default_salinity = 32.0
+   real (kind=RKIND), parameter :: max_allowable_salinity = 40.0
+   real (kind=RKIND), parameter :: min_allowable_salinity = 0.0
+   real (kind=RKIND), parameter :: max_allowable_temperature = 100.0
+   real (kind=RKIND), parameter :: min_allowable_temperature = -10.0 
+   real (kind=RKIND), parameter :: max_allowable_TF = 100.0
+   real (kind=RKIND), parameter :: min_allowable_TF = -10.0
 !***********************************************************************
 
 contains
@@ -474,19 +481,23 @@ contains
                      do iLayer = 1, nISMIP6OceanLayers
                         if ( (thickness(jCell) > 0) .and. (bedTopography(jCell) < 0) ) then
                            if (config_calculate_thermal_forcing) then
-                              ! no need to change if not already designated as
-                              ! ocean cell
-                              if ( (oceanSalinity(iLayer,jCell) == invalid_value_TF) .and. & 
-                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then 
+                                   ! Change temperature and/or salinity if
+                                   ! outside of physical range
+                              
+                              if ( ((oceanSalinity(iLayer,jCell) < min_allowable_salinity) .or. &
+                                    (oceanSalinity(iLayer,jCell) > max_allowable_salinity)) .and. & 
+                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) ) then 
                                  oceanSalinity(iLayer,jCell) = default_salinity
                               endif
-                              if ( (oceanTemperature(iLayer,jCell) == invalid_value_TF) .and. &
-                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then 
+                              if ( ((oceanTemperature(iLayer,jCell) < min_allowable_temperature) .or. &
+                                    (oceanTemperature(iLayer,jCell) > max_allowable_temperature)) .and. &
+                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) ) then 
                                  oceanTemperature(iLayer,jCell) = (gamma1 * oceanSalinity(iLayer,jCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
                               endif
                            endif
-                           if ( (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) == invalid_value_TF) .and. &
-                                 (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then 
+                           if ( ((ismip6shelfMelt_3dThermalForcing(iLayer,jCell) < min_allowable_TF) .or. &
+                                 (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) > max_allowable_TF)) .and. &
+                                 (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) ) then 
                               ismip6shelfMelt_3dThermalForcing(iLayer,jCell) = 0.0_RKIND
                            endif
                         endif
