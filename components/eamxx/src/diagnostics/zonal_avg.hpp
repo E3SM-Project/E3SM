@@ -30,24 +30,14 @@ public:
   void initialize_impl(const RunType /*run_type*/);
   void compute_diagnostic_impl();
 
-  // TODO: make it a local function in the cpp file
-  // Utility to compute the contraction of a field along its column dimension.
-  // This is equivalent to f_out = einsum('i,i...k->...k', weight, f_in).
-  // The implementation is such that:
-  // - all Field objects must be allocated
-  // - the first dimension for field, weight, and lat is for the columns (COL)
-  // - the first dimension for result is for the zonal bins (CMP,"bin")
-  // - field and result must be the same dimension, up to 3
-  // TODO: make it a local function in the cpp file
-  static void compute_zonal_sum(const Field &result, const Field &field, const Field &weight,
-                                const Field &lat, const ekat::Comm *comm = nullptr);
-
 protected:
   std::string m_diag_name;
   int m_num_zonal_bins;
 
   Field m_lat;
   Field m_scaled_area;
+  Field m_bin_to_cols;
+
 };
 
 } // namespace scream
