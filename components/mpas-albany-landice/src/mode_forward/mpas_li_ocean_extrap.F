@@ -898,6 +898,11 @@ contains
 
       allocate(freezingTemperature(nISMIP6OceanLayers))
      
+      if ( (.not. config_TF_iceberg_melt == 'off') .and. (.not. config_TF_iceberg_melt == 'on') &
+              .and. (.not. config_TF_iceberg_melt == 'mask') ) then
+         call mpas_log_write("Unknown config_TF_iceberg_melt specified. Options are: 'on', 'off', or 'mask'", MPAS_LOG_ERR)
+      endif
+      
       ! Main difference between TF parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F
       do iCell = 1, nCells
          if (config_TF_iceberg_melt == 'off') then

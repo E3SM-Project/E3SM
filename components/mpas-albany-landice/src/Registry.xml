@@ -469,7 +469,7 @@
 				  description="Method for calculating 2D thermal forcing from the 3d field. 'seafloor' uses the thermal forcing value immediately above the ocean floor (at grounding line depth); 'average' averages the full water column; '200-500' averages only between 200 - 500 m depth"
 		        possible_values="'seafloor', 'average', '200-500'"		  
 		/>
-	   <nml_option name="config_TF_iceberg_melt" type="character" default_value="none" units="unitless"
+	   <nml_option name="config_TF_iceberg_melt" type="character" default_value="off" units="unitless"
 				  description="Option to modify ocean temperature in the upper portion of the water column (above depth specified by config_TF_iceberg_depth) to resemble iceberg melt-driven cooling. Done before calculating the 3d thermal forcing field if both config_ocean_data_extrapolation and config_calculate_thermal_forcing are also true. 'on' applies modification universally, while 'mask' uses binary mask 'icebergFjordMask' to apply the correction. "
 				  possible_values="'off', 'on', 'mask'"		  
 		/>

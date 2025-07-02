@@ -1589,6 +1589,8 @@ module li_iceshelf_melt
                         endif
                      endif
                   enddo
+               else
+                  call mpas_log_write("Unknown config_TF_vertical_calc specified. Options are: 'seafloor','200-500',or 'average' ", MPAS_LOG_ERR)
                endif
          
                TFocean = TFocean + ismip6shelfMelt_deltaT !apply dT correction
