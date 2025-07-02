@@ -13,7 +13,7 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way, bifurcflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm
   use MOSART_heat_mod
@@ -46,6 +46,7 @@ MODULE MOSART_physics_mod
   real(r8), parameter :: SLOPE1def = 0.1_r8        ! here give it a small value in order to avoid the abrupt change of hydraulic radidus etc.
   real(r8) :: sinatanSLOPE1defr   ! 1.0/sin(atan(slope1))
   real(r8), parameter :: MaxStorageDepleted = 0.95_r8        ! maximum storage allowed to deplete in a single step -- a trick to keep water balance and numerical stability
+
   public Euler
   public updatestate_hillslope
   public updatestate_subnetwork
@@ -334,7 +335,14 @@ MODULE MOSART_physics_mod
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
+             ! MCT matrix now handles bifurcation automatically with weighted entries
              avsrc_upstrm%rAttr(nt,cnt) = TRunoff%erout(iunit,nt)
+             
+             ! Debug bifurcation source flow
+             if (bifurcflag .and. rtmCTL%is_bifurc(iunit) .and. rtmCTL%gindex(iunit) == 218196) then
+                write(iulog,*) 'MCT SOURCE DEBUG: iunit=', iunit, ' gindex=', rtmCTL%gindex(iunit), &
+                     ' nt=', nt, ' erout=', TRunoff%erout(iunit,nt), ' avsrc=', avsrc_upstrm%rAttr(nt,cnt)
+             endif
           enddo
           if (heatflag) then
               avsrc_upstrm%rAttr(nt_rtm+1,cnt) = THeat%Ha_rout(iunit)
@@ -468,13 +476,11 @@ MODULE MOSART_physics_mod
                  do k=1,numSubSteps
                     call mainchannelRouting(iunit,nt,localDeltaT)    
                     TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
-                    !! check for negative channel storage
-                    !if(TRunoff%wr(iunit,1) < -1.e-10) then
-                    !   write(iulog,*) 'Negative channel storage! ', iunit, TRunoff%wr(iunit,1), TRunoff%erin(iunit,1), TRunoff%erout(iunit,1), rtmCTL%nUp(iunit)
-                    !   call shr_sys_abort('mosart: negative channel storage')
-                    !end if
                     call UpdateState_mainchannel(iunit,nt)
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
+                    if (iunit == 77419 .and. iam == 35) then
+                 !      write(iulog,*) 'DEBUG: iunit=', iunit, ' k=', k, ' instantaneous erout=', TRunoff%erout(iunit,nt)
+                    endif
                  end do
              elseif(Tctl%RoutingMethod == DW) then ! diffusion wave routing method
                  numSubSteps = 20 ! now set as 20, could be adjusted as needed.
@@ -493,6 +499,10 @@ MODULE MOSART_physics_mod
              
              temp_erout = temp_erout / numSubSteps
              TRunoff%erout(iunit,nt) = temp_erout
+             if (iunit == 77419 .and. iam == 35) then
+            !    write(iulog,*) 'DEBUG: iunit=', iunit, ' averaged erout (after sub-cycle)=', TRunoff%erout(iunit,nt)
+             endif
+             ! Bifurcation is now handled automatically by MCT sparse matrix
              if (heatflag) then
              if (nt==nt_nliq) then
                  do k=1,TUnit%numDT_r(iunit)                
@@ -680,7 +690,7 @@ MODULE MOSART_physics_mod
     end do  ! DLevelH2R
     ! subcycling within MOSART ends
 
-   ! check for negative channel storage
+    ! check for negative channel storage
     if (negchan < -1.e-10 .and. negchan >= -1.e-8) then
        write(iulog,*) 'Warning: Small negative channel storage found! ',negchan
     elseif(negchan < -1.e-8) then
@@ -860,7 +870,10 @@ MODULE MOSART_physics_mod
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,nt) = 0._r8
 
+    ! Add flow from the standard MCT routing (non-bifurcation cells)
     TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%eroutUp(iunit,nt)
+
+    ! Bifurcation inflow now handled automatically by MCT upstream routing
 
     ! estimate the outflow
     if(TUnit%rlen(iunit) <= 0._r8) then ! no river network, no channel routing
@@ -873,7 +886,6 @@ MODULE MOSART_physics_mod
           TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
        else
           if(nt == nt_nliq) then
-              !TRunoff%vr(iunit,nt) = CRVRMAN(TUnit%rslp(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
               TRunoff%vr(iunit,nt) = CRVRMAN_nosqrt(TUnit%rslpsqrt(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
               TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
               if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + &
@@ -1096,6 +1108,9 @@ MODULE MOSART_physics_mod
    !    write(iulog,*) 'negative wr! -- Routing_DW', iunit, TRunoff%wr(iunit,nt), TRunoff%erlateral(iunit,nt), TRunoff%erin(iunit,nt), TRunoff%erout(iunit,nt), temp_gwl
        !stop          
    ! end if     
+
+    ! TODO: DW + bifurcation requires proper physics integration
+    ! Current bifurcation implementation focuses on KW method only
    
   end subroutine Routing_DW
 
@@ -1204,6 +1219,9 @@ MODULE MOSART_physics_mod
           end if
        end if
     end if
+
+    ! TODO: DW + bifurcation requires proper physics integration  
+    ! Current bifurcation implementation focuses on KW method only
 
     TRunoff%dwr(iunit,nt) = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt) + temp_gwl
 

@@ -185,6 +185,7 @@ contains
     integer ,allocatable :: itempr(:,:)       ! temporary buffer
     integer ,allocatable :: itempr_3d(:,:,:)  ! temporary buffer for multi-dimensional dnID
     integer :: ndims, actual_downstream_size  ! for NetCDF dimension checking
+    type(var_desc_t) :: vardesc               ! pio variable descriptor
     integer ,allocatable :: idxocn(:)         ! downstream ocean outlet cell
     integer ,allocatable :: nupstrm(:)        ! number of upstream cells including own cell
     integer ,allocatable :: pocn(:)           ! pe number assigned to basin
@@ -235,6 +236,7 @@ contains
     integer ,pointer  :: rglo2gdc(:)          ! temporary for initialization
     integer ,pointer  :: gmask(:)             ! global mask
     logical           :: found                ! flag
+    logical           :: found_3d             ! flag for 3D dnID detection
     character(len=256):: fnamer               ! name of netcdf restart file 
     character(len=256):: pnamer               ! full pathname of netcdf restart file
     character(len=256):: locfn                ! local file name
@@ -245,6 +247,7 @@ contains
     character(len= 7) :: runtyp(4)            ! run type
     integer ,allocatable :: gindex(:)         ! global index
     integer           :: cnt, lsize, gsize    ! counter
+    integer           :: local_entries        ! bifurcation support variables
     integer           :: igrow,igcol,iwgt     ! mct field indices
     character(len=256):: nlfilename_rof       ! namelist filename
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
@@ -722,8 +725,25 @@ contains
           allocate(itempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
           if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for itempr_3d')
           
-          call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr_3d, readvar=found)
+          ! Try to read 3D variable - use pio_get_var for full global read
+          call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+          ier = pio_inq_varid(ncid, 'dnID', vardesc)
+          if (ier == PIO_NOERR) then
+             ier = pio_get_var(ncid, vardesc, itempr_3d)
+             found = (ier == PIO_NOERR)
+          else
+             found = .false.
+          endif
+          call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
           if (found) then
+             if (masterproc) then
+                write(iulog,*) 'DEBUG: Successfully found and read 3D dnID variable using pio_get_var.'
+                write(iulog,*) 'DEBUG: Shape of temp array (itempr_3d):', shape(itempr_3d)
+                write(iulog,*) 'DEBUG: Min/Max values read into temp array:', minval(itempr_3d), maxval(itempr_3d)
+                ! Let's check a specific point of interest if you know one.
+                ! For example, checking the first few values of the second downstream branch.
+                write(iulog,*) 'DEBUG: Sample values from second downstream branch (k=2):', itempr_3d(1,1,2), itempr_3d(2,1,2), itempr_3d(3,1,2)
+             endif
              if (masterproc) write(iulog,*) 'Read 3D structured dnID(lon,lat,downstream), min=',minval(itempr_3d),' max=',maxval(itempr_3d)
              do k=1,max_downstream
              do j=1,rtmlat
@@ -735,6 +755,10 @@ contains
              end do
           else
              ! Fall back to 2D dnID reading for backward compatibility
+             if (masterproc) then
+                write(iulog,*) 'DEBUG: pio_get_var FAILED to read 3D dnID. Check variable name and dimensions in NetCDF file.'
+                write(iulog,*) 'DEBUG: Falling back to 2D read with ncd_io.'
+             endif
              if (masterproc) write(iulog,*) '3D dnID not found, reading 2D structured dnID for backward compatibility'
              call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
              if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
@@ -751,7 +775,16 @@ contains
           allocate(itempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
           if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for itempr_3d')
           
-          call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr_3d, readvar=found)
+          ! Try to read 3D variable - use pio_get_var for full global read
+          call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+          ier = pio_inq_varid(ncid, 'dnID', vardesc)
+          if (ier == PIO_NOERR) then
+             ier = pio_get_var(ncid, vardesc, itempr_3d)
+             found = (ier == PIO_NOERR)
+          else
+             found = .false.
+          endif
+          call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
           if (found) then
              if (masterproc) write(iulog,*) 'Read 3D unstructured dnID, min=',minval(itempr_3d),' max=',maxval(itempr_3d)
              do k=1,max_downstream
@@ -778,9 +811,36 @@ contains
        endif
     else
        ! Original dnID reading when bifurcflag = false (handle both mesh types)
-       call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
-       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
-       if (masterproc) write(iulog,*) 'Read dnID ',minval(itempr),maxval(itempr)
+       ! Check if 3D dnID exists (from bifurcation NetCDF file), if so read only first slice
+       call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+       ier = pio_inq_varid(ncid, 'dnID', vardesc)
+       found_3d = .false.
+       if (ier == PIO_NOERR) then
+          ! Check if this is 3D by trying to read dimensions
+          allocate(itempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
+          if (ier == 0) then
+             ier = pio_get_var(ncid, vardesc, itempr_3d)
+             if (ier == PIO_NOERR) then
+                found_3d = .true.
+                ! Extract first slice (primary downstream) for backward compatibility
+                do j=1,rtmlat
+                do i=1,rtmlon
+                   itempr(i,j) = itempr_3d(i,j,1)
+                end do
+                end do
+                if (masterproc) write(iulog,*) 'Read 3D dnID (first slice only for bifurcflag=false), min=',minval(itempr),' max=',maxval(itempr)
+             endif
+             deallocate(itempr_3d)
+          endif
+       endif
+       call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+       
+       if (.not. found_3d) then
+          ! Fall back to original 2D reading
+          call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
+          if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
+          if (masterproc) write(iulog,*) 'Read 2D dnID ',minval(itempr),maxval(itempr)
+       endif
        
        ! Both mesh types use the same indexing pattern
        do j=1,rtmlat
@@ -1555,28 +1615,89 @@ contains
 
        ! Set up bifurcation connectivity if enabled
        if (bifurcflag) then
+          ! Debug: Print grid bounds
+          if (masterproc .and. n <= 10) then
+             write(iulog,*) 'GRID DEBUG: rtmlon=', rtmlon, ' rtmlat=', rtmlat, ' max_id=', rtmlon*rtmlat
+          end if
+          
           ! Count valid downstream connections and detect bifurcation
           rtmCTL%num_downstream(nr) = 0
           do k=1,max_downstream
+             ! Debug: Print values being checked for potential bifurcation cells
+             if (k == 2 .and. dnID_global(n,k) /= -9999) then
+                write(iulog,*) 'POTENTIAL BIFURC: global n=', n, ' k=', k, &
+                     ' dnID=', dnID_global(n,k), ' check: >0?', (dnID_global(n,k) > 0), &
+                     ' <=max?', (dnID_global(n,k) <= rtmlon*rtmlat)
+                write(iulog,*) '  Primary dnID for this cell: k=1, dnID=', dnID_global(n,1)
+             end if
+             
              if (dnID_global(n,k) > 0 .and. dnID_global(n,k) <= rtmlon*rtmlat) then
                 rtmCTL%num_downstream(nr) = rtmCTL%num_downstream(nr) + 1
                 rtmCTL%dsig_all(nr,k) = dnID_global(n,k)
                 rtmCTL%iDown_all(nr,k) = rglo2gdc(dnID_global(n,k))
+                
+                ! Debug: Print when we find valid connections
+                if (k > 1) then  ! k>1 means potential bifurcation
+                   write(iulog,*) 'SETUP DEBUG: Found connection at global n=', n, &
+                        ' local nr=', nr, ' k=', k, ' dnID=', dnID_global(n,k), &
+                        ' num_downstream=', rtmCTL%num_downstream(nr)
+                end if
              else
-                rtmCTL%dsig_all(nr,k) = 0
+                ! Keep invalid connections as -999 (don't overwrite with 0)
+                ! rtmCTL%dsig_all(nr,k) already initialized to -999
                 rtmCTL%iDown_all(nr,k) = 0
+                
              endif
           end do
           
-          ! Set bifurcation flag
+          ! Set bifurcation flag and prevent double matrix entries
           rtmCTL%is_bifurc(nr) = (rtmCTL%num_downstream(nr) > 1)
+          
+          ! Clear dsig for bifurcation cells to prevent double-routing in any smat_option
+          if (rtmCTL%is_bifurc(nr)) then
+             rtmCTL%dsig(nr) = 0  ! Bifurcation handled via dsig_all only
+             rtmCTL%iDown(nr) = 0
+          end if
+
+          ! DEBUG print for specific bifurcation point
+          if (i == 36 .and. j == 304) then
+             write(iulog,*) 'DEBUG BIFURC CELL (col=', i, ', row=', j, ')'
+             write(iulog,*) '  Global index n =', n
+             write(iulog,*) '  Local index nr =', nr
+             write(iulog,*) '  Latitude =', rtmCTL%latc(nr)
+             write(iulog,*) '  Longitude =', rtmCTL%lonc(nr)
+             write(iulog,*) '  dnID_global(n,1) =', dnID_global(n,1)
+             write(iulog,*) '  dnID_global(n,2) =', dnID_global(n,2)
+             write(iulog,*) '  Calculated num_downstream =', rtmCTL%num_downstream(nr)
+             write(iulog,*) '  Is bifurcation? =', rtmCTL%is_bifurc(nr)
+          endif
+          
+          ! Debug: Print bifurcation detection  
+          if (rtmCTL%is_bifurc(nr)) then
+             write(iulog,*) 'BIFURCATION DETECTED: global n=', n, ' local nr=', nr, &
+                  ' gindex=', rtmCTL%gindex(nr), ' num_downstream=', rtmCTL%num_downstream(nr)
+             write(iulog,*) '  FIXED: dsig cleared =', rtmCTL%dsig(nr), ' (should be 0)'
+             do k=1,rtmCTL%num_downstream(nr)
+                write(iulog,*) '  Connection', k, ': dsig_all=', rtmCTL%dsig_all(nr,k), &
+                     ' iDown_all=', rtmCTL%iDown_all(nr,k), ' ratio=', rtmCTL%bifurc_ratio(nr,k)
+             end do
+          end if
           
           ! Set equal split ratios for now (50-50 for 2-way, 33-33-33 for 3-way, etc.)
           if (rtmCTL%is_bifurc(nr)) then
+             if (rtmCTL%gindex(nr) == 218196) then
+                write(iulog,*) 'RATIO DEBUG: Setting ratios for bifurcation cell, num_downstream=', rtmCTL%num_downstream(nr)
+             endif
              do k=1,rtmCTL%num_downstream(nr)
                 rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
+                if (rtmCTL%gindex(nr) == 218196) then
+                   write(iulog,*) '  Setting ratio[', k, '] =', rtmCTL%bifurc_ratio(nr,k)
+                endif
              end do
           else
+             if (rtmCTL%gindex(nr) == 218196) then
+                write(iulog,*) 'RATIO DEBUG: Non-bifurcation cell, setting 1.0, 0.0, 0.0...'
+             endif
              rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
              do k=2,max_downstream
                 rtmCTL%bifurc_ratio(nr,k) = 0.0_r8
@@ -1584,6 +1705,9 @@ contains
           endif
        else
           ! For non-bifurcation mode, set defaults
+          if (rtmCTL%gindex(nr) == 218196) then
+             write(iulog,*) 'RATIO DEBUG: bifurcflag=false, setting defaults'
+          endif
           rtmCTL%num_downstream(nr) = 1
           rtmCTL%is_bifurc(nr) = .false.
           rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
@@ -1620,6 +1744,16 @@ contains
     
     ! Validate bifurcation points after all data structures are populated
     call ValidateBifurcationPoints()
+    
+    ! Check for incompatible configuration: DW routing + bifurcation
+    if (bifurcflag .and. Tctl%RoutingMethod /= 1) then
+       if (masterproc) then
+          write(iulog,*) 'ERROR: Bifurcation is currently only supported with KW routing method'
+          write(iulog,*) 'Current routing method:', Tctl%RoutingMethod, ' (1=KW, 2=DW)'
+          write(iulog,*) 'Please set bifurcflag=.false. or use KW routing (RoutingMethod=1)'
+       end if
+       call shr_sys_abort('MOSART: Incompatible bifurcation + DW routing configuration')
+    end if
     
     deallocate(gmask)
     deallocate(rglo2gdc)
@@ -1664,7 +1798,15 @@ contains
 
        cnt = 0
        do nr=rtmCTL%begr,rtmCTL%endr
-          if(rtmCTL%dsig(nr) > 0) cnt = cnt + 1
+          if (bifurcflag .and. rtmCTL%is_bifurc(nr)) then
+             ! Count all downstream connections for bifurcation cells
+             do k = 1, rtmCTL%num_downstream(nr)
+                if (rtmCTL%dsig_all(nr,k) > 0) cnt = cnt + 1
+             end do
+          elseif (rtmCTL%dsig(nr) > 0) then
+             ! Normal single downstream connection
+             cnt = cnt + 1
+          endif
        enddo
 
        call mct_sMat_init(sMat, gsize, gsize, cnt)
@@ -1673,7 +1815,33 @@ contains
        iwgt  = mct_sMat_indexRA(sMat,'weight')
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
-          if (rtmCTL%dsig(nr) > 0) then
+          if (bifurcflag .and. rtmCTL%is_bifurc(nr)) then
+             ! Debug: Show matrix creation attempt
+             if (rtmCTL%gindex(nr) == 218196) then
+                write(iulog,*) 'MCT MATRIX BUILD: Processing bifurcation cell, num_downstream=', rtmCTL%num_downstream(nr)
+             end if
+             
+             ! Create multiple matrix entries for bifurcation cells
+             do k = 1, rtmCTL%num_downstream(nr)
+                if (rtmCTL%gindex(nr) == 218196) then
+                   write(iulog,*) '  Checking k=', k, ' dsig_all=', rtmCTL%dsig_all(nr,k), ' >0?', (rtmCTL%dsig_all(nr,k) > 0)
+                end if
+                if (rtmCTL%dsig_all(nr,k) > 0) then
+                   cnt = cnt + 1
+                   sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)      ! Source cell
+                   sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig_all(nr,k)  ! Downstream cell
+                   sMat%data%rAttr(iwgt ,cnt) = rtmCTL%bifurc_ratio(nr,k) ! Split ratio
+                   
+                   ! Debug output for bifurcation matrix entries (all processors)
+                   if (rtmCTL%gindex(nr) == 218196) then
+                      write(iulog,*) 'MCT MATRIX DEBUG: Entry', cnt, ' Source=', rtmCTL%gindex(nr), &
+                           ' Downstream=', rtmCTL%dsig_all(nr,k), ' Weight=', rtmCTL%bifurc_ratio(nr,k), &
+                           ' k=', k, ' num_downstream=', rtmCTL%num_downstream(nr)
+                   end if
+                end if
+             end do
+          elseif (rtmCTL%dsig(nr) > 0) then
+             ! Normal single downstream connection
              cnt = cnt + 1
              sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)
              sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig(nr)
@@ -1685,7 +1853,24 @@ contains
 
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
-          if (rtmCTL%dsig(nr) > 0) then
+          if (bifurcflag .and. rtmCTL%is_bifurc(nr)) then
+             ! Create multiple matrix entries for bifurcation cells (downstream matrix)
+             do k = 1, rtmCTL%num_downstream(nr)
+                if (rtmCTL%dsig_all(nr,k) > 0) then
+                   cnt = cnt + 1
+                   sMat%data%iAttr(igcol,cnt) = rtmCTL%dsig_all(nr,k)  ! Downstream cell  
+                   sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)      ! Source cell
+                   sMat%data%rAttr(iwgt ,cnt) = rtmCTL%bifurc_ratio(nr,k) ! Split ratio
+                   
+                   ! Debug output for downstream matrix entries (all processors)
+                   if (rtmCTL%gindex(nr) == 218196) then
+                      write(iulog,*) 'DNSTRM MATRIX DEBUG: Entry', cnt, ' Source=', rtmCTL%gindex(nr), &
+                           ' Downstream=', rtmCTL%dsig_all(nr,k), ' Weight=', rtmCTL%bifurc_ratio(nr,k)
+                   end if
+                end if
+             end do
+          elseif (rtmCTL%dsig(nr) > 0) then
+             ! Normal single downstream connection
              cnt = cnt + 1
              sMat%data%iAttr(igcol,cnt) = rtmCTL%dsig(nr)
              sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)
@@ -1697,40 +1882,105 @@ contains
 
     elseif (smat_option == 'Xonly' .or. smat_option == 'Yonly') then
 
-       ! root initialization
+       ! root initialization - conditional bifurcation support for B4B compatibility
 
-       call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
-       call mct_aVect_zero(avtmp)
-       cnt = 0
-       do nr = rtmCTL%begr,rtmCTL%endr
-          cnt = cnt + 1
-          avtmp%rAttr(1,cnt) = rtmCTL%gindex(nr)
-          avtmp%rAttr(2,cnt) = rtmCTL%dsig(nr)
-       enddo
+       if (bifurcflag) then
+          ! BIFURCATION MODE: Fixed-size data structure for all downstream connections
+          ! Fields: f1=gindex, f2-f5=downstream_IDs, f6-f9=weights
+          call mct_aVect_init(avtmp,rList='f1:f2:f3:f4:f5:f6:f7:f8:f9',lsize=lsize)
+          call mct_aVect_zero(avtmp)
+          cnt = 0
+          do nr = rtmCTL%begr,rtmCTL%endr
+             cnt = cnt + 1
+             avtmp%rAttr(1,cnt) = rtmCTL%gindex(nr)                  ! Source cell
+             
+             if (rtmCTL%is_bifurc(nr)) then
+                ! Bifurcation cells: send all downstream connections
+                do k = 1, min(rtmCTL%num_downstream(nr), max_downstream)
+                   avtmp%rAttr(1+k,cnt) = rtmCTL%dsig_all(nr,k)      ! Downstream ID
+                   avtmp%rAttr(5+k,cnt) = rtmCTL%bifurc_ratio(nr,k)  ! Weight
+                end do
+                ! Remaining fields stay zero (from mct_aVect_zero)
+             else
+                ! Normal cells: send primary downstream only
+                avtmp%rAttr(2,cnt) = rtmCTL%dsig(nr)                 ! Primary downstream
+                avtmp%rAttr(6,cnt) = 1.0_r8                          ! Full weight
+                ! Other fields stay zero
+             endif
+          enddo
+       else
+          ! ORIGINAL MODE: Exact original logic for B4B compatibility
+          call mct_aVect_init(avtmp,rList='f1:f2',lsize=lsize)
+          call mct_aVect_zero(avtmp)
+          cnt = 0
+          do nr = rtmCTL%begr,rtmCTL%endr
+             cnt = cnt + 1
+             avtmp%rAttr(1,cnt) = rtmCTL%gindex(nr)
+             avtmp%rAttr(2,cnt) = rtmCTL%dsig(nr)
+          enddo
+       endif
        call mct_avect_gather(avtmp,avtmpG,gsmap_r,mastertask,mpicom_rof)
        call mct_avect_clean(avtmp)
        if (masterproc) then
-          cnt = 0
-          do n = 1,rtmlon*rtmlat
-             if (avtmpG%rAttr(2,n) > 0) then
-                cnt = cnt + 1
-             endif
-          enddo
+          if (bifurcflag) then
+             ! BIFURCATION MODE: Count total matrix entries from 9-field structure
+             cnt = 0
+             do n = 1, mct_avect_lsize(avtmpG)
+                ! Count all non-zero downstream connections per cell
+                do k = 2, 5  ! f2-f5 are downstream IDs
+                   if (avtmpG%rAttr(k,n) > 0) then
+                      cnt = cnt + 1
+                   endif
+                end do
+             enddo
 
-          call mct_sMat_init(sMat, gsize, gsize, cnt)
-          igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
-          igrow = mct_sMat_indexIA(sMat,'grow')
-          iwgt  = mct_sMat_indexRA(sMat,'weight')
+             call mct_sMat_init(sMat, gsize, gsize, cnt)
+             igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
+             igrow = mct_sMat_indexIA(sMat,'grow')
+             iwgt  = mct_sMat_indexRA(sMat,'weight')
 
-          cnt = 0
-          do n = 1,rtmlon*rtmlat
-             if (avtmpG%rAttr(2,n) > 0) then
-                cnt = cnt + 1
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
-             endif
-          enddo
+             cnt = 0
+             do n = 1, mct_avect_lsize(avtmpG)
+                ! Create matrix entries for all downstream connections
+                do k = 2, 5  ! f2-f5 are downstream IDs
+                   if (avtmpG%rAttr(k,n) > 0) then
+                      cnt = cnt + 1
+                      sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)     ! Source
+                      sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(k,n)     ! Downstream
+                      sMat%data%rAttr(iwgt ,cnt) = avtmpG%rAttr(4+k,n)   ! Weight (f6-f9)
+                      
+                      ! Debug bifurcation matrix entries
+                      if (avtmpG%rAttr(1,n) == 218196) then
+                         write(iulog,*) 'XONLY MATRIX DEBUG: Entry', cnt, ' Source=', avtmpG%rAttr(1,n), &
+                              ' Downstream=', avtmpG%rAttr(k,n), ' Weight=', avtmpG%rAttr(4+k,n), ' k=', k
+                      end if
+                   endif
+                end do
+             enddo
+          else
+             ! ORIGINAL MODE: Exact original logic for B4B compatibility
+             cnt = 0
+             do n = 1,rtmlon*rtmlat
+                if (avtmpG%rAttr(2,n) > 0) then
+                   cnt = cnt + 1
+                endif
+             enddo
+
+             call mct_sMat_init(sMat, gsize, gsize, cnt)
+             igcol = mct_sMat_indexIA(sMat,'gcol')   ! src
+             igrow = mct_sMat_indexIA(sMat,'grow')
+             iwgt  = mct_sMat_indexRA(sMat,'weight')
+
+             cnt = 0
+             do n = 1,rtmlon*rtmlat
+                if (avtmpG%rAttr(2,n) > 0) then
+                   cnt = cnt + 1
+                   sMat%data%rAttr(iwgt ,cnt) = 1.0_r8              ! Original hardcoded weight
+                   sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)
+                   sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(2,n)
+                endif
+             enddo
+          endif
        else
           call mct_sMat_init(sMat,1,1,1)
        endif
@@ -1738,15 +1988,38 @@ contains
        call mct_sMatP_Init(sMatP_upstrm, sMat, gsMap_r, gsMap_r, smat_option, 0, mpicom_rof, ROFID)
 
        if (masterproc) then
-          cnt = 0
-          do n = 1,rtmlon*rtmlat
-             if (avtmpG%rAttr(2,n) > 0) then
-                cnt = cnt + 1
-                sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(2,n)
-                sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
-                sMat%data%rAttr(iwgt ,cnt) = 1.0_r8
-             endif
-          enddo
+          if (bifurcflag) then
+             ! BIFURCATION MODE: Use 9-field structure for downstream matrix
+             cnt = 0
+             do n = 1, mct_avect_lsize(avtmpG)
+                ! Create downstream matrix entries for all connections
+                do k = 2, 5  ! f2-f5 are downstream IDs
+                   if (avtmpG%rAttr(k,n) > 0) then
+                      cnt = cnt + 1
+                      sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(k,n)     ! Downstream (becomes source)
+                      sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)     ! Source (becomes target)
+                      sMat%data%rAttr(iwgt ,cnt) = avtmpG%rAttr(4+k,n)   ! Weight (f6-f9)
+                      
+                      ! Debug downstream bifurcation matrix entries
+                      if (avtmpG%rAttr(1,n) == 218196) then
+                         write(iulog,*) 'XONLY DNSTRM DEBUG: Entry', cnt, ' Source=', avtmpG%rAttr(1,n), &
+                              ' Downstream=', avtmpG%rAttr(k,n), ' Weight=', avtmpG%rAttr(4+k,n), ' k=', k
+                      end if
+                   endif
+                end do
+             enddo
+          else
+             ! ORIGINAL MODE: Exact original logic for B4B compatibility
+             cnt = 0
+             do n = 1,rtmlon*rtmlat
+                if (avtmpG%rAttr(2,n) > 0) then
+                   cnt = cnt + 1
+                   sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(2,n)
+                   sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)
+                   sMat%data%rAttr(iwgt ,cnt) = 1.0_r8              ! Original hardcoded weight
+                endif
+             enddo
+          endif
           call mct_avect_clean(avtmpG)
        endif
 

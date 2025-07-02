@@ -763,18 +763,19 @@ contains
     !
     ! !USES:
     use shr_sys_mod, only : shr_sys_abort
-    use RtmSpmd, only : masterproc
+    use RtmSpmd, only : masterproc, mpicom_rof
+    use shr_mpi_mod, only : shr_mpi_sum
     !
     ! !LOCAL VARIABLES:
-    integer :: i, j, k, downstream_id, num_invalid, num_circular, num_bifurc
-    logical :: is_valid, has_circular
+    integer :: i, j, k, downstream_id, num_invalid, num_circular, num_bifurc, g_num_bifurc
+    logical :: is_valid
     character(len=*), parameter :: subname = 'ValidateBifurcationPoints'
     !-----------------------------------------------------------------------
 
     if (.not. bifurcflag) return  ! Skip validation if bifurcation disabled
 
     num_invalid = 0
-    num_circular = 0 
+    num_circular = 0
     num_bifurc = 0
 
     ! Check each cell for bifurcation validity
@@ -782,13 +783,13 @@ contains
        if (rtmCTL%is_bifurc(i)) then
           num_bifurc = num_bifurc + 1
           is_valid = .true.
-          
+
           ! Check that all downstream connections are valid
           do j = 1, rtmCTL%num_downstream(i)
              downstream_id = rtmCTL%dsig_all(i,j)
-             
+
              ! Check for missing downstream connections
-             if (downstream_id <= 0 .or. downstream_id == -999) then
+             if (downstream_id <= 0 .or. downstream_id == -9999) then
                 if (masterproc) then
                    write(iulog,*) trim(subname), ' ERROR: Invalid downstream ID ', &
                         downstream_id, ' for bifurcation point ', rtmCTL%gindex(i), ' connection ', j
@@ -796,7 +797,7 @@ contains
                 is_valid = .false.
                 num_invalid = num_invalid + 1
              end if
-             
+
              ! Check for self-referencing (immediate circular reference)
              if (downstream_id == rtmCTL%gindex(i)) then
                 if (masterproc) then
@@ -807,7 +808,7 @@ contains
                 num_circular = num_circular + 1
              end if
           end do
-          
+
           ! Check that bifurcation ratios sum to 1.0 (within tolerance)
           if (abs(sum(rtmCTL%bifurc_ratio(i,1:rtmCTL%num_downstream(i))) - 1.0_r8) > 1.e-6_r8) then
              if (masterproc) then
@@ -820,9 +821,13 @@ contains
        end if
     end do
 
+    ! Sum local counts to get global count
+    g_num_bifurc = 0
+    call shr_mpi_sum(num_bifurc, g_num_bifurc, mpicom_rof)
+
     ! Report validation results
     if (masterproc) then
-       write(iulog,*) trim(subname), ': Validated ', num_bifurc, ' bifurcation points'
+       write(iulog,*) trim(subname), ': Validated ', g_num_bifurc, ' bifurcation points'
        if (num_invalid > 0) then
           write(iulog,*) trim(subname), ' ERROR: Found ', num_invalid, ' invalid bifurcation configurations'
        end if
@@ -836,11 +841,13 @@ contains
        call shr_sys_abort(trim(subname)//' ERROR: Bifurcation validation failed')
     end if
 
-    if (masterproc .and. num_bifurc > 0) then
+    if (masterproc .and. g_num_bifurc > 0) then
        write(iulog,*) trim(subname), ': All bifurcation points passed validation'
     end if
 
   end subroutine ValidateBifurcationPoints
+
+!-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
 
