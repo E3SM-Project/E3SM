@@ -264,7 +264,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
          eddyKillingCorrection !variable to output for diagnostics of the correction
 
-      real (kind=RKIND) :: u10m
+      real (kind=RKIND) :: leadingCoeff, u10m
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -282,6 +282,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMerid)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
+      call mpas_pool_get_array(forcingPool, 'eddyKillingCorrection', eddyKillingCorrection)
 
       !*** Transfer data to device
       !$acc enter data &
@@ -331,14 +332,14 @@ contains
       end do
 
       if (config_eddy_killing_correction_enable) then
-         leadingCoeff = -1.5_RKIND*config_eddy_killing_cd*config_eddy_killing_rhoa
+         leadingCoeff = 1.5_RKIND*config_eddy_killing_cd*config_eddy_killing_rhoa
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             u10m = 0.5_RKIND*(windSpeed10m(cell1) + windSpeed10m(cell2))
             eddyKillingCorrection(iEdge) = 0.0_RKIND
             if (iceFraction(cell1) < 0.05_RKIND .and. iceFraction(cell2) < 0.05_RKIND) then
-               eddyKillingCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)*u10m
+               eddyKillingCorrection(iEdge) = 0.3_RKIND*leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)*u10m
                sfcStress(iEdge) = sfcStress(iEdge) + eddyKillingCorrection(iEdge)
             end if
          end do

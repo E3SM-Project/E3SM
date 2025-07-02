@@ -680,7 +680,7 @@ Default: Defined in namelist_defaults.xml
 
 <!-- eddy_killing_correction -->
 
-<entry id="config_eddy_killing_correction_enable" type="real"
+<entry id="config_eddy_killing_correction_enable" type="logical"
 	category="eddy_killing_correction" group="eddy_killing_correction">
 flag to enable the eddy killing corrections.  NOTE: this should only be used at for RRS6to18 resolution or finer
 

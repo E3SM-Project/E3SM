@@ -455,7 +455,7 @@
 		/>
 	</nml_record>
 	<nml_record name="eddy_killing_correction" mode="forward">
-		<nml_option name="config_eddy_killing_correction_enable" type="real" default_value=".false."
+		<nml_option name="config_eddy_killing_correction_enable" type="logical" default_value=".false."
 					description="flag to enable the eddy killing corrections.  NOTE: this should only be used at for RRS6to18 resolution or finer"
 					possible_values=".true. or .false."
 		/>
