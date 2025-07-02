@@ -117,8 +117,8 @@
 			description="The number of days stored in the history of removed ice runoff."
 		/>
 		<dim name="nGlcZLevels" definition="namelist:config_n_glc_z_levels"
-			description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling"
-                />
+                        description="The number of z-levels to use for passing ocean properties to GLC for indirect ice-sheet/ocean coupling"
+		/>
 		<dim name="nAccumulatedSFWFHistory" definition="namelist:config_precip_scaling_history_years"
 			description="The number of years stored in the history of surface freshwater fluxes."
 		/>
