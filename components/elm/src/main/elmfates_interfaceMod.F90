@@ -2721,7 +2721,6 @@ contains
     call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
                                this%fates(nc)%sites, &
                                this%fates(nc)%bc_in,  &
-                               this%fates(nc)%bc_out, &
                                dtime)
     return
  end subroutine wrap_accumulatefluxes
