@@ -588,7 +588,7 @@ subroutine zm_convr(lchnk   ,ncol    ,is_first_step, &
 !
    capelmt_wk = capelmt   ! capelmt_wk default to capelmt for default trigger
 
-   if ( zm_param%trig_dcape .and. (.not.is_first_step()) )  capelmt_wk = 0.0_r8
+   if ( zm_param%trig_dcape .and. (.not.is_first_step) )  capelmt_wk = 0.0_r8
 
    lengath = 0
    do i=1,ncol

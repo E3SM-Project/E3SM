@@ -55,6 +55,17 @@ type :: zm_aero_t
    integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
    integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
+   integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
+   integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
+#endif
+
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+   integer :: coarse_bc_idx  = -1  ! index of bc in coarse mode
+   integer :: coarse_pom_idx = -1  ! index of pom in coarse mode
+   integer :: coarse_soa_idx = -1  ! index of soa in coarse mode
+#endif
+
    type(ptr2d), allocatable :: dgnum(:)        ! mode dry radius
    real(r8),    allocatable :: dgnumg(:,:,:)   ! gathered mode dry radius
 
