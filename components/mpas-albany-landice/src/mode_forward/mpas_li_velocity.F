@@ -905,7 +905,7 @@ contains
       real(kind=RKIND), pointer :: config_flowLawExponent
 
       real (kind=RKIND), dimension(:), pointer :: thickness
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+      real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions
       real (kind=RKIND), dimension(:,:), pointer :: temperature
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA
       real (kind=RKIND), dimension(:), pointer :: effectiveViscosity
@@ -931,6 +931,8 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
+      call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
+
       call mpas_pool_get_array(velocityPool, 'exx', exx)
       call mpas_pool_get_array(velocityPool, 'eyy', eyy)
       call mpas_pool_get_array(velocityPool, 'dudy', dudy)
@@ -951,7 +953,6 @@ contains
       call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
 
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'effectiveViscosity', effectiveViscosity)
 
       call mpas_pool_get_field(scratchPool, 'meanFlowParamA', meanFlowParamAVar)
@@ -979,11 +980,7 @@ contains
 
       ! calculate the depth-averaged flow parameter A
       do iCell = 1, nCells
-         if (thickness(iCell) > 0.0_RKIND) then
-            meanFlowParamA(iCell) = sum(layerThickness(:,iCell) * flowParamA(:,iCell)) / thickness(iCell)
-         else
-            meanFlowParamA(iCell) = 0.0_RKIND
-         endif
+         meanFlowParamA(iCell) = sum(flowParamA(:,iCell) * layerThicknessFractions(:))
       enddo
 
       ! calculate effective viscosity from strain rate and flow param.
