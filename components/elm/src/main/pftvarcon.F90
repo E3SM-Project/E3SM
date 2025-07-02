@@ -1111,7 +1111,7 @@ contains
       stocking(:) = stocking(:)/10000._r8 ! conversion from stems/ha to stems/m2 done here now
     endif
     if (any(stocking(:) .ge. 1000._r8 )) then
-      call endrun(msg="Non-physical selection of stocking density parameter, implies >1000 plants/m2"//errMsg(__FILE__, __LINE__)))
+      call endrun(msg="Non-physical selection of stocking density parameter, implies >1000 plants/m2"//errMsg(__FILE__, __LINE__))
     endif
 
     taper_defaults = .false.
