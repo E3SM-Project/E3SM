@@ -337,12 +337,6 @@ MODULE MOSART_physics_mod
           do nt = 1,nt_rtm
              ! MCT matrix now handles bifurcation automatically with weighted entries
              avsrc_upstrm%rAttr(nt,cnt) = TRunoff%erout(iunit,nt)
-             
-             ! Debug bifurcation source flow
-             if (bifurcflag .and. rtmCTL%is_bifurc(iunit) .and. rtmCTL%gindex(iunit) == 218196) then
-                write(iulog,*) 'MCT SOURCE DEBUG: iunit=', iunit, ' gindex=', rtmCTL%gindex(iunit), &
-                     ' nt=', nt, ' erout=', TRunoff%erout(iunit,nt), ' avsrc=', avsrc_upstrm%rAttr(nt,cnt)
-             endif
           enddo
           if (heatflag) then
               avsrc_upstrm%rAttr(nt_rtm+1,cnt) = THeat%Ha_rout(iunit)
@@ -478,9 +472,6 @@ MODULE MOSART_physics_mod
                     TRunoff%wr(iunit,nt) = TRunoff%wr(iunit,nt) + TRunoff%dwr(iunit,nt) * localDeltaT
                     call UpdateState_mainchannel(iunit,nt)
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
-                    if (iunit == 77419 .and. iam == 35) then
-                 !      write(iulog,*) 'DEBUG: iunit=', iunit, ' k=', k, ' instantaneous erout=', TRunoff%erout(iunit,nt)
-                    endif
                  end do
              elseif(Tctl%RoutingMethod == DW) then ! diffusion wave routing method
                  numSubSteps = 20 ! now set as 20, could be adjusted as needed.
@@ -499,9 +490,6 @@ MODULE MOSART_physics_mod
              
              temp_erout = temp_erout / numSubSteps
              TRunoff%erout(iunit,nt) = temp_erout
-             if (iunit == 77419 .and. iam == 35) then
-            !    write(iulog,*) 'DEBUG: iunit=', iunit, ' averaged erout (after sub-cycle)=', TRunoff%erout(iunit,nt)
-             endif
              ! Bifurcation is now handled automatically by MCT sparse matrix
              if (heatflag) then
              if (nt==nt_nliq) then
@@ -870,10 +858,9 @@ MODULE MOSART_physics_mod
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,nt) = 0._r8
 
-    ! Add flow from the standard MCT routing (non-bifurcation cells)
+    ! Add flow from the standard MCT routing (includes both normal and bifurcation upstream flows)
     TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%eroutUp(iunit,nt)
-
-    ! Bifurcation inflow now handled automatically by MCT upstream routing
+    ! Note: MCT upstream routing automatically handles weighted contributions from bifurcation splits
 
     ! estimate the outflow
     if(TUnit%rlen(iunit) <= 0._r8) then ! no river network, no channel routing

@@ -736,14 +736,6 @@ contains
           endif
           call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
           if (found) then
-             if (masterproc) then
-                write(iulog,*) 'DEBUG: Successfully found and read 3D dnID variable using pio_get_var.'
-                write(iulog,*) 'DEBUG: Shape of temp array (itempr_3d):', shape(itempr_3d)
-                write(iulog,*) 'DEBUG: Min/Max values read into temp array:', minval(itempr_3d), maxval(itempr_3d)
-                ! Let's check a specific point of interest if you know one.
-                ! For example, checking the first few values of the second downstream branch.
-                write(iulog,*) 'DEBUG: Sample values from second downstream branch (k=2):', itempr_3d(1,1,2), itempr_3d(2,1,2), itempr_3d(3,1,2)
-             endif
              if (masterproc) write(iulog,*) 'Read 3D structured dnID(lon,lat,downstream), min=',minval(itempr_3d),' max=',maxval(itempr_3d)
              do k=1,max_downstream
              do j=1,rtmlat
@@ -755,10 +747,6 @@ contains
              end do
           else
              ! Fall back to 2D dnID reading for backward compatibility
-             if (masterproc) then
-                write(iulog,*) 'DEBUG: pio_get_var FAILED to read 3D dnID. Check variable name and dimensions in NetCDF file.'
-                write(iulog,*) 'DEBUG: Falling back to 2D read with ncd_io.'
-             endif
              if (masterproc) write(iulog,*) '3D dnID not found, reading 2D structured dnID for backward compatibility'
              call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
              if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
@@ -1622,26 +1610,11 @@ contains
           
           ! Count valid downstream connections and detect bifurcation
           rtmCTL%num_downstream(nr) = 0
-          do k=1,max_downstream
-             ! Debug: Print values being checked for potential bifurcation cells
-             if (k == 2 .and. dnID_global(n,k) /= -9999) then
-                write(iulog,*) 'POTENTIAL BIFURC: global n=', n, ' k=', k, &
-                     ' dnID=', dnID_global(n,k), ' check: >0?', (dnID_global(n,k) > 0), &
-                     ' <=max?', (dnID_global(n,k) <= rtmlon*rtmlat)
-                write(iulog,*) '  Primary dnID for this cell: k=1, dnID=', dnID_global(n,1)
-             end if
-             
+          do k=1,max_downstream             
              if (dnID_global(n,k) > 0 .and. dnID_global(n,k) <= rtmlon*rtmlat) then
                 rtmCTL%num_downstream(nr) = rtmCTL%num_downstream(nr) + 1
                 rtmCTL%dsig_all(nr,k) = dnID_global(n,k)
                 rtmCTL%iDown_all(nr,k) = rglo2gdc(dnID_global(n,k))
-                
-                ! Debug: Print when we find valid connections
-                if (k > 1) then  ! k>1 means potential bifurcation
-                   write(iulog,*) 'SETUP DEBUG: Found connection at global n=', n, &
-                        ' local nr=', nr, ' k=', k, ' dnID=', dnID_global(n,k), &
-                        ' num_downstream=', rtmCTL%num_downstream(nr)
-                end if
              else
                 ! Keep invalid connections as -999 (don't overwrite with 0)
                 ! rtmCTL%dsig_all(nr,k) already initialized to -999
@@ -1658,56 +1631,19 @@ contains
              rtmCTL%dsig(nr) = 0  ! Bifurcation handled via dsig_all only
              rtmCTL%iDown(nr) = 0
           end if
-
-          ! DEBUG print for specific bifurcation point
-          if (i == 36 .and. j == 304) then
-             write(iulog,*) 'DEBUG BIFURC CELL (col=', i, ', row=', j, ')'
-             write(iulog,*) '  Global index n =', n
-             write(iulog,*) '  Local index nr =', nr
-             write(iulog,*) '  Latitude =', rtmCTL%latc(nr)
-             write(iulog,*) '  Longitude =', rtmCTL%lonc(nr)
-             write(iulog,*) '  dnID_global(n,1) =', dnID_global(n,1)
-             write(iulog,*) '  dnID_global(n,2) =', dnID_global(n,2)
-             write(iulog,*) '  Calculated num_downstream =', rtmCTL%num_downstream(nr)
-             write(iulog,*) '  Is bifurcation? =', rtmCTL%is_bifurc(nr)
-          endif
-          
-          ! Debug: Print bifurcation detection  
-          if (rtmCTL%is_bifurc(nr)) then
-             write(iulog,*) 'BIFURCATION DETECTED: global n=', n, ' local nr=', nr, &
-                  ' gindex=', rtmCTL%gindex(nr), ' num_downstream=', rtmCTL%num_downstream(nr)
-             write(iulog,*) '  FIXED: dsig cleared =', rtmCTL%dsig(nr), ' (should be 0)'
-             do k=1,rtmCTL%num_downstream(nr)
-                write(iulog,*) '  Connection', k, ': dsig_all=', rtmCTL%dsig_all(nr,k), &
-                     ' iDown_all=', rtmCTL%iDown_all(nr,k), ' ratio=', rtmCTL%bifurc_ratio(nr,k)
-             end do
-          end if
           
           ! Set equal split ratios for now (50-50 for 2-way, 33-33-33 for 3-way, etc.)
           if (rtmCTL%is_bifurc(nr)) then
-             if (rtmCTL%gindex(nr) == 218196) then
-                write(iulog,*) 'RATIO DEBUG: Setting ratios for bifurcation cell, num_downstream=', rtmCTL%num_downstream(nr)
-             endif
              do k=1,rtmCTL%num_downstream(nr)
                 rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
-                if (rtmCTL%gindex(nr) == 218196) then
-                   write(iulog,*) '  Setting ratio[', k, '] =', rtmCTL%bifurc_ratio(nr,k)
-                endif
              end do
           else
-             if (rtmCTL%gindex(nr) == 218196) then
-                write(iulog,*) 'RATIO DEBUG: Non-bifurcation cell, setting 1.0, 0.0, 0.0...'
-             endif
              rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
              do k=2,max_downstream
                 rtmCTL%bifurc_ratio(nr,k) = 0.0_r8
              end do
           endif
        else
-          ! For non-bifurcation mode, set defaults
-          if (rtmCTL%gindex(nr) == 218196) then
-             write(iulog,*) 'RATIO DEBUG: bifurcflag=false, setting defaults'
-          endif
           rtmCTL%num_downstream(nr) = 1
           rtmCTL%is_bifurc(nr) = .false.
           rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
@@ -1816,28 +1752,14 @@ contains
        cnt = 0
        do nr = rtmCTL%begr,rtmCTL%endr
           if (bifurcflag .and. rtmCTL%is_bifurc(nr)) then
-             ! Debug: Show matrix creation attempt
-             if (rtmCTL%gindex(nr) == 218196) then
-                write(iulog,*) 'MCT MATRIX BUILD: Processing bifurcation cell, num_downstream=', rtmCTL%num_downstream(nr)
-             end if
              
              ! Create multiple matrix entries for bifurcation cells
              do k = 1, rtmCTL%num_downstream(nr)
-                if (rtmCTL%gindex(nr) == 218196) then
-                   write(iulog,*) '  Checking k=', k, ' dsig_all=', rtmCTL%dsig_all(nr,k), ' >0?', (rtmCTL%dsig_all(nr,k) > 0)
-                end if
                 if (rtmCTL%dsig_all(nr,k) > 0) then
                    cnt = cnt + 1
                    sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)      ! Source cell
                    sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig_all(nr,k)  ! Downstream cell
                    sMat%data%rAttr(iwgt ,cnt) = rtmCTL%bifurc_ratio(nr,k) ! Split ratio
-                   
-                   ! Debug output for bifurcation matrix entries (all processors)
-                   if (rtmCTL%gindex(nr) == 218196) then
-                      write(iulog,*) 'MCT MATRIX DEBUG: Entry', cnt, ' Source=', rtmCTL%gindex(nr), &
-                           ' Downstream=', rtmCTL%dsig_all(nr,k), ' Weight=', rtmCTL%bifurc_ratio(nr,k), &
-                           ' k=', k, ' num_downstream=', rtmCTL%num_downstream(nr)
-                   end if
                 end if
              end do
           elseif (rtmCTL%dsig(nr) > 0) then
@@ -1861,12 +1783,6 @@ contains
                    sMat%data%iAttr(igcol,cnt) = rtmCTL%dsig_all(nr,k)  ! Downstream cell  
                    sMat%data%iAttr(igrow,cnt) = rtmCTL%gindex(nr)      ! Source cell
                    sMat%data%rAttr(iwgt ,cnt) = rtmCTL%bifurc_ratio(nr,k) ! Split ratio
-                   
-                   ! Debug output for downstream matrix entries (all processors)
-                   if (rtmCTL%gindex(nr) == 218196) then
-                      write(iulog,*) 'DNSTRM MATRIX DEBUG: Entry', cnt, ' Source=', rtmCTL%gindex(nr), &
-                           ' Downstream=', rtmCTL%dsig_all(nr,k), ' Weight=', rtmCTL%bifurc_ratio(nr,k)
-                   end if
                 end if
              end do
           elseif (rtmCTL%dsig(nr) > 0) then
@@ -1948,12 +1864,6 @@ contains
                       sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(1,n)     ! Source
                       sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(k,n)     ! Downstream
                       sMat%data%rAttr(iwgt ,cnt) = avtmpG%rAttr(4+k,n)   ! Weight (f6-f9)
-                      
-                      ! Debug bifurcation matrix entries
-                      if (avtmpG%rAttr(1,n) == 218196) then
-                         write(iulog,*) 'XONLY MATRIX DEBUG: Entry', cnt, ' Source=', avtmpG%rAttr(1,n), &
-                              ' Downstream=', avtmpG%rAttr(k,n), ' Weight=', avtmpG%rAttr(4+k,n), ' k=', k
-                      end if
                    endif
                 end do
              enddo
@@ -1999,12 +1909,6 @@ contains
                       sMat%data%iAttr(igcol,cnt) = avtmpG%rAttr(k,n)     ! Downstream (becomes source)
                       sMat%data%iAttr(igrow,cnt) = avtmpG%rAttr(1,n)     ! Source (becomes target)
                       sMat%data%rAttr(iwgt ,cnt) = avtmpG%rAttr(4+k,n)   ! Weight (f6-f9)
-                      
-                      ! Debug downstream bifurcation matrix entries
-                      if (avtmpG%rAttr(1,n) == 218196) then
-                         write(iulog,*) 'XONLY DNSTRM DEBUG: Entry', cnt, ' Source=', avtmpG%rAttr(1,n), &
-                              ' Downstream=', avtmpG%rAttr(k,n), ' Weight=', avtmpG%rAttr(4+k,n), ' k=', k
-                      end if
                    endif
                 end do
              enddo
