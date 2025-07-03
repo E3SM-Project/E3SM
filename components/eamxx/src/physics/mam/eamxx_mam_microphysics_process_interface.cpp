@@ -212,14 +212,12 @@ void MAMMicrophysics::set_grids(
     // Diagnostics: tendencies due to aqueous chemistry [kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
 
-<<<<<<< HEAD
     // Diagnostics: SO4 in-cloud tendencies[kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, kg / kg / s, grid_name);
 
     // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
-||||||| parent of 52fcca6472 (rebase and bring diagnostics under control of bool flag)
-=======
+
     // get_3d_tensor_layout extents are [ncol, gas_pcnst, nq<...>, nlev]
     FieldLayout tensor3d_gas_tend =
         grid_->get_3d_tensor_layout(true, {num_gas_aerosol_constituents_, num_gas_tend_},
@@ -231,7 +229,7 @@ void MAMMicrophysics::set_grids(
     // Note: The following hold grid-cell-averaged "tracer mixing ratios"--that is, they are
     //       ncol columns with nlev grid cells for which the tensor qoi is the subarea mixing
     //       ratio, averaged over the subareas and the tensor quantity has shape
-    //       {num_gas_aerosol_constituents_ X num_gas_tend_[cw_]}
+    //       {num_gas_aerosol_constituents_ x num_gas_tend_[cw_]}
     //  the related subarea mixing ratios, qXXXN (X=gas,aer,wat,num; N=1:4), are:
     //    XXX=gas - gas species [kmol/kmol]
     //    XXX=aer - aerosol mass species (excluding water) [kmol/kmol]
@@ -242,7 +240,6 @@ void MAMMicrophysics::set_grids(
     //       (per conversation among @mahf708, @TaufiqHassan, @mjschmidt271)
     add_field<Computed>("gas_spec_tendencies", tensor3d_gas_tend, kmol_inv, grid_name);
     add_field<Computed>("gas_spec_tendencies_cw", tensor3d_gas_tend_cw, kmol_inv, grid_name);
->>>>>>> 52fcca6472 (rebase and bring diagnostics under control of bool flag)
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -694,11 +691,14 @@ void MAMMicrophysics::run_impl(const double dt) {
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
   view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
+  view_4d gas_spec_tendencies, gas_spec_tendencies_cw;
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
+    gas_spec_tendencies = get_field_out("gas_spec_tendencies").get_view<Real****>();
+    gas_spec_tendencies_cw = get_field_out("gas_spec_tendencies_cw").get_view<Real****>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -1035,10 +1035,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         team.team_barrier();
 
         if (extra_mam4_aero_microphys_diags) {
-          const auto gas_spec_tendencies =
-              get_field_out("gas_spec_tendencies").get_view<Real****>();
-          const auto gas_spec_tendencies_cw =
-              get_field_out("gas_spec_tendencies_cw").get_view<Real****>();
+          // const auto gas_spec_tendencies =
+          //     get_field_out("gas_spec_tendencies").get_view<Real****>();
+          // const auto gas_spec_tendencies_cw =
+          //     get_field_out("gas_spec_tendencies_cw").get_view<Real****>();
           const auto gas_spec_tend_col_f = ekat::subview(gas_spec_tendencies, icol);
           const auto gas_spec_tend_cw_col_f = ekat::subview(gas_spec_tendencies_cw, icol);
           // shuffle the views from mam4xx into the corresponding field views
