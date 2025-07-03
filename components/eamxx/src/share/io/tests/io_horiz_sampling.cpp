@@ -138,10 +138,13 @@ TEST_CASE("io_remap_test","io_remap_test")
   // Read output file
   std::string filename = "horiz_sampling.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   auto tgt_grid = create_point_grid(gname + "_tgt",ngcols_tgt,nlevs,comm);
+
   auto s2d_tgt = create_f("s2d",tgt_grid->get_2d_scalar_layout(),gname+"_tgt");
   auto s3d_tgt = create_f("s3d",tgt_grid->get_3d_scalar_layout(true),gname+"_tgt");
 
-  AtmosphereInput reader(filename,tgt_grid,{s2d_tgt,s3d_tgt});
+  std::vector<Field> fields = {s2d_tgt,s3d_tgt};
+
+  AtmosphereInput reader(filename,tgt_grid,fields);
   reader.read_variables();
   reader.finalize(); // manually finalize, or scorpio cleanup will complain about a file still open
 
