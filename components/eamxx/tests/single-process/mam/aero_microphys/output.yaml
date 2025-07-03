@@ -63,6 +63,8 @@ fields:
       - num_c3
       - num_c4
       - constituent_fluxes
+      - gas_spec_tendencies
+      - gas_spec_tendencies_cw
       # To save these fields make sure to turn on
       # OUTPUT_TRACER_FIELDS
       #- oxi_fields
