@@ -39,6 +39,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
   config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
   config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
+  config_.linoz.compute  = m_params.get<double>("mam4_compute_linoz",true);
 }
 // ================================================================
 //  SET_GRIDS
@@ -586,7 +587,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy =
        ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
@@ -730,11 +731,13 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::fence();
   }
 
+  config_.linoz.chlorine_loading=chlorine_loading;
   const_view_1d &col_latitudes     = col_latitudes_;
   const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
 
   mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   mam_coupling::AerosolState &dry_aero = dry_aero_;
+
 
   mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
   const Config &config                        = config_;
@@ -875,7 +878,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         for(int i = 0; i < mam4::mo_setinv::num_tracer_cnst; ++i) {
           cnst_offline_icol[i] = ekat::subview(cnst_offline[i], icol);
         }
-
         // calculate o3 column densities (first component of col_dens in Fortran
         // code)
         auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
@@ -884,16 +886,17 @@ void MAMMicrophysics::run_impl(const double dt) {
 
         const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
 
-        const auto linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
-        const auto linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
-        const auto linoz_o3col_clim_icol =
+        mam4::microphysics::LinozData linoz_data;
+        linoz_data.linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
+        linoz_data.linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
+        linoz_data.linoz_o3col_clim_icol =
             ekat::subview(linoz_o3col_clim, icol);
-        const auto linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
-        const auto linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
-        const auto linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
-        const auto linoz_dPmL_dO3col_icol =
+        linoz_data.linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
+        linoz_data.linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
+        linoz_data.linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
+        linoz_data.linoz_dPmL_dO3col_icol =
             ekat::subview(linoz_dPmL_dO3col, icol);
-        const auto linoz_cariolle_pscs_icol =
+        linoz_data.linoz_cariolle_pscs_icol =
             ekat::subview(linoz_cariolle_pscs, icol);
         const auto nevapr_icol       = ekat::subview(nevapr, icol);
         const auto prain_icol        = ekat::subview(prain, icol);
@@ -957,18 +960,17 @@ void MAMMicrophysics::run_impl(const double dt) {
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
-            photo_table, chlorine_loading, config.setsox, config.amicphys,
-            config.linoz.psc_T, zenith_angle(icol), d_sfc_alb_dir_vis(icol),
+            photo_table,  config.setsox, config.amicphys,
+             zenith_angle(icol), d_sfc_alb_dir_vis(icol),
             o3_col_dens_i, photo_rates_icol, extfrc_icol, invariants_icol,
-            work_photo_table_icol, linoz_o3_clim_icol, linoz_t_clim_icol,
-            linoz_o3col_clim_icol, linoz_PmL_clim_icol, linoz_dPmL_dO3_icol,
-            linoz_dPmL_dT_icol, linoz_dPmL_dO3col_icol,
-            linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles,
+            work_photo_table_icol,
+            config.linoz, linoz_data,
+             eccf, adv_mass_kg_per_moles,
             fraction_landuse_icol, index_season, clsmap_4, permute_4,
-            offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
-            config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
+            offset_aerosol,
+            dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays, 
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays,
 	    dvel_col, dflx_col, progs);
 
         team.team_barrier();
