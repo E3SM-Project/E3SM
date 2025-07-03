@@ -218,7 +218,8 @@ contains
 
    subroutine ocn_surface_bulk_forcing_vel( &
                                forcingPool, sfcStress, &
-                               sfcStressMag, normalVelocity, err)!{{{
+                               sfcStressMag, velocityZonal, &
+                               velocityMeridional, normalVelocity, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -228,7 +229,7 @@ contains
          forcingPool         !< [in] Forcing structure w/ sfc stresses
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity
+         velocityZonal, velocityMeridional, normalVelocity
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -264,7 +265,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
          eddyKillingCorrection !variable to output for diagnostics of the correction
 
-      real (kind=RKIND) :: leadingCoeff, u10m
+      real (kind=RKIND) :: leadingCoeff, u10m, eddyKillCorrZon, eddyKillCorrMer
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -324,6 +325,7 @@ contains
 #else
       !$omp parallel
       !$omp do schedule(runtime)
+      !$omp private(cell1,cell2,leadingCoeff,u10m)
 #endif
       do iEdge = 1, nEdges
         sfcStress(iEdge) = sfcStress(iEdge) + &
@@ -342,6 +344,7 @@ contains
                eddyKillingCorrection(iEdge) = 0.3_RKIND*leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)*u10m
                sfcStress(iEdge) = sfcStress(iEdge) + eddyKillingCorrection(iEdge)
             end if
+
          end do
       end if
 
@@ -357,12 +360,29 @@ contains
       !$acc                          windStressMerid)
 #else
       !$omp do schedule(runtime)
+      !$omp private(eddyKillCorrZon, eddyKillCorrMer)
 #endif
+      if (config_eddy_killing_correction_enable) then
+      do iCell = 1, nCells
+        eddyKillCorrZon = leadingCoeff*windSpeed10m(iCell)*velocityZonal(minLevelCell(iCell),iCell)
+        eddyKillCorrMer = leadingCoeff*windSpeed10m(icell)*velocityMeridional(minLevelCell(iCell),iCell)
+
+        if (iceFraction(iCell) > 0.05_RKIND) then
+           eddyKillCorrZon = 0.0_RKIND
+           eddyKillCorrMer = 0.0_RKIND
+        end if
+
+        sfcStressMag(iCell) = sfcStressMag(iCell) + &
+                              sqrt( (windStressZonal(iCell) + 0.3_RKIND*eddyKillCorrZon)**2 &
+                                  + (windStressMerid(iCell) + 0.3_RKIND*eddyKillCorrMer)**2 )
+      end do
+      else
       do iCell = 1, nCells
         sfcStressMag(iCell) = sfcStressMag(iCell) + &
                               sqrt( windStressZonal(iCell)**2 &
                                   + windStressMerid(iCell)**2 )
       end do
+      end if
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
