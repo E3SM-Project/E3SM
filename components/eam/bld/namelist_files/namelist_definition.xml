@@ -4494,6 +4494,12 @@ Return fluxes per band in addition to the total fluxes.
 Default: FALSE
 </entry>
 
+<entry id="rad_asym_splt" type="logical"  category="radiation"
+group="radiation_nl" valid_values="" > 
+Split radiation asymmetrically between VIS/NIR, coef for VIS
+Default: FALSE
+</entry>
+
 <entry id="use_rad_dt_cosz" type="logical"  category="radiation"
        group="radiation_nl" valid_values="" >
 If true, then use the radiation timestep for all cosz calculations.
