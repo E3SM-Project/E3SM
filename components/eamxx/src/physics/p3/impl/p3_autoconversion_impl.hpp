@@ -28,13 +28,7 @@ void Functions<S,D>
       runtime_options.autoconversion_nc_exponent;
   const Scalar autoconversion_radius = runtime_options.autoconversion_radius;
 
-  Scalar CONS3;
-  // TODO: always default to second branch after BFB stuff is addressed
-  if(autoconversion_radius == sp(25.0e-6)) {
-    CONS3 = C::CONS3;
-  } else {
-    CONS3 = sp(1.0) / (C::CONS2 * pow(autoconversion_radius, sp(3.0)));
-  }
+  const Scalar CONS3 = sp(1.0) / (C::CONS2 * pow(autoconversion_radius, sp(3.0)));
 
   if(qc_not_small.any()) {
     Spack sgs_var_coef;
