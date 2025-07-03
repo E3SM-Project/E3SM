@@ -1409,11 +1409,13 @@ contains
    real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
    integer, dimension(:,:), pointer :: orig3dOceanMask
    real(kind=RKIND), pointer :: config_invalid_value_TF
+   character(len=StrKIND), pointer :: config_smb_source
    real(kind=RKIND) :: fractionalMaskVal
 
     errorCode = 0
 
     call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
+    call mpas_pool_get_config(domain % configs, 'config_smb_source', config_smb_source)
 
     n = 0
     block => domain % blocklist
@@ -1443,7 +1445,9 @@ contains
          endif
          do i = 1, nCellsSolve
             n = n + 1
-            sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
+            if (trim(config_smb_source) == 'coupler') then
+               sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
+            endif
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
             if (nISMIP6OceanLayers > 0) then
                do iLev = 1, nISMIP6OceanLayers
