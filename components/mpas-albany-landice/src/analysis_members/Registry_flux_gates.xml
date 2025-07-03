@@ -25,7 +25,7 @@
         </packages>
         <var_struct name="fluxGatesAM" time_levs="1" packages="fluxGatesAMPKG">
 
-                <var name="iceFluxThroughGates" type="real" dimensions="nFluxGates Time" units="kg yr^{-1}"
+                <var name="iceFluxThroughGates" type="real" dimensions="nFluxGates Time" units="kg yr^-1"
                         description="ice flux through flux gates"
                 />
         </var_struct>
