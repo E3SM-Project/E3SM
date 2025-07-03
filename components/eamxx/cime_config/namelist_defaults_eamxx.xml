@@ -229,7 +229,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
       <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">2000.0</spa_ccn_to_nc_factor>
       <spa_ccn_to_nc_factor hgrid="ne256np4.pg2">1000.0</spa_ccn_to_nc_factor>
-      <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">0.55</spa_ccn_to_nc_exponent>      
+      <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">0.55</spa_ccn_to_nc_exponent>
       <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
       <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
       <min_rime_rho type="real" doc="Minimum rime density in kg/m3">50.0</min_rime_rho>
@@ -312,6 +312,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_do_coag   type="logical" doc="Switch to enable aerosol microphysics coagulation process">true</mam4_do_coag>
       <mam4_do_rename type="logical" doc="Switch to enable aerosol microphysics rename process">true</mam4_do_rename>
       <!-- LINOZ parameters -->
+      <mam4_run_linoz    type="logical"    doc="turn on/off linoz computation">true</mam4_run_linoz>
       <mam4_o3_tau    type="real"    doc="Linoz tau parameter">172800.0</mam4_o3_tau>
       <mam4_o3_sfc    type="real"    doc="Linoz surface parameter">3.0E-008</mam4_o3_sfc>
       <mam4_o3_lbl    type="integer" doc="Linoz lbl parameter">4</mam4_o3_lbl>
@@ -562,6 +563,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       </do_subcol_sampling>
       <pool_size_multiplier type="real">1.0</pool_size_multiplier>
       <force_run_after_restart type="logical" doc="Force rad to run on first step after restart, regardless of rad frequency">false</force_run_after_restart>
+
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
