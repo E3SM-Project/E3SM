@@ -6,13 +6,21 @@ conduct an ensemble of simulations starting from different initial conditions.
 This class inherits from SystemTestsCommon.
 """
 
+# NOTE: NINST is a tunable parameter
+# NOTE: it controls how many instances of the test we are using
+# NOTE: it should be adjusted when we have better information
+
+NINST = 3
+
 import os
 import glob
 import json
 import shutil
+import sys
 import logging
 
 from shutil import copytree
+from importlib import import_module
 
 import CIME.test_status
 import CIME.utils
@@ -21,13 +29,33 @@ from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.XML.machines import Machines
 
+# add eamxx scripts dir to get stuff from there
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../scripts'))
+# get the pylib stuff and ensure we have the packages we need
+from utils import _ensure_pylib_impl
+
+# ensure we have all these libraries before we run this test
+_ensure_pylib_impl("packaging")
+_ensure_pylib_impl("setuptools")
+_ensure_pylib_impl("six")
+_ensure_pylib_impl("numpy")
+_ensure_pylib_impl("scipy")
+_ensure_pylib_impl("pandas", min_version="2.1.0") # note: needs py 3.9+
+_ensure_pylib_impl("livvkit", min_version="3.0.1")
+_ensure_pylib_impl("netCDF4")
+_ensure_pylib_impl("matplotlib")
+_ensure_pylib_impl("pybtex", min_version="0.24.0")
+_ensure_pylib_impl("statsmodels", min_version="0.14.0")
+
+_ensure_pylib_impl("evv4esm")
+
 
 import evv4esm  # pylint: disable=import-error
 from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
-NINST = 2
+
 
 
 def duplicate_yaml_files(yaml_file, num_copies):
