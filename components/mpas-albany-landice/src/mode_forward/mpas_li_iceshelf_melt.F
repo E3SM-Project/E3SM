@@ -1202,6 +1202,7 @@ module li_iceshelf_melt
       real(kind=RKIND), dimension(maxNumBasins*2) :: localSums, globalSums
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND) :: coef
       integer :: i
 
@@ -1226,7 +1227,10 @@ module li_iceshelf_melt
 
          ! Get 3d thermal forcing (had to be read-in)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean3d)
-
+         
+         ! Get bed topography
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         
          ! Get z-coords for ocean data
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
 
@@ -1289,27 +1293,25 @@ module li_iceshelf_melt
                      err = ior(err, 1)
                   endif
                endif
-               if (kinf <= nOceanLayers) then
-                  if (TFocean3d(kinf, iCell) == invalid_value_TF) then
-                     call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean3d. " // &
-                        "kinf=$i TFocean3d(kinf,iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
-                        intArgs=(/kinf, indexToCellID(iCell)/), &
-                        realArgs=(/TFocean3d(kinf, iCell) /) )
-                     err = ior(err, 1)
-                  endif
-               endif
 
                if (ksup == 0) then
                   ! For depths shallower than shallowest layer center, use shallowest layer
                   TFdraft(iCell) = TFocean3d(1, iCell)
                elseif (ksup == nOceanLayers) then
-                  ! for depths below the deepest layer center, use deepest layer corrected for Tfreeze
+                  ! Use deepest layer corrected for Tfreeze for depths below the deepest layer center
                   TFdraft(iCell) = TFocean3d(nOceanLayers, iCell) - &
                      (zOcean(nOceanLayers) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
                else
-                  ! for depths between the first and last layer centers, linearly interpolate
-                  TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean3d(kinf, iCell) &
-                     + (lowerSurface(iCell)-zOcean(kinf)) * TFocean3d(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+                  if (zOcean(kinf) < bedTopography(iCell)) then
+                     ! Use deepest ocean cell corrected for Tfreeze where
+                     ! lowerSurface is below that cell center
+                     TFdraft(iCell) = TFocean3d(ksup, iCell) - &
+                        (zOcean(ksup) - lowerSurface(iCell)) * oceanFreezingTempDepthDependence
+                  else
+                     ! for depths between the first and last layer centers, linearly interpolate
+                     TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean3d(kinf, iCell) &
+                        + (lowerSurface(iCell)-zOcean(kinf)) * TFocean3d(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
+                  endif
                endif
 
                ! 2 -  Mean Thermal forcing in individual basins (NB: fortran norm while basins start at zero):
