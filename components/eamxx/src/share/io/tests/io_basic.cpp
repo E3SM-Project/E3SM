@@ -37,7 +37,7 @@ void add (const Field& f, const double v) {
 }
 
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {
