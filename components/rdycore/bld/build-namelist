@@ -278,7 +278,7 @@ foreach my $attr (keys %xmlvars) {
 }
 
 my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
-my $RDYCORE_MODE        = $xmlvars{'RDYCORE_MODE'};
+my $RDYCORE_MODE    = $xmlvars{'RDYCORE_MODE'};
 my $ROF_GRID        = $xmlvars{'ROF_GRID'};
 my $LND_GRID        = $xmlvars{'LND_GRID'};
 my $ROF_NCPL        = $xmlvars{'ROF_NCPL'};
@@ -305,7 +305,8 @@ if ($RDYCORE_MODE eq "NULL") {
 else {
     # Set Initial conditions if there is a file for this grid and sim-yr
     add_default($nl, 'do_rdycore', 'val'=>".true.");
-    add_default($nl, 'rdycore_yaml_file');
+    add_default($nl, 'rdycore_yaml_file', 'rof_grid'=>$ROF_GRID );
+    add_default($nl, 'filename_rof', 'rof_grid'=>$ROF_GRID );
     my $val = 0;
     if ($NCPL_BASE_PERIOD eq "year") {
         $val = ( 3600 * 24 *365 ) / $ROF_NCPL;
