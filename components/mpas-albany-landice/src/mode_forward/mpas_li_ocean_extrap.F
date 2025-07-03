@@ -451,7 +451,7 @@ contains
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
                do iLayer = 1, nISMIP6OceanLayers 
-                  if ( ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell) ) then
+                  if ((iLayer == 1) .or. (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell))) then
                   
                      if (config_calculate_thermal_forcing) then
                         ! for ice-dammed inland seas, assume default salinity, and back-calculate sea temperature to ensure zero thermal forcing
@@ -479,30 +479,31 @@ contains
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor,iCell)
                      do iLayer = 1, nISMIP6OceanLayers
-                        if ( (thickness(jCell) > 0) .and. (bedTopography(jCell) < 0) ) then
+                        if ( ((thickness(jCell) > 0) .and. (bedTopography(jCell) < 0)) &
+                              .and. ( (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) &
+                              .or. (iLayer == 1))) then 
                            if (config_calculate_thermal_forcing) then
                                    ! Change temperature and/or salinity if
                                    ! outside of physical range
                               
-                              if ( ((oceanSalinity(iLayer,jCell) < min_allowable_salinity) .or. &
-                                    (oceanSalinity(iLayer,jCell) > max_allowable_salinity)) .and. & 
-                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) ) then 
+                              if ((oceanSalinity(iLayer,jCell) < min_allowable_salinity) .or. &
+                                    (oceanSalinity(iLayer,jCell) > max_allowable_salinity)) then 
                                  oceanSalinity(iLayer,jCell) = default_salinity
+                                 alteredCellsIter(jCell) = 1
                               endif
-                              if ( ((oceanTemperature(iLayer,jCell) < min_allowable_temperature) .or. &
-                                    (oceanTemperature(iLayer,jCell) > max_allowable_temperature)) .and. &
-                                      (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) ) then 
+                              if ((oceanTemperature(iLayer,jCell) < min_allowable_temperature) .or. &
+                                    (oceanTemperature(iLayer,jCell) > max_allowable_temperature)) then
                                  oceanTemperature(iLayer,jCell) = (gamma1 * oceanSalinity(iLayer,jCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+                                 alteredCellsIter(jCell) = 1
                               endif
                            endif
-                           if ( ((ismip6shelfMelt_3dThermalForcing(iLayer,jCell) < min_allowable_TF) .or. &
-                                 (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) > max_allowable_TF)) .and. &
-                                 (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(jCell)) ) then 
+                           if ((ismip6shelfMelt_3dThermalForcing(iLayer,jCell) < min_allowable_TF) .or. &
+                                 (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) > max_allowable_TF)) then 
                               ismip6shelfMelt_3dThermalForcing(iLayer,jCell) = 0.0_RKIND
+                              alteredCellsIter(jCell) = 1
                            endif
                         endif
                      enddo
-                     alteredCellsIter(iCell) = 1
                   enddo
                endif
             enddo
