@@ -4,6 +4,7 @@
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_coupling.hpp>
 #include <share/util/eamxx_common_physics_functions.hpp>
+#include <share/field/field_utils.hpp>
 
 #include "readfiles/tracer_reader_utils.hpp"
 // For calling MAM4 processes
@@ -22,6 +23,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
   using view_1d       = typename KT::template view_1d<Real>;
   using view_2d       = typename KT::template view_2d<Real>;
   using view_3d       = typename KT::template view_3d<Real>;
+  using view_4d       = typename KT::template view_ND<Real, 4>;
   using const_view_1d = typename KT::template view_1d<const Real>;
   using const_view_2d = typename KT::template view_2d<const Real>;
 
@@ -64,6 +66,10 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // Output extra mam4xx diagnostics.
   bool extra_mam4_aero_microphys_diags_ = false;
 
+  // number of species involved in gas phase chemistry (gases + aerosols)
+  static constexpr int num_gas_aerosol_constituents_ = mam_coupling::gas_pcnst();
+  // number of species with external forcing
+  static constexpr int extcnt_ = mam4::gas_chemistry::extcnt;
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
@@ -162,7 +168,19 @@ class MAMMicrophysics final : public MAMGenericInterface {
   int get_len_temporary_views();
   void init_temporary_views();
   int len_temporary_views_{0};
+  view_3d gas_spec_tend_col_;
+  view_3d gas_spec_tend_cw_col_;
+  static constexpr int num_gas_tend_ = mam4::microphysics::nqtendaa();
+  static constexpr int num_gas_tend_cw_ = mam4::microphysics::nqqcwtendaa();
 
+  void transpose_mam_gas_tend_view(const view_3d gt_col, const view_3d gt_col_f,
+                                   const int nlev, const int nsub) {
+    Kokkos::parallel_for("transpose_mam4_gas_tend",
+      Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {num_gas_aerosol_constituents_, nsub, nlev}),
+      KOKKOS_LAMBDA(const int spec, const int jsub, const int lvl) {
+        gt_col_f(spec, jsub, lvl) = gt_col(lvl, spec, jsub);
+    });
+  }
 };  // MAMMicrophysics
 
 }  // namespace scream
