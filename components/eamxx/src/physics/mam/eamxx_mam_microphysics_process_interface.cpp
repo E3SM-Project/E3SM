@@ -207,10 +207,17 @@ void MAMMicrophysics::set_grids(
     const FieldLayout vector3d_num_gas_aerosol_constituents =
         grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
-    // Fields for tendencies due to gas phase chemistry
-    // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
+    // Diagnostics: tendencies due to gas phase chemistry [kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+
+    // Diagnostics: tendencies due to aqueous chemistry [kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+
+    // Diagnostics: SO4 in-cloud tendencies[kg/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+
+    // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -655,9 +662,12 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
+  view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
+    aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
+    aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -903,6 +913,8 @@ void MAMMicrophysics::run_impl(const double dt) {
         if (extra_mam4_aero_microphys_diags) {
 	        diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
 	        diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
+          diag_arrays.aqso4_incloud_mmr_tendency = ekat::subview(aqso4_incloud_mmr_tendency, icol);
+          diag_arrays.aqh2so4_incloud_mmr_tendency = ekat::subview(aqh2so4_incloud_mmr_tendency, icol);
 	      }
 
         // Wind speed at the surface
