@@ -434,6 +434,10 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,{lat_f,lon_f});
   latlon_reader.read_variables();
 
+  // Create iop remap tgt grid
+  m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
+  m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
+
   // Create IOP remappers
   m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
   m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
