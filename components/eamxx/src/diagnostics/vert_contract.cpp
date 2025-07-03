@@ -58,7 +58,7 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
   const auto &fid    = f.get_header().get_identifier();
   const auto &layout = fid.get_layout();
 
-  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 3,
+  EKAT_REQUIRE_MSG(layout.rank() >= 1 && layout.rank() <= 4,
                    "Error! Field rank not supported by VertContractDiag.\n"
                    " - field name: " + fid.name() + "\n"
                    " - field layout: " + layout.to_string() + "\n");
