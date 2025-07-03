@@ -207,6 +207,11 @@ void MAMMicrophysics::set_grids(
     const FieldLayout vector3d_num_gas_aerosol_constituents =
         grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
+    //Gas aerosol exchange from the condensation process
+    //BALLI TODO: Check units!!!!
+    add_field<Computed>("mam4_microphysics_gas_aero_exchange_condensation",
+                     vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+
     // Fields for tendencies due to gas phase chemistry
     // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
@@ -655,7 +660,9 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
+  view_3d gas_aero_exchange_condensation;
   if (extra_mam4_aero_microphys_diags_) {
+    gas_aero_exchange_condensation =get_field_out("mam4_microphysics_gas_aero_exchange_condensation").get_view<Real ***>();
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
   }
@@ -901,6 +908,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
         mam4::MicrophysDiagnosticArrays diag_arrays;
         if (extra_mam4_aero_microphys_diags) {
+          diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
 	        diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
 	        diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
 	      }
