@@ -3974,6 +3974,8 @@ module li_calving
                                         thermalPool
       character (len=StrKIND), pointer :: config_flowParamA_calculation, &
                                           config_crevasse_water_depth_source
+      character (len=StrKIND), pointer :: config_damage_calving_method
+      logical, pointer :: config_calculate_damage
       integer :: iCell, err_tmp
       integer, pointer :: nCells
       real (kind=RKIND), pointer :: config_ice_density, config_ocean_density
@@ -4003,6 +4005,8 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_flowLawExponent', config_flowLawExponent)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
+      call mpas_pool_get_config(liConfigs, 'config_calculate_damage', config_calculate_damage)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
@@ -4024,6 +4028,18 @@ module li_calving
       call mpas_pool_get_array(velocityPool, 'eMax', eMax)
       call mpas_pool_get_array(velocityPool, 'eMin', eMin)
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+
+      if (trim(config_damage_calving_method) /= "none") then
+         call mpas_log_write("When using crevasse depth calving, config_damage_calving_method must be set to 'none'", MPAS_LOG_ERR)
+         err = 1
+         return
+      endif
+
+      if (config_calculate_damage) then
+         call mpas_log_write("When using crevasse depth calving, config_calculate_damage must be set to .false.", MPAS_LOG_ERR)
+         err = 1
+         return
+      endif
 
       if (trim(config_flowParamA_calculation) /= "PB1982") then
          call mpas_log_write("When using crevasse depth calving, config_flowParamA_calculation must be set to 'PB1982'", MPAS_LOG_ERR)
