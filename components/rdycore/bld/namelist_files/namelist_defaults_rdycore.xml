@@ -17,6 +17,13 @@ for the RDYCORE data in the E3SM distribution
 <!-- Default rdycore namelist -->
 
 <do_rdycore>.true.</do_rdycore> 
-<rdycore_yaml_file>rdycore_yaml</rdycore_yaml_file>
+<rdycore_yaml_file>rdycore.yaml</rdycore_yaml_file>
+
+<!-- River Transport Model river routing file (relative to DIN_LOC_ROOT) -->
+<filename_rof rof_grid="r0125" >rof/mosart/MOSART_global_8th_20180211c.nc</filename_rof>
+<filename_rof rof_grid="r025" >rof/mosart/MOSART_global_qd_20240212.v3.nc</filename_rof>
+<filename_rof rof_grid="r05" >rof/mosart/MOSART_global_half_20180721a.nc</filename_rof>
+<filename_rof rof_grid="r2" >rof/mosart/MOSART_Global_2deg_antarctica_flowing_to_north_c09162020.nc</filename_rof>
+<filename_rof rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th_20160426.nc</filename_rof>
 
 </namelist_defaults>

@@ -22,7 +22,17 @@ If .true., rdycore will run
        group="rdycore_inparm" 
        valid_values="" >
 Default: ' '
-Name of rdycore yaml file
+Full pathname of rdycore yaml file
+</entry>
+
+<entry id="filename_rof" 
+       type="char*256"
+       category="rdycore"
+       input_pathname="abs"
+       group="rdycore_inparm" 
+       valid_values="" >
+Default: ' '
+Full pathname of rdycore rof file
 </entry>
 
 </namelist_definition>

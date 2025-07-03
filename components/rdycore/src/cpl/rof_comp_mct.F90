@@ -24,7 +24,8 @@ module rof_comp_mct
                               index_r2x_Flrr_volrmch, index_r2x_Flrr_supply, &
                               index_r2x_Flrr_deficit, index_x2r_So_ssh
   use rdycoreMod      , only: inst_name, inst_suffix, inst_index
-  use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit
+  use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit, &
+                              MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RDycoreIO
 
   !
@@ -57,6 +58,10 @@ module rof_comp_mct
   integer, allocatable :: length(:)    ! for gsmap initialization
   integer, allocatable :: pe_loc(:)    ! for gsmap initialization
 
+  logical                 :: do_rdycore
+
+  character(len=256)      :: rdycore_yaml_file
+  character(len=256)      :: filename_rof
   character(*), parameter :: F00   = "('(rof_comp_init) ',8a)"
   character(*), parameter :: subName = "(rof_init_mct) "
 
@@ -494,132 +499,70 @@ CONTAINS
 
 !====================================================================================
 
-  subroutine  rof_read_mosart0()
+  subroutine rof_read_namelist()
 
     use shr_mpi_mod
     !---------------------------------------------------------------------------
     ! DESCRIPTION:
-    ! Send the runoff model export state to the coupler
-    ! convert from m3/s to kg/m2s
+    ! Read the rdycore_in file and associated namelist
     !
     ! ARGUMENTS:
     implicit none
     !
     ! LOCAL VARIABLES
-    integer :: dimid
-    integer :: ncid
-    integer :: varid, areavarid
-    integer :: status
-    integer :: i, j, count, ier
-    integer :: lat, lon
-    character(len=128) :: filename_rof
-    integer, parameter :: RKIND = selected_real_kind(13)
-    real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D, area1D
-    real(kind=RKIND), dimension(:,:), allocatable :: area
+    character(len=256):: nlfilename_rof       ! namelist filename
+    character(len=*),parameter :: subname = '(rof_read_namelist) '
+    integer :: ier, unitn
+    logical :: lexist
 
     !---------------------------------------------------------------------------
 
-    ! open mosart file
-    filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/mosart/MOSART_global_half_20180721a.nc'
+    namelist /rdycore_inparm / do_rdycore, rdycore_yaml_file, filename_rof
 
-    ! read file only from master_task
+    ! default values
+    do_rdycore        = .true.
+    rdycore_yaml_file = ' '
+    filename_rof      = ' '
+
+    ! read namelist from expected file
+    nlfilename_rof = "rdycore_in" // trim(inst_suffix)
+    inquire (file = trim(nlfilename_rof), exist = lexist)
+    if ( .not. lexist ) then
+       write(logunit_rof,*) subname // ' ERROR: nlfilename_rof does NOT exist:'&
+            //trim(nlfilename_rof)
+       call shr_sys_abort(trim(subname)//' ERROR nlfilename_rof does not exist')
+    end if
     if (masterproc) then
-       status = nf90_open(trim(filename_rof), NF90_NOWRITE, ncid)
-
-       ! read in data dimensions
-       status = nf90_inq_dimid(ncid, "lat", dimid)
-       if (status == PIO_NOERR) then
-         status = nf90_inquire_dimension(ncid, dimid, len=lat)
-         status = nf90_inq_dimid(ncid, "lon", dimid)
-         if (status /= PIO_NOERR) then
-            call shr_sys_abort("ERROR: lat dimension defined in the file, but lon dimension is missing. file " // trim(filename_rof))
-         endif
-         status = nf90_inquire_dimension(ncid, dimid, len=lon)
-       else
-          status = nf90_inq_dimid(ncid, "gridcell", dimid)
-          if (status == PIO_NOERR) then
-             status = nf90_inquire_dimension(ncid, dimid, len=lon)
-             lat = 1
-          else
-             call shr_sys_abort("ERROR: Neither (lon,lat) nor (gridcell) dimension defined in the following file: " // trim(filename_rof))
+       unitn = shr_file_getunit()
+       write(logunit_rof,*) 'Read in rdycore_inparm namelist from: ', trim(nlfilename_rof)
+       open( unitn, file=trim(nlfilename_rof), status='old' )
+       ier = 1
+       do while ( ier /= 0 )
+          read(unitn, rdycore_inparm, iostat=ier)
+          if (ier < 0) then
+             call shr_sys_abort( subname//' encountered end-of-file on rdycore_inparm read' )
           endif
-       endif
-    end if
-
-    ! broadcast dimensions
-    call shr_mpi_bcast (lat, mpicom_rof, 'rof_read_mosart')
-    call shr_mpi_bcast (lon, mpicom_rof, 'rof_read_mosart')
-
-    ! set dimensions on all processors
-    gsize = lat*lon
-    nlatg = lat
-    nlong = lon
-
-    ! allocate arrays
-    allocate(lat1D(lat))
-    allocate(lon1D(lon))
-    allocate(area(lat,lon))
-    allocate(lonc(gsize))
-    allocate(latc(gsize))
-    allocate(areac(gsize))
-
-    ! read in lat, lon, and area only on master_task
-    if (masterproc) then
-       allocate(area1D(lat))
-       status = nf90_inq_varid(ncid, "lat", varid)
-       status = nf90_get_var(ncid, varid, lat1D)
-
-       status = nf90_inq_varid(ncid, "lon", varid)
-       status = nf90_get_var(ncid, varid, lon1D)
-
-       status = nf90_inq_varid(ncid, "area", areavarid)
-       do j = 1, nlong
-          status = nf90_get_var(ncid, areavarid, area1D, start=(/1,j/), count=(/lat,1/))
-          area(:,j) = area1d(:)
-       enddo
-
-       call shr_file_freeUnit(ncid)
-       deallocate(area1D)
-    endif
-
-    ! broadcast lat1D, lon1D and arear
-    call shr_mpi_bcast (lat1D, mpicom_rof, 'rof_read_mosart')
-    call shr_mpi_bcast (lon1D, mpicom_rof, 'rof_read_mosart')
-    call shr_mpi_bcast (area,  mpicom_rof, 'rof_read_mosart')
-
-    ! load 2d data into 1d arrays
-    count = 0
-    do j = 1, nlong
-       do i = 1, nlatg
-         count = count + 1
-         latc(count)  = lat1D(i)
-         lonc(count)  = lon1D(j)
-         areac(count) = area(i,j)
        end do
-    end do
-
-    if (masterproc) then
-       write(logunit_rof,*) 'Read lat1D ', minval(lat1D), maxval(lat1D)
-       write(logunit_rof,*) 'Read lon1D ', minval(lon1D), maxval(lon1D)
-       write(logunit_rof,*) 'Read area  ', minval(area),  maxval(area)
+       call shr_file_freeunit(unitn)
     end if
 
-    deallocate(lat1D)
-    deallocate(lon1D)
-    deallocate(area)
+    call mpi_bcast (do_rdycore,        1,                      MPI_LOGICAL,   0, mpicom_rof, ier)
+    call mpi_bcast (rdycore_yaml_file, len(rdycore_yaml_file), MPI_CHARACTER, 0, mpicom_rof, ier)
+    call mpi_bcast (filename_rof,      len(filename_rof),      MPI_CHARACTER, 0, mpicom_rof, ier)
 
+    ! TODO print out namelist settings
     return
 
-  end subroutine rof_read_mosart0
+  end subroutine rof_read_namelist
+
 !====================================================================================
 
-  subroutine  rof_read_mosart()
+  subroutine rof_read_mosart()
 
     use shr_mpi_mod
     !---------------------------------------------------------------------------
     ! DESCRIPTION:
-    ! Send the runoff model export state to the coupler
-    ! convert from m3/s to kg/m2s
+    ! Read the specififed mosart file
     !
     ! ARGUMENTS:
     implicit none
@@ -627,7 +570,6 @@ CONTAINS
     ! LOCAL VARIABLES
     integer :: i, j, count, ier
     logical :: found, isgrid2d
-    character(len=128) :: filename_rof
     character(len=*),parameter :: subname = '(rof_read_mosart) '
     integer, parameter :: RKIND = selected_real_kind(13)
     real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D, area1D
@@ -637,7 +579,7 @@ CONTAINS
     !---------------------------------------------------------------------------
 
     ! open mosart file
-    filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/mosart/MOSART_global_half_20180721a.nc'
+!JW    filename_rof = '/global/cfs/cdirs/e3sm/inputdata/rof/mosart/MOSART_global_half_20180721a.nc'
 
     if (masterproc) then
        write(logunit_rof,*) 'Read in MOSART file name: ',trim(filename_rof)
