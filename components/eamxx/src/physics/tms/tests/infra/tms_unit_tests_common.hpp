@@ -3,7 +3,6 @@
 
 #include "tms_functions.hpp"
 #include "share/eamxx_types.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/share/physics_test_data.hpp"
 
 namespace scream {

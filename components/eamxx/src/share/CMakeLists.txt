@@ -107,7 +107,8 @@ else()
   target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
 endif()
 
-target_link_libraries(scream_share PUBLIC ekat pioc)
+target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
+
 target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
 )
@@ -155,6 +156,7 @@ if (NOT SCREAM_LIB_ONLY)
     util/eamxx_test_session.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
+  target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
 
   add_subdirectory(tests)
 endif()

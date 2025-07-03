@@ -1,6 +1,6 @@
 #include "share/property_checks/property_check.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <list>

@@ -3,7 +3,7 @@
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 #include <set>
 #include <stdexcept>

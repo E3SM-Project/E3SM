@@ -1,12 +1,11 @@
 #include "eamxx_cosp.hpp"
 #include "cosp_functions.hpp"
-#include "share/property_checks/field_within_interval_check.hpp"
 #include "physics/share/physics_constants.hpp"
-
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
-
+#include "share/property_checks/field_within_interval_check.hpp"
 #include "share/field/field_utils.hpp"
+
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -175,10 +174,10 @@ void Cosp::run_impl (const double dt)
 
     using KT       = KokkosTypes<DefaultDevice>;
     using ExeSpace = typename KT::ExeSpace;
-    using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+    using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
     using PF       = scream::PhysicsFunctions<DefaultDevice>;
 
-    const auto scan_policy = ESU::get_thread_range_parallel_scan_team_policy(ncol, nlev);
+    const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol, nlev);
     const auto g = physics::Constants<Real>::gravit;
     Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
         const int i = team.league_rank();

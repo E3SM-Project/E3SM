@@ -9,9 +9,8 @@
 #include "share/eamxx_session.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <thread>
 #include <array>

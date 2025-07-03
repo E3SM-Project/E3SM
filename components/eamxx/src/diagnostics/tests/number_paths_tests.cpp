@@ -2,14 +2,14 @@
 
 #include "catch2/catch.hpp"
 #include "diagnostics/register_diagnostics.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/util/eamxx_utils.hpp"
+
+#include <ekat_view_utils.hpp>
 
 namespace scream {
 

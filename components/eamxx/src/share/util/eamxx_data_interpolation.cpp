@@ -11,6 +11,8 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "physics/share/physics_constants.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 #include <filesystem>
 #include <fstream>
 #include <regex>
@@ -89,7 +91,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     using KT = KokkosTypes<DefaultDevice>;
     using ExeSpace = typename KT::ExeSpace;
     using MemberType = typename KT::MemberType;
-    using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
     using C = scream::physics::Constants<Real>;
     using PT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
@@ -102,7 +104,7 @@ void DataInterpolation::run (const util::TimeStamp& ts)
 
     const int ncols = ps_v.extent(0);
     const int num_vert_packs = p_v.extent(1);
-    const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+    const auto policy = TPF::get_default_team_policy(ncols, num_vert_packs);
 
     Kokkos::parallel_for("spa_compute_p_src_loop", policy,
       KOKKOS_LAMBDA (const MemberType& team) {
@@ -395,7 +397,7 @@ setup_horiz_remappers (const RemapData& data)
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
   if (data.has_iop) {
-    EKAT_REQUIRE_MSG (not ekat::is_invalid(data.iop_lat) and not ekat::is_invalid(data.iop_lon),
+    EKAT_REQUIRE_MSG (not Kokkos::isnan(data.iop_lat) and not Kokkos::isnan(data.iop_lon),
         "Error! At least one between iop_lat and iop_lon appears to be valid in RemapData.\n"
         "  - iop_lat: " << data.iop_lat << "\n"
         "  - iop_lon: " << data.iop_lon << "\n");
