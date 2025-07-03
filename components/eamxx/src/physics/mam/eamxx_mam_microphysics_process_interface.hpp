@@ -79,12 +79,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   struct Config {
     // stratospheric chemistry parameters
-    struct {
-      int o3_lbl;   // number of layers with ozone decay from the surface
-      Real o3_sfc;  // set from namelist input linoz_sfc
-      Real o3_tau;  // set from namelist input linoz_tau
-      Real psc_T;   // set from namelist input linoz_psc_T
-    } linoz;
+    mam4::microphysics::LinozConf linoz;
 
     // aqueous chemistry parameters
     mam4::mo_setsox::Config setsox;
