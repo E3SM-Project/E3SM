@@ -144,6 +144,7 @@ TEST_CASE("utils") {
 
     int dim0 = 129;
     int dim1 = 4;
+    int dim11 = 6;
     int dim2 = 17;
 
     // Set a weight field
@@ -163,28 +164,34 @@ TEST_CASE("utils") {
     FieldIdentifier f10("f", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
     FieldIdentifier f11("f", {{COL, LEV}, {dim0, dim2}}, m / s, "g");
     FieldIdentifier f20("f", {{COL, CMP, LEV}, {dim0, dim1, dim2}}, m / s, "g");
+    FieldIdentifier f30("f", {{COL, CMP, CMP, LEV}, {dim0, dim1, dim11, dim2}}, m / s, "g");
     Field fieldsc(fsc);
     Field field10(f10);
     Field field11(f11);
     Field field20(f20);
+    Field field30(f30);
     fieldsc.allocate_view();
     field10.allocate_view();
     field11.allocate_view();
     field20.allocate_view();
+    field30.allocate_view();
     randomize(fieldsc, engine, pdf);
     randomize(field10, engine, pdf);
     randomize(field11, engine, pdf);
     randomize(field20, engine, pdf);
+    randomize(field30, engine, pdf);
 
     FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
     FieldIdentifier F_y("fy", {{LEV}, {dim2}}, m / s, "g");
     FieldIdentifier F_z("fz", {{CMP}, {dim1}}, m / s, "g");
     FieldIdentifier F_w("fyz", {{CMP, LEV}, {dim1, dim2}}, m / s, "g");
+    FieldIdentifier F_u("fxyz", {{CMP, CMP, LEV}, {dim1, dim11, dim2}}, m / s, "g");
 
     Field field_x(F_x);
     Field field_y(F_y);
     Field field_z(F_z);
     Field field_w(F_w);
+    Field field_u(F_u);
 
     // Test invalid inputs
     REQUIRE_THROWS(horiz_contraction<Real>(fieldsc, field_x,
@@ -194,6 +201,7 @@ TEST_CASE("utils") {
     field_y.allocate_view();
     field_z.allocate_view();
     field_w.allocate_view();
+    field_u.allocate_view();
 
     REQUIRE_THROWS(horiz_contraction<Real>(fieldsc, field_y,
                                            field_x));  // unmatching layout
@@ -224,6 +232,14 @@ TEST_CASE("utils") {
     REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
             std::vector<FieldTag>({LEV}));
     REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim2);
+    
+    result = field_u.clone();
+    horiz_contraction<Real>(result, field30, field00);
+    REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+            std::vector<FieldTag>({CMP, CMP, LEV}));
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim11);
+    REQUIRE(result.get_header().get_identifier().get_layout().dim(2) == dim2);
 
     result = field_w.clone();
     horiz_contraction<Real>(result, field20, field00);
@@ -250,6 +266,29 @@ TEST_CASE("utils") {
         REQUIRE_THAT(rr(j, k), Catch::Matchers::WithinRel(mr(j, k), tol));
       }
     }
+
+    // Check a 4D case
+    field30.sync_to_host();
+    result = field_u.clone();
+    horiz_contraction<Real>(result, field30, field00);
+    result.sync_to_host();
+    manual_result = result.clone();
+    manual_result.deep_copy(0);
+    manual_result.sync_to_host();
+    auto v3 = field30.get_strided_view<Real ****, Host>();
+    auto mr3 = manual_result.get_strided_view<Real ***, Host>();
+    auto rr3 = result.get_strided_view<Real ***, Host>();
+
+    for(int j = 0; j < dim1; ++j) {
+      for(int k = 0; k < dim11; ++k) {
+        for(int l = 0; l < dim2; ++l) {
+          for(int i = 0; i < dim0; ++i) {
+            mr3(j, k, l) += v00(i) * v3(i, j, k, l);
+          }
+          REQUIRE_THAT(rr3(j, k, l), Catch::Matchers::WithinRel(mr3(j, k, l), tol));
+        }
+      }
+    }
   }
 
   SECTION("vert_contraction") {
@@ -268,6 +307,7 @@ TEST_CASE("utils") {
 
       int dim0 = 18;
       int dim1 = 9;
+      int dim11 = 5;
       // Note that parallel reduction is happening over dim2 (LEV/ILEV)
       int dim2 = lev_tag == LEV ? 225 : 226;
 
@@ -290,26 +330,33 @@ TEST_CASE("utils") {
       FieldIdentifier f11("f", {{CMP, lev_tag}, {dim1, dim2}}, m / s, "g");
       FieldIdentifier f20("f", {{COL, CMP, lev_tag}, {dim0, dim1, dim2}}, m / s,
                           "g");
+      FieldIdentifier f30("f", {{COL, CMP, CMP, lev_tag}, {dim0, dim1, dim11, dim2}}, m / s,
+                          "g");
       Field fieldsc(fsc);
       Field field10(f10);
       Field field11(f11);
       Field field20(f20);
+      Field field30(f30);
       fieldsc.allocate_view();
       field10.allocate_view();
       field11.allocate_view();
       field20.allocate_view();
+      field30.allocate_view();
       randomize(fieldsc, engine, pdf);
       randomize(field10, engine, pdf);
       randomize(field11, engine, pdf);
       randomize(field20, engine, pdf);
+      randomize(field30, engine, pdf);
 
       FieldIdentifier F_x("fx", {{COL}, {dim0}}, m / s, "g");
       FieldIdentifier F_y("fy", {{CMP}, {dim1}}, m / s, "g");
       FieldIdentifier F_z("fz", {{COL, CMP}, {dim0, dim1}}, m / s, "g");
+      FieldIdentifier F_u("fxyz", {{COL, CMP, CMP}, {dim0, dim1, dim11}}, m / s, "g");
 
       Field field_x(F_x);
       Field field_y(F_y);
       Field field_z(F_z);
+      Field field_u(F_u);
 
       // Test invalid inputs
       REQUIRE_THROWS(vert_contraction<Real>(fieldsc, field_x,
@@ -318,6 +365,7 @@ TEST_CASE("utils") {
       field_x.allocate_view();
       field_y.allocate_view();
       field_z.allocate_view();
+      field_u.allocate_view();
 
       REQUIRE_THROWS(vert_contraction<Real>(fieldsc, field_y,
                                             field_x));  // unmatching layout
@@ -380,6 +428,14 @@ TEST_CASE("utils") {
               std::vector<FieldTag>({CMP}));
       REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim1);
 
+      result = field_u.clone();
+      vert_contraction<Real>(result, field30, field00);
+      REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
+              std::vector<FieldTag>({COL, CMP, CMP}));
+      REQUIRE(result.get_header().get_identifier().get_layout().dim(0) == dim0);
+      REQUIRE(result.get_header().get_identifier().get_layout().dim(1) == dim1);
+      REQUIRE(result.get_header().get_identifier().get_layout().dim(2) == dim11);
+
       result = field_z.clone();
       vert_contraction<Real>(result, field20, field00);
       REQUIRE(result.get_header().get_identifier().get_layout().tags() ==
@@ -426,6 +482,28 @@ TEST_CASE("utils") {
             mr3(i, j) += v1(i, k) * v2(i, j, k);
           }
           REQUIRE_THAT(rr3(i, j), Catch::Matchers::WithinRel(mr3(i, j), tol));
+        }
+      }
+
+      // Check a 4D case with 1D weight
+      field30.sync_to_host();
+      result = field_u.clone();
+      vert_contraction<Real>(result, field30, field00);
+      result.sync_to_host();
+      manual_result = result.clone();
+      manual_result.deep_copy(0);
+      manual_result.sync_to_host();
+      auto v3  = field30.get_strided_view<Real ****, Host>();
+      auto mr30 = manual_result.get_strided_view<Real ***, Host>();
+      auto rr30 = result.get_strided_view<Real ***, Host>();
+      for(int i = 0; i < dim0; ++i) {
+        for(int j = 0; j < dim1; ++j) {
+          for(int l = 0; l < dim11; ++l) {
+            for(int k = 0; k < dim2; ++k) {
+              mr30(i, j, l) += v00(k) * v3(i, j, l, k);
+            }
+            REQUIRE_THAT(rr30(i, j, l), Catch::Matchers::WithinRel(mr30(i, j, l), tol));
+          }
         }
       }
     }
