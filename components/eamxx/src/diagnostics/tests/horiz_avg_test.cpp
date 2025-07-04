@@ -42,6 +42,7 @@ TEST_CASE("horiz_avg") {
   // Create a grids manager - single column for these tests
   constexpr int nlevs = 3;
   constexpr int dim3  = 4;
+  constexpr int dim4  = 8;
   const int ngcols    = 6 * comm.size();
 
   auto gm   = create_gm(comm, ngcols, nlevs);
@@ -51,18 +52,22 @@ TEST_CASE("horiz_avg") {
   FieldLayout scalar1d_layout{{COL}, {ngcols}};
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
   FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
+  FieldLayout scalar4d_layout{{COL, CMP, CMP, LEV}, {ngcols, dim3, dim4, nlevs}};
 
   FieldIdentifier qc1_fid("qc", scalar1d_layout, kg / kg, grid->name());
   FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier qc3_fid("qc", scalar3d_layout, kg / kg, grid->name());
+  FieldIdentifier qc4_fid("qc", scalar4d_layout, kg / kg, grid->name());
 
   Field qc1(qc1_fid);
   Field qc2(qc2_fid);
   Field qc3(qc3_fid);
+  Field qc4(qc4_fid);
 
   qc1.allocate_view();
   qc2.allocate_view();
   qc3.allocate_view();
+  qc4.allocate_view();
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
@@ -82,9 +87,11 @@ TEST_CASE("horiz_avg") {
   qc1.get_header().get_tracking().update_time_stamp(t0);
   qc2.get_header().get_tracking().update_time_stamp(t0);
   qc3.get_header().get_tracking().update_time_stamp(t0);
+  qc4.get_header().get_tracking().update_time_stamp(t0);
   randomize(qc1, engine, pdf);
   randomize(qc2, engine, pdf);
   randomize(qc3, engine, pdf);
+  randomize(qc4, engine, pdf);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
@@ -92,9 +99,11 @@ TEST_CASE("horiz_avg") {
   auto diag1 = diag_factory.create("HorizAvgDiag", comm, params);
   auto diag2 = diag_factory.create("HorizAvgDiag", comm, params);
   auto diag3 = diag_factory.create("HorizAvgDiag", comm, params);
+  auto diag4 = diag_factory.create("HorizAvgDiag", comm, params);
   diag1->set_grids(gm);
   diag2->set_grids(gm);
   diag3->set_grids(gm);
+  diag4->set_grids(gm);
 
   // Clone the area field
   auto area = grid->get_geometry_data("area").clone();
@@ -161,6 +170,20 @@ TEST_CASE("horiz_avg") {
   diag3->compute_diagnostic();
   auto diag3_f = diag3->get_diagnostic();
   REQUIRE(views_are_equal(diag3_f, diag3_manual));
+
+  // Try a random case with qc4 (4D field test)
+  auto qc4_v = qc4.get_view<Real ****>();
+  FieldIdentifier diag4_manual_fid("qc_horiz_avg_manual",
+                                   scalar4d_layout.clone().strip_dim(COL),
+                                   kg / kg, grid->name());
+  Field diag4_manual(diag4_manual_fid);
+  diag4_manual.allocate_view();
+  horiz_contraction<Real>(diag4_manual, qc4, area, &comm);
+  diag4->set_required_field(qc4);
+  diag4->initialize(t0, RunType::Initial);
+  diag4->compute_diagnostic();
+  auto diag4_f = diag4->get_diagnostic();
+  REQUIRE(views_are_equal(diag4_f, diag4_manual));
 }
 
 }  // namespace scream
