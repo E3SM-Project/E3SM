@@ -23,6 +23,7 @@ set(DIAGNOSTIC_SRCS
   water_path.cpp
   wind_speed.cpp
   vert_contract.cpp
+  vert_divergence.cpp
   zonal_avg.cpp
 )
 
