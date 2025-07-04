@@ -3740,7 +3740,7 @@ with respect to the vertical coordinate (pressure or height).
 In other words, the vertical divergence is the derivative of the field
 along a vertical coordinate.
 To automatically get the divergence of a field X, we can request
-<code>X_dp_vert_divergence</code> or <code>X_dz_vert_divergence</code>
+<code>dX_dp_vert_divergence</code> or <code>X_dz_vert_divergence</code>
 in the output yaml files.</p>
 <h2 id="brief-description">Brief description</h2>
 <p>For simplicity, the field <code>X</code> can only have two dimensions
@@ -3765,8 +3765,8 @@ levels, pointing downwards. That is, for a pressure coordinate,</p>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_dp_vert_divergence</span><span class="w">  </span><span class="c1"># K / Pa</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_dz_vert_divergence</span><span class="w">  </span><span class="c1"># K / m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dT_mid_dp_vert_divergence</span><span class="w">  </span><span class="c1"># K / Pa</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dT_mid_dz_vert_divergence</span><span class="w">  </span><span class="c1"># K / m</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
