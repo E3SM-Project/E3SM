@@ -49,19 +49,23 @@ TEST_CASE("vert_contract") {
   FieldLayout scalar1d_layout{{LEV}, {nlevs}};
   FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
   FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
+  FieldLayout scalar4d_layout{{COL, CMP, CMP, LEV}, {ngcols, dim3, dim3, nlevs}};
 
   FieldIdentifier fin2_fid("qc", scalar2d_layout, kg / kg, grid->name());
   FieldIdentifier fin3_fid("qc", scalar3d_layout, kg / kg, grid->name());
+  FieldIdentifier fin4_fid("qc", scalar4d_layout, kg / kg, grid->name());
   FieldIdentifier dp_fid("pseudo_density", scalar2d_layout, Pa, grid->name());
   FieldIdentifier dz_fid("dz", scalar2d_layout, m, grid->name());
 
   Field fin2(fin2_fid);
   Field fin3(fin3_fid);
+  Field fin4(fin4_fid);
   Field dp(dp_fid);
   // Field dz(dz_fid);
 
   fin2.allocate_view();
   fin3.allocate_view();
+  fin4.allocate_view();
   dp.allocate_view();
   // dz.allocate_view();
 
@@ -85,10 +89,12 @@ TEST_CASE("vert_contract") {
 
   fin2.get_header().get_tracking().update_time_stamp(t0);
   fin3.get_header().get_tracking().update_time_stamp(t0);
+  fin4.get_header().get_tracking().update_time_stamp(t0);
   dp.get_header().get_tracking().update_time_stamp(t0);
   // dz.get_header().get_tracking().update_time_stamp(t0);
   randomize(fin2, engine, pdf);
   randomize(fin3, engine, pdf);
+  randomize(fin4, engine, pdf);
   randomize(dp, engine, pdf);
   // randomize(dz, engine, pdf);
 
@@ -140,6 +146,8 @@ TEST_CASE("vert_contract") {
   params.set<std::string>("contract_method", "avg");
   params.set<std::string>("weighting_method", "none");
   auto unweighted_avg = diag_factory.create("VertContractDiag", comm, params);
+  // 4d unweighted_avg
+  auto unweighted_avg_4d = diag_factory.create("VertContractDiag", comm, params);
 
   dp_weighted_avg->set_grids(gm);
   dp_weighted_sum->set_grids(gm);
@@ -147,14 +155,19 @@ TEST_CASE("vert_contract") {
   // dz_weighted_avg->set_grids(gm);
   unweighted_sum->set_grids(gm);
   unweighted_avg->set_grids(gm);
+  // 4d unweighted_avg
+  unweighted_avg_4d->set_grids(gm);
 
   // Fields for manual calculation
   FieldIdentifier diag1_fid("qc_vert_contract_manual", scalar2d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
   FieldIdentifier diag2_fid("qc_vert_contract_manual", scalar3d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
+  FieldIdentifier diag3_fid("qc_vert_contract_manual", scalar4d_layout.clone().strip_dim(LEV), kg / kg, grid->name());
   Field diag1_m(diag1_fid);
   Field diag2_m(diag2_fid);
+  Field diag3_m(diag3_fid);
   diag1_m.allocate_view();
   diag2_m.allocate_view();
+  diag3_m.allocate_view();
 
   // Fields for scaling
   FieldIdentifier dps_fid ("dps", scalar2d_layout.clone().strip_dim(LEV), Pa, grid->name());
@@ -297,6 +310,16 @@ TEST_CASE("vert_contract") {
     auto unweighted_avg_f = unweighted_avg->get_diagnostic();
     
     REQUIRE(views_are_equal(unweighted_avg_f, diag2_m));
+    
+    // add a test for fin4 here
+    vert_contraction<Real>(diag3_m, fin4, dp_ones_scaled);
+    // Calculate unweighted avg through diagnostics
+    unweighted_avg_4d->set_required_field(fin4);
+    unweighted_avg_4d->initialize(t0, RunType::Initial);
+    unweighted_avg_4d->compute_diagnostic();
+    auto unweighted_avg_4d_f = unweighted_avg_4d->get_diagnostic();
+    
+    REQUIRE(views_are_equal(unweighted_avg_4d_f, diag3_m));
   }
 }
 

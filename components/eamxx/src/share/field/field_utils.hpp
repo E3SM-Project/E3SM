@@ -139,8 +139,8 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
                    "Error! The weight field must have a column dimension.\n"
                    "The input field has layout "
                        << l_w.tags() << ".\n");
-  EKAT_REQUIRE_MSG(l_in.rank() <= 3,
-                   "Error! The input field must be at most rank-3.\n"
+  EKAT_REQUIRE_MSG(l_in.rank() <= 4,
+                   "Error! The input field must be at most rank-4.\n"
                    "The input field's rank is "
                        << l_in.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_in.tags()[0] == COL,
@@ -212,8 +212,8 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       "Error! The weight field must have LEV as its last dimension.\n"
       "The weight field layout is "
           << l_w.to_string() << ".\n");
-  EKAT_REQUIRE_MSG(l_in.rank() <= 3,
-                   "Error! The input field must be at most rank-3.\n"
+  EKAT_REQUIRE_MSG(l_in.rank() <= 4,
+                   "Error! The input field must be at most rank-4.\n"
                    "The input field rank is "
                        << l_in.rank() << ".\n");
   EKAT_REQUIRE_MSG(l_in.rank() >= l_w.rank(),

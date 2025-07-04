@@ -361,6 +361,25 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
                 v_out(j, k));
           });
     } break;
+    case 4: {
+      auto v_in    = f_in.get_view<const ST ****>();
+      auto v_out   = f_out.get_view<ST ***>();
+      const int d1 = l_in.dim(1);
+      const int d2 = l_in.dim(2);
+      const int d3 = l_in.dim(3);
+      auto p       = ESU::get_default_team_policy(d1 * d2 * d3, ncols);
+      Kokkos::parallel_for(
+          f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+            const int idx = tm.league_rank();
+            const int j   = idx / (d2 * d3);
+            const int k   = (idx % (d2 * d3)) / d3;
+            const int l   = idx % d3;
+            Kokkos::parallel_reduce(
+                Kokkos::TeamVectorRange(tm, ncols),
+                [&](int i, ST &ac) { ac += v_w(i) * v_in(i, j, k, l); },
+                v_out(j, k, l));
+          });
+    } break;
     default:
       EKAT_ERROR_MSG("Error! Unsupported field rank.\n");
   }
@@ -446,6 +465,28 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                                 : w2d(i, k) * v_in(i, j, k);
                 },
                 v_out(i, j));
+          });
+    } break;
+    case 4: {
+      auto v_in    = f_in.get_view<const ST ****>();
+      auto v_out   = f_out.get_view<ST ***>();
+      const int d0 = l_in.dim(0);
+      const int d1 = l_in.dim(1);
+      const int d2 = l_in.dim(2);
+      auto p       = ESU::get_default_team_policy(d0 * d1 * d2, nlevs);
+      Kokkos::parallel_for(
+          f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
+            const int idx = tm.league_rank();
+            const int i   = idx / (d1 * d2);
+            const int j   = (idx % (d1 * d2)) / d2;
+            const int k   = idx % d2;
+            Kokkos::parallel_reduce(
+                Kokkos::TeamVectorRange(tm, nlevs),
+                [&](int l, ST &ac) {
+                  ac += w_is_1d ? w1d(l) * v_in(i, j, k, l)
+                                : w2d(i, l) * v_in(i, j, k, l);
+                },
+                v_out(i, j, k));
           });
     } break;
     default:

@@ -84,6 +84,7 @@ void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, co
               result_view(lat_i, d1_i, d2_i));
         });
   } break;
+  // TODO: support case 4
   default:
     EKAT_ERROR_MSG("Error! Unsupported field rank for zonal averages.\n");
   }
