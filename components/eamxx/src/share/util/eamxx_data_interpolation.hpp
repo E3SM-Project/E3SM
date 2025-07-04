@@ -52,6 +52,9 @@ public:
                             const util::TimeLine timeline,
                             const util::TimeStamp& ref_ts = util::TimeStamp());
 
+  // In case the input files store col/lev dims with exhotic names, the user can provide them here
+  void set_input_files_dimname (const FieldTag t, const std::string& name) { m_input_files_dimnames[t] = name; }
+
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
   void create_vert_remapper ();
@@ -103,6 +106,10 @@ protected:
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_beg;
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_end;
   std::shared_ptr<AbstractRemapper> m_vert_remapper;
+
+  // These are inited as the usual "ncol" and "lev" at construction, but the user
+  // can reset them in case the input files store funky dimensions
+  std::map<FieldTag,std::string>    m_input_files_dimnames;
 
   // If vertical remap happens, at runtime we may need to access some
   // versions of certain perssure fields. Store them here for convenient access

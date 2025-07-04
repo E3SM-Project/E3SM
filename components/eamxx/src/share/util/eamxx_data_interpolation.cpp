@@ -29,6 +29,11 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
 
   m_nfields = m_fields.size();
   m_comm = model_grid->get_comm();
+
+  using namespace ShortFieldTagsNames;
+  m_input_files_dimnames[COL] = "ncol";
+  m_input_files_dimnames[LEV] = "lev";
+  e2str(LEV);
 }
 
 void DataInterpolation::run (const util::TimeStamp& ts)
@@ -372,12 +377,14 @@ get_input_files_dimlen (const std::string& dimname) const
 void DataInterpolation::
 create_horiz_remappers (const std::string& map_file)
 {
+  using namespace ShortFieldTagsNames;
+
   EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
       "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
   // Create hremap tgt grid
-  int nlevs_data = get_input_files_dimlen ("lev");
-  int ncols_data = get_input_files_dimlen ("ncol");
+  int nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+  int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
@@ -416,6 +423,8 @@ create_horiz_remappers (const std::string& map_file)
 void DataInterpolation::
 create_horiz_remappers (const Real iop_lat, const Real iop_lon)
 {
+  using namespace ShortFieldTagsNames;
+
   EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
       "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
@@ -424,8 +433,8 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
       "  - iop_lat: " << iop_lat << "\n"
       "  - iop_lon: " << iop_lon << "\n");
 
-  int nlevs_data = get_input_files_dimlen ("lev");
-  int ncols_data = get_input_files_dimlen ("ncol");
+  int nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+  int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
   auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
