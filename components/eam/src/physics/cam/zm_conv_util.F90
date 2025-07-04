@@ -2,7 +2,12 @@ module zm_conv_util
    !----------------------------------------------------------------------------
    ! Purpose: utility methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8
+#else
    use shr_kind_mod,     only: r8=>shr_kind_r8
+#endif
+   use cam_logfile,      only: iulog
    use cam_abortutils,   only: endrun
    use zm_conv_types,    only: zm_const_t
 
@@ -179,7 +184,11 @@ elemental subroutine qsat_hPa(t, p, es, qm)
    !----------------------------------------------------------------------------
    ! Purpose: wrapper for qsat_water that translates between Pa and hPa
    ! qsat_water uses Pa internally, so pass in Pa and set es back to hPa after
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_wv_saturation, only: qsat_water
+#else
    use wv_saturation, only: qsat_water
+#endif
    !----------------------------------------------------------------------------
    ! Arguments
    real(r8), intent(in)  :: t   ! Temperature                  [K]
