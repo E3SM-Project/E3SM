@@ -88,8 +88,6 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
   m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, ref_ts);
 
-  DataInterpolation::RemapData remap_data;
-  remap_data.hremap_file = spa_map_file=="none" ? "" : spa_map_file;
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
     EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file=="none",
@@ -98,15 +96,18 @@ void SPA::initialize_impl (const RunType /* run_type */)
 
     // TODO: expose tgt lat/lon in IOPDataManager, to avoid injecting knowledge
     // of its param list structure in other places
-    remap_data.iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
-    remap_data.iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
-    remap_data.has_iop = true;
+    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    m_data_interpolation->create_horiz_remappers (iop_lat,iop_lon);
+  } else {
+    m_data_interpolation->create_horiz_remappers (spa_map_file=="none" ? "" : spa_map_file);
   }
-  remap_data.vr_type = DataInterpolation::Dynamic3DRef;
-  remap_data.pname = "PS";
-  remap_data.pmid = pmid;
-  remap_data.pint = pint;
-  m_data_interpolation->setup_remappers (remap_data);
+  DataInterpolation::VertRemapData vremap_data;
+  vremap_data.vr_type = DataInterpolation::Dynamic3DRef;
+  vremap_data.pname = "PS";
+  vremap_data.pmid = pmid;
+  vremap_data.pint = pint;
+  m_data_interpolation->create_vert_remapper (vremap_data);
   m_data_interpolation->init_data_interval (start_of_step_ts());
 
   // Set property checks for fields in this process

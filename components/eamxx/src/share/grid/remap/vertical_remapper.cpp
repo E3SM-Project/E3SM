@@ -114,9 +114,7 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
       msg_prefix + "Field is not yet allocated.\n"
       " - field name: " + p.name() + "\n");
 
-  EKAT_REQUIRE_MSG(p.get_header().get_alloc_properties().is_compatible<PackT>(),
-      msg_prefix + "Field not compatible with default pack size.\n"
-      " - pack size: " + std::to_string(SCREAM_PACK_SIZE) + "\n");
+  bool pack_compatible = p.get_header().get_alloc_properties().is_compatible<PackT>();
 
   const int nlevs = src ? m_src_grid->get_num_vertical_levels()
                         : m_tgt_grid->get_num_vertical_levels();
@@ -135,6 +133,7 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
       } else {
         m_tgt_pmid = p;
       }
+      m_mid_packs_supported &= pack_compatible;
       break;
     case Interfaces:
       expected_tag = ILEV;
@@ -144,6 +143,7 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
       } else {
         m_tgt_pint = p;
       }
+      m_int_packs_supported &= pack_compatible;
       break;
     case Both:
       expected_tag = LEV;
@@ -157,6 +157,8 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
         m_tgt_pmid = p;
         m_tgt_int_same_as_mid = true;
       }
+      m_mid_packs_supported &= pack_compatible;
+      m_int_packs_supported &= pack_compatible;
       break;
     default:
       EKAT_ERROR_MSG ("[VerticalRemapper::set_source_pressure] Error! Unrecognized value for 'ptype'.\n");
@@ -192,6 +194,12 @@ registration_ends_impl ()
                    : src.get_header().get_identifier().get_layout().has_tag(LEV);
       ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
                      tgt.get_header().get_alloc_properties().is_compatible<PackT>();
+
+      // Adjust packed based on whether we support packs (i.e., if src/tgt pressures were pack-compatible)
+      if (ft.midpoints)
+        ft.packed &= m_mid_packs_supported;
+      else
+        ft.packed &= m_int_packs_supported;
 
       if (m_etype_top==Mask or m_etype_bot==Mask) {
         // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
