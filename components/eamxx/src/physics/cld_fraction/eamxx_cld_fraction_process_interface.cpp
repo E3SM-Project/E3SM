@@ -85,8 +85,8 @@ void CldFraction::run_impl (const double /* dt */)
   auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_analysis");
   auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_analysis");
 #ifdef EAMXX_HAS_PYTHON
-  if (m_py_module!=nullptr) {
-    // For now, we run only on CPU
+  if (not m_py_module.is_none()) {
+    // For now, we run Python code only on CPU
     const auto& py_fields = m_py_fields_host.at("physics");
 
     auto py_qi                = py_fields.at("qi");
@@ -96,25 +96,12 @@ void CldFraction::run_impl (const double /* dt */)
     auto py_ice_cld_frac_4out = py_fields.at("cldfrac_ice_for_analysis");
     auto py_tot_cld_frac_4out = py_fields.at("cldfrac_tot_for_analysis");
 
-    PyObject* pArgs = PyTuple_Pack(6,
-        qi,
-        liq_cld_frac,
-        ice_cld_frac,
-        tot_cld_frac,
-        ice_cld_frac_4out,
-        tot_cld_frac_4out);
-    PyObject* pFunc = PyObject_GetAttrString(m_py_module, "main");
-    if (pFunc && PyCallable_Check(pFunc)) {
-      PyObject_CallObject(pFunc, pArgs);
-    } else {
-      // Handle the error: function not found or not callable
-      if (PyErr_Occurred()) {
-        PyErr_Print();
-      }
-    }
-    Py_XDECREF(pFunc);
-    Py_DECREF(pArgs); // Decrease reference count of the arguments
+    // Sync input to host
+    auto liq_cld_frac.sync_to_host();
 
+    m_py_module.attr("main")(py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
+
+    // Sync outputs to dev
     qi.sync_to_dev();
     liq_cld_frac.sync_to_dev();
     ice_cld_frac.sync_to_dev();

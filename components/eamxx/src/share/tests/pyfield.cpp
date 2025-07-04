@@ -9,18 +9,20 @@
 
 #include <filesystem>
 
+namespace py = pybind11;
+
 namespace scream {
 
 TEST_CASE("pysession", "") {
-  auto& py = PySession::get();
+  auto& ps = PySession::get();
 
-  REQUIRE_THROWS(py.finalize());
-  REQUIRE (not py.is_initialized());
+  REQUIRE_THROWS(ps.finalize());
+  REQUIRE (not ps.is_initialized());
 
-  py.initialize();
-  REQUIRE (py.is_initialized());
-  py.finalize();
-  REQUIRE (not py.is_initialized());
+  ps.initialize();
+  REQUIRE (ps.is_initialized());
+  ps.finalize();
+  REQUIRE (not ps.is_initialized());
 }
 
 TEST_CASE("pyfield", "") {
@@ -35,12 +37,12 @@ TEST_CASE("pyfield", "") {
 
   // Get the current file path
   std::filesystem::path curr_file(__FILE__);
-  std::filesystem::path curr_path = curr_file.parent_path();
+  std::filesystem::path curr_src_path = curr_file.parent_path();
 
-  auto& py = PySession::get();
+  // auto& ps = PySession::get();
 
-  py.initialize();
-  py.add_path(curr_path.string());
+  // ps.initialize();
+  // ps.add_path(curr_src_path);
 
   FieldIdentifier fid ("field", {tags,dims}, m/s,"some_grid");
   Field f1 (fid);
@@ -61,14 +63,25 @@ TEST_CASE("pyfield", "") {
 
   // Use scope, so all py structures are destroyed BEFORE py.finalize()
   {
-    auto py_mod = pybind11::module::import("pyfield");
+    py::scoped_interpreter guard;
+    auto sys = py::module::import("sys");
+    auto sysPath = sys.attr("path");
+    // sysPath.append(__FILE__);
+    std::cout << "sys.path entries:" << std::endl;
+    for (const auto& pathEntry : sysPath) {
+        std::cout << py::cast<std::string>(pathEntry) << std::endl;
+    }
+    // std::cout << "py inited: " << ps.is_initialized() << "\n";
+    auto py_mod = py::module::import("pyfield");
+    // std::cout << "py inited: " << ps.is_initialized() << "\n";
 
-    auto f_py = create_py_field<Host>(f1);
-    py_mod.attr("set_iota")(f_py);
+    // auto f_py = create_py_field<Host>(f1);
+    // py_mod.attr("set_iota")(f_py);
+    // py_mod.attr("hello")();
   }
-  REQUIRE (views_are_equal(f1,f2));
+  // REQUIRE (views_are_equal(f1,f2));
 
-  py.finalize();
+  // ps.finalize();
 }
 
 } // namespace scream

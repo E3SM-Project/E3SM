@@ -2,6 +2,7 @@
 #define EAMXX_PY_SESSION_HPP
 
 #include <string>
+#include <pybind11/embed.h>
 
 namespace scream {
 
@@ -13,7 +14,7 @@ public:
   void initialize ();
   void finalize ();
 
-  bool is_initialized () const {return num_customers>0; }
+  bool is_initialized () const {return guard!=nullptr; }
   static PySession& get () {
     static PySession s;
     return s;
@@ -32,9 +33,8 @@ private:
   // Keep track of how many eamxx places are requesting py support
   int num_customers = 0;
 
-  // If when we call initialize the 1st time (num_customers=0) we see
-  // that py is already inited, we ASSUME its init/finalize is EXTERNALLY handled
-  bool should_finalize = false;
+  // Created inside initialize and destroyed inside finalize
+  std::shared_ptr<pybind11::scoped_interpreter> guard;
 };
 
 } // namespace scream

@@ -5,20 +5,22 @@
 
 #include <filesystem>
 
+namespace py = pybind11;
+
 namespace scream {
 
 void PySession::initialize () {
   if (num_customers==0) {
-    if (not Py_IsInitialized()) {
-      Py_Initialize();
-      should_finalize = true;
-    }
+    guard = std::make_shared<py::scoped_interpreter>();
+    std::cout << "calling py init ...\n";
+    Py_Initialize();
   }
   ++num_customers;
 }
 void PySession::finalize () {
-  if (num_customers==1 and should_finalize) {
-    Py_Finalize();
+  if (num_customers==1) {
+    std::cout << "cleaning up...\n";
+    guard = nullptr;
   }
   EKAT_REQUIRE_MSG (num_customers>0,
       "Error! Invalid number of customers.\n"
@@ -31,43 +33,19 @@ void PySession::add_path (const std::string& path)
   EKAT_REQUIRE_MSG (is_initialized(),
       "Error! Cannot modify python's sys.path, since PySession was not initialized yet.\n");
 
-  // Import the sys module
-  PyObject *sysModule = PyImport_ImportModule("sys");
-  if (sysModule == nullptr) {
-      PyErr_Print();
-      EKAT_ERROR_MSG("Could not import sys module. Aborting.\n");
-  }
+  try {
+    // Import the sys module
+    py::module sysModule = py::module::import("sys");
 
-  // Get the sys.path list
-  PyObject *sysPath = PyObject_GetAttrString(sysModule, "path");
-  if (sysPath == nullptr) {
-      PyErr_Print();
-      Py_DECREF(sysModule);
-      EKAT_ERROR_MSG("Could not access sys.path. Aborting.\n");
-  }
+    // Get the sys.path list
+    py::list sysPath = sysModule.attr("path");
 
-  // Convert path to py object
-  PyObject *pathItem = PyUnicode_FromString(path.c_str());
-  if (pathItem == nullptr) {
-      PyErr_Print();
-      Py_DECREF(sysPath);
-      Py_DECREF(sysModule);
-      EKAT_ERROR_MSG("Could not convert path string. Aborting.\n");
+    // Append the new path to sys.path
+    sysPath.append(path);
+  } catch (const py::error_already_set& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    throw std::runtime_error("Could not modify sys.path. Aborting.");
   }
-
-  // Append the new path to sys.path
-  if (PyList_Append(sysPath, pathItem) != 0) {
-      PyErr_Print();
-      Py_DECREF(pathItem);
-      Py_DECREF(sysPath);
-      Py_DECREF(sysModule);
-      EKAT_ERROR_MSG("Could not append to sys.path. Aborting.\n");
-  }
-
-  // Clean up
-  Py_DECREF(pathItem);
-  Py_DECREF(sysPath);
-  Py_DECREF(sysModule);
 }
 
 void PySession::add_curr_path ()

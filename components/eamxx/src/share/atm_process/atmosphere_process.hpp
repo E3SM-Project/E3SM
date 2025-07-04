@@ -22,7 +22,6 @@
 #include "ekat/logging/ekat_logger.hpp"
 
 #ifdef EAMXX_HAS_PYTHON
-#include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #endif
@@ -626,7 +625,7 @@ protected:
   std::list<GroupRequest>   m_computed_group_requests;
 
 #ifdef EAMXX_HAS_PYTHON
-  PyObject* m_py_module = nullptr;
+  pybind11::module m_py_module;
 
   strmap_t<strmap_t<pybind11::array>> m_py_fields_dev;
   strmap_t<strmap_t<pybind11::array>> m_py_fields_host;

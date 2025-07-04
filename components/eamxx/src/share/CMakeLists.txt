@@ -121,7 +121,7 @@ if (EAMXX_ENABLE_PYTHON)
   target_sources (scream_share PRIVATE
     eamxx_pysession.cpp)
 
-  target_link_libraries(scream_share PUBLIC Python::Python pybind11::module)
+  target_link_libraries(scream_share PUBLIC Python::Python pybind11::embed)
   target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
 endif()
 
