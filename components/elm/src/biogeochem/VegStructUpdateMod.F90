@@ -241,7 +241,7 @@ contains
             fb = (ol / max(1.e-06_r8, (htop(p)-hbot(p)))) 
          else if (woody(ivt(p)) == 2.0_r8) then
             ol = min( max(snow_depth(c)-bendresist(ivt(p))*hbot(p), 0._r8), (bendresist(ivt(p))*(htop(p)-hbot(p)))**vegshape(ivt(p)))
-            fb = (ol / max(1.e-06_r8, bendresist(ivt(p))*(htop(p)-hbot(p))**vegshape(ivt(p)))
+            fb = (ol / max(1.e-06_r8, bendresist(ivt(p))*(htop(p)-hbot(p))**vegshape(ivt(p))))
          else
             fb = max(min(snow_depth(c),0.2_r8),0._r8)/0.2_r8   ! 0.2m is assumed
             !depth of snow required for complete burial of grasses
