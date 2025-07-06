@@ -85,6 +85,7 @@ module seq_flux_mct
   real(r8), allocatable ::  tref (:)  ! diagnostic:  2m ref T
   real(r8), allocatable ::  qref (:)  ! diagnostic:  2m ref Q
   real(r8), allocatable :: duu10n(:)  ! diagnostic: 10m wind speed squared
+  real(r8), allocatable :: u10res(:)  ! diagnostic: 10m "resolved" (no gustiness) wind speed (m/s)
 
   real(r8), allocatable :: fswpen (:) ! fraction of sw penetrating ocn surface layer
   real(r8), allocatable :: ocnsal (:) ! ocean salinity
@@ -364,6 +365,9 @@ contains
     allocate(duu10n(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate duu10n',ier)
     duu10n = 0.0_r8
+    allocate(u10res(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate u10res',ier)
+    u10res = 0.0_r8
 
     !--- flux_diurnal cycle flux fields ---
     allocate(uGust(nloc),stat=ier)
@@ -765,6 +769,8 @@ contains
     if(ier/=0) call mct_die(subName,'allocate qref',ier)
     allocate(duu10n(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate duu10n',ier)
+    allocate(u10res(nloc_a2o),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate u10res',ier)
 
     ! set emask
 
@@ -1285,6 +1291,7 @@ contains
             cskin, cskin_night, tod, dt,          &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
             cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for flux_diurnal
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
@@ -1293,6 +1300,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
             wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
 
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
@@ -1302,7 +1310,7 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            duu10n, u10res, ustar, re  , ssq , missval = 0.0_r8, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust)
     endif
 
@@ -1361,7 +1369,7 @@ contains
        xaop_oe%rAttr(index_ssq   ,io) = xaop_oe%rAttr(index_ssq   ,io) + ssq(n) * wt   ! s.hum. saturation at Ts
        xaop_oe%rAttr(index_lwup  ,io) = xaop_oe%rAttr(index_lwup  ,io) + lwup(n)* wt
        xaop_oe%rAttr(index_duu10n,io) = xaop_oe%rAttr(index_duu10n,io) + duu10n(n)*wt
-       xaop_oe%rAttr(index_u10   ,io) = xaop_oe%rAttr(index_u10   ,io) + sqrt(duu10n(n))*wt
+       xaop_oe%rAttr(index_u10   ,io) = xaop_oe%rAttr(index_u10   ,io) + u10res(n)*wt
        xaop_oe%rAttr(index_sumwt ,io) = xaop_oe%rAttr(index_sumwt ,io) + wt
     enddo
 
@@ -1395,7 +1403,7 @@ contains
        xaop_ae%rAttr(index_ssq   ,ia) = xaop_ae%rAttr(index_ssq   ,ia) + ssq(n) * wt   ! s.hum. saturation at Ts
        xaop_ae%rAttr(index_lwup  ,ia) = xaop_ae%rAttr(index_lwup  ,ia) + lwup(n)* wt
        xaop_ae%rAttr(index_duu10n,ia) = xaop_ae%rAttr(index_duu10n,ia) + duu10n(n)*wt
-       xaop_ae%rAttr(index_u10   ,ia) = xaop_ae%rAttr(index_u10   ,ia) + sqrt(duu10n(n))*wt
+       xaop_ae%rAttr(index_u10   ,ia) = xaop_ae%rAttr(index_u10   ,ia) + u10res(n)*wt
        xaop_ae%rAttr(index_sumwt ,ia) = xaop_ae%rAttr(index_sumwt ,ia) + wt
     enddo
 
@@ -1749,6 +1757,7 @@ contains
                                 !consistent with mrgx2a fraction
                                 !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
             cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for flux_diurnal
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
@@ -1756,6 +1765,7 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
@@ -1764,7 +1774,7 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq, &
+            duu10n, u10res, ustar, re  , ssq, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
@@ -1788,7 +1798,7 @@ contains
           xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts
           xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
           xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
-          xao%rAttr(index_xao_So_u10   ,n) = sqrt(duu10n(n))
+          xao%rAttr(index_xao_So_u10   ,n) = u10res(n)
           xao%rAttr(index_xao_So_u10withgusts,n) = sqrt(duu10n(n))
           xao%rAttr(index_xao_So_warm_diurn       ,n) = warm(n)
           xao%rAttr(index_xao_So_salt_diurn       ,n) = salt(n)
