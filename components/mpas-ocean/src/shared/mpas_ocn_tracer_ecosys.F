@@ -2443,6 +2443,16 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
 
+! make sure that if config_use_ecosysTracers_atm_dust_from_coupler is true, then 
+!  config_use_ecosysTracers_iron_solubility_file is also true
+
+      if (config_use_ecosysTracers_atm_dust_from_coupler .and.  &
+          .not. config_use_ecosysTracers_iron_solubility_file) then
+        call mpas_log_write('Abort: In ocn_tracer_ecosys_init' // &
+            ' must have config_use_ecosysTracers_iron_solubility_file true if ' // &
+            'config_use_ecosysTracers_atm_dust_from_coupler is true', MPAS_LOG_CRIT)
+      endif
+
       call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNO3', depositionFluxNO3)
       call mpas_pool_get_array(ecosysAuxiliary, 'depositionFluxNH4', depositionFluxNH4)
       call mpas_pool_get_array(ecosysAuxiliary, 'IRON_FLUX_IN', IRON_FLUX_IN)
@@ -2838,8 +2848,12 @@ contains
              IRON_Solubility_wet(iCell)   = IRON_Zolubility_wet(iCell)
              IRON_Solubility_dry(iCell)   = IRON_Zolubility_dry(iCell)
              IRON_in_dust_fraction(iCell) = IRON_in_duzt_fraction(iCell)
-             dust_FLUX_WET(iCell) = dust_FLUZ_WET(iCell)
-             dust_FLUX_DRY(iCell) = dust_FLUZ_DRY(iCell)
+
+! only use dust fluxes from file if not coming from the coupler
+             if (.not. config_use_ecosysTracers_atm_dust_from_coupler) then
+               dust_FLUX_WET(iCell) = dust_FLUZ_WET(iCell)
+               dust_FLUX_DRY(iCell) = dust_FLUZ_DRY(iCell)
+             endif
 
              IRON_FLUX_IN(iCell)  = ( dust_FLUX_WET(iCell)*IRON_Solubility_wet(iCell)    &
                                     + dust_FLUX_DRY(iCell)*IRON_Solubility_dry(iCell) )  &

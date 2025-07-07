@@ -2255,7 +2255,7 @@ contains
             call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOCField)
             call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDONField)
 
-            if (config_use_ecosysTracers_iron_solubility_file) then
+            if (config_use_ecosysTracers_atm_dust_from_coupler) then
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET' , dust_FLUX_WETField)
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY' , dust_FLUX_DRYField)
             endif
@@ -2272,7 +2272,7 @@ contains
             iceFluxDOC => iceFluxDOCField % array
             iceFluxDON => iceFluxDONField % array
 
-            if (config_use_ecosysTracers_iron_solubility_file) then
+            if (config_use_ecosysTracers_atm_dust_from_coupler) then
               dust_FLUX_WET => dust_FLUX_WETField % array
               dust_FLUX_DRY => dust_FLUX_DRYField % array
             endif
@@ -2538,17 +2538,20 @@ contains
                    iceFluxDustField % isActive ) then
                  iceFluxDust(i) = x2o_o % rAttr(index_x2o_Fioi_dust1, n)
               endif
-              if ( config_use_ecosysTracers_iron_solubility_file .and. dust_FLUX_WETField % isActive ) then
-                 dust_FLUX_WET(i) = x2o_o % rAttr(index_x2o_Faxa_dstwet1, n)  &
-                                  + x2o_o % rAttr(index_x2o_Faxa_dstwet2, n)  &
-                                  + x2o_o % rAttr(index_x2o_Faxa_dstwet3, n)  &
-                                  + x2o_o % rAttr(index_x2o_Faxa_dstwet4, n)
+! do not want atmospheric deposition on 100% land ice to enter the ocean
+              if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_WETField % isActive ) then
+                 dust_FLUX_WET(i) = ( x2o_o % rAttr(index_x2o_Faxa_dstwet1, n)   &
+                                    + x2o_o % rAttr(index_x2o_Faxa_dstwet2, n)   &
+                                    + x2o_o % rAttr(index_x2o_Faxa_dstwet3, n)   &
+                                    + x2o_o % rAttr(index_x2o_Faxa_dstwet4, n) ) &
+                                  * (1.0_RKIND - landIceFraction(i))
               endif
-              if ( config_use_ecosysTracers_iron_solubility_file .and. dust_FLUX_DRYField % isActive ) then
-                 dust_FLUX_DRY(i) = x2o_o % rAttr(index_x2o_Faxa_dstdry1, n)  &
-                                  + x2o_o % rAttr(index_x2o_Faxa_dstdry2, n)  &
-                                  + x2o_o % rAttr(index_x2o_Faxa_dstdry3, n)  &
-                                  + x2o_o % rAttr(index_x2o_Faxa_dstdry4, n)
+              if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_DRYField % isActive ) then
+                 dust_FLUX_DRY(i) = ( x2o_o % rAttr(index_x2o_Faxa_dstdry1, n)   &
+                                    + x2o_o % rAttr(index_x2o_Faxa_dstdry2, n)   &
+                                    + x2o_o % rAttr(index_x2o_Faxa_dstdry3, n)   &
+                                    + x2o_o % rAttr(index_x2o_Faxa_dstdry4, n) ) &
+                                  * (1.0_RKIND - landIceFraction(i))
               endif
               if ( iceFluxDOCField % isActive ) then
                  iceFluxDOC(1,i) = x2o_o % rAttr(index_x2o_Fioi_doc1, n)
@@ -2656,7 +2659,7 @@ contains
          call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOCField)
          call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDONField)
 
-            if (config_use_ecosysTracers_iron_solubility_file) then
+            if (config_use_ecosysTracers_atm_dust_from_coupler) then
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_WET'  , dust_FLUX_WETField)
               call mpas_pool_get_field(ecosysAuxiliary, 'dust_FLUX_DRY'  , dust_FLUX_DRYField)
             endif
@@ -2842,10 +2845,10 @@ contains
          if ( iceFluxDustField % isActive ) then
             call mpas_dmpar_exch_halo_field(iceFluxDustField)
          endif
-         if ( config_use_ecosysTracers_iron_solubility_file .and. dust_FLUX_WETField % isActive ) then
+         if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_WETField % isActive ) then
             call mpas_dmpar_exch_halo_field(dust_FLUX_WETField)
          endif
-         if ( config_use_ecosysTracers_iron_solubility_file .and. dust_FLUX_DRYField % isActive ) then
+         if ( config_use_ecosysTracers_atm_dust_from_coupler .and. dust_FLUX_DRYField % isActive ) then
             call mpas_dmpar_exch_halo_field(dust_FLUX_DRYField)
          endif
          if ( iceFluxDOCField % isActive ) then

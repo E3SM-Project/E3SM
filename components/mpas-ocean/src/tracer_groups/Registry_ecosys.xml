@@ -55,6 +55,10 @@
 			description="if true, couple ecosys fields with sea ice"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_use_ecosysTracers_atm_dust_from_coupler" type="logical" default_value=".false." units="unitless"
+			description="if true, get atmospheric dust inputs from the coupler, else from ecosys monthly forcing file"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_ecosysTracers_diagnostic_fields_level1" type="logical" default_value=".false." units="unitless"
 			description="if true, make variables in ecosysDiagFieldsLevel1 available for output"
 			possible_values=".true. or .false."
