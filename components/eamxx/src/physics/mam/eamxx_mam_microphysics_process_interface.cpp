@@ -218,6 +218,12 @@ void MAMMicrophysics::set_grids(
 
     // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+
+    add_field<Computed>("mam4_microphys_tendency_condensation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming_cw", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -593,7 +599,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy =
        ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
@@ -663,11 +669,19 @@ void MAMMicrophysics::run_impl(const double dt) {
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
   view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
+  view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
+          gas_aero_exchange_nucleation, gas_aero_exchange_coagulation,
+          gas_aero_exchange_renaming_cw;
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
+    gas_aero_exchange_condensation = get_field_out("mam4_microphys_tendency_condensation").get_view<Real***>();
+    gas_aero_exchange_renaming = get_field_out("mam4_microphys_tendency_renaming").get_view<Real***>();
+    gas_aero_exchange_nucleation = get_field_out("mam4_microphys_tendency_nucleation").get_view<Real***>();
+    gas_aero_exchange_coagulation = get_field_out("mam4_microphys_tendency_coagulation").get_view<Real***>();
+    gas_aero_exchange_renaming_cw = get_field_out("mam4_microphys_tendency_renaming_cw").get_view<Real***>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -915,6 +929,11 @@ void MAMMicrophysics::run_impl(const double dt) {
 	        diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
           diag_arrays.aqso4_incloud_mmr_tendency = ekat::subview(aqso4_incloud_mmr_tendency, icol);
           diag_arrays.aqh2so4_incloud_mmr_tendency = ekat::subview(aqh2so4_incloud_mmr_tendency, icol);
+          diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
+          diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
+          diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
+          diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
+          diag_arrays.gas_aero_exchange_renaming_cw = ekat::subview(gas_aero_exchange_renaming_cw, icol);
 	      }
 
         // Wind speed at the surface
@@ -980,8 +999,8 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays, 
-	    dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col,
+            diag_arrays, dvel_col, dflx_col, progs);
 
         team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
