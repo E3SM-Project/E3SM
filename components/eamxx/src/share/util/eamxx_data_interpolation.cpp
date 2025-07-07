@@ -484,12 +484,10 @@ create_vert_remapper (const VertRemapData& data)
     return;
   }
 
-  std::shared_ptr<VerticalRemapper> vremap;
-
   if (data.custom_remapper) {
-    // The user provided a remapper. Let's just check that it has the right type
-    EKAT_REQUIRE_MSG (std::dynamic_pointer_cast<VerticalRemapper>(data.custom_remapper),
-        "[DataInterpolation] Error! Input vertical remapper MUST be of type VerticalRemapper (or derive from it).\n");
+    // The user provided a remapper. If vr_type is not Custom, this MUST be a VerticalRemapper.
+    EKAT_REQUIRE_MSG (m_vr_type==Custom or std::dynamic_pointer_cast<VerticalRemapper>(data.custom_remapper),
+        "[DataInterpolation] Error! Input vertical remapper MUST be of type VerticalRemapper (or derive from it) if the remap type is not 'Custom'.\n");
 
     // Sanity checks on src/tgt grids
     auto src_ncols = data.custom_remapper->get_src_grid()->get_num_global_dofs();
@@ -513,6 +511,8 @@ create_vert_remapper (const VertRemapData& data)
         "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
         " - model grid num levels      : " + std::to_string(m_model_grid->get_num_vertical_levels()) + "\n"
         " - custom remapper num levels : " + std::to_string(tgt_nlevs) + "\n");
+
+    m_vert_remapper = data.custom_remapper;
   } else {
     auto s2et = [](const std::string& s) {
       if (s=="P0") {
@@ -529,7 +529,7 @@ create_vert_remapper (const VertRemapData& data)
     };
 
     // We need to build a vert remapper based on the input data
-    vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
+    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
 
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
@@ -538,11 +538,14 @@ create_vert_remapper (const VertRemapData& data)
     if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
       vremap->set_mask_value(data.mask_value);
     }
+    m_vert_remapper = vremap;
   }
-  vremap->set_target_pressure(data.pmid,data.pint);
 
   // If the vremap type is not CUSTOM, we need to setup the source pressure profile
   if (m_vr_type!=Custom) {
+    // If the remapper is not "custom", we MUST be able to cast down to VerticalRemapper
+    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
+
     // Setup vertical pressure profiles (which can add 1 extra field to hremap)
     // NOTES:
     //  - both Dynamic3D and Dynamic3DRef use a 3d profile for the data
