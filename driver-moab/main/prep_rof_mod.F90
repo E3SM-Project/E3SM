@@ -1162,13 +1162,15 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     ! Local Variables
     character(CXX) ::tagname
     integer :: arrsize, ent_type, ierr
+    real(R8) :: ravg  ! averaging factor for bit-for-bit consistency with MCT
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
     character(*), parameter :: subname = '(prep_rof_accum_avg_moab)'
     !---------------------------------------------------------------
     if(l2racc_lm_cnt > 1) then
-       l2racc_lm = 1./l2racc_lm_cnt*l2racc_lm
+       ravg = 1.0_R8/real(l2racc_lm_cnt, R8)
+       l2racc_lm = l2racc_lm * ravg
     endif
     l2racc_lm_cnt = 0
     ! set now the accumulated fields on land instance
@@ -1195,7 +1197,8 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 #endif
 
     if((a2racc_am_cnt > 1) .and. rof_heat) then
-       a2racc_am = 1./a2racc_am_cnt * a2racc_am
+       ravg = 1.0_R8/real(a2racc_am_cnt, R8)
+       a2racc_am = a2racc_am * ravg
     endif
     a2racc_am_cnt = 0
     ! set now the accumulated fields on atm instance
@@ -1220,7 +1223,8 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     endif
 #endif
     if(o2racc_om_cnt > 1) then
-       o2racc_om = 1./o2racc_om_cnt *o2racc_om
+       ravg = 1.0_R8/real(o2racc_om_cnt, R8)
+       o2racc_om = o2racc_om * ravg
     endif
     o2racc_om_cnt = 0
     ! set now the accumulated fields on ocn instance
