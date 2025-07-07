@@ -493,9 +493,9 @@ create_vert_remapper (const VertRemapData& data)
 
     // Sanity checks on src/tgt grids
     auto src_ncols = data.custom_remapper->get_src_grid()->get_num_global_dofs();
-    auto tgt_ncols = data.custom_remapper->get_src_grid()->get_num_global_dofs();
+    auto tgt_ncols = data.custom_remapper->get_tgt_grid()->get_num_global_dofs();
     auto src_nlevs = data.custom_remapper->get_src_grid()->get_num_vertical_levels();
-    auto tgt_nlevs = data.custom_remapper->get_src_grid()->get_num_vertical_levels();
+    auto tgt_nlevs = data.custom_remapper->get_tgt_grid()->get_num_vertical_levels();
 
     EKAT_REQUIRE_MSG (src_ncols==m_grid_after_hremap->get_num_global_dofs(),
         "[DataInterpolation] Error! Custom vert remapper src grid incompatible with the grid after horiz remap.\n"
