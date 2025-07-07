@@ -583,9 +583,14 @@ create_vert_remapper (const VertRemapData& data)
       p_data_reader.read_variables();
     }
     vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);
-  }
 
-  m_vert_remapper = vremap;
+    if (data.pint.is_allocated()) {
+      vremap->set_target_pressure(data.pint,VerticalRemapper::Interfaces);
+    }
+    if (data.pmid.is_allocated()) {
+      vremap->set_target_pressure(data.pmid,VerticalRemapper::Midpoints);
+    }
+  }
 }
 
 void DataInterpolation::register_fields_in_remappers ()
