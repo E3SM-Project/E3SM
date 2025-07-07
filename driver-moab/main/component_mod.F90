@@ -470,6 +470,7 @@ contains
     use iso_c_binding
     !   character(1024)         :: domain_file        ! file containing domain info (set my input)
     use seq_comm_mct,     only: mboxid ! iMOAB id for MPAS ocean migrated mesh to coupler pes
+    use seq_comm_mct,     only: mbixid ! iMOAB id for MPAS sea-ice migrated mesh to coupler pes
     use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
@@ -658,6 +659,14 @@ contains
             call shr_sys_abort(subname//' ERROR in writing ocn mesh coupler ')
          endif
      endif
+     if(mbixid >=0 ) then
+        ierr = iMOAB_WriteMesh(mbixid, trim('cplIceWithAream.h5m'//C_NULL_CHAR), &
+                              trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in writing ice mesh coupler '
+           call shr_sys_abort(subname//' ERROR in writing ice mesh coupler ')
+        endif
+     endif
      if(mbrxid >=0 ) then
          ierr = iMOAB_WriteMesh(mbrxid, trim('cplRofWithAream.h5m'//C_NULL_CHAR), &
                                  trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
@@ -776,8 +785,10 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
       ! For only component pes
       if (comp(1)%iamin_compid) then
-             ! Allocate and initialize area correction factors on component processes
+         ! Allocate and initialize area correction factors on component processes
          ! get areas, first allocate memory
+         ! Side Note:: !!! TODO mblsize on component side is always the size of comp domain for mct, too
+         ! that is the whole point, we are using the same order, and the same grid size as mct driver
          lsize = comp(1)%mblsize
          allocate(areas (lsize, 3)) ! lsize is along grid; read mask too
          allocate(factors (lsize, 2))
@@ -847,7 +858,22 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          nfields=mct_list_nitem (temp_list)
          call mct_list_clean(temp_list)
 
+         ! above aream work is irrelevant with this:
+   ! as a quick fix, set the correction factors on component side, on MOAB tags mdl2drv and drv2mdl 
+   !  exactly as those from mct; hopefully, we will see zero differences with MOABCOMP
 
+         lsize = comp(1)%mblsize
+         tagname = 'mdl2drv'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%mdl2drv)
+         if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' cannot set new mdl2drv values for moab like those for mct  ')
+         endif
+         tagname = 'drv2mdl'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%drv2mdl)
+         if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' cannot set new mdldrv2mdl2drv values for moab like those for mct  ')
+         endif
+      
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
@@ -859,9 +885,11 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          do i=1,lsize
             rmask = areas(i,3)
             if ( abs(rmask) >= 1.0e-06) then
-               fact = factors(i,1) ! mdl2drv tag
+               ! fact = factors(i,1) ! mdl2drv tag
+               ! do nt use what we computed; use the values from mct driver
+               fact = comp(1)%mdl2drv(i) 
                do j=1,nfields
-                  vals(i,j) = fact*vals(i,j)
+                  vals(i,j) = vals(i,j) * fact
                enddo
             endif
          enddo
@@ -1271,7 +1299,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       endif
       do i=1,comp%mblsize
          do j=1,nfields
-            vals(i,j) = factors(i) * vals(i,j)
+            vals(i,j) = vals(i,j) * factors(i)
          enddo
       enddo
 
