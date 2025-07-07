@@ -565,6 +565,10 @@ contains
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='ocn2atm aream initialization')
           call t_stopf('CPL:seq_map_readdata-ocn2atm')
+          call seq_map_readdata_moab('seq_maps.rc','ocn2atm_fmapname:', mpicom_CPLID, CPLID, &
+               mbsrcid = mboxid, avfld_s='aream', filefld_s='area_a', &
+               mbtgtid = mbaxid, avfld_d='aream', filefld_d='area_b', &
+               string='ocn2atm moab aream initialization')
 
        endif
     endif
@@ -586,12 +590,19 @@ contains
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn liq aream initialization')
           call t_stopf('CPL:seq_map_readdata-rof2ocn_liq')
+          call seq_map_readdata_moab('seq_maps.rc','rof2ocn_liq_rmapname:', mpicom_CPLID, CPLID, &
+               mbsrcid = mbrxid, avfld_s='aream', filefld_s='area_a', &
+               string='rof2ocn liq moab aream initialization')
+
 
           call t_startf('CPL:seq_map_readdata-rof2ocn_ice')
           call seq_map_readdata('seq_maps.rc', 'rof2ocn_ice_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn ice aream initialization')
           call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
+          call seq_map_readdata_moab('seq_maps.rc','rof2ocn_ice_rmapname:', mpicom_CPLID, CPLID, &
+               mbsrcid = mbrxid, avfld_s='aream', filefld_s='area_a', &
+               string='rof2ocn ice moab aream initialization')
           
        endif
     end if
@@ -611,6 +622,9 @@ contains
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='atm2lnd aream initialization')
           call t_stopf('CPL:seq_map_readdata-atm2lnd')
+          call seq_map_readdata_moab('seq_maps.rc','atm2lnd_fmapname:', mpicom_CPLID, CPLID, &
+               mbtgtid = mblxid, avfld_d='aream', filefld_d='area_b', &
+               string='atm2lnd moab aream initialization')
 
        endif
     end if
@@ -630,6 +644,10 @@ contains
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='lnd2glc aream initialization')
           call t_stopf('CPL:seq_map_readdata-lnd2glc')
+          ! we do not have yet glc moab
+!          call seq_map_readdata_moab('seq_maps.rc','lnd2glc_fmapname:', mpicom_CPLID, CPLID, &
+!               mbtgtid = mbgxid, avfld_d='aream', filefld_d='area_b', &
+!               string='lnd2glc moab aream initialization')
 
        endif
     endif

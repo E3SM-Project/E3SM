@@ -36,6 +36,7 @@ module seq_map_mod
   public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
   public :: seq_map_readdata        ! cpl pes
+  public :: seq_map_readdata_moab   ! cpl pes
 
   interface seq_map_avNorm
      module procedure seq_map_avNormArr
@@ -1134,6 +1135,257 @@ end subroutine moab_map_init_rcfile
 
   end subroutine seq_map_readdata
 
+subroutine seq_map_readdata_moab(maprcfile, maprcname, mpicom, ID, &
+       mbsrcid, avfld_s, filefld_s, &
+       mbtgtid, avfld_d, filefld_d, string)
+
+    ! moab version used to read area fields from map files
+    use iso_c_binding ! C_NULL_CHAR
+    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
+    use pio, only : pio_openfile, pio_closefile, pio_read_darray, pio_inq_dimid, &
+         pio_inq_dimlen, pio_inq_varid, file_desc_t, io_desc_t, iosystem_desc_t, &
+         var_desc_t, pio_int, pio_get_var, pio_double, pio_initdecomp, pio_freedecomp
+   
+    use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
+         iMOAB_GetIntTagStorage
+    use m_MergeSorts,     only: IndexSet, IndexSort
+
+    implicit none
+    !-----------------------------------------------------
+    !
+    ! Arguments
+    !
+    character(len=*),intent(in)             :: maprcfile
+    character(len=*),intent(in)             :: maprcname
+    integer(IN)     ,intent(in)             :: mpicom
+    integer(IN)     ,intent(in)             :: ID
+    integer(IN)     ,intent(out)  ,optional :: mbsrcid
+    character(len=*),intent(in)   ,optional :: avfld_s
+    character(len=*),intent(in)   ,optional :: filefld_s
+    integer(IN)     ,intent(out)  ,optional :: mbtgtid
+    character(len=*),intent(in)   ,optional :: avfld_d
+    character(len=*),intent(in)   ,optional :: filefld_d
+    character(len=*),intent(in)   ,optional :: string
+    !
+    ! Local Variables
+    !
+    type(iosystem_desc_t), pointer :: pio_subsystem
+    integer(IN)       :: pio_iotype
+    type(file_desc_t) :: File    ! PIO file pointer
+    type(io_desc_t)   :: iodesc  ! PIO parallel io descriptor
+    integer(IN)       :: rcode   ! pio routine return code
+    type(var_desc_t)  :: vid     ! pio variable  ID
+    integer(IN)       :: did     ! pio dimension ID
+    integer(IN)       :: na      ! size of source domain
+    integer(IN)       :: nb      ! size of destination domain
+    integer(IN)       :: i       ! index
+    integer(IN)       :: mytask  ! my task
+        
+    integer(IN)       :: ns ! size of source cells, local 
+    integer, allocatable         :: indx(:) !  this will be ordered
+    integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
+    integer, allocatable         :: Dof_reorder(:)  !
+    real(r8), allocatable        :: data1(:), data_reorder(:)
+    integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    integer    ::          ent_type, ierr, ix, ng, dummy
+    character(len=CXX) :: tagname
+
+    character(len=256):: fileName
+    character(len=64) :: lfld_s, lfld_d, lfile_s, lfile_d
+    character(*),parameter :: areaAV_field = 'aream'
+    character(*),parameter :: areafile_s   = 'area_a'
+    character(*),parameter :: areafile_d   = 'area_b'
+
+    character(len=*),parameter :: subname  = "(seq_map_readdata_moab) "
+    !-----------------------------------------------------
+
+    if (seq_comm_iamroot(CPLID) .and. present(string)) then
+       write(logunit,'(A)') subname//' called for '//trim(string)
+       call shr_sys_flush(logunit)
+    endif
+
+    call MPI_COMM_RANK(mpicom,mytask,rcode)
+
+    lfld_s = trim(areaAV_field)
+    if (present(avfld_s)) then
+       lfld_s = trim(avfld_s)
+    endif
+
+    lfld_d = trim(areaAV_field)
+    if (present(avfld_d)) then
+       lfld_s = trim(avfld_d)
+    endif
+
+    lfile_s = trim(areafile_s)
+    if (present(filefld_s)) then
+       lfile_s = trim(filefld_s)
+    endif
+
+    lfile_d = trim(areafile_d)
+    if (present(filefld_d)) then
+       lfile_d = trim(filefld_d)
+    endif
+
+    call I90_allLoadF(trim(maprcfile),0,mpicom,rcode)
+    if(rcode /= 0) then
+       write(logunit,*)"Cant find maprcfile file ",trim(maprcfile)
+       call shr_sys_abort(trim(subname)//"i90_allLoadF File Not Found")
+    endif
+
+    call i90_label(trim(maprcname),rcode)
+    if(rcode /= 0) then
+       write(logunit,*)"Cant find label ",maprcname
+       call shr_sys_abort(trim(subname)//"i90_label Not Found")
+    endif
+
+    call i90_gtoken(filename,rcode)
+    if(rcode /= 0) then
+       write(logunit,*)"Error reading token ",filename
+       call shr_sys_abort(trim(subname)//"i90_gtoken Error on filename read")
+    endif
+
+    pio_subsystem => shr_pio_getiosys(ID)
+    pio_iotype = shr_pio_getiotype(ID)
+
+    rcode = pio_openfile(pio_subsystem, File, pio_iotype, filename)
+    ent_type = 1 ! cells always on coupler side
+
+    !--- read and load area_a --- source mb id has to be present
+    if (present(mbsrcid)) then
+       rcode = pio_inq_dimid (File, 'n_a', did)  ! size of  input vector
+       rcode = pio_inq_dimlen(File, did  , na)
+        ! find out the number of global cells, needed for defining the variables length
+       ierr = iMOAB_GetGlobalInfo( mbsrcid, dummy, ng)
+       if (na .ne. ng) then
+         write(logunit,*) subname,' ERROR: na and ng are different for source na, ng:', na, ng
+         call shr_sys_abort(subname//'ERROR: na and ng are different for source ')
+       endif
+
+       ierr = iMOAB_GetMeshInfo ( mbsrcid, nvert, nvise, nbl, nsurf, nvisBC )
+       ns = nvise(1) ! local number of cells 
+       allocate(data1(ns))
+       allocate(data_reorder(ns))
+       allocate(dof(ns))
+       allocate(dof_reorder(ns))
+
+      ! note: size of dof is ns
+       tagname = 'GLOBAL_ID'//C_NULL_CHAR
+       if (ns > 0 ) then 
+         ierr = iMOAB_GetIntTagStorage ( mbsrcid, tagname, ns , ent_type, dof)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' ERROR: cannot get dofs '
+           call shr_sys_abort(subname//'cannot get dofs ')
+         endif
+       endif
+
+       allocate(indx(ns))
+       call IndexSet(ns, indx)
+       call IndexSort(ns, indx, dof, descend=.false.)
+   !      after sort, dof( indx(i)) < dof( indx(i+1) )
+       do ix=1,ns
+          dof_reorder(ix) = dof(indx(ix)) ! 
+       enddo
+#ifdef MOABCOMP
+       if (mytask==0) write(logunit,*) subname, ' dof_reorder on mytask=0: ', dof_reorder
+#endif
+       deallocate(dof)
+
+!       call mct_gsmap_OrderedPoints(gsMap_s, mytask, dof)
+       call pio_initdecomp(pio_subsystem, pio_double, (/na/), dof_reorder, iodesc)
+       deallocate(dof_reorder)
+       rcode = pio_inq_varid(File,trim(lfile_s),vid)
+       call pio_read_darray(File, vid, iodesc, data1, rcode)
+       do ix=1,ns
+         data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
+      enddo
+#ifdef MOABCOMP
+      if (mytask==0 ) then
+         write(logunit,*) subname, 'data1   ',  data1
+         write(logunit,*) subname, 'data_reorder   ',  data_reorder
+      endif
+#endif
+       tagname = trim(lfld_s)//C_NULL_CHAR ! should be aream
+       ierr = iMOAB_SetDoubleTagStorage(mbsrcid, tagname, ns, ent_type, data_reorder)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' ERROR: cannot seat aream '
+         call shr_sys_abort(subname//'cannot set aream for source')
+       endif
+       call pio_freedecomp(File,iodesc)
+       deallocate(data1)
+       deallocate(data_reorder)
+       deallocate(indx)
+    end if
+
+    !--- read and load area_b ---
+    if (present(mbtgtid)) then
+       rcode = pio_inq_dimid (File, 'n_b', did)  ! size of output vector
+       rcode = pio_inq_dimlen(File, did  , nb)
+ ! find out the number of global cells, needed for defining the variables length
+       ierr = iMOAB_GetGlobalInfo( mbtgtid, dummy, ng)
+       if (nb .ne. ng) then
+         write(logunit,*) subname,' ERROR: nb and ng are different for target nb, ng:', nb, ng
+         call shr_sys_abort(subname//'ERROR: nb and ng are different for target ')
+       endif
+
+       ierr = iMOAB_GetMeshInfo ( mbtgtid, nvert, nvise, nbl, nsurf, nvisBC )
+       ns = nvise(1) ! local number of cells 
+       allocate(data1(ns))
+       allocate(data_reorder(ns))
+       allocate(dof(ns))
+       allocate(dof_reorder(ns))
+
+      ! note: size of dof is ns
+       tagname = 'GLOBAL_ID'//C_NULL_CHAR
+       if (ns > 0 ) then 
+         ierr = iMOAB_GetIntTagStorage ( mbtgtid, tagname, ns , ent_type, dof)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' ERROR: cannot get dofs '
+           call shr_sys_abort(subname//'cannot get dofs ')
+         endif
+       endif
+
+       allocate(indx(ns))
+       call IndexSet(ns, indx)
+       call IndexSort(ns, indx, dof, descend=.false.)
+   !      after sort, dof( indx(i)) < dof( indx(i+1) )
+       do ix=1,ns
+          dof_reorder(ix) = dof(indx(ix)) ! 
+       enddo
+#ifdef MOABCOMP
+       if (mytask==0) write(logunit,*) subname, ' dof_reorder on mytask=0: ', dof_reorder
+#endif
+       deallocate(dof)
+
+!       call mct_gsmap_OrderedPoints(gsMap_s, mytask, dof)
+       call pio_initdecomp(pio_subsystem, pio_double, (/nb/), dof_reorder, iodesc)
+       deallocate(dof_reorder)
+       rcode = pio_inq_varid(File,trim(lfile_d),vid)
+       call pio_read_darray(File, vid, iodesc, data1, rcode)
+       do ix=1,ns
+         data_reorder(indx(ix)) = data1(ix) ! or is it data_reorder(ix) = data1(indx(ix)) ? 
+      enddo
+#ifdef MOABCOMP
+      if (mytask==0 ) then
+         write(logunit,*) subname, 'data1   ',  data1
+         write(logunit,*) subname, 'data_reorder   ',  data_reorder
+      endif
+#endif
+       tagname = trim(lfld_d)//C_NULL_CHAR ! should be aream
+       ierr = iMOAB_SetDoubleTagStorage(mbtgtid, tagname, ns, ent_type, data_reorder)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' ERROR: cannot seat aream '
+         call shr_sys_abort(subname//'cannot set aream for source')
+       endif
+       call pio_freedecomp(File,iodesc)
+       deallocate(data1)
+       deallocate(data_reorder)
+       deallocate(indx)
+    endif
+
+
+    call pio_closefile(File)
+
+  end subroutine seq_map_readdata_moab
   !=======================================================================
 
   subroutine seq_map_avNormAvF(mapper, av_i, av_o, avf_i, avfifld, rList, norm)
