@@ -184,6 +184,7 @@ CONTAINS
     rofice_present=.false.
     rof_prognostic=.true.
     flood_present=.false.
+    call rof_read_namelist()
 
     !----------------------------------------------------------------------------
     ! Initialize RDycore
