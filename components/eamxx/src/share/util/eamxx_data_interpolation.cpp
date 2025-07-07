@@ -528,8 +528,9 @@ create_vert_remapper (const VertRemapData& data)
       }
     };
 
-    // We need to build a vert remapper based on the input data
-    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
+    // We need to build a vert remapper based on the input data.
+    // Note: on src grid, we don't distinguish midpoints from interfaces, while on tgt we do.
+    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid,true,false);
 
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);

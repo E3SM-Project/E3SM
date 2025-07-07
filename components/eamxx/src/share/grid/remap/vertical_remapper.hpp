@@ -35,12 +35,14 @@ public:
     Both
   };
 
-  // Use fixed value as mask value
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file);
+                    const std::string& map_file,
+                    const bool src_int_same_as_mid = false);
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const grid_ptr_type& tgt_grid);
+                    const grid_ptr_type& tgt_grid,
+                    const bool src_int_same_as_mid = false,
+                    const bool tgt_int_same_as_mid = false);
 
   ~VerticalRemapper () = default;
 

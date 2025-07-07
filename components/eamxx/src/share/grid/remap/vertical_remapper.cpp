@@ -47,15 +47,20 @@ create_tgt_grid (const grid_ptr_type& src_grid,
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                  const std::string& map_file)
- : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file))
+                  const std::string& map_file,
+                  const bool src_int_same_as_mid)
+ : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file),src_int_same_as_mid,true)
 {
   set_target_pressure (m_tgt_grid->get_geometry_data("p_levs"),Both);
 }
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                  const grid_ptr_type& tgt_grid)
+                  const grid_ptr_type& tgt_grid,
+                  const bool src_int_same_as_mid,
+                  const bool tgt_int_same_as_mid)
+ : m_src_int_same_as_mid(src_int_same_as_mid)
+ , m_tgt_int_same_as_mid(tgt_int_same_as_mid)
 {
   // We only go in one direction for simplicity, since we need to setup some
   // infrsatructures, and we don't want to setup 2x as many "just in case".
@@ -124,45 +129,29 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
 
   FieldTag expected_tag;
   int      expected_dim;
-  switch (ptype) {
-    case Midpoints:
-      expected_tag = LEV;
-      expected_dim = nlevs;
-      if (src) {
-        m_src_pmid = p;
-      } else {
-        m_tgt_pmid = p;
-      }
-      m_mid_packs_supported &= pack_compatible;
-      break;
-    case Interfaces:
-      expected_tag = ILEV;
-      expected_dim = nlevs+1;
-      if (src) {
-        m_src_pint = p;
-      } else {
-        m_tgt_pint = p;
-      }
-      m_int_packs_supported &= pack_compatible;
-      break;
-    case Both:
-      expected_tag = LEV;
-      expected_dim = nlevs;
-      if (src) {
-        m_src_pint = p;
-        m_src_pmid = p;
-        m_src_int_same_as_mid = true;
-      } else {
-        m_tgt_pint = p;
-        m_tgt_pmid = p;
-        m_tgt_int_same_as_mid = true;
-      }
-      m_mid_packs_supported &= pack_compatible;
-      m_int_packs_supported &= pack_compatible;
-      break;
-    default:
-      EKAT_ERROR_MSG ("[VerticalRemapper::set_source_pressure] Error! Unrecognized value for 'ptype'.\n");
+  if (ptype==Midpoints or ptype==Both) {
+    expected_tag = LEV;
+    expected_dim = nlevs;
+    if (src) {
+      m_src_pmid = p;
+    } else {
+      m_tgt_pmid = p;
+    }
+    m_mid_packs_supported &= pack_compatible;
   }
+  if (ptype==Interfaces or ptype==Both) {
+    if (src) {
+      expected_tag = m_src_int_same_as_mid ? LEV : ILEV;
+      expected_dim = m_src_int_same_as_mid ? nlevs : nlevs+1;
+      m_src_pint = p;
+    } else {
+      expected_tag = m_tgt_int_same_as_mid ? LEV : ILEV;
+      expected_dim = m_tgt_int_same_as_mid ? nlevs : nlevs+1;
+      m_tgt_pint = p;
+    }
+    m_int_packs_supported &= pack_compatible;
+  }
+
   EKAT_REQUIRE_MSG (vtag==expected_tag and vdim==expected_dim,
       msg_prefix + "Invalid pressure layout.\n"
       "  - layout: " + p_layout.to_string() + "\n"
