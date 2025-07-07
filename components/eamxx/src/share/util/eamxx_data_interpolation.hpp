@@ -66,6 +66,8 @@ public:
 
   void run (const util::TimeStamp& ts);
 
+  std::shared_ptr<const AbstractGrid> grid_after_hremap () const { return m_grid_after_hremap; }
+
 protected:
 
   void shift_data_interval ();
