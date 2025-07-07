@@ -1088,6 +1088,7 @@ subroutine prep_ocn_accum_avg_moab()
     ! Local Variables
     integer   :: ent_type, ierr
     integer noflds, lsize ! used for restart case only?
+    real(r8) :: ravg
     character(CXX)  :: tagname
     character(*), parameter  :: subname = '(prep_ocn_accum_avg_moab)'
 #ifdef MOABDEBUG
@@ -1098,7 +1099,8 @@ subroutine prep_ocn_accum_avg_moab()
        ! temporary formation of average
        if (x2oacc_om_cnt > 1) then
           !call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
-          x2oacc_om = 1./x2oacc_om_cnt * x2oacc_om
+          ravg = 1.0_r8/real(x2oacc_om_cnt, r8)
+          x2oacc_om = x2oacc_om * ravg
        end if
 
        if (.not. allocated(x2o_om)) then
