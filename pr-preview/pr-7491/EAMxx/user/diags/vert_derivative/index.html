@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#vertical-divergence-diagnostics" class="md-skip">
+        <a href="#vertical-derivative-diagnostics" class="md-skip">
           Skip to content
         </a>
       
@@ -1881,9 +1881,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#brief-description" class="md-nav__link">
+  <a href="#brief-description-of-algorithm" class="md-nav__link">
     <span class="md-ellipsis">
-      Brief description
+      Brief description of algorithm
     </span>
   </a>
   
@@ -3690,9 +3690,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#brief-description" class="md-nav__link">
+  <a href="#brief-description-of-algorithm" class="md-nav__link">
     <span class="md-ellipsis">
-      Brief description
+      Brief description of algorithm
     </span>
   </a>
   
@@ -3727,34 +3727,41 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamuser/diags/vert_divergence.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamuser/diags/vert_derivative.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="vertical-divergence-diagnostics">vertical divergence diagnostics</h1>
-<p>We can automatically calculate the vertical divergence of a given field
-with respect to the vertical coordinate (pressure or height).
-In other words, the vertical divergence is the derivative of the field
+<h1 id="vertical-derivative-diagnostics">Vertical derivative diagnostics</h1>
+<p>We can automatically calculate the vertical derivative of a given field
+with respect to a vertical coordinate (pressure or height).
+In other words, the vertical derivative is the derivative of the field
 along a vertical coordinate.
-To automatically get the divergence of a field X, we can request
-<code>dX_dp_vert_divergence</code> or <code>X_dz_vert_divergence</code>
+To automatically get the derivative of a field X, we can request
+<code>dX_dp_vert_derivative</code> or <code>dX_dz_vert_derivative</code>
 in the output yaml files.</p>
-<h2 id="brief-description">Brief description</h2>
+<p><em>WARNING: support for the dz-based derivative is experimental!</em></p>
+<h2 id="brief-description-of-algorithm">Brief description of algorithm</h2>
 <p>For simplicity, the field <code>X</code> can only have two dimensions
 (column and level). This covers most fields of interest, but
-notably does not cover higher-dimensioned fields.
-We also assume that the highest level (top of the atmosphere)
-has a zero derivative.
+notably does not cover higher-dimensioned fields in radiation and MAM.
+We calculate the derivative by weighting two finite differences.
 The input field <code>X</code> must be defined on the midpoints, and its
 difference is defined as the difference between two consecutive
 levels, pointing downwards. That is, for a pressure coordinate,</p>
 <div class="arithmatex">\[
-\nabla_{\text{vert}} X = \frac{X_{i, k} - X_{i, k-1}}{\Delta p_{k}}
+\nabla_{p} X = w  \frac{x}{a} + (1-w)\frac{y}{b}
 \]</div>
-<p>for all <span class="arithmatex">\(k&gt;0\)</span> (at <span class="arithmatex">\(k=0\)</span>, the derivative is zero).</p>
+<p>where</p>
+<ul>
+<li><span class="arithmatex">\(x = X_{i, k} - X_{i, k-1}\)</span> and <span class="arithmatex">\(a = p_{i,k} - p_{i,k-1}\)</span></li>
+<li><span class="arithmatex">\(y = X_{i, k+1} - X_{i, k}\)</span> and <span class="arithmatex">\(b = p_{i,k+1} - p_{i,k}\)</span></li>
+<li><span class="arithmatex">\(w = b / (a + b)\)</span></li>
+</ul>
+<p>and <span class="arithmatex">\(x = 0\)</span>, <span class="arithmatex">\(w=0\)</span> for <span class="arithmatex">\(k=0\)</span> (highest level)
+and <span class="arithmatex">\(y = 0\)</span>, <span class="arithmatex">\(w=1\)</span> for <span class="arithmatex">\(k=K\)</span> (lowest level).</p>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -3765,8 +3772,8 @@ levels, pointing downwards. That is, for a pressure coordinate,</p>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># in this example, we use T_mid in units of K</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dT_mid_dp_vert_divergence</span><span class="w">  </span><span class="c1"># K / Pa</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dT_mid_dz_vert_divergence</span><span class="w">  </span><span class="c1"># K / m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dT_mid_dp_vert_derivative</span><span class="w">  </span><span class="c1"># K / Pa</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dT_mid_dz_vert_derivative</span><span class="w">  </span><span class="c1"># K / m</span>
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nmonths</span>
