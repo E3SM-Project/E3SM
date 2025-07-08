@@ -14161,7 +14161,7 @@ contains
                ! NJ: BGCTracerType < 0.  Purely mobile tracers now adhere when formed in situ.
                ! only the releaseTime is used
                retentionTime(iBioLayer) = 1.0_RKIND
-               releaseTime(iBioLayer) = config_long_mobile_to_stationary_time
+               releaseTime(iBioLayer) = config_rapid_mobile_to_stationary_time
 
                if (BGCTracerType(iBioLayer) >=  0.0_RKIND .and. BGCTracerType(iBioLayer) < 0.5_RKIND) then
                   retentionTime(iBioLayer) = config_rapid_mobile_to_stationary_time
