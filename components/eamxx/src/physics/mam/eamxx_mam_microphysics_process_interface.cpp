@@ -223,7 +223,7 @@ void MAMMicrophysics::set_grids(
     add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
     add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
     add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming_cw", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -671,7 +671,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
   view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
           gas_aero_exchange_nucleation, gas_aero_exchange_coagulation,
-          gas_aero_exchange_renaming_cw;
+          gas_aero_exchange_renaming_cloud_borne;
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
@@ -681,7 +681,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     gas_aero_exchange_renaming = get_field_out("mam4_microphys_tendency_renaming").get_view<Real***>();
     gas_aero_exchange_nucleation = get_field_out("mam4_microphys_tendency_nucleation").get_view<Real***>();
     gas_aero_exchange_coagulation = get_field_out("mam4_microphys_tendency_coagulation").get_view<Real***>();
-    gas_aero_exchange_renaming_cw = get_field_out("mam4_microphys_tendency_renaming_cw").get_view<Real***>();
+    gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphys_tendency_renaming_cloud_borne").get_view<Real***>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -933,7 +933,7 @@ void MAMMicrophysics::run_impl(const double dt) {
           diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
           diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
           diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
-          diag_arrays.gas_aero_exchange_renaming_cw = ekat::subview(gas_aero_exchange_renaming_cw, icol);
+          diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
 	      }
 
         // Wind speed at the surface
