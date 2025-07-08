@@ -1540,30 +1540,19 @@ module li_iceshelf_melt
                   enddo
 
                elseif (config_TF_vertical_calc == '200-500') then
-                  ! Depth-weighted average between 200-500m
+                  ! Depth-weighted average between 200-500m, ignoring bathymetry
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
-                     
-                     kk = 1
-                     ! Find deepest zOcean above ocean floor
-                     do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
-                        kk = kk + 1
-                     enddo
-                     
-                     ! if bed topography is shallower than 200 m, then throw out TF in cell
-                     if (bedTopography(iCell) > -200.0_RKIND) then
-                        TFocean(iCell) = 0.0_RKIND
-                     ! Otherwise average TF between 200 and 500 m depth
-                     else 
+                     if (bedTopography(iCell) < 0.0_RKIND) then 
                         dzAccumulated = 0.0_RKIND
-                        do iLayer = 1, kk
-                           if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) &
-                                 .and. (bedTopography(iCell) <= zOcean(iLayer))) then
+                        do iLayer = 1, nISMIP6OceanLayers
+                           if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) ) then
 
                               dz = zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer)
                               TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
                                    / (dzAccumulated + dz)
                               dzAccumulated = dzAccumulated + dz
+                        
                            endif
                         enddo
                      endif

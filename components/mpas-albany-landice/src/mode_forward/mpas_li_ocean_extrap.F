@@ -99,6 +99,7 @@ contains
       !-----------------------------------------------------------------
       logical, pointer :: config_ocean_data_extrapolation
       real(kind=RKIND), pointer :: invalid_value_TF
+      character(len=StrKIND), pointer :: config_TF_vertical_calc
       logical, pointer :: config_calculate_thermal_forcing
       logical, pointer :: config_extrap_sill_blocking
       real(kind=RKIND), pointer :: config_sea_level
@@ -140,6 +141,7 @@ contains
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', nCellsExtra)
          call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
+         call mpas_pool_get_config(liConfigs, 'config_TF_vertical_calc', config_TF_vertical_calc) 
          call mpas_pool_get_config(liConfigs, 'config_extrap_sill_blocking', config_extrap_sill_blocking)
          call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -168,7 +170,14 @@ contains
             call mpas_pool_get_array(extrapOceanDataPool, 'oceanTemperature', oceanTemperature)
             call mpas_pool_get_array(extrapOceanDataPool, 'oceanSalinity', oceanSalinity)
          endif
-         
+
+         ! check parameterization compatibility. TF_vertical_calc = '200-500'
+         ! assumes no knowledge of fjord geometry, so is not compatible with
+         ! sill blocking 
+         if ( (config_TF_vertical_calc == '200-500') .and. (config_extrap_sill_blocking) ) then
+            call mpas_log_write("config_TF_vertical_calc set to '200-500' is not compatible with config_extrap_sill_blocking", MPAS_LOG_ERR)         
+         endif
+
          ! create a 2D mask based on the open ocean + floating ice + grounded ice mask to be used for defining the location of the n-extra cells into the grounded ice
          allocate(seedOceanMaskHorizOld(nCells+1))
          seedOceanMaskHorizOld(:) = 0
@@ -337,23 +346,27 @@ contains
          enddo
          availOceanMask(:,:) = 0
          do iCell = 1, nCells
-            do iLayer = 1, nISMIP6OceanLayers
-               layerCenter = ismip6shelfMelt_zOcean(iLayer)
-               if ( (seedOceanMaskHoriz(iCell) == 1) .and. (connectedMarineMask(iCell) == 1)) then
-                  ! For now, only assign surface cells and other ocean cells with cell centers above bed topography
-                  ! to availOceanMask. Partial ocean cells with cell centers below bed topography will be accounted for in the
-                  ! vertical extrapolation routine 
-                  if ( (bedTopography(iCell) < layerCenter) .or. ((iLayer == 1) .and. (bedTopography(iCell) < 0.0_RKIND)) )then
-                     availOceanMask(iLayer,iCell) = 1
-                     
-                  elseif ((config_calculate_thermal_forcing) .and. (.not. config_extrap_sill_blocking)) then
+            if ((config_calculate_thermal_forcing) .and. (.not. config_extrap_sill_blocking) &
+                    .and. (bedTopography(iCell) < 0.0_RKIND)) then
                         
-                        ! If recalculating thermal forcing with ISMIP6retreat or AMretreat methods, then ignore
-                        ! topography and allow for translation of water properties directly to glacier face.
-                        availOceanMask(iLayer,iCell) = 1
-                  endif
-               endif
-            enddo
+                  ! If recalculating thermal forcing without sill
+                  ! blocking, ignore bathymetry and extrapolate water
+                  ! properties to all cells below sea level. 
+                  availOceanMask(:,iCell) = 1
+            else
+               do iLayer = 1, nISMIP6OceanLayers
+                  layerCenter = ismip6shelfMelt_zOcean(iLayer)
+                  
+                  if ( ( (seedOceanMaskHoriz(iCell) == 1) .and. (connectedMarineMask(iCell) == 1) ) &
+                          .and. ( (bedTopography(iCell) < layerCenter) &
+                          .or. ((iLayer == 1) .and. (bedTopography(iCell) < 0.0_RKIND)) ) ) then
+                     
+                     ! Only assign surface cells and other ocean cells with cell centers above bed topography
+                     ! to availOceanMask.  
+                     availOceanMask(iLayer,iCell) = 1
+                  endif  
+               enddo
+            endif
          enddo
 
          ! Make a copy of original mask to use for extending the mask during extrapolation
