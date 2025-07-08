@@ -929,16 +929,20 @@ contains
             ! Alter 3d profile following the iceberg Parameterization from Hager 2023 for fjord where icebergs are prevalent
             ! find cell just above config_TF_iceberg_depth
             icebergCellVertID = 0
-            do iLayer = 1, nISMIP6OceanLayers
-               if ( (ismip6shelfMelt_zOcean(iLayer) >= config_TF_iceberg_depth) & 
-                       .and. (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then
-                  icebergCellVertID = iLayer
-               endif
+            freezingTemperature(:) = 0.0_RKIND
 
-               ! calculate freezing temperature. 
-               ! << NOTE >>: Again we are using the simplified equation from Jenkins 2011 to do this. May eventually want to 
-               ! switch to method in gsw toolbox to do this to be consistent with Hager 2023
-               freezingTemperature(iLayer) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+            do iLayer = 1, nISMIP6OceanLayers
+               if ( ( (ismip6shelfMelt_zOcean(iLayer) >= config_TF_iceberg_depth) & 
+                       .and. (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) & 
+                       .or. ( (iLayer == 1) .and. (bedTopography(iCell) >= config_TF_iceberg_depth) &
+                       .and. (bedTopography(iCell) < 0.0_RKIND) ) ) then
+                  icebergCellVertID = iLayer
+
+                  ! calculate freezing temperature. 
+                  ! << NOTE >>: Again we are using the simplified equation from Jenkins 2011 to do this. May eventually want to 
+                  ! switch to method in gsw toolbox to do this to be consistent with Hager 2023
+                  freezingTemperature(iLayer) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+               endif
             enddo
 
             !Start alteration just above iceberg depth or bedTopography and work upwards
@@ -954,14 +958,19 @@ contains
                   gadeSlope = inverseSalt * (phaseChange - tempDiff)
                endif
 
-               ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line. Assume linear function
-               ! between current z-level and one z-level below
-               saltDiff = oceanSalinity(iLayer,iCell) - oceanSalinity(iLayer + 1,iCell)     
-                  
-               newTemp = (gadeSlope * saltDiff) + oceanTemperature(iLayer + 1, iCell)
+               ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line.
+               if (ismip6shelfMelt_zOcean(iLayer + 1) < bedTopography(iCell)) then
+                  ! Not enough information to alter cells immediately above bed topography
+                  saltDiff = 0.0_RKIND
+                  newTemp = oceanTemperature(iLayer, iCell)
+               else
+                  saltDiff = oceanSalinity(iLayer,iCell) - oceanSalinity(iLayer + 1,iCell)     
+                  newTemp = (gadeSlope * saltDiff) + oceanTemperature(iLayer + 1, iCell)
+               endif
+               
                ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
                ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
-                oceanTemperature(iLayer,iCell) = min(newTemp,oceanTemperature(iLayer,iCell))
+               oceanTemperature(iLayer,iCell) = min(newTemp,oceanTemperature(iLayer,iCell))
            
                ! Ensure no artificially adjusted temperatures fall below the freezing temperature
                oceanTemperature(iLayer, iCell) = max(freezingTemperature(iLayer), oceanTemperature(iLayer,iCell))
