@@ -11,6 +11,7 @@ time_stepping:
 atmosphere_processes:
   atm_procs_list: [mam4_aero_microphys]
   mam4_aero_microphys:
+   extra_mam4_aero_microphys_diags: true
    mam4_do_cond: true
    mam4_do_newnuc: true
    mam4_do_coag: true
