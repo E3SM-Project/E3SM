@@ -172,6 +172,7 @@ contains
    character(CXX)           :: tagName
    integer                  :: context_id ! we will use a special context for the extra flux ocean instance
    logical                  :: no_match ! used to force a new mapper
+   integer                  :: arearead ! to signal read of area_a or area_b, or both
 
    !---------------------------------------------------------------
 
@@ -369,9 +370,13 @@ contains
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 3 ! read both area a and area b
+                  ! maybe we should read the moab map for fmap, not smap; are rhey always the same?
+                  ! the bigger question is about aream, they are read using smap , not fmap, as a 
+                  ! consequence; we do not read acn2atm_fmap in moab, we read only ocn2atm_smap
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
-                        wgtIdo2a, 'mapper_So2a MOAB init', esmf_map_flag)
+                        arearead, wgtIdo2a, 'mapper_So2a MOAB init', esmf_map_flag)
                   ! need to call migrate map mesh, which will compute the cov mesh and
                   !  comm graph too for coverage mesh
                   context_id = idintx ! intx id
@@ -634,9 +639,10 @@ contains
 
             else
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+               arearead = 0
                call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
                      'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
-                     wgtIdi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+                     arearead, wgtIdi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
                context_id = idintx ! intx id
                ierr = iMOAB_MigrateMapMesh (mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
                      mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
@@ -810,9 +816,10 @@ contains
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0
                   call moab_map_init_rcfile(mblxid, mbaxid, mbintxla, type1, &
                         'seq_maps.rc', 'lnd2atm_fmapname:', 'lnd2atm_fmaptype:', samegrid_al, &
-                        wgtIdl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
+                        arearead, wgtIdl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
 
                   context_id = idintx ! intx id
                   ierr = iMOAB_MigrateMapMesh (mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, &

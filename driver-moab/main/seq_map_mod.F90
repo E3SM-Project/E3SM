@@ -176,9 +176,9 @@ contains
 
 
   subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
-    maprcfile, maprcname, maprctype, samegrid, sol_identifier, string, esmf_map)
+    maprcfile, maprcname, maprctype, samegrid, arearead, sol_identifier, string, esmf_map)
 
-   use iMOAB, only: iMOAB_LoadMappingWeightsFromFile
+   use iMOAB, only: iMOAB_LoadFromMappingFile
    implicit none
    !-----------------------------------------------------
    !
@@ -194,6 +194,7 @@ contains
    character(len=*)     ,intent(in)            :: maprcname
    character(len=*)     ,intent(in)            :: maprctype
    logical              ,intent(in)            :: samegrid
+   integer              ,intent(in)            :: arearead ! read or not area_a and area_b 
    character(len=*)     ,intent(in),optional   :: sol_identifier !   /* "scalar", "flux", "custom" */
    character(len=*)     ,intent(in),optional   :: string
    logical              ,intent(in),optional   :: esmf_map
@@ -228,8 +229,8 @@ contains
        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
    endif
 
-   ierr = iMOAB_LoadMappingWeightsFromFile( mbsrc, mbtgt, mbintx, discretization_type, &
-                      discretization_type, sol_identifier, mapfile_term)
+   ierr = iMOAB_LoadFromMappingFile( mbsrc, mbtgt, mbintx, discretization_type, &
+                      discretization_type, arearead, sol_identifier, mapfile_term)
    if (ierr .ne. 0) then
       write(logunit,*) subname,' error in loading map file'
       call shr_sys_abort(subname//' ERROR in loading map file')
