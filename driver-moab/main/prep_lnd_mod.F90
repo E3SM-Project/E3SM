@@ -172,7 +172,7 @@ contains
     logical :: compute_maps_online_r2l, compute_maps_online_a2l
 
     integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
-    integer  nghlay_tgt
+    integer  nghlay_tgt, arearead
 
 #endif
     character(*), parameter  :: subname = '(prep_lnd_init)'
@@ -367,9 +367,10 @@ contains
                   endif
               else ! read maps
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0
                   call moab_map_init_rcfile( mbrxid, mblxid, mbintxrl, type1, &
                         'seq_maps.rc', 'rof2lnd_fmapname:', 'rof2lnd_fmaptype:',samegrid_lr, &
-                        wgtIdr2l, 'mapper_Fr2l MOAB initialization', esmf_map_flag)
+                        arearead, wgtIdr2l, 'mapper_Fr2l MOAB initialization', esmf_map_flag)
                   ! need to call migrate map mesh, which will compute the cov mesh and
                   !  comm graph too for coverage mesh
                   ierr = iMOAB_MigrateMapMesh (mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, &
@@ -572,18 +573,19 @@ contains
 
               else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-
+                  arearead = 0
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
                         'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:',samegrid_al, &
-                        wgtIda2l_bilinear, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
+                        arearead, wgtIda2l_bilinear, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
 
                   ! TODO make sure it is good enough
                   ! we are using the same coverage for 2 maps , one bilinear, one conservative
                   ! read as the second one the f map, this one has the aream for land correct, so it should be fine
                   ! the area_b for the bilinear map above is 0 ! which caused grief
+                  arearead = 2 !  area_b for land aream
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
                         'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
-                        wgtIda2l_conservative, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
+                        arearead, wgtIda2l_conservative, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
                   ! we need to do only one map migrate, should over both maps!!
                   ! we have one coverage for both maps!
                   ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, &

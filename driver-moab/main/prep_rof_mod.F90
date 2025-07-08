@@ -217,7 +217,7 @@ contains
    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
 
    integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
-   integer                  :: tagtype, numco, tagindex
+   integer                  :: tagtype, numco, tagindex, arearead
    character(CXX)           :: tagName
    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
 
@@ -456,9 +456,10 @@ contains
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0
                   call moab_map_init_rcfile( mblxid, mbrxid, mbintxlr, type1, &
                         'seq_maps.rc', 'lnd2rof_fmapname:', 'lnd2rof_fmaptype:',samegrid_lr, &
-                        wgtIdl2r, 'mapper_Fl2r MOAB initialization', esmf_map_flag)
+                        arearead, wgtIdl2r, 'mapper_Fl2r MOAB initialization', esmf_map_flag)
 
                   ! this creates a par comm graph between mblxid and mbintxlr, with ids lnd(1)%cplcompid
                   ierr = iMOAB_MigrateMapMesh (mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, &
@@ -667,9 +668,10 @@ contains
 
             else
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+               arearead = 0
                call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
                      'seq_maps.rc', 'atm2rof_fmapname:', 'atm2rof_fmaptype:',samegrid_ar, &
-                     wgtIda2r, 'mapper_Fa2r MOAB initialization', esmf_map_flag)
+                     arearead, wgtIda2r, 'mapper_Fa2r MOAB initialization', esmf_map_flag)
                 ! this creates a par comm graph between mblxid and mbintxlr, with ids lnd(1)%cplcompid
                ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, &
                      mpigrp_CPLID, type1, atm(1)%cplcompid, idintx)
