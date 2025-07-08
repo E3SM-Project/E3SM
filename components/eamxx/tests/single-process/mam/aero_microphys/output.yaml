@@ -63,20 +63,6 @@ fields:
       - num_c3
       - num_c4
       - constituent_fluxes
-      - mam4_microphysics_tendency_gas_phase_chemistry
-      - mam4_microphysics_tendency_aqueous_chemistry
-      - mam4_microphysics_tendency_aqso4
-      - mam4_microphysics_tendency_aqh2so4
-      - mam4_microphys_tendency_condensation
-      - mam4_microphys_tendency_renaming
-      - mam4_microphys_tendency_nucleation
-      - mam4_microphys_tendency_coagulation
-      - mam4_microphys_tendency_renaming_cw
-      - mam4_microphys_tendency_condensation_vert_sum_dp_weighted
-      - mam4_microphys_tendency_renaming_vert_sum_dp_weighted
-      - mam4_microphys_tendency_nucleation_vert_sum_dp_weighted
-      - mam4_microphys_tendency_coagulation_vert_sum_dp_weighted
-      - mam4_microphys_tendency_renaming_cw_vert_sum_dp_weighted
       # To save these fields make sure to turn on
       # OUTPUT_TRACER_FIELDS
       #- oxi_fields
