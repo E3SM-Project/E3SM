@@ -38,7 +38,7 @@ module clubb_intr
   use shr_kind_mod,     only: core_rknd=>shr_kind_r8
 #endif
 
-  use zm_conv,      only: zm_microp
+  use zm_conv,      only: zm_param
 
   implicit none
 
@@ -227,7 +227,7 @@ module clubb_intr
 
   integer :: cmfmc_sh_idx = 0
 
-! ZM convective microphysics(zm_microp)
+! ZM convective microphysics(zm_param%zm_microp)
   integer :: &
     dlfzm_idx  = -1,    & ! index of ZM detrainment of convective cloud water mixing ratio.
     difzm_idx  = -1,    & ! index of ZM detrainment of convective cloud ice mixing ratio.
@@ -777,7 +777,7 @@ end subroutine clubb_init_cnst
     iiedsclr_thl = -1
     iiedsclr_CO2 = -1
 
-    if (zm_microp) then
+    if (zm_param%zm_microp) then
         dlfzm_idx = pbuf_get_index('DLFZM')
         difzm_idx = pbuf_get_index('DIFZM')
         dsfzm_idx = pbuf_get_index('DSFZM')
@@ -1496,7 +1496,7 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
 
-   ! ZM convective microphysics(zm_microp)
+   ! ZM convective microphysics(zm_param%zm_microp)
    real(r8), pointer :: dlfzm(:,:)  ! ZM detrainment of convective cloud water mixing ratio.
    real(r8), pointer :: difzm(:,:)  ! ZM detrainment of convective cloud ice mixing ratio.
    real(r8), pointer :: dsfzm(:,:)  ! ZM detrainment of convective snow mixing ratio.
@@ -2718,7 +2718,7 @@ end subroutine clubb_init_cnst
 
    call physics_ptend_init(ptend_loc,state%psetcols, 'clubb_det', ls=.true., lq=lqice)
 
-   if (zm_microp) then
+   if (zm_param%zm_microp) then
       call pbuf_get_field(pbuf, dlfzm_idx, dlfzm)
       call pbuf_get_field(pbuf, difzm_idx, difzm)
       call pbuf_get_field(pbuf, dsfzm_idx, dsfzm)
@@ -2740,7 +2740,7 @@ end subroutine clubb_init_cnst
             dum1 = ( clubb_tk1 - state1%t(i,k) ) /(clubb_tk1 - clubb_tk2)
          endif
 
-         if (zm_microp) then
+         if (zm_param%zm_microp) then
            ptend_loc%q(i,k,ixcldliq) = dlfzm(i,k) + dlf2(i,k) * ( 1._r8 - dum1 )
            ptend_loc%q(i,k,ixcldice) = difzm(i,k) + dsfzm(i,k) +  dlf2(i,k) * dum1
            ptend_loc%q(i,k,ixnumliq) = dnlfzm(i,k) + 3._r8 * ( dlf2(i,k) * ( 1._r8 - dum1 ) )   &

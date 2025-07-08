@@ -61,6 +61,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void finalize_impl(){/*Do nothing*/};
 
  private:
+  // Output extra mam4xx diagnostics.
+  bool extra_mam4_aero_microphys_diags_ = false;
+
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters

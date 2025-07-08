@@ -23,6 +23,14 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/gw_gw_front_project_winds.cpp
     eti/gw_gw_front_gw_sources.cpp
     eti/gw_gw_cm_src.cpp
+    eti/gw_gw_convect_project_winds.cpp
+    eti/gw_gw_heating_depth.cpp
+    eti/gw_gw_storm_speed.cpp
+    eti/gw_gw_convect_gw_sources.cpp
+    eti/gw_gw_beres_src.cpp
+    eti/gw_gw_ediff.cpp
+    eti/gw_gw_diff_tend.cpp
+    eti/gw_gw_oro_src.cpp
   ) # GW ETI SRCS
 endif()
 

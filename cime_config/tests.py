@@ -397,7 +397,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
             "SMS_Ld3.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.eam-cosplite",
-            "SMS.T62_SOwISC12to60E2r4.GMPAS-IAF",
+            "SMS.T62_SOwISC12to30E3r3.GMPAS-IAF",
             )
         },
 
@@ -811,6 +811,7 @@ _TESTS = {
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-drydep",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aero_microphysics",
             "REP_Ln5.ne30pg2_oECv3.F2010-EAMxx-MAM4xx.eamxx-mam4xx-remap_emiss_ne4_ne30",
+            "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-compute_mam4xx_diags",
             "REP_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx",
             "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-optics",
             "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-mam4xx-aci",

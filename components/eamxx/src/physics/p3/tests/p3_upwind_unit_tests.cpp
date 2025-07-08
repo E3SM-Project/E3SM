@@ -10,7 +10,6 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
 
 #include <thread>
 #include <array>
@@ -237,7 +236,7 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : cuds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -272,7 +271,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      cuds_cxx[i].write(Base::m_fid);
+      cuds_cxx[i].write(Base::m_ofile);
     }
   }
 }
@@ -319,7 +318,7 @@ void run_bfb()
   // Read baseline data
   if (this->m_baseline_action == COMPARE) {
     for (auto& d : gsds_baseline) {
-      d.read(Base::m_fid);
+      d.read(Base::m_ifile);
     }
   }
 
@@ -357,7 +356,7 @@ void run_bfb()
   }
   else if (this->m_baseline_action == GENERATE) {
     for (Int i = 0; i < num_runs; ++i) {
-      gsds_cxx[i].write(Base::m_fid);
+      gsds_cxx[i].write(Base::m_ofile);
     }
   }
 }

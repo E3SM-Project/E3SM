@@ -27,6 +27,7 @@
 
 <!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
 <tracer_cnst_type    >INTERP_MISSING_MONTHS</tracer_cnst_type>
+<tracer_cnst_datapath>atm/cam/chem/trop_mozart_aero/oxid</tracer_cnst_datapath>
 <tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 

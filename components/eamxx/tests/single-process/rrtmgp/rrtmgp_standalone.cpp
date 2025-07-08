@@ -50,18 +50,18 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   const auto& field_mgr = *ad.get_field_mgr();
 
   // Get field managed variables we need to check
-  auto sw_flux_up = field_mgr.get_field("sw_flux_up", grid->name());
+  auto rad_heating_pdel = field_mgr.get_field("rad_heating_pdel", grid->name());
 
   // Create deep copies so that we can check values before and after call to ad.run
   // Note: we have to do some trickery here to make sure the new fields we allocate
   // get the same size as the (packed) ones in the FM, otherwise the vertical dim
   // might be padded in the FM fields and unpadded in our copies, which will cause
   // the deep_copy below to fail.
-  Field sw_flux_up_old = Field(sw_flux_up.get_header().get_identifier());
-  const auto& ap_new = sw_flux_up.get_header().get_alloc_properties();
-  auto& ap_old = sw_flux_up_old.get_header().get_alloc_properties();
+  Field rad_heating_pdel_old = Field(rad_heating_pdel.get_header().get_identifier());
+  const auto& ap_new = rad_heating_pdel.get_header().get_alloc_properties();
+  auto& ap_old = rad_heating_pdel_old.get_header().get_alloc_properties();
   ap_old.request_allocation(ap_new.get_largest_pack_size());
-  sw_flux_up_old.allocate_view();
+  rad_heating_pdel_old.allocate_view();
 
   int rad_freq = ad_params.sublist("atmosphere_processes").sublist("rrtmgp").get<int>("rad_frequency");
   // Start stepping
@@ -74,7 +74,7 @@ TEST_CASE("rrtmgp-stand-alone", "") {
     auto istep = time.get_num_steps();
     // Create a (deep) copy of fields we want to check before calling ad.run() so we can verify
     // that these fields do or do not change as we expect them to based on the rad frequency
-    sw_flux_up_old.deep_copy(sw_flux_up);
+    rad_heating_pdel_old.deep_copy(rad_heating_pdel);
 
     ad.run(dt);
     if (atm_comm.am_i_root()) {
@@ -82,16 +82,16 @@ TEST_CASE("rrtmgp-stand-alone", "") {
       std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(istep)/nsteps << "%]\n";
     }
 
-    // Test that in between rad steps, we maintain the same values of fluxes and heating rates
-    // get rad fluxes and heating rates before; we set rad_requency to 3 in the input.yaml, so
+    // Test that in between rad steps, we maintain the same value of heating rate
+    // get rad heating rates before; we set rad_requency to 3 in the input.yaml, so
     // the first two steps should look the same
-    auto d_sw_flux_up_new = sw_flux_up.get_view<Real**,Host>();
-    auto d_sw_flux_up_old = sw_flux_up_old.get_view<Real**,Host>();
+    auto d_rad_heating_pdel_new = rad_heating_pdel.get_view<Real**,Host>();
+    auto d_rad_heating_pdel_old = rad_heating_pdel_old.get_view<Real**,Host>();
 
     if (istep==1 or istep%rad_freq==0) {
-      REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
+      REQUIRE(!views_are_equal(rad_heating_pdel_old, rad_heating_pdel));
     } else {
-      REQUIRE(views_are_equal(sw_flux_up_old, sw_flux_up));
+      REQUIRE(views_are_equal(rad_heating_pdel_old, rad_heating_pdel));
     }
   }
 

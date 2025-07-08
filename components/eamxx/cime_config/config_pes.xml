@@ -116,6 +116,21 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="aurora">
+      <pes compset="any" pesize="any">
+        <comment>aurora: any compset on ne4 grid, 12x1</comment>
+        <ntasks>
+          <ntasks_atm>12</ntasks_atm>
+          <ntasks_cpl>12</ntasks_cpl>
+          <ntasks_ice>12</ntasks_ice>
+          <ntasks_lnd>12</ntasks_lnd>
+          <ntasks_rof>12</ntasks_rof>
+          <ntasks_ocn>12</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4">
     <mach name="pm-gpu|muller-gpu|alvarez-gpu">

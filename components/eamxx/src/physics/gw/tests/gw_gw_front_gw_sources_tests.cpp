@@ -32,7 +32,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
       d.randomize(engine);
     }
 
-    // Set up init data
+    // Set up front init data
     GwFrontInitData front_init_data[] = {
                 // taubgnd,  frontgfc_in, kfront_in, init
       GwFrontInitData(  .1,           .4,        10, init_data[0]),
@@ -73,7 +73,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -96,7 +96,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontGwSources : public UnitWrap::UnitTest<D
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        test_data[i].write(Base::m_fid);
+        test_data[i].write(Base::m_ofile);
       }
     }
   } // run_bfb

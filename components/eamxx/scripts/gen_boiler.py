@@ -2494,9 +2494,13 @@ f"""{decl}
     }"""
 
         _, _, _, _, scalars, real_data, int_data, bool_data = group_data(arg_data, filter_out_intent="in")
-        check_scalars, check_arrays = "", ""
+        check_scalars, check_arrays, scalar_comments = "", "", ""
         for scalar in scalars:
             check_scalars += f"        REQUIRE(d_baseline.{scalar[0]} == d_test.{scalar[0]});\n"
+
+        _, _, _, all_dims, input_scalars, _, _, _ = group_data(arg_data, filter_out_intent="out")
+        all_scalar_inputs = all_dims + [scalar_name for scalar_name, _ in input_scalars]
+        scalar_comments = "// " + ", ".join(all_scalar_inputs)
 
         if has_array:
             c2f_transpose_code = "" if not need_transpose else \
@@ -2531,6 +2535,8 @@ f"""{decl}
     // Set up inputs
     {data_struct} baseline_data[] = {{
       // TODO
+      {scalar_comments}
+      {data_struct}(),
     }};
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof({data_struct});{gen_random}
@@ -2539,6 +2545,7 @@ f"""{decl}
     // inout data is in original state
     {data_struct} test_data[] = {{
       // TODO
+      {data_struct}(baseline_data[0]),
     }};
 
     // Read baseline data
@@ -2567,6 +2574,7 @@ f"""{decl}
       }}
     }}
   }} // run_bfb""".format(data_struct=data_struct,
+                          scalar_comments=scalar_comments,
                           sub=sub,
                           gen_random=gen_random,
                           c2f_transpose_code=c2f_transpose_code,

@@ -23,6 +23,7 @@ module elm_initializeMod
   use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
   use ELMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
+  use SoilLittVertTranspMod, only : CreateLitterTransportList
   !
   !-----------------------------------------
   ! Definition of component types
@@ -782,6 +783,11 @@ contains
        ! differences in LAI can be computed
        call SatellitePhenologyInit(bounds_proc)
     end if
+
+    if (use_cn .or. use_fates) then 
+       ! Create pointers to decomp pools for SoilLittVertTransp
+       call CreateLitterTransportList()
+    end if 
 
 
     ! ------------------------------------------------------------------------
