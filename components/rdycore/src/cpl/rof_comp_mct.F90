@@ -25,7 +25,7 @@ module rof_comp_mct
                               index_r2x_Flrr_deficit, index_x2r_So_ssh
   use rdycoreMod      , only: inst_name, inst_suffix, inst_index
   use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit, &
-                              MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
+                              MPI_REAL8, MPI_INTEGER, MPI_CHARACTER, MPI_LOGICAL, MPI_SUM
   use RDycoreIO
 
   !
@@ -425,6 +425,8 @@ CONTAINS
   !
   subroutine rof_domain_mct( lsize, gsMap_rof, dom_rof )
 
+    use rdycoreMod, only : natural_id_cells_owned
+    !
     ! ARGUMENTS:
     implicit none
     integer        , intent(in)    :: lsize
@@ -627,7 +629,15 @@ CONTAINS
     call mpi_bcast (rdycore_yaml_file, len(rdycore_yaml_file), MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (filename_rof,      len(filename_rof),      MPI_CHARACTER, 0, mpicom_rof, ier)
 
-    ! TODO print out namelist settings
+    ! print out namelist settings to log
+    if (masterproc) then
+       write(logunit_rof,*) ' '
+       write(logunit_rof,*) 'read from namelist:'
+       write(logunit_rof,*) '   do_rdycore        = ', do_rdycore
+       write(logunit_rof,*) '   rdycore_yaml_file = ', trim(rdycore_yaml_file)
+       write(logunit_rof,*) '   filename_rof      = ', trim(filename_rof)
+    end if
+
     return
 
   end subroutine rof_read_namelist
@@ -647,7 +657,6 @@ CONTAINS
     ! LOCAL VARIABLES
     integer :: i, j, count, ier
     logical :: found
-    character(len=128) :: filename_rof
     character(len=*),parameter :: subname = '(rof_read_rdycore) '
     integer, parameter :: RKIND = selected_real_kind(13)
     real(kind=RKIND), dimension(:),   allocatable :: lat1D, lon1D, area1D
