@@ -35,33 +35,9 @@ struct UnitWrap::UnitTest<D>::Test_zm_find_mse_max : public UnitWrap::UnitTest<D
     for (auto& d : baseline_data) {
       for (auto i = decltype(d.ncol){0}; i < d.ncol; ++i) {
         d.msemax_top_k[i] = 0;
-        // for (auto k = decltype(pver){0}; k < pver; ++k) {
-        //   int index = nlev*i+k;
-        //   d.zmid[index] = 0;
-        // }
       }
       zm_test_data_generate_profile( engine, d.pver, d.ncol, d.zmid, d.temperature, d.sp_humidity );
     }
-
-    // std::uniform_real_distribution<Real> lapse_rate_t(3.0, 9.0);
-    // std::uniform_real_distribution<Real> lapse_rate_q(0.5e-3, 1.5e-3);
-    // std::uniform_real_distribution<Real> surface_t(285, 305);
-    // std::uniform_real_distribution<Real> surface_q(0.5e-3, 1.5e-3);
-    // std::uniform_real_distribution<Real> perturb_t(-0.1,   0.1);
-    // std::uniform_real_distribution<Real> perturb_q(-0.1e-3, 0.1e-3);
-    // for (auto& d : test_data) {
-    //   for (auto i = decltype(d.ncol){0}; i < d.ncol; ++i) {
-    //     d.msemax_top_k[i] =    0;
-    //     d.msemax_klev [i] = -999;
-    //     d.mse_max_val [i] = -999;
-    //     for (auto k = decltype(d.pver){0}; k < d.pver; ++k) {
-    //       d.zmid       [nlev*i + k] = k*1000;
-    //       d.temperature[nlev*i + k] = surface_t(engine) - lapse_rate_t(engine)*(d.pver-1-k) + perturb_t(engine);
-    //       d.sp_humidity[nlev*i + k] = surface_q(engine) - lapse_rate_q(engine)*(d.pver-1-k) + perturb_q(engine);
-    //       // apply limiters
-    //       if d.temperature[nlev*i + k]<200 { d.sp_humidity[nlev*i + k] = 200; }
-    //       if d.sp_humidity[nlev*i + k]<  0 { d.sp_humidity[nlev*i + k] =   0; }
-    // }
 
     // Create copies of data for use by test
     // (needs to happen before read calls so that inout data is in original state)

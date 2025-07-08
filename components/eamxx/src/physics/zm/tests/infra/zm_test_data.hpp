@@ -19,8 +19,8 @@ namespace zm {
 struct zm_data_find_mse_max : public PhysicsTestData {
   // Inputs
   Int  pcols;
-  Int  pver;
   Int  ncol;
+  Int  pver;
   Int  num_msg;
   bool pergro_active;
 

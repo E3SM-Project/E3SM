@@ -68,6 +68,10 @@ struct Functions
     ZMHistoryOutput() = default;
   };
 
+  // ---------------------------------------------------------------------------
+  // Functions
+
+
 }; // struct Functions
 
 } // namespace zm
