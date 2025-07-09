@@ -98,11 +98,12 @@ contains
   end subroutine rdycore_init
 
   !-----------------------------------------------------------------------
-  subroutine rdycore_run(iulog)
+  subroutine rdycore_run(iulog, coupling_dt_in_sec)
     !
     implicit none
     !
     integer, intent(in)   :: iulog
+    integer, intent(in)   :: coupling_dt_in_sec
     !
     character(len=256)   :: dateTimeString
     real(r8)             :: dtime
@@ -113,7 +114,7 @@ contains
     PetscInt             :: g, idx
     PetscErrorCode       :: ierr
 
-    dtime    = 1800._r8 !get_step_size()
+    dtime    = coupling_dt_in_sec * 1._r8
     nstep    = nstep + 1
     cur_time = (nstep-1)*dtime
 
