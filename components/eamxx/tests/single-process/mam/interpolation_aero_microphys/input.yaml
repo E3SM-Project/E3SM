@@ -1,0 +1,52 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: [mam4_interpolation_aero_microphys]
+  mam4_interpolation_aero_microphys:
+   mam4_linoz_ymd : 20100101
+   mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
+   mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
+   mam4_oxid_ymd : 20150101
+   mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
+   mam4_chlorine_loading_ymd : 20100101
+   mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc
+   mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
+   elevated_emiss_ymd : 20100101
+   mam4_so2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20250627.nc
+   mam4_season_wes_file : ${SCREAM_DATA_DIR}/mam4xx/drydep/season_wes.nc
+   create_fields_interval_checks: true
+grids_manager:
+  type: mesh_free
+  geo_data_source: IC_FILE
+  grids_names: [physics_gll]
+  physics_gll:
+    type: point_grid
+    aliases: [physics]
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
+  pbl_height: 1.0
+# The parameters for I/O control
+scorpio:
+  output_yaml_files: ["output.yaml"]
+...
