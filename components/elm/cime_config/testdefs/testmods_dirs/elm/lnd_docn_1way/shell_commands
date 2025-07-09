@@ -1,0 +1,16 @@
+./xmlchange DATM_MODE=CLMGSWP3v1
+./xmlchange LND_DOMAIN_FILE=domain_global_coastline_merit_90m.nc
+./xmlchange ATM_DOMAIN_FILE=domain_global_coastline_merit_90m.nc
+./xmlchange LND_DOMAIN_PATH=/compyfs/xudo627/lnd-docn-1way/inputdata
+./xmlchange ATM_DOMAIN_PATH=/compyfs/xudo627/lnd-docn-1way/inputdata
+
+./xmlchange --file env_run.xml --id SSTICE_YEAR_START     --val 1980
+./xmlchange --file env_run.xml --id SSTICE_YEAR_END       --val 1981
+./xmlchange --file env_run.xml --id SSTICE_YEAR_ALIGN     --val 1980
+
+./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_START --val 1980
+./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_END   --val 1981
+./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_ALIGN --val 1980
+
+./xmlchange PIO_TYPENAME_OCN=netcdf # pnetcdf doesn't support NETCDF4
+./xmlchange NTASKS=600
