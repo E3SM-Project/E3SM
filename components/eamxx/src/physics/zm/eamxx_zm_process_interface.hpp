@@ -51,7 +51,7 @@ class ZMDeepConvection : public AtmosphereProcess
     int m_ncols;
     int m_nlevs;
     
-};
+}; // class ZMDeepConvection
 
 } // namespace scream
 
