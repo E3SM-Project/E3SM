@@ -760,6 +760,7 @@ _TESTS = {
             "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
             "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-hremap_nudged",
             )
     },
 
