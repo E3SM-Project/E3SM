@@ -30,6 +30,7 @@ module ColumnDataType
   use elm_varctl      , only : pf_hmode, nu_com
   use elm_varctl      , only : use_extrasnowlayers, use_polygonal_tundra
   use elm_varctl      , only : use_fan
+  use elm_varctl      , only : use_ocn_lnd_one_way
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
@@ -5912,14 +5913,16 @@ contains
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
 
-    call hist_addfld1d (fname='QH2OOCN',  units='mm/s',  &
-         avgflag='A', long_name='Ocean inundation infiltration', &
-         ptr_col=this%qflx_h2oocn_drain, c2l_scale_type='urbanf')
+    if (use_ocn_lnd_one_way) then
+      call hist_addfld1d (fname='QH2OOCN',  units='mm/s',  &
+           avgflag='A', long_name='Ocean inundation infiltration', &
+           ptr_col=this%qflx_h2oocn_drain, c2l_scale_type='urbanf')
 
-    this%qflx_lnd2ocn(begc:endc) = spval
-    call hist_addfld1d (fname='QLND2OCN',  units='mm/s',  &
-         avgflag='A', long_name='land to ocean drainage', &
-         ptr_col=this%qflx_lnd2ocn, c2l_scale_type='urbanf')
+      this%qflx_lnd2ocn(begc:endc) = spval
+      call hist_addfld1d (fname='QLND2OCN',  units='mm/s',  &
+           avgflag='A', long_name='land to ocean drainage', &
+           ptr_col=this%qflx_lnd2ocn, c2l_scale_type='urbanf')
+    endif
 
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
