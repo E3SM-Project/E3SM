@@ -951,11 +951,11 @@ contains
                        .and. (bedTopography(iCell) < 0.0_RKIND) ) ) then
                   icebergCellVertID = iLayer
 
-                  ! calculate freezing temperature. 
-                  ! << NOTE >>: Again we are using the simplified equation from Jenkins 2011 to do this. May eventually want to 
-                  ! switch to method in gsw toolbox to do this to be consistent with Hager 2023
-                  freezingTemperature(iLayer) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
                endif
+               ! calculate freezing temperature. 
+               ! << NOTE >>: Again we are using the simplified equation from Jenkins 2011 to do this. May eventually want to 
+               ! switch to method in gsw toolbox to do this to be consistent with Hager 2023
+               freezingTemperature(iLayer) = (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
             enddo
 
             !Start alteration just above iceberg depth or bedTopography and work upwards
