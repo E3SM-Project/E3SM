@@ -238,6 +238,39 @@ CONTAINS
   end subroutine rof_init_mct
 
   !===============================================================================
+  subroutine chkrc(rc, mes)
+
+    integer, intent(in)          :: rc   ! return code from time management library
+    character(len=*), intent(in) :: mes  ! error message
+
+    if ( rc == ESMF_SUCCESS ) return
+
+    write(logunit_rof,*) mes
+
+    call shr_sys_abort ('CHKRC')
+
+  end subroutine chkrc
+
+  !=========================================================================================
+  integer function get_step_size(EClock)
+
+    type(ESMF_Clock) :: EClock
+
+    ! Return the step size in seconds.
+
+    type(ESMF_TimeInterval)     :: step_size       ! timestep size
+    integer                     :: rc
+    character(len=*), parameter :: sub = 'rof::get_step_size'
+
+    call ESMF_ClockGet(EClock, timeStep=step_size, rc=rc)
+    call chkrc(rc, sub//': error return from ESMF_ClockGet')
+
+    call ESMF_TimeIntervalGet(step_size, s=get_step_size, rc=rc)
+    call chkrc(rc, sub//': error return from ESMF_ClockTimeIntervalGet')
+
+  end function get_step_size
+
+  !===============================================================================
   !BOP ===========================================================================
   !
   ! !IROUTINE: rof_run_mct
@@ -264,13 +297,18 @@ CONTAINS
     !EOP
     !-------------------------------------------------------------------------------
 
+    !--- local ---
+    integer :: coupling_dt_in_sec
+
+    coupling_dt_in_sec = get_step_size(EClock)
+
     ! Map MCT datatype to rof data
     call t_startf ('lc_rof_import')
     call rof_import_mct( x2r )
     call t_stopf ('lc_rof_import')
 
     ! run the model
-    call rdycore_run(logunit_rof)
+    call rdycore_run(logunit_rof, coupling_dt_in_sec)
 
     ! Map rof data to MCT datatype
     call t_startf ('lc_rof_export')
