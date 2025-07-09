@@ -15,27 +15,29 @@ class DataInterpolation
 {
 public:
   using strvec_t = std::vector<std::string>;
+  // This enum helps in two parts of DataInterpolation lifetime:
+  //  - when building a VerticalRemapper, to correctly initialize it
+  //  - at runtime, to load source data vertical profile coordinates
+  // The first only applies if the user does not provide a pre-built vertical remapper
   enum VRemapType {
-    None,
-    Static1D,     // Uses a constant 1d (vertical) pressure from input data
-    Dynamic3D,    // Uses a time-dep 3d pressure from input data
-    Dynamic3DRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
+    None,         // This signales "no vert remap"
+    Static1D,     // Uses a constant 1d (vertical) src pressure from input data
+    Dynamic3D,    // Uses a time-dep 3d src pressure from input data
+    Dynamic3DRef, // Reconstructs a reference 3d src pressure from time-dep PS in input data
+    Custom        // The user will provide a vert remapper, and there won't be any need
+                  // to set up the src pressure profile (the user will take care of it)
   };
 
-  struct RemapData {
-    // Horiz remap options. Mutually exclusive
-    std::string hremap_file = "";
-    Real iop_lat = std::numeric_limits<Real>::quiet_NaN();
-    Real iop_lon = std::numeric_limits<Real>::quiet_NaN();
-    bool has_iop = false;
+  struct VertRemapData {
+    VertRemapData() = default;
 
-    // Vert remap options
-    VRemapType vr_type;
+    VRemapType vr_type = None;
     std::string extrap_top = "P0";
     std::string extrap_bot = "P0";
     Real mask_value = std::numeric_limits<Real>::quiet_NaN(); // Unused for P0 extrapolation
     std::string pname; // What we need to load from nc file
-    Field pmid, pint;
+    Field pmid, pint;  // The model pmid/pint
+    std::shared_ptr<AbstractRemapper> custom_remapper; // Use this custom remapper
   };
 
   // Constructor(s) & Destructor
@@ -50,18 +52,24 @@ public:
                             const util::TimeLine timeline,
                             const util::TimeStamp& ref_ts = util::TimeStamp());
 
-  void setup_remappers (const RemapData& data);
+  // In case the input files store col/lev dims with exhotic names, the user can provide them here
+  void set_input_files_dimname (const FieldTag t, const std::string& name) { m_input_files_dimnames[t] = name; }
+
+  void create_horiz_remappers (const std::string& map_file = "");
+  void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
+  void create_vert_remapper ();
+  void create_vert_remapper (const VertRemapData& data);
+
+  void register_fields_in_remappers ();
 
   void init_data_interval (const util::TimeStamp& t0);
 
   void run (const util::TimeStamp& ts);
 
+  std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
+
 protected:
 
-  void setup_horiz_remappers (const RemapData& data);
-  void setup_vert_remapper   (const RemapData& data);
-
-  void register_fields_in_remappers ();
   void shift_data_interval ();
   void update_end_fields ();
 
@@ -101,6 +109,10 @@ protected:
   std::shared_ptr<AbstractRemapper> m_horiz_remapper_end;
   std::shared_ptr<AbstractRemapper> m_vert_remapper;
 
+  // These are inited as the usual "ncol" and "lev" at construction, but the user
+  // can reset them in case the input files store funky dimensions
+  std::map<FieldTag,std::string>    m_input_files_dimnames;
+
   // If vertical remap happens, at runtime we may need to access some
   // versions of certain perssure fields. Store them here for convenient access
   std::map<std::string,Field>     m_helper_pressure_fields;
@@ -117,7 +129,6 @@ protected:
   ekat::ParameterList   m_params;
 
   bool                  m_time_db_created   = false;
-  bool                  m_remappers_created = false;
   bool                  m_data_initialized  = false;
 
   bool m_dbg_output = false;

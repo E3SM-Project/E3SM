@@ -35,12 +35,14 @@ public:
     Both
   };
 
-  // Use fixed value as mask value
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file);
+                    const std::string& map_file,
+                    const bool src_int_same_as_mid = false);
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                    const grid_ptr_type& tgt_grid);
+                    const grid_ptr_type& tgt_grid,
+                    const bool src_int_same_as_mid = false,
+                    const bool tgt_int_same_as_mid = false);
 
   ~VerticalRemapper () = default;
 
@@ -124,6 +126,11 @@ protected:
 
   bool m_src_int_same_as_mid = false;
   bool m_tgt_int_same_as_mid = false;
+
+  // If user provides pressure profiles that are NOT compatible with SCREAM_PACK_SIZE,
+  // we will set these boolean to false, and use ONLY the "scalar" LinInterp structures
+  bool m_int_packs_supported = true;
+  bool m_mid_packs_supported = true;
 
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;

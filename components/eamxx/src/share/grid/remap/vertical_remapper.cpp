@@ -47,15 +47,20 @@ create_tgt_grid (const grid_ptr_type& src_grid,
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                  const std::string& map_file)
- : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file))
+                  const std::string& map_file,
+                  const bool src_int_same_as_mid)
+ : VerticalRemapper(src_grid,create_tgt_grid(src_grid,map_file),src_int_same_as_mid,true)
 {
   set_target_pressure (m_tgt_grid->get_geometry_data("p_levs"),Both);
 }
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                  const grid_ptr_type& tgt_grid)
+                  const grid_ptr_type& tgt_grid,
+                  const bool src_int_same_as_mid,
+                  const bool tgt_int_same_as_mid)
+ : m_src_int_same_as_mid(src_int_same_as_mid)
+ , m_tgt_int_same_as_mid(tgt_int_same_as_mid)
 {
   // We only go in one direction for simplicity, since we need to setup some
   // infrsatructures, and we don't want to setup 2x as many "just in case".
@@ -114,9 +119,7 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
       msg_prefix + "Field is not yet allocated.\n"
       " - field name: " + p.name() + "\n");
 
-  EKAT_REQUIRE_MSG(p.get_header().get_alloc_properties().is_compatible<PackT>(),
-      msg_prefix + "Field not compatible with default pack size.\n"
-      " - pack size: " + std::to_string(SCREAM_PACK_SIZE) + "\n");
+  bool pack_compatible = p.get_header().get_alloc_properties().is_compatible<PackT>();
 
   const int nlevs = src ? m_src_grid->get_num_vertical_levels()
                         : m_tgt_grid->get_num_vertical_levels();
@@ -126,41 +129,29 @@ set_pressure (const Field& p, const std::string& src_or_tgt, const ProfileType p
 
   FieldTag expected_tag;
   int      expected_dim;
-  switch (ptype) {
-    case Midpoints:
-      expected_tag = LEV;
-      expected_dim = nlevs;
-      if (src) {
-        m_src_pmid = p;
-      } else {
-        m_tgt_pmid = p;
-      }
-      break;
-    case Interfaces:
-      expected_tag = ILEV;
-      expected_dim = nlevs+1;
-      if (src) {
-        m_src_pint = p;
-      } else {
-        m_tgt_pint = p;
-      }
-      break;
-    case Both:
-      expected_tag = LEV;
-      expected_dim = nlevs;
-      if (src) {
-        m_src_pint = p;
-        m_src_pmid = p;
-        m_src_int_same_as_mid = true;
-      } else {
-        m_tgt_pint = p;
-        m_tgt_pmid = p;
-        m_tgt_int_same_as_mid = true;
-      }
-      break;
-    default:
-      EKAT_ERROR_MSG ("[VerticalRemapper::set_source_pressure] Error! Unrecognized value for 'ptype'.\n");
+  if (ptype==Midpoints or ptype==Both) {
+    expected_tag = LEV;
+    expected_dim = nlevs;
+    if (src) {
+      m_src_pmid = p;
+    } else {
+      m_tgt_pmid = p;
+    }
+    m_mid_packs_supported &= pack_compatible;
   }
+  if (ptype==Interfaces or ptype==Both) {
+    if (src) {
+      expected_tag = m_src_int_same_as_mid ? LEV : ILEV;
+      expected_dim = m_src_int_same_as_mid ? nlevs : nlevs+1;
+      m_src_pint = p;
+    } else {
+      expected_tag = m_tgt_int_same_as_mid ? LEV : ILEV;
+      expected_dim = m_tgt_int_same_as_mid ? nlevs : nlevs+1;
+      m_tgt_pint = p;
+    }
+    m_int_packs_supported &= pack_compatible;
+  }
+
   EKAT_REQUIRE_MSG (vtag==expected_tag and vdim==expected_dim,
       msg_prefix + "Invalid pressure layout.\n"
       "  - layout: " + p_layout.to_string() + "\n"
@@ -192,6 +183,12 @@ registration_ends_impl ()
                    : src.get_header().get_identifier().get_layout().has_tag(LEV);
       ft.packed    = src.get_header().get_alloc_properties().is_compatible<PackT>() and
                      tgt.get_header().get_alloc_properties().is_compatible<PackT>();
+
+      // Adjust packed based on whether we support packs (i.e., if src/tgt pressures were pack-compatible)
+      if (ft.midpoints)
+        ft.packed &= m_mid_packs_supported;
+      else
+        ft.packed &= m_int_packs_supported;
 
       if (m_etype_top==Mask or m_etype_bot==Mask) {
         // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
