@@ -297,6 +297,45 @@ void MAMMicrophysics::set_grids(
     }
   }  // oxid file reader
 
+#else
+  std::cout << "Using DataInterpolation Class..." << "\n";
+  std::vector<std::string> var_names_linoz = {
+        "o3_clim",  "o3col_clim", "t_clim",      "PmL_clim",
+        "dPmL_dO3", "dPmL_dT",    "dPmL_dO3col", "cariolle_pscs"};
+
+  for(const auto &var_name : var_names_linoz) {
+      // FIXME: switch to Required
+      add_field<Updated>(var_name, scalar3d_mid, nondim, grid_name);
+  }
+
+  std::vector<std::string>  var_names_oxi = {"O3", "OH", "NO3", "HO2"};
+  for(const auto &field_name : var_names_oxi) {
+      // FIXME: switch to Required
+      add_field<Updated>(field_name, scalar3d_mid, nondim, grid_name);
+  }
+#endif
+
+  extfrc_lst_ = {"so2",    "so4_a1", "so4_a2", "pom_a4", "bc_a4",
+                   "num_a1", "num_a2", "num_a4", "soag"};
+  elevated_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV",
+                                          "contvolc"};
+  elevated_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV",
+                                          "contvolc"};
+  elevated_emis_var_names_["so4_a2"] = {"contvolc"};
+  elevated_emis_var_names_["pom_a4"] = {"BB"};
+  elevated_emis_var_names_["bc_a4"]  = {"BB"};
+  elevated_emis_var_names_["num_a1"] = {
+        "num_a1_SO4_ELEV_BB", "num_a1_SO4_ELEV_ENE", "num_a1_SO4_ELEV_IND",
+        "num_a1_SO4_ELEV_contvolc"};
+  elevated_emis_var_names_["num_a2"] = {"num_a2_SO4_ELEV_contvolc"};
+  // num_a4
+  // FIXME: why the sectors in this files are num_a1;
+  //  I guess this should be num_a4? Is this a bug in the orginal nc files?
+  elevated_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB",
+                                          "num_a1_POM_ELEV_BB"};
+  elevated_emis_var_names_["soag"] = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
+
+#ifdef USE_OLD_VERTICAL_FILE_READ
   {
     const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -305,32 +344,11 @@ void MAMMicrophysics::set_grids(
     // ','pom_a4          ','bc_a4           ', 'num_a1          ','num_a2
     // ','num_a4          ','SOAG            ' }
     // This order corresponds to files in namelist e3smv2
-    extfrc_lst_ = {"so2",    "so4_a1", "so4_a2", "pom_a4", "bc_a4",
-                   "num_a1", "num_a2", "num_a4", "soag"};
-
     for(const auto &var_name : extfrc_lst_) {
       std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
       const auto file_name  = m_params.get<std::string>(item_name);
       elevated_emis_file_name_[var_name] = file_name;
     }
-    elevated_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV",
-                                          "contvolc"};
-    elevated_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV",
-                                          "contvolc"};
-    elevated_emis_var_names_["so4_a2"] = {"contvolc"};
-    elevated_emis_var_names_["pom_a4"] = {"BB"};
-    elevated_emis_var_names_["bc_a4"]  = {"BB"};
-    elevated_emis_var_names_["num_a1"] = {
-        "num_a1_SO4_ELEV_BB", "num_a1_SO4_ELEV_ENE", "num_a1_SO4_ELEV_IND",
-        "num_a1_SO4_ELEV_contvolc"};
-    elevated_emis_var_names_["num_a2"] = {"num_a2_SO4_ELEV_contvolc"};
-    // num_a4
-    // FIXME: why the sectors in this files are num_a1;
-    //  I guess this should be num_a4? Is this a bug in the orginal nc files?
-    elevated_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB",
-                                          "num_a1_POM_ELEV_BB"};
-    elevated_emis_var_names_["soag"] = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
-
     int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
 
     for(const auto &var_name : extfrc_lst_) {
@@ -382,6 +400,15 @@ void MAMMicrophysics::set_grids(
     }  // end i
 
   }  // Tracer external forcing data
+#else
+  for(const auto &pair : elevated_emis_var_names_) {
+    const auto &var_name =pair.first;
+    for(const auto &field_name : pair.second) {
+      add_field<Updated>(field_name+"_"+var_name, scalar3d_mid, nondim, grid_name);
+    }
+  }
+
+#endif
 
   {
     const std::string season_wes_file =
@@ -599,6 +626,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     auto linoz_cariolle_pscs =
         buffer_.scratch[7];  // Cariolle parameter for PSC loss of ozone [1/s]
 
+#endif
     auto ts = start_of_step_ts();
     std::string linoz_chlorine_file =
         m_params.get<std::string>("mam4_linoz_chlorine_file");
@@ -615,19 +643,40 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Note: At the first time step, the data will be moved into extfrc_lst_beg,
   //       and extfrc_lst_end will be reloaded from file with the new month.
   const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
+#ifdef USE_OLD_LINOZ_FILE_READ
   if (config_.linoz.compute) {
     scream::mam_coupling::update_tracer_data_from_file(
       LinozDataReader_, curr_month, *LinozHorizInterp_, linoz_data_);
   }
   scream::mam_coupling::update_tracer_data_from_file(
       TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
+#endif
 
+#ifdef USE_OLD_VERTICAL_FILE_READ
   for(int i = 0; i < static_cast<int>(extfrc_lst_.size()); ++i) {
     scream::mam_coupling::update_tracer_data_from_file(
         ElevatedEmissionsDataReader_[i], curr_month,
         *ElevatedEmissionsHorizInterp_[i], elevated_emis_data_[i]);
   }
-
+#else
+  {
+    for(size_t i = 0; i < extfrc_lst_.size(); ++i) {
+      std::string var_name = extfrc_lst_[i];
+      const auto sector_names = elevated_emis_var_names_[var_name];
+      const int nvars      = static_cast<int>(sector_names.size());
+      forcings_[i].nsectors = nvars;
+      // I am assuming the order of species in extfrc_lst_.
+      // Indexing in mam4xx is fortran.
+      forcings_[i].frc_ndx = i + 1;
+      forcings_[i].file_alt_data = true;
+      for(int isp = 0; isp < nvars; ++isp)
+      {
+        const std::string field_name = sector_names[isp]+"_"+var_name;
+        forcings_[i].fields[isp] = get_field_out(field_name).get_view<Real **>();
+      }//isp
+    } //i
+  }
+#endif
   // //
 
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
@@ -775,6 +824,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     config_.linoz.chlorine_loading=chlorine_loading;
   }
 
+#ifdef USE_OLD_LINOZ_FILE_READ
   // Update the TracerTimeState to reflect the current time
   trace_time_state_.t_now = ts.frac_of_year_in_days();
   scream::mam_coupling::advance_tracer_data(
@@ -785,6 +835,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       dry_atm_.p_mid, dry_atm_.z_iface,  // in
       cnst_offline_);                    // out
   Kokkos::fence();
+  const auto &cnst_offline = cnst_offline_;
 
   if (config_.linoz.compute) {
     view_2d linoz_output[8];
@@ -806,7 +857,8 @@ void MAMMicrophysics::run_impl(const double dt) {
       linoz_output);                     // out
     Kokkos::fence();
   }
-
+#endif
+#ifdef USE_OLD_VERTICAL_FILE_READ
   int i                            = 0;
   for(const auto &var_name : extfrc_lst_) {
     elevated_emiss_time_state_[i].t_now = ts.frac_of_year_in_days();
@@ -820,6 +872,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     i++;
     Kokkos::fence();
   }
+#endif
 
   const_view_1d &col_latitudes     = col_latitudes_;
   const_view_1d &d_sfc_alb_dir_vis = d_sfc_alb_dir_vis_;
@@ -834,7 +887,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &photo_rates                     = photo_rates_;
 
   const auto &invariants   = invariants_;
-  const auto &cnst_offline = cnst_offline_;
+
 
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle.
@@ -964,6 +1017,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto extfrc_icol = ekat::subview(extfrc, icol);
 
         view_1d cnst_offline_icol[mam4::mo_setinv::num_tracer_cnst];
+ #ifdef USE_OLD_LINOZ_FILE_READ
         for(int i = 0; i < mam4::mo_setinv::num_tracer_cnst; ++i) {
           cnst_offline_icol[i] = ekat::subview(cnst_offline[i], icol);
         }
