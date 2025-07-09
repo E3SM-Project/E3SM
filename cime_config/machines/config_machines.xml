@@ -5715,7 +5715,8 @@
   </machine>
 
   <default_run_suffix>
-    <default_run_exe>${EXEROOT}/e3sm.exe </default_run_exe>
+    <default_run_exe>aps --start-paused -r apsresultsdir ${EXEROOT}/e3sm.exe </default_run_exe>
+    <!--default_run_exe>vtune -collect hpc-performance -r vtuneresultsdir ${EXEROOT}/e3sm.exe </default_run_exe-->
     <default_run_misc_suffix> &gt;&gt; e3sm.log.$LID 2&gt;&amp;1 </default_run_misc_suffix>
   </default_run_suffix>
 

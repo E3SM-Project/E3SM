@@ -38,6 +38,7 @@ program cime_driver
   use cime_comp_mod, only : cime_final
   use cime_comp_mod, only : cime_pre_init2_lb
   use seq_comm_mct,  only : logunit
+  use ittnotify
 
   implicit none
 
@@ -150,6 +151,7 @@ program cime_driver
   !--------------------------------------------------------------------------
   ! Call the run and finalize routines.
   !--------------------------------------------------------------------------
+  call ITT_RESUME()
   call cime_run()
   call cime_final()
 

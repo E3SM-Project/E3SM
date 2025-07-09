@@ -4,6 +4,7 @@ list(APPEND drv_sources
   map_lnd2rof_irrig_mod.F90
   seq_map_mod.F90
   seq_map_type_mod.F90
+  ittnotify.F90
   )
 
 sourcelist_to_parent(drv_sources)
