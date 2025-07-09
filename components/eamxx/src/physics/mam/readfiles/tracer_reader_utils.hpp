@@ -12,6 +12,8 @@
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_lin_interp.hpp>
+#define USE_OLD_LINOZ_FILE_READ
+#define USE_OLD_VERTICAL_FILE_READ
 
 namespace scream::mam_coupling {
 
@@ -28,7 +30,8 @@ using LIV      = ekat::LinInterp<Real, 1>;
 // This function allocates a view, so we need to do it during initialization.
 // Thus, we assume that source pressure is independent of time,
 // which is the case for Linoz files (zonal file).
-
+#if defined(USE_OLD_LINOZ_FILE_READ) || \
+    defined(USE_OLD_VERTICAL_FILE_READ)
 inline void compute_p_src_zonal_files(const view_1d &levs,
                                       const view_2d &p_src) {
   EKAT_REQUIRE_MSG(p_src.data() != 0,
@@ -50,7 +53,7 @@ inline void compute_p_src_zonal_files(const view_1d &levs,
       });
   Kokkos::fence();
 }
-
+#endif
 // We have a similar version in MAM4xx.
 // This version was created because the data view cannot be modified
 // inside the parallel_for.
@@ -67,7 +70,8 @@ struct ForcingHelper {
   // data of views
   view_2d fields[MAX_SECTION_NUM_FORCING];
 };
-
+#if defined(USE_OLD_LINOZ_FILE_READ)|| \
+    defined(USE_OLD_VERTICAL_FILE_READ)
 enum TracerFileType {
   // file with ncol, lev, ilev, time and has P0 and PS as variables
   // example: oxidants
@@ -107,7 +111,7 @@ struct TracerTimeState {
   // Number of days in the current month, cast as a Real
   Real days_this_month;
 };  // TracerTimeState
-
+#endif
 inline scream::util::TimeStamp convert_date(const int date) {
   constexpr int ten_thousand = 10000;
   constexpr int one_hundred = 100;
@@ -118,7 +122,8 @@ inline scream::util::TimeStamp convert_date(const int date) {
 
   return scream::util::TimeStamp(year, month, day, 0, 0, 0);
 }
-
+#if defined(USE_OLD_LINOZ_FILE_READ)|| \
+    defined(USE_OLD_VERTICAL_FILE_READ)
 struct TracerTimeSlice {
   scream::util::TimeStamp time;
   int time_index;
@@ -256,7 +261,7 @@ KOKKOS_INLINE_FUNCTION
 Real linear_interp(const Real &x0, const Real &x1, const Real &t) {
   return (1 - t) * x0 + t * x1;
 }  // linear_interp
-
+#endif
 // FIXME: This function is not implemented in eamxx.
 // FIXME: Assumes 365 days/year, 30 days/month;
 // NOTE: that this assumption is mainly used for plotting.
@@ -290,7 +295,8 @@ inline void create_linoz_chlorine_reader(
   }  // end itime
   scorpio::release_file(linoz_chlorine_file);
 }
-
+#if defined(USE_OLD_LINOZ_FILE_READ)|| \
+    defined(USE_OLD_VERTICAL_FILE_READ)
 // Gets the times from the NC file
 // Given a date in the format YYYYMMDD, returns its index in the time dimension.
 inline void get_time_from_ncfile(const std::string &file_name,
@@ -322,7 +328,7 @@ inline void get_time_from_ncfile(const std::string &file_name,
                        ").\n");
   scorpio::release_file(file_name);
 }
-
+#endif
 inline Real chlorine_loading_advance(const util::TimeStamp &ts,
                                      std::vector<Real> &values,
                                      std::vector<int> &time_secs) {
@@ -341,6 +347,8 @@ inline Real chlorine_loading_advance(const util::TimeStamp &ts,
   return values[index] + delt * (values[index + 1] - values[index]);
 }
 
+#if defined(USE_OLD_LINOZ_FILE_READ)|| \
+    defined(USE_OLD_VERTICAL_FILE_READ)
 // It reads variables that are not time-dependent and independent of columns (no
 // MPI involved here). We also obtain the offset_time_index using a date
 // (cyclical_ymd) as input. We initialize a few members of tracer_data.
@@ -917,6 +925,6 @@ inline void advance_tracer_data(
   }
 
 }  // advance_tracer_data
-
+#endif
 }  // namespace scream::mam_coupling
 #endif  // EAMXX_MAM_HELPER_MICRO
