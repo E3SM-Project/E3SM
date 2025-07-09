@@ -17,23 +17,15 @@ namespace scream {
 TEST_CASE("pysession", "") {
   auto& ps = PySession::get();
 
-  printf("testing premature finalize...\n");
   REQUIRE_THROWS(ps.finalize());
-  printf("testing premature finalize...done\n");
 
-  printf("testing not inited...\n");
   REQUIRE (not ps.is_initialized());
-  printf("testing not inited...done\n");
 
-  printf("testing inited...\n");
   ps.initialize();
   REQUIRE (ps.is_initialized());
-  printf("testing inited...done\n");
 
-  printf("testing finalize...\n");
   ps.finalize();
   REQUIRE (not ps.is_initialized());
-  printf("testing finalize...done\n");
 }
 
 TEST_CASE("pyfield", "") {
@@ -58,7 +50,7 @@ TEST_CASE("pyfield", "") {
   f1.allocate_view();
 
   auto f2 = f1.clone();
-  auto f2_h = f2.get_view<double***,Host>();
+  auto f2_h = f2.get_view<Real***,Host>();
   for (int icol=0,k=0; icol<ncol; ++icol) {
     for (int idim=0; idim<ndim; ++idim) {
       for (int ilev=0; ilev<nlev; ++ilev, ++k) {
