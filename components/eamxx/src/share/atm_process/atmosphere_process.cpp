@@ -81,11 +81,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     const auto& py_module_path = m_params.get<std::string>("py_module_path","./");
 
     pysession.add_path(py_module_path);
-    auto py_module = py::module::import(py_module_name.c_str());
-
-    EKAT_REQUIRE_MSG (not py_module.is_none(),
-        "Error! Could not import module '" + py_module_name + "'.\n");
-    m_py_module = py_module;
+    m_py_module = pysession.safe_import(py_module_name);
   }
 #endif
 }

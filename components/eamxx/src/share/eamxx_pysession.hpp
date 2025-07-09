@@ -1,6 +1,8 @@
 #ifndef EAMXX_PY_SESSION_HPP
 #define EAMXX_PY_SESSION_HPP
 
+#include <pybind11/pybind11.h>
+
 #include <string>
 #include <any>
 
@@ -25,6 +27,10 @@ public:
   // has to be manually added when calling py from C++.
   void add_path (const std::string& path);
   void add_curr_path ();
+
+  // Imports a python module preventing spurious FPEs.All FPEs are DISABLED
+  // during the import operation, and re-enabled afterwards.
+  pybind11::module safe_import (const std::string& module_name) const;
 
 private:
 

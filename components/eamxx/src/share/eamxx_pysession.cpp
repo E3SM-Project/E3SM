@@ -56,4 +56,18 @@ void PySession::add_curr_path ()
   add_path(curr_path.string());
 }
 
+pybind11::module PySession::safe_import (const std::string& module_name) const
+{
+  // Disable FPEs while loading the module, then immediately re-enable them
+  auto fpes = ekat::get_enabled_fpes();
+  ekat::disable_all_fpes();
+  pybind11::module m = pybind11::module::import(module_name.c_str());
+  ekat::enable_fpes(fpes);
+
+  EKAT_REQUIRE_MSG (not m.is_none(),
+      "Error! Could not import module '" + module_name + "'.\n");
+
+  return m;
+}
+
 } // namespace scream

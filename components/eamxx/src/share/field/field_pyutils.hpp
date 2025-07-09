@@ -57,6 +57,9 @@ pybind11::array create_py_field (const Field& f)
   EKAT_REQUIRE_MSG (PySession::get().is_initialized(),
       "Error! You have not initialized the Python session yet.\n");
 
+  // Ensure numpy has been initialized
+  auto numpy = PySession::get().safe_import("numpy");
+
   const auto& fh  = f.get_header();
   const auto& fid = fh.get_identifier();
 

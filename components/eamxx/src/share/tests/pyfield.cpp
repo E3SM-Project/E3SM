@@ -64,7 +64,7 @@ TEST_CASE("pyfield", "") {
 
   // Use scope, so all py structures are destroyed BEFORE py.finalize()
   {
-    auto py_mod = py::module::import("pyfield");
+    auto py_mod = ps.safe_import("pyfield");
 
     auto f_py = create_py_field<Host>(f1);
     py_mod.attr("set_iota")(f_py);
