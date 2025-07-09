@@ -165,7 +165,7 @@
 	<nml_record name="calving" in_defaults="true">
 		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for calving ice (as defined below). 'von_Mises_stress' and 'eigencalving' options can be used in combination with damage threshold calving (see descrption of config_damage_calving_method for details)."
-		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat', 'crevasse_depth'"
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'specified_retreat_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat', 'crevasse_depth'"
 		/>
                 <nml_option name="config_apply_calving_mask" type="logical" default_value=".false." units="unitless"
 			    description="Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected."
@@ -192,11 +192,11 @@
 		            possible_values="any positive real number"
 		/>
 		<nml_option name="config_calving_specified_source" type="character" default_value="const" units="none"
-		            description="method of specified calving velocity"
-		            possible_values="'const' (constant calving velocity), 'data' (calving velocity given by data input)"
+		            description="method of specified calving velocity (for config_calving='specified_calving_velocity') or specified retreat velocity (for config_calving='specified_retreat_velocity')"
+		            possible_values="'const' (constant calving or retreat velocity), 'data' (calving or retreat velocity given by data input)"
 		/>
-                    <nml_option name="config_calving_velocity_const" type="real" default_value="0.0" units="m s^-1"
-		            description="constant calving velocity specified in the namelist"
+                <nml_option name="config_calving_velocity_const" type="real" default_value="0.0" units="m s^-1"
+		            description="constant velocity used by specified_calving_velocity and specified_retreat_velocity options for config_calving.  If config_calving='specified_calving_velocity', then config_calving_velocity_const is the calving velocity.  If config_calving=specified_retreat_velocity, then config_calving_velocity_const is the retreat velocity."
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
@@ -1349,7 +1349,7 @@ is the value of that variable from the *previous* time level!
                      description="bookkeeping field for how much volume should be removed from a dynamic edge"
                 />
                 <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^-1" time_levs="1"
-                     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
+                     description="If config_calving='specified_calving_velocity', then calvingVelocityData is the calving velocity to be imposed.  If config_calving=specified_retreat_velocity, then calvingVelocityData is the retreat velocity to be imposed. In either case, this field is only used if config_calving_specified_source='data'"
                 />
                 <var name="passiveTracer2d" type="real" dimensions="nCells Time" time_levs="1"
                      description="passive tracer used to verify advection routines"
