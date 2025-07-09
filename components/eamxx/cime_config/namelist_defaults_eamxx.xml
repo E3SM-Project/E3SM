@@ -268,8 +268,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
     </shoc>
 
-    <!-- <zm inherit="atm_proc_base"> -->
-    <!-- </zm> -->
+    <!-- ZM deep convection -->
+    <zm inherit="atm_proc_base"/>
+    </zm>
 
     <!-- Basic options for each mam4 atm process -->
     <mam4_atm_proc_base inherit="atm_proc_base">
@@ -595,6 +596,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>

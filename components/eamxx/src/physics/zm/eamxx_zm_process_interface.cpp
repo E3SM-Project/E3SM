@@ -31,7 +31,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   using namespace ShortFieldTagsNames;
 
   // Specify which grid this process will act upon, typical options are "Dynamics" or "Physics".
-  auto m_grid = grids_manager->get_grid("Physics");
+  auto m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   const auto layout = m_grid->get_3d_scalar_layout(true);
 
@@ -66,7 +66,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   // // Output variables
   // add_field<Computed>("???", scalar2d    , ???, grid_name);
   // add_field<Computed>("???", scalar3d_mid, ???, grid_name, ps);
-  
+
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -90,8 +90,11 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& phis     = get_field_in("phis").get_view<const Real*>();
   
   // Run ZM
+
+  std::cout << "Hello from ZMDeepConvection::run_impl";
   
   // Update output fields
+
   
 }
 
