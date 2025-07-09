@@ -160,7 +160,7 @@ if (EAMXX_ENABLE_PYTHON)
   find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
 
   # Add py sources and link pybind11
-  target_sources (scream_share PRIVATE
+  target_sources (scream_share PUBLIC
     eamxx_pysession.cpp)
 
   target_link_libraries(scream_share PUBLIC pybind11::embed)
