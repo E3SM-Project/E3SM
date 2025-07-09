@@ -24,8 +24,8 @@ module rof_comp_mct
                               index_r2x_Flrr_volrmch, index_r2x_Flrr_supply, &
                               index_r2x_Flrr_deficit, index_x2r_So_ssh
   use rdycoreMod      , only: inst_name, inst_suffix, inst_index
-  use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit, &
-                              MPI_REAL8, MPI_INTEGER, MPI_CHARACTER, MPI_LOGICAL, MPI_SUM
+  use rdycoreSpmdMod  , only: masterproc, mpicom_rof, iam, npes, rofid, RDycoreSpmdInit
+
   use RDycoreIO
 
   use rdycoreMod     , only: rdycore_init
