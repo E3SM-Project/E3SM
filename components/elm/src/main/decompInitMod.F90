@@ -125,7 +125,7 @@ contains
     endif
     procinfo%nclumps = clump_pproc
     procinfo%cid(:)  = -1
-    procinfo%ncells  = neoproc ! owned elements in the current task
+    procinfo%ncells  = moab_gcell%num_owned ! owned elements in the current task
     procinfo%ntunits  = 0
     procinfo%nlunits = 0
     procinfo%ncols   = 0
@@ -211,14 +211,14 @@ contains
     ! assign clumps to proc round robin
    !  cid = (iam+1)*clump_pproc
    !  do n = cid,cid+clump_pproc
-   !    ! clumps(n)%owner = eowner(n) ! store the process that owns the cell
-   !    ! procinfo%cid(cid) = globid(n)   ! store the global ID of the cell
+   !    ! clumps(n)%owner = moab_gcell%owner_rank(n) ! store the process that owns the cell
+   !    ! procinfo%cid(cid) = moab_gcell%natural_id(n)   ! store the global ID of the cell
    !    clumps(n)%owner = iam     ! store the process that owns the clump
    !    procinfo%cid(n-cid+1) = n   ! store the global clump ID
    !  enddo
 
     ! set the begginning and end range for the local array space
-    procinfo%begg = proc_offset - neoproc + 1
+    procinfo%begg = proc_offset - moab_gcell%num_owned + 1
     procinfo%endg = proc_offset ! beginning + local-owned + local-ghosted
 
     !
@@ -282,7 +282,7 @@ contains
     end if
 
     ! set the global ids
-    !  ldecomp%gdc2glo(beg:end) = globid(:)
+    !  ldecomp%gdc2glo(beg:end) = moab_gcell%natural_id(:)
 
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
     allocate(gindex(beg:end))
@@ -293,37 +293,37 @@ contains
     !gind = beg + neoproc ! offset by owned elements on the process
     cid = 1 ! starting clump id
     offset = clump_ncells(1)
-    do n = 1, neproc
-      ! if (eowner(n) /= iam) then
+    do n = 1, moab_gcell%num_ghosted
+      ! if (moab_gcell%owner_rank(n) /= iam) then
       !    ! found a ghosted element
-      !    ldecomp%gdc2glo(gind) = globid(n)
-      !    lcid(globid(n)) = eowner(n) + 1 !gind
+      !    ldecomp%gdc2glo(gind) = moab_gcell%natural_id(n)
+      !    lcid(moab_gcell%natural_id(n)) = moab_gcell%owner_rank(n) + 1 !gind
       !    gind = gind + 1
       ! else
       !    ! found an owned element
-      !    ldecomp%gdc2glo(oind) = globid(n)
-      !    lcid(globid(n)) = eowner(n) + 1 !oind
+      !    ldecomp%gdc2glo(oind) = moab_gcell%natural_id(n)
+      !    lcid(moab_gcell%natural_id(n)) = moab_gcell%owner_rank(n) + 1 !oind
       !    oind = oind + 1
       ! end if
 
       ! if (iam == 0) then
-      !    print *, "Root: oind: ", oind, ", GID: ", globid(n), ", owner: ", eowner(n)
+      !    print *, "Root: oind: ", oind, ", GID: ", moab_gcell%natural_id(n), ", owner: ", moab_gcell%owner_rank(n)
       ! end if
-      if (eowner(n) /= iam) then
+      if (moab_gcell%owner_rank(n) /= iam) then
          cycle
       end if
 
       ! found an owned element
-      ldecomp%gdc2glo(oind) = globid(n)
+      ldecomp%gdc2glo(oind) = moab_gcell%natural_id(n)
 
       ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
-      gindex(oind) = globid(n)
-      ! lcid(globid(n)) = iam + 1 !oind
+      gindex(oind) = moab_gcell%natural_id(n)
+      ! lcid(moab_gcell%natural_id(n)) = iam + 1 !oind
       if (n > offset) then
          cid = cid + 1
          offset = offset + clump_ncells(cid)
       end if
-      lcid(globid(n)) = eowner(n) + 1
+      lcid(moab_gcell%natural_id(n)) = moab_gcell%owner_rank(n) + 1
       oind = oind + 1
     enddo
 
@@ -348,7 +348,7 @@ contains
        write(iulog,*)'   longitude points               = ',lni
        write(iulog,*)'   latitude points                = ',lnj
        write(iulog,*)'   total number of active land gridcells = ',numg
-       write(iulog,*)'   total number of global MOAB gridcells = ',neg
+       write(iulog,*)'   total number of global MOAB gridcells = ',moab_gcell%num_global
        write(iulog,*)' Decomposition Characteristics'
        write(iulog,*)'   clumps per process             = ',clump_pproc
        write(iulog,*)' gsMap Characteristics'
@@ -2515,7 +2515,7 @@ contains
       !      nblocks, ndata_send, data_send, ndata_recv, data_recv)
 
       ! Get number of ghost quantites at all subgrid categories
-      procinfo%ncells_ghost    = negproc !ldomain_lateral%ugrid%ngrid_ghost
+      procinfo%ncells_ghost    = moab_gcell%num_ghost !ldomain_lateral%ugrid%ngrid_ghost
       procinfo%ntunits_ghost   = 0
       procinfo%nlunits_ghost   = 0
       procinfo%ncols_ghost     = 0
