@@ -122,7 +122,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(in) :: E_aldir(pcols)     ! 0.7-5.0 micro-meter srfc alb: direct rad
    real(r8), intent(in) :: E_asdif(pcols)     ! 0.2-0.7 micro-meter srfc alb: diffuse rad
    real(r8), intent(in) :: E_aldif(pcols)     ! 0.7-5.0 micro-meter srfc alb: diffuse rad
-   real(r8), intent(in) :: vis_frc            ! Fraction flux flux blueward of 0.7microns
+   real(r8), intent(in) :: vis_frc            ! Fraction of surface insolation blueward of 0.7microns
                                               ! in rrtmg_sw split band 
    real(r8), intent(in) :: sfac(nbndsw)            ! factor to account for solar variability in each band 
    integer,  intent(inout) :: clm_rand_seed(pcols,4)            ! rand # seeds for sw
