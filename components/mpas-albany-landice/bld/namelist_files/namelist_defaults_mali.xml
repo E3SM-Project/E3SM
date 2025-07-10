@@ -22,6 +22,7 @@
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
 <config_advection_coef_3rd_order>0.25</config_advection_coef_3rd_order>
 <config_restore_thickness_after_advection>.false.</config_restore_thickness_after_advection>
+<config_smb_source>'coupler'</config_smb_source>
 <config_zero_sfcMassBalApplied_over_bare_land>.true.</config_zero_sfcMassBalApplied_over_bare_land>
 
 <!-- solidearth -->
