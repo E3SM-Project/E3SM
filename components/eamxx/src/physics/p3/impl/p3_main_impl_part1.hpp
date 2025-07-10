@@ -141,11 +141,8 @@ void Functions<S,D>
         // and it can be made sublinear (e.g., 2000 and 0.55).
         // First, scale by cld_frac_l to account for subgrid frac (if any)
         auto nccn_scaled = nccn_prescribed(k) / inv_cld_frac_l(k);
-        // TODO: HACK: keep BFB, avoid roundoff diff due to pow(x, 1.0)
-        // Second, apply the exponent, but keep strict BFB with defaults
-        if(spa_ccn_to_nc_exponent != sp(1.0)) {
-          nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
-        }
+        // Second, apply the exponent
+        nccn_scaled = pow(nccn_scaled, spa_ccn_to_nc_exponent);
         // Third, apply the factor, and retain the max
         nc(k).set(not_drymass,
                   max(nc(k), spa_ccn_to_nc_factor * nccn_scaled));
