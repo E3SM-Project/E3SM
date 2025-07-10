@@ -921,7 +921,7 @@ end function radiation_nextsw_cday
     real(r8) clmed(pcols)                      !       "     mid  cloud cover
     real(r8) clhgh(pcols)                      !       "     hgh  cloud cover
     real(r8) :: ftem(pcols,pver)               ! Temporary workspace for outfld variables
-    real(r8) :: vis_frc                        ! Fraction of flux blueward of 0.7microns 
+    real(r8) :: vis_frc                        ! Fraction of surface insolation blueward of 0.7microns 
                                                ! in rrtmg_sw split band 
     ! combined cloud radiative parameters are "in cloud" not "in cell"
     real(r8) :: c_cld_tau    (nbndsw,pcols,pver) ! cloud extinction optical depth

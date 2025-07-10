@@ -238,7 +238,7 @@
                                                         !    Dimensions: (ncol)
       real(kind=r8), intent(in) :: aldif(:)             ! Near-IR surface albedo: diffuse rad
                                                         !    Dimensions: (ncol)
-      real(kind=r8), intent(in) :: vis_frc              ! Fraction of flux blueward of 0.7microns 
+      real(kind=r8), intent(in) :: vis_frc              ! Fraction of surface insolation blueward of 0.7microns
                                                         ! in rrtmg_sw split band
       integer, intent(in) :: dyofyr                     ! Day of the year (used to get Earth/Sun
                                                         !  distance if adjflx not provided)
@@ -449,7 +449,6 @@
       real(kind=r8) :: znifu(nlay+2)          ! temporary near-IR downward shortwave flux (w/m2)
       real(kind=r8) :: znicu(nlay+2)          ! temporary clear sky near-IR downward shortwave flux (w/m2)
 
-
 ! Optional output fields 
       real(kind=r8) :: swnflx(nlay+2)         ! Total sky shortwave net flux (W/m2)
       real(kind=r8) :: swnflxc(nlay+2)        ! Clear sky shortwave net flux (W/m2)
@@ -577,10 +576,8 @@
 ! Transfer albedo, cloud and aerosol properties into arrays for 2-stream radiative transfer 
 
 ! Surface albedo
-         
 !  Near-IR bands 16-24 and 29 (1-9 and 14), 820-16000 cm-1, 0.625-12.195 microns
 !         do ib=1,9
-
          do ib=1,8
             albdir(ib) = aldir(iplon)
             albdif(ib) = aldif(iplon)

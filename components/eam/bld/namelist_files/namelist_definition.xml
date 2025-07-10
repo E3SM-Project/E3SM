@@ -4496,7 +4496,9 @@ Default: FALSE
 
 <entry id="rad_asym_splt" type="logical"  category="radiation"
 group="radiation_nl" valid_values="" > 
-Split radiation asymmetrically between VIS/NIR, coef for VIS
+Split surface insolation asymmetrically between VIS/NIR. 
+Coefficient determines fraction of VIS flux (i.e., less than 0.7 um) 
+in RRTMG overlap band that spans 0.625–0.778 um
 Default: FALSE
 </entry>
 

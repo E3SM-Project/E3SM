@@ -131,7 +131,7 @@
                                                                  !   Dimensions: (nbndsw)
       real(kind=r8), intent(in) :: palbp(:)                    ! surface albedo (direct)
                                                                  !   Dimensions: (nbndsw)
-      real(kind=r8), intent(in) :: vis_frc                     ! Fraction of flux blueward of 0.7microns
+      real(kind=r8), intent(in) :: vis_frc                     ! Fraction of surface insolation blueward of 0.7microns
                                                                ! in rrtmg_sw split band
       real(kind=r8), intent(in) :: prmu0                       ! cosine of solar zenith angle
       real(kind=r8), intent(in) :: pcldfmc(:,:)                ! cloud fraction [mcica]
