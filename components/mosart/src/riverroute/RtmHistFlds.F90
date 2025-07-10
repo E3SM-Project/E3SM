@@ -11,7 +11,7 @@ module RtmHistFlds
   use shr_kind_mod   , only: r8 => shr_kind_r8
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
-  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
+  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way, bifurcflag
 
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
 
@@ -101,6 +101,16 @@ contains
     call RtmHistAddfld (fname='STORAGE'//'_'//trim(rtm_tracers(2)), units='m3',  &
          avgflag='A', long_name='MOSART storage: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%volr_nt2, default='active')
+
+    if (bifurcflag) then
+       call RtmHistAddfld (fname='BIFUR_AMOUNT'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
+            avgflag='A', long_name='MOSART bifurcation transfer amount: '//trim(rtm_tracers(1)), &
+            ptr_rof=rtmCTL%bifur_amount_nt1, default='active')
+
+       call RtmHistAddfld (fname='BIFUR_AMOUNT'//'_'//trim(rtm_tracers(2)), units='m3/s',  &
+            avgflag='A', long_name='MOSART bifurcation transfer amount: '//trim(rtm_tracers(2)), &
+            ptr_rof=rtmCTL%bifur_amount_nt2, default='active')
+    end if
 
     call RtmHistAddfld (fname='DVOLRDT_LND'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
          avgflag='A', long_name='MOSART land change in storage: '//trim(rtm_tracers(1)), &

@@ -10,9 +10,9 @@ MODULE WRM_subw_IO_mod
   use RunoffMod     , only : Tctl, TUnit, rtmCTL
   use RtmSpmd       , only : masterproc, mpicom_rof, iam, ROFID, &
                              MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
-  use RtmVar        , only : iulog, inst_suffix, smat_option, rstraflag, ngeom, nlayers, rinittemp
+  use RtmVar        , only : iulog, inst_suffix, smat_option, rstraflag, ngeom, nlayers, rinittemp, isgrid2d
   use RtmFileUtils  , only : getfil, getavu, relavu
-  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile
+  use RtmIO         , only : pio_subsystem, ncd_pio_openfile, ncd_pio_closefile, ncd_inqfdims
   use RtmTimeManager, only : get_curr_date, is_new_month
   use rof_cpl_indices, only : nt_rtm
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
@@ -59,6 +59,7 @@ MODULE WRM_subw_IO_mod
      integer :: iunit
      integer :: ncdfid, did, dids(2), ndims, dsize(1), dsizes(2), ier, varid
      integer :: start(2), count(2)
+     logical :: iswm2d = .true.  ! if the wm input file is structured or unstructured
      integer(kind=PIO_OFFSET_KIND) :: frame
      real(r8) :: peak, prorata , mn, mx                  ! peak value to define the start of operationalyr
      integer :: sgn,curr_sgn, nsc, ct, ct_mx, mth_op , idepend      ! number of sign change
@@ -87,6 +88,13 @@ MODULE WRM_subw_IO_mod
 
      begr = rtmCTL%begr
      endr = rtmCTL%endr
+
+     ! Initialize arrays to prevent garbage values (bifurcation compatibility)
+     dids = 0
+     dsize = 0  
+     dsizes = 0
+     start = 0
+     count = 0
 
      if (masterproc) write(iulog,FORMI) subname,' begr endr = ',iam,begr,endr
      call shr_sys_flush(iulog)
@@ -171,10 +179,23 @@ MODULE WRM_subw_IO_mod
 
      call ncd_pio_openfile(ncid, trim(ctlSubwWRM%paraFile), 0)
      call shr_sys_flush(iulog)
+     
+     ! Determine if the WRM input file is structured or unstructured (independent of main MOSART file)
+     call ncd_inqfdims(ncid, iswm2d, dsizes(1), dsizes(2), gsize)
+     if (iswm2d) then
+        ndims = 2
+        if (masterproc) write(iulog,*) 'WRM: Using structured grid with dimensions:', dsizes(1), dsizes(2)
+     else
+        ndims = 1
+        if (masterproc) write(iulog,*) 'WRM: Using unstructured grid with dimensions:', dsizes(1), dsizes(2)
+     endif
+     
+     ! Verify DamInd_2d variable exists (but don't need to manually read dimensions anymore)
      ier = pio_inq_varid   (ncid, 'DamInd_2d', vardesc)
-     ier = pio_inq_vardimid(ncid, vardesc, dids)
-     ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
-     ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
+     if (ier /= PIO_NOERR) then
+        write(iulog,*) 'ERROR: Could not find DamInd_2d variable in WRM parameter file'
+        call shr_sys_abort('WRM_init: DamInd_2d variable not found')
+     endif
 
      write(iulog,FORMI) subname,' lnumr = ',iam,rtmCTL%lnumr,begr,endr
      write(iulog,FORMI) subname,' gindex = ',iam,minval(rtmCTL%gindex),maxval(rtmCTL%gindex)
@@ -204,8 +225,8 @@ MODULE WRM_subw_IO_mod
      write(iulog,FORMI) subname,' avect_wg lsize = ',iam,mct_aVect_lsize(aVect_wg)
      call shr_sys_flush(iulog)
 
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, gindex, iodesc_dbl_grd2grd)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, gindex, iodesc_int_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), gindex, iodesc_dbl_grd2grd)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes(1:ndims), gindex, iodesc_int_grd2grd)
      deallocate(gindex)
 
      !-------------------
@@ -276,8 +297,8 @@ MODULE WRM_subw_IO_mod
      deallocate(gindex)
 
      ! decomp for lon/lat to local dam
-     call pio_initdecomp(pio_subsystem, pio_double, dsizes, WRMUnit%grdID, iodesc_dbl_grd2dam)
-     call pio_initdecomp(pio_subsystem, pio_int   , dsizes, WRMUnit%grdID, iodesc_int_grd2dam)
+     call pio_initdecomp(pio_subsystem, pio_double, dsizes(1:ndims), WRMUnit%grdID, iodesc_dbl_grd2dam)
+     call pio_initdecomp(pio_subsystem, pio_int   , dsizes(1:ndims), WRMUnit%grdID, iodesc_int_grd2dam)
 
      ! decomp for global dam to local dam
      dsize(1) = ctlSubwWRM%NDam

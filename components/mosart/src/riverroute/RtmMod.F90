@@ -15,11 +15,11 @@ module RtmMod
   use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use seq_flds_mod    , only : rof_sed
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
-                               MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
+                               MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX,MPI_SUM
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
-                               inst_index, inst_suffix, inst_name, wrmflag, inundflag, bifurcflag, max_downstream, &
+                               inst_index, inst_suffix, inst_name, wrmflag, inundflag, bifurcflag, ibtflag, max_downstream, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_budget, &
                                isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
@@ -34,7 +34,7 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, ValidateBifurcationPoints, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
+  use RunoffMod       , only : RunoffInit, ValidateBifurcationPoints, FinalizeBifurcationTracking, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
                                SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
@@ -182,9 +182,13 @@ contains
     real(r8) :: dy                            ! lat dist. betn grid cells (m)
     real(r8) :: lrtmarea                      ! tmp local sum of area
     real(r8),allocatable :: tempr(:,:)        ! temporary buffer
+    real(r8),allocatable :: tempr_3d(:,:,:)   ! temporary buffer for 3D real data (IBT)
     integer ,allocatable :: itempr(:,:)       ! temporary buffer
     integer ,allocatable :: itempr_3d(:,:,:)  ! temporary buffer for multi-dimensional dnID
+    integer ,allocatable :: itempr_unstr_3d(:,:)  ! temporary buffer for unstructured bifurcation dnID
+    real(r8),allocatable :: tempr_unstr_3d(:,:)   ! temporary buffer for unstructured IBT/ratio data
     integer :: ndims, actual_downstream_size  ! for NetCDF dimension checking
+    integer :: dimid                          ! dimension ID for downstream
     type(var_desc_t) :: vardesc               ! pio variable descriptor
     integer ,allocatable :: idxocn(:)         ! downstream ocean outlet cell
     integer ,allocatable :: nupstrm(:)        ! number of upstream cells including own cell
@@ -226,7 +230,6 @@ contains
                                               ! the elevation profile (used to alleviate the effect of DEM pits on elevation profiles).
     real(r8) :: dtover,dtovermax              ! ts calc temporaries
     type(file_desc_t) :: ncid                 ! netcdf file id
-    integer  :: dimid                         ! netcdf dimension identifier
     integer  :: nroflnd                       ! local number of land runoff 
     integer  :: nrofocn                       ! local number of ocn runoff
     integer  :: pid,np,npmin,npmax,npint      ! log loop control
@@ -256,6 +259,7 @@ contains
 !global (glo), temporary
     integer , pointer :: ID0_global(:)  ! local ID index
     integer , pointer :: dnID_global(:,:) ! downstream IDs based on ID0 (gridcell, max_downstream)
+    real(r8), pointer :: ibt_data_global(:,:) ! IBT data from NetCDF (gridcell, max_downstream) - ratios or demands
     integer , pointer :: nUp_global(:)  ! number of upstream units
     integer , pointer :: nUp_dstrm_global(:)  ! number of units flowing into the downstream unit
     real(r8), pointer :: area_global(:) ! area
@@ -266,6 +270,7 @@ contains
     real(r8) :: wd_chnl                       ! Channel water depth (m).
     real(r8) :: hydrR                         ! Hydraulic radius (= wet A / wet P) (m).
     real(r8) :: v_chnl                        ! Channel flow velocity (m/s).#endif
+    real(r8) :: ratio_sum                     ! temporary sum for ratio validation
 
 !-----------------------------------------------------------------------
 
@@ -281,7 +286,7 @@ contains
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag, &
-         bifurcflag
+         bifurcflag, ibtflag
 
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
@@ -302,6 +307,7 @@ contains
     sediflag    = .false.
     heatflag    = .false.
     bifurcflag  = .false.
+    ibtflag     = .false.
     do_budget = 0
     barrier_timers = .false.
     finidat_rtm = ' '
@@ -611,8 +617,30 @@ contains
 
     call ncd_inqfdims(ncid, isgrid2d, rtmlon, rtmlat, rtmn)
 
+    ! Dynamically determine max_downstream from NetCDF file if bifurcation is enabled
+    if (bifurcflag) then
+       call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+       ier = pio_inq_dimid(ncid, 'downstream', dimid)
+       if (ier == PIO_NOERR) then
+          ier = pio_inq_dimlen(ncid, dimid, max_downstream)
+          if (ier == PIO_NOERR) then
+             if (masterproc) write(iulog,*) 'Found downstream dimension in NetCDF file: ', max_downstream
+          else
+             if (masterproc) write(iulog,*) 'WARNING: Could not read downstream dimension length, using default=1'
+             max_downstream = 1
+          endif
+       else
+          if (masterproc) write(iulog,*) 'No downstream dimension found - using traditional single-downstream format (max_downstream=1)'
+          max_downstream = 1
+       endif
+       call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Values for rtmlon/rtmlat: ',rtmlon,rtmlat
+       if (bifurcflag) then
+          write(iulog,*) 'Using max_downstream = ', max_downstream
+       endif
        write(iulog,*) 'Successfully read MOSART dimensions'
        if (isgrid2d) then
         write(iulog,*) 'MOSART input is 2d'
@@ -644,7 +672,8 @@ contains
     ! reading the routing parameters
     allocate ( &
               ID0_global(rtmlon*rtmlat), area_global(rtmlon*rtmlat), &
-              dnID_global(rtmlon*rtmlat, max_downstream), nUp_global(rtmlon*rtmlat), nUp_dstrm_global(rtmlon*rtmlat),&
+              dnID_global(rtmlon*rtmlat, max_downstream), ibt_data_global(rtmlon*rtmlat, max_downstream), &
+              nUp_global(rtmlon*rtmlat), nUp_dstrm_global(rtmlon*rtmlat), &
               stat=ier)
     if (ier /= 0) then
        write(iulog,*) subname, ' : Allocation error for ID0_global'
@@ -729,8 +758,14 @@ contains
           call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
           ier = pio_inq_varid(ncid, 'dnID', vardesc)
           if (ier == PIO_NOERR) then
-             ier = pio_get_var(ncid, vardesc, itempr_3d)
-             found = (ier == PIO_NOERR)
+             ! Check if dnID variable has correct dimensions for 3D reading
+             ier = pio_inq_varndims(ncid, vardesc, ndims)
+             if (ier == PIO_NOERR .and. ndims == 3) then
+                ier = pio_get_var(ncid, vardesc, itempr_3d)
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.  ! Wrong number of dimensions
+             endif
           else
              found = .false.
           endif
@@ -759,43 +794,56 @@ contains
           endif
           deallocate(itempr_3d)
        else
-          ! For unstructured mesh: still use 3D dnID but with different NetCDF structure
-          allocate(itempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
-          if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for itempr_3d')
+          ! For unstructured mesh: try reading 2D dnID(cells, downstream) first
+          if (masterproc) write(iulog,*) 'Attempting to read 2D unstructured dnID(cells, downstream)'
           
-          ! Try to read 3D variable - use pio_get_var for full global read
+          ! For unstructured: dnID should be dnID(cells, downstream) where cells = rtmlon
+          allocate(itempr_unstr_3d(rtmlon, max_downstream), stat=ier)
+          if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for itempr_unstr_3d')
+          
           call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
           ier = pio_inq_varid(ncid, 'dnID', vardesc)
           if (ier == PIO_NOERR) then
-             ier = pio_get_var(ncid, vardesc, itempr_3d)
-             found = (ier == PIO_NOERR)
+             ! Check if dnID variable has correct dimensions for 2D reading
+             ier = pio_inq_varndims(ncid, vardesc, ndims)
+             if (ier == PIO_NOERR .and. ndims == 2) then
+                ier = pio_get_var(ncid, vardesc, itempr_unstr_3d)
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.  ! Wrong number of dimensions
+             endif
           else
              found = .false.
           endif
           call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+          
           if (found) then
-             if (masterproc) write(iulog,*) 'Read 3D unstructured dnID, min=',minval(itempr_3d),' max=',maxval(itempr_3d)
+             if (masterproc) write(iulog,*) 'Read 2D unstructured dnID(cells,downstream), min=',minval(itempr_unstr_3d),' max=',maxval(itempr_unstr_3d)
              do k=1,max_downstream
-             do j=1,rtmlat
              do i=1,rtmlon
-                n = (j-1)*rtmlon + i
-                dnID_global(n,k) = itempr_3d(i,j,k)
-             end do
+                dnID_global(i,k) = itempr_unstr_3d(i,k)
              end do
              end do
           else
-             ! Fall back to 2D dnID reading for backward compatibility
-             if (masterproc) write(iulog,*) '3D dnID not found, reading 2D unstructured dnID for backward compatibility'
-             call ncd_io(ncid=ncid, varname='dnID', flag='read', data=itempr, readvar=found)
-             if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART dnID')
-             do j=1,rtmlat
-             do i=1,rtmlon
+             ! Fall back to 1D dnID reading for unstructured mesh backward compatibility
+             if (masterproc) write(iulog,*) '3D dnID not found, reading 1D unstructured dnID(cells) for backward compatibility'
+             ier = pio_inq_varid(ncid, 'dnID', vardesc)
+             if (ier == PIO_NOERR) then
+                ! For unstructured mesh: read 1D dnID(cells) into itempr(:,1)
+                ier = pio_get_var(ncid, vardesc, itempr(:,1))
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.
+             endif
+             if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read unstructured MOSART dnID')
+             do j=1,rtmlat  ! j=1 for unstructured
+             do i=1,rtmlon  ! i=1 to ncells
                 n = (j-1)*rtmlon + i
-                dnID_global(n,1) = itempr(i,j)  ! Put in first position
+                dnID_global(n,1) = itempr(i,j)  ! Put in first position  
              end do
              end do
           endif
-          deallocate(itempr_3d)
+          deallocate(itempr_unstr_3d)
        endif
     else
        ! Original dnID reading when bifurcflag = false (handle both mesh types)
@@ -839,6 +887,147 @@ contains
        end do
     endif
     if (masterproc) write(iulog,*) 'dnID processed'
+
+    ! Validate IBT configuration
+    if (ibtflag .and. .not. bifurcflag) then
+       write(iulog,*) 'ERROR: ibtflag=true requires bifurcflag=true'
+       write(iulog,*) 'IBT (Inter-Basin Transfer) mode is an extension of the bifurcation system'
+       write(iulog,*) 'Please set bifurcflag=.true. in your namelist when using ibtflag=.true.'
+       call shr_sys_abort(subname//' ERROR: ibtflag requires bifurcflag=true')
+    endif
+
+    ! Validate IBT routing method compatibility
+    if (ibtflag .and. Tctl%RoutingMethod /= KW) then
+       write(iulog,*) 'ERROR: Inter-basin transfer (IBT) is currently only supported with KW routing method'
+       write(iulog,*) 'Current routing method:', Tctl%RoutingMethod, ' (1=KW, 2=DW)'
+       write(iulog,*) 'Please set RoutingMethod=1 (KW) in your namelist when using ibtflag=.true.'
+       call shr_sys_abort(subname//' ERROR: IBT mode incompatible with DW routing')
+    endif
+
+    ! Initialize IBT data with zeros
+    ibt_data_global(:,:) = 0.0_r8
+
+    ! Read IBT/bifurcation ratio data if bifurcation is enabled
+    if (bifurcflag) then
+       if (ibtflag) then
+          ! Mixed Mode: Read both IBT demands and bifurcation ratios from NetCDF
+          ! This supports basins with both delta bifurcation (ratios) and IBT diversions (demands)
+          if (masterproc) write(iulog,*) 'Mixed Mode: Reading IBT demands and bifurcation ratios for heterogeneous basins'
+          call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+          if (isgrid2d) then
+             allocate(tempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
+             if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for tempr_3d (IBT)')
+             ier = pio_inq_varid(ncid, 'ibt_demand', vardesc)
+             if (ier == PIO_NOERR) then
+                ier = pio_get_var(ncid, vardesc, tempr_3d)
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.
+             endif
+             if (found) then
+                if (masterproc) write(iulog,*) 'Read 3D IBT demands (m³/s), min=',minval(tempr_3d),' max=',maxval(tempr_3d)
+                do k=1,max_downstream
+                do j=1,rtmlat
+                do i=1,rtmlon
+                   n = (j-1)*rtmlon + i
+                   ibt_data_global(n,k) = tempr_3d(i,j,k)
+                end do
+                end do
+                end do
+             else
+                write(iulog,*) 'WARNING: ibt_demand variable not found in NetCDF parameter file'
+                write(iulog,*) 'Mixed mode will fall back to ratio-based splitting for all bifurcation points'
+                write(iulog,*) 'For pure IBT mode, provide: ibt_demand(lon,lat,downstream) with demands in m³/s'
+             endif
+             deallocate(tempr_3d)
+          else
+             ! Unstructured mesh IBT reading: ibt_demand(cells, downstream)
+             allocate(tempr_unstr_3d(rtmlon, max_downstream), stat=ier)
+             if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for tempr_unstr_3d (IBT unstructured)')
+             ier = pio_inq_varid(ncid, 'ibt_demand', vardesc)
+             if (ier == PIO_NOERR) then
+                ier = pio_get_var(ncid, vardesc, tempr_unstr_3d)
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.
+             endif
+             if (found) then
+                if (masterproc) write(iulog,*) 'Read 3D unstructured IBT demands (m³/s), min=',minval(tempr_unstr_3d),' max=',maxval(tempr_unstr_3d)
+                do k=1,max_downstream
+                do i=1,rtmlon
+                   ibt_data_global(i,k) = tempr_unstr_3d(i,k)
+                end do
+                end do
+             else
+                write(iulog,*) 'WARNING: ibt_demand variable not found in NetCDF parameter file (unstructured mesh)'
+                write(iulog,*) 'Mixed mode will fall back to ratio-based splitting for all bifurcation points'
+                write(iulog,*) 'For pure IBT mode, provide: ibt_demand(cells,downstream) with demands in m³/s'
+             endif
+             deallocate(tempr_unstr_3d)
+          endif
+          call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+       else
+          ! Ratio Mode: Read bifurcation ratios (must sum to 1.0)
+          if (masterproc) write(iulog,*) 'Ratio Mode: Reading bifurcation ratios from NetCDF'
+          call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+          if (isgrid2d) then
+             allocate(tempr_3d(rtmlon, rtmlat, max_downstream), stat=ier)
+             if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for tempr_3d (ratio)')
+             ier = pio_inq_varid(ncid, 'bifurc_ratio', vardesc)
+             if (ier == PIO_NOERR) then
+                ier = pio_get_var(ncid, vardesc, tempr_3d)
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.
+             endif
+             if (found) then
+                if (masterproc) write(iulog,*) 'Read 3D bifurcation ratios, min=',minval(tempr_3d),' max=',maxval(tempr_3d)
+                do k=1,max_downstream
+                do j=1,rtmlat
+                do i=1,rtmlon
+                   n = (j-1)*rtmlon + i
+                   ibt_data_global(n,k) = tempr_3d(i,j,k)
+                end do
+                end do
+                end do
+             else
+                if (masterproc) write(iulog,*) 'WARNING: bifurc_ratio variable not found, using equal splits'
+             endif
+             deallocate(tempr_3d)
+          else
+             ! Unstructured mesh ratio reading - uses 2D format: bifurc_ratio(cells, downstream)
+             allocate(tempr_unstr_3d(rtmlon, max_downstream), stat=ier)
+             if (ier /= 0) call shr_sys_abort(subname//' ERROR: allocation failed for tempr_unstr_3d (ratio unstructured)')
+             ier = pio_inq_varid(ncid, 'bifurc_ratio', vardesc)
+             if (ier == PIO_NOERR) then
+                ier = pio_get_var(ncid, vardesc, tempr_unstr_3d)
+                found = (ier == PIO_NOERR)
+             else
+                found = .false.
+             endif
+             if (found) then
+                if (masterproc) write(iulog,*) 'Read 2D unstructured bifurcation ratios, min=',minval(tempr_unstr_3d),' max=',maxval(tempr_unstr_3d)
+                do k=1,max_downstream
+                do j=1,rtmlat  ! For unstructured: j=1 only
+                do i=1,rtmlon  ! For unstructured: i=1 to number_of_gridcells
+                   n = (j-1)*rtmlon + i
+                   ibt_data_global(n,k) = tempr_unstr_3d(i,k)
+                end do
+                end do
+                end do
+             else
+                if (masterproc) write(iulog,*) 'WARNING: bifurc_ratio variable not found, using equal splits'
+             endif
+             deallocate(tempr_unstr_3d)
+          endif
+          call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+       endif
+    endif
+
+    ! Validate bifurcation/IBT data consistency and requirements
+    if (bifurcflag) then
+       call ValidateBifurcationIBTData()
+    endif
 
     if (data_bgc_fluxes_to_ocean_flag) then
 
@@ -1632,15 +1821,44 @@ contains
              rtmCTL%iDown(nr) = 0
           end if
           
-          ! Set equal split ratios for now (50-50 for 2-way, 33-33-33 for 3-way, etc.)
+          ! Set ratios/demands based on IBT mode
           if (rtmCTL%is_bifurc(nr)) then
-             do k=1,rtmCTL%num_downstream(nr)
-                rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
-             end do
+             if (ibtflag) then
+                ! IBT Mode: Store absolute demands for dynamic calculation
+                do k=1,rtmCTL%num_downstream(nr)
+                   rtmCTL%ibt_demand(nr,k) = ibt_data_global(n,k)  ! m³/s demands
+                end do
+                ! Initialize ratios to equal splits (will be updated dynamically in physics)
+                do k=1,rtmCTL%num_downstream(nr)
+                   rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
+                end do
+             else
+                ! Ratio Mode: Use ratios from NetCDF or equal splits
+                ratio_sum = 0.0_r8
+                do k=1,rtmCTL%num_downstream(nr)
+                   if (ibt_data_global(n,k) > 0.0_r8) then
+                      rtmCTL%bifurc_ratio(nr,k) = ibt_data_global(n,k)  ! Use NetCDF ratios
+                   else
+                      rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)  ! Equal split
+                   endif
+                   ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(nr,k)
+                end do
+                ! Validate ratios sum to 1.0 (within tolerance)
+                if (abs(ratio_sum - 1.0_r8) > 1.e-6_r8) then
+                   write(iulog,*) 'WARNING: Bifurcation ratios do not sum to 1.0 for cell nr=',nr,' sum=',ratio_sum
+                   ! Normalize ratios to ensure they sum to 1.0
+                   do k=1,rtmCTL%num_downstream(nr)
+                      rtmCTL%bifurc_ratio(nr,k) = rtmCTL%bifurc_ratio(nr,k) / ratio_sum
+                   end do
+                endif
+             endif
           else
+             ! Non-bifurcation cells
              rtmCTL%bifurc_ratio(nr,1) = 1.0_r8
+             rtmCTL%ibt_demand(nr,1) = 0.0_r8
              do k=2,max_downstream
                 rtmCTL%bifurc_ratio(nr,k) = 0.0_r8
+                rtmCTL%ibt_demand(nr,k) = 0.0_r8
              end do
           endif
        else
@@ -1694,7 +1912,7 @@ contains
     deallocate(gmask)
     deallocate(rglo2gdc)
     deallocate(rgdc2glo)
-    deallocate(dnID_global,area_global)
+    deallocate(dnID_global,area_global,ibt_data_global)
     deallocate(nUp_global,nUp_dstrm_global)
     deallocate(idxocn)
     if (data_bgc_fluxes_to_ocean_flag) then
@@ -1760,6 +1978,7 @@ contains
                    sMat%data%iAttr(igcol,cnt) = rtmCTL%gindex(nr)      ! Source cell
                    sMat%data%iAttr(igrow,cnt) = rtmCTL%dsig_all(nr,k)  ! Downstream cell
                    sMat%data%rAttr(iwgt ,cnt) = rtmCTL%bifurc_ratio(nr,k) ! Split ratio
+                   rtmCTL%matrix_idx(nr,k) = cnt  ! Store matrix index for later updates
                 end if
              end do
           elseif (rtmCTL%dsig(nr) > 0) then
@@ -2347,6 +2566,113 @@ contains
     if (masterproc) call shr_sys_flush(iulog)
 
     call t_stopf('mosarti_histinit')
+
+contains
+
+  !-----------------------------------------------------------------------
+  subroutine ValidateBifurcationIBTData()
+    !
+    ! Validate bifurcation/IBT data consistency and requirements
+    ! NOTE: dnID_global and ibt_data_global contain GLOBAL data, so only master processor should validate
+    !
+    implicit none
+    
+    integer :: n, k, num_bifurc_points, num_ibt_points, num_conflicts, ier
+    logical :: has_ibt_data, has_ratio_data, is_bifurc_point
+    character(len=*), parameter :: subname = 'ValidateBifurcationIBTData'
+    
+    ! Initialize counts
+    num_bifurc_points = 0
+    num_ibt_points = 0
+    num_conflicts = 0
+    
+    ! Only master processor validates since dnID_global contains global data
+    if (masterproc) then
+       ! Check all grid cells for conflicts and requirements
+       do n = 1, rtmlon*rtmlat
+          is_bifurc_point = .false.
+          has_ibt_data = .false.
+          has_ratio_data = .false.
+          
+          ! Determine if this is a bifurcation point and what data it has
+          do k = 1, max_downstream
+             if (dnID_global(n,k) > 0 .and. dnID_global(n,k) <= rtmlon*rtmlat) then
+                if (k > 1) is_bifurc_point = .true.  ! More than 1 downstream = bifurcation
+             endif
+             if (ibt_data_global(n,k) > 0.0_r8) then
+                if (ibtflag) then
+                   has_ibt_data = .true.
+                else
+                   has_ratio_data = .true.  ! In ratio mode, ibt_data_global stores ratios
+                endif
+             endif
+          end do
+          
+          if (is_bifurc_point) then
+             num_bifurc_points = num_bifurc_points + 1
+             
+             if (ibtflag) then
+                ! Mixed mode: check for conflicts between IBT and ratio data
+                if (has_ibt_data .and. has_ratio_data) then
+                   num_conflicts = num_conflicts + 1
+                   write(iulog,*) 'ERROR: Bifurcation point conflict at grid cell', n
+                   write(iulog,*) '       Cell has both IBT volume data AND ratio data'
+                   write(iulog,*) '       Each bifurcation point must use either IBT volumes OR ratios, not both'
+                endif
+                
+                if (has_ibt_data) num_ibt_points = num_ibt_points + 1
+             endif
+          endif
+       end do
+    endif
+    
+    ! Broadcast validation results to all processors
+    call MPI_BCAST(num_bifurc_points, 1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call MPI_BCAST(num_ibt_points, 1, MPI_INTEGER, 0, mpicom_rof, ier)
+    call MPI_BCAST(num_conflicts, 1, MPI_INTEGER, 0, mpicom_rof, ier)
+    
+    ! Report validation results
+    if (masterproc) then
+       write(iulog,*) trim(subname), ': Bifurcation/IBT validation summary:'
+       write(iulog,*) '  Total bifurcation points found: ', num_bifurc_points
+       if (ibtflag) then
+          write(iulog,*) '  IBT points with volume data: ', num_ibt_points
+          write(iulog,*) '  Regular bifurcation points (equal splits): ', num_bifurc_points - num_ibt_points
+       else
+          write(iulog,*) '  Using equal splits for points without ratio data'
+       endif
+    endif
+    
+    ! Error checking based on mode
+    if (ibtflag .and. num_bifurc_points > 0 .and. num_ibt_points == 0) then
+       if (masterproc) then
+          write(iulog,*) 'ERROR: IBT mode enabled (ibtflag=true) but no IBT volume data found'
+          write(iulog,*) '       When ibtflag=true, NetCDF file must contain ibt_demand variable'
+          write(iulog,*) '       with volume data (m³/s) for at least some bifurcation points'
+          write(iulog,*) '       Either:'
+          write(iulog,*) '         1. Add ibt_demand(lon,lat,downstream) variable to NetCDF file, OR'
+          write(iulog,*) '         2. Set ibtflag=false for pure bifurcation mode (allows equal splits)'
+       endif
+       call shr_sys_abort(trim(subname)//' ERROR: IBT mode requires volume data')
+    endif
+    
+    if (num_conflicts > 0) then
+       if (masterproc) then
+          write(iulog,*) 'ERROR: Found', num_conflicts, 'bifurcation points with conflicting data'
+          write(iulog,*) '       Same grid cell cannot have both IBT volume data AND ratio data'
+          write(iulog,*) '       Each bifurcation point must use either:'
+          write(iulog,*) '         - IBT volumes: ibt_demand(cell,downstream) > 0, OR'
+          write(iulog,*) '         - Fixed ratios: bifurc_ratio(cell,downstream) > 0'
+          write(iulog,*) '       But not both for the same cell'
+       endif
+       call shr_sys_abort(trim(subname)//' ERROR: Conflicting bifurcation data')
+    endif
+    
+    if (masterproc .and. num_bifurc_points > 0) then
+       write(iulog,*) trim(subname), ': All bifurcation/IBT data passed validation'
+    endif
+    
+  end subroutine ValidateBifurcationIBTData
 
   end subroutine Rtmini
 
@@ -3042,6 +3368,11 @@ contains
        end if
        
     enddo ! nsub
+
+    !--- Track bifurcation transfers after subcycling ---
+    if (bifurcflag) then
+       call FinalizeBifurcationTracking()
+    endif
 
     !-----------------------------------
     ! average flow over subcycling

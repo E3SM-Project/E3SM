@@ -13,7 +13,7 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way, bifurcflag
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way, bifurcflag, ibtflag
   use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm
   use MOSART_heat_mod
@@ -58,6 +58,7 @@ MODULE MOSART_physics_mod
   contains
 
 !-----------------------------------------------------------------------
+
   subroutine Euler
   ! !DESCRIPTION: solve the ODEs with Euler algorithm
     implicit none    
@@ -329,13 +330,23 @@ MODULE MOSART_physics_mod
        end do
        end do
 #else
+       !--- IBT dynamic ratio calculation and matrix weight update ---
+       if (bifurcflag .and. ibtflag) then
+          call UpdateIBTRatios()
+          call UpdateMCTMatrixWeights()  ! Update matrix weights with current dynamic ratios
+       end if
+       
+       !--- Initialize bifur_amount tracking and record pre-MCT flows ---
+       if (bifurcflag) then
+          call InitializeBifurcationTracking()
+       endif
+       
        !--- copy erout into avsrc_upstrm ---
        call mct_avect_zero(avsrc_upstrm)
        cnt = 0
        do iunit = rtmCTL%begr,rtmCTL%endr
           cnt = cnt + 1
           do nt = 1,nt_rtm
-             ! MCT matrix now handles bifurcation automatically with weighted entries
              avsrc_upstrm%rAttr(nt,cnt) = TRunoff%erout(iunit,nt)
           enddo
           if (heatflag) then
@@ -357,6 +368,9 @@ MODULE MOSART_physics_mod
               THeat%Ha_eroutUp(iunit) = avdst_upstrm%rAttr(nt_rtm+1,cnt)
           end if
        enddo
+       
+       !--- Track bifurcation transfers directly ---
+       ! NOTE: FinalizeBifurcationTracking moved to be called from RtmMod after subcycle loop
        
        if (Tctl%RoutingMethod == DW ) then
           ! retrieve water depth in downstream channels
@@ -1215,6 +1229,197 @@ MODULE MOSART_physics_mod
   end subroutine Routing_DW_ocn_rof_two_way
 
 !-----------------------------------------------------------------------
+
+  subroutine UpdateIBTRatios()
+  ! !DESCRIPTION: Update bifurcation ratios dynamically for IBT (Inter-Basin Transfer) mode
+  ! This subroutine implements volume-based diversions with environmental flow protection
+    use RtmVar, only : max_downstream
+    implicit none
+    
+    integer :: iunit, k
+    real(r8) :: total_flow, available_flow, env_minimum, total_diverted
+    real(r8) :: actual_diversion(max_downstream), demand, remaining_ratio
+    real(r8) :: ratio_sum
+    logical :: has_ibt_demands
+    character(len=*), parameter :: subname = '(UpdateIBTRatios)'
+    
+    ! Update IBT ratios for all bifurcation points
+    do iunit = rtmCTL%begr, rtmCTL%endr
+       if (rtmCTL%is_bifurc(iunit)) then
+          ! Check if this cell has IBT demands (vs fixed ratio splits)
+          has_ibt_demands = .false.
+          do k = 1, rtmCTL%num_downstream(iunit)
+             if (rtmCTL%ibt_demand(iunit,k) > TINYVALUE) then
+                has_ibt_demands = .true.
+                exit
+             endif
+          end do
+          
+          ! Debug: Check if any IBT demands exist
+          write(iulog,*) 'IBT DEMAND CHECK: unit=', iunit, ' has_ibt_demands=', has_ibt_demands, &
+                       ' num_downstream=', rtmCTL%num_downstream(iunit)
+          do k = 1, rtmCTL%num_downstream(iunit)
+             write(iulog,*) 'IBT DEMAND CHECK: unit=', iunit, ' k=', k, ' demand=', rtmCTL%ibt_demand(iunit,k)
+          end do
+          
+          ! Only apply IBT logic to cells with actual demands
+          if (has_ibt_demands) then
+             ! Get current total outflow (absolute value)
+             total_flow = abs(TRunoff%erout(iunit, nt_nliq))
+             
+             ! Store base flow for consistent ratio application in tracking
+             rtmCTL%bifurc_base_flow(iunit) = total_flow
+             
+             ! Debug logging for IBT ratio calculation
+             write(iulog,*) 'IBT RATIO DEBUG: unit=', iunit, ' total_flow=', total_flow
+             
+             if (total_flow > TINYVALUE) then
+             ! Calculate environmental minimum (10% retention)
+             env_minimum = 0.1_r8 * total_flow
+             available_flow = max(0.0_r8, total_flow - env_minimum)
+             
+             ! Initialize diversions
+             actual_diversion(:) = 0.0_r8
+             
+             ! Calculate actual diversions based on priority and availability
+             do k = 2, rtmCTL%num_downstream(iunit)  ! Skip k=1 (primary downstream)
+                demand = rtmCTL%ibt_demand(iunit,k)
+                if (demand > TINYVALUE .and. available_flow > TINYVALUE) then
+                   actual_diversion(k) = min(demand, available_flow)
+                   available_flow = available_flow - actual_diversion(k)
+                   ! Debug logging for demand processing
+                   write(iulog,*) 'IBT DEMAND DEBUG: unit=', iunit, ' k=', k, ' demand=', demand, &
+                                ' actual_diversion=', actual_diversion(k), ' remaining_available=', available_flow
+                else
+                   actual_diversion(k) = 0.0_r8
+                endif
+             end do
+             
+             ! Convert diversions to ratios for MCT matrix operations
+             ! Calculate total diverted flow
+             total_diverted = 0.0_r8
+             do k = 2, rtmCTL%num_downstream(iunit)
+                total_diverted = total_diverted + actual_diversion(k)
+             end do
+             
+             ! Set ratios for all channels
+             do k = 1, rtmCTL%num_downstream(iunit)
+                if (total_flow > TINYVALUE) then
+                   if (k == 1) then
+                      ! Main channel gets remaining flow after diversions
+                      rtmCTL%bifurc_ratio(iunit,k) = (total_flow - total_diverted) / total_flow
+                      write(iulog,*) 'IBT RATIO CALC DEBUG: unit=', iunit, ' k=', k, ' main_channel_flow=', (total_flow - total_diverted), &
+                                   ' total_flow=', total_flow, ' ratio=', rtmCTL%bifurc_ratio(iunit,k)
+                   else
+                      ! Diversion channels get their specific ratios
+                      rtmCTL%bifurc_ratio(iunit,k) = actual_diversion(k) / total_flow
+                      if (actual_diversion(k) > TINYVALUE) then
+                         write(iulog,*) 'IBT RATIO CALC DEBUG: unit=', iunit, ' k=', k, ' actual_diversion=', actual_diversion(k), &
+                                      ' total_flow=', total_flow, ' ratio=', rtmCTL%bifurc_ratio(iunit,k)
+                      endif
+                   endif
+                else
+                   rtmCTL%bifurc_ratio(iunit,k) = 0.0_r8
+                endif
+             end do
+             
+             ! Debug: Verify ratios sum to 1.0
+             ratio_sum = 0.0_r8
+             do k = 1, rtmCTL%num_downstream(iunit)
+                ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(iunit,k)
+             end do
+             write(iulog,*) 'IBT RATIO SUM DEBUG: unit=', iunit, ' ratio_sum=', ratio_sum, ' should_be_1.0'
+             
+             ! Primary downstream gets remaining flow (environmental minimum + unused diversions)
+             ratio_sum = 0.0_r8
+             do k = 2, max_downstream
+                ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(iunit,k)
+             end do
+             remaining_ratio = 1.0_r8 - ratio_sum
+             rtmCTL%bifurc_ratio(iunit,1) = max(0.0_r8, remaining_ratio)
+             
+             ! Environmental flow protection warning
+             if (remaining_ratio < 0.09_r8) then  ! Less than 9% remaining (close to 10% minimum)
+                write(iulog,*) 'IBT WARNING: Environmental minimum triggered at cell ', iunit, &
+                               ' remaining ratio=', remaining_ratio, ' total_flow=', total_flow
+             endif
+             
+             else
+                ! No flow available - reset all ratios for IBT cells
+                rtmCTL%bifurc_ratio(iunit,1) = 1.0_r8
+                do k = 2, max_downstream
+                   rtmCTL%bifurc_ratio(iunit,k) = 0.0_r8
+                end do
+             endif
+          endif
+          ! Cells without IBT demands keep their existing fixed ratios (no changes needed)
+       endif
+    end do
+    
+  end subroutine UpdateIBTRatios
+
+!-----------------------------------------------------------------------
+
+  subroutine UpdateMCTMatrixWeights()
+  ! !DESCRIPTION: Efficiently update only the matrix weights for bifurcation points
+  ! This enables dynamic IBT ratios without full matrix reconstruction
+    use RtmVar, only : max_downstream
+    use RunoffMod, only : SMatP_upstrm
+    use perf_mod, only: t_startf, t_stopf
+    implicit none
+    
+    integer :: iunit, k, matrix_index, num_updates
+    integer :: iwgt
+    character(len=*), parameter :: subname = '(UpdateMCTMatrixWeights)'
+    
+    ! Get weight index for MCT matrix (correct API usage)
+    iwgt = mct_sMat_indexRA(SMatP_upstrm%Matrix, 'weight')
+    
+    ! Performance monitoring
+    call t_startf('mosart_matrix_update')
+    num_updates = 0
+    
+    ! Update only bifurcation points with stored matrix indices
+    do iunit = rtmCTL%begr, rtmCTL%endr
+       if (rtmCTL%is_bifurc(iunit)) then
+          do k = 1, rtmCTL%num_downstream(iunit)
+             matrix_index = rtmCTL%matrix_idx(iunit,k)
+             if (matrix_index > 0) then
+                ! Update only this specific matrix weight (correct API usage)
+                SMatP_upstrm%Matrix%data%rAttr(iwgt, matrix_index) = rtmCTL%bifurc_ratio(iunit,k)
+                num_updates = num_updates + 1
+             endif
+          end do
+       endif
+    end do
+    
+    call t_stopf('mosart_matrix_update')
+    
+    if (masterproc) write(iulog,*) 'Updated ', num_updates, ' MCT matrix weights for IBT dynamic ratios'
+    
+  end subroutine UpdateMCTMatrixWeights
+
+!-----------------------------------------------------------------------
+
+  subroutine InitializeBifurcationTracking()
+  ! !DESCRIPTION: Initialize bifur_amount tracking - called before MCT operation
+    implicit none
+    
+    ! Initialize all cells to zero
+    rtmCTL%bifur_amount(:,:) = 0.0_r8
+    rtmCTL%bifur_amount_nt1(:) = 0.0_r8
+    rtmCTL%bifur_amount_nt2(:) = 0.0_r8
+    
+  end subroutine InitializeBifurcationTracking
+
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+
 
   subroutine updateState_hillslope(iunit,nt)
   ! !DESCRIPTION: update the state variables at hillslope

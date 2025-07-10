@@ -12,7 +12,7 @@ module RunoffMod
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
   use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag, &
-                               bifurcflag, max_downstream
+                               bifurcflag, ibtflag, max_downstream
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -48,7 +48,10 @@ module RunoffMod
      integer , pointer :: dsig_all(:,:)    ! all downstream indices from NetCDF file (i,j) where j=1:max_downstream
      integer , pointer :: num_downstream(:) ! number of downstream connections per cell (1 for normal, >1 for bifurcation)
      real(r8), pointer :: bifurc_ratio(:,:) ! bifurcation split ratios (i,j) where j=1:max_downstream  
+     real(r8), pointer :: ibt_demand(:,:)  ! IBT diversion demands in m³/s (i,j) where j=1:max_downstream
+     real(r8), pointer :: bifurc_base_flow(:) ! base flow used for IBT ratio calculation consistency
      logical , pointer :: is_bifurc(:)      ! flag indicating bifurcation points
+     integer , pointer :: matrix_idx(:,:)   ! MCT matrix indices for bifurcation points (i,j) where j=1:max_downstream
      integer , pointer :: outletg(:)       ! outlet index, global index
      real(r8), pointer :: rmask(:)         ! general mask of cell 1=land, 2=ocean, 3=outlet
      real(r8), pointer :: rgindex(:)       ! global index consistent with map file
@@ -184,6 +187,11 @@ module RunoffMod
 
      real(r8), pointer :: ssh(:)
      real(r8), pointer :: yr_nt1(:)
+     
+     !    - bifurcation transfer tracking
+     real(r8), pointer :: bifur_amount(:,:)  ! bifurcation transfer amount (m3/s) - negative at source, positive at destination
+     real(r8), pointer :: bifur_amount_nt1(:)  ! bifurcation transfer amount for tracer 1 (liquid water)
+     real(r8), pointer :: bifur_amount_nt2(:)  ! bifurcation transfer amount for tracer 2 (ice)
      
   end type runoff_flow
 
@@ -551,6 +559,7 @@ module RunoffMod
 
   public :: RunoffInit
   public :: ValidateBifurcationPoints
+  public :: FinalizeBifurcationTracking
 
 contains
 
@@ -643,7 +652,13 @@ contains
              rtmCTL%iDown_all(begr:endr,max_downstream), &
              rtmCTL%num_downstream(begr:endr),    &
              rtmCTL%bifurc_ratio(begr:endr,max_downstream), &
+             rtmCTL%ibt_demand(begr:endr,max_downstream), &
+             rtmCTL%bifurc_base_flow(begr:endr),  &
              rtmCTL%is_bifurc(begr:endr),         &
+             rtmCTL%matrix_idx(begr:endr,max_downstream), &
+             rtmCTL%bifur_amount(begr:endr,nt_rtm), &
+             rtmCTL%bifur_amount_nt1(begr:endr), &
+             rtmCTL%bifur_amount_nt2(begr:endr), &
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
@@ -680,7 +695,15 @@ contains
     rtmCTL%iDown_all(:,:) = 0
     rtmCTL%num_downstream(:) = 1  ! Default to 1 downstream connection
     rtmCTL%bifurc_ratio(:,:) = 0.0_r8
+    rtmCTL%ibt_demand(:,:) = 0.0_r8  ! Initialize IBT demands to zero
+    rtmCTL%bifurc_base_flow(:) = 0.0_r8  ! Initialize base flow to zero
     rtmCTL%is_bifurc(:) = .false.
+    rtmCTL%matrix_idx(:,:) = -1      ! Initialize to invalid index
+    rtmCTL%bifur_amount(:,:) = 0.0_r8  ! Initialize bifurcation transfer amounts
+    
+    ! Initialize separate arrays for individual tracers (for history output)
+    rtmCTL%bifur_amount_nt1(:) = 0.0_r8
+    rtmCTL%bifur_amount_nt2(:) = 0.0_r8
     
     rtmCTL%runoff(:,:)     = 0._r8
     rtmCTL%runofflnd(:,:)  = spval
@@ -767,7 +790,7 @@ contains
     use shr_mpi_mod, only : shr_mpi_sum
     !
     ! !LOCAL VARIABLES:
-    integer :: i, j, k, downstream_id, num_invalid, num_circular, num_bifurc, g_num_bifurc
+    integer :: i, j, downstream_id, num_invalid, num_circular, num_bifurc, g_num_bifurc, local_count
     logical :: is_valid
     character(len=*), parameter :: subname = 'ValidateBifurcationPoints'
     !-----------------------------------------------------------------------
@@ -809,21 +832,15 @@ contains
              end if
           end do
 
-          ! Check that bifurcation ratios sum to 1.0 (within tolerance)
-          if (abs(sum(rtmCTL%bifurc_ratio(i,1:rtmCTL%num_downstream(i))) - 1.0_r8) > 1.e-6_r8) then
-             if (masterproc) then
-                write(iulog,*) trim(subname), ' ERROR: Bifurcation ratios do not sum to 1.0 for point ', &
-                     rtmCTL%gindex(i), ' sum = ', sum(rtmCTL%bifurc_ratio(i,1:rtmCTL%num_downstream(i)))
-             end if
-             is_valid = .false.
-             num_invalid = num_invalid + 1
-          end if
+          ! Check bifurcation ratios and handle partial ratio scenarios
+          call ValidateAndAdjustRatios(i, is_valid, num_invalid)
        end if
     end do
 
     ! Sum local counts to get global count
+    local_count = num_bifurc  ! Copy to separate variable to avoid MPI buffer aliasing
     g_num_bifurc = 0
-    call shr_mpi_sum(num_bifurc, g_num_bifurc, mpicom_rof)
+    call shr_mpi_sum(local_count, g_num_bifurc, mpicom_rof, 'bifurcation validation', all=.false.)
 
     ! Report validation results
     if (masterproc) then
@@ -848,6 +865,201 @@ contains
   end subroutine ValidateBifurcationPoints
 
 !-----------------------------------------------------------------------
+
+  subroutine ValidateAndAdjustRatios(i, is_valid, num_invalid)
+    !
+    ! !DESCRIPTION:
+    ! Validate and adjust bifurcation ratios with improved handling of partial ratios
+    !
+    ! !USES:
+    use shr_sys_mod, only : shr_sys_abort
+    use RtmSpmd, only : masterproc
+    use RtmVar, only : max_downstream
+    !
+    ! !ARGUMENTS:
+    integer, intent(in) :: i                  ! cell index
+    logical, intent(inout) :: is_valid        ! validity flag
+    integer, intent(inout) :: num_invalid     ! invalid count
+    !
+    ! !LOCAL VARIABLES:
+    integer :: j, num_defined_ratios, num_downstream_connections
+    real(r8) :: ratio_sum, remaining_ratio
+    logical :: has_nonzero_ratios
+    character(len=*), parameter :: subname = 'ValidateAndAdjustRatios'
+    !-----------------------------------------------------------------------
+
+    num_downstream_connections = rtmCTL%num_downstream(i)
+    
+    ! Count how many ratios are actually defined (non-zero)
+    num_defined_ratios = 0
+    ratio_sum = 0.0_r8
+    has_nonzero_ratios = .false.
+    
+    do j = 1, num_downstream_connections
+       if (rtmCTL%bifurc_ratio(i,j) > 1.e-12_r8) then
+          num_defined_ratios = num_defined_ratios + 1
+          ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(i,j)
+          has_nonzero_ratios = .true.
+       end if
+    end do
+    
+    ! Handle different scenarios
+    if (.not. has_nonzero_ratios) then
+       ! No ratios defined - set primary downstream to 1.0
+       if (masterproc) then
+          write(iulog,*) trim(subname), ' WARNING: No ratios defined for bifurcation point ', &
+               rtmCTL%gindex(i), ' - setting primary downstream to 1.0'
+       end if
+       rtmCTL%bifurc_ratio(i,1) = 1.0_r8
+       do j = 2, max_downstream
+          rtmCTL%bifurc_ratio(i,j) = 0.0_r8
+       end do
+       
+    else if (num_defined_ratios < num_downstream_connections) then
+       ! Partial ratios defined (N dnID, M ratios where N > M)
+       if (ratio_sum > 1.0_r8 + 1.e-6_r8) then
+          ! Sum exceeds 1.0 - error condition
+          if (masterproc) then
+             write(iulog,*) trim(subname), ' ERROR: ', num_downstream_connections, ' downstream connections with ', &
+                  num_defined_ratios, ' ratios found for point ', rtmCTL%gindex(i), &
+                  ' but ratios sum to ', ratio_sum, ' > 1.0'
+          end if
+          is_valid = .false.
+          num_invalid = num_invalid + 1
+       else
+          ! Sum <= 1.0 - assign remaining to primary downstream
+          remaining_ratio = 1.0_r8 - ratio_sum
+          if (rtmCTL%bifurc_ratio(i,1) < 1.e-12_r8) then
+             ! Primary downstream ratio not defined, assign remaining
+             rtmCTL%bifurc_ratio(i,1) = remaining_ratio
+             if (masterproc) then
+                write(iulog,*) trim(subname), ' WARNING: ', num_downstream_connections, ' downstream connections with ', &
+                     num_defined_ratios, ' ratios found for point ', rtmCTL%gindex(i), &
+                     ' - assigning remaining ratio ', remaining_ratio, ' to primary downstream'
+             end if
+          else
+             ! Primary downstream already defined, just report
+             if (masterproc) then
+                write(iulog,*) trim(subname), ' INFO: ', num_downstream_connections, ' downstream connections with ', &
+                     num_defined_ratios, ' ratios found for point ', rtmCTL%gindex(i), &
+                     ' - ratios sum to ', ratio_sum
+             end if
+          end if
+       end if
+       
+    else if (num_defined_ratios > num_downstream_connections) then
+       ! More ratios than connections (should not happen with current data structure)
+       if (masterproc) then
+          write(iulog,*) trim(subname), ' ERROR: ', num_downstream_connections, ' downstream connections but ', &
+               num_defined_ratios, ' ratios found for point ', rtmCTL%gindex(i)
+       end if
+       is_valid = .false.
+       num_invalid = num_invalid + 1
+       
+    else
+       ! All ratios defined - check if they sum to 1.0
+       if (abs(ratio_sum - 1.0_r8) > 1.e-6_r8) then
+          if (masterproc) then
+             write(iulog,*) trim(subname), ' ERROR: ', num_downstream_connections, ' downstream connections with ', &
+                  num_defined_ratios, ' ratios found for point ', rtmCTL%gindex(i), &
+                  ' but ratios sum to ', ratio_sum, ' instead of 1.0'
+          end if
+          is_valid = .false.
+          num_invalid = num_invalid + 1
+       end if
+    end if
+
+  end subroutine ValidateAndAdjustRatios
+
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+
+  subroutine FinalizeBifurcationTracking()
+  ! !DESCRIPTION: Calculate and record bifurcation transfers - called after MCT operation
+    use RtmSpmd, only : masterproc, iam
+    use rof_cpl_indices, only : nt_rtm
+    use RtmVar, only : iulog
+    implicit none
+    
+    real(r8), parameter :: TINYVALUE = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
+    
+    integer :: iunit, nt, k, dst_global_id, dst_local_unit
+    real(r8) :: source_flow, diverted_flow, transfer_flow
+    character(len=*), parameter :: subname = '(FinalizeBifurcationTracking)'
+    
+    ! Process each bifurcation point on this processor
+    do iunit = rtmCTL%begr, rtmCTL%endr
+       if (rtmCTL%is_bifurc(iunit)) then
+          
+          do nt = 1, nt_rtm
+             source_flow = TRunoff%erout(iunit,nt)
+             
+             ! Calculate total diverted flow (sum of secondary channels k>1)
+             diverted_flow = 0.0_r8
+             do k = 2, rtmCTL%num_downstream(iunit)
+                ! Use stored base flow for consistent ratio application
+                if (rtmCTL%bifurc_base_flow(iunit) > TINYVALUE) then
+                   ! For IBT mode, use absolute demand instead of ratio-based calculation
+                   if (rtmCTL%ibt_demand(iunit,k) > TINYVALUE) then
+                      transfer_flow = sign(rtmCTL%ibt_demand(iunit,k), source_flow)
+                      write(iulog,*) 'IBT TRACKING DEBUG: unit=', iunit, ' k=', k, ' using_direct_demand=', rtmCTL%ibt_demand(iunit,k), &
+                                   ' source_flow=', source_flow, ' transfer_flow=', transfer_flow
+                   else
+                      transfer_flow = sign(rtmCTL%bifurc_base_flow(iunit), source_flow) * rtmCTL%bifurc_ratio(iunit,k)
+                      write(iulog,*) 'IBT TRACKING DEBUG: unit=', iunit, ' k=', k, ' using_ratio=', rtmCTL%bifurc_ratio(iunit,k), &
+                                   ' base_flow=', rtmCTL%bifurc_base_flow(iunit), ' transfer_flow=', transfer_flow
+                   endif
+                else
+                   transfer_flow = source_flow * rtmCTL%bifurc_ratio(iunit,k)
+                   write(iulog,*) 'IBT TRACKING DEBUG: unit=', iunit, ' k=', k, ' using_original_method, transfer_flow=', transfer_flow
+                endif
+                diverted_flow = diverted_flow + transfer_flow
+                
+                ! Find destination and record positive transfer if on this processor
+                dst_global_id = rtmCTL%dsig_all(iunit,k)
+                call FindLocalUnit(dst_global_id, dst_local_unit)
+                if (dst_local_unit > 0) then
+                   rtmCTL%bifur_amount(dst_local_unit,nt) = rtmCTL%bifur_amount(dst_local_unit,nt) + transfer_flow
+                   ! Also update separate arrays for history output
+                   if (nt == 1) rtmCTL%bifur_amount_nt1(dst_local_unit) = rtmCTL%bifur_amount_nt1(dst_local_unit) + transfer_flow
+                   if (nt == 2) rtmCTL%bifur_amount_nt2(dst_local_unit) = rtmCTL%bifur_amount_nt2(dst_local_unit) + transfer_flow
+                endif
+             end do
+             
+             ! Record negative diverted amount at source (bifurcation point)
+             rtmCTL%bifur_amount(iunit,nt) = -diverted_flow
+             ! Also update separate arrays for history output
+             if (nt == 1) rtmCTL%bifur_amount_nt1(iunit) = -diverted_flow
+             if (nt == 2) rtmCTL%bifur_amount_nt2(iunit) = -diverted_flow
+             
+          end do
+       end if
+    end do
+    
+    
+  end subroutine FinalizeBifurcationTracking
+
+  subroutine FindLocalUnit(global_id, local_unit)
+  ! !DESCRIPTION: Find local unit index for a given global ID on this processor
+    implicit none
+    
+    integer, intent(in) :: global_id
+    integer, intent(out) :: local_unit
+    
+    integer :: iunit
+    
+    local_unit = 0  ! Initialize to "not found"
+    
+    ! Search through local units on this processor
+    do iunit = rtmCTL%begr, rtmCTL%endr
+       if (rtmCTL%gindex(iunit) == global_id) then
+          local_unit = iunit
+          return
+       endif
+    end do
+    
+  end subroutine FindLocalUnit
 
 !-----------------------------------------------------------------------
 

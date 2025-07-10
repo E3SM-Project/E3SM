@@ -126,6 +126,14 @@ Default: .false.
 If .true., bifurcation module will be turned on. This module will allow the river routing to split into multiple branches at a bifurcation point.
 </entry>
 
+<entry id="ibtflag" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., inter-basin transfer (IBT) mode will be enabled. This allows volume-based water diversions with environmental flow protection instead of ratio-based splitting.
+</entry>
+
 <entry id="data_bgc_fluxes_to_ocean_flag" 
        type="logical" 
        category="mosart"
