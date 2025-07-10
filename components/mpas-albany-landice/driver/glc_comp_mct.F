@@ -1447,6 +1447,11 @@ contains
             n = n + 1
             if (trim(config_smb_source) == 'coupler') then
                sfcMassBal(i) = x2g_g % rAttr(index_x2g_Flgl_qice, n)
+            elseif (trim(config_smb_source) == 'file') then
+               ! do nothing, use data read-in from file
+            else
+               call mpas_log_write("Unknown value for 'config_smb_source'", MPAS_LOG_ERR)
+               errorCode = ior(errorCode, 1)
             endif
             floatingBasalMassBal(i) = x2g_g % rAttr(index_x2g_Fogx_qiceli, n)
             if (nISMIP6OceanLayers > 0) then

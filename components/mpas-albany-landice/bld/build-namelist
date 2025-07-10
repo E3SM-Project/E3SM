@@ -167,7 +167,7 @@ my $NTASKS_GLC        = $opts{'ntasks_glc'};
 my $MALI_PROGNOSTIC_MODE = uc($opts{'mali_prognostic_mode'});
 my $GLC_NZOC          = $opts{'glc_nzoc'};
 my $OCN_GLC_ISMF_COUPLING = $opts{'ocn_glc_ismf_coupling'};
-my $GLC_TWO_WAY_COUPLING = $opts{'ocn_glc_two_way_coupling'};
+my $GLC_TWO_WAY_COUPLING = $opts{'glc_two_way_coupling'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -474,7 +474,7 @@ if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_advection_coef_3rd_order');
 add_default($nl, 'config_restore_thickness_after_advection');
-if ($GLC_TWO_WAY_COUPLING eq 'TRUE') {
+if ($GLC_TWO_WAY_COUPLING eq 'True') {
     add_default($nl, 'config_smb_source');
 } else {
     add_default($nl, 'config_smb_source', 'val'=>"file");
