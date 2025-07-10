@@ -1224,6 +1224,15 @@ void compute_mask (const Field& x, const ST value, Field& m)
   }
 }
 
+#define EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(C) \
+extern template void impl::compute_mask<C, int>(const Field&, const int, Field&); \
+extern template void impl::compute_mask<C, float>(const Field&, const float, Field&); \
+extern template void impl::compute_mask<C, double>(const Field&, const double, Field&)
+
+// Only these two, since they are the only ones used so far (in IO)
+EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::NE);
+EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::LE);
+
 } // namespace impl
 
 } // namespace scream
