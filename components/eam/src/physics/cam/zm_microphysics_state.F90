@@ -3,8 +3,12 @@ module zm_microphysics_state
    ! Purpose: microphysics state structure definition and methods for ZM
    ! Original Author: Xialiang Song and Guang Zhang, June 2010
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp
+#else
    use shr_kind_mod,     only: r8=>shr_kind_r8
    use ppgrid,           only: pcols, pver, pverp
+#endif
 
    public :: zm_microp_st           ! structure to hold state and tendency of ZM microphysics
    public :: zm_microp_st_alloc     ! allocate zm_microp_st variables

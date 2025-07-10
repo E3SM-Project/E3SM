@@ -262,6 +262,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
     </shoc>
 
+    <!-- <zm inherit="atm_proc_base"> -->
+    <!-- </zm> -->
+
     <!-- Basic options for each mam4 atm process -->
     <mam4_atm_proc_base inherit="atm_proc_base">
       <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
