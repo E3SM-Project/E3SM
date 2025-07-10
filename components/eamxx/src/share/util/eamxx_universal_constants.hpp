@@ -17,10 +17,21 @@ template<typename T>
 struct DefaultFillValue {
   static constexpr bool is_float = std::is_floating_point<T>::value;
   static constexpr bool is_int   = std::is_integral<T>::value;
+  // static inline T value = is_int ? std::numeric_limits<int>::max() / 2 :
   static constexpr T value = is_int ? std::numeric_limits<int>::max() / 2 :
 	  is_float ? std::numeric_limits<float>::max() / 1e5 : std::numeric_limits<char>::max();
-
 };
+
+template<typename T>
+// T fill_value () {
+constexpr T fill_value () {
+  return DefaultFillValue<T>::value;
+}
+
+// template<typename T>
+// void set_fill_value (const T value) {
+//   DefaultFillValue<T>.value = value;
+// }
 
 } // namespace constants
 

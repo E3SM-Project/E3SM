@@ -39,10 +39,12 @@ project:
   name: EAMxx
   baseline_gen_label: baseline_gen
   baseline_summary_file: baseline_list
-  cmake_vars_names:
-    enable_baselines:
+  cmake_settings:
+    baselines_on:
       SCREAM_ENABLE_BASELINE_TESTS: ON
-    generate_baselines:
+    baselines_off:
+      SCREAM_ENABLE_BASELINE_TESTS: OFF
+    baselines_only:
       SCREAM_ONLY_GENERATE_BASELINES: ON
     baselines_dir: SCREAM_BASELINES_DIR
   cdash:
@@ -77,9 +79,9 @@ machines:
         - 'module purge'
         - 'module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas'
         - 'export GATOR_INITIAL_MB=4000MB'
-        - 'export NetCDF_Fortran_ROOT=$(nf-config --prefix)'
-        - 'export NetCDF_C_ROOT=$(nc-config --prefix)'
-        - 'export PnetCDF_C_ROOT=$(pnetcdf-config --prefix)'
+        - 'export NetCDF_Fortran_ROOT=/projects/sems/install/rhel9-x86_64/sems/tpl/netcdf-fortran/4.6.1/gcc/11.4.0/openmpi/4.1.6/rztypf2'
+        - 'export NetCDF_C_ROOT=/projects/sems/install/rhel9-x86_64/sems/tpl/netcdf-c/4.9.2/gcc/11.4.0/openmpi/4.1.6/po6gjlz'
+        - 'export PnetCDF_C_ROOT=/projects/sems/install/rhel9-x86_64/sems/tpl/parallel-netcdf/1.12.3/gcc/11.4.0/openmpi/4.1.6/llgqd5t'
     baselines_dir: "/sems-data-store/ACME/baselines/scream/master-baselines"
     node_regex: mappy
     valg_supp_file: "${project.root_dir}/scripts/jenkins/valgrind/mappy.supp"

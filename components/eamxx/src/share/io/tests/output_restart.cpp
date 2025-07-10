@@ -27,7 +27,7 @@
 
 namespace scream {
 
-constexpr Real FillValue = constants::DefaultFillValue<float>().value;
+constexpr Real fillValue = constants::fill_value<float>();
 
 std::shared_ptr<FieldManager>
 get_test_fm(const std::shared_ptr<const AbstractGrid>& grid);
@@ -77,7 +77,6 @@ TEST_CASE("output_restart","io")
   ekat::ParameterList output_params;
   output_params.set<std::string>("floating_point_precision","real");
   output_params.set<std::vector<std::string>>("field_names",{"field_1", "field_2", "field_3", "field_4","field_5"});
-  output_params.set<double>("fill_value",FillValue);
   output_params.set<int>("flush_frequency",1);
   output_params.sublist("restart").set<bool>("force_new_file",false);
   output_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
@@ -274,8 +273,8 @@ void time_advance (const FieldManager& fm,
                 if (fname == "field_5") {
                   // field_5 is used to test restarts w/ filled values, so
                   // we cycle between filled and unfilled states.
-                  v(i,j,k) = (v(i,j,k)==FillValue) ? dt :
-                    ( (v(i,j,k)==1.0) ? 2.0*dt : FillValue );
+                  v(i,j,k) = (v(i,j,k)==fillValue) ? dt :
+                    ( (v(i,j,k)==1.0) ? 2.0*dt : fillValue );
                 } else {
                               v(i,j,k) += dt;
                 }
