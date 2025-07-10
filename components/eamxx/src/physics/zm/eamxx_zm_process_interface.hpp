@@ -5,6 +5,8 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "physics/zm/zm_functions.hpp"
 
+// #include "physics/zm/fortran_bridge/zm_eamxx_bridge.hpp"
+
 namespace scream
 {
 

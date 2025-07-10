@@ -7,6 +7,8 @@
 #include "eamxx_zm_process_interface.hpp"
 #include "physics/share/physics_constants.hpp"
 
+#include "fortran_bridge/zm_eamxx_bridge.hpp"
+
 namespace scream
 {
 
@@ -71,7 +73,11 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::initialize_impl (const RunType /* run_type */)
 {
-  // placeholder for initialization
+  
+  std::cout << "Hello from ZMDeepConvection::initialize_impl" << std::endl;
+
+  // initialize variables on the fortran side
+  zm::zm_eamxx_bridge_init();
 }
 
 /*------------------------------------------------------------------------------------------------*/
