@@ -72,7 +72,11 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::initialize_impl (const RunType /* run_type */)
 {
-  // placeholder for initialization
+  
+  std::cout << "Hello from ZMDeepConvection::initialize_impl" << std::endl;
+
+  // initialize variables on the fortran side
+  zm::zm_eamxx_bridge_init();
 }
 
 /*------------------------------------------------------------------------------------------------*/
