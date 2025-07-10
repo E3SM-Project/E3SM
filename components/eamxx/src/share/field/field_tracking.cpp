@@ -11,8 +11,8 @@ void FieldTracking::add_customer (const std::weak_ptr<AtmosphereProcess>& custom
 }
 
 void FieldTracking::
-add_to_group (const std::shared_ptr<const FieldGroupInfo>& group) {
-  m_groups.insert(group);
+add_group (const std::string& group_name) {
+  m_groups.insert(group_name);
 }
 
 void FieldTracking::update_time_stamp (const TimeStamp& ts) {
