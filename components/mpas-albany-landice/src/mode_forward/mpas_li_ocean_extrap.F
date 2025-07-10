@@ -124,7 +124,6 @@ contains
       integer, dimension(:), pointer :: seedMask, growMask, connectedMarineMask, altConnectedMarineMask
       real (kind=RKIND), dimension(:,:,:), pointer :: oceanField
       integer, dimension(:), allocatable :: alteredCells
-      integer, dimension(:), allocatable :: alteredCellsIter
       ! No init is needed.
       err = 0
       err_tmp = 0
@@ -176,6 +175,7 @@ contains
          ! sill blocking 
          if ( (config_TF_vertical_calc == '200-500') .and. (config_extrap_sill_blocking) ) then
             call mpas_log_write("config_TF_vertical_calc set to '200-500' is not compatible with config_extrap_sill_blocking", MPAS_LOG_ERR)         
+            err = ior(err, 1)
          endif
 
          ! create a 2D mask based on the open ocean + floating ice + grounded ice mask to be used for defining the location of the n-extra cells into the grounded ice
@@ -406,7 +406,6 @@ contains
 
          ! deallocate scratch fields used for flood fill
          call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
-         call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
          ! flood-fill the valid ocean mask and TF field through
          ! horizontal and vertial extrapolation
@@ -453,13 +452,13 @@ contains
             
          ! As a last step, identify all inland seas and lakes and set TF to zero in these
          ! locations. Otherwise, these cells are given an invalid_TF value that
-         ! could result in runaway melting.
+         ! could result in runaway melting. Need a scratch Registry variable to
+         ! iterate through and perform halo updates on, so borrow growMask,
+         ! which is no longer used at this point in the routine
 
-         allocate(alteredCells(nCells))
+         allocate(alteredCells(nCells+1))
          alteredCells(:) = 0
-         
-         allocate(alteredCellsIter(nCells))
-         alteredCellsIter(:) = 0
+         growMask(:) = 0
 
          do iCell = 1, nCells
             if ( (altConnectedMarineMask(iCell) /= connectedMarineMask(iCell)) .and. (thickness(iCell) == 0.0_RKIND) ) then
@@ -474,10 +473,14 @@ contains
                      ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = 0.0_RKIND
                   endif
                enddo
-               alteredCellsIter(iCell) = 1
+               growMask(iCell) = 1
             endif
          enddo
-         
+
+         call mpas_timer_start("halo_updates")
+         call mpas_dmpar_field_halo_exch(domain,'growMask')
+         call mpas_timer_stop("halo_updates")
+
          do iter = 1, nCellsExtra
             ! Iterate through neighboring cells and alter neighbors within
             ! config_ocean_data_extrap_ncells_extra that have ice and are
@@ -485,8 +488,9 @@ contains
             ! GL, and we need a buffer zone in case the glacier retreats to invalid
             ! TF values in the interior.
 
-            alteredCells = alteredCellsIter
-            alteredCellsIter(:) = 0
+            alteredCells = growMask
+            growMask(:) = 0
+
             do iCell = 1, nCells
                if (alteredCells(iCell) == 1) then
                   do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -502,18 +506,18 @@ contains
                               if ((oceanSalinity(iLayer,jCell) < min_allowable_salinity) .or. &
                                     (oceanSalinity(iLayer,jCell) > max_allowable_salinity)) then 
                                  oceanSalinity(iLayer,jCell) = default_salinity
-                                 alteredCellsIter(jCell) = 1
+                                 growMask(jCell) = 1
                               endif
                               if ((oceanTemperature(iLayer,jCell) < min_allowable_temperature) .or. &
                                     (oceanTemperature(iLayer,jCell) > max_allowable_temperature)) then
                                  oceanTemperature(iLayer,jCell) = (gamma1 * oceanSalinity(iLayer,jCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
-                                 alteredCellsIter(jCell) = 1
+                                 growMask(jCell) = 1
                               endif
                            endif
                            if ((ismip6shelfMelt_3dThermalForcing(iLayer,jCell) < min_allowable_TF) .or. &
                                  (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) > max_allowable_TF)) then 
                               ismip6shelfMelt_3dThermalForcing(iLayer,jCell) = 0.0_RKIND
-                              alteredCellsIter(jCell) = 1
+                              growMask(jCell) = 1
                            endif
                         endif
                      enddo
@@ -524,9 +528,13 @@ contains
             call mpas_dmpar_field_halo_exch(domain,'oceanSalinity')
             call mpas_dmpar_field_halo_exch(domain,'oceanTemperature')
             call mpas_dmpar_field_halo_exch(domain,'ismip6shelfMelt_3dThermalForcing')
+            call mpas_dmpar_field_halo_exch(domain,'growMask')
             call mpas_timer_stop("halo_updates")
          enddo
-      
+         
+         deallocate(alteredCells)
+         call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
+         
       endif
    !--------------------------------------------------------------------
 
@@ -926,6 +934,7 @@ contains
       if ( (.not. config_TF_iceberg_melt == 'off') .and. (.not. config_TF_iceberg_melt == 'on') &
               .and. (.not. config_TF_iceberg_melt == 'mask') ) then
          call mpas_log_write("Unknown config_TF_iceberg_melt specified. Options are: 'on', 'off', or 'mask'", MPAS_LOG_ERR)
+         err = ior(err, 1)
       endif
       
       ! Main difference between TF parameterization is how we collapse into 2d, which happens in mpas_li_ice_shelt_melt.F

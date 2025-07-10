@@ -1569,19 +1569,26 @@ module li_iceshelf_melt
                            kk = kk + 1
                         enddo
                         ! If bed is shallower than first layer, use TF from the first layer.
-                        ! If bed is deeper than the bottom ocean layer, use TF from the bottom layer.
-                        if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
+                        if (kk == 1) then
                            TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell)
                         
-                        ! For all other bed depths, interpolate linearly between layers above and below bed depth.
+                        elseif (kk == nISMIP6OceanLayers) then
+                           ! If bed is deeper than the bottom ocean layer, use
+                           ! TF from the bottom layer adjusted for depth
+                           ! dependence
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk,iCell) - & 
+                                   ((zOcean(kk) - bedTopography(iCell)) * oceanFreezingTempDepthDependence)
                         else
-                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1,iCell) + & 
+                           ! For all other bed depths, use layer TF adjusted for
+                           ! depth dependence
+                           TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1,iCell) - & 
                                    ((zOcean(kk-1) - bedTopography(iCell)) * oceanFreezingTempDepthDependence)
                         endif
                      endif
                   enddo
                else
                   call mpas_log_write("Unknown config_TF_vertical_calc specified. Options are: 'seafloor','200-500',or 'average' ", MPAS_LOG_ERR)
+                  err = ior(err, 1)
                endif
          
                TFocean = TFocean + ismip6shelfMelt_deltaT !apply dT correction
