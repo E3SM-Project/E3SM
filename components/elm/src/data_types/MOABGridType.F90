@@ -49,9 +49,37 @@ module MOABGridType
   integer, dimension(100) :: tag_indices
   integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
 
+  type, public :: grid_cell
+     integer           :: num_owned     ! number of owned "active" grid cells
+     integer           :: num_ghost     ! number of ghost "active" grid cells
+     integer           :: num_ghosted   ! number of owned + ghost "active" grid cells
+     integer           :: num_global    ! number of global "active" grid cells
+
+     integer, pointer  :: natural_id(:) ! [num_ghosted] ID of cell in the full mesh, while accounting for active and inactive cells
+     integer, pointer  :: is_owned(:)   ! [num_ghosted] true if the grid cell locally owned
+     integer, pointer  :: owner_rank(:) ! [num_ghosted] MPI rank that owns the cell
+
+     real(r8), pointer :: lat(:)        ! [num_ghosted] latitude of the cell
+     real(r8), pointer :: lon(:)        ! [num_ghosted] longitude of the cell
+
+  end type grid_cell
+  
+  type, public :: grid_vertex
+     integer           :: num_owned     ! number of owned "active" grid vertices
+     integer           :: num_ghost     ! number of ghost "active" grid vertices
+     integer           :: num_ghosted   ! number of owned + ghost "active" grid vertices
+     integer           :: num_global    ! number of global "active" grid vertices
+
+     integer, pointer  :: natural_id(:) ! [num_ghosted] ID of vertex in the full mesh, while accounting for active and inactiver vertices
+     integer, pointer  :: is_owned(:)   ! [num_ghosted] true if the grid cell locally owned
+     integer, pointer  :: owner_rank(:) ! [num_ghosted] MPI rank that owns the vertex
+
+     real(r8), pointer :: lat(:)        ! [num_ghosted] latitude of the cell
+     real(r8), pointer :: lon(:)        ! [num_ghosted] longitude of the cell
+
+  end type grid_vertex
+  
   ! topological entity list
-  integer :: neg, neoproc, negproc, neproc   ! number of elements: global, owned, ghosted, total
-  integer :: nvg, nvoproc, nvgproc, nvproc   ! number of vertices: global, owned, ghosted, total
   integer :: proc_offset  ! current task offset in the global index space
 
   integer :: topodim      ! topological dimension of the mesh
@@ -59,17 +87,16 @@ module MOABGridType
   integer :: nghostlayers ! number of ghost layer regions
 
   ! topological mapping functionality, local 1d gdc arrays
-  integer , pointer :: globid   (:) => null() ! global index of element
-  integer , pointer :: eowner   (:) => null() ! task owner of element
   integer , pointer :: sblock   (:) => null() ! subgrid block parent of element
 
   !------------------------------------------------------------------------
 
   public :: mlndghostid
-  public :: neg, neoproc, negproc, neproc
-  public :: nvg, nvoproc, nvgproc, nvproc
   public :: proc_offset
-  public :: globid, eowner, sblock
+  public :: sblock
+
+  type(grid_cell), public :: moab_gcell
+  type(grid_cell), public :: moab_gvertex
 
   !------------------------------------------------------------------------
 
@@ -149,28 +176,31 @@ contains
       call endrun('elm_moab_load_grid_file(): failed to get mesh info ')
 
     ! set the local size (owned, ghosted) and total entity list (vertices/elements)
-    nvoproc = nverts(1)  ! owned vertices
-    nvgproc = nverts(2)  ! ghosted vertices
-    nvproc = nverts(3)   ! owned + ghosted vertices
-    neoproc = nelem(1)   ! owned elements
-    negproc = nelem(2)   ! ghosted elements
-    neproc = nelem(3)    ! owned + ghosted elements
+    moab_gvertex%num_owned   = nverts(1) ! owned vertices
+    moab_gvertex%num_ghost   = nverts(2) ! ghost vertices
+    moab_gvertex%num_ghosted = nverts(3) ! owned + ghosted vertices
+
+    moab_gcell%num_owned     = nelem(1)  ! owned elements
+    moab_gcell%num_ghost     = nelem(2)  ! ghost elements
+    moab_gcell%num_ghosted   = nelem(3)  ! owned + ghost elements
+
     proc_offset = 0      ! initialize proc_offset
 
     ! now consolidate/reduce data to root and print information
     ! not really necessary for actual code -- for verbose info only
     ! TODO: combine the Allreduce calls
-    call MPI_Allreduce(nvoproc, nvg, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
-    call MPI_Allreduce(neoproc, neg, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
+    call MPI_Allreduce(moab_gvertex%num_owned, moab_gvertex%num_global, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
+    call MPI_Allreduce(moab_gcell%num_owned  , moab_gcell%num_global  , 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     if (masterproc) then
-      write(iulog, *)  "elm_moab_load_grid_file()(): Number of gridcell vertices: owned=", nvoproc, &
-                        ", ghosted=", nvgproc, ", global=", nvg
-      write(iulog, *)  "elm_moab_load_grid_file()(): Number of gridcell elements: owned=", neoproc, &
-                        ", ghosted=", negproc, ", global=", neg
+      write(iulog, *)  "elm_moab_load_grid_file()(): Number of gridcell vertices: owned=", moab_gvertex%num_owned, &
+                        ", ghost=", moab_gvertex%num_ghost, ", global=", moab_gvertex%num_global
+      write(iulog, *)  "elm_moab_load_grid_file()(): Number of gridcell elements: owned=", moab_gcell%num_owned, &
+                        ", ghost=", moab_gcell%num_ghost, ", global=", moab_gcell%num_global
     endif
 
     ! Determine the cell id offset on each processor
-    call MPI_Scan(neoproc, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
+    !call MPI_Scan(neoproc, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
+    call MPI_Scan(moab_gcell%num_owned, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     if (ierr /= 0) then
        write(iulog,*) 'load_grid_file(): MPI_Scan error failed to get proc_offset'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -227,23 +257,23 @@ contains
 
     ! deallocate(data)
 
-    allocate(globid(neproc), stat=ierr)
+    allocate(moab_gcell%natural_id(moab_gcell%num_ghosted), stat=ierr)
     if (ierr /= 0) then
-        write(iulog,*) 'load_grid_file(): allocation error for globid'
+        write(iulog,*) 'load_grid_file(): allocation error for moab_gcell%natural_id'
         call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    allocate(eowner(neproc), stat=ierr)
+    allocate(moab_gcell%owner_rank(moab_gcell%num_ghosted), stat=ierr)
     if (ierr /= 0) then
-        write(iulog,*) 'load_grid_file(): allocation error for eowner'
+        write(iulog,*) 'load_grid_file(): allocation error for moab_gcell%owner_rank'
         call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    allocate(sblock(neproc), stat=ierr)
+    allocate(sblock(moab_gcell%num_ghosted), stat=ierr)
     if (ierr /= 0) then
         write(iulog,*) 'load_grid_file(): allocation error for sblock'
         call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    ierr = iMOAB_GetVisibleElementsInfo(mlndghostid, neproc, &
-                    globid, eowner, sblock )
+    ierr = iMOAB_GetVisibleElementsInfo(mlndghostid, moab_gcell%num_ghosted, &
+                    moab_gcell%natural_id, moab_gcell%owner_rank, sblock )
     if (ierr > 0 )  &
     call endrun('Error: fail to query information for visible elements')
 
@@ -261,8 +291,8 @@ contains
   subroutine elm_moab_finalize()
   !------------------------------------------------------------------------
 
-    deallocate(globid)
-    deallocate(eowner)
+    deallocate(moab_gcell%natural_id)
+    deallocate(moab_gcell%owner_rank)
     deallocate(sblock)
 
   end subroutine elm_moab_finalize
