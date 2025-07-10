@@ -861,19 +861,17 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          ! above aream work is irrelevant with this:
    ! as a quick fix, set the correction factors on component side, on MOAB tags mdl2drv and drv2mdl 
    !  exactly as those from mct; hopefully, we will see zero differences with MOABCOMP
-
+         !tagname = 'mdl2drv'//C_NULL_CHAR
+         !ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%mdl2drv)
+         !if (ierr .ne. 0) then
+         !   call shr_sys_abort(subname//' cannot set new mdl2drv values for moab like those for mct  ')
+         !endif
+         !tagname = 'drv2mdl'//C_NULL_CHAR
+         !ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%drv2mdl)
+         !if (ierr .ne. 0) then
+         !   call shr_sys_abort(subname//' cannot set new mdldrv2mdl2drv values for moab like those for mct  ')
+         !endif
          lsize = comp(1)%mblsize
-         tagname = 'mdl2drv'//C_NULL_CHAR
-         ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%mdl2drv)
-         if (ierr .ne. 0) then
-            call shr_sys_abort(subname//' cannot set new mdl2drv values for moab like those for mct  ')
-         endif
-         tagname = 'drv2mdl'//C_NULL_CHAR
-         ierr = iMOAB_SetDoubleTagStorage(mbccid , tagname, lsize , comp(1)%mbGridType, comp(1)%drv2mdl)
-         if (ierr .ne. 0) then
-            call shr_sys_abort(subname//' cannot set new mdldrv2mdl2drv values for moab like those for mct  ')
-         endif
-      
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
@@ -885,9 +883,9 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          do i=1,lsize
             rmask = areas(i,3)
             if ( abs(rmask) >= 1.0e-06) then
-               ! fact = factors(i,1) ! mdl2drv tag
+               fact = factors(i,1) ! mdl2drv tag
                ! do nt use what we computed; use the values from mct driver
-               fact = comp(1)%mdl2drv(i) 
+               ! fact = comp(1)%mdl2drv(i) 
                do j=1,nfields
                   vals(i,j) = vals(i,j) * fact
                enddo
