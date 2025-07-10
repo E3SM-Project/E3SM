@@ -35,7 +35,7 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // LINOZ namelist parameters
-  config_.linoz.compute  = m_params.get<double>("mam4_compute_linoz",true);
+  config_.linoz.compute  = m_params.get<bool>("mam4_compute_linoz",true);
   if (config_.linoz.compute) {
     config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
     config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
