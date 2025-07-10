@@ -269,7 +269,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     </shoc>
 
     <!-- ZM deep convection -->
-    <zm inherit="atm_proc_base"/>
+    <zm inherit="atm_proc_base">
     </zm>
 
     <!-- Basic options for each mam4 atm process -->

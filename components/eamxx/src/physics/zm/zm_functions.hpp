@@ -51,6 +51,30 @@ struct Functions
   // This struct stores input views for ZM_main.
   struct ZMInput {
     ZMInput() = default;
+    // surface geopotential height [m2/s]
+    view_1d<Spack> phis;
+    // mid-point level altitude [m]
+    view_2d<Spack> zmid;
+    // interface level altitude [m]
+    view_2d<Spack> zint;
+    // mid-point level pressure [Pa]
+    view_2d<Spack> pmid;
+    // interface level pressure [Pa]
+    view_2d<Spack> pint;
+    // pressure thickness [Pa]
+    view_2d<Spack> pdel;
+    // PBL height [m]
+    view_1d<Spack> pblh;
+    // Temperature [K]
+    view_2d<Spack> t;
+    // Water vapor mixing ratio [kg kg-1]
+    view_2d<Spack> qv;
+    // Cloud mass mixing ratio [kg kg-1]
+    view_2d<Spack> qc;
+    // Ice total mass mixing ratio [kg kg-1]
+    view_2d<Spack> qi;
+    // vertical pressure velocity [Pa/s]
+    view_2d<Spack> omega;
   };
 
   // This struct stores input/outputs views for ZM_main.
