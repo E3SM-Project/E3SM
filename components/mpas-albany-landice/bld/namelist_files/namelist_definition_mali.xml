@@ -177,7 +177,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_smb_source" type="char*1024"
 	category="advection" group="advection">
-Source of surface mass balance used by sfcMassBal variable.  'file' uses whatever value has been read into the sfcMassBal field from an input or forcing file. 'coupler' uses a value passed from the E3SM coupler.  The option 'coupler' behaves the same as 'file' when MALI is run in standalone mode."
+Source of surface mass balance used by sfcMassBal variable.  'file' uses whatever value has been read into the sfcMassBal field from an input or forcing file. 'coupler' uses a value passed from the E3SM coupler.  The option 'coupler' behaves the same as 'file' when MALI is run in standalone mode.
 
 Valid values: 'file' or 'coupler'
 Default: Defined in namelist_defaults.xml
