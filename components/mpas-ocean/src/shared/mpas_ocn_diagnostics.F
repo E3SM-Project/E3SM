@@ -863,7 +863,7 @@ contains
          iEdge, k,     &! edge and vertical loop indices
          cell1, cell2, &! neighbor cell indices across an edge
          kmin, kmax     ! min,max active vertical levels
-
+      real(kind=RKIND) :: columnThickness
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -991,7 +991,43 @@ contains
 #endif
 
         end if
-
+        if (config_use_spatially_variable_upwind) then
+#ifdef MPAS_OPENACC
+            !$acc parallel loop &
+            !$acc    present(layerThickEdgeMean, layerThickEdgeFlux, &
+            !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
+            !$acc            upwindFactor) &
+            !$acc    private(k, kmin, kmax, columnThickness)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2, columnThickness)
+#endif
+            do iEdge = 1, nEdgesAll
+              cell1 = cellsOnEdge(1,iEdge)
+              cell2 = cellsOnEdge(2,iEdge)
+              columnThickness = min(bottomDepth(cell1) + ssh(cell1), &
+                                    bottomDepth(cell2) + ssh(cell2))
+              if (columnThickness <= config_spatially_variable_upwind_hmin) then
+                upwindFactor(iEdge) = 1.0_RKIND
+              elseif (columnThickness >= config_spatially_variable_upwind_hmax) then
+                upwindFactor(iEdge) = 0.0_RKIND
+              else
+                upwindFactor(iEdge) = 1.0_RKIND - &
+                                      (columnThickness - config_spatially_variable_upwind_hmin) / &
+                                      (config_spatially_variable_upwind_hmax - config_spatially_variable_upwind_hmin)
+              end if
+              kmin = minLevelEdgeBot(iEdge)
+              kmax = maxLevelEdgeTop(iEdge)
+              do k = kmin,kmax
+                 layerThickEdgeFlux(k,iEdge) = (1.0_RKIND - upwindFactor(iEdge)) * layerThickEdgeMean(k,iEdge) &
+                                             + upwindFactor(iEdge)* layerThickEdgeFlux(k,iEdge)
+              end do
+            end do
+#ifndef MPAS_OPENACC
+            !$omp end do
+            !$omp end parallel
+#endif
+        endif
       case (thickEdgeFluxConstant)
          ! Use linearized version H*u where H is constant in time
 
