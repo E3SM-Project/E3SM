@@ -12,7 +12,7 @@
 
 
 namespace scream {
-
+class DataInterpolation;
 // The process responsible for handling MAM4 aerosol microphysics. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMMicrophysics final : public MAMGenericInterface {
@@ -106,6 +106,10 @@ class MAMMicrophysics final : public MAMGenericInterface {
   std::vector<Real> chlorine_values_;
   std::vector<int> chlorine_time_secs_;
   view_3d photo_rates_;
+
+  std::vector<std::string> m_var_names_oxi;
+  std::vector<std::string> m_var_names_linoz;
+
 #ifdef USE_OLD_LINOZ_FILE_READ
   // invariants members
   mam_coupling::TracerTimeState trace_time_state_;
@@ -114,6 +118,11 @@ class MAMMicrophysics final : public MAMGenericInterface {
   mam_coupling::TracerData tracer_data_;
   std::string oxid_file_name_;
   view_2d cnst_offline_[4];
+#else
+  std::shared_ptr<DataInterpolation>    m_data_interpolation;
+  void set_oxid_reader();
+  std::shared_ptr<DataInterpolation>    m_data_interpolation_linoz;
+  void set_linoz_reader();
 #endif
   view_3d invariants_;
   // linoz reader
@@ -126,15 +135,18 @@ class MAMMicrophysics final : public MAMGenericInterface {
 #endif
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
+  std::map<std::string, std::vector<std::string>> m_elevated_emis_var_names;
 #ifdef USE_OLD_VERTICAL_FILE_READ
   mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
   std::vector<std::shared_ptr<AtmosphereInput>> ElevatedEmissionsDataReader_;
   std::vector<std::shared_ptr<AbstractRemapper>> ElevatedEmissionsHorizInterp_;
   std::vector<mam_coupling::TracerData> elevated_emis_data_;
   std::map<std::string, std::string> elevated_emis_file_name_;
+#else
+  std::vector<std::shared_ptr<DataInterpolation>> m_data_interpolation_vertical;
+  void set_vertical_emissions_reader();
 #endif
   std::vector<std::string> extfrc_lst_;
-  std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
 
   view_3d extfrc_;
   mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];

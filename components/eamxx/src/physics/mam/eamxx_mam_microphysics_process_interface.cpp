@@ -5,6 +5,8 @@
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
+#include "physics/mam/readfiles/vertical_remapper_mam4.hpp"
+#include "share/util/eamxx_data_interpolation.hpp"
 
 namespace scream {
 
@@ -238,20 +240,25 @@ void MAMMicrophysics::set_grids(
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
+#ifdef USE_OLD_LINOZ_FILE_READ
   if (config_.linoz.compute) {
+
+  // NOTE: order matches mam4xx:
+  m_var_names_oxi={"O3", "OH", "NO3", "HO2"};
+    // linoz
+  m_var_names_linoz = {
+        "o3_clim",  "o3col_clim", "t_clim",      "PmL_clim",
+        "dPmL_dO3", "dPmL_dT",    "dPmL_dO3col", "cariolle_pscs"};
+    std::cout << "Using former reader..." << "\n";
     linoz_file_name_ = m_params.get<std::string>("mam4_linoz_file_name");
     const std::string linoz_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
-    const std::vector<std::string> var_names{
-        "o3_clim",  "o3col_clim", "t_clim",      "PmL_clim",
-        "dPmL_dO3", "dPmL_dT",    "dPmL_dO3col", "cariolle_pscs"};
-
     // in format YYYYMMDD
     const int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
     scream::mam_coupling::setup_tracer_data(linoz_data_, linoz_file_name_,
                                             linoz_cyclical_ymd);
     LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
-        grid_, linoz_file_name_, linoz_map_file, var_names, linoz_data_);
+        grid_, linoz_file_name_, linoz_map_file, m_var_names_linoz, linoz_data_);
     LinozDataReader_ = scream::mam_coupling::create_tracer_data_reader(
         LinozHorizInterp_, linoz_file_name_);
 
@@ -262,7 +269,7 @@ void MAMMicrophysics::set_grids(
     const int num_levs_io_linoz =
         io_grid_linoz
             ->get_num_vertical_levels();  // Number of levels per column
-    const int nvars = int(var_names.size());
+    const int nvars = int(m_var_names_linoz.size());
     linoz_data_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
     linoz_data_.allocate_temporary_views();
   }  // LINOZ reader
@@ -271,19 +278,17 @@ void MAMMicrophysics::set_grids(
     oxid_file_name_ = m_params.get<std::string>("mam4_oxid_file_name");
     const std::string oxid_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
-    // NOTE: order matches mam4xx:
-    const std::vector<std::string> var_names{"O3", "OH", "NO3", "HO2"};
 
     // in format YYYYMMDD
     const int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
     scream::mam_coupling::setup_tracer_data(tracer_data_, oxid_file_name_,
                                             oxid_ymd);
     TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
-        grid_, oxid_file_name_, oxid_map_file, var_names, tracer_data_);
+        grid_, oxid_file_name_, oxid_map_file, m_var_names_oxi, tracer_data_);
     TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(
         TracerHorizInterp_, oxid_file_name_);
 
-    const int nvars    = int(var_names.size());
+    const int nvars    = int(m_var_names_oxi.size());
     const auto io_grid = TracerHorizInterp_->get_tgt_grid();
     const int num_cols_io =
         io_grid->get_num_local_dofs();  // Number of columns on this rank
@@ -305,35 +310,34 @@ void MAMMicrophysics::set_grids(
 
   for(const auto &var_name : var_names_linoz) {
       // FIXME: switch to Required
-      add_field<Updated>(var_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(var_name, scalar3d_mid, nondim, grid_name);
   }
 
   std::vector<std::string>  var_names_oxi = {"O3", "OH", "NO3", "HO2"};
   for(const auto &field_name : var_names_oxi) {
-      // FIXME: switch to Required
-      add_field<Updated>(field_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(field_name, scalar3d_mid, nondim, grid_name);
   }
 #endif
 
   extfrc_lst_ = {"so2",    "so4_a1", "so4_a2", "pom_a4", "bc_a4",
                    "num_a1", "num_a2", "num_a4", "soag"};
-  elevated_emis_var_names_["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV",
+  m_elevated_emis_var_names["so2"]    = {"BB", "ENE_ELEV", "IND_ELEV",
                                           "contvolc"};
-  elevated_emis_var_names_["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV",
+  m_elevated_emis_var_names["so4_a1"] = {"BB", "ENE_ELEV", "IND_ELEV",
                                           "contvolc"};
-  elevated_emis_var_names_["so4_a2"] = {"contvolc"};
-  elevated_emis_var_names_["pom_a4"] = {"BB"};
-  elevated_emis_var_names_["bc_a4"]  = {"BB"};
-  elevated_emis_var_names_["num_a1"] = {
+  m_elevated_emis_var_names["so4_a2"] = {"contvolc"};
+  m_elevated_emis_var_names["pom_a4"] = {"BB"};
+  m_elevated_emis_var_names["bc_a4"]  = {"BB"};
+  m_elevated_emis_var_names["num_a1"] = {
         "num_a1_SO4_ELEV_BB", "num_a1_SO4_ELEV_ENE", "num_a1_SO4_ELEV_IND",
         "num_a1_SO4_ELEV_contvolc"};
-  elevated_emis_var_names_["num_a2"] = {"num_a2_SO4_ELEV_contvolc"};
+  m_elevated_emis_var_names["num_a2"] = {"num_a2_SO4_ELEV_contvolc"};
   // num_a4
   // FIXME: why the sectors in this files are num_a1;
   //  I guess this should be num_a4? Is this a bug in the orginal nc files?
-  elevated_emis_var_names_["num_a4"] = {"num_a1_BC_ELEV_BB",
+  m_elevated_emis_var_names["num_a4"] = {"num_a1_BC_ELEV_BB",
                                           "num_a1_POM_ELEV_BB"};
-  elevated_emis_var_names_["soag"] = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
+  m_elevated_emis_var_names["soag"] = {"SOAbb_src", "SOAbg_src", "SOAff_src"};
 
 #ifdef USE_OLD_VERTICAL_FILE_READ
   {
@@ -353,7 +357,7 @@ void MAMMicrophysics::set_grids(
 
     for(const auto &var_name : extfrc_lst_) {
       const auto file_name = elevated_emis_file_name_[var_name];
-      const auto var_names = elevated_emis_var_names_[var_name];
+      const auto var_names = m_elevated_emis_var_names[var_name];
 
       scream::mam_coupling::TracerData data_tracer;
       scream::mam_coupling::setup_tracer_data(data_tracer, file_name,
@@ -370,7 +374,7 @@ void MAMMicrophysics::set_grids(
     int i               = 0;
     for(const auto &var_name : extfrc_lst_) {
       const auto file_name = elevated_emis_file_name_[var_name];
-      const auto var_names = elevated_emis_var_names_[var_name];
+      const auto var_names = m_elevated_emis_var_names[var_name];
       const int nvars      = static_cast<int>(var_names.size());
 
       forcings_[i].nsectors = nvars;
@@ -401,10 +405,10 @@ void MAMMicrophysics::set_grids(
 
   }  // Tracer external forcing data
 #else
-  for(const auto &pair : elevated_emis_var_names_) {
+  for(const auto &pair : m_elevated_emis_var_names) {
     const auto &var_name =pair.first;
     for(const auto &field_name : pair.second) {
-      add_field<Updated>(field_name+"_"+var_name, scalar3d_mid, nondim, grid_name);
+      add_field<Computed>(field_name+"_"+var_name, scalar3d_mid, nondim, grid_name);
     }
   }
 
@@ -497,6 +501,111 @@ void MAMMicrophysics::init_temporary_views() {
                        std::to_string(workspace_provided) +
                        ") should be equal. \n");
 }
+#ifndef USE_OLD_LINOZ_FILE_READ
+void MAMMicrophysics::set_oxid_reader()
+{
+    // Oxid fields read initialization
+  auto pmid = get_field_in("p_mid");
+  std::vector<Field> oxid_fields;
+  const auto oxid_file_name = m_params.get<std::string>("mam4_oxid_file_name");
+  const std::string oxid_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
+  for(const auto &field_name : m_var_names_oxi) {
+      oxid_fields.push_back(get_field_out(field_name));
+  }
+
+  const int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
+  util::TimeStamp ref_ts_oxid= mam_coupling::convert_date(oxid_ymd);
+  m_data_interpolation = std::make_shared<DataInterpolation>(grid_,oxid_fields);
+  m_data_interpolation->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts_oxid);
+  m_data_interpolation->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
+
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::Dynamic3DRef;
+  remap_data.pname = "PS";
+  remap_data.pmid = pmid;
+  //FIXME: make it a namelist parameter.
+  bool mam4_use_eamxx_vertical_remp=false;
+  if (mam4_use_eamxx_vertical_remp){
+    auto grid_after_hremap = m_data_interpolation->get_grid_after_hremap();
+    auto vertical_remapper= std::make_shared<VerticalRemapperMAM4>(grid_after_hremap, grid_,
+    VerticalRemapperMAM4::VertRemapType::MAM4_PSRef);
+    remap_data.custom_remapper=vertical_remapper;
+  }
+  m_data_interpolation->create_vert_remapper (remap_data);
+  m_data_interpolation->init_data_interval (start_of_step_ts());
+}
+
+void MAMMicrophysics::set_linoz_reader(){
+    // linoz
+  // in format YYYYMMDD
+  auto pmid = get_field_in("p_mid");
+
+  const int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
+  util::TimeStamp ref_ts_linoz = mam_coupling::convert_date(linoz_cyclical_ymd);
+  // util::TimeStamp ref_ts_linoz (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  const auto m_linoz_file_name = m_params.get<std::string>("mam4_linoz_file_name");
+  const std::string linoz_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
+  std::vector<Field> linoz_fields;
+  for(const auto &field_name : m_var_names_linoz) {
+      linoz_fields.push_back(get_field_out(field_name));
+  }
+
+  m_data_interpolation_linoz = std::make_shared<DataInterpolation>(grid_,linoz_fields);
+  m_data_interpolation_linoz->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, ref_ts_linoz);
+  m_data_interpolation_linoz->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
+
+  DataInterpolation::VertRemapData remap_data_linoz;
+  remap_data_linoz.vr_type = DataInterpolation::Static1D;
+  remap_data_linoz.pname = "lev";
+  remap_data_linoz.pmid = pmid;
+  auto grid_after_hremap_linoz = m_data_interpolation_linoz->get_grid_after_hremap();
+  auto vertical_remapper_linoz = std::make_shared<VerticalRemapperMAM4>(grid_after_hremap_linoz, grid_,
+  VerticalRemapperMAM4::VertRemapType::MAM4_ZONAL);
+  remap_data_linoz.custom_remapper=vertical_remapper_linoz;
+  m_data_interpolation_linoz->create_vert_remapper (remap_data_linoz);
+  m_data_interpolation_linoz->init_data_interval (start_of_step_ts());
+}
+#endif
+
+#ifndef USE_OLD_VERTICAL_FILE_READ
+void MAMMicrophysics::set_vertical_emissions_reader()
+{
+  const auto z_iface = get_field_out("z_iface");
+  const std::string extfrc_map_file =
+        m_params.get<std::string>("aero_microphys_remap_file", "");
+  int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
+  for(const auto &pair : m_elevated_emis_var_names) {
+    const auto& var_name=pair.first;
+    std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
+    const auto file_name  = m_params.get<std::string>(item_name);
+    util::TimeStamp ref_ts_vertical = mam_coupling::convert_date(elevated_emiss_cyclical_ymd);
+    std::vector<Field> vertical_fields;
+    for(const auto &field_name :pair.second) {
+      vertical_fields.push_back(get_field_out(field_name+"_"+var_name).alias(field_name));
+    }
+    std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
+    di_vertical->set_input_files_dimname(ShortFieldTagsNames::LEV,"altitude");
+    di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, ref_ts_vertical);
+    di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
+    DataInterpolation::VertRemapData remap_data_vertical;
+    remap_data_vertical.vr_type = DataInterpolation::Custom;
+    remap_data_vertical.pmid = z_iface;
+    auto grid_after_hremap_vertical = di_vertical->get_grid_after_hremap();
+    grid_after_hremap_vertical->reset_field_tag_name(ShortFieldTagsNames::LEV, "altitude");
+    grid_after_hremap_vertical->reset_field_tag_name(ShortFieldTagsNames::ILEV, "altitude_int");
+    auto vertical_remapper_elevated = std::make_shared<VerticalRemapperMAM4>(grid_after_hremap_vertical, grid_,
+    VerticalRemapperMAM4::VertRemapType::MAM4_ELEVATED_EMISSIONS);
+    vertical_remapper_elevated->set_source_pressure(file_name);
+    vertical_remapper_elevated->set_target_pressure(z_iface);
+    remap_data_vertical.custom_remapper=vertical_remapper_elevated;
+    di_vertical->create_vert_remapper (remap_data_vertical);
+    di_vertical->init_data_interval (start_of_step_ts());
+    m_data_interpolation_vertical.push_back(di_vertical);
+  }//end var_name
+}
+#endif
 // ================================================================
 //  INITIALIZE_IMPL
 // ================================================================
@@ -625,7 +734,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
                                                   // overhead O3 column [vmr/DU]
     auto linoz_cariolle_pscs =
         buffer_.scratch[7];  // Cariolle parameter for PSC loss of ozone [1/s]
-
 #endif
     auto ts = start_of_step_ts();
     std::string linoz_chlorine_file =
@@ -650,6 +758,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
   scream::mam_coupling::update_tracer_data_from_file(
       TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
+#else
+  set_oxid_reader();
+  set_linoz_reader();
 #endif
 
 #ifdef USE_OLD_VERTICAL_FILE_READ
@@ -660,9 +771,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   }
 #else
   {
+    set_vertical_emissions_reader();
     for(size_t i = 0; i < extfrc_lst_.size(); ++i) {
       std::string var_name = extfrc_lst_[i];
-      const auto sector_names = elevated_emis_var_names_[var_name];
+      const auto sector_names = m_elevated_emis_var_names[var_name];
       const int nvars      = static_cast<int>(sector_names.size());
       forcings_[i].nsectors = nvars;
       // I am assuming the order of species in extfrc_lst_.
@@ -783,6 +895,8 @@ void MAMMicrophysics::run_impl(const double dt) {
   }
 
 
+  view_2d linoz_output[8];
+  if (config_.linoz.compute) {
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
   view_2d linoz_o3_clim;
@@ -801,16 +915,45 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Cariolle parameter for PSC loss of ozone [1/s]
   view_2d linoz_cariolle_pscs;
 
-  if (config_.linoz.compute) {
-    linoz_o3_clim = buffer_.scratch[0];
-    linoz_o3col_clim = buffer_.scratch[1];
-    linoz_t_clim     = buffer_.scratch[2];
-    linoz_PmL_clim = buffer_.scratch[3];
-    linoz_dPmL_dO3 = buffer_.scratch[4];
-    linoz_dPmL_dT = buffer_.scratch[5];
-    linoz_dPmL_dO3col = buffer_.scratch[6];
-    linoz_cariolle_pscs = buffer_.scratch[7];
+
+  linoz_output[0] = linoz_o3_clim;
+  linoz_output[1] = linoz_o3col_clim;
+  linoz_output[2] = linoz_t_clim;
+  linoz_output[3] = linoz_PmL_clim;
+  linoz_output[4] = linoz_dPmL_dO3;
+  linoz_output[5] = linoz_dPmL_dT;
+  linoz_output[6] = linoz_dPmL_dO3col;
+  linoz_output[7] = linoz_cariolle_pscs;
   }
+#else
+  //FIXME: I will need to modify perform_atmospheric_chemistry_and_microphysics in MAM4xx.
+  // Let's do that after we have tested the new interface for DataInterpolation.
+  // const auto linoz_o3_clim = get_field_in("o3_clim").get_view<const Real **>();
+  // const auto linoz_o3col_clim = get_field_in("o3col_clim").get_view<const Real **>();
+  // const auto linoz_t_clim = get_field_in("t_clim").get_view<const Real **>();
+  // const auto linoz_PmL_clim = get_field_in("PmL_clim").get_view<const Real **>();
+  // const auto linoz_dPmL_dO3 = get_field_in("dPmL_dO3").get_view<const Real **>();
+  // const auto linoz_dPmL_dT = get_field_in("dPmL_dT").get_view<const Real **>();
+  // const auto linoz_dPmL_dO3col = get_field_in("dPmL_dO3col").get_view<const Real **>();
+  // const auto linoz_cariolle_pscs = get_field_in("cariolle_pscs").get_view<const Real **>();
+  m_data_interpolation->run(end_of_step_ts());
+  m_data_interpolation_linoz->run(end_of_step_ts());
+
+  const auto linoz_o3_clim = get_field_out("o3_clim").get_view<Real **>();
+  const auto linoz_o3col_clim = get_field_out("o3col_clim").get_view<Real **>();
+  const auto linoz_t_clim = get_field_out("t_clim").get_view<Real **>();
+  const auto linoz_PmL_clim = get_field_out("PmL_clim").get_view<Real **>();
+  const auto linoz_dPmL_dO3 = get_field_out("dPmL_dO3").get_view<Real **>();
+  const auto linoz_dPmL_dT = get_field_out("dPmL_dT").get_view<Real **>();
+  const auto linoz_dPmL_dO3col = get_field_out("dPmL_dO3col").get_view<Real **>();
+  const auto linoz_cariolle_pscs = get_field_out("cariolle_pscs").get_view<Real **>();
+
+  const auto oxid_O3 = get_field_out("O3").get_view<Real **>();
+  const auto oxid_OH = get_field_out("OH").get_view<Real **>();
+  const auto oxid_NO3 = get_field_out("NO3").get_view<Real **>();
+  const auto oxid_HO2 = get_field_out("HO2").get_view<Real **>();
+
+#endif
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
@@ -863,7 +1006,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   for(const auto &var_name : extfrc_lst_) {
     elevated_emiss_time_state_[i].t_now = ts.frac_of_year_in_days();
     const auto file_name = elevated_emis_file_name_[var_name];
-    const auto var_names = elevated_emis_var_names_[var_name];
+    const auto var_names = m_elevated_emis_var_names[var_name];
     auto& elevated_emis_output= forcings_[i].fields;
     scream::mam_coupling::advance_tracer_data(
         ElevatedEmissionsDataReader_[i], *ElevatedEmissionsHorizInterp_[i], ts,
@@ -871,6 +1014,10 @@ void MAMMicrophysics::run_impl(const double dt) {
         dry_atm_.z_iface, elevated_emis_output);
     i++;
     Kokkos::fence();
+  }
+#else
+  for (size_t i = 0; i < m_elevated_emis_var_names.size(); ++i) {
+    m_data_interpolation_vertical[i]->run(end_of_step_ts());
   }
 #endif
 
