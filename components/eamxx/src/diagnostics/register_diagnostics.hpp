@@ -30,6 +30,7 @@
 #include "diagnostics/zonal_avg.hpp"
 #include "diagnostics/conditional_sampling.hpp"
 #include "diagnostics/binary_ops.hpp"
+#include "diagnostics/histogram.hpp"
 
 namespace scream {
 
@@ -63,6 +64,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ZonalAvgDiag",&create_atmosphere_diagnostic<ZonalAvgDiag>);
   diag_factory.register_product("ConditionalSampling",&create_atmosphere_diagnostic<ConditionalSampling>);
   diag_factory.register_product("BinaryOpsDiag", &create_atmosphere_diagnostic<BinaryOpsDiag>);
+  diag_factory.register_product("HistogramDiag",&create_atmosphere_diagnostic<HistogramDiag>);
 }
 
 } // namespace scream
