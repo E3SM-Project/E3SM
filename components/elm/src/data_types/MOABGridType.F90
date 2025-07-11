@@ -23,7 +23,8 @@ module MOABGridType
   use iMOAB  , only: iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
   iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
   iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
-  iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh, iMOAB_GetVisibleElementsInfo
+  iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh, iMOAB_GetVisibleElementsInfo, &
+  iMOAB_GetNeighborElements
 
   use mpi
   use iso_c_binding
@@ -48,16 +49,20 @@ module MOABGridType
   ! between ghost layers on the component side
   integer, dimension(100) :: tag_indices
   integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
+  integer, parameter :: max_num_neighbor = 10
 
   type, public :: grid_cell
      integer           :: num_owned     ! number of owned "active" grid cells
      integer           :: num_ghost     ! number of ghost "active" grid cells
      integer           :: num_ghosted   ! number of owned + ghost "active" grid cells
-     integer           :: num_global    ! number of global "active" grid cells
+     integer           :: num_global    ! number of global "active" grid cells     
 
      integer, pointer  :: natural_id(:) ! [num_ghosted] ID of cell in the full mesh, while accounting for active and inactive cells
      integer, pointer  :: is_owned(:)   ! [num_ghosted] true if the grid cell locally owned
      integer, pointer  :: owner_rank(:) ! [num_ghosted] MPI rank that owns the cell
+
+     integer, pointer  :: num_neighbor (:) ! [num_ghosted] number of neighboring grid cells
+     integer, pointer  :: neighbor_id(:,:) ! [num_ghosted, max_num_neighbor] ghosted ID of neighboring grid cells
 
      real(r8), pointer :: lat(:)        ! [num_ghosted] latitude of the cell
      real(r8), pointer :: lon(:)        ! [num_ghosted] longitude of the cell
@@ -139,6 +144,8 @@ contains
     integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
     integer, dimension(5) :: entity_type
     real(r8), pointer :: data(:)  ! temporary
+    integer :: g, num_neighbor
+    integer, pointer :: neighbor_id(:)
 
     if(masterproc) &
         write(iulog,*) "elm_moab_load_grid_file(): reading mesh file: ", trim(meshfile)
@@ -277,6 +284,24 @@ contains
     if (ierr > 0 )  &
     call endrun('Error: fail to query information for visible elements')
 
+    ! determine neigbors of grid cells
+    allocate(moab_gcell%num_neighbor(moab_gcell%num_ghosted))
+    allocate(moab_gcell%neighbor_id(moab_gcell%num_ghosted, max_num_neighbor))
+
+    moab_gcell%num_neighbor(:) = max_num_neighbor
+    moab_gcell%neighbor_id(:, :) = -1
+
+    allocate(neighbor_id(max_num_neighbor))
+    do g = 1, moab_gcell%num_ghosted
+
+       num_neighbor = max_num_neighbor
+       ierr = iMOAB_GetNeighborElements(mlndghostid, g, num_neighbor, neighbor_id)
+
+       moab_gcell%num_neighbor(g)                = num_neighbor
+       moab_gcell%neighbor_id(g, 1:num_neighbor) = neighbor_id(1:num_neighbor)
+    enddo
+    deallocate(neighbor_id)
+
 #ifdef MOABDEBUG
       ! write out the local mesh file to disk (np tasks produce np files)
       outfile = 'elm_local_mesh'//CHAR(0)
@@ -291,8 +316,11 @@ contains
   subroutine elm_moab_finalize()
   !------------------------------------------------------------------------
 
-    deallocate(moab_gcell%natural_id)
-    deallocate(moab_gcell%owner_rank)
+    deallocate(moab_gcell%natural_id   )
+    deallocate(moab_gcell%owner_rank   )
+    deallocate(moab_gcell%num_neighbor )
+    deallocate(moab_gcell%neighbor_id  )
+
     deallocate(sblock)
 
   end subroutine elm_moab_finalize
