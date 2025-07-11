@@ -354,7 +354,7 @@ void MAMGenericInterface::populate_dry_atm(mam_coupling::DryAtmosphere &dry_atm,
   dry_atm.dz = buffer.dz;
 
   // geopotential height above surface at interface levels (m)
-  dry_atm.z_iface = buffer.z_iface;
+  dry_atm.z_iface = get_field_out("z_iface").get_view< Real **>();
 
   // geopotential height above surface at mid levels (m)
   dry_atm.z_mid = buffer.z_mid;
@@ -424,6 +424,9 @@ void MAMGenericInterface::add_fields_dry_atm() {
 
   // cloud fraction [nondimensional] computed by eamxx_cld_fraction_process
   add_field<Required>("cldfrac_tot", scalar3d_mid, nondim, grid_name);
+
+  // geopotential height above surface at interface levels (m)
+  add_field<Updated>("z_iface", scalar3d_int, m, grid_name);
 }
 
 // ================================================================
