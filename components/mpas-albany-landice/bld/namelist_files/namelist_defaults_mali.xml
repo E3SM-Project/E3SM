@@ -125,7 +125,7 @@
 <config_time_integration>'forward_euler'</config_time_integration>
 <config_rk_order>2</config_rk_order>
 <config_rk3_stages>3</config_rk3_stages>
-<config_adaptive_timestep>.false.</config_adaptive_timestep>
+<config_adaptive_timestep>.true.</config_adaptive_timestep>
 <config_min_adaptive_timestep>3600.0</config_min_adaptive_timestep>
 <config_max_adaptive_timestep>3.15e9</config_max_adaptive_timestep>
 <config_adaptive_timestep_CFL_fraction>0.25</config_adaptive_timestep_CFL_fraction>
@@ -134,7 +134,7 @@
 <config_adaptive_timestep_include_DCFL>.false.</config_adaptive_timestep_include_DCFL>
 <config_adaptive_timestep_include_calving>.true.</config_adaptive_timestep_include_calving>
 <config_adaptive_timestep_include_face_melting>.true.</config_adaptive_timestep_include_face_melting>
-<config_adaptive_timestep_force_interval>'1000-00-00_00:00:00'</config_adaptive_timestep_force_interval>
+<config_adaptive_timestep_force_interval>'0000-00-05_00:00:00'</config_adaptive_timestep_force_interval>
 
 <!-- time_management -->
 <config_do_restart>.false.</config_do_restart>
