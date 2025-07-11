@@ -24,7 +24,7 @@ module MOABGridType
   iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
   iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
   iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh, iMOAB_GetVisibleElementsInfo, &
-  iMOAB_GetNeighborElements, iMOAB_GetElementConnectivity
+  iMOAB_GetNeighborElements, iMOAB_GetElementConnectivity, iMOAB_GetDoubleTagStorage
 
   use mpi
   use iso_c_binding
@@ -236,13 +236,6 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to retrieve GLOBAL_ID tag ')
 
-    !  Define and Set Fraction on each mesh
-    tagname='frac:area:aream'//C_NULL_CHAR
-    tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(2) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create frac:area:aream tags')
-
     ! use data array as a data holder
     ! Note that loop bounds are typical for locally owned points
     ! allocate(data(neproc*3))
@@ -373,6 +366,39 @@ contains
     ! free up temporary memory
     deallocate(neighbor_id)
     deallocate(vertex_id)
+
+    !  Define and Set Fraction on each mesh
+    tagname='frac:area:aream'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(2) )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create frac:area:aream tags')
+
+    allocate(data(moab_gcell%num_ghosted * 3))
+    data(:) = -1
+    do g = 1, moab_gcell%num_ghosted
+       if (moab_gcell%is_owned(g)) then
+          data((g-1)*3 + 1) = iam
+          data((g-1)*3 + 2) = iam + 0.1_r8
+          data((g-1)*3 + 3) = iam + 0.4_r8
+       end if
+    end do
+    ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(1), data )
+    if (ierr > 0) call endrun('Error: setting values failed')
+
+    ierr = iMOAB_SynchronizeTags(mlndghostid, 3, tag_indices(1:3), entity_type(2))
+    if (ierr > 0) call endrun('Error: synchronize failed')
+
+    ! reset the data to some arbitrary value
+    data(:) = -100.0
+
+    ierr = iMOAB_GetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(2), data )
+    if (ierr > 0) call endrun('Error: getting values failed')
+
+    do g = 1, moab_gcell%num_ghosted
+       write(iulog,*)'g: ',g, moab_gcell%is_owned(g), data((g-1)*3+1:(g-1)*3+3)
+    end do
+    deallocate(data)
 
 #ifdef MOABDEBUG
       ! write out the local mesh file to disk (np tasks produce np files)
