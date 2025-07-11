@@ -99,19 +99,19 @@ fields:
       - PotentialTemperature_at_model_top
       - PotentialTemperature_at_500mb
       # invariants
-      - O3
-      - OH
-      - NO3
-      - HO2
+      #- O3
+      #- OH
+      #- NO3
+      #- HO2
       # linoz
-      - o3_clim
-      - o3col_clim
-      - t_clim
-      - PmL_clim
-      - dPmL_dO3
-      - dPmL_dT
-      - dPmL_dO3col
-      - cariolle_pscs
+      #- o3_clim
+      #- o3col_clim
+      #- t_clim
+      #- PmL_clim
+      #- dPmL_dO3
+      #- dPmL_dT
+      #- dPmL_dO3col
+      #- cariolle_pscs
       # vertical emissions
       - BB_so2
       - ENE_ELEV_so2
