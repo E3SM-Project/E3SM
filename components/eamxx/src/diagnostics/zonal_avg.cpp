@@ -1,7 +1,4 @@
 #include "diagnostics/zonal_avg.hpp"
-
-#include "share/field/field_utils.hpp"
-
 #include <ekat_math_utils.hpp>
 
 namespace scream {
@@ -31,11 +28,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
   case 1: {
     auto field_view        = field.get_view<const Real *>();
     auto result_view       = result.get_view<Real *>();
-<<<<<<< HEAD
-    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins, ncols);
-=======
-    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins, max_ncols_per_bin);
->>>>>>> c2d2118b52 (refactored zonal average diagnostic to assign columns to bins during initialization)
+    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins, max_ncols_per_bin);
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember &tm) {
@@ -53,11 +46,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     const int d1           = result_layout.dim(1);
     auto field_view        = field.get_view<const Real **>();
     auto result_view       = result.get_view<Real **>();
-<<<<<<< HEAD
-    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1, ncols);
-=======
-    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins * d1, max_ncols_per_bin);
->>>>>>> c2d2118b52 (refactored zonal average diagnostic to assign columns to bins during initialization)
+    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1, max_ncols_per_bin);
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy,
         KOKKOS_LAMBDA(const TeamMember &tm) {
@@ -78,11 +67,7 @@ void compute_zonal_sum(const Field &result, const Field &field, const Field &wei
     const int d2           = result_layout.dim(2);
     auto field_view        = field.get_view<const Real ***>();
     auto result_view       = result.get_view<Real ***>();
-<<<<<<< HEAD
-    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1 * d2, ncols);
-=======
-    TeamPolicy team_policy = ESU::get_default_team_policy(num_zonal_bins * d1 * d2, max_ncols_per_bin);
->>>>>>> c2d2118b52 (refactored zonal average diagnostic to assign columns to bins during initialization)
+    TeamPolicy team_policy = TPF::get_default_team_policy(num_zonal_bins * d1 * d2, max_ncols_per_bin);
     Kokkos::parallel_for(
         "compute_zonal_sum_" + field.name(), team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
           const int idx        = tm.league_rank();
@@ -178,12 +163,12 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   using KT         = ekat::KokkosTypes<DefaultDevice>;
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   const int ncols      = field_layout.dim(COL);
   const Real lat_delta = sp(180.0) / m_num_zonal_bins;
   auto lat_view    = m_lat.get_view<const Real *>();
   auto ncols_per_bin_view = ncols_per_bin.get_view<Int *>();
-  TeamPolicy team_policy = ESU::get_default_team_policy(m_num_zonal_bins, ncols);
+  TeamPolicy team_policy = TPF::get_default_team_policy(m_num_zonal_bins, ncols);
   Kokkos::parallel_for("count_columns_per_zonal_bin_" + field.name(),
       team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
         const int bin_i      = tm.league_rank();
