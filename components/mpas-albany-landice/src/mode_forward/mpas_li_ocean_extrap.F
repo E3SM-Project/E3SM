@@ -42,7 +42,8 @@ module li_ocean_extrap
    !--------------------------------------------------------------------
 
    public :: li_ocean_extrap_solve
-
+   public :: li_is_tf_invalid
+   
    !--------------------------------------------------------------------
    ! Private module variables
    !--------------------------------------------------------------------
@@ -52,14 +53,7 @@ module li_ocean_extrap
    real (kind=RKIND), parameter :: gamma2 = 8.8E-2
    real (kind=RKIND), parameter :: gamma3 = 7.61E-4
 
-   ! physical constraints on temp, salinity, and thermal forcing
    real (kind=RKIND), parameter :: default_salinity = 32.0
-   real (kind=RKIND), parameter :: max_allowable_salinity = 40.0
-   real (kind=RKIND), parameter :: min_allowable_salinity = 0.0
-   real (kind=RKIND), parameter :: max_allowable_temperature = 100.0
-   real (kind=RKIND), parameter :: min_allowable_temperature = -10.0 
-   real (kind=RKIND), parameter :: max_allowable_TF = 100.0
-   real (kind=RKIND), parameter :: min_allowable_TF = -10.0
 !***********************************************************************
 
 contains
@@ -503,19 +497,16 @@ contains
                                    ! Change temperature and/or salinity if
                                    ! outside of physical range
                               
-                              if ((oceanSalinity(iLayer,jCell) < min_allowable_salinity) .or. &
-                                    (oceanSalinity(iLayer,jCell) > max_allowable_salinity)) then 
+                              if (li_is_tf_invalid(oceanSalinity(iLayer,jCell))) then
                                  oceanSalinity(iLayer,jCell) = default_salinity
                                  growMask(jCell) = 1
                               endif
-                              if ((oceanTemperature(iLayer,jCell) < min_allowable_temperature) .or. &
-                                    (oceanTemperature(iLayer,jCell) > max_allowable_temperature)) then
+                              if (li_is_tf_invalid(oceanTemperature(iLayer,jCell))) then
                                  oceanTemperature(iLayer,jCell) = (gamma1 * oceanSalinity(iLayer,jCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
                                  growMask(jCell) = 1
                               endif
                            endif
-                           if ((ismip6shelfMelt_3dThermalForcing(iLayer,jCell) < min_allowable_TF) .or. &
-                                 (ismip6shelfMelt_3dThermalForcing(iLayer,jCell) > max_allowable_TF)) then 
+                           if (li_is_tf_invalid(ismip6shelfMelt_3dThermalForcing(iLayer,jCell))) then
                               ismip6shelfMelt_3dThermalForcing(iLayer,jCell) = 0.0_RKIND
                               growMask(jCell) = 1
                            endif
@@ -661,7 +652,7 @@ contains
                      if ( validOceanMaskOld(iLayer,jCell) == 1 ) then
                          
                         do iField = 1, nFields  
-                           if ( oceanFieldOld(iField,iLayer,jCell) > 1.0e6_RKIND) then
+                           if (li_is_tf_invalid(oceanFieldOld(iField,iLayer,jCell))) then
                               ! raise error if an invalid ocean data value is used
                               call mpas_log_write("ocean data value used for extrapolation is invalid" // &
                                    "in horizontal extrapolations: cell id=$i, iLayer=$i, iField=$i, value=$r", &
@@ -821,7 +812,7 @@ contains
                     .and. (availOceanMask(iLayer-1,iCell) == 1) .and. &
                     (ismip6shelfMelt_zOcean(iLayer) >= bedTopography(iCell)) ) then
                   do iField = 1, nFields
-                     if (oceanField(iField,iLayer-1,iCell) > 1.0e6_RKIND) then
+                     if (li_is_tf_invalid(oceanField(iField,iLayer-1,iCell))) then
                         ! raise error if an invalid ocean data value is used
                         call mpas_log_write("ocean data value used for extrapolation is invalid" // &
                            "in vertical extrapolations: cell id=$i, iLayer=$i, TF=$r", &
@@ -1016,6 +1007,33 @@ contains
       block => block % next
       enddo
    end subroutine calculate_thermal_forcing
+
+   !-----------------------------------------------------------------------
+
+   !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+   ! 
+   !  function li_is_tf_invalid
+
+   !> \brief Determines if a cell is invalid if it is within a threshold away from
+   !  invalid_value_TF
+   !> \author Matt Hoffman
+   !> \date Jul 10 2025
+   !-----------------------------------------------------------------------
+
+   logical function li_is_tf_invalid(value)
+      
+      real(kind=RKIND), intent(in) :: value     
+      real(kind=RKIND), pointer :: invalid_value
+      real(kind=RKIND) :: eps
+           
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value)
+           
+      eps = 10.0_RKIND * epsilon(1.0_RKIND) * max(abs(value), abs(invalid_value))
+      li_is_tf_invalid = (abs(value - invalid_value) < eps)
+      return
+
+   end function li_is_tf_invalid
+
 end module li_ocean_extrap
 
 

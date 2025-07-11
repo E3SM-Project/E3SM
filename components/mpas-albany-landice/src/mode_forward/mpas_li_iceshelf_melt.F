@@ -32,6 +32,7 @@ module li_iceshelf_melt
    use li_setup
    use li_mask
    use li_constants
+   use li_ocean_extrap
 
    implicit none
    private
@@ -1285,7 +1286,7 @@ module li_iceshelf_melt
 
                ! check if any invalid TFocean3d value is used for calculating TF at the draft
                if (ksup >= 1) then
-                  if (TFocean3d(ksup, iCell) == invalid_value_TF) then
+                  if (li_is_tf_invalid(TFocean3d(ksup, iCell))) then
                      call mpas_log_write("iceshelf_melt_ismip6: Invalid value for TFocean3d. " // &
                         "ksup=$i TFocean3d(ksup, iCell)=$r indexToCellID=$i", MPAS_LOG_ERR, &
                         intArgs=(/ksup,  indexToCellID(iCell)/), &
