@@ -50,6 +50,7 @@ initial_conditions:
   cldfrac_tot: 0.138584624960092
   horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
   constituent_fluxes: 0.0
+  z_iface : 0.0
 # The parameters for I/O control
 scorpio:
   output_yaml_files: ["output.yaml"]
