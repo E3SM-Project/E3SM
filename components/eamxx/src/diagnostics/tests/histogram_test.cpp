@@ -29,9 +29,6 @@ TEST_CASE("histogram") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  // A numerical tolerance
-  auto tol = std::numeric_limits<Real>::epsilon() * 100;
-
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -117,7 +114,8 @@ TEST_CASE("histogram") {
   const int num_bins = bin_values.size()-1;
   const std::string bin_dim_name = diag1_field.get_header().get_identifier().get_layout().name(0);
   FieldLayout diag0_layout({CMP}, {num_bins}, {bin_dim_name});
-  FieldIdentifier diag0_id("qc_histogram_manual", diag0_layout, kg / kg, grid->name(), DataType::IntType);
+  FieldIdentifier diag0_id("qc_histogram_manual", diag0_layout,
+    FieldIdentifier::Units::nondimensional(), grid->name(), DataType::IntType);
   Field diag0_field(diag0_id);
   diag0_field.allocate_view();
 
@@ -134,46 +132,47 @@ TEST_CASE("histogram") {
 
   // Compare
   REQUIRE(views_are_equal(diag1_field, diag0_field));
-/*
+
   // Try other known cases
-  // Set qc1_v to 1.0 to get zonal averages of 1.0/nlats
-  const Real zavg1 = sp(1.0);
+  // Set qc1_v to so histogram is all entries in first bin
+  const Real zavg1 = sp(0.5*(bin_values[0]+bin_values[1]));
   qc1.deep_copy(zavg1);
   diag1->compute_diagnostic();
-  auto diag1_view_host = diag1_field.get_view<Real *, Host>();
-  for (int nlat = 0; nlat < nlats; nlat++) {
-    REQUIRE_THAT(diag1_view_host(nlat), Catch::Matchers::WithinRel(zavg1, tol));
+  auto diag1_view_host = diag1_field.get_view<Int *, Host>();
+  REQUIRE(diag1_view_host(0) == qc1.get_header().get_identifier().get_layout().size());
+  for (int bin_i = 1; bin_i < num_bins; bin_i++) {
+    REQUIRE(diag1_view_host(bin_i) == 0);
   }
 
   // other diags
-  // Set qc2_v to 5.0 to get weighted average of 5.0
-  const Real zavg2 = sp(5.0);
+  // Set qc2_v so histogram is all entries in last bin
+  const Real zavg2 = sp(0.5*(bin_values[num_bins-1]+bin_values[num_bins]));
   qc2.deep_copy(zavg2);
   diag2->set_required_field(qc2);
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
   auto diag2_field = diag2->get_diagnostic();
-
-  auto diag2_view_host = diag2_field.get_view<Real **, Host>();
-  for (int i = 0; i < nlevs; ++i) {
-    for (int nlat = 0; nlat < nlats; nlat++) {
-      REQUIRE_THAT(diag2_view_host(nlat, i), Catch::Matchers::WithinRel(zavg2, tol));
-    }
+  auto diag2_view_host = diag2_field.get_view<Int *, Host>();
+  REQUIRE(diag2_view_host(num_bins-1) == qc2.get_header().get_identifier().get_layout().size());
+  for (int bin_i = num_bins-2; bin_i >=0; bin_i--) {
+    REQUIRE(diag2_view_host(bin_i) == 0);
   }
 
   // Try a random case with qc3
-  FieldLayout diag3m_layout({CMP, CMP, LEV}, {nlats, dim3, nlevs},
-                            {bin_dim_name, e2str(CMP), e2str(LEV)});
-  FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, kg / kg, grid->name());
+  FieldLayout diag3m_layout({CMP}, {num_bins}, {bin_dim_name});
+  FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout,
+    FieldIdentifier::Units::nondimensional(), grid->name(), DataType::IntType);
   Field diag3m_field(diag3m_id);
   diag3m_field.allocate_view();
   auto qc3_view_h    = qc3.get_view<Real ***, Host>();
-  auto diag3m_view_h = diag3m_field.get_view<Real ***, Host>();
-  for (int i = 0; i < ngcols; i++) {
-    const int nlat = i % nlats;
-    for (int j = 0; j < dim3; j++) {
-      for (int k = 0; k < nlevs; k++) {
-        diag3m_view_h(nlat, j, k) += area_view_h(i) / zonal_areas[nlat] * qc3_view_h(i, j, k);
+  auto diag3m_view_h = diag3m_field.get_view<Int *, Host>();
+  for (int bin_i = 0; bin_i < num_bins; bin_i++) {
+    for (int i = 0; i < ngcols; i++) {
+      for (int j = 0; j < dim3; j++) {
+        for (int k = 0; k < nlevs; k++) {
+          if (bin_values[bin_i] <= qc3_view_h(i,j,k) && qc3_view_h(i,j,k) < bin_values[bin_i+1])
+            diag3m_view_h(bin_i) += 1;
+        }
       }
     }
   }
@@ -183,7 +182,6 @@ TEST_CASE("histogram") {
   diag3->compute_diagnostic();
   auto diag3_field = diag3->get_diagnostic();
   REQUIRE(views_are_equal(diag3_field, diag3m_field));
-  */
 }
 
 } // namespace scream
