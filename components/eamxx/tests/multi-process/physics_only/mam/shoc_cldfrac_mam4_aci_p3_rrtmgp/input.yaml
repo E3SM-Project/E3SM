@@ -81,6 +81,7 @@ initial_conditions:
 
   #variables required for mam4_aci
   dgnum: 1e-3
+  z_iface : 0.0
 
 # The parameters for I/O control
 scorpio:

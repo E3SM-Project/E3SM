@@ -39,6 +39,7 @@ initial_conditions:
   cldfrac_liq_prev: 0.138584624960092
   eddy_diff_heat: 0.620820118789603
   w_variance:  1.110977269289875E-002
+  z_iface : 0.0
 
 # The parameters for I/O control
 scorpio:

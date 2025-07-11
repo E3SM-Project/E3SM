@@ -70,7 +70,7 @@ initial_conditions:
   hetfrz_immersion_nucleation_tend: 0.1
   hetfrz_contact_nucleation_tend: 0.1
   hetfrz_deposition_nucleation_tend: 0.1
-
+  z_iface : 0.0
 # The parameters for I/O control
 scorpio:
   output_yaml_files: ["output.yaml"]

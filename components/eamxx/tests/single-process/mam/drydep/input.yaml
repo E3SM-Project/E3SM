@@ -42,7 +42,7 @@ initial_conditions:
   ram1: 0.45506166067091662E+002
   dgnumwet: 0.41417721820867320E-007
   wetdens: 0.15100083211582764E+004
-
+  z_iface : 0.0
 # The parameters for I/O control
 scorpio:
   output_yaml_files: ["output.yaml"]

@@ -32,6 +32,7 @@ initial_conditions:
   #we should get the following variables from other processes
   pbl_height : 1.0
   constituent_fluxes: 1.e-5
+  z_iface : 0.0
 
 # The parameters for I/O control
 scorpio:
