@@ -9,7 +9,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   41)
 
 # Create the test
 CreateADUnitTest(${TEST_BASE_NAME}
-  LIBS cld_fraction ${dynLibName} shoc p3 scream_rrtmgp mam
+  LIBS cld_fraction ${dynLibName} shoc p3 scream_rrtmgp mam mam4_aero_microphys
   LABELS dynamics shoc cld p3 rrtmgp physics mam4_optics
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   FIXTURES_SETUP_INDIVIDUAL ${FIXTURES_BASE_NAME}
