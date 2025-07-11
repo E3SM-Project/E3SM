@@ -24,6 +24,7 @@ initial_conditions:
   hetfrz_deposition_nucleation_tend: 0.1
   pbl_height : 1.0
   phis : 1.0
+  z_iface : 0.0
 
 atmosphere_processes:
   atm_procs_list: [homme,physics]
