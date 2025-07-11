@@ -1355,15 +1355,24 @@ contains
 
     ip = p_inst
 
+    if (first_time) then
+
+       ! we calc these both first rather then in their respective "if" constructs
+       ! below to avoid g2x indices not getting calculated (because the call to
+       ! x2g and g2x happen separately, in budgets1 and budgets2, respectively).
+
+       ! indices needed for g2x
+       index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
+       index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
+       index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
+
+       ! indices needed for x2g
+       index_x2g_Flgl_qice  = mct_aVect_indexRA(x2g_g,'Flgl_qice')
+       index_g2x_Sg_icemask = mct_avect_indexRA(g2x_g,'Sg_icemask')
+
+    end if
+
     if( present(do_g2x))then  ! do fields from glc to coupler (g2x_)
-
-       if (first_time) then
-
-          index_g2x_Fogg_rofl   = mct_aVect_indexRA(g2x_g,'Fogg_rofl')
-          index_g2x_Fogg_rofi   = mct_aVect_indexRA(g2x_g,'Fogg_rofi')
-          index_g2x_Figg_rofi   = mct_aVect_indexRA(g2x_g,'Figg_rofi')
-
-       end if
 
        ic = c_glc_gr
        kArea = mct_aVect_indexRA(dom_g%data,afldname)
@@ -1381,13 +1390,6 @@ contains
     endif ! end do fields from glc to coupler (g2x_)
 
     if( present(do_x2g))then  ! do fields from coupler to glc (x2g_)
-
-       if (first_time) then
-
-          index_x2g_Flgl_qice  = mct_aVect_indexRA(x2g_g,'Flgl_qice')
-          index_g2x_Sg_icemask = mct_avect_indexRA(g2x_g,'Sg_icemask')
-
-       end if
 
        l2gacc_lx_cnt_avg = prep_glc_get_l2gacc_lx_cnt_avg() ! counter for how many times SMB flux accumulation has occured 
        ic = c_glc_gs
