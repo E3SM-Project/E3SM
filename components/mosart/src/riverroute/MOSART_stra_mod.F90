@@ -41,7 +41,7 @@ MODULE MOSART_stra_mod
 		real(r8) :: le= 2.501e6													! latent heat of vaporaization (J/kg)
 		real(r8) :: rho_w = 1.e3												! Water density  (kg/m3)
 		real(r8) :: rho_a = 1.177_r8											! Air density  (kg/m3)
-		real(r8) :: st_bl = 5.67e-8												! Stefan-Boltzmann constant ~ W/m^2/K^4
+		real(r8) :: st_bl = 5.670374419e-8												! Stefan-Boltzmann constant ~ W/m^2/K^4
 		real(r8) :: t_frz   = 273.15_r8											! freezing temperature (K)
 		real(r8) :: sar   	= 1.0_r8											! Surface area ratio
 		integer  :: s_dtime														! number of sub hourly time step
