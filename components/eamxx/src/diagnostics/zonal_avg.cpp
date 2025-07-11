@@ -1,7 +1,5 @@
 #include "diagnostics/zonal_avg.hpp"
 
-#include "share/field/field_utils.hpp"
-
 namespace scream {
 
 // Utility to compute the contraction of a field along its column dimension.
