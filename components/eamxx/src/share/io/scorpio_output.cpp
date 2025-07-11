@@ -416,6 +416,25 @@ run (const std::string& filename,
         continue;
       }
 
+      //////////////////////// TODO ////////////////////////
+      // 1. Make the diags/procs COMPUTE the mask for the field, and
+      //    set the mask as extra data. We DON'T want to compute it here
+      // 2. Create count with same layout as the mask
+      // 3. In avg=tally/count, count MAY have smaller layout, hence
+      //    be incompatible. E.g., mask came from FieldAtPressureLevel,
+      //    and was (ncol), but the field is (ncol,2). In this case, we
+      //    ASSUME same mask for all slices, so do scaling on all slices:
+      //      avg.component(i).scale_inv(count)
+      // 4. In FieldAtPressureLevel, make ALL instances at same Plev share
+      //    the same mask field. How? Two ideas:
+      //      - store a static map string->Field in class, and use a string
+      //        key that encodes grid and press level. Only compute mask if
+      //        timestamp of mask field is "old"
+      //      - make another diag that computes the mask, make F@plev depend
+      //        on that diag.
+      // 5. FieldAtPressureLevel (and vremap) should only fill the mask field
+      //    if we later need it. E.g, if no AvgCount AND no hremap, we don't need it.
+      //////////////////////////////////////////////////////
       auto field = fm_after_hr->get_field(fname);
       auto mask  = count.get_header().get_extra_data<Field>("mask");
 
@@ -896,7 +915,7 @@ init_diagnostics ()
 
     // Some diags do need to track avg count
     if (m_track_avg_cnt and diag_header.may_be_filled()) {
-      const auto& mask_id = diag_header.get_extra_data("mask_id");
+      const auto& mask_id = diag_header.get_extra_data<std::string>("mask_id");
       m_field_to_avg_cnt_suffix.emplace(diag_field.name(),mask_id);
     }
 
