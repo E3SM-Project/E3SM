@@ -86,7 +86,13 @@ module MOABGridType
      real(r8), pointer :: lon(:)        ! [num_ghosted] longitude of the cell
 
   end type grid_vertex
-  
+
+  type, public :: grid_edge
+     integer           :: num             ! number of edges
+     integer, pointer  :: cell_ids(:,:)   ! ghosted cell IDs left and right of the edge
+     real(r8), pointer :: vertex_ids(:,:) ! ghosted ID vertices forming the edge
+  end type grid_edge
+
   ! topological entity list
   integer :: proc_offset  ! current task offset in the global index space
 
@@ -103,8 +109,9 @@ module MOABGridType
   public :: proc_offset
   public :: sblock
 
-  type(grid_cell), public :: moab_gcell
-  type(grid_cell), public :: moab_gvertex
+  type(grid_cell)  , public :: moab_gcell
+  type(grid_vertex), public :: moab_gvertex
+  type(grid_edge)  , public :: moab_edge_internal
 
   !------------------------------------------------------------------------
 
@@ -147,7 +154,9 @@ contains
     integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
     integer, dimension(5) :: entity_type
     real(r8), pointer :: data(:)  ! temporary
-    integer :: g, num_neighbor, num_vertex
+    integer :: g, n, num_neighbor, num_vertex, num_internal_edges
+    integer :: ghosted_id_left, ghosted_id_right
+    integer :: nat_id_left, nat_id_right
     integer, pointer :: neighbor_id(:), vertex_id(:)
 
     if(masterproc) &
@@ -305,6 +314,8 @@ contains
     allocate(neighbor_id(max_num_neighbor))
     allocate(vertex_id  (max_num_neighbor))
 
+    num_internal_edges = 0
+
     do g = 1, moab_gcell%num_ghosted
 
        ! get data about cell neighbors
@@ -314,16 +325,50 @@ contains
        moab_gcell%num_neighbor(g)                = num_neighbor
        moab_gcell%neighbor_id(g, 1:num_neighbor) = neighbor_id(1:num_neighbor) + 1 ! convert to 1-based index
 
+       do n = 1, moab_gcell%num_neighbor(g)
+          ghosted_id_left  = g
+          ghosted_id_right = moab_gcell%neighbor_id(g, n)
+
+          nat_id_left  = moab_gcell%natural_id(ghosted_id_left)
+          nat_id_right = moab_gcell%natural_id(ghosted_id_right)
+
+          if (nat_id_left < nat_id_right) then
+             num_internal_edges = num_internal_edges + 1
+          endif
+       end do
+
        ! get data about vertices
        num_vertex = max_num_neighbor
        ierr = iMOAB_GetElementConnectivity(mlndghostid, g - 1, num_vertex, vertex_id) ! convert g from 1- to 0-based index
 
-       moab_gcell%num_vertex(g)                = num_vertex
-       moab_gcell%neighbor_id(g, 1:num_vertex) = vertex_id(1:num_vertex) + 1 ! convert to 1-based index
+       moab_gcell%num_vertex(g)              = num_vertex
+       moab_gcell%vertex_id(g, 1:num_vertex) = vertex_id(1:num_vertex) + 1 ! convert to 1-based index
 
        if (moab_gcell%owner_rank(g) == iam) moab_gcell%is_owned(g) = .true.
 
     enddo
+
+    moab_edge_internal%num = num_internal_edges
+    allocate(moab_edge_internal%cell_ids(num_internal_edges,2))
+    allocate(moab_edge_internal%vertex_ids(num_internal_edges,2))
+
+    num_internal_edges = 0
+    do g = 1, moab_gcell%num_ghosted
+
+       do n = 1, moab_gcell%num_neighbor(g)
+          ghosted_id_left  = g
+          ghosted_id_right = moab_gcell%neighbor_id(g, n)
+
+          nat_id_left  = moab_gcell%natural_id(ghosted_id_left)
+          nat_id_right = moab_gcell%natural_id(ghosted_id_right)
+
+          if (nat_id_left < nat_id_right) then
+             num_internal_edges = num_internal_edges + 1
+             moab_edge_internal%cell_ids(num_internal_edges, 1) = ghosted_id_left
+             moab_edge_internal%cell_ids(num_internal_edges, 2) = ghosted_id_right
+          endif
+       end do
+    end do
 
     ! free up temporary memory
     deallocate(neighbor_id)
