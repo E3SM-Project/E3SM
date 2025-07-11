@@ -902,6 +902,7 @@ contains
       integer :: iCell, iLayer, counter, icebergCellVertID
       real (kind=RKIND), dimension(:), allocatable :: freezingTemperature
       real (kind=RKIND) :: inverseSalt, phaseChange, tempDiff, saltDiff, newTemp, gadeSlope
+      real (kind=RKIND), pointer :: invalid_value_TF
 
       block => domain % blocklist
       do while (associated(block))
@@ -910,6 +911,7 @@ contains
       call mpas_pool_get_subpool(block % structs, 'extrapOceanData', extrapOceanDataPool)
       call mpas_pool_get_config(liConfigs, 'config_TF_iceberg_melt', config_TF_iceberg_melt)
       call mpas_pool_get_config(liConfigs, 'config_TF_iceberg_depth', config_TF_iceberg_depth)
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
       call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
       call mpas_pool_get_array(extrapOceanDataPool, 'oceanTemperature', oceanTemperature)
       call mpas_pool_get_array(extrapOceanDataPool, 'oceanSalinity', oceanSalinity)
@@ -934,7 +936,11 @@ contains
 
             ! From Jenkins 2011 and Slater 2020
             do iLayer = 1, nISMIP6OceanLayers
-                ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = oceanTemperature(iLayer,iCell) - (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+               if (li_is_tf_invalid(oceanTemperature(iLayer,iCell)) .or. li_is_tf_invalid(oceanSalinity(iLayer,iCell))) then
+                  ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = invalid_value_TF
+               else 
+                  ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = oceanTemperature(iLayer,iCell) - (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
+               endif
             enddo
       
          elseif ( (config_TF_iceberg_melt == 'on') .or. ( (config_TF_iceberg_melt == 'mask') .and. (icebergFjordMask(iCell) == 1)) ) then
@@ -960,37 +966,44 @@ contains
 
             !Start alteration just above iceberg depth or bedTopography and work upwards
             do iLayer = icebergCellVertID, 1, -1 
-               ! Calculate Gade slope (slope of submarine melt mixing line) at each z-level. Assumes ice at pressure melting temperature
-               if (oceanSalinity(iLayer,iCell) == 0) then
-                  gadeSlope = 0.0_RKIND
-               else
-                  inverseSalt = (1.0_RKIND / oceanSalinity(iLayer,iCell)) 
-                  phaseChange = latent_heat_ice/cp_ice 
-                  tempDiff = (freezingTemperature(iLayer) - oceanTemperature(iLayer,iCell))
-
-                  gadeSlope = inverseSalt * (phaseChange - tempDiff)
-               endif
-
-               ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line.
-               if (ismip6shelfMelt_zOcean(iLayer + 1) < bedTopography(iCell)) then
-                  ! Not enough information to alter cells immediately above bed topography
-                  saltDiff = 0.0_RKIND
-                  newTemp = oceanTemperature(iLayer, iCell)
-               else
-                  saltDiff = oceanSalinity(iLayer,iCell) - oceanSalinity(iLayer + 1,iCell)     
-                  newTemp = (gadeSlope * saltDiff) + oceanTemperature(iLayer + 1, iCell)
-               endif
+               if (.not. (li_is_tf_invalid(oceanTemperature(iLayer,iCell)) .or. li_is_tf_invalid(oceanSalinity(iLayer,iCell)))) then
                
-               ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
-               ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
-               oceanTemperature(iLayer,iCell) = min(newTemp,oceanTemperature(iLayer,iCell))
+                  ! Calculate Gade slope (slope of submarine melt mixing line) at each z-level. Assumes ice at pressure melting temperature
+                  if (oceanSalinity(iLayer,iCell) == 0) then
+                     gadeSlope = 0.0_RKIND
+                  else
+                     inverseSalt = (1.0_RKIND / oceanSalinity(iLayer,iCell)) 
+                     phaseChange = latent_heat_ice/cp_ice 
+                     tempDiff = (freezingTemperature(iLayer) - oceanTemperature(iLayer,iCell))
+
+                     gadeSlope = inverseSalt * (phaseChange - tempDiff)
+                  endif
+
+                  ! Now that we have the slope of the melt line, alter ocean temperatures along submarine melt line.
+                  if (ismip6shelfMelt_zOcean(iLayer + 1) < bedTopography(iCell)) then
+                     ! Not enough information to alter cells immediately above bed topography
+                     saltDiff = 0.0_RKIND
+                     newTemp = oceanTemperature(iLayer, iCell)
+                  else
+                     saltDiff = oceanSalinity(iLayer,iCell) - oceanSalinity(iLayer + 1,iCell)     
+                     newTemp = (gadeSlope * saltDiff) + oceanTemperature(iLayer + 1, iCell)
+                  endif
+               
+                  ! Ensure iceberg melting only cools ocean. Uncommon but possible to warm ocean if already a sharp thermocline in the ocean.
+                  ! In reality, melt-driven upwelling can warm ocean but we are not accounting for this process.
+                  oceanTemperature(iLayer,iCell) = min(newTemp,oceanTemperature(iLayer,iCell))
            
-               ! Ensure no artificially adjusted temperatures fall below the freezing temperature
-               oceanTemperature(iLayer, iCell) = max(freezingTemperature(iLayer), oceanTemperature(iLayer,iCell))
+                  ! Ensure no artificially adjusted temperatures fall below the freezing temperature
+                  oceanTemperature(iLayer, iCell) = max(freezingTemperature(iLayer), oceanTemperature(iLayer,iCell))
+               endif
             enddo
             
             do iLayer = 1, nISMIP6OceanLayers
-               ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = oceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
+               if (li_is_tf_invalid(oceanTemperature(iLayer,iCell)) .or. li_is_tf_invalid(oceanSalinity(iLayer,iCell))) then
+                  ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = invalid_value_TF
+               else 
+                  ismip6shelfMelt_3dThermalForcing(iLayer, iCell) = oceanTemperature(iLayer, iCell) - freezingTemperature(iLayer)
+               endif
             enddo
          endif
       enddo

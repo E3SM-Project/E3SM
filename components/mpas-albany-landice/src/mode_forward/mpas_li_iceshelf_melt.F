@@ -1454,6 +1454,8 @@ module li_iceshelf_melt
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
       character(len=StrKIND), pointer :: config_TF_vertical_calc
+      real (kind=RKIND), pointer :: invalid_value_TF
+      logical :: validTF
       logical, pointer :: config_calculate_thermal_forcing
       real (kind=RKIND) :: dzAccumulated, dz
       integer :: err_tmp, kk, iLayer
@@ -1474,7 +1476,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
-      
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_TF', invalid_value_TF)
       call mpas_pool_get_config(liConfigs, 'config_calculate_thermal_forcing', config_calculate_thermal_forcing)
       call mpas_pool_get_config(liConfigs, 'config_TF_vertical_calc', config_TF_vertical_calc)
 
@@ -1525,7 +1527,9 @@ module li_iceshelf_melt
                         if (kk == 1) then
                            TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell)
                           
-                        ! For all other bed depths, average between surface and layer just above bed depth.
+                        ! For all other bed depths, average between surface and
+                        ! layer just above bed depth. All cells above bathymetry
+                        ! are already defined as valid.
                         else
                            dzAccumulated = 0.0_RKIND
                            do iLayer = 1, kk
@@ -1541,21 +1545,27 @@ module li_iceshelf_melt
                   enddo
 
                elseif (config_TF_vertical_calc == '200-500') then
-                  ! Depth-weighted average between 200-500m, ignoring bathymetry
+                  ! Depth-weighted average of valid cells between 200-500m, ignoring bathymetry
                   TFocean(:) = 0.0_RKIND
                   do iCell = 1, nCells
                      if (bedTopography(iCell) < 0.0_RKIND) then 
                         dzAccumulated = 0.0_RKIND
+                        validTF = .false.
                         do iLayer = 1, nISMIP6OceanLayers
-                           if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) ) then
-
+                           if ( (zOcean(iLayer) <= -200.0_RKIND) .and. (zOcean(iLayer) >= -500.0_RKIND) &
+                                 .and. (.not. li_is_tf_invalid(ismip6shelfMelt_3dThermalForcing(iLayer,iCell))) ) then
+                              
                               dz = zBndsOcean(2,iLayer) - zBndsOcean(1,iLayer)
                               TFocean(iCell) = (TFocean(iCell) * dzAccumulated + ismip6shelfMelt_3dThermalForcing(iLayer,iCell) * dz) &
                                    / (dzAccumulated + dz)
                               dzAccumulated = dzAccumulated + dz
+                              validTF = .true.
                         
                            endif
                         enddo
+                        if (.not. validTF) then
+                           TFocean(iCell) = invalid_value_TF
+                        endif
                      endif
                   enddo
 
