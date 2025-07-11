@@ -95,6 +95,7 @@ void MAMMicrophysics::set_grids(
 
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
+  constexpr auto kmol_inv = pow(mol, -1);
 
   // Surface geopotential [m2/s2]
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
@@ -184,10 +185,8 @@ void MAMMicrophysics::set_grids(
   // ---------------------------------------------------------------------
   // These variables are "computed" or outputs for the process
   // ---------------------------------------------------------------------
-  // Number of externally forced chemical species
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-  FieldLayout vector3d_extcnt = grid_->get_3d_vector_layout(true, extcnt, "ext_cnt");
+  FieldLayout vector3d_extcnt = grid_->get_3d_vector_layout(true, extcnt_, "ext_cnt");
 
   // Register computed fields for external forcing
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
@@ -205,7 +204,7 @@ void MAMMicrophysics::set_grids(
   extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
   if (extra_mam4_aero_microphys_diags_) {
     const FieldLayout vector3d_num_gas_aerosol_constituents =
-        grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
+        grid_->get_3d_vector_layout(true, num_gas_aerosol_constituents_, "num_gas_aerosol_constituents");
 
     // Diagnostics: tendencies due to gas phase chemistry [kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
@@ -218,6 +217,29 @@ void MAMMicrophysics::set_grids(
 
     // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+
+    // get_3d_tensor_layout extents are [ncol, gas_pcnst, nq<...>, nlev]
+    FieldLayout tensor3d_gas_tend =
+        grid_->get_3d_tensor_layout(true, {num_gas_aerosol_constituents_, num_gas_tend_},
+                                    {"num_gas_aerosol_constituents", "num_gas_tend_"});
+    FieldLayout tensor3d_gas_tend_cw =
+        grid_->get_3d_tensor_layout(true, {num_gas_aerosol_constituents_, num_gas_tend_cw_},
+                                    {"num_gas_aerosol_constituents", "num_gas_tend_cw_"});
+
+    // Note: The following hold grid-cell-averaged "tracer mixing ratios"--that is, they are
+    //       ncol columns with nlev grid cells for which the tensor qoi is the subarea mixing
+    //       ratio, averaged over the subareas and the tensor quantity has shape
+    //       {num_gas_aerosol_constituents_ x num_gas_tend_[cw_]}
+    //  the related subarea mixing ratios, qXXXN (X=gas,aer,wat,num; N=1:4), are:
+    //    XXX=gas - gas species [kmol/kmol]
+    //    XXX=aer - aerosol mass species (excluding water) [kmol/kmol]
+    //    XXX=wat - aerosol water [kmol/kmol]
+    //    XXX=num - aerosol number [#/kmol]
+    // TODO: Since units are heterogeneous, for now, we'll give this field units of
+    //       [1/kmol] and handle unrolling them in src/diagnostics/
+    //       (per conversation among @mahf708, @TaufiqHassan, @mjschmidt271)
+    add_field<Computed>("gas_spec_tendencies", tensor3d_gas_tend, kmol_inv, grid_name);
+    add_field<Computed>("gas_spec_tendencies_cw", tensor3d_gas_tend_cw, kmol_inv, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -410,7 +432,6 @@ void MAMMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) {
 int MAMMicrophysics::get_len_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -421,13 +442,16 @@ int MAMMicrophysics::get_len_temporary_views() {
   // invariants_
   work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
-  work_len += ncol_ * nlev_ * extcnt;
+  work_len += ncol_ * nlev_ * extcnt_;
+  // gas_spec_tend_col
+  work_len += nlev_ * num_gas_aerosol_constituents_ * num_gas_tend_;
+  // gas_spec_tend_cw_col
+  work_len += nlev_ * num_gas_aerosol_constituents_ * num_gas_tend_cw_;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
-  constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
@@ -439,8 +463,12 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   invariants_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
-  extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
-  work_ptr += ncol_ * nlev_ * extcnt;
+  extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt_);
+  work_ptr += ncol_ * nlev_ * extcnt_;
+  gas_spec_tend_col_ = view_3d(work_ptr, nlev_, num_gas_aerosol_constituents_, num_gas_tend_);
+  work_ptr += nlev_ * num_gas_aerosol_constituents_ * num_gas_tend_;
+  gas_spec_tend_cw_col_ = view_3d(work_ptr, nlev_, num_gas_aerosol_constituents_, num_gas_tend_cw_);
+  work_ptr += nlev_ * num_gas_aerosol_constituents_ * num_gas_tend_cw_;
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -593,7 +621,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy =
        ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
@@ -663,11 +691,14 @@ void MAMMicrophysics::run_impl(const double dt) {
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
   view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
+  view_4d gas_spec_tendencies, gas_spec_tendencies_cw;
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
+    gas_spec_tendencies = get_field_out("gas_spec_tendencies").get_view<Real****>();
+    gas_spec_tendencies_cw = get_field_out("gas_spec_tendencies_cw").get_view<Real****>();
   }
 
   // climatology data for linear stratospheric chemistry
@@ -807,18 +838,16 @@ void MAMMicrophysics::run_impl(const double dt) {
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }
   const auto zenith_angle = acos_cosine_zenith_;
-  constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
 
-  const auto &extfrc   = extfrc_;
-  const auto &forcings = forcings_;
-  constexpr int extcnt = mam4::gas_chemistry::extcnt;
+  const auto &extfrc               = extfrc_;
+  const auto &forcings             = forcings_;
 
   const int offset_aerosol = mam4::utils::gasses_start_ind();
-  Real adv_mass_kg_per_moles[num_gas_aerosol_constituents];
+  Real adv_mass_kg_per_moles[num_gas_aerosol_constituents_];
   // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
   // the device.
-  int clsmap_4[num_gas_aerosol_constituents], permute_4[num_gas_aerosol_constituents];
-  for(int i = 0; i < num_gas_aerosol_constituents; ++i) {
+  int clsmap_4[num_gas_aerosol_constituents_], permute_4[num_gas_aerosol_constituents_];
+  for(int i = 0; i < num_gas_aerosol_constituents_; ++i) {
     // NOTE: state_q is kg/kg-dry-air; adv_mass is in g/mole.
     // Convert adv_mass to kg/mole as vmr_from_mmr function uses
     // molec_weight_dry_air with kg/mole units
@@ -836,10 +865,17 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
   const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
+  const int extcnt = extcnt_;
+  const int num_gas_aerosol_constituents = num_gas_aerosol_constituents_;
 
-  //NOTE: we need to initialize photo_rates_
-  Kokkos::deep_copy(photo_rates_,0.0);
-  // loop over atmosphere columns and compute aerosol microphyscs
+  Kokkos::Array<Real, num_gas_aerosol_constituents_> molar_mass_g_per_mol_tmp;
+  for (int i = 0; i < num_gas_aerosol_constituents_; ++i) {
+    molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
+  }
+
+  // NOTE: we need to initialize photo_rates_
+  Kokkos::deep_copy(photo_rates_, 0.0);
+  // loop over atmosphere columns and compute aerosol microphysics
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -958,12 +994,25 @@ void MAMMicrophysics::run_impl(const double dt) {
             }
           }
         }
+
+        // NOTE: we use these temporary views so that we can pass a column-view
+        // the way mam4xx expects it--the level index in the final dimension.
+        // This also means that mam4xx can subview into it by level and keep it
+        // layout-right
+        const auto &gas_spec_tend_col = gas_spec_tend_col_;
+        const auto &gas_spec_tend_cw_col = gas_spec_tend_cw_col_;
+
         // These output values need to be put somewhere:
-        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
-        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
-        Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
-        Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
+        // deposition flux of so4 [mole/mole/s]
+        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);
+        // deposition flux of h2so4 [mole/mole/s]
+        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);
+        // deposition velocity [1/cm/s]
+        Real dflx_col[num_gas_aerosol_constituents] = {};
+        // deposition flux [1/cm^2/s]
+        Real dvel_col[num_gas_aerosol_constituents] = {};
         // Output: values are dvel, dflx
+        // Diagnostic Output: gas_spec_tend_col, gas_spec_tend_cw_col
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
@@ -980,10 +1029,25 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
             config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays, 
-	    dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, aqso4_flx_col, aqh2so4_flx_col, diag_arrays,
+            dvel_col, dflx_col, gas_spec_tend_col, gas_spec_tend_cw_col, progs);
 
         team.team_barrier();
+
+        if (extra_mam4_aero_microphys_diags) {
+          // const auto gas_spec_tendencies =
+          //     get_field_out("gas_spec_tendencies").get_view<Real****>();
+          // const auto gas_spec_tendencies_cw =
+          //     get_field_out("gas_spec_tendencies_cw").get_view<Real****>();
+          const auto gas_spec_tend_col_f = ekat::subview(gas_spec_tendencies, icol);
+          const auto gas_spec_tend_cw_col_f = ekat::subview(gas_spec_tendencies_cw, icol);
+          // shuffle the views from mam4xx into the corresponding field views
+          transpose_mam_gas_tend_view(gas_spec_tend_col, gas_spec_tend_col_f,
+                                      nlev_, mam4::microphysics::nqtendaa());
+          transpose_mam_gas_tend_view(gas_spec_tend_col, gas_spec_tend_col_f,
+                                      nlev_, mam4::microphysics::nqqcwtendaa());
+        }
+
         // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
@@ -1001,17 +1065,13 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Mapping from external forcing species index to physics constituent index
   // NOTE: These indices should match the species in extfrc_lst
   // TODO: getting rid of hard-coded indices
-  Kokkos::Array<int, extcnt> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
-  Kokkos::Array<Real, num_gas_aerosol_constituents> molar_mass_g_per_mol_tmp;
-  for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
-    molar_mass_g_per_mol_tmp[i] = mam4::gas_chemistry::adv_mass[i];  // host-only access
-  }
+  Kokkos::Array<int, extcnt_> extfrc_pcnst_index = {3, 6, 14, 27, 28, 13, 18, 30, 5};
 
   // Transpose extfrc_ from internal layout [ncol][nlev][extcnt]
   // to output layout [ncol][extcnt][nlev]
   // This aligns with expected field storage in the EAMxx infrastructure.
   Kokkos::parallel_for("transpose_extfrc",
-    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt, nlev}),
+    Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {ncol, extcnt_, nlev}),
     KOKKOS_LAMBDA(const int i, const int j, const int k) {
       const int pcnst_idx = extfrc_pcnst_index[j];
       const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
