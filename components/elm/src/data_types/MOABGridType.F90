@@ -24,7 +24,7 @@ module MOABGridType
   iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
   iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
   iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh, iMOAB_GetVisibleElementsInfo, &
-  iMOAB_GetNeighborElements
+  iMOAB_GetNeighborElements, iMOAB_GetElementConnectivity
 
   use mpi
   use iso_c_binding
@@ -63,6 +63,9 @@ module MOABGridType
 
      integer, pointer  :: num_neighbor (:) ! [num_ghosted] number of neighboring grid cells
      integer, pointer  :: neighbor_id(:,:) ! [num_ghosted, max_num_neighbor] ghosted ID of neighboring grid cells
+
+     integer, pointer  :: num_vertex(:)    ! [num_ghosted] number of vertices
+     integer, pointer  :: vertex_id(:,:)   ! [num_ghosted, max_num_neigbor] IDs of vertices
 
      real(r8), pointer :: lat(:)        ! [num_ghosted] latitude of the cell
      real(r8), pointer :: lon(:)        ! [num_ghosted] longitude of the cell
@@ -144,8 +147,8 @@ contains
     integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
     integer, dimension(5) :: entity_type
     real(r8), pointer :: data(:)  ! temporary
-    integer :: g, num_neighbor
-    integer, pointer :: neighbor_id(:)
+    integer :: g, num_neighbor, num_vertex
+    integer, pointer :: neighbor_id(:), vertex_id(:)
 
     if(masterproc) &
         write(iulog,*) "elm_moab_load_grid_file(): reading mesh file: ", trim(meshfile)
@@ -284,23 +287,42 @@ contains
     if (ierr > 0 )  &
     call endrun('Error: fail to query information for visible elements')
 
-    ! determine neigbors of grid cells
+    ! allocate memory for storing data about neigbors and vertices for each grid cell
     allocate(moab_gcell%num_neighbor(moab_gcell%num_ghosted))
+    allocate(moab_gcell%num_vertex(moab_gcell%num_ghosted))
     allocate(moab_gcell%neighbor_id(moab_gcell%num_ghosted, max_num_neighbor))
+    allocate(moab_gcell%vertex_id(moab_gcell%num_ghosted, max_num_neighbor))
 
-    moab_gcell%num_neighbor(:) = max_num_neighbor
-    moab_gcell%neighbor_id(:, :) = -1
+    ! initialize
+    moab_gcell%num_neighbor(:)  = 0
+    moab_gcell%num_vertex(:)    = 0
+    moab_gcell%neighbor_id(:,:) = -1
+    moab_gcell%vertex_id(:,:)   = -1
 
+    ! allocate memory for temporay variables
     allocate(neighbor_id(max_num_neighbor))
+    allocate(vertex_id  (max_num_neighbor))
+
     do g = 1, moab_gcell%num_ghosted
 
+       ! get data about cell neighbors
        num_neighbor = max_num_neighbor
        ierr = iMOAB_GetNeighborElements(mlndghostid, g, num_neighbor, neighbor_id)
 
        moab_gcell%num_neighbor(g)                = num_neighbor
        moab_gcell%neighbor_id(g, 1:num_neighbor) = neighbor_id(1:num_neighbor)
+
+       ! get data about vertices
+       num_vertex = max_num_neighbor
+       ierr = iMOAB_GetElementConnectivity(mlndghostid, g, num_vertex, vertex_id)
+
+       moab_gcell%num_vertex(g)                = num_vertex
+       moab_gcell%neighbor_id(g, 1:num_vertex) = vertex_id(1:num_vertex)
     enddo
+
+    ! free up temporary memory
     deallocate(neighbor_id)
+    deallocate(vertex_id)
 
 #ifdef MOABDEBUG
       ! write out the local mesh file to disk (np tasks produce np files)
