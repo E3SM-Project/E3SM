@@ -1,0 +1,163 @@
+#include "diagnostics/conditional_sampling.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
+#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <string>
+
+namespace scream {
+
+// Utility function to apply conditional sampling logic
+KOKKOS_INLINE_FUNCTION
+bool evaluate_condition(const Real &condition_val, const int &op_code, const Real &comparison_val) {
+  // op_code: 0=eq, 1=ne, 2=gt, 3=ge, 4=lt, 5=le
+  switch (op_code) {
+    case 0: return condition_val == comparison_val;  // eq or ==
+    case 1: return condition_val != comparison_val;  // ne or !=
+    case 2: return condition_val > comparison_val;   // gt or >
+    case 3: return condition_val >= comparison_val;  // ge or >=
+    case 4: return condition_val < comparison_val;   // lt or <
+    case 5: return condition_val <= comparison_val;  // le or <=
+    default: return false;
+  }
+}
+
+// Utility function to convert operator string to code
+int get_operator_code(const std::string& op) {
+  if (op == "eq" || op == "==") return 0;
+  if (op == "ne" || op == "!=") return 1;
+  if (op == "gt" || op == ">")  return 2;
+  if (op == "ge" || op == ">=") return 3;
+  if (op == "lt" || op == "<")  return 4;
+  if (op == "le" || op == "<=") return 5;
+  return -1; // Invalid operator
+}
+
+// Utility function to apply conditional sampling for 1D fields (either ncols or nlevs)
+void apply_conditional_sampling_1d(
+    const Field &output_field, const Field &input_field, const Field &condition_field,
+    const std::string &condition_op, const Real &condition_val,
+    const Real &fill_value = constants::DefaultFillValue<Real>::value) {
+
+  const auto output_v    = output_field.get_view<Real *>();
+  const auto input_v     = input_field.get_view<const Real *>();
+  const auto condition_v = condition_field.get_view<const Real *>();
+
+  const int n_elements = output_field.get_header().get_identifier().get_layout().dims()[0];
+
+  // Convert operator string to integer code for device use
+  const int op_code = get_operator_code(condition_op);
+
+  Kokkos::parallel_for(
+      "ConditionalSampling1D", Kokkos::RangePolicy<>(0, n_elements), KOKKOS_LAMBDA(const int &idx) {
+        if (evaluate_condition(condition_v(idx), op_code, condition_val)) {
+          output_v(idx) = input_v(idx);
+        } else {
+          output_v(idx) = fill_value;
+        }
+      });
+  Kokkos::fence();
+}
+
+// Utility function to apply conditional sampling for 2D fields (ncols x nlevs)
+void apply_conditional_sampling_2d(
+    const Field &output_field, const Field &input_field, const Field &condition_field,
+    const std::string &condition_op, const Real &condition_val,
+    const Real &fill_value = constants::DefaultFillValue<Real>::value) {
+
+  const auto output_v    = output_field.get_view<Real **>();
+  const auto input_v     = input_field.get_view<const Real **>();
+  const auto condition_v = condition_field.get_view<const Real **>();
+
+  const int ncols = output_field.get_header().get_identifier().get_layout().dims()[0];
+  const int nlevs = output_field.get_header().get_identifier().get_layout().dims()[1];
+
+  // Convert operator string to integer code for device use
+  const int op_code = get_operator_code(condition_op);
+
+  Kokkos::parallel_for(
+      "ConditionalSampling2D", Kokkos::RangePolicy<>(0, ncols * nlevs),
+      KOKKOS_LAMBDA(const int &idx) {
+        const int icol = idx / nlevs;
+        const int ilev = idx % nlevs;
+
+        if (evaluate_condition(condition_v(icol, ilev), op_code, condition_val)) {
+          output_v(icol, ilev) = input_v(icol, ilev);
+        } else {
+          output_v(icol, ilev) = fill_value;
+        }
+      });
+  Kokkos::fence();
+}
+
+ConditionalSampling::ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params)
+    : AtmosphereDiagnostic(comm, params) {
+
+  m_input_f      = m_params.get<std::string>("field_name");
+  m_condition_f  = m_params.get<std::string>("condition_field");
+  m_condition_op = m_params.get<std::string>("condition_operator");
+
+  const auto str_condition_v = m_params.get<std::string>("condition_value");
+  // TODO: relying on std::stod to throw if bad val is given
+  m_condition_v = static_cast<Real>(std::stod(str_condition_v));
+
+  m_diag_name =
+      m_input_f + "_where_" + m_condition_f + "_" + m_condition_op + "_" + str_condition_v;
+}
+
+void ConditionalSampling::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+  const auto &gn = m_params.get<std::string>("grid_name");
+  const auto g   = grids_manager->get_grid("physics");
+
+  add_field<Required>(m_input_f, gn);
+  add_field<Required>(m_condition_f, gn);
+}
+
+void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
+
+  const auto ifid = get_field_in(m_input_f).get_header().get_identifier();
+  const auto cfid = get_field_in(m_condition_f).get_header().get_identifier();
+
+  FieldIdentifier d_fid(m_diag_name, ifid.get_layout().clone(), ifid.get_units(),
+                        ifid.get_grid_name());
+  m_diagnostic_output = Field(d_fid);
+  m_diagnostic_output.allocate_view();
+
+  // check that m_input_f and m_condition_f have the same layout
+  EKAT_REQUIRE_MSG(ifid.get_layout() == cfid.get_layout(),
+                   "Error! ConditionalSampling only supports comparing fields of the same layout.\n"
+                   " - input field has layout of " + ifid.get_layout().to_string() + "\n" +
+                   " - condition field has layout of " + cfid.get_layout().to_string() + "\n");
+}
+
+void ConditionalSampling::compute_diagnostic_impl() {
+  const auto &f = get_field_in(m_input_f);
+  const auto &c = get_field_in(m_condition_f);
+  const auto &d = m_diagnostic_output;
+
+  // Validate operator
+  const int op_code = get_operator_code(m_condition_op);
+  EKAT_REQUIRE_MSG(op_code >= 0,
+                   "Error! Invalid condition operator: '" + m_condition_op + "'\n"
+                   "Valid operators are: eq, ==, ne, !=, gt, >, ge, >=, lt, <, le, <=\n");
+
+  // Get the fill value from constants
+  const Real fill_value = constants::DefaultFillValue<Real>::value;
+
+  // Determine field layout and apply appropriate conditional sampling
+  const auto &layout = f.get_header().get_identifier().get_layout();
+  const int rank     = layout.rank();
+
+  if (rank == 1) {
+    // 1D field: (ncols) or (nlevs)
+    apply_conditional_sampling_1d(d, f, c, m_condition_op, m_condition_v, fill_value);
+  } else if (rank == 2) {
+    // 2D field: (ncols, nlevs)
+    apply_conditional_sampling_2d(d, f, c, m_condition_op, m_condition_v, fill_value);
+  } else {
+    // no support for now, contact devs
+    EKAT_ERROR_MSG("Error! ConditionalSampling only supports 1D or 2D field layouts.\n"
+                   " - field layout: " + layout.to_string() + "\n"
+                   " - field rank: " + std::to_string(rank) + "\n");
+  }
+}
+
+} // namespace scream
