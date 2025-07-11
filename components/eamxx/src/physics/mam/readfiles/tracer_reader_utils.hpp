@@ -14,7 +14,7 @@
 #include "share/util/eamxx_time_interpolation.hpp"
 
 #define USE_OLD_LINOZ_FILE_READ
-#define USE_OLD_VERTICAL_FILE_READ
+// #define USE_OLD_VERTICAL_FILE_READ
 
 namespace scream::mam_coupling {
 
