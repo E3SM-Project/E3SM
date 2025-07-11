@@ -122,6 +122,7 @@ module elm_driver
   use elm_instMod            , only : waterflux_vars
   use elm_instMod            , only : waterstate_vars
   use elm_instMod            , only : atm2lnd_vars
+  use elm_instMod            , only : ocn2lnd_vars
   use elm_instMod            , only : lnd2atm_vars
   use elm_instMod            , only : glc2lnd_vars
   use elm_instMod            , only : lnd2glc_vars
@@ -901,8 +902,8 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
-            atm2lnd_vars, lnd2atm_vars, soilstate_vars, energyflux_vars,     &
-            soilhydrology_vars, aerosol_vars )
+            atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, soilstate_vars,        &
+            energyflux_vars, soilhydrology_vars, aerosol_vars )
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -1220,7 +1221,7 @@ contains
             filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic, &
             filter(nc)%num_urbanc, filter(nc)%urbanc,             &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
-            atm2lnd_vars, glc2lnd_vars,        &
+            atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars,             &
             soilhydrology_vars, soilstate_vars)
 
        else
@@ -1230,7 +1231,7 @@ contains
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &
-            atm2lnd_vars, glc2lnd_vars,      &
+            atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars,         &
             soilhydrology_vars, soilstate_vars)
 
        end if
