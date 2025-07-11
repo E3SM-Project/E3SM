@@ -16,7 +16,7 @@ module MOABGridType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_kind_mod     , only : CXX => SHR_KIND_CXX
   use shr_log_mod      , only : errMsg => shr_log_errMsg
-  use spmdmod  , only: masterproc, mpicom
+  use spmdmod  , only: iam, masterproc, mpicom
   use elm_varctl  ,  only : iulog, fatmlndfrc  ! for messages and domain file name
   use abortutils , only : endrun
 
@@ -58,7 +58,7 @@ module MOABGridType
      integer           :: num_global    ! number of global "active" grid cells     
 
      integer, pointer  :: natural_id(:) ! [num_ghosted] ID of cell in the full mesh, while accounting for active and inactive cells
-     integer, pointer  :: is_owned(:)   ! [num_ghosted] true if the grid cell locally owned
+     logical, pointer  :: is_owned(:)   ! [num_ghosted] true if the grid cell locally owned
      integer, pointer  :: owner_rank(:) ! [num_ghosted] MPI rank that owns the cell
 
      integer, pointer  :: num_neighbor (:) ! [num_ghosted] number of neighboring grid cells
@@ -290,12 +290,14 @@ contains
     ! allocate memory for storing data about neigbors and vertices for each grid cell
     allocate(moab_gcell%num_neighbor(moab_gcell%num_ghosted))
     allocate(moab_gcell%num_vertex(moab_gcell%num_ghosted))
+    allocate(moab_gcell%is_owned(moab_gcell%num_ghosted))
     allocate(moab_gcell%neighbor_id(moab_gcell%num_ghosted, max_num_neighbor))
     allocate(moab_gcell%vertex_id(moab_gcell%num_ghosted, max_num_neighbor))
 
     ! initialize
     moab_gcell%num_neighbor(:)  = 0
     moab_gcell%num_vertex(:)    = 0
+    moab_gcell%is_owned(:)      = .false.
     moab_gcell%neighbor_id(:,:) = -1
     moab_gcell%vertex_id(:,:)   = -1
 
@@ -307,17 +309,20 @@ contains
 
        ! get data about cell neighbors
        num_neighbor = max_num_neighbor
-       ierr = iMOAB_GetNeighborElements(mlndghostid, g, num_neighbor, neighbor_id)
+       ierr = iMOAB_GetNeighborElements(mlndghostid, g - 1, num_neighbor, neighbor_id) ! convert g from 1- to 0-based index
 
        moab_gcell%num_neighbor(g)                = num_neighbor
-       moab_gcell%neighbor_id(g, 1:num_neighbor) = neighbor_id(1:num_neighbor)
+       moab_gcell%neighbor_id(g, 1:num_neighbor) = neighbor_id(1:num_neighbor) + 1 ! convert to 1-based index
 
        ! get data about vertices
        num_vertex = max_num_neighbor
-       ierr = iMOAB_GetElementConnectivity(mlndghostid, g, num_vertex, vertex_id)
+       ierr = iMOAB_GetElementConnectivity(mlndghostid, g - 1, num_vertex, vertex_id) ! convert g from 1- to 0-based index
 
        moab_gcell%num_vertex(g)                = num_vertex
-       moab_gcell%neighbor_id(g, 1:num_vertex) = vertex_id(1:num_vertex)
+       moab_gcell%neighbor_id(g, 1:num_vertex) = vertex_id(1:num_vertex) + 1 ! convert to 1-based index
+
+       if (moab_gcell%owner_rank(g) == iam) moab_gcell%is_owned(g) = .true.
+
     enddo
 
     ! free up temporary memory
@@ -342,6 +347,7 @@ contains
     deallocate(moab_gcell%owner_rank   )
     deallocate(moab_gcell%num_neighbor )
     deallocate(moab_gcell%neighbor_id  )
+    deallocate(moab_gcell%is_owned     )
 
     deallocate(sblock)
 
