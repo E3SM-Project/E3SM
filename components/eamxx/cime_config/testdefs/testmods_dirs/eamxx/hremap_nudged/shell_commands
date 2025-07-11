@@ -1,0 +1,14 @@
+#!/bin/bash
+
+cime_root=$(./xmlquery --value CIMEROOT)
+input_data_dir=$(./xmlquery --value DIN_LOC_ROOT)
+atmchange=$cime_root/../components/eamxx/scripts/atmchange
+case_name=$(./xmlquery --value CASE)
+
+$atmchange -b physics::atm_procs_list+="nudging"
+
+$atmchange -b nudging::nudging_filenames_patterns="${input_data_dir}/atm/scream/hremap_nudging/output*.nc"
+$atmchange -b nudging::source_pressure_type=TIME_DEPENDENT_3D_PROFILE
+$atmchange -b nudging::nudging_fields=U,V
+$atmchange -b nudging::nudging_timescale=21600
+$atmchange -b nudging::nudging_refine_remap_mapfile="${input_data_dir}/atm/scream/maps/map_ne4pg2_to_ne30pg2_nco_c20241108.nc"
