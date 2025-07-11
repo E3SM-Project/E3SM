@@ -709,6 +709,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <num_c2 type="real">0.0</num_c2>
     <num_c3 type="real">0.0</num_c3>
     <num_c4 type="real">0.0</num_c4>
+    <z_iface type="real">0.0</z_iface>
     <!-- Surface fluxes for the land model from MAM4xx wet scavenging-->
     <wetdep_hydrophilic_bc type="real">1e-5</wetdep_hydrophilic_bc>
     <drydep_hydrophilic_bc type="real">1e-5</drydep_hydrophilic_bc>
