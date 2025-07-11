@@ -41,7 +41,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
                     E_pmid   ,E_cld      ,                             &
                     E_aer_tau,E_aer_tau_w,E_aer_tau_w_g,E_aer_tau_w_f, &
                     eccf     ,E_coszrs   ,solin        ,sfac         , &
-                    E_asdir  ,E_asdif    ,E_aldir      ,E_aldif      , &
+                    E_asdir  ,E_asdif    ,E_aldir      ,E_aldif,   vis_frc, &
                     qrs      ,qrsc       ,fsnt         ,fsntc        ,fsntoa,fsutoa, &
                     fsntoac  ,fsnirtoa   ,fsnrtoac     ,fsnrtoaq     ,fsns    , &
                     fsnsc    ,fsdsc      ,fsds         ,sols         ,soll    , &
@@ -122,6 +122,8 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    real(r8), intent(in) :: E_aldir(pcols)     ! 0.7-5.0 micro-meter srfc alb: direct rad
    real(r8), intent(in) :: E_asdif(pcols)     ! 0.2-0.7 micro-meter srfc alb: diffuse rad
    real(r8), intent(in) :: E_aldif(pcols)     ! 0.7-5.0 micro-meter srfc alb: diffuse rad
+   real(r8), intent(in) :: vis_frc            ! Fraction of surface insolation blueward of 0.7microns
+                                              ! in rrtmg_sw split band 
    real(r8), intent(in) :: sfac(nbndsw)            ! factor to account for solar variability in each band 
    integer,  intent(inout) :: clm_rand_seed(pcols,4)            ! rand # seeds for sw
 
@@ -522,7 +524,7 @@ subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
    call rrtmg_sw(lchnk, Nday, rrtmg_levs, icld,         &
                  pmidmb, pintmb, tlay, tlev, tsfc, &
                  h2ovmr, o3vmr, co2vmr, ch4vmr, o2vmr, n2ovmr, &
-                 asdir, asdif, aldir, aldif, &
+                 asdir, asdif, aldir, aldif, vis_frc, &
                  coszrs, eccf, dyofyr, solvar, &
                  inflgsw, iceflgsw, liqflgsw, &
                  cld_stosw, tauc_stosw, ssac_stosw, asmc_stosw, fsfc_stosw, &
