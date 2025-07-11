@@ -53,9 +53,11 @@ initial_conditions:
   #variables needed for SHOC
   surf_sens_flux: 0.0
   surf_evap: 0.0
-  
+
   #variables needed for mam4-aci
   dgnum: 1e-3
+
+  z_iface : 0.0
 
 # The parameters for I/O control
 scorpio:

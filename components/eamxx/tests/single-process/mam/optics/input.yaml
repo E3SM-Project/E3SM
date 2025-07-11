@@ -41,6 +41,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height : 1.0
   phis : 1.0
+  z_iface : 0.0
 
 # The parameters for I/O control
 scorpio:
