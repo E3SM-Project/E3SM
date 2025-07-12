@@ -1,16 +1,6 @@
 #include "vertical_remapper_mam4.hpp"
-
-#include "share/grid/point_grid.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/field/field_tag.hpp"
-#include "share/field/field_identifier.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
-
-#include <ekat/util/ekat_units.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-
-#include <numeric>
+#include <mam4xx/mam4.hpp>
 
 namespace scream
 {
@@ -34,11 +24,7 @@ void VerticalRemapperMAM4::remap_fwd_impl ()
 
   }
 }
-void VerticalRemapperMAM4::
-set_source_pressure (const Field& p)
-{
-  m_src_pmid=p;
-}
+
 void VerticalRemapperMAM4::
 set_target_pressure (const Field& p)
 {
@@ -78,7 +64,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncols, nlevs_tgt);
-
+  using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
   if (m_vremap_type== MAM4_PSRef) {
 
     const int unit_factor_pin=1;
@@ -86,7 +72,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
     Kokkos::parallel_for(
       "vert_interp", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
+      KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto pin_at_icol     = ekat::subview(p_src_c, icol);
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
@@ -104,7 +90,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
     Kokkos::parallel_for(
       "vert_interp", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
+      KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
         const auto datain_at_icol  = ekat::subview(datain, icol);
@@ -122,7 +108,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
       constexpr Real m2km    = 1e-3;
       Kokkos::parallel_for(
       "tracer_vert_interp_loop", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
+      KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto datain_at_icol  = ekat::subview(datain, icol);
         const auto dataout_at_icol = ekat::subview(dataout, icol);
