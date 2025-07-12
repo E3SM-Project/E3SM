@@ -1,9 +1,7 @@
 #ifndef EAMXX_VERTICAL_REMAPPER_MAM4_HPP
 #define EAMXX_VERTICAL_REMAPPER_MAM4_HPP
 
-// #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/vertical_remapper.hpp"
-#include <mam4xx/mam4.hpp>
 
 namespace scream
 {
@@ -29,7 +27,6 @@ public:
 
   ~VerticalRemapperMAM4 () = default;
 
-  void set_source_pressure (const Field& p);
   void set_target_pressure (const Field& p);
   void set_source_pressure (const std::string& file_name);
 
@@ -45,16 +42,6 @@ public:
                                      const Field& p_src, const Field& p_tgt) const;
 
 protected:
-
-  using KT = KokkosTypes<DefaultDevice>;
-
-  template<typename T>
-  using view_1d = typename KT::template view_1d<T>;
-  template<typename T>
-  using view_2d = typename KT::template view_2d<T>;
-
-  // a thread team dispatched to a single vertical column
-  using ThreadTeam = mam4::ThreadTeam;
   VertRemapType         m_vremap_type;
 };
 
