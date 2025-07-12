@@ -64,7 +64,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
   const auto policy =
       ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncols, nlevs_tgt);
-
+  using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
   if (m_vremap_type== MAM4_PSRef) {
 
     const int unit_factor_pin=1;
@@ -72,7 +72,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
     Kokkos::parallel_for(
       "vert_interp", policy,
-      KOKKOS_LAMBDA(const auto &team) {
+      KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto pin_at_icol     = ekat::subview(p_src_c, icol);
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
@@ -90,7 +90,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
 
     Kokkos::parallel_for(
       "vert_interp", policy,
-      KOKKOS_LAMBDA(const auto &team) {
+      KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
         const auto datain_at_icol  = ekat::subview(datain, icol);
@@ -108,7 +108,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
       constexpr Real m2km    = 1e-3;
       Kokkos::parallel_for(
       "tracer_vert_interp_loop", policy,
-      KOKKOS_LAMBDA(const auto &team) {
+      KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto datain_at_icol  = ekat::subview(datain, icol);
         const auto dataout_at_icol = ekat::subview(dataout, icol);
