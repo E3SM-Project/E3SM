@@ -487,21 +487,13 @@ def buildnml(case, caseroot, compname):
             lines.append('<streams>')
             lines.append('<immutable_stream name="mesh"')
             lines.append('                  type="none"')
-            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
-                    or ice_grid.startswith("RRSwISC6"):
-                lines.append('                  io_type="pnetcdf,cdf5"')
-            else:
-                lines.append('                  io_type="{}"'.format(ice_pio_typename))
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
             lines.append('                  filename_template="mesh_variables.nc" />')
             lines.append('')
             lines.append('<immutable_stream name="input"')
             lines.append('                  type="input"')
-            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
-                    or ice_grid.startswith("RRSwISC6"):
-                lines.append('                  io_type="pnetcdf,cdf5"')
-            else:
-                lines.append('                  io_type="{}"'.format(ice_pio_typename))
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
             lines.append('                  filename_interval="none"')
             lines.append('                  filename_template="{}"'.format(input_file))
@@ -520,11 +512,7 @@ def buildnml(case, caseroot, compname):
             lines.append('')
             lines.append('<immutable_stream name="restart"')
             lines.append('                  type="input;output"')
-            if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
-                    or ice_grid.startswith("RRSwISC6"):
-                lines.append('                  io_type="pnetcdf,cdf5"')
-            else:
-                lines.append('                  io_type="{}"'.format(ice_pio_typename))
+            lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
             lines.append('                  filename_template="{}.mpassi{}.rst.$Y-$M-$D_$S.nc"'.format(casename, inst_string))
             lines.append('                  filename_interval="output_interval"')
@@ -537,11 +525,7 @@ def buildnml(case, caseroot, compname):
             if ice_ic_mode == 'spunup':
                 lines.append('<immutable_stream name="restart_ic"')
                 lines.append('                  type="input"')
-                if ice_grid.startswith("oRRS1") or ice_grid.startswith("FRIS") \
-                        or ice_grid.startswith("RRSwISC6"):
-                        lines.append('                  io_type="pnetcdf,cdf5"')
-                else:
-                    lines.append('                  io_type="{}"'.format(ice_pio_typename))
+                lines.append('                  io_type="{}"'.format(ice_pio_typename))
 
                 lines.append('                  filename_template="{}"'.format(input_file))
                 lines.append('                  filename_interval="none"')
@@ -1005,7 +989,7 @@ def buildnml(case, caseroot, compname):
 
                 lines.append('<stream name="pointwiseStatsOutput"')
                 lines.append('        type="output"')
-                lines.append('        io_type="netcdf"')
+                lines.append('        io_type="{}"'.format(ice_pio_typename))
                 lines.append('        filename_template="pointwiseStats.$Y-$M-$D.nc"')
                 lines.append('        filename_interval="00-01-00_00:00:00"')
                 lines.append('        reference_time="01-01-01_00:00:00"')

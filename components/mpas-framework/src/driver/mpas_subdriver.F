@@ -285,6 +285,10 @@ module mpas_subdriver
          mesh_iotype = MPAS_IO_NETCDF
       else if (trim(iotype) == 'netcdf4') then
          mesh_iotype = MPAS_IO_NETCDF4
+      else if (trim(iotype) == 'adios') then
+         mesh_iotype = MPAS_IO_ADIOS
+      else if (trim(iotype) == 'adiosc') then
+         mesh_iotype = MPAS_IO_ADIOSC
       else
          mesh_iotype = MPAS_IO_PNETCDF
       end if
