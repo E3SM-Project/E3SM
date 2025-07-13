@@ -1917,9 +1917,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-field-layouts" class="md-nav__link">
+  <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported field layouts
+      Caveats
     </span>
   </a>
   
@@ -3762,9 +3762,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#supported-field-layouts" class="md-nav__link">
+  <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
-      Supported field layouts
+      Caveats
     </span>
   </a>
   
@@ -3807,14 +3807,13 @@
 
 
 <h1 id="conditional-sampling">Conditional sampling</h1>
-<p>The conditional sampling diagnostic allows youto extract field values
+<p>The conditional sampling diagnostic allows you to extract field values
 where a specified condition is met, filling other locations with a
 default fill value. This is useful for analyzing field behavior under
 specific atmospheric conditions or at particular levels.
 The goal of the diagnostics is to enable you to discard unwanted data
 via <em>other</em> reductions, such as horizontal and vertical reductions
-(see "Field contraction" section of the docs).
-Additionally they allow you to better track certain diagnostics.</p>
+(see "Field contraction" section of the docs).</p>
 <h2 id="overview">Overview</h2>
 <p>Conditional sampling creates a new field where:</p>
 <ul>
@@ -3883,10 +3882,21 @@ Use the special condition field name <code>lev</code>.</p>
 <li><code>p_mid_where_lev_eq_0</code></li>
 <li><code>qv_where_lev_le_10</code></li>
 </ul>
-<h2 id="supported-field-layouts">Supported field layouts</h2>
-<p>For now, we only support 1D or 2D fields.
-Adding support for higher-dimensioned fields is straightforward,
-but we will add it when requested.</p>
+<h2 id="caveats">Caveats</h2>
+<ul>
+<li>For now, we only support 1D or 2D fields.
+  These include most fields of interest with the following layouts
+  (ncol,), (nlev,), (ncol,nlev).<br />
+  Adding support for higher-dimensioned fields is straightforward,
+  but we will add it when requested.</li>
+<li>The condition and input fields must have the same layout
+  (except for level-based sampling). In level-based sampling,
+  the level index must be present in the field.</li>
+<li>The condition is provided as a triplet of information string
+  (<code>&lt;condition&gt;_&lt;operator&gt;_&lt;value&gt;</code>). We assume the user knows
+  the standard unit of the condition that is used internally
+  in EAMxx field manager (there is no way to specify it).</li>
+</ul>
 <h2 id="example-configuration">Example configuration</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">%YAML</span><span class="w"> </span><span class="m">1.1</span>
 <span class="nn">---</span>
@@ -3895,15 +3905,12 @@ but we will add it when requested.</p>
 <span class="nt">fields</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">      </span><span class="c1"># Field-based conditional sampling</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_where_qv_gt_0.01</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_mid_where_T_mid_le_273.15.</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_mid_where_T_mid_le_273.15</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_where_p_mid_lt_50000</span>
-<span class="w">      </span><span class="c1"># Level-based conditional sampling  </span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_where_lev_gt_5</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_mid_where_lev_eq_0</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qv_where_lev_le_10</span>
-
 <span class="nt">output_control</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frequency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
 <span class="w">  </span><span class="nt">frequency_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nhours</span>
