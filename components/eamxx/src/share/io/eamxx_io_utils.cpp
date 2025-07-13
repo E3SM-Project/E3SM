@@ -141,11 +141,6 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
   std::regex vert_contract ("([A-Za-z0-9_]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
   std::regex zonal_avg (R"(([A-Za-z0-9_]+)_zonal_avg_(\d+)_bins$)");
-  // X_where_Y_comp_VAL
-  // X is a field name like ([A-Za-z0-9_]+)
-  // Y is a field name like ([A-Za-z0-9_]+)
-  // comp is one of: gt,ge,eq,ne,le,lt
-  // VAL is a numeric value (no units)
   std::regex conditional_sampling (R"(([A-Za-z0-9_]+)_where_([A-Za-z0-9_]+)_(gt|ge|eq|ne|le|lt)_(\d+(\.\d+)?)$)");
 
   std::string diag_name;
