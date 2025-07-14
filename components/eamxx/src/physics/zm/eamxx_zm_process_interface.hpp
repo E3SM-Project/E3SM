@@ -3,16 +3,14 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "physics/zm/zm_functions.hpp"
-
-// #include "physics/zm/fortran_bridge/zm_eamxx_bridge.hpp"
+#include "zm_functions.hpp"
 
 namespace scream
 {
 
 // Zhang-McFarlane Deep Convection scheme
 
-class ZMDeepConvection : public AtmosphereProcess
+class zm_deep_convection : public AtmosphereProcess
 {
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using ZMF = zm::Functions<Real, DefaultDevice>;
@@ -32,7 +30,7 @@ class ZMDeepConvection : public AtmosphereProcess
   public:
 
     // Constructors
-    ZMDeepConvection(const ekat::Comm& comm, const ekat::ParameterList& params);
+    zm_deep_convection(const ekat::Comm& comm, const ekat::ParameterList& params);
 
     // The type of subcomponent
     AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
@@ -50,10 +48,17 @@ class ZMDeepConvection : public AtmosphereProcess
 
     // define ZM process variables
     std::shared_ptr<const AbstractGrid> m_grid;
+    int m_pcols;
     int m_ncols;
     int m_nlevs;
+
+    // Structures for arguments to ZM
+    ZMF::zm_runtime_opt zm_opts;
+    ZMF::zm_input_state zm_input;
+    ZMF::zm_output_tend zm_tend;
+    ZMF::zm_output_diag zm_diag;
     
-}; // class ZMDeepConvection
+}; // class zm_deep_convection
 
 } // namespace scream
 
