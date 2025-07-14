@@ -12,6 +12,7 @@ module subgridAveMod
   use elm_varcon    , only : grlnd, nameg, namet, namel, namec, namep,spval 
   use elm_varctl    , only : iulog
   use decompMod     , only : bounds_type
+  use GridcellType  , only : grc_pp
   use TopounitType  , only : top_pp
   use LandunitType  , only : lun_pp
   use ColumnType    , only : col_pp,column_physical_properties
@@ -735,7 +736,7 @@ contains
           c = veg_pp%column(p)
           l = veg_pp%landunit(p)
 		  t = veg_pp%topounit(p)
-          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(l) /= spval) then
+          if (parr(p) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
              g = veg_pp%gridcell(p)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
              garr(g) = garr(g) + parr(p) * scale_p2c(p) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * veg_pp%wtgcell(p)
@@ -1182,6 +1183,28 @@ contains
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
              garr(g) = garr(g) + carr(c) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * col_pp%wtgcell(c)
              sumwt(g) = sumwt(g) + col_pp%wtgcell(c)
+			 
+			 ! TKT debugging
+	!		 write(iulog,*)'TKT c2g sumwt(g) ===> ',sumwt(g)
+	!		 write(iulog,*)'TKT c2g col_pp%wtgcell(c) ===> ',col_pp%wtgcell(c)
+	!		 write(iulog,*)'TKT c2g c ===> ',c
+	!		 write(iulog,*)'TKT c2g t ===> ',t
+	!		 write(iulog,*)'TKT c2g l ===> ',l
+	!		 write(iulog,*)'TKT c2g scale_t2g(t) ===> ',scale_t2g(t)
+	!		 write(iulog,*)'TKT c2g scale_l2t(l) ===> ',scale_l2t(l)
+	!		 write(iulog,*)'TKT c2g scale_c2l(c) ===> ',scale_c2l(c)
+	!		 write(iulog,*)'TKT c2g top_pp%wtgcell(t) ===> ',top_pp%wtgcell(t)
+	!		 write(iulog,*)'TKT c2g lun_pp%wtgcell(l) ===> ',lun_pp%wtgcell(l)
+	!		 write(iulog,*)'TKT c2g top_pp%nlandunits(t) ===> ',top_pp%nlandunits(t)
+	!		 write(iulog,*)'TKT c2g top_pp%ncolumns(t) ===> ',top_pp%ncolumns(t)
+	!		 write(iulog,*)'TKT c2g top_pp%npfts(t) ===> ',top_pp%npfts(t)
+	!		 write(iulog,*)'TKT c2g grc_pp%nlandunits(g) ===> ',grc_pp%nlandunits(g)
+	!		 write(iulog,*)'TKT c2g grc_pp%ncolumns(g) ===> ',grc_pp%ncolumns(g)
+	!		 write(iulog,*)'TKT c2g grc_pp%npfts(g) ===> ',grc_pp%npfts(g)
+	!		 write(iulog,*)'TKT c2g lun_pp%ncolumns(l) ===> ',lun_pp%ncolumns(l)
+	!		 write(iulog,*)'TKT c2g lun_pp%npfts(l) ===> ',lun_pp%npfts(l) 
+			 ! end TKT debugging
+			 
           end if
        end if
     end do
@@ -1196,7 +1219,7 @@ contains
     end do
     if (found) then
 #ifndef _OPENACC            
-        write(iulog,*) 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
+        write(iulog,*) 'c2g_1d_gpu error: sumwt is greater than 1.0 at g= ',index
         call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
 #endif 
     end if
@@ -1308,7 +1331,7 @@ contains
           if (col_pp%active(c) .and. col_pp%wtgcell(c) /= 0._r8) then
              l = col_pp%landunit(c)
 			 t = col_pp%topounit(c)
-             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_t2g(l) /= spval .and. scale_t2g(t) /= spval) then
+             if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval .and. scale_t2g(t) /= spval) then
                 g = col_pp%gridcell(c)
                 if (sumwt(g) == 0._r8) garr(g,j) = 0._r8
                 garr(g,j) = garr(g,j) + carr(c,j) * scale_c2l(c) * scale_l2t(l) * scale_t2g(t) * col_pp%wtgcell(c)
@@ -1487,7 +1510,7 @@ contains
 			 t = lun_pp%topounit(l)
              if (sumwt(g) == 0._r8) garr(g) = 0._r8
              garr(g) = garr(g) + larr(l) * scale_l2t(l) * scale_t2g(t) * lun_pp%wtgcell(l)
-             sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)
+             sumwt(g) = sumwt(g) + lun_pp%wtgcell(l)			 
           end if
        end if
     end do
@@ -1632,7 +1655,7 @@ contains
      else if (l2t_scale_type == 'lake') then
         scale_lookup(istdlak) = 1.0_r8
      else
-        write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2t_scale_type,' not supported'
+        write(iulog,*)'scale_l2t_lookup_array error: scale type ',l2t_scale_type,' not supported'
         call endrun(msg=errMsg(__FILE__, __LINE__))
      end if
 
@@ -1986,7 +2009,7 @@ contains
        if (col_pp%active(c) .and. col_pp%wttopounit(c) /= 0._r8) then
           l = col_pp%landunit(c)
           if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
-             t = col_pp%wttopounit(c)
+             t = col_pp%topounit(c)
              if (sumwt(t) == 0._r8) tarr(t) = 0._r8
              tarr(t) = tarr(t) + carr(c) * scale_c2l(c) * scale_l2t(l) * col_pp%wttopounit(c)
              sumwt(t) = sumwt(t) + col_pp%wttopounit(c)
@@ -2050,7 +2073,7 @@ contains
           if (col_pp%active(c) .and. col_pp%wttopounit(c) /= 0._r8) then
              l = col_pp%landunit(c)
              if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
-                t = col_pp%wttopounit(c)
+                t = col_pp%topounit(c)
                 if (sumwt(t) == 0._r8) tarr(t,j) = 0._r8
                 tarr(t,j) = tarr(t,j) + carr(c,j) * scale_c2l(c) * scale_l2t(l) * col_pp%wttopounit(c)
                 sumwt(t) = sumwt(t) + col_pp%wttopounit(c)
@@ -2095,6 +2118,10 @@ contains
     real(r8) :: scale_c2l(bounds%begc:bounds%endc) ! scale factor
     real(r8) :: scale_l2t(bounds%begl:bounds%endl) ! scale factor
     real(r8) :: sumwt(bounds%begt:bounds%endt)     ! sum of weights
+	real(r8) :: tmpsumwt !TKT
+	integer :: t_err   ! TKT
+	integer :: lndi, lndf, coli,colf,pfti,pftf,nlnd,ncols,nptfts
+	real(r8) :: pftcolwt, pftlndwt, pfttguwt,pftgwt,collndwt,coltguwt,colgwt,lndtguwt,lndgwt,tgugwt
     !------------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -2114,10 +2141,30 @@ contains
        if (col_pp%active(c) .and. col_pp%wttopounit(c) /= 0._r8) then
           l = col_pp%landunit(c)
           if (carr(c) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
-             t = col_pp%wttopounit(c)
+             t = col_pp%topounit(c)
              if (sumwt(t) == 0._r8) tarr(t) = 0._r8
              tarr(t) = tarr(t) + carr(c) * scale_c2l(c) * scale_l2t(l) * col_pp%wttopounit(c)
              sumwt(t) = sumwt(t) + col_pp%wttopounit(c)
+			 
+			 ! TKT debugging			 
+		!	 write(iulog,*)'TKT sumwt(t) ===> ',sumwt(t)
+		!	 write(iulog,*)'TKT col_pp%wttopounit(c) ===> ',col_pp%wttopounit(c)
+		!	 write(iulog,*)'TKT c2t col_pp%wtgcell(c) ===> ',col_pp%wtgcell(c)
+		!	 write(iulog,*)'TKT c2t c ===> ',c
+		!	 write(iulog,*)'TKT c2t t ===> ',t
+		!	 write(iulog,*)'TKT c2t l ===> ',l
+		!	 write(iulog,*)'TKT c2t scale_l2t(l) ===> ',scale_l2t(l)
+		!	 write(iulog,*)'TKT c2t scale_c2l(c) ===> ',scale_c2l(c)
+		!	 write(iulog,*)'TKT c2t top_pp%wtgcell(t) ===> ',top_pp%wtgcell(t)
+		!	 write(iulog,*)'TKT c2t lun_pp%wtgcell(l) ===> ',lun_pp%wtgcell(l)
+		!	 write(iulog,*)'TKT c2t top_pp%nlandunits(t) ===> ',top_pp%nlandunits(t)
+		!	 write(iulog,*)'TKT c2t top_pp%ncolumns(t) ===> ',top_pp%ncolumns(t)
+		!	 write(iulog,*)'TKT c2t top_pp%npfts(t) ===> ',top_pp%npfts(t)
+		!	 write(iulog,*)'TKT c2t lun_pp%ncolumns(l) ===> ',lun_pp%ncolumns(l)
+		!	 write(iulog,*)'TKT c2t lun_pp%npfts(l) ===> ',lun_pp%npfts(l) 
+			 
+			 ! end TKT debugging
+			 
           end if
        end if
     end do
@@ -2126,13 +2173,57 @@ contains
        if (sumwt(t) > 1.0_r8 + 1.e-6_r8) then
           found = .true.
           index = t
+		  ! TKT debugging 
+		  tmpsumwt = sumwt(t)
+		  tgugwt = top_pp%wtgcell(t)
+		  lndi = top_pp%lndi(t)
+		  lndf = top_pp%lndf(t)
+		  coli = top_pp%coli(t)
+		  colf = top_pp%colf(t)
+		  pfti = top_pp%pfti(t)
+		  pftf = top_pp%pftf(t)
+		  nlnd = top_pp%nlandunits(t)
+		  ncols = top_pp%ncolumns(t)
+		  nptfts = top_pp%npfts(t)
+		  ! end TKT debugging
+		  
        else if (sumwt(t) /= 0._r8) then
           tarr(t) = tarr(t)/sumwt(t)
        end if
     end do
     if (found) then
        write(iulog,*)'c2t_1d_gpu error: sumwt is greater than 1.0 at t= ',index
-       call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
+    !   ! TKT debugging
+	!   write(iulog,*)'TKT sumwt ===> ',tmpsumwt
+	!   write(iulog,*)'TKT begt===>',bounds%begt
+	!   write(iulog,*)'TKT endt===>',bounds%endt
+	!   write(iulog,*)'TKT tgugwt===>',tgugwt 
+	!   write(iulog,*)'TKT lndi ===> ',lndi
+	!   write(iulog,*)'TKT lndf ===> ',lndf
+	!   write(iulog,*)'TKT coli ===> ',coli
+	!   write(iulog,*)'TKT colf ===> ',colf
+	!   write(iulog,*)'TKT pfti ===> ',pfti
+	!   write(iulog,*)'TKT pftf ===> ',pftf
+	!   write(iulog,*)'TKT nlnd ===> ',nlnd
+	!   write(iulog,*)'TKT ncols ===> ',ncols
+	!   write(iulog,*)'TKT nptfts ===> ',nptfts
+	!   write(iulog,*)'TKT veg_pp%wttopounit(pfti) ===> ',veg_pp%wttopounit(pfti)
+	!   write(iulog,*)'TKT veg_pp%wttopounit(pftf) ===> ',veg_pp%wttopounit(pftf)
+	!!   
+	!   write(iulog,*)'TKT col_pp%wttopounit(coli) ===> ',col_pp%wttopounit(coli)
+	!   write(iulog,*)'TKT col_pp%wttopounit(colf) ===> ',col_pp%wttopounit(colf)
+	!   
+	!   write(iulog,*)'TKT lun_pp%wttopounit(lndi) ===> ',lun_pp%wttopounit(lndi)	   
+	!   write(iulog,*)'TKT lun_pp%wttopounit(lndf) ===> ',lun_pp%wttopounit(lndf)
+	!   
+	!   write(iulog,*)'TKT scale_c2l(coli) ===> ',scale_c2l(coli)
+	!   write(iulog,*)'TKT scale_c2l(coli) ===> ',scale_c2l(coli)
+	!   write(iulog,*)'TKT scale_l2t(lndi) ===> ',scale_l2t(lndi)
+	!   write(iulog,*)'TKT scale_l2t(lndf) ===> ',scale_l2t(lndf)	   
+	!   write(iulog,*)'TKT top_pp%landunit_indices(:,index) ===> ',top_pp%landunit_indices(:,index)
+
+	   ! TKT debugging ends
+	   call endrun(decomp_index=index, elmlevel=namet, msg=errMsg(__FILE__, __LINE__))
     end if
 
   end subroutine c2t_1d_gpu
@@ -2179,7 +2270,7 @@ contains
           if (col_pp%active(c) .and. col_pp%wttopounit(c) /= 0._r8) then
              l = col_pp%landunit(c)
              if (carr(c,j) /= spval .and. scale_c2l(c) /= spval .and. scale_l2t(l) /= spval) then
-                t = col_pp%wttopounit(c)
+                t = col_pp%topounit(c)
                 if (sumwt(t) == 0._r8) tarr(t,j) = 0._r8
                 tarr(t,j) = tarr(t,j) + carr(c,j) * scale_c2l(c) * scale_l2t(l) * col_pp%wttopounit(c)
                 sumwt(t) = sumwt(t) + col_pp%wttopounit(c)
@@ -2671,7 +2762,7 @@ contains
     !$acc routine seq
     ! DESCRIPTION:
     ! Create a lookup array, scale_lookup(1..max_lunit), which gives the scale factor for
-    ! each landunit type depending on l2g_scale_type
+    ! each landunit type depending on l2t_scale_type
     !
     ! !USES:
     use landunit_varcon, only : istsoil, istcrop, istice, istice_mec, istdlak

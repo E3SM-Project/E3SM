@@ -841,17 +841,17 @@ module TopounitDataType
 	!this%heat1_tgu(begt:endt) = spval
     !call hist_addfld1d (fname='TOP_HEAT1',  units='J/m^2',  &
     !     avgflag='A', long_name='initial topounit total heat content', &
-    !     ptr_lnd=this%heat1_tgu)
+    !     ptr_topo=this%heat1_tgu)
 
     !this%heat2_tgu(begt:endt) = spval
     !call hist_addfld1d (fname='TOP_HEAT2',  units='J/m^2',  &
     !     avgflag='A', long_name='post land cover change total heat content', &
-    !     ptr_lnd=this%heat2_tgu, default='inactive')  
+    !     ptr_topo=this%heat2_tgu, default='inactive')  
 
     !this%liquid_water_temp1_tgu(begt:endt) = spval
     !call hist_addfld1d (fname='TOP_LIQUID_WATER_TEMP1', units='K', &
     !     avgflag='A', long_name='initial topounit weighted average liquid water temperature', &
-    !     ptr_lnd=this%liquid_water_temp1_tgu, default='inactive')
+    !     ptr_topo=this%liquid_water_temp1_tgu, default='inactive')
 	
   end subroutine init_top_es
 
@@ -908,7 +908,7 @@ module TopounitDataType
     this%eflx_dynbal(begt:endt) = spval 
     call hist_addfld1d (fname='TOP_EFLX_DYNBAL',  units='W/m^2',  &
          avgflag='A', long_name='dynamic land cover change conversion energy flux', &
-         ptr_lnd=this%eflx_dynbal)
+         ptr_topo=this%eflx_dynbal)
 
   end subroutine top_ef_init
 
@@ -980,37 +980,37 @@ module TopounitDataType
     this%liq1(begt:endt) = spval
     call hist_addfld1d (fname='TOP_LIQ1',  units='mm',  &
          avgflag='A', long_name='initial topounit total liq content', &
-         ptr_lnd=this%liq1)
+         ptr_topo=this%liq1)
 
     this%liq2(begt:endt) = spval
     call hist_addfld1d (fname='TOP_LIQ2',  units='mm',  &  
          avgflag='A', long_name='post landuse change topounit total liq content', &              
-         ptr_lnd=this%liq2, default='inactive')     
+         ptr_topo=this%liq2, default='inactive')     
 
     this%ice1(begt:endt) = spval
     call hist_addfld1d (fname='TOP_ICE1',  units='mm',  &  
          avgflag='A', long_name='initial topounit total ice content', &              
-         ptr_lnd=this%ice1)     
+         ptr_topo=this%ice1)     
 
     this%ice2(begt:endt) = spval
     call hist_addfld1d (fname='TOP_ICE2',  units='mm',  &  
          avgflag='A', long_name='post land cover change total ice content', &              
-         ptr_lnd=this%ice2, default='inactive')
+         ptr_topo=this%ice2, default='inactive')
 
     this%tws(begt:endt) = spval
     call hist_addfld1d (fname='TOP_TWS',  units='mm',  &
          avgflag='A', long_name='total water storage', &
-         ptr_lnd=this%tws)
+         ptr_topo=this%tws)
 
     this%tws_month_beg(begt:endt) = spval
     call hist_addfld1d (fname='TOP_TWS_MONTH_BEGIN',  units='mm',  &
          avgflag='I', long_name='total water storage at the beginning of a month', &
-         ptr_lnd=this%tws_month_beg)
+         ptr_topo=this%tws_month_beg)
 
     this%tws_month_end(begt:endt) = spval
     call hist_addfld1d (fname='TOP_TWS_MONTH_END',  units='mm',  &
          avgflag='I', long_name='total water storage at the end of a month', &
-         ptr_lnd=this%tws_month_end)
+         ptr_topo=this%tws_month_end)
   end subroutine top_ws_init
 
   !------------------------------------------------------------------------
@@ -1083,12 +1083,12 @@ module TopounitDataType
     this%qflx_liq_dynbal(begt:endt) = spval
     call hist_addfld1d (fname='TOP_QFLX_LIQ_DYNBAL',  units='mm/s',  &  
          avgflag='A', long_name='liq dynamic land cover change conversion runoff flux', &              
-         ptr_lnd=this%qflx_liq_dynbal)     
+         ptr_topo=this%qflx_liq_dynbal)     
 
     this%qflx_ice_dynbal(begt:endt) = spval
     call hist_addfld1d (fname='TOP_QFLX_ICE_DYNBAL',  units='mm/s',  &
          avgflag='A', long_name='ice dynamic land cover change conversion runoff flux', &                                   
-         ptr_lnd=this%qflx_ice_dynbal)
+         ptr_topo=this%qflx_ice_dynbal)
   
   end subroutine top_wf_init
 
@@ -1194,16 +1194,16 @@ module TopounitDataType
     this%tcs_month_beg(begt:endt) = spval
     call hist_addfld1d (fname='TOP_TCS_MONTH_BEGIN',  units='gC/m^2',  &
          avgflag='I', long_name='total carbon storage at the beginning of a month', &
-         ptr_lnd=this%tcs_month_beg)
+         ptr_topo=this%tcs_month_beg)
 
     this%tcs_month_end(begt:endt) = spval
     call hist_addfld1d (fname='TOP_TCS_MONTH_END',  units='gC/m^2',  &
          avgflag='I', long_name='total carbon storage at the end of a month', &
-         ptr_lnd=this%tcs_month_end)
+         ptr_topo=this%tcs_month_end)
 
     call hist_addfld1d (fname='TOP_CMASS_BALANCE_ERROR',  units='gC/m^2',  &
          avgflag='A', long_name='Topounit carbon mass balance error', &
-         ptr_lnd=this%errcb)
+         ptr_topo=this%errcb)
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of top_cs

@@ -183,7 +183,7 @@ module histFileMod
      integer :: hpindex                        ! history pointer index 
      character(len=8) :: p2c_scale_type        ! scale factor when averaging pft to column
      character(len=8) :: c2l_scale_type        ! scale factor when averaging column to landunit     
-	 character(len=8) :: l2t_scale_type        ! scale factor when averaging landunit to topounit
+     character(len=8) :: l2t_scale_type        ! scale factor when averaging landunit to topounit
      character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell
      integer :: no_snow_behavior               ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
   end type field_info
@@ -315,7 +315,7 @@ contains
     integer         , intent(in)  :: hpindex          ! data type index for history buffer output
     character(len=*), intent(in)  :: p2c_scale_type   ! scale type for subgrid averaging of pfts to column
     character(len=*), intent(in)  :: c2l_scale_type   ! scale type for subgrid averaging of columns to landunits
-	character(len=*), intent(in)  :: l2t_scale_type   ! scale type for subgrid averaging of landunits to topounit
+    character(len=*), intent(in)  :: l2t_scale_type   ! scale type for subgrid averaging of landunits to topounit
     character(len=*), intent(in)  :: t2g_scale_type   ! scale type for subgrid averaging of topounits to gridcells
     integer, intent(in), optional :: no_snow_behavior ! if a multi-layer snow field, behavior to use for absent snow layers
     !
@@ -380,7 +380,7 @@ contains
     masterlist(f)%field%hpindex        = hpindex
     masterlist(f)%field%p2c_scale_type = p2c_scale_type
     masterlist(f)%field%c2l_scale_type = c2l_scale_type
-	masterlist(f)%field%l2t_scale_type = l2t_scale_type
+    masterlist(f)%field%l2t_scale_type = l2t_scale_type
     masterlist(f)%field%t2g_scale_type = t2g_scale_type
 
     select case (type1d)
@@ -1006,7 +1006,13 @@ contains
 !$OMP PARALLEL DO PRIVATE (f, numdims, num2d)
        do f = 1,tape(t)%nflds
           numdims = tape(t)%hlist(f)%field%numdims
-          if ( numdims == 1) then   
+          if ( numdims == 1) then  
+            ! write(iulog,*) trim(subname),' TKT type1d tape(t)%hlist(f)%field%name===> ', tape(t)%hlist(f)%field%name 
+	! write(iulog,*) trim(subname),' TKT type1d tape(t)%hlist(f)%field%p2c_scale_type===> ', tape(t)%hlist(f)%field%p2c_scale_type 
+	! write(iulog,*) trim(subname),' TKT type1d tape(t)%hlist(f)%field%c2l_scale_type===> ', tape(t)%hlist(f)%field%c2l_scale_type 
+	!write(iulog,*) trim(subname),' TKT type1d tape(t)%hlist(f)%field%l2t_scale_type===> ', tape(t)%hlist(f)%field%l2t_scale_type 
+	! write(iulog,*) trim(subname),' TKT type1d tape(t)%hlist(f)%field%t2g_scale_type===> ', tape(t)%hlist(f)%field%t2g_scale_type 
+			 
              call hist_update_hbuf_field_1d (t, f, bounds)
           else
              num2d = tape(t)%hlist(f)%field%num2d
@@ -1050,7 +1056,7 @@ contains
     character(len=1)  :: avgflag        ! time averaging flag
     character(len=8)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
     character(len=8)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
-	character(len=8)  :: l2t_scale_type ! scale type for subgrid averaging of landunits to topounit
+    character(len=8)  :: l2t_scale_type ! scale type for subgrid averaging of landunits to topounit
     character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
     real(r8), pointer :: hbuf(:,:)      ! history buffer
     integer , pointer :: nacs(:,:)      ! accumulation counter
@@ -1073,7 +1079,7 @@ contains
     type1d_out     =  tape(t)%hlist(f)%field%type1d_out
     p2c_scale_type =  tape(t)%hlist(f)%field%p2c_scale_type
     c2l_scale_type =  tape(t)%hlist(f)%field%c2l_scale_type
-	l2t_scale_type =  tape(t)%hlist(f)%field%l2t_scale_type
+    l2t_scale_type =  tape(t)%hlist(f)%field%l2t_scale_type
     t2g_scale_type =  tape(t)%hlist(f)%field%t2g_scale_type
     hpindex        =  tape(t)%hlist(f)%field%hpindex
     field          => elmptr_rs(hpindex)%ptr
@@ -1094,6 +1100,14 @@ contains
                p2c_scale_type, c2l_scale_type, l2t_scale_type,t2g_scale_type)
           map2gcell = .true.
        else if (type1d == namec) then
+         if (trim(l2t_scale_type) == '') then
+!             print *, 'WARNING: scale_type is empty!'
+             write(iulog,*) trim(subname),' TKT type1dtape(t)%hlist(f)%field%name===> ', tape(t)%hlist(f)%field%name
+             write(iulog,*) trim(subname),' TKT type1d p2c_scale_type===> ',p2c_scale_type
+             write(iulog,*) trim(subname),' TKT type1d c2l_scale_type===>',c2l_scale_type
+             write(iulog,*) trim(subname),' TKT type1d l2t_scale_type===>',l2t_scale_type
+             write(iulog,*) trim(subname),' TKT type1d t2g_scale_type===>',t2g_scale_type
+         end if 
           call c2g(bounds, &
                field, &
                field_gcell(bounds%begg:bounds%endg), &
@@ -1184,6 +1198,11 @@ contains
 
        select case (avgflag)
        case ('I') ! Instantaneous
+          ! TKT debugging
+          !write(iulog,*) trim(subname),' TKT beg1d and end1d ===> ', beg1d, ' and ', end1d
+          !write(iulog,*) trim(subname),' TKT type1d ===> ', type1d
+		  !write(iulog,*) trim(subname),' TKT type1d tape(t)%hlist(f)%field%name===> ', tape(t)%hlist(f)%field%name
+          ! end TKT debugging
           do k = beg1d,end1d
              valid = .true.
              if (check_active) then
@@ -1302,7 +1321,7 @@ contains
     character(len=1)  :: avgflag        ! time averaging flag
     character(len=8)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
     character(len=8)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
-	character(len=8)  :: l2t_scale_type ! scale type for subgrid averaging of landunits to topounit
+    character(len=8)  :: l2t_scale_type ! scale type for subgrid averaging of landunits to topounit
     character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
     integer  :: no_snow_behavior        ! for multi-layer snow fields, behavior to use when a given layer is absent
     real(r8), pointer :: hbuf(:,:)      ! history buffer
@@ -1326,7 +1345,7 @@ contains
     type1d_out          =  tape(t)%hlist(f)%field%type1d_out
     p2c_scale_type      =  tape(t)%hlist(f)%field%p2c_scale_type
     c2l_scale_type      =  tape(t)%hlist(f)%field%c2l_scale_type
-	l2t_scale_type      =  tape(t)%hlist(f)%field%l2t_scale_type
+    l2t_scale_type      =  tape(t)%hlist(f)%field%l2t_scale_type
     t2g_scale_type      =  tape(t)%hlist(f)%field%t2g_scale_type
     no_snow_behavior    =  tape(t)%hlist(f)%field%no_snow_behavior
     hpindex             =  tape(t)%hlist(f)%field%hpindex
@@ -2096,8 +2115,8 @@ contains
     character(len=max_chars) :: standard_name ! variable CF standard_name
     character(len=max_namlen):: varname   ! variable name
     character(len=max_namlen):: units     ! variable units
-	character(len=8) :: l2t_scale_type    ! scale type for subgrid averaging of landunits to topounits
-	character(len=8) :: t2g_scale_type    ! scale type for subgrid averaging of landunits to topounits
+    character(len=8) :: l2t_scale_type    ! scale type for subgrid averaging of landunits to topounits
+    character(len=8) :: t2g_scale_type    ! scale type for subgrid averaging of landunits to topounits
     !
     real(r8), pointer :: histi(:,:)       ! temporary
     real(r8), pointer :: histo(:,:)       ! temporary
@@ -2211,7 +2230,7 @@ contains
           else if (ifld == 6) then  ! HKSAT
              l2t_scale_type = 'veg'
           end if
-		  t2g_scale_type = 'topounit'
+          t2g_scale_type = 'topounit'
 
           histi(:,:) = spval
           do lev = 1,nlevgrnd
@@ -3600,7 +3619,7 @@ contains
     type(var_desc_t)   :: avgflag_desc           ! variable descriptor for avgflag
     type(var_desc_t)   :: p2c_scale_type_desc    ! variable descriptor for p2c_scale_type
     type(var_desc_t)   :: c2l_scale_type_desc    ! variable descriptor for c2l_scale_type
-	type(var_desc_t)   :: l2t_scale_type_desc    ! variable descriptor for l2t_scale_type
+    type(var_desc_t)   :: l2t_scale_type_desc    ! variable descriptor for l2t_scale_type
     type(var_desc_t)   :: t2g_scale_type_desc    ! variable descriptor for t2g_scale_type
     integer :: status                            ! error status
     integer :: dimid                             ! dimension ID
@@ -3841,7 +3860,7 @@ contains
           call ncd_defvar(ncid=ncid_hist(t), varname='c2l_scale_type', xtype=ncd_char, &
                long_name="column to landunit scale type", &
                dim1name='string_length', dim2name='max_nflds' )
-		  call ncd_defvar(ncid=ncid_hist(t), varname='l2t_scale_type', xtype=ncd_char, &
+          call ncd_defvar(ncid=ncid_hist(t), varname='l2t_scale_type', xtype=ncd_char, &
                long_name="landunit to topounits scale type", &
                dim1name='string_length', dim2name='max_nflds' )
           call ncd_defvar(ncid=ncid_hist(t), varname='t2g_scale_type', xtype=ncd_char, &
@@ -3929,8 +3948,8 @@ contains
              tavgflag(f) = tape(t)%hlist(f)%avgflag
              tmpstr(f,4) = tape(t)%hlist(f)%field%p2c_scale_type
              tmpstr(f,5) = tape(t)%hlist(f)%field%c2l_scale_type
-			 tmpstr(f,7) = tape(t)%hlist(f)%field%l2t_scale_type
-             tmpstr(f,8) = tape(t)%hlist(f)%field%t2g_scale_type
+             tmpstr(f,6) = tape(t)%hlist(f)%field%l2t_scale_type
+             tmpstr(f,7) = tape(t)%hlist(f)%field%t2g_scale_type
           end do
           call ncd_io( 'name', tname, 'write',ncid_hist(t))
           call ncd_io('long_name', tlongname, 'write', ncid_hist(t))
@@ -3941,7 +3960,7 @@ contains
           call ncd_io('avgflag',tavgflag , 'write', ncid_hist(t))
           call ncd_io('p2c_scale_type', tmpstr(:,4), 'write', ncid_hist(t))
           call ncd_io('c2l_scale_type', tmpstr(:,5), 'write', ncid_hist(t))
-		  call ncd_io('l2t_scale_type', tmpstr(:,6), 'write', ncid_hist(t))
+          call ncd_io('l2t_scale_type', tmpstr(:,6), 'write', ncid_hist(t))
           call ncd_io('t2g_scale_type', tmpstr(:,7), 'write', ncid_hist(t))
           deallocate(tname,tlongname,tunits,tmpstr,tavgflag)
        enddo       
@@ -3996,7 +4015,7 @@ contains
              call ncd_inqvid(ncid_hist(t), 'avgflag',        varid, avgflag_desc)
              call ncd_inqvid(ncid_hist(t), 'p2c_scale_type', varid, p2c_scale_type_desc)
              call ncd_inqvid(ncid_hist(t), 'c2l_scale_type', varid, c2l_scale_type_desc)
-			 call ncd_inqvid(ncid_hist(t), 'l2t_scale_type', varid, l2t_scale_type_desc)
+             call ncd_inqvid(ncid_hist(t), 'l2t_scale_type', varid, l2t_scale_type_desc)
              call ncd_inqvid(ncid_hist(t), 't2g_scale_type', varid, t2g_scale_type_desc)
 
              call ncd_io(varname='fincl', data=fincl(:,t), ncid=ncid_hist(t), flag='read')
@@ -4048,7 +4067,7 @@ contains
                              'read', ncid_hist(t), start )
                 call ncd_io( c2l_scale_type_desc, tape(t)%hlist(f)%field%c2l_scale_type,   &
                              'read', ncid_hist(t), start )
-				call ncd_io( l2t_scale_type_desc, tape(t)%hlist(f)%field%l2t_scale_type,   &
+                call ncd_io( l2t_scale_type_desc, tape(t)%hlist(f)%field%l2t_scale_type,   &
                              'read', ncid_hist(t), start )
                 call ncd_io( t2g_scale_type_desc, tape(t)%hlist(f)%field%t2g_scale_type,   &
                              'read', ncid_hist(t), start )
@@ -4488,8 +4507,8 @@ contains
     character(len=hist_dim_name_length) :: l_type1d_out   ! 1d output type
     character(len=8) :: scale_type_p2c ! scale type for subgrid averaging of pfts to column
     character(len=8) :: scale_type_c2l ! scale type for subgrid averaging of columns to landunits
-    character(len=8) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
-	character(len=8) :: scale_type_l2t ! scale type for subgrid averaging of landunits to topounit
+   ! character(len=8) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
+   character(len=8) :: scale_type_l2t ! scale type for subgrid averaging of landunits to topounit
     character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
     type(bounds_type):: bounds         ! boudns 
     character(len=16):: l_default      ! local version of 'default'
@@ -4642,13 +4661,13 @@ contains
 
     scale_type_p2c = 'unity'
     scale_type_c2l = 'unity'
-    scale_type_l2g = 'unity'
-	scale_type_l2t = 'unity'
+    !scale_type_l2g = 'unity'
+    scale_type_l2t = 'unity'
     scale_type_t2g = 'topounit'
 
     if (present(p2c_scale_type)) scale_type_p2c = p2c_scale_type
     if (present(c2l_scale_type)) scale_type_c2l = c2l_scale_type
-	if (present(l2t_scale_type)) scale_type_l2t = l2t_scale_type
+    if (present(l2t_scale_type)) scale_type_l2t = l2t_scale_type
     if (present(t2g_scale_type)) scale_type_t2g = t2g_scale_type
     if (present(type1d_out)) l_type1d_out = type1d_out
 
@@ -4736,8 +4755,8 @@ contains
     character(len=hist_dim_name_length) :: l_type1d_out     ! 1d output type
     character(len=8) :: scale_type_p2c ! scale type for subgrid averaging of pfts to column
     character(len=8) :: scale_type_c2l ! scale type for subgrid averaging of columns to landunits
-    character(len=8) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
-	character(len=8) :: scale_type_l2t ! scale type for subgrid averaging of landunits to topounit
+    !character(len=8) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
+    character(len=8) :: scale_type_l2t ! scale type for subgrid averaging of landunits to topounit
     character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
     type(bounds_type):: bounds          
     character(len=16):: l_default      ! local version of 'default'
@@ -5011,13 +5030,13 @@ contains
 
     scale_type_p2c = 'unity'
     scale_type_c2l = 'unity'
-    scale_type_l2g = 'unity'
-	scale_type_l2t = 'unity'
+    !scale_type_l2g = 'unity'
+    scale_type_l2t = 'unity'
     scale_type_t2g = 'topounit'
 
     if (present(p2c_scale_type)) scale_type_p2c = p2c_scale_type
     if (present(c2l_scale_type)) scale_type_c2l = c2l_scale_type
-	if (present(l2t_scale_type)) scale_type_l2t = l2t_scale_type
+    if (present(l2t_scale_type)) scale_type_l2t = l2t_scale_type
     if (present(t2g_scale_type)) scale_type_t2g = t2g_scale_type
     if (present(type1d_out)) l_type1d_out = type1d_out
 

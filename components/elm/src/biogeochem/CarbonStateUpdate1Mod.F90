@@ -82,7 +82,7 @@ contains
 	   
 	   ! TKT for TGU
 	   do t = bounds%begt, bounds%endt
-          top_cs%seedc(t) = grc_cs%seedc(t) &
+              top_cs%seedc(t) = top_cs%seedc(t) &
                - top_cf%dwt_seedc_to_leaf(t)     * dt &
                - top_cf%dwt_seedc_to_deadstem(t) * dt
 

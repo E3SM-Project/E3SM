@@ -100,7 +100,7 @@ contains
     ! ------------------------------------------------------------
     ! Gridcell:      1   1   1   2   2   2   1   1   1   2   2   2
     ! Landunit type: 1   1   1   1   1   1   2   2   2   2   2   2
-    ! PATCH type:      1   2   3   1   2   3   1   2   3   1   2   3
+    ! PATCH type:    1   2   3   1   2   3   1   2   3   1   2   3
     !
     ! So note that clump index is most slowly varying, followed by landunit type,
     ! followed by gridcell, followed by column and pft type.
@@ -133,15 +133,18 @@ contains
        ! With all topounits defined, next place landunits
 
        ! Determine naturally vegetated landunit
-       do topounit = bounds_clump%begt,bounds_clump%endt
+       do topounit = bounds_clump%begt,bounds_clump%endt	      
           topo_ind = top_pp%topo_grc_ind(topounit)
+		   ! TKT debugging
+	    !  write(iulog,*)'TKT topounit and topo_ind',topounit, topo_ind
+	      ! end TKT debugging
           call set_landunit_veg_compete(               &
                ltype=istsoil, gi=top_pp%gridcell(topounit), ti=topounit,topo_ind=topo_ind, li=li, ci=ci, pi=pi, &
                setdata=.true.)
        end do
 
        ! Determine crop landunit
-       do topounit = bounds_clump%begt,bounds_clump%endt
+       do topounit = bounds_clump%begt,bounds_clump%endt	     
           topo_ind = top_pp%topo_grc_ind(topounit)
           call set_landunit_crop_noncompete(           &
                ltype=istcrop, gi=top_pp%gridcell(topounit), ti=topounit,topo_ind=topo_ind, li=li, ci=ci, pi=pi, &

@@ -1217,10 +1217,11 @@ contains
 		 
 		 call c2t( bounds, &
               endcb(bounds%begc:bounds%endc), &
-              tcs_month_end_grc(bounds%begg:bounds%endg), &
+              tcs_month_end_top(bounds%begt:bounds%endt), &
               c2l_scale_type= 'unity', l2t_scale_type='unity' )
       else
          tcs_month_end_grc(bounds%begg:bounds%endg) = spval
+         tcs_month_end_top(bounds%begt:bounds%endt) = spval
       endif
 
     end associate
