@@ -44,57 +44,101 @@ struct Functions
 
   // ---------------------------------------------------------------------------
   // Structs
-  struct ZMRuntime {
-    ZMRuntime() = default;
+
+  struct zm_runtime_opt {
+    zm_runtime_opt() = default;
   };
 
-  // This struct stores input views for ZM_main.
-  struct ZMInput {
-    ZMInput() = default;
-    // surface geopotential height [m2/s]
-    view_1d<Spack> phis;
-    // mid-point level altitude [m]
-    view_2d<Spack> zmid;
-    // interface level altitude [m]
-    view_2d<Spack> zint;
-    // mid-point level pressure [Pa]
-    view_2d<Spack> pmid;
-    // interface level pressure [Pa]
-    view_2d<Spack> pint;
-    // pressure thickness [Pa]
-    view_2d<Spack> pdel;
-    // PBL height [m]
-    view_1d<Spack> pblh;
+  struct zm_input_state {
+    zm_input_state() = default;
+    // -------------------------------------------------------------------------
+    // number of columns for current task/chunk
+    Int ncol;
     // Temperature [K]
-    view_2d<Spack> t;
+    view_2d<Spack> T_mid;
     // Water vapor mixing ratio [kg kg-1]
     view_2d<Spack> qv;
-    // Cloud mass mixing ratio [kg kg-1]
-    view_2d<Spack> qc;
-    // Ice total mass mixing ratio [kg kg-1]
-    view_2d<Spack> qi;
-    // vertical pressure velocity [Pa/s]
-    view_2d<Spack> omega;
+    // -------------------------------------------------------------------------
+    // transpose method for fortran bridging
+    template <ekat::TransposeDirection::Enum D>
+    void transpose()
+    {
+      std::vector<view_2d<Spack>> transposed_views(2);
+      ekat::host_to_device<D>({ekat::scalarize(T_mid).data(),
+                               ekat::scalarize(qv).data()},
+                               T_mid.extent(0), T_mid.extent(1) * Spack::n,
+                               transposed_views, true);
+      if (D == ekat::TransposeDirection::c2f) {
+        T_mid = transposed_views[0];
+        qv    = transposed_views[1];
+      // else {
+        // ???
+      }
+    };
+    // -------------------------------------------------------------------------
   };
 
-  // This struct stores input/outputs views for ZM_main.
-  struct ZMInputOutput {
-    ZMInputOutput() = default;
+    // // surface geopotential height [m2/s]
+    // view_1d<Spack> phis;
+    // // mid-point level altitude [m]
+    // view_2d<Spack> zmid;
+    // // interface level altitude [m]
+    // view_2d<Spack> zint;
+    // // mid-point level pressure [Pa]
+    // view_2d<Spack> pmid;
+    // // interface level pressure [Pa]
+    // view_2d<Spack> pint;
+    // // pressure thickness [Pa]
+    // view_2d<Spack> pdel;
+    // // PBL height [m]
+    // view_1d<Spack> pblh;
+    // // Temperature [K]
+    // view_2d<Spack> T_mid;
+    // // Water vapor mixing ratio [kg kg-1]
+    // view_2d<Spack> qv;
+    // // Cloud mass mixing ratio [kg kg-1]
+    // view_2d<Spack> qc;
+    // // Ice total mass mixing ratio [kg kg-1]
+    // view_2d<Spack> qi;
+    // // vertical pressure velocity [Pa/s]
+    // view_2d<Spack> omega;
+
+  struct zm_output_tend {
+    zm_output_tend() = default;
   };
 
-  // This struct stores output only views for ZM_main.
-  struct ZMOutput {
-    ZMOutput() = default;
+  struct zm_output_diag {
+    zm_output_diag() = default;
   };
 
-  // This struct stores output views for ZM diagnostics for ZM_main.
-  struct ZMHistoryOutput {
-    ZMHistoryOutput() = default;
-  };
+  // struct zm_runtime_opts {
+  //   zm_runtime_opts() = default;
+  // };
+
+  // // This struct stores input views for ZM_main.
+  // struct zm_input_state {
+    // zm_input_state() = default;
+  // };
+
+  // // This struct stores input/outputs views for ZM_main.
+  // struct zm_inout {
+  //   zm_inout() = default;
+  // };
+
+  // // This struct stores output only views for ZM_main.
+  // struct zm_output {
+  //   zm_output() = default;
+  // };
+
+  // // This struct stores output views for ZM diagnostics for ZM_main.
+  // struct ZMHistoryOutput {
+  //   ZMHistoryOutput() = default;
+  // };
 
   // ---------------------------------------------------------------------------
   // Functions
 
+  // static Int zm_main()
 
 }; // struct Functions
 
