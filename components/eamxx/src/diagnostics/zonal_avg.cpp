@@ -2,6 +2,8 @@
 
 #include "share/field/field_utils.hpp"
 
+#include <ekat/util/ekat_math_utils.hpp>
+
 namespace scream {
 
 void ZonalAvgDiag::compute_zonal_sum(const Field &result, const Field &field, const Field &weight,
@@ -170,13 +172,14 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   using RangePolicy     = Kokkos::RangePolicy<Field::device_t::execution_space>;
   const Real lat_delta  = sp(180.0) / m_num_zonal_bins;
   const int ncols       = field_layout.dim(0);
+  const int nbins       = m_num_zonal_bins;
   auto lat_view         = m_lat.get_view<const Real *>();
   auto zonal_area_view  = zonal_area.get_view<const Real *>();
   auto scaled_area_view = m_scaled_area.get_view<Real *>();
   Kokkos::parallel_for(
       "scale_area_by_zonal_area_" + field.name(), RangePolicy(0, ncols),
       KOKKOS_LAMBDA(const int &i) {
-        const int lat_i = (lat_view(i) + sp(90.0)) / lat_delta;
+        const int lat_i = ekat::impl::min(static_cast<int>((lat_view(i) + sp(90.0)) / lat_delta),nbins-1);
         scaled_area_view(i) /= zonal_area_view(lat_i);
       });
 }
