@@ -149,7 +149,7 @@ void apply_conditional_sampling_2d_lev(
 ConditionalSampling::ConditionalSampling(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
 
-  m_input_f      = m_params.get<std::string>("field_name");
+  m_input_f      = m_params.get<std::string>("input_field");
   m_condition_f  = m_params.get<std::string>("condition_field");
   m_condition_op = m_params.get<std::string>("condition_operator");
 

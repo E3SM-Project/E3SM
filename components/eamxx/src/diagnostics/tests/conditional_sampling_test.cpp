@@ -79,7 +79,7 @@ TEST_CASE("conditional_sampling") {
     const auto comp_val = 0.001;
     REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
                                        params)); // No 'field_name' parameter
-    params.set<std::string>("field_name", "qc");
+    params.set<std::string>("input_field", "qc");
     REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
                                        params)); // No 'condition_field' parameter
     params.set<std::string>("condition_field", "qc");
@@ -169,7 +169,7 @@ TEST_CASE("conditional_sampling") {
     const auto comp_lev = static_cast<int>(nlevs / 3);
     REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
                                        params)); // No 'field_name' parameter
-    params.set<std::string>("field_name", "qc");
+    params.set<std::string>("input_field", "qc");
     REQUIRE_THROWS(diag_factory.create("ConditionalSampling", comm,
                                        params)); // No 'condition_field' parameter
     params.set<std::string>("condition_field", "lev");
