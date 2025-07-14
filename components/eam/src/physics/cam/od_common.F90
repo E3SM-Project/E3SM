@@ -394,7 +394,7 @@ function pblh_get_level_idx(height_array,pblheight)
   !get the pblh level index and return
   do k = 2, pver
     if((pblheight >= height_array(k).and.pblheight <height_array(k-1)))then
-      pblh_get_level_idx =  k - 1
+      pblh_get_level_idx =  k
       found=.true.
       return
     endif
