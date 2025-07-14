@@ -19,17 +19,17 @@ During construction, if the input parameter list contains a non-trivial
 entry for the key `py_module_name`, EAMxx will automatically set up
 these data structures. In particular, EAMxx will
 
- - create python-compatible arrays for each of the input/output/internal
-   fields that are registered in the class. These are stored in two maps:
-   `m_py_fields_dev` and `m_py_fields_host`, which store python-compatible
-   arrays for the device and host views of the Field, respectively. The maps
-   are in fact nested maps, so that the python-compatible array for field X
-   on grid Y can be retrieved via `m_py_fields_host[Y][X]`.
- - load the python module provided via parameter list, so that its interfaces
-   can later be called during init/run phases. The module is then stored in
-   the local member `m_py_module`. If the module is in a non-standard path,
-   the parameter list entry `py_module_path` can be used to specify its path,
-   which will be added to python's search path before loading the module.
+- create python-compatible arrays for each of the input/output/internal
+  fields that are registered in the class. These are stored in two maps:
+  `m_py_fields_dev` and `m_py_fields_host`, which store python-compatible
+  arrays for the device and host views of the Field, respectively. The maps
+  are in fact nested maps, so that the python-compatible array for field X
+  on grid Y can be retrieved via `m_py_fields_host[Y][X]`.
+- load the python module provided via parameter list, so that its interfaces
+  can later be called during init/run phases. The module is then stored in
+  the local member `m_py_module`. If the module is in a non-standard path,
+  the parameter list entry `py_module_path` can be used to specify its path,
+  which will be added to python's search path before loading the module.
 
 Due to implementation details in the pybind11 library, and to avoid compiler warnings,
 all the python-compatible data structures are stored wrapped inside `std::any` objects.
@@ -48,6 +48,7 @@ the module. For instance, if the module had a function `run` that takes 2 arrays
 ```c++
  pymod.attr("run")(f1,f2,my_double);
 ```
+
 where `f1` and `f2` are of type `pybind11::array` (e.g., casted from objects in `m_py_fields_host`).
 
 ## Example
@@ -98,21 +99,22 @@ to support both C++ and python implemenation in the same cpp file
       qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
   }
 ```
+
 A few observations:
 
- - `m_py_module.has_value()` is a good way to check if the `std::any` object is storing anything or it's empty.
-   If empty, it means that the user did not specify the `py_module_name` input option. In this case, we interpret
-   this as "proceed with the C++ implementation", but of course, another process may only offer a python
-   implementation, in which case it would make sense to error out if the check fails.
- - the namespace alias `py = pybind11` was used in this implementation. This is a common (and sometimes
-   recommended) practice.
- - when casting to pybind11 data structures, we used const references, for both inputs and outputs. The reason
-   for using a reference is to avoid copy construction of pybind11 structures (even though they are usually
-   lightweight). The const qualifier is not really important, as python has no corresponding concept, and the
-   code would have been perfectly fine (and working the same way) without `const`.
- - when passing host arrays to python, keep in mind that EAMxx only requires that device views be kept up to
-   date by atmosphere processes. Hence, you must take care of syncing to host all inputs before calling the
-   python interfaces, as well as syncing to device the outputs upon return.
+- `m_py_module.has_value()` is a good way to check if the `std::any` object is storing anything or it's empty.
+  If empty, it means that the user did not specify the `py_module_name` input option. In this case, we interpret
+  this as "proceed with the C++ implementation", but of course, another process may only offer a python
+  implementation, in which case it would make sense to error out if the check fails.
+- the namespace alias `py = pybind11` was used in this implementation. This is a common (and sometimes
+  recommended) practice.
+- when casting to pybind11 data structures, we used const references, for both inputs and outputs. The reason
+  for using a reference is to avoid copy construction of pybind11 structures (even though they are usually
+  lightweight). The const qualifier is not really important, as python has no corresponding concept, and the
+  code would have been perfectly fine (and working the same way) without `const`.
+- when passing host arrays to python, keep in mind that EAMxx only requires that device views be kept up to
+  date by atmosphere processes. Hence, you must take care of syncing to host all inputs before calling the
+  python interfaces, as well as syncing to device the outputs upon return.
 
 The python implemenetation of the CldFraction process is provided in `cld_fraction.py`, in the same folder
 as the process interface.
