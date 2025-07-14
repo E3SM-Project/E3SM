@@ -620,7 +620,10 @@ protected:
   std::list<GroupRequest>   m_required_group_requests;
   std::list<GroupRequest>   m_computed_group_requests;
 
+  void add_py_fields (const Field& f);
+  void add_py_fields (const FieldGroup& g);
 #ifdef EAMXX_HAS_PYTHON
+
   // NOTE: we need to use std::any instead of pybind11::XYZ to avoid
   //       namespace visibility warnings. Derived classes need to
   //       manually call std::any_cast<pybind11::array> on the fields

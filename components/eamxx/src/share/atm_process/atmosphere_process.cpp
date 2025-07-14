@@ -334,13 +334,7 @@ void AtmosphereProcess::set_required_field (const Field& f) {
 
   set_required_field_impl (f);
 
-#ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
-    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
-  }
-#endif
+  add_py_fields(f);
 }
 
 void AtmosphereProcess::set_computed_field (const Field& f) {
@@ -368,13 +362,7 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
     m_proc_tendencies[f.name()] = f;
   }
 
-#ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    const auto& grid_name= f.get_header().get_identifier().get_grid_name();
-    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
-    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
-  }
-#endif
+  add_py_fields(f);
 }
 
 void AtmosphereProcess::set_required_group (const FieldGroup& group) {
@@ -403,21 +391,7 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
 
   set_required_group_impl(group);
 
-#ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    const auto& grid_name = group.grid_name();
-    if (group.m_monolithic_field) {
-      const auto& f = group.m_monolithic_field;
-      m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
-      m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
-    } else {
-      for (const auto& [name,f] : group.m_individual_fields) {
-        m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
-        m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
-      }
-    }
-  }
-#endif
+  add_py_fields(group);
 }
 
 void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
@@ -446,21 +420,7 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 
   set_computed_group_impl(group);
 
-#ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    const auto& grid_name = group.grid_name();
-    if (group.m_monolithic_field) {
-      const auto& f = group.m_monolithic_field;
-      m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
-      m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
-    } else {
-      for (const auto& [name,f] : group.m_individual_fields) {
-        m_py_fields_dev[grid_name][f->name()] = create_py_field<Device>(*f);
-        m_py_fields_host[grid_name][f->name()] = create_py_field<Host>(*f);
-      }
-    }
-  }
-#endif
+  add_py_fields(group);
 }
 
 void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
@@ -709,13 +669,7 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
 
 void AtmosphereProcess::add_internal_field (const Field& f) {
   m_internal_fields.push_back(f);
-#ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
-    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
-  }
-#endif
+  add_py_fields(f);
 }
 
 const Field& AtmosphereProcess::
@@ -1241,6 +1195,37 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
+}
+
+void AtmosphereProcess::add_py_fields (const Field& f)
+{
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module.has_value()) {
+    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
+    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+  }
+#else
+  (void) f;
+#endif
+}
+
+void AtmosphereProcess::add_py_fields (const FieldGroup& group)
+{
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module.has_value()) {
+    if (group.m_monolithic_field) {
+      const auto& f = group.m_monolithic_field;
+      add_py_fields(*f);
+    } else {
+      for (const auto& [name,f] : group.m_individual_fields) {
+        add_py_fields(*f);
+      }
+    }
+  }
+#else
+  (void) group;
+#endif
 }
 
 } // namespace scream
