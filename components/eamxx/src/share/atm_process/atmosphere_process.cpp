@@ -709,6 +709,13 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
 
 void AtmosphereProcess::add_internal_field (const Field& f) {
   m_internal_fields.push_back(f);
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module.has_value()) {
+    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
+    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+  }
+#endif
 }
 
 const Field& AtmosphereProcess::
