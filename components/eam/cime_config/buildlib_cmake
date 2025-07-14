@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
-    pass
+
+    cmake_args += " -DUSE_FTORCH=TRUE"
+    
+    return cmake_args
+#   pass
 
 ###############################################################################
 def _main(argv, documentation):
