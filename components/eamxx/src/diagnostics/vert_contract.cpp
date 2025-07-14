@@ -33,7 +33,10 @@ void VertContractDiag::set_grids(
       m_weighting_method == "dp" || m_weighting_method == "dz" || m_weighting_method == "none",
       "Error! VertContractDiag only supports 'dp' or 'dz' or 'none' as weighting_method.\n"
       " - weighting_method: " + m_weighting_method + "\n");
-  m_diag_name = fn + m_contract_method + "_" + m_weighting_method;
+  m_diag_name = fn + "_vert_" + m_contract_method;
+  if (m_weighting_method!="none") {
+    m_diag_name += "_" + m_weighting_method;
+  }
 
   auto scalar3d = g->get_3d_scalar_layout(true);
   if (m_weighting_method == "dp") {
