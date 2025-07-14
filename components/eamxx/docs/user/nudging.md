@@ -14,7 +14,7 @@ Finally, the dimension order must be such that `lev` is the last dimension, so m
 ## Pressure in the nudging data
 
 Pressure can be explicitly provided in the nudging data as time-varying `p_mid` corresponding to the option `TIME_DEPENDENT_3D_PROFILE` for `source_pressure_type`.
-Alternatively, the data can contain a time-invariant pressure variable `p_lev` corresponding to the option `TIME_DEPENDENT_3D_PROFILE` for `source_pressure_type`.
+Alternatively, the data can contain a time-invariant pressure variable `p_lev` corresponding to the option `STATIC_1D_VERTICAL_PROFILE` for `source_pressure_type`.
 
 ## Weighted nudging for RRM applications
 
