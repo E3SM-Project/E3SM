@@ -8,9 +8,9 @@ module lnd_import_export
   use atm2lndType  , only: atm2lnd_type
   use glc2lndMod   , only: glc2lnd_type
   use lnd2iacMod   , only: lnd2iac_type
-  use iac2lndMod   , only: iac2lnd_type
+  use iac2lndMod   , only: iac2lnd_type, numharvest
   use elm_varctl   , only: iac_active, iulog
-  use elm_varpar   , only: numpft, numharvest
+  use elm_varpar   , only: numpft
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices

@@ -173,6 +173,13 @@ contains
     landunit_names(isturb_tbd) = 'urban_tbd'
     landunit_names(isturb_hd) = 'urban_hd'
     landunit_names(isturb_md) = 'urban_md'
+    if (use_polygonal_tundra) then
+      landunit_names(istlowcenpoly) = 'low_centered_polygon'
+      landunit_names(istflatcenpoly) = 'flat_centered_polygon'
+      landunit_names(isthighcenpoly) = 'high_centered_polygon'
+    !else
+      !call shr_sys_abort(trim(subname)//': BALLI-Polygonal tundra not used')
+    end if
 
     if (any(landunit_names == not_set)) then
        call shr_sys_abort(trim(subname)//': Not all landunit names set')

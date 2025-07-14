@@ -9,7 +9,7 @@ module iac2lndMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use elm_varpar     , only : numpft, numharvest, maxpatch_pft
+  use elm_varpar     , only : numpft, maxpatch_pft
   use elm_varctl     , only : iulog
   use abortutils     , only : endrun
   use GridcellType   , only : grc_pp
@@ -26,6 +26,10 @@ module iac2lndMod
 
   ! !PUBLIC MEMBER FUNCTIONS
   public :: iac_rpointer_write
+
+  public :: numharvest
+  integer, parameter :: numharvest = 5
+
 
   ! iac -> land structure
   ! Dimensioned by (ngrid,numpft)

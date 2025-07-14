@@ -48,14 +48,12 @@ module elm_varpar
   integer, parameter :: ndst        =   4     ! number of dust size classes (BGC only)
   integer, parameter :: dst_src_nbr =   3     ! number of size distns in src soil (BGC only)
   integer, parameter :: sz_nbr      = 200     ! number of sub-grid bins in large bin of dust size distribution (BGC only)
-  !integer, parameter :: mxpft       =  50     ! maximum number of PFT's for any mode;
   integer :: mxpft                  =  50     ! maximum number of PFT's for any mode;
                                               ! can be modified from reading pft-physiology in 'main/pftvarcon.F90:pftconrd'
   ! FIX(RF,032414) might we set some of these automatically from reading pft-physiology?
   integer, parameter :: numveg      =  16     ! number of veg types (without specific crop)
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
-  integer, parameter :: numharvest = 5 ! number of harvest fields
 
   integer :: numpft      =  50     ! actual # of patches (without bare), a total that spans LUs
   integer :: numcft      =  36     ! actual # of crops

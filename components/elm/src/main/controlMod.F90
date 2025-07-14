@@ -466,6 +466,11 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
+          if( use_lch4 ) then
+             call endrun(msg=' ERROR: use_lch4 (methane) and use_fates cannot both be set to true.'//&
+                   errMsg(__FILE__, __LINE__))
+          end if
+
           if ( n_drydep > 0 .and. drydep_method /= DD_XLND ) then
              call endrun(msg=' ERROR: dry deposition via ML Welsey is not compatible with FATES.'//&
                    errMsg(__FILE__, __LINE__))
@@ -505,7 +510,7 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
-       end if
+       end if !use_fates
 
 
        if (use_crop .and. (use_c13 .or. use_c14)) then
@@ -515,6 +520,11 @@ contains
 
        if (use_crop .and. .not. create_crop_landunit) then
           call endrun(msg=' ERROR: prognostic crop Patches require create_crop_landunit=.true.'//&
+            errMsg(__FILE__, __LINE__))
+       end if
+
+       if (.not. use_crop .and. irrigate) then
+          call endrun(msg=' ERROR: irrigate = .true. requires CROP model active.'//&
             errMsg(__FILE__, __LINE__))
        end if
        
@@ -797,7 +807,7 @@ contains
     ! BGC
     call mpi_bcast (co2_type, len(co2_type), MPI_CHARACTER, 0, mpicom, ier)
 
-    if (use_cn .or. use_fates) then
+    if (use_cn) then
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
@@ -870,12 +880,10 @@ contains
 
     call mpi_bcast (use_lake_wat_storage, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    if ((use_cn .or. use_fates) .and. use_vertsoilc) then
+    if (use_cn  .and. use_vertsoilc) then
        ! vertical soil mixing variables
        call mpi_bcast (som_adv_flux, 1, MPI_REAL8,  0, mpicom, ier)
        call mpi_bcast (max_depth_cryoturb, 1, MPI_REAL8,  0, mpicom, ier)
-    end if
-    if (use_cn .and. use_vertsoilc) then
        ! C and N input vertical profiles
        call mpi_bcast (exponential_rooting_profile,       1, MPI_LOGICAL,  0, mpicom, ier)
        call mpi_bcast (rootprof_exp,            1, MPI_REAL8,  0, mpicom, ier)
@@ -883,7 +891,7 @@ contains
        call mpi_bcast (pftspecific_rootingprofile,        1, MPI_LOGICAL,  0, mpicom, ier)
     end if
 
-    if ((use_cn .or. use_fates)) then
+    if (use_cn) then
        call mpi_bcast (no_frozen_nitrif_denitrif,  1, MPI_LOGICAL, 0, mpicom, ier)
     end if
 
@@ -1161,6 +1169,9 @@ contains
        write(iulog, *) '   pftspecific_rootingprofile                            : ', pftspecific_rootingprofile
        write(iulog, *) '   dynamic roots                                         : ', use_dynroot
     end if
+    if (use_cn) then
+       write(iulog, *) '   no_frozen_nitrif_denitrif                             : ', no_frozen_nitrif_denitrif
+    end if
        
     if (use_cn) then
        write(iulog, *) '  use_c13                                                : ', use_c13
@@ -1327,6 +1338,7 @@ contains
 
     ! NGEE Arctic options
     if (use_polygonal_tundra) write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
+    write(iulog, *) '    use_polygonal_tundra    =', use_polygonal_tundra
     if (use_arctic_init) write(iulog, *)      '    use_arctic_init    ='     , use_arctic_init
 
   end subroutine control_print

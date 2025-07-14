@@ -17,6 +17,7 @@ module elm_initializeMod
   use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
+  use elm_varctl       , only : iac_active
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
@@ -230,7 +231,6 @@ contains
     if (masterproc) then
        call domain_check(ldomain)
     endif
-    ldomain%mask = 1  !!! TODO - is this needed?
 
     ! Get topo if appropriate (set ldomain%topo)
 
@@ -273,10 +273,6 @@ contains
       allocate (wt_lunit     (begg:endg,1:max_topounits, max_non_poly_lunit  ))
     end if
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
-    !allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
-    !allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    !allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
-    !allocate (fert_p_cft   (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg,1:max_topounits, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg,1:max_topounits, maxpatch_glcmec))
