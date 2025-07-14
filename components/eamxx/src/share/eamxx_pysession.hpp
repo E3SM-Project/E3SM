@@ -8,6 +8,30 @@
 
 namespace scream {
 
+/*
+ * A singleton class holding a py interpreter context
+ *
+ * This class is needed b/c we must ensure that a py interpreter session
+ * is active when we call any py code. To avoid having to do that every
+ * time we call python (directly or indirectly), users can initialize
+ * the PySession singleton before doing any py stuff, and finalizing it
+ * when they are done. For instance, call PySession::get().initialize()
+ * inside an atm proc constructor, and PySession::get().finalize() inside
+ * the destructor is a good way to ensure the py interpreter session is
+ * active during the lifetime of the atm process.
+ * A few notes on the class:
+ *   - it is impl-ed via singleton design
+ *   - it keeps a ref count of how many times initialize() was called,
+ *     so that it can release the py interpreter session only when the
+ *     last customer has called finalize()
+ *   - it offers convenience functions to add a path to sys.path, so that
+ *     we can later import py modules from arbitrary locations
+ *   - the safe_import method can be used to temporarily disable FPEs during
+ *     the import operation (and re-enable them right after). This is needed
+ *     for instance when importing numpy, as FPEs are generated inside the
+ *     import operation, and cannot be avoided (but are benign).
+ */
+
 class PySession {
 public:
   // Avoid accidentally initializing a COPY of the session
