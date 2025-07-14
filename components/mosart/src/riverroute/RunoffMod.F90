@@ -976,91 +976,152 @@ contains
 !-----------------------------------------------------------------------
 
   subroutine FinalizeBifurcationTracking()
-  ! !DESCRIPTION: Calculate and record bifurcation transfers - called after MCT operation
+  ! !DESCRIPTION: Calculate and record bifurcation transfers. This version uses a robust
+  ! MPI Allgatherv to distribute positive amounts to the correct processors.
     use RtmSpmd, only : masterproc, iam
-    use rof_cpl_indices, only : nt_rtm
+    use rof_cpl_indices, only : nt_rtm, nt_nliq
     use RtmVar, only : iulog
     implicit none
     
-    real(r8), parameter :: TINYVALUE = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
-    
-    integer :: iunit, nt, k, dst_global_id, dst_local_unit
+    integer :: iunit, nt, k
     real(r8) :: source_flow, diverted_flow, transfer_flow
-    character(len=*), parameter :: subname = '(FinalizeBifurcationTracking)'
     
-    ! Process each bifurcation point on this processor
+    ! Maximum number of transfers originating from a single processor
+    integer, parameter :: MAX_LOCAL_TRANSFERS = 2000 
+    integer :: num_local_transfers
+    integer :: local_dst_gids(MAX_LOCAL_TRANSFERS)
+    real(r8) :: local_transfer_amounts(MAX_LOCAL_TRANSFERS)
+    
+    character(len=*), parameter :: subname = '(FinalizeBifurcationTracking)'
+
+    ! --- Part 1: Calculate negative amounts (transfer out of primary channel) and create a list of positive transfers ---
+    
+    num_local_transfers = 0
+    ! Initialize all bifurcation amounts to zero before calculation
+    rtmCTL%bifur_amount(:,:) = 0.0_r8
+
     do iunit = rtmCTL%begr, rtmCTL%endr
        if (rtmCTL%is_bifurc(iunit)) then
+          ! We only track the liquid water tracer for bifurcation amount
+          nt = nt_nliq
+          source_flow = TRunoff%erout(iunit,nt)
           
-          do nt = 1, nt_rtm
-             source_flow = TRunoff%erout(iunit,nt)
-             
-             ! Calculate total diverted flow (sum of secondary channels k>1)
+          ! Only process if there is an actual outflow to divert
+          if (abs(source_flow) > 1.0e-14_r8) then
              diverted_flow = 0.0_r8
+             
+             ! Calculate transfers for all secondary downstream paths (k>1)
              do k = 2, rtmCTL%num_downstream(iunit)
-                ! Use stored base flow for consistent ratio application
-                if (rtmCTL%bifurc_base_flow(iunit) > TINYVALUE) then
-                   ! For IBT mode, use absolute demand instead of ratio-based calculation
-                   if (rtmCTL%ibt_demand(iunit,k) > TINYVALUE) then
-                      transfer_flow = sign(rtmCTL%ibt_demand(iunit,k), source_flow)
-                      write(iulog,*) 'IBT TRACKING DEBUG: unit=', iunit, ' k=', k, ' using_direct_demand=', rtmCTL%ibt_demand(iunit,k), &
-                                   ' source_flow=', source_flow, ' transfer_flow=', transfer_flow
-                   else
-                      transfer_flow = sign(rtmCTL%bifurc_base_flow(iunit), source_flow) * rtmCTL%bifurc_ratio(iunit,k)
-                      write(iulog,*) 'IBT TRACKING DEBUG: unit=', iunit, ' k=', k, ' using_ratio=', rtmCTL%bifurc_ratio(iunit,k), &
-                                   ' base_flow=', rtmCTL%bifurc_base_flow(iunit), ' transfer_flow=', transfer_flow
-                   endif
-                else
-                   transfer_flow = source_flow * rtmCTL%bifurc_ratio(iunit,k)
-                   write(iulog,*) 'IBT TRACKING DEBUG: unit=', iunit, ' k=', k, ' using_original_method, transfer_flow=', transfer_flow
-                endif
+                ! The bifurcation ratio is updated in UpdateIBTRatios for both pure bifurcation
+                ! and IBT modes. We can simply use the ratio against the total outflow.
+                transfer_flow = source_flow * rtmCTL%bifurc_ratio(iunit,k)
                 diverted_flow = diverted_flow + transfer_flow
                 
-                ! Find destination and record positive transfer if on this processor
-                dst_global_id = rtmCTL%dsig_all(iunit,k)
-                call FindLocalUnit(dst_global_id, dst_local_unit)
-                if (dst_local_unit > 0) then
-                   rtmCTL%bifur_amount(dst_local_unit,nt) = rtmCTL%bifur_amount(dst_local_unit,nt) + transfer_flow
-                   ! Also update separate arrays for history output
-                   if (nt == 1) rtmCTL%bifur_amount_nt1(dst_local_unit) = rtmCTL%bifur_amount_nt1(dst_local_unit) + transfer_flow
-                   if (nt == 2) rtmCTL%bifur_amount_nt2(dst_local_unit) = rtmCTL%bifur_amount_nt2(dst_local_unit) + transfer_flow
+                ! Add this transfer to our local list of outgoing transfers
+                if (num_local_transfers < MAX_LOCAL_TRANSFERS) then
+                   num_local_transfers = num_local_transfers + 1
+                   local_dst_gids(num_local_transfers) = rtmCTL%dsig_all(iunit,k)
+                   ! The amount at the receiving cell should be positive, and transfer_flow is negative.
+                   local_transfer_amounts(num_local_transfers) = -transfer_flow
+                else
+                   if (masterproc) write(iulog,*) trim(subname), ' WARNING: MAX_LOCAL_TRANSFERS (', MAX_LOCAL_TRANSFERS, &
+                        ') exceeded on processor ', iam, '. Current transfers: ', num_local_transfers, &
+                        '. Bifurcation tracking will be incomplete and water balance may be violated.'
                 endif
              end do
              
-             ! Record negative diverted amount at source (bifurcation point)
-             rtmCTL%bifur_amount(iunit,nt) = -diverted_flow
-             ! Also update separate arrays for history output
-             if (nt == 1) rtmCTL%bifur_amount_nt1(iunit) = -diverted_flow
-             if (nt == 2) rtmCTL%bifur_amount_nt2(iunit) = -diverted_flow
-             
-          end do
+             ! Record the total negative diverted amount at the source cell.
+             ! diverted_flow is negative, so we add it to get a negative value.
+             rtmCTL%bifur_amount(iunit,nt) = rtmCTL%bifur_amount(iunit,nt) + diverted_flow
+          endif
        end if
     end do
     
+    ! --- Part 2: Distribute the positive amounts (transfer into) to all processors ---
+    call DistributePositiveAmounts(num_local_transfers, local_dst_gids, local_transfer_amounts)
     
+    ! --- Part 3: Update the per-tracer history variables from the final array ---
+    do iunit = rtmCTL%begr, rtmCTL%endr
+        rtmCTL%bifur_amount_nt1(iunit) = rtmCTL%bifur_amount(iunit,1)
+        if (nt_rtm >= 2) then
+            rtmCTL%bifur_amount_nt2(iunit) = rtmCTL%bifur_amount(iunit,2)
+        else
+            rtmCTL%bifur_amount_nt2(iunit) = 0.0_r8
+        endif
+    enddo
+
   end subroutine FinalizeBifurcationTracking
 
-  subroutine FindLocalUnit(global_id, local_unit)
-  ! !DESCRIPTION: Find local unit index for a given global ID on this processor
+!-----------------------------------------------------------------------
+
+  subroutine DistributePositiveAmounts(num_local_transfers, local_dst_gids, local_transfer_amounts)
+  ! !DESCRIPTION: Uses MPI_Allgatherv to efficiently distribute the positive bifurcation
+  ! amounts to the correct destination processors.
+    use RtmSpmd, only : mpicom_rof, npes
+    use mpi
+    use rof_cpl_indices, only : nt_nliq
     implicit none
+
+    integer, intent(in) :: num_local_transfers
+    integer, intent(in) :: local_dst_gids(:)
+    real(r8), intent(in) :: local_transfer_amounts(:)
+
+    ! --- Declaration Section ---
+    integer :: ierr, i, total_transfers, dst_global_id, iunit
+    real(r8) :: transfer_flow
     
-    integer, intent(in) :: global_id
-    integer, intent(out) :: local_unit
+    ! Variables for MPI_Allgatherv
+    integer :: recv_counts(npes)
+    integer :: displacements(npes)
+    integer, allocatable :: all_dst_gids(:)
+    real(r8), allocatable :: all_transfer_amounts(:)
+
+    ! --- Executable Section ---
+
+    ! Part 1: Gather the number of transfers from each processor
+    call MPI_ALLGATHER(num_local_transfers, 1, MPI_INTEGER, recv_counts, 1, MPI_INTEGER, mpicom_rof, ierr)
     
-    integer :: iunit
-    
-    local_unit = 0  ! Initialize to "not found"
-    
-    ! Search through local units on this processor
-    do iunit = rtmCTL%begr, rtmCTL%endr
-       if (rtmCTL%gindex(iunit) == global_id) then
-          local_unit = iunit
-          return
-       endif
+    total_transfers = sum(recv_counts)
+    if (total_transfers == 0) return ! No transfers anywhere, so we are done.
+
+    ! Part 2: Prepare for and execute Allgatherv to get global transfer lists
+    displacements(1) = 0
+    do i = 2, npes
+        displacements(i) = displacements(i-1) + recv_counts(i-1)
     end do
-    
-  end subroutine FindLocalUnit
+
+    allocate(all_dst_gids(total_transfers))
+    allocate(all_transfer_amounts(total_transfers))
+
+    ! Gather all destination GIDs
+    call MPI_ALLGATHERV(local_dst_gids, num_local_transfers, MPI_INTEGER, &
+                        all_dst_gids, recv_counts, displacements, MPI_INTEGER, mpicom_rof, ierr)
+                        
+    ! Gather all transfer amounts
+    call MPI_ALLGATHERV(local_transfer_amounts, num_local_transfers, MPI_DOUBLE_PRECISION, &
+                        all_transfer_amounts, recv_counts, displacements, MPI_DOUBLE_PRECISION, mpicom_rof, ierr)
+
+    ! Part 3: Apply the received positive transfers to local cells
+    do i = 1, total_transfers
+        dst_global_id = all_dst_gids(i)
+        transfer_flow = all_transfer_amounts(i)
+        
+        ! Each processor checks the entire global list and applies transfers for cells it owns.
+        do iunit = rtmCTL%begr, rtmCTL%endr
+            if (rtmCTL%gindex(iunit) == dst_global_id) then
+                rtmCTL%bifur_amount(iunit,nt_nliq) = rtmCTL%bifur_amount(iunit,nt_nliq) + transfer_flow
+                exit ! Found the cell, move to the next transfer in the global list
+            endif
+        enddo
+    enddo
+
+    deallocate(all_dst_gids)
+    deallocate(all_transfer_amounts)
+
+  end subroutine DistributePositiveAmounts
 
 !-----------------------------------------------------------------------
+
+  
 
 end module RunoffMod

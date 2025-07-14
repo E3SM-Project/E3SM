@@ -1255,12 +1255,6 @@ MODULE MOSART_physics_mod
              endif
           end do
           
-          ! Debug: Check if any IBT demands exist
-          write(iulog,*) 'IBT DEMAND CHECK: unit=', iunit, ' has_ibt_demands=', has_ibt_demands, &
-                       ' num_downstream=', rtmCTL%num_downstream(iunit)
-          do k = 1, rtmCTL%num_downstream(iunit)
-             write(iulog,*) 'IBT DEMAND CHECK: unit=', iunit, ' k=', k, ' demand=', rtmCTL%ibt_demand(iunit,k)
-          end do
           
           ! Only apply IBT logic to cells with actual demands
           if (has_ibt_demands) then
@@ -1270,8 +1264,6 @@ MODULE MOSART_physics_mod
              ! Store base flow for consistent ratio application in tracking
              rtmCTL%bifurc_base_flow(iunit) = total_flow
              
-             ! Debug logging for IBT ratio calculation
-             write(iulog,*) 'IBT RATIO DEBUG: unit=', iunit, ' total_flow=', total_flow
              
              if (total_flow > TINYVALUE) then
              ! Calculate environmental minimum (10% retention)
@@ -1287,9 +1279,6 @@ MODULE MOSART_physics_mod
                 if (demand > TINYVALUE .and. available_flow > TINYVALUE) then
                    actual_diversion(k) = min(demand, available_flow)
                    available_flow = available_flow - actual_diversion(k)
-                   ! Debug logging for demand processing
-                   write(iulog,*) 'IBT DEMAND DEBUG: unit=', iunit, ' k=', k, ' demand=', demand, &
-                                ' actual_diversion=', actual_diversion(k), ' remaining_available=', available_flow
                 else
                    actual_diversion(k) = 0.0_r8
                 endif
@@ -1308,14 +1297,10 @@ MODULE MOSART_physics_mod
                    if (k == 1) then
                       ! Main channel gets remaining flow after diversions
                       rtmCTL%bifurc_ratio(iunit,k) = (total_flow - total_diverted) / total_flow
-                      write(iulog,*) 'IBT RATIO CALC DEBUG: unit=', iunit, ' k=', k, ' main_channel_flow=', (total_flow - total_diverted), &
-                                   ' total_flow=', total_flow, ' ratio=', rtmCTL%bifurc_ratio(iunit,k)
                    else
                       ! Diversion channels get their specific ratios
                       rtmCTL%bifurc_ratio(iunit,k) = actual_diversion(k) / total_flow
                       if (actual_diversion(k) > TINYVALUE) then
-                         write(iulog,*) 'IBT RATIO CALC DEBUG: unit=', iunit, ' k=', k, ' actual_diversion=', actual_diversion(k), &
-                                      ' total_flow=', total_flow, ' ratio=', rtmCTL%bifurc_ratio(iunit,k)
                       endif
                    endif
                 else
@@ -1323,12 +1308,6 @@ MODULE MOSART_physics_mod
                 endif
              end do
              
-             ! Debug: Verify ratios sum to 1.0
-             ratio_sum = 0.0_r8
-             do k = 1, rtmCTL%num_downstream(iunit)
-                ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(iunit,k)
-             end do
-             write(iulog,*) 'IBT RATIO SUM DEBUG: unit=', iunit, ' ratio_sum=', ratio_sum, ' should_be_1.0'
              
              ! Primary downstream gets remaining flow (environmental minimum + unused diversions)
              ratio_sum = 0.0_r8
@@ -1395,7 +1374,6 @@ MODULE MOSART_physics_mod
     
     call t_stopf('mosart_matrix_update')
     
-    if (masterproc) write(iulog,*) 'Updated ', num_updates, ' MCT matrix weights for IBT dynamic ratios'
     
   end subroutine UpdateMCTMatrixWeights
 
@@ -1414,8 +1392,6 @@ MODULE MOSART_physics_mod
 
 !-----------------------------------------------------------------------
 
-
-!-----------------------------------------------------------------------
 
 
 !-----------------------------------------------------------------------

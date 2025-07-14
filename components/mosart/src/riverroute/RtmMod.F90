@@ -1792,10 +1792,6 @@ contains
 
        ! Set up bifurcation connectivity if enabled
        if (bifurcflag) then
-          ! Debug: Print grid bounds
-          if (masterproc .and. n <= 10) then
-             write(iulog,*) 'GRID DEBUG: rtmlon=', rtmlon, ' rtmlat=', rtmlat, ' max_id=', rtmlon*rtmlat
-          end if
           
           ! Count valid downstream connections and detect bifurcation
           rtmCTL%num_downstream(nr) = 0
