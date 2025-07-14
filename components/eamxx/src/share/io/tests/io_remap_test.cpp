@@ -14,6 +14,7 @@ namespace {
 using namespace scream;
 
 constexpr int packsize = SCREAM_SMALL_PACK_SIZE;
+constexpr float fill_val = constants::fill_value<float>();
 using         Pack     = ekat::Pack<Real,packsize>;
 using stratts_t = std::map<std::string,std::string>;
 
@@ -282,9 +283,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   //                                    ---  Vertical Remapping ---
   {
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
-    const float mask_val = vert_remap_control.isParameter("Fill Value")
-                         ? vert_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
-    print ("    -> vertical remap ... \n",io_comm);
+    print ("    -> vertical remap ... \n",io_comm)
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("point_grid");
     auto fm_vert   = get_test_fm(grid_vert,true,p_ref);
@@ -330,7 +329,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
     for (int ii=0; ii<ncols_src_l; ii++) {
       const bool ref_masked = (p_ref>pi_v(ii,nlevs_src) || p_ref<pi_v(ii,0));
-      const Real test_val = ref_masked ? mask_val : calculate_output(p_ref,ii,0);
+      const Real test_val = ref_masked ? fill_val : calculate_output(p_ref,ii,0);
       REQUIRE(approx(Ys_v_vert(ii),test_val));
 
       REQUIRE(approx(Yf_v_vert(ii), Yf_v(ii)));
@@ -338,11 +337,11 @@ TEST_CASE("io_remap_test","io_remap_test")
         auto p_jj = p_tgt[jj];
         const bool mid_masked = (p_jj>pm_v(ii,nlevs_src-1) || p_jj<pm_v(ii,0));
         const bool int_masked = (p_jj>pi_v(ii,nlevs_src)   || p_jj<pi_v(ii,0));
-        REQUIRE(approx(Ym_v_vert(ii,jj),(mid_masked ? mask_val : calculate_output(p_jj,ii,0))));
-        REQUIRE(approx(Yi_v_vert(ii,jj),(int_masked ? mask_val : calculate_output(p_jj,ii,0))));
+        REQUIRE(approx(Ym_v_vert(ii,jj),(mid_masked ? fill_val : calculate_output(p_jj,ii,0))));
+        REQUIRE(approx(Yi_v_vert(ii,jj),(int_masked ? fill_val : calculate_output(p_jj,ii,0))));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(approx(Vm_v_vert(ii,cc,jj), (mid_masked ? mask_val : calculate_output(p_jj,ii,cc+1))));
-          REQUIRE(approx(Vi_v_vert(ii,cc,jj), (int_masked ? mask_val : calculate_output(p_jj,ii,cc+1))));
+          REQUIRE(approx(Vm_v_vert(ii,cc,jj), (mid_masked ? fill_val : calculate_output(p_jj,ii,cc+1))));
+          REQUIRE(approx(Vi_v_vert(ii,cc,jj), (int_masked ? fill_val : calculate_output(p_jj,ii,cc+1))));
         }
       }
     }
@@ -352,8 +351,6 @@ TEST_CASE("io_remap_test","io_remap_test")
   //                                    ---  Horizontal Remapping ---
   {
     // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
-    const float mask_val = horiz_remap_control.isParameter("Fill Value")
-                         ? horiz_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("point_grid");
@@ -429,7 +426,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       if (found) {
         Ys_exp /= Ys_wgt;
       } else {
-        Ys_exp = mask_val;
+        Ys_exp = fill_val;
       }
       REQUIRE(approx(Ys_v_horiz(ii), Ys_exp));
     }
@@ -438,8 +435,6 @@ TEST_CASE("io_remap_test","io_remap_test")
   // ------------------------------------------------------------------------------------------------------
   //                                ---  Vertical + Horizontal Remapping ---
   {
-    const float mask_val = vert_horiz_remap_control.isParameter("Fill Value")
-                         ? vert_horiz_remap_control.get<double>("Fill Value") : constants::DefaultFillValue<float>().value;
     print ("    -> vertical + horizontal remap ... \n",io_comm);
     auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
     auto grid_vh = gm_vh->get_grid("point_grid");
@@ -500,13 +495,13 @@ TEST_CASE("io_remap_test","io_remap_test")
           test_mid = (mid_mask_1*calculate_output(p_jj,col1,0)*wgt + mid_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
         } else {
           // This point is completely masked out, assign masked value
-          test_mid = mask_val;
+          test_mid = fill_val;
         }
         if (int_mask_1 + int_mask_2 > 0.0) {
           test_int = (int_mask_1*calculate_output(p_jj,col1,0)*wgt + int_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
         } else {
           // This point is completely masked out, assign masked value
-          test_int = mask_val;
+          test_int = fill_val;
         }
         REQUIRE(approx(Ym_v_vh(ii,jj), test_mid));
         REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
@@ -515,13 +510,13 @@ TEST_CASE("io_remap_test","io_remap_test")
             test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
           } else {
             // This point is completely masked out, assign masked value
-            test_mid = mask_val;
+            test_mid = fill_val;
           }
           if (int_mask_1 + int_mask_2 > 0.0) {
             test_int = (int_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + int_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
           } else {
             // This point is completely masked out, assign masked value
-            test_int = mask_val;
+            test_int = fill_val;
           }
           REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
           REQUIRE(approx(Vi_v_vh(ii,cc,jj), test_int));
@@ -544,7 +539,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       if (found) {
         Ys_exp /= Ys_wgt;
       } else {
-        Ys_exp = mask_val;
+        Ys_exp = fill_val;
       }
       REQUIRE(approx(Ys_v_vh(ii), Ys_exp));
     }

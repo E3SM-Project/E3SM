@@ -34,7 +34,6 @@ public:
     VRemapType vr_type = None;
     std::string extrap_top = "P0";
     std::string extrap_bot = "P0";
-    Real mask_value = std::numeric_limits<Real>::quiet_NaN(); // Unused for P0 extrapolation
     std::string pname; // What we need to load from nc file
     Field pmid, pint;  // The model pmid/pint
     std::shared_ptr<AbstractRemapper> custom_remapper; // Use this custom remapper
