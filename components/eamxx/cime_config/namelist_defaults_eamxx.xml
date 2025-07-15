@@ -216,17 +216,20 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals_v2.dat8
       </tables>
       <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
+      <autoconversion_prefactor hgrid="ne256np4.pg2">2700.0</autoconversion_prefactor>
       <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>
       <autoconversion_nc_exponent type="real" doc="Autoconversion nc exponent">1.79</autoconversion_nc_exponent>
       <autoconversion_radius type="real" doc="Autoconversion droplet radius in meter">25.0e-6</autoconversion_radius>
       <accretion_prefactor type="real" doc="Accretion linear prefactor">67.0</accretion_prefactor>
+      <accretion_prefactor hgrid="ne256np4.pg2">150.0</accretion_prefactor>
       <accretion_qc_exponent type="real" doc="Accretion qc exponent">1.15</accretion_qc_exponent>
       <accretion_qr_exponent type="real" doc="Accretion qr exponent">1.15</accretion_qr_exponent>
       <rain_selfcollection_prefactor type="real" doc="Rain self-collection prefactor">5.78</rain_selfcollection_prefactor>
       <rain_selfcollection_breakup_diameter type="real" doc="Rain self-collection breakup diameter in meter">0.00028</rain_selfcollection_breakup_diameter>
       <constant_mu_rain type="real" doc="Constant shape parameter (mu) in the rain droplet distribution">1.0</constant_mu_rain>
-      <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">1.0</spa_ccn_to_nc_factor>
-      <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">1.0</spa_ccn_to_nc_exponent>      
+      <spa_ccn_to_nc_factor type="real" doc="Scaling factor for turning SPA ccn into P3 nc">2000.0</spa_ccn_to_nc_factor>
+      <spa_ccn_to_nc_factor hgrid="ne256np4.pg2">1000.0</spa_ccn_to_nc_factor>
+      <spa_ccn_to_nc_exponent type="real" doc="Exponent for turning SPA ccn into P3 nc">0.55</spa_ccn_to_nc_exponent>      
       <cldliq_to_ice_collection_factor type="real" doc="Cloud liquid to ice collection scaling factor">0.5</cldliq_to_ice_collection_factor>
       <rain_to_ice_collection_factor type="real" doc="Rain to ice collection scaling factor">1.0</rain_to_ice_collection_factor>
       <min_rime_rho type="real" doc="Minimum rime density in kg/m3">50.0</min_rime_rho>
@@ -236,8 +239,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <ice_sedimentation_factor type="real" doc="Ice sedimentation fall speed factor">1.0</ice_sedimentation_factor>
       <do_ice_production type="logical" doc="Flag to turn on ice production processes (loss processes unaffected)">true</do_ice_production>
       <set_cld_frac_l_to_one type="logical" doc="set P3 input liquid cloud fraction to 1 everywhere">false</set_cld_frac_l_to_one>
-      <set_cld_frac_r_to_one type="logical" doc="set P3 input rain cloud fraction to 1 everywhere"  >false</set_cld_frac_r_to_one>
-      <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere"   >false</set_cld_frac_i_to_one>
+      <set_cld_frac_r_to_one type="logical" doc="set P3 input rain cloud fraction to 1 everywhere">false</set_cld_frac_r_to_one>
+      <set_cld_frac_r_to_one hgrid="ne256np4.pg2">true</set_cld_frac_r_to_one>
+      <set_cld_frac_r_to_one hgrid="ne512np4.pg2">true</set_cld_frac_r_to_one>
+      <set_cld_frac_r_to_one hgrid="ne1024np4.pg2">true</set_cld_frac_r_to_one>
+      <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere">false</set_cld_frac_i_to_one>
       <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
       <extra_p3_diags type="logical" doc="Extra P3 diagnostics">false</extra_p3_diags>
     </p3>
