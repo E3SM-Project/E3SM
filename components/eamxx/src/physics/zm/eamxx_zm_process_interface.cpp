@@ -96,12 +96,14 @@ void zm_deep_convection::run_impl (const double dt)
   // get fields
   const auto& T_mid    = get_field_out("T_mid") .get_view<Spack**, Host>();
   const auto& qv       = get_field_out("qv")    .get_view<Spack**, Host>();
-  // const auto& p_mid    = get_field_in("p_mid").get_view<const Spack**, Host>();
-  // const auto& p_int    = get_field_in("p_int").get_view<const Spack**, Host>();
+  const auto& qc       = get_field_out("qc")    .get_view<Spack**, Host>();
+
+  const auto& p_mid    = get_field_in("p_mid")  .get_view<const Spack**, Host>();
+  const auto& p_int    = get_field_in("p_int")  .get_view<const Spack**, Host>();
+  const auto& omega    = get_field_in("omega")  .get_view<const Spack**, Host>();
   // const auto& rho      = get_field_in("pseudo_density").get_view<const Spack**, Host>();
-  // const auto& omega    = get_field_in("omega").get_view<const Spack**, Host>();
-  // const auto& qc       = get_field_out("qc").get_view<Spack**, Host>();
-  // const auto& phis     = get_field_in("phis").get_view<const Real*>();
+  
+  const auto& phis     = get_field_in("phis")   .get_view<const Real*>();
 
   // prepare inputs
   zm_input.ncol           = m_ncols;
