@@ -11,11 +11,11 @@ using scream::Int;
 // A C++ interface to ZM fortran calls and vice versa
 
 extern "C" {
-  void zm_eamxx_bridge_init_c(Int  &pcols_in,
-                              Int  &pver_in );
+  void zm_eamxx_bridge_init_c(Int pcols_in,
+                              Int pver_in );
 
-  void zm_eamxx_bridge_run_c( Int  &ncol,
-                              bool &is_first_step,
+  void zm_eamxx_bridge_run_c( Int ncol,
+                              bool is_first_step,
                               Real *state_t,
                               Real *state_q );
 } // extern "C" : end _c decls
@@ -27,13 +27,15 @@ void zm_eamxx_bridge_init( Int pcols, Int pver ){
   zm_eamxx_bridge_init_c( pcols, pver );
 }
 
-void zm_eamxx_bridge_run(ZMF::zm_input_state& zm_input){
-  zm_input.transpose<ekat::TransposeDirection::c2f>();
+void zm_eamxx_bridge_run(ZMF::zm_input_state& zm_input, Int pver){
+  zm_input.transpose<ekat::TransposeDirection::c2f>(pver);
+
   zm_eamxx_bridge_run_c( zm_input.ncol,
                          zm_input.is_first_step,
-                         ekat::scalarize(zm_input.T_mid ).data(),
-                         ekat::scalarize(zm_input.qv    ).data() );
-  // zm_output.transpose<ekat::TransposeDirection::f2c>();
+                         zm_input.T_mid_f.data(),
+                         zm_input.qv_f   .data() );
+
+  zm_input.transpose<ekat::TransposeDirection::f2c>(pver);
 }
 
 // end _c impls
