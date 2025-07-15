@@ -40,7 +40,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   m_pcols = m_ncols;
   comm.all_reduce(&m_pcols,1,MPI_MAX);
 
-  constexpr int ps = Spack::n;
+  constexpr int pack_size = Spack::n;
 
   const auto nondim = Units::nondimensional();
   const auto m2 = pow(m,2);
@@ -52,21 +52,21 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // Layout for horiz_wind field
 
   // Input variables
-  add_field<Required>("p_mid",          scalar3d_mid, Pa,    grid_name, ps);
-  add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, ps);
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, ps);
-  add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
-  add_field<Required>("omega",          scalar3d_mid, Pa/s,  grid_name, ps);
+  add_field<Required>("p_mid",          scalar3d_mid, Pa,    grid_name, pack_size);
+  add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, pack_size);
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, pack_size);
+  add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, pack_size);
+  add_field<Required>("omega",          scalar3d_mid, Pa/s,  grid_name, pack_size);
 
   // Input/Output variables
-  add_field <Updated>("T_mid",          scalar3d_mid, K,     grid_name, ps);
-  add_field <Updated>("horiz_winds",    vector3d_mid, m/s,   grid_name, ps);
-  add_tracer<Updated>("qv",             m_grid,       kg/kg,            ps);
-  add_tracer<Updated>("qc",             m_grid,       kg/kg,            ps);
+  add_field <Updated>("T_mid",          scalar3d_mid, K,     grid_name, pack_size);
+  add_field <Updated>("horiz_winds",    vector3d_mid, m/s,   grid_name, pack_size);
+  add_tracer<Updated>("qv",             m_grid,       kg/kg,            pack_size);
+  add_tracer<Updated>("qc",             m_grid,       kg/kg,            pack_size);
 
   // // Output variables
   // add_field<Computed>("???", scalar2d    , ???, grid_name);
-  // add_field<Computed>("???", scalar3d_mid, ???, grid_name, ps);
+  // add_field<Computed>("???", scalar3d_mid, ???, grid_name, pack_size);
 
   // // Diagnostic Outputs:
   // add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
