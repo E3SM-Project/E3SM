@@ -210,7 +210,7 @@ contains
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
-      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers
+      iMOAB_WriteMapFile, iMOAB_SetMapGhostLayers
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -540,7 +540,7 @@ contains
                      call shr_sys_abort(subname//' ERROR in computing ATM-OCN weights ')
                   endif
 
-                  ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, wgtIda2o_bilinear, 'bilinear_a2o.nc'//C_NULL_CHAR)
+                  ! ierr = iMOAB_WriteMapFile(mbintxao, wgtIda2o_bilinear, 'bilinear_a2o.nc'//C_NULL_CHAR)
 
                   ! Next compute the conservative map for projection of flux fields
                   if (iamroot_CPLID) then
