@@ -26,7 +26,7 @@ struct Functions
 
   template <typename S> using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S> using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-  
+
   using SPackInt = SmallPack<Int>;
   using BPack    = BigPack<Scalar>;
   using Spack    = SmallPack<Scalar>;
@@ -35,6 +35,7 @@ struct Functions
 
   template <typename S> using view_1d           = typename KT::template view_1d<S>;
   template <typename S> using view_2d           = typename KT::template view_2d<S>;
+  template <typename S> using view_2dl          = typename KT::template lview<S**>;
   template <typename S> using view_3d           = typename KT::template view_3d<S>;
   template <typename S> using view_2d_strided   = typename KT::template sview<S**>;
   template <typename S> using view_3d_strided   = typename KT::template sview<S***>;
@@ -94,7 +95,7 @@ struct Functions
     // -------------------------------------------------------------------------
     // alternate transpose method
     template <ekat::TransposeDirection::Enum D>
-    void transpose()
+    void transpose(int pver)
     {
       std::vector<view_2d<Spack>> tviews = { T_mid, qv };
       if (D == ekat::TransposeDirection::c2f) {

@@ -13,7 +13,7 @@ namespace scream
 
 /*------------------------------------------------------------------------------------------------*/
 // Constructor for the zm_deep_convection interface
-zm_deep_convection::zm_deep_convection(const ekat::Comm& comm, 
+zm_deep_convection::zm_deep_convection(const ekat::Comm& comm,
                                        const ekat::ParameterList& params)
  : AtmosphereProcess(comm,params)
 {
@@ -114,7 +114,7 @@ void zm_deep_convection::run_impl (const double dt)
   // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 
   // Run ZM
-  zm_eamxx_bridge_run( zm_input );
+  zm_eamxx_bridge_run( zm_input, m_nlevs );
 
   // Update output fields
   // ???
