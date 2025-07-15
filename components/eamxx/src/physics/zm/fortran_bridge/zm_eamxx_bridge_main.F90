@@ -1,6 +1,6 @@
 module zm_eamxx_bridge_main
   !-----------------------------------------------------------------------------
-  ! Purpose: 
+  ! Purpose:
   !-----------------------------------------------------------------------------
   use iso_c_binding
   use cam_logfile,   only: iulog
@@ -8,6 +8,7 @@ module zm_eamxx_bridge_main
   use zm_eamxx_bridge_params, only: masterproc, r8, pcols, pver, pverp, top_lev
   !-----------------------------------------------------------------------------
   implicit none
+
   private
   !-----------------------------------------------------------------------------
   ! public methods for bridging
@@ -51,7 +52,7 @@ subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
   top_lev = 1
   !-----------------------------------------------------------------------------
   ! obtain master process ID
-  call mpi_comm_rank(MPI_COMM_WORLD, mpi_rank, ierror) 
+  call mpi_comm_rank(MPI_COMM_WORLD, mpi_rank, ierror)
   masterproc = .false.
   if (mpi_rank==0) masterproc = .true.
   !-----------------------------------------------------------------------------
@@ -88,10 +89,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_q      ! input state water vapor
   !-----------------------------------------------------------------------------
   ! Local variables
-  integer :: i
+  integer :: i,j
   ! arguments for zm_convr - order consistent with current interface
   ! integer  :: lchnk = 0
-  ! 
+  !
   ! logical  :: is_first_step
   ! real(r8), dimension(pcols,pver) :: state_t      ! input state temperature
   ! real(r8), dimension(pcols,pver) :: state_q      ! input state water vapor
@@ -167,7 +168,28 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
     write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver) : ',state_q(i,pver)
     ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
     call shr_sys_flush(iulog)
-  end do
+
+    !-----------------------------------------------------------------------------
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 01'
+    call shr_sys_flush(iulog)
+    do j = 1,pver
+
+       !write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver-1) : ',state_t(i,pver-1)
+       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
+        write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',1,',',j,') : ',state_q(1,j)
+       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
+       call shr_sys_flush(iulog)
+    end do
+    do j = 1,pver
+
+       !write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver-1) : ',state_t(i,pver-1)
+       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
+       write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',1,',',j,') : ',state_t(1,j)
+       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
+       call shr_sys_flush(iulog)
+    end do
+ end if
+
   !-----------------------------------------------------------------------------
   ! ! Call the primary Zhang-McFarlane convection parameterization
   ! call zm_convr( lchnk, ncol, is_first_step, &
@@ -194,7 +216,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
   !                ql, &
   !                rliq, &
   !                landfrac, &
-  !                t_star, q_star, dcape, &  
+  !                t_star, q_star, dcape, &
   !                aero(lchnk), &
   !                qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, &
   !                mudpcu, &
