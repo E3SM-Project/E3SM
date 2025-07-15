@@ -219,11 +219,17 @@ void MAMMicrophysics::set_grids(
     // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
 
-    add_field<Computed>("mam4_microphys_tendency_condensation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents,  pow(mol, -1), grid_name);
+    // constexpr ekat::units::Units u_heterogeneous = ekat::units::Units(ekat::units::Units::nondimensional(), "Warning: This array carries quantities with heterogeneous units");
+    add_field<Computed>("mam4_microphys_tendency_condensation", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
+    // get_field_set_io_docstring("mam4_microphys_tendency_condensation");
+    // get_field_set_io_docstring("mam4_microphys_tendency_renaming");
+    // get_field_set_io_docstring("mam4_microphys_tendency_nucleation");
+    // get_field_set_io_docstring("mam4_microphys_tendency_coagulation");
+    // get_field_set_io_docstring("mam4_microphys_tendency_renaming_cloud_borne");
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data

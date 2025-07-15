@@ -163,6 +163,13 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
+  void get_field_set_io_docstring(const std::string &fname) {
+    using str_atts_t = std::map<std::string,std::string>;
+    auto &f = get_field_out(fname);
+    auto &io_str_atts = f.get_header().get_extra_data<str_atts_t>("io: string attributes");
+    io_str_atts["doc"] = "Collection of heterogeneous quantities--species have different units";
+  }
+
 };  // MAMMicrophysics
 
 }  // namespace scream
