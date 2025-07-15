@@ -38,8 +38,8 @@ subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer(kind=c_int), intent(in) :: pcols_in
-  integer(kind=c_int), intent(in) :: pver_in
+  integer(kind=c_int), value, intent(in) :: pcols_in
+  integer(kind=c_int), value, intent(in) :: pver_in
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: mpi_rank, ierror
@@ -80,8 +80,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_t, state_q ) bind(C
   use zm_conv,               only: zm_convr
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer(kind=c_int),                      intent(in) :: ncol
-  logical(kind=c_bool),                     intent(in) :: is_first_step
+  integer(kind=c_int),  value,              intent(in) :: ncol
+  logical(kind=c_bool), value,              intent(in) :: is_first_step
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_t      ! input state temperature
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_q      ! input state water vapor
   !-----------------------------------------------------------------------------
