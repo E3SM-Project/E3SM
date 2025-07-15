@@ -26,7 +26,7 @@ struct Functions
 
   template <typename S> using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S> using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-  
+
   using SPackInt = SmallPack<Int>;
   using BPack    = BigPack<Scalar>;
   using Spack    = SmallPack<Scalar>;
@@ -35,6 +35,7 @@ struct Functions
 
   template <typename S> using view_1d           = typename KT::template view_1d<S>;
   template <typename S> using view_2d           = typename KT::template view_2d<S>;
+  template <typename S> using view_2dl          = typename KT::template lview<S**>;
   template <typename S> using view_3d           = typename KT::template view_3d<S>;
   template <typename S> using view_2d_strided   = typename KT::template sview<S**>;
   template <typename S> using view_3d_strided   = typename KT::template sview<S***>;
@@ -70,51 +71,34 @@ struct Functions
     // view_2d<Spack>  qi;             // Ice total mass mixing ratio [kg kg-1]
     // view_2d<Spack>  omega;          // vertical pressure velocity [Pa/s]
 
+    // transposed views for fortran bridge
+    view_2dl<Real>  T_mid_f;
+    view_2dl<Real>  qv_f;
+
     // -------------------------------------------------------------------------
-    // vectors for alternate transpose method
-    std::vector<Real> phis_v;
-    std::vector<Real> T_mid_v;
-    std::vector<Real> qv_v;
-    // -------------------------------------------------------------------------
-    // // transpose method for fortran bridging
-    // template <ekat::TransposeDirection::Enum D>
-    // void transpose()
-    // {
-    //   std::vector<view_2d<Spack>> transposed_views(2);
-    //   ekat::host_to_device<D>({ekat::scalarize(T_mid).data(),
-    //                            ekat::scalarize(qv).data()},
-    //                            T_mid.extent(0), T_mid.extent(1) * Spack::n, transposed_views, true);
-    //   if (D == ekat::TransposeDirection::c2f) {
-    //     T_mid = transposed_views[0];
-    //     qv    = transposed_views[1];
-    //   // else {
-    //     // ???
-    //   }
-    // };
-    // -------------------------------------------------------------------------
-    // alternate transpose method
+    // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
-    void transpose()
+    void transpose(int pver)
     {
-      std::vector<view_2d<Spack>> tviews = { T_mid, qv };
       if (D == ekat::TransposeDirection::c2f) {
-        auto rsz = T_mid.size() * Spack::n;
-        // auto rsz = T_mid.extent(1) * Spack::n;
-        // ---------------------------------------------------------------------
-        T_mid_v .resize(rsz);
-        qv_v    .resize(rsz);
-        ekat::device_to_host( { T_mid_v .data(),
-                                qv_v    .data() },
-                              T_mid.extent(0), T_mid.extent(1)*Spack::n, tviews, true);
-        T_mid = tviews[0];
-        qv    = tviews[1];
-        // ---------------------------------------------------------------------
+        auto s_T_mid = ekat::scalarize(T_mid);
+        auto s_qv    = ekat::scalarize(qv);
+
+        T_mid_f = view_2dl<Real>("T_mid_f", T_mid.extent(0), pver);
+        qv_f    = view_2dl<Real>("qv_f", T_mid.extent(0), pver);
+        for (int i = 0; i < T_mid.extent(0); ++i) {
+          for (int j = 0; j < pver; ++j) {
+            T_mid_f(i, j) = s_T_mid(i, j);
+            qv_f(i, j)    = s_qv(i, j);
+          }
+        }
       }
-      // else {
-      //   ekat::host_to_device({T_mid_v .data(),
-      //                         qv_v    .data()},
-      //                        T_mid.extent(0), T_mid.extent(1) * Spack::n, transposed_views, true);
-      // }
+      else {
+        std::vector<view_2d<Spack> > views = {T_mid, qv};
+        ekat::host_to_device( { T_mid_f.data(), 
+                                qv_f.data() }, 
+                              (int)T_mid.extent(0), pver, views);
+      }
     }
     // -------------------------------------------------------------------------
   };

@@ -16,8 +16,6 @@ extern "C" {
 
   void zm_eamxx_bridge_run_c( Int  ncol,
                               bool is_first_step,
-                              // Real *state_t,
-                              // Real *state_q );
                               Real *state_phis,
                               Real *state_t,
                               Real *state_q );
@@ -30,51 +28,38 @@ void zm_eamxx_bridge_init( Int pcols, Int pver ){
   zm_eamxx_bridge_init_c( pcols, pver );
 }
 
-void zm_eamxx_bridge_run(ZMF::zm_input_state& zm_input){
+void zm_eamxx_bridge_run(ZMF::zm_input_state& zm_input, Int pver){
 
-  // int ncol = zm_input.T_mid.extent(0);
-  // int nlev = zm_input.T_mid.extent(1);
-
+  //----------------------------------------------------------------------------
   auto phis_s = zm_input.phis;
-  auto T_s    = ekat::scalarize( zm_input.T_mid );
-  auto q_s    = ekat::scalarize( zm_input.qv    );
+  auto s_T    = ekat::scalarize( zm_input.T_mid );
+  auto s_q    = ekat::scalarize( zm_input.qv    );
 
-  int ncol = T_s.extent(0);
-  int nlev = T_s.extent(1);
-
-  std::cout << "zm_eamxx_bridge_run - ncol: "<< ncol << std::endl;
-  std::cout << "zm_eamxx_bridge_run - nlev: "<< nlev << std::endl;
-
-  auto sz2 = T_mid.size() * Spack::n;
-
-  std::cout << "zm_eamxx_bridge_run - sz1: "<< T_mid.size() << std::endl;
-  std::cout << "zm_eamxx_bridge_run - sz2: "<< sz2 << std::endl;
+  int ncol = s_T.extent(0);
+  // int nlev = s_T.extent(1);
+  // std::cout << "zm_eamxx_bridge_run - ncol: "<< ncol << std::endl;
+  // std::cout << "zm_eamxx_bridge_run - nlev: "<< nlev << std::endl;
+  // auto sz2 = T_mid.size() * Spack::n;
+  // std::cout << "zm_eamxx_bridge_run - sz1: "<< T_mid.size() << std::endl;
+  // std::cout << "zm_eamxx_bridge_run - sz2: "<< sz2 << std::endl;
 
   for (int i = 0; i<ncol; ++i) {
     // std::cout << "zm_eamxx_bridge_run - phis("<<i<<")     : " << phis_s(i)      << std::endl;
-    std::cout << "zm_eamxx_bridge_run - T("<<i<<",     0): " << T_s(i,      0) << std::endl;
-    std::cout << "zm_eamxx_bridge_run - q("<<i<<",     0): " << q_s(i,      0) << std::endl;
-    std::cout << "zm_eamxx_bridge_run - T("<<i<<",  72-1): " << T_s(i,   72-1) << std::endl;
-    std::cout << "zm_eamxx_bridge_run - q("<<i<<",  72-1): " << q_s(i,   72-1) << std::endl;
-    std::cout << "zm_eamxx_bridge_run - T("<<i<<",nlev-1): " << T_s(i, nlev-1) << std::endl;
-    std::cout << "zm_eamxx_bridge_run - q("<<i<<",nlev-1): " << q_s(i, nlev-1) << std::endl;
+    // std::cout << "zm_eamxx_bridge_run - T("<<i<<",     0): " << T_s(i,      0) << std::endl;
+    // std::cout << "zm_eamxx_bridge_run - q("<<i<<",     0): " << q_s(i,      0) << std::endl;
+    std::cout << "zm_eamxx_bridge_run - T("<<i<<",pver-1): " << s_T(i, pver-1) << std::endl;
+    std::cout << "zm_eamxx_bridge_run - q("<<i<<",pver-1): " << s_q(i, pver-1) << std::endl;
   }
+  //----------------------------------------------------------------------------
 
-  zm_input.transpose<ekat::TransposeDirection::c2f>();
-
+  zm_input.transpose<ekat::TransposeDirection::c2f>(pver);
   zm_eamxx_bridge_run_c( zm_input.ncol,
                          zm_input.is_first_step,
-                         zm_input.phis.data(),
-                         ekat::scalarize( zm_input.T_mid ).data(),
-                         ekat::scalarize( zm_input.qv    ).data() );
+                         zm_input.phis    .data(),
+                         zm_input.T_mid_f .data(),
+                         zm_input.qv_f    .data() );
+  zm_input.transpose<ekat::TransposeDirection::f2c>(pver);
 
-  // zm_eamxx_bridge_run_c( zm_input.ncol,
-  //                        zm_input.is_first_step,
-  //                        zm_input.phis  .data(),
-  //                        zm_input.T_mid .data(),
-  //                        zm_input.qv    .data() );
-  
-  // zm_output.transpose<ekat::TransposeDirection::f2c>();
 }
 
 // end _c impls

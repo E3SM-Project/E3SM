@@ -1,6 +1,6 @@
 module zm_eamxx_bridge_main
   !-----------------------------------------------------------------------------
-  ! Purpose: 
+  ! Purpose:
   !-----------------------------------------------------------------------------
   use iso_c_binding
   use cam_logfile,   only: iulog
@@ -8,6 +8,7 @@ module zm_eamxx_bridge_main
   use zm_eamxx_bridge_params, only: masterproc, r8, pcols, pver, pverp, top_lev
   !-----------------------------------------------------------------------------
   implicit none
+
   private
   !-----------------------------------------------------------------------------
   ! public methods for bridging
@@ -51,7 +52,7 @@ subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
   top_lev = 1
   !-----------------------------------------------------------------------------
   ! obtain master process ID
-  call mpi_comm_rank(MPI_COMM_WORLD, mpi_rank, ierror) 
+  call mpi_comm_rank(MPI_COMM_WORLD, mpi_rank, ierror)
   masterproc = .false.
   if (mpi_rank==0) masterproc = .true.
   !-----------------------------------------------------------------------------
@@ -81,17 +82,17 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
   use zm_conv,               only: zm_convr
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer(kind=c_int),  value,              intent(in) :: ncol
-  logical(kind=c_bool), value,              intent(in) :: is_first_step
+  integer(kind=c_int),               value, intent(in) :: ncol
+  logical(kind=c_bool),              value, intent(in) :: is_first_step
   real(kind=c_real), dimension(pcols)     , intent(in) :: state_phis   ! input state surface geopotential height
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_t      ! input state temperature
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_q      ! input state water vapor
   !-----------------------------------------------------------------------------
   ! Local variables
-  integer :: i
+  integer :: i,j
   ! arguments for zm_convr - order consistent with current interface
   ! integer  :: lchnk = 0
-  ! 
+  !
   ! logical  :: is_first_step
   ! real(r8), dimension(pcols,pver) :: state_t      ! input state temperature
   ! real(r8), dimension(pcols,pver) :: state_q      ! input state water vapor
@@ -168,6 +169,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
     ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
     call shr_sys_flush(iulog)
   end do
+
   !-----------------------------------------------------------------------------
   ! ! Call the primary Zhang-McFarlane convection parameterization
   ! call zm_convr( lchnk, ncol, is_first_step, &
@@ -194,7 +196,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
   !                ql, &
   !                rliq, &
   !                landfrac, &
-  !                t_star, q_star, dcape, &  
+  !                t_star, q_star, dcape, &
   !                aero(lchnk), &
   !                qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, &
   !                mudpcu, &
