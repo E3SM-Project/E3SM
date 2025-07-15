@@ -162,7 +162,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
   write(iulog,*) 'zm_eamxx_bridge_run_c - 01'
   call shr_sys_flush(iulog)
   do i = 1,ncol
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - phis(',i,')   : ',state_phis(i)
+    ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - phis(',i,')   : ',state_phis(i)
     write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver) : ',state_t(i,pver)
     ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
     write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver) : ',state_q(i,pver)
