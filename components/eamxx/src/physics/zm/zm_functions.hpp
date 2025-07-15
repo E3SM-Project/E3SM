@@ -52,14 +52,14 @@ struct Functions
   struct zm_input_state {
     zm_input_state() = default;
     // -------------------------------------------------------------------------
-    // number of columns for current task/chunk
-    Int ncol;
-    // flag for first call
-    bool is_first_step;
-    // Temperature [K]
-    view_2d<Spack> T_mid;
-    // Water vapor mixing ratio [kg kg-1]
-    view_2d<Spack> qv;
+    Int             ncol;           // number of columns for current task/chunk
+    bool            is_first_step;  // flag for first call
+    view_2d<Spack>  T_mid;          // Temperature [K]
+    view_2d<Spack>  qv;             // Water vapor mixing ratio [kg kg-1]
+    // -------------------------------------------------------------------------
+    // vectors for alternate transpose method
+    std::vector<Real> T_mid_v;
+    std::vector<Real> qv_v;
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
@@ -77,6 +77,25 @@ struct Functions
         // ???
       }
     };
+    // -------------------------------------------------------------------------
+    // // alternate transpose method
+    // template <ekat::TransposeDirection::Enum D>
+    // void transpose()
+    // {
+    //   std::vector<view_2d<Spack>> views = {T_mid, qv};
+    //   if (D == ekat::TransposeDirection::c2f) {
+    //     T_mid_v.resize(T_mid.size() * Spack::n);
+    //     qv_v.resize(T_mid.size() * Spack::n);
+    //     ekat::device_to_host({T_mid_v.data(),
+    //                           qv_v.data()},
+    //                          T_mid.extent(0), T_mid.extent(1) * Spack::n, views, true);
+    //   }
+    //   else {
+    //     ekat::host_to_device({T_mid_v.data(),
+    //                           qv_v.data()},
+    //                          T_mid.extent(0), T_mid.extent(1) * Spack::n, views, true);
+    //   }
+    // }
     // -------------------------------------------------------------------------
   };
 
