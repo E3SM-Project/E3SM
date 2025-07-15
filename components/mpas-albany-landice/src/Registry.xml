@@ -1711,7 +1711,7 @@ is the value of that variable from the *previous* time level!
                      description="3D mask for indicating where ocean data is present (i.e., seed mask).  Initially this is equal to orig3dOceanMask but it grows as the ocean extrapolation scheme iterates.  It indicates anywhere that valid ocean data is present, whether that is the original ocean data or where it has been extrapolated."
                 />
                 <var name="availOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time" units="none"
-                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask).  These are the locations into which the ocean data can possibly be expanded.  It is defined as cells below sea level connected to the open ocean and shallower than the first ocean layer below the bed.  It remains constant as the extrapolation scheme iterates."
+                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask).  These are the locations into which the ocean data can possibly be expanded.  It is defined as cells below sea level connected to the open ocean. It remains constant as the extrapolation scheme iterates."
                 />
                 <var name="seedOceanMaskHoriz" type="integer" dimensions="nCells Time" units="none"
                      description="seedmask for horizontal floodfill used to determine the over-extrapolation region into grounded ice.  It is defined by cells below sea level that are not occupied by grounded ice.  The only purpose is for calculating availOceanMask."
