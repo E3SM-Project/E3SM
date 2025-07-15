@@ -71,33 +71,34 @@ struct Functions
     // view_2d<Spack>  qi;             // Ice total mass mixing ratio [kg kg-1]
     // view_2d<Spack>  omega;          // vertical pressure velocity [Pa/s]
 
-    // transposed views for fortran bridge
-    view_2dl<Real>  T_mid_f;
-    view_2dl<Real>  qv_f;
+    // truncated views for fortran bridging
+    view_2dl<Real>  f_T_mid;
+    view_2dl<Real>  f_qv;
 
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
     void transpose(int pver)
     {
+      auto ncol = (int)T_mid.extent(0);
       if (D == ekat::TransposeDirection::c2f) {
         auto s_T_mid = ekat::scalarize(T_mid);
         auto s_qv    = ekat::scalarize(qv);
 
-        T_mid_f = view_2dl<Real>("T_mid_f", T_mid.extent(0), pver);
-        qv_f    = view_2dl<Real>("qv_f", T_mid.extent(0), pver);
+        T_mid_f = view_2dl<Real>("T_mid_f", ncol, pver);
+        qv_f    = view_2dl<Real>("qv_f",    ncol, pver);
         for (int i = 0; i < T_mid.extent(0); ++i) {
           for (int j = 0; j < pver; ++j) {
-            T_mid_f(i, j) = s_T_mid(i, j);
-            qv_f(i, j)    = s_qv(i, j);
+            f_T_mid(i,j) = s_T_mid(i,j);
+            f_qv   (i,j) = s_qv   (i,j);
           }
         }
       }
       else {
         std::vector<view_2d<Spack> > views = {T_mid, qv};
-        ekat::host_to_device( { T_mid_f.data(), 
-                                qv_f.data() }, 
-                              (int)T_mid.extent(0), pver, views);
+        ekat::host_to_device( { f_T_mid .data(), 
+                                f_qv    .data() }, 
+                              ncol, pver, views);
       }
     }
     // -------------------------------------------------------------------------
