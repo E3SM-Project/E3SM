@@ -54,75 +54,70 @@ struct Functions
     // -------------------------------------------------------------------------
     Int             ncol;           // number of columns for current task/chunk
     bool            is_first_step;  // flag for first call
+
+    // view_2d<Spack>  zmid;           // mid-point level altitude [m]
+    // view_2d<Spack>  zint;           // interface level altitude [m]
+    // view_2d<Spack>  pmid;           // mid-point level pressure [Pa]
+    // view_2d<Spack>  pint;           // interface level pressure [Pa]
+    // view_2d<Spack>  pdel;           // pressure thickness [Pa]
+    view_1d<Scalar>  phis;           // surface geopotential height [m2/s]
+    // view_1d<Scalar>  pblh;           // PBL height [m]
+
     view_2d<Spack>  T_mid;          // Temperature [K]
     view_2d<Spack>  qv;             // Water vapor mixing ratio [kg kg-1]
+
+    // view_2d<Spack>  qc;             // Cloud mass mixing ratio [kg kg-1]
+    // view_2d<Spack>  qi;             // Ice total mass mixing ratio [kg kg-1]
+    // view_2d<Spack>  omega;          // vertical pressure velocity [Pa/s]
+
     // -------------------------------------------------------------------------
     // vectors for alternate transpose method
+    std::vector<Real> phis_v;
     std::vector<Real> T_mid_v;
     std::vector<Real> qv_v;
     // -------------------------------------------------------------------------
-    // transpose method for fortran bridging
-    template <ekat::TransposeDirection::Enum D>
-    void transpose()
-    {
-      std::vector<view_2d<Spack>> transposed_views(2);
-      ekat::host_to_device<D>({ekat::scalarize(T_mid).data(),
-                               ekat::scalarize(qv).data()},
-                               T_mid.extent(0), T_mid.extent(1) * Spack::n,
-                               transposed_views, true);
-      if (D == ekat::TransposeDirection::c2f) {
-        T_mid = transposed_views[0];
-        qv    = transposed_views[1];
-      // else {
-        // ???
-      }
-    };
-    // -------------------------------------------------------------------------
-    // // alternate transpose method
+    // // transpose method for fortran bridging
     // template <ekat::TransposeDirection::Enum D>
     // void transpose()
     // {
-    //   std::vector<view_2d<Spack>> views = {T_mid, qv};
+    //   std::vector<view_2d<Spack>> transposed_views(2);
+    //   ekat::host_to_device<D>({ekat::scalarize(T_mid).data(),
+    //                            ekat::scalarize(qv).data()},
+    //                            T_mid.extent(0), T_mid.extent(1) * Spack::n, transposed_views, true);
     //   if (D == ekat::TransposeDirection::c2f) {
-    //     T_mid_v.resize(T_mid.size() * Spack::n);
-    //     qv_v.resize(T_mid.size() * Spack::n);
-    //     ekat::device_to_host({T_mid_v.data(),
-    //                           qv_v.data()},
-    //                          T_mid.extent(0), T_mid.extent(1) * Spack::n, views, true);
+    //     T_mid = transposed_views[0];
+    //     qv    = transposed_views[1];
+    //   // else {
+    //     // ???
     //   }
-    //   else {
-    //     ekat::host_to_device({T_mid_v.data(),
-    //                           qv_v.data()},
-    //                          T_mid.extent(0), T_mid.extent(1) * Spack::n, views, true);
-    //   }
-    // }
+    // };
+    // -------------------------------------------------------------------------
+    // alternate transpose method
+    template <ekat::TransposeDirection::Enum D>
+    void transpose()
+    {
+      std::vector<view_2d<Spack>> tviews = { T_mid, qv };
+      if (D == ekat::TransposeDirection::c2f) {
+        auto rsz = T_mid.size() * Spack::n;
+        // auto rsz = T_mid.extent(1) * Spack::n;
+        // ---------------------------------------------------------------------
+        T_mid_v .resize(rsz);
+        qv_v    .resize(rsz);
+        ekat::device_to_host( { T_mid_v .data(),
+                                qv_v    .data() },
+                              T_mid.extent(0), T_mid.extent(1)*Spack::n, tviews, true);
+        T_mid = tviews[0];
+        qv    = tviews[1];
+        // ---------------------------------------------------------------------
+      }
+      // else {
+      //   ekat::host_to_device({T_mid_v .data(),
+      //                         qv_v    .data()},
+      //                        T_mid.extent(0), T_mid.extent(1) * Spack::n, transposed_views, true);
+      // }
+    }
     // -------------------------------------------------------------------------
   };
-
-    // // surface geopotential height [m2/s]
-    // view_1d<Spack> phis;
-    // // mid-point level altitude [m]
-    // view_2d<Spack> zmid;
-    // // interface level altitude [m]
-    // view_2d<Spack> zint;
-    // // mid-point level pressure [Pa]
-    // view_2d<Spack> pmid;
-    // // interface level pressure [Pa]
-    // view_2d<Spack> pint;
-    // // pressure thickness [Pa]
-    // view_2d<Spack> pdel;
-    // // PBL height [m]
-    // view_1d<Spack> pblh;
-    // // Temperature [K]
-    // view_2d<Spack> T_mid;
-    // // Water vapor mixing ratio [kg kg-1]
-    // view_2d<Spack> qv;
-    // // Cloud mass mixing ratio [kg kg-1]
-    // view_2d<Spack> qc;
-    // // Ice total mass mixing ratio [kg kg-1]
-    // view_2d<Spack> qi;
-    // // vertical pressure velocity [Pa/s]
-    // view_2d<Spack> omega;
 
   struct zm_output_tend {
     zm_output_tend() = default;
