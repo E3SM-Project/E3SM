@@ -831,8 +831,8 @@ contains
                         endif
                      endif
                   enddo
-                  ! update validOceanMask if above bed topography
-                  if (ismip6shelfMelt_zOcean(iLayer) > bedTopography(iCell)) then
+                  ! update validOceanMask if cell is defined in availOceanMask
+                  if (availOceanMask(iLayer,iCell) == 1) then
                      validOceanMask(iLayer,iCell) = 1
                      newMaskCountLocalAccum = newMaskCountLocalAccum + 1
                   endif
