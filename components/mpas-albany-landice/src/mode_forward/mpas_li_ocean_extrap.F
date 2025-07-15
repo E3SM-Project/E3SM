@@ -416,6 +416,14 @@ contains
                        "extrapolation more than $i times.  Aborting", MPAS_LOG_ERR, intArgs=(/GlobalLoopCount/))
                err = ior(err, 1)
             endif
+            ! if using the 200-500 TF parameterization, perform an initial vertical
+            ! extrapolation to bottom z layer before extrapolating horizontally.
+            if (config_TF_vertical_calc == '200-500') then
+               call mpas_timer_start("vertical scheme")
+               call vertical_extrapolation(domain, availOceanMask, validOceanMask, newMaskCountGlobal, oceanField, err_tmp)
+               err = ior(err, err_tmp)
+               call mpas_timer_stop("vertical scheme")
+            endif
             ! call the horizontal extrapolation routine
             call mpas_timer_start("horizontal scheme")
             call horizontal_extrapolation(domain, availOceanMask, validOceanMask, orig3dOceanMask, oceanField, err_tmp)
