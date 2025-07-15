@@ -11,6 +11,7 @@ module zm_eamxx_bridge_main
   use iso_c_binding
   use cam_logfile,   only: iulog
   use shr_sys_mod,   only: shr_sys_flush
+  use zm_eamxx_bridge_params, only: masterproc, r8, pcols, pver, pverp, top_lev
   !-----------------------------------------------------------------------------
   implicit none
   private
@@ -35,15 +36,13 @@ subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
   use zm_conv_types,   only: zm_const_set_for_testing, zm_param_set_for_testing
   use zm_conv_types,   only: zm_param_mpi_broadcast, zm_param_print
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
-  use zm_eamxx_bridge_params,        only: masterproc, pcols, pver, pverp, top_lev
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int), intent(in) :: pcols_in
   integer(kind=c_int), intent(in) :: pver_in
   !-----------------------------------------------------------------------------
   ! Local variables
-  integer :: mpi_rank
-  integer :: ierror
+  integer :: mpi_rank, ierror
   !-----------------------------------------------------------------------------
   pcols = pcols_in
   pver  = pver_in
@@ -75,14 +74,14 @@ end subroutine zm_eamxx_bridge_init_c
 
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_run_c( ncol, state_t, state_q ) bind(C)
-  use zm_eamxx_bridge_params,only: r8, pcols, pver, pverp
+subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_t, state_q ) bind(C)
   use zm_aero_type,          only: zm_aero_t
   use zm_microphysics_state, only: zm_microp_st
   use zm_conv,               only: zm_convr
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int),                      intent(in) :: ncol
+  logical(kind=c_bool),                     intent(in) :: is_first_step
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_t      ! input state temperature
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_q      ! input state water vapor
   !-----------------------------------------------------------------------------
@@ -148,13 +147,23 @@ subroutine zm_eamxx_bridge_run_c( ncol, state_t, state_q ) bind(C)
   ! type(zm_microp_st)              :: microp_st    ! ZM microphysics data structure
   ! real(r8), dimension(pcols,pver) :: wuc          ! pbuf variable for in-cloud vertical velocity
   !-----------------------------------------------------------------------------
-  write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - pcols: ',pcols
+  ! write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - is_first_step: ',is_first_step
   call shr_sys_flush(iulog)
-  write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - ncol: ',ncol
+  if (is_first_step) then
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - pcols: ',pcols
+    call shr_sys_flush(iulog)
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - ncol: ',ncol
+    call shr_sys_flush(iulog)
+  end if
+  !-----------------------------------------------------------------------------
+  write(iulog,*) 'zm_eamxx_bridge_run_c - 01'
   call shr_sys_flush(iulog)
   do i = 1,ncol
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver) : ',state_t(i,pver)
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver) : ',state_q(i,pver)
+    
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver-1) : ',state_t(i,pver-1)
+    ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver-1) : ',state_q(i,pver-1)
+    ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
     call shr_sys_flush(iulog)
   end do
   !-----------------------------------------------------------------------------

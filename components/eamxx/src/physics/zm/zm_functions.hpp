@@ -54,6 +54,8 @@ struct Functions
     // -------------------------------------------------------------------------
     // number of columns for current task/chunk
     Int ncol;
+    // flag for first call
+    bool is_first_step;
     // Temperature [K]
     view_2d<Spack> T_mid;
     // Water vapor mixing ratio [kg kg-1]
