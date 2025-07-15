@@ -1,10 +1,4 @@
 module zm_eamxx_bridge_main
-#include "eamxx_config.f"
-#ifdef SCREAM_DOUBLE_PRECISION
-# define c_real c_double
-#else
-# define c_real c_float
-#endif
   !-----------------------------------------------------------------------------
   ! Purpose: 
   !-----------------------------------------------------------------------------
@@ -25,6 +19,13 @@ module zm_eamxx_bridge_main
   !-----------------------------------------------------------------------------
   ! private variables
 
+!===================================================================================================
+#include "eamxx_config.f"
+#ifdef SCREAM_DOUBLE_PRECISION
+# define c_real c_double
+#else
+# define c_real c_float
+#endif
 !===================================================================================================
 contains
 !===================================================================================================
@@ -74,7 +75,7 @@ end subroutine zm_eamxx_bridge_init_c
 
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_t, state_q ) bind(C)
+subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, state_q ) bind(C)
   use zm_aero_type,          only: zm_aero_t
   use zm_microphysics_state, only: zm_microp_st
   use zm_conv,               only: zm_convr
@@ -82,6 +83,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_t, state_q ) bind(C
   ! Arguments
   integer(kind=c_int),  value,              intent(in) :: ncol
   logical(kind=c_bool), value,              intent(in) :: is_first_step
+  real(kind=c_real), dimension(pcols)     , intent(in) :: state_phis   ! input state surface geopotential height
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_t      ! input state temperature
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_q      ! input state water vapor
   !-----------------------------------------------------------------------------
@@ -98,7 +100,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_t, state_q ) bind(C
   ! integer,  dimension(pcols)      :: jcbot        ! output bot-of-deep-convection indices
   ! real(r8), dimension(pcols)      :: pblh         ! input planetary boundary layer height
   ! real(r8), dimension(pcols,pver) :: state_zm     ! input state altitude at mid-levels
-  ! real(r8), dimension(pcols)      :: state_phis   ! input state surface geopotential height
+  
   ! real(r8), dimension(pcols,pverp):: state_zi     ! input state altitude at interfaces
   ! real(r8), dimension(pcols,pver) :: ptend_loc_q  ! output tendency of water vapor
   ! real(r8), dimension(pcols,pver) :: ptend_loc_s  ! output tendency of dry statis energy
@@ -159,10 +161,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_t, state_q ) bind(C
   write(iulog,*) 'zm_eamxx_bridge_run_c - 01'
   call shr_sys_flush(iulog)
   do i = 1,ncol
-    
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver-1) : ',state_t(i,pver-1)
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - phis(',i,')   : ',state_phis(i)
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver) : ',state_t(i,pver)
     ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver-1) : ',state_q(i,pver-1)
+    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver) : ',state_q(i,pver)
     ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
     call shr_sys_flush(iulog)
   end do
