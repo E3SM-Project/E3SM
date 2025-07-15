@@ -27,15 +27,18 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  // Specify which grid this process will act upon, typical options are "Dynamics" or "Physics".
   auto m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   const auto layout = m_grid->get_3d_scalar_layout(true);
+  const auto comm = m_grid->get_comm();
 
   // retrieve local grid parameters
-  m_pcols = m_grid->get_global_max_dof_gid();
   m_ncols = m_grid->get_num_local_dofs();
   m_nlevs = m_grid->get_num_vertical_levels();
+
+  // get max ncol value across ranks to mimic how pcols is used on the fortran side
+  m_pcols = m_ncols;
+  comm.all_reduce(&m_pcols,1,MPI_MAX);
 
   constexpr int ps = Spack::n;
 
@@ -65,11 +68,22 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   // add_field<Computed>("???", scalar2d    , ???, grid_name);
   // add_field<Computed>("???", scalar3d_mid, ???, grid_name, ps);
 
+  // // Diagnostic Outputs:
+  // add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  // add_field<Updated>("precip_ice_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+
 }
 
 /*------------------------------------------------------------------------------------------------*/
 void zm_deep_convection::initialize_impl (const RunType /* run_type */)
 {
+  // Set property checks for fields in this process
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);
+
+  // add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_liq_surf_mass"),m_grid,0.0,false);
+  // add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
+
   // initialize variables on the fortran side
   zm::zm_eamxx_bridge_init( m_pcols, m_nlevs );
 }
@@ -77,9 +91,11 @@ void zm_deep_convection::initialize_impl (const RunType /* run_type */)
 /*------------------------------------------------------------------------------------------------*/
 void zm_deep_convection::run_impl (const double dt)
 {
+  auto ts_start = start_of_step_ts();
+
   // get fields
-  const auto& T_mid    = get_field_out("T_mid").get_view<Spack**, Host>();
-  const auto& qv       = get_field_out("qv").get_view<Spack**, Host>();
+  const auto& T_mid    = get_field_out("T_mid") .get_view<Spack**, Host>();
+  const auto& qv       = get_field_out("qv")    .get_view<Spack**, Host>();
   // const auto& p_mid    = get_field_in("p_mid").get_view<const Spack**, Host>();
   // const auto& p_int    = get_field_in("p_int").get_view<const Spack**, Host>();
   // const auto& rho      = get_field_in("pseudo_density").get_view<const Spack**, Host>();
@@ -88,9 +104,12 @@ void zm_deep_convection::run_impl (const double dt)
   // const auto& phis     = get_field_in("phis").get_view<const Real*>();
 
   // prepare inputs
-  zm_input.ncol   = m_ncols;
-  zm_input.T_mid  = T_mid;
-  zm_input.qv     = qv;
+  zm_input.ncol           = m_ncols;
+  zm_input.is_first_step  = (ts_start.get_num_steps()==0);
+  zm_input.T_mid          = T_mid;
+  zm_input.qv             = qv;
+
+  // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 
   // Run ZM
   zm_eamxx_bridge_run( zm_input );
