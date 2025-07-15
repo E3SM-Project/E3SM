@@ -178,7 +178,7 @@ contains
   subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
     maprcfile, maprcname, maprctype, samegrid, arearead, sol_identifier, string, esmf_map)
 
-   use iMOAB, only: iMOAB_LoadFromMappingFile
+   use iMOAB, only: iMOAB_LoadMapFile
    implicit none
    !-----------------------------------------------------
    !
@@ -229,7 +229,7 @@ contains
        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
    endif
 
-   ierr = iMOAB_LoadFromMappingFile( mbsrc, mbtgt, mbintx, discretization_type, &
+   ierr = iMOAB_LoadMapFile( mbsrc, mbtgt, mbintx, discretization_type, &
                       discretization_type, arearead, sol_identifier, mapfile_term)
    if (ierr .ne. 0) then
       write(logunit,*) subname,' error in loading map file'
