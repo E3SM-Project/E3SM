@@ -3985,7 +3985,9 @@ end subroutine wrap_update_hifrq_hist
    integer, intent(in) :: nc
 
    ! !LOCAL VARIABLES
+   type(canopystate_type) :: canopystate_inst
    integer :: s, p, c, l, i
+
 
    do s=1,this%fates(nc)%nsites
 
