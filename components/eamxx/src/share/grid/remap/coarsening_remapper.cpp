@@ -202,10 +202,15 @@ void CoarseningRemapper::remap_fwd_impl ()
     return (ap.get_last_extent() % SCREAM_PACK_SIZE) == 0;
   };
 
-  // Loop over each field
+  // First, perform the local mat-vec. Recall that in these y=Ax products,
+  // x is the src field, and y is the overlapped tgt field.
   for (int i=0; i<m_num_fields; ++i) {
-    // First, perform the local mat-vec. Recall that in these y=Ax products,
-    // x is the src field, and y is the overlapped tgt field.
+    if (m_needs_remap[i]==0) {
+      // No need to do a mat-vec here. Just deep copy and move on
+      m_tgt_fields[i].deep_copy(m_src_fields[i]);
+      continue;
+    }
+
     const auto& f_src = m_src_fields[i];
     const auto& f_ov  = m_ov_fields[i];
 
@@ -611,15 +616,14 @@ void CoarseningRemapper::pack_and_send ()
   const auto pid_lid_start = m_send_pid_lids_start;
   const auto lids_pids = m_send_lids_pids;
   const auto buf = m_send_buffer;
-  constexpr auto COL = FieldTag::Column;
 
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      continue; // Not a field to coarsen
+
     const auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
-
-    if (not fl.has_tag(COL))
-      continue; // Not a field to coarsen
 
     switch (fl.rank()) {
       case 1:
@@ -752,6 +756,9 @@ void CoarseningRemapper::recv_and_unpack ()
   const auto recv_lids_end = m_recv_lids_end;
   const auto recv_lids_pidpos = m_recv_lids_pidpos;
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      continue; // Not a field to coarsen
+
           auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
@@ -966,6 +973,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   std::vector<int> field_col_size (m_num_fields);
   int sum_fields_col_sizes = 0;
   for (int i=0; i<m_num_fields; ++i) {
+    if (m_needs_remap[i]==0)
+      continue;
+
     const auto& f  = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
     field_col_size[i] = fl.clone().strip_dim(COL).size();
@@ -1012,6 +1022,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
     send_pid_offsets[pid] = pos;
     for (int i=0; i<m_num_fields; ++i) {
+      if (m_needs_remap[i]==0)
+        continue;
+
       send_f_pid_offsets_h(i,pid) = pos;
       pos += field_col_size[i]*pid2lids_send[pid].size();
     }
@@ -1110,6 +1123,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     recv_pid_offsets[pid] = pos;
     const int num_recv_gids = recv_pid_start[pid+1] - recv_pid_start[pid];
     for (int i=0; i<m_num_fields; ++i) {
+      if (m_needs_remap[i]==0)
+        continue;
+
       recv_f_pid_offsets_h(i,pid) = pos;
       pos += field_col_size[i]*num_recv_gids;
     }
