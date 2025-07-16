@@ -16,8 +16,12 @@ namespace scream
 
 // Enum used when quering Field for a view on a specific mem space
 enum HostOrDevice {
-  Device = 0,
-  Host
+  Host = 0,
+#ifdef EAMXX_ENABLE_GPU
+  Device = 1
+#else
+  Device = Host
+#endif
 };
 
 // ======================== FIELD ======================== //
@@ -68,12 +72,12 @@ private:
     view_dev_t<DT,MT>   d_view;
     view_host_t<DT,MT>  h_view;
 
-    template<HostOrDevice HD>
-    const if_t<HD==Device,view_dev_t<DT,MT>>& get_view() const {
+    template<typename Device>
+    const if_t<std::is_same_v<Device,device_t>,view_dev_t<DT,MT>>& get_view() const {
       return d_view;
     }
-    template<HostOrDevice HD>
-    const if_t<HD==Host,view_host_t<DT,MT>>& get_view() const {
+    template<typename Device>
+    const if_t<not std::is_same_v<Device,device_t>,view_host_t<DT,MT>>& get_view() const {
       return h_view;
     }
   };
@@ -357,7 +361,11 @@ protected:
   const get_view_type<char*,HD>&
   get_view_impl () const {
     EKAT_REQUIRE_MSG (is_allocated (), "Error! View was not yet allocated.\n");
-    return m_data.get_view<HD>();
+    if constexpr (HD==Host) {
+      return m_data.get_view<host_device_t>();
+    } else {
+      return m_data.get_view<device_t>();
+    }
   }
 
   // These SFINAE impl of get_subview are needed since subview_1 does not
