@@ -6,7 +6,7 @@ We call these horizontal and vertical reductions.
 We can also automatically calculate zonal averages.
 We have *experimental* support for composing diagnostics; below,
 the horizontal and vertical reductions can be composed
-consequentially, but if using dp- or dz-weighted reductions,
+sequentially, but if using dp- or dz-weighted reductions,
 one must do the vertical reduction first.
 
 ## Horizontal reduction
