@@ -979,11 +979,6 @@ contains
          ! Allocate the FATES sites
          allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
 
-         ! Allocate HLM-FATES mapping arrays
-         ! TODO: update this to be agnostic to fates column run mode
-         allocate(this%fates(nc)%sites(:)%column_map(1))
-         allocate(this%fates(nc)%sites(:)%patch_map(natpft_size))
-
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
 
@@ -1002,6 +997,13 @@ contains
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
          do s = 1, this%fates(nc)%nsites
+
+            ! Allocate HLM-FATES mapping arrays
+            ! TODO: update this to be agnostic to fates column run mode
+            allocate(this%fates(nc)%sites(s)%column_map(1))
+            allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
+
+            ! TODO: Assign column_map and patch_map values
 
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
