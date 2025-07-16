@@ -34,26 +34,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
         continue;
       }
       const auto& src_data = src_grid->get_geometry_data(name);
-      const auto& src_data_fid = src_data.get_header().get_identifier();
-      const auto& layout = src_data_fid.get_layout();
-      if (layout.tags().empty()) {
-        // This is a scalar field, so won't be coarsened.
-        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-        FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-        tgt_data.deep_copy(src_data);
-      } else if (layout.tags()[0]!=COL) {
-        // Not a field to be coarsened (perhaps a vertical coordinate field).
-        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-        FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-        tgt_data.deep_copy(src_data);
-      } else {
-        // This field needs to be remapped
-        auto tgt_data_fid = create_tgt_fid(src_data_fid);
-        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-        register_field(src_data,tgt_data);
-      }
+      register_field_from_src(src_data);
     }
     registration_ends();
     if (get_num_fields()>0) {
