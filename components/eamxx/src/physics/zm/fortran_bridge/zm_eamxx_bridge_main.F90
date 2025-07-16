@@ -31,7 +31,7 @@ module zm_eamxx_bridge_main
 contains
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
+subroutine zm_eamxx_bridge_init_c( pcol_in, pver_in ) bind(C)
   use mpi
   use zm_conv_types,   only: zm_const_t, zm_param_t
   use zm_conv,         only: zm_const, zm_param
@@ -40,13 +40,13 @@ subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer(kind=c_int), value, intent(in) :: pcols_in
+  integer(kind=c_int), value, intent(in) :: pcol_in
   integer(kind=c_int), value, intent(in) :: pver_in
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: mpi_rank, ierror
   !-----------------------------------------------------------------------------
-  pcols = pcols_in
+  pcols = pcol_in
   pver  = pver_in
   pverp = pver+1
   top_lev = 1
@@ -76,6 +76,7 @@ end subroutine zm_eamxx_bridge_init_c
 
 !===================================================================================================
 subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
+                                  state_phis, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_qc ) bind(C)
   use zm_aero_type,          only: zm_aero_t
@@ -85,7 +86,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   ! Arguments
   integer(kind=c_int),               value, intent(in) :: ncol
   logical(kind=c_bool),              value, intent(in) :: is_first_step
-  ! real(kind=c_real), dimension(pcols)     , intent(in) :: state_phis   ! input state surface geopotential height
+  real(kind=c_real), dimension(pcols)     , intent(in) :: state_phis   ! input state surface geopotential height
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_p_mid  ! input state mid-point pressure
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_p_int  ! input state interface pressure
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_p_del  ! input state pressure thickness
@@ -95,10 +96,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,j,k
+
   ! arguments for zm_convr - order consistent with current interface
-  ! integer  :: lchnk = 0
-  !
-  ! logical  :: is_first_step
+  integer :: lchnk = 0
+
   ! real(r8), dimension(pcols,pver) :: state_t      ! input state temperature
   ! real(r8), dimension(pcols,pver) :: state_q      ! input state water vapor
   ! real(r8), dimension(pcols)      :: prec         ! output precipitation
@@ -106,7 +107,6 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   ! integer,  dimension(pcols)      :: jcbot        ! output bot-of-deep-convection indices
   ! real(r8), dimension(pcols)      :: pblh         ! input planetary boundary layer height
   ! real(r8), dimension(pcols,pver) :: state_zm     ! input state altitude at mid-levels
-  
   ! real(r8), dimension(pcols,pverp):: state_zi     ! input state altitude at interfaces
   ! real(r8), dimension(pcols,pver) :: ptend_loc_q  ! output tendency of water vapor
   ! real(r8), dimension(pcols,pver) :: ptend_loc_s  ! output tendency of dry statis energy
@@ -162,7 +162,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   ! end if
   !-----------------------------------------------------------------------------
   do i = 1,ncol
-    ! write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,')   : ',state_phis(i)
+    write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,')   : ',state_phis(i)
     do k = 1,12
       write(iulog,*) 'zm_eamxx_bridge_run_c - pmid(',i,',',k,') : ',state_p_mid(i,k)
     end do
