@@ -143,6 +143,14 @@ target_compile_options(scream_share PUBLIC
 if (SCREAM_CIME_BUILD)
   target_compile_definitions (scream_share PUBLIC SCREAM_CIME_BUILD)
 endif()
+
+# When dealing with subtle bugs in read/write of unit tests baselines,
+# using ascii baselines can help inspect that the file indeed looks as expected
+option (EAMXX_ASCII_BASELINES "Whether physics units tests should assume ascii (instead of binary) format for baselines" OFF)
+if (EAMXX_ASCII_BASELINES)
+  target_compile_definitions (scream_share PUBLIC EAMXX_ASCII_BASELINES)
+endif()
+
 # We have some issues with RDC and repeated libraries in the link line.
 # It's a known issue, and nvcc_wrapper has a flag for handling this.
 if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
