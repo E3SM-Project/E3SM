@@ -3984,6 +3984,7 @@ end subroutine wrap_update_hifrq_hist
    ! ---------------------------------------------------------------------------------
 
    ! !USES:
+   use FatesInterfaceMod, only : TransferBCIn
    !
    ! !ARGUMENTS:
    class(hlm_fates_interface_type), intent(inout) :: this
