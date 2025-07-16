@@ -153,7 +153,7 @@ contains
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname
-    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdr2l, wgtIda2l_conservative, wgtIda2l_bilinear
+    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2l, wgtIdFa2l, wgtIdSa2l
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
     ! will do comm graph over coupler PES, in 2-hop strategy
@@ -195,9 +195,9 @@ contains
     allocate(mapper_Fg2l)
 
 #ifdef HAVE_MOAB
-      wgtIdr2l = 'conservative_r2l'//C_NULL_CHAR
-      wgtIda2l_conservative = 'conservative_a2l'//C_NULL_CHAR
-      wgtIda2l_bilinear = 'bilinear_a2l'//C_NULL_CHAR
+      wgtIdFr2l = 'flux_r2l'//C_NULL_CHAR
+      wgtIdFa2l = 'flux_a2l'//C_NULL_CHAR
+      wgtIdSa2l = 'scalar_a2l'//C_NULL_CHAR
       compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
@@ -258,6 +258,7 @@ contains
               write(logunit,*) subname,' error in registering  rof lnd intx'
               call shr_sys_abort(subname//' ERROR in registering rof lnd intx')
             endif
+
             call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
             if (samegrid_lr) then
                ! the same mesh , lnd and rof use the same dofs, but restricted
@@ -319,6 +320,7 @@ contains
                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
                   endif
               endif ! (compute_maps_online_r2l)
+
               ! now take care of the mapper
               if ( mapper_Fr2l%src_mbid .gt. -1 ) then
                 if (iamroot_CPLID) then
@@ -331,7 +333,7 @@ contains
               mapper_Fr2l%intx_mbid = mbintxrl
               mapper_Fr2l%src_context = rof(1)%cplcompid
               mapper_Fr2l%intx_context = idintx
-              mapper_Fr2l%weight_identifier = wgtIdr2l
+              mapper_Fr2l%weight_identifier = wgtIdFr2l
               mapper_Fr2l%mbname = 'mapper_Fr2l'
 
               if (compute_maps_online_r2l) then
@@ -348,13 +350,13 @@ contains
                   validate = 0 !! important
                   fInverseDistanceMap = 0
                   if (iamroot_CPLID) then
-                    write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxrl=', mbintxrl, ' wgtIdef=', wgtIdr2l, &
+                    write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxrl=', mbintxrl, ' wgtIdef=', wgtIdFr2l, &
                         'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
                                                     fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                     noConserve, validate, &
                                                     trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, wgtIdr2l, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, wgtIdFr2l, &
                                                     trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                     fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                     noConserve, validate, &
@@ -370,7 +372,8 @@ contains
                   arearead = 0
                   call moab_map_init_rcfile( mbrxid, mblxid, mbintxrl, type1, &
                         'seq_maps.rc', 'rof2lnd_fmapname:', 'rof2lnd_fmaptype:',samegrid_lr, &
-                        arearead, wgtIdr2l, 'mapper_Fr2l MOAB initialization', esmf_map_flag)
+                        arearead, wgtIdFr2l, 'mapper_Fr2l MOAB initialization', esmf_map_flag)
+
                   ! need to call migrate map mesh, which will compute the cov mesh and
                   !  comm graph too for coverage mesh
                   ierr = iMOAB_MigrateMapMesh (mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, &
@@ -382,8 +385,9 @@ contains
               endif ! compute or read mape
 
             endif ! samegrid_lr or not
-              ! because we will project fields from rof to lnd grid, we need to define
-              !  the r2x fields to lnd grid on coupler side
+
+            ! because we will project fields from rof to lnd grid, we need to define
+            !  the r2x fields to lnd grid on coupler side
             tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 !
@@ -393,7 +397,7 @@ contains
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_r2x_fields on lnd cpl')
             endif
 
- ! find out the number of local elements in moab mesh land instance on coupler
+            ! find out the number of local elements in moab mesh land instance on coupler
             ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' cant get size of land mesh'
@@ -467,7 +471,7 @@ contains
             mapper_Sa2l%intx_mbid = mbintxal
             mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
-            mapper_Sa2l%weight_identifier = wgtIda2l_bilinear
+            mapper_Sa2l%weight_identifier = wgtIdSa2l
             mapper_Sa2l%mbname = 'mapper_Sa2l'
 
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
@@ -494,7 +498,7 @@ contains
                 ! write intx only if true intx file:
                 wopts = C_NULL_CHAR
                 call shr_mpi_commrank( mpicom_CPLID, rank )
-                  if (rank .lt. 3) then ! write only a few intx files
+                if (rank .lt. 1) then ! write only a few intx files
                   write(lnum,"(I0.2)")rank !
                   outfile = 'intx_al'//trim(lnum)// '.h5m' // C_NULL_CHAR
                   ierr = iMOAB_WriteMesh(mbintxal, outfile, wopts) ! write local intx file
@@ -504,26 +508,7 @@ contains
                   endif
                 endif
 #endif
-                ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
-                ! lnd for the intx atm-lnd context (coverage)
-                !
-                if (atm_pg_active) then
-                  type1 = 3; !  fv for atm; cgll does not work anyway
-                else
-                  type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
-                endif
-                type2 = 3; ! land is fv in this case (separate grid)
 
-                ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          atm(1)%cplcompid, idintx)
-                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
-                endif
-              endif
-
-
-              if (compute_maps_online_a2l) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
                     dm1 = "fv"//C_NULL_CHAR
@@ -543,14 +528,14 @@ contains
                   validate = 0 ! less verbose
                   fInverseDistanceMap = 0
                   if (iamroot_CPLID) then
-                      write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxal=', mbintxal, ' wgtIdef=', wgtIda2l_bilinear, &
+                      write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxal=', mbintxal, ' wgtIdef=', wgtIdSa2l, &
                           'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
                                                       trim(dofnameS), trim(dofnameT)
                   endif
 
-                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIda2l_bilinear, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIdSa2l, &
                                                       trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
@@ -561,7 +546,7 @@ contains
                   endif
 
                   ! Next compute the conservative map for projection of flux fields
-                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIda2l_conservative, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIdFa2l, &
                                                   trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                   noConserve, validate, &
@@ -573,10 +558,10 @@ contains
 
               else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-                  arearead = 0
+                  arearead = 0 ! no need for areas
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
-                        'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:',samegrid_al, &
-                        arearead, wgtIda2l_bilinear, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
+                        'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:', samegrid_al, &
+                        arearead, wgtIdSa2l, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
 
                   ! TODO make sure it is good enough
                   ! we are using the same coverage for 2 maps , one bilinear, one conservative
@@ -585,7 +570,8 @@ contains
                   arearead = 2 !  area_b for land aream
                   call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
                         'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
-                        arearead, wgtIda2l_conservative, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
+                        arearead, wgtIdFa2l, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
+
                   ! we need to do only one map migrate, should over both maps!!
                   ! we have one coverage for both maps!
                   ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, &
@@ -595,6 +581,15 @@ contains
                      call shr_sys_abort(subname//' ERROR in migrating atm mesh for map rof c2 lnd')
                   endif
 
+              endif
+
+              type1 = 3; !  fv for atm; cgll does not work anyway
+              type2 = 3; ! land is fv in this case (separate grid)
+              ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        atm(1)%cplcompid, idintx)
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for second hop, ATM-LND'
+                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-LND')
               endif
 
             else
@@ -629,7 +624,7 @@ contains
             mapper_Fa2l%intx_mbid = mbintxal
             mapper_Fa2l%src_context = atm(1)%cplcompid
             mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
-            mapper_Fa2l%weight_identifier = wgtIda2l_conservative
+            mapper_Fa2l%weight_identifier = wgtIdFa2l
             mapper_Fa2l%mbname = 'mapper_Fa2l'
 
             ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields
@@ -655,6 +650,7 @@ contains
           call seq_map_init_rcfile(mapper_Sg2l, glc(1), lnd(1), &
                'seq_maps.rc','glc2lnd_smapname:','glc2lnd_smaptype:',samegrid_lg, &
                'mapper_Sg2l initialization',esmf_map_flag)
+
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fg2l'
