@@ -278,6 +278,7 @@ void HorizInterpRemapperBase::clean_up ()
   m_src_fields.clear();
   m_tgt_fields.clear();
   m_ov_fields.clear();
+  m_needs_remap.clear();
 
   // Reset the state of the base class
   m_state = RepoState::Clean;
