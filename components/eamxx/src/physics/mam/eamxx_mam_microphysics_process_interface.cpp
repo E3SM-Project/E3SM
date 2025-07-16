@@ -222,11 +222,11 @@ void MAMMicrophysics::set_grids(
     add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, nondim, grid_name);
 
     // Diagnostics: tendencies due to aerosol microphysics (gas aerosol exchange) [mixed units: mol/mol/s or #/mol/s]
-    add_field<Computed>("mam4_microphys_tendency_condensation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
-    add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
-    add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_condensation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_renaming", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_nucleation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_coagulation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -534,11 +534,11 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       "mam4_microphysics_tendency_aqueous_chemistry", 
       "mam4_microphysics_tendency_aqso4",
       "mam4_microphysics_tendency_aqh2so4",
-      "mam4_microphys_tendency_condensation",
-      "mam4_microphys_tendency_renaming",
-      "mam4_microphys_tendency_nucleation",
-      "mam4_microphys_tendency_coagulation",
-      "mam4_microphys_tendency_renaming_cloud_borne",
+      "mam4_microphysics_tendency_condensation",
+      "mam4_microphysics_tendency_renaming",
+      "mam4_microphysics_tendency_nucleation",
+      "mam4_microphysics_tendency_coagulation",
+      "mam4_microphysics_tendency_renaming_cloud_borne",
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
@@ -699,11 +699,11 @@ void MAMMicrophysics::run_impl(const double dt) {
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
-    gas_aero_exchange_condensation = get_field_out("mam4_microphys_tendency_condensation").get_view<Real***>();
-    gas_aero_exchange_renaming = get_field_out("mam4_microphys_tendency_renaming").get_view<Real***>();
-    gas_aero_exchange_nucleation = get_field_out("mam4_microphys_tendency_nucleation").get_view<Real***>();
-    gas_aero_exchange_coagulation = get_field_out("mam4_microphys_tendency_coagulation").get_view<Real***>();
-    gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphys_tendency_renaming_cloud_borne").get_view<Real***>();
+    gas_aero_exchange_condensation = get_field_out("mam4_microphysics_tendency_condensation").get_view<Real***>();
+    gas_aero_exchange_renaming = get_field_out("mam4_microphysics_tendency_renaming").get_view<Real***>();
+    gas_aero_exchange_nucleation = get_field_out("mam4_microphysics_tendency_nucleation").get_view<Real***>();
+    gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
+    gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
   }
 
   // climatology data for linear stratospheric chemistry
