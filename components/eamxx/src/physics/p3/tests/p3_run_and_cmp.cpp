@@ -203,13 +203,13 @@ private:
       EKAT_REQUIRE_MSG(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
-      std::vector<int> ds(dim);
-      impl::read_scalars(ifile,ds);
+      int extents[3];
+      impl::read_scalars(ifile,extents);
       for (int i = 0; i < dim; ++i)
-        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
+        EKAT_REQUIRE_MSG(extents[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
-                        << ds[i]);
+                        << extents[i]);
       impl::read_scalars(ifile,f.data, f.size);
     // The code below is to force a result difference. This is used by the
     // scream/scripts internal testing to verify that various DIFFs are detected.
