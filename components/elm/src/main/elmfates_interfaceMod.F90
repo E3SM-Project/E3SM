@@ -977,7 +977,12 @@ contains
          this%fates(nc)%nsites = s
 
          ! Allocate the FATES sites
-         allocate (this%fates(nc)%sites(this%fates(nc)%nsites))
+         allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
+
+         ! Allocate HLM-FATES mapping arrays
+         ! TODO: update this to be agnostic to fates column run mode
+         allocate(this%fates(nc)%sites(:)%column_map(1))
+         allocate(this%fates(nc)%sites(:)%patch_map(natpft_size))
 
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
