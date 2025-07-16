@@ -172,6 +172,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
       auto &f = get_field_out(fname);
       auto &io_str_atts = f.get_header().get_extra_data<str_atts_t>("io: string attributes");
       io_str_atts["doc"] = "Collection of heterogeneous quantities--species have different units";
+    }
   }
 };  // MAMMicrophysics
 

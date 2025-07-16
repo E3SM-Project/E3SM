@@ -525,22 +525,24 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
-  //Some dignostics fields have mixed units (kg/kg/s, #/kg/s, etc.)
-  //For these fields, we add a docstring to the field to indicate that
-  //the units are mixed and the user should be careful when using these fields.
-  constexpr std::vector<std::string> mixed_units_fields = {
-    "mam4_microphysics_tendency_gas_phase_chemistry", 
-    "mam4_microphysics_tendency_aqueous_chemistry", 
-    "mam4_microphysics_tendency_aqso4",
-    "mam4_microphysics_tendency_aqh2so4",
-    "mam4_microphys_tendency_condensation",
-    "mam4_microphys_tendency_renaming",
-    "mam4_microphys_tendency_nucleation",
-    "mam4_microphys_tendency_coagulation",
-    "mam4_microphys_tendency_renaming_cloud_borne",
-  };
-  // Add docstring to the fields with mixed units
-  add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
+  if (extra_mam4_aero_microphys_diags_) {
+    //Some dignostics fields have mixed units (kg/kg/s, #/kg/s, etc.)
+    //For these fields, we add a docstring to the field to indicate that
+    //the units are mixed and the user should be careful when using these fields.
+    const std::vector<std::string> mixed_units_fields = {
+      "mam4_microphysics_tendency_gas_phase_chemistry", 
+      "mam4_microphysics_tendency_aqueous_chemistry", 
+      "mam4_microphysics_tendency_aqso4",
+      "mam4_microphysics_tendency_aqh2so4",
+      "mam4_microphys_tendency_condensation",
+      "mam4_microphys_tendency_renaming",
+      "mam4_microphys_tendency_nucleation",
+      "mam4_microphys_tendency_coagulation",
+      "mam4_microphys_tendency_renaming_cloud_borne",
+    };
+    // Add docstring to the fields with mixed units
+    add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
+  }
    
   // set field property checks for the fields in this process
   /* e.g.
