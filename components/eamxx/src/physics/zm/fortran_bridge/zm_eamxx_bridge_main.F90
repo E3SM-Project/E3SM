@@ -75,21 +75,26 @@ subroutine zm_eamxx_bridge_init_c( pcols_in, pver_in ) bind(C)
 end subroutine zm_eamxx_bridge_init_c
 
 !===================================================================================================
-
-subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, state_q ) bind(C)
+subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
+                                  state_p_mid, state_p_int, state_p_del, &
+                                  state_t, state_qv, state_qc ) bind(C)
   use zm_aero_type,          only: zm_aero_t
   use zm_microphysics_state, only: zm_microp_st
   use zm_conv,               only: zm_convr
   !-----------------------------------------------------------------------------
   ! Arguments
-  integer(kind=c_int),  value,              intent(in) :: ncol
-  logical(kind=c_bool), value,              intent(in) :: is_first_step
-  real(kind=c_real), dimension(pcols)     , intent(in) :: state_phis   ! input state surface geopotential height
+  integer(kind=c_int),               value, intent(in) :: ncol
+  logical(kind=c_bool),              value, intent(in) :: is_first_step
+  ! real(kind=c_real), dimension(pcols)     , intent(in) :: state_phis   ! input state surface geopotential height
+  real(kind=c_real), dimension(pcols,pver), intent(in) :: state_p_mid  ! input state mid-point pressure
+  real(kind=c_real), dimension(pcols,pver), intent(in) :: state_p_int  ! input state interface pressure
+  real(kind=c_real), dimension(pcols,pver), intent(in) :: state_p_del  ! input state pressure thickness
   real(kind=c_real), dimension(pcols,pver), intent(in) :: state_t      ! input state temperature
-  real(kind=c_real), dimension(pcols,pver), intent(in) :: state_q      ! input state water vapor
+  real(kind=c_real), dimension(pcols,pver), intent(in) :: state_qv     ! input state water vapor
+  real(kind=c_real), dimension(pcols,pver), intent(in) :: state_qc     ! input state cloud liquid water
   !-----------------------------------------------------------------------------
   ! Local variables
-  integer :: i,j
+  integer :: i,j,k
   ! arguments for zm_convr - order consistent with current interface
   ! integer  :: lchnk = 0
   !
@@ -150,46 +155,18 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, state_phis, state_t, stat
   ! type(zm_microp_st)              :: microp_st    ! ZM microphysics data structure
   ! real(r8), dimension(pcols,pver) :: wuc          ! pbuf variable for in-cloud vertical velocity
   !-----------------------------------------------------------------------------
-  ! write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - is_first_step: ',is_first_step
-  call shr_sys_flush(iulog)
-  if (is_first_step) then
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - pcols: ',pcols
-    call shr_sys_flush(iulog)
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 00 - ncol: ',ncol
-    call shr_sys_flush(iulog)
-  end if
+  ! if (is_first_step) then
+  !   write(iulog,*) 'zm_eamxx_bridge_run_c - pcols: ',pcols
+  !   write(iulog,*) 'zm_eamxx_bridge_run_c - ncol: ',ncol
+  !   call shr_sys_flush(iulog)
+  ! end if
   !-----------------------------------------------------------------------------
-  write(iulog,*) 'zm_eamxx_bridge_run_c - 01'
-  call shr_sys_flush(iulog)
   do i = 1,ncol
-    ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - phis(',i,')   : ',state_phis(i)
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver) : ',state_t(i,pver)
-    ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',pver) : ',state_q(i,pver)
-    ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
-    call shr_sys_flush(iulog)
-
-    !-----------------------------------------------------------------------------
-    write(iulog,*) 'zm_eamxx_bridge_run_c - 01'
-    call shr_sys_flush(iulog)
-    do j = 1,pver
-
-       !write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver-1) : ',state_t(i,pver-1)
-       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
-        write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',1,',',j,') : ',state_q(1,j)
-       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
-       call shr_sys_flush(iulog)
+    ! write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,')   : ',state_phis(i)
+    do k = 1,12
+      write(iulog,*) 'zm_eamxx_bridge_run_c - pmid(',i,',',k,') : ',state_p_mid(i,k)
     end do
-    do j = 1,pver
-
-       !write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',pver-1) : ',state_t(i,pver-1)
-       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',i,',1)    : ',state_t(i,1)
-       write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - t(',1,',',j,') : ',state_t(1,j)
-       ! write(iulog,*) 'zm_eamxx_bridge_run_c - 01 - q(',i,',1)    : ',state_q(i,1)
-       call shr_sys_flush(iulog)
-    end do
- end if
-
+  end do
   !-----------------------------------------------------------------------------
   ! ! Call the primary Zhang-McFarlane convection parameterization
   ! call zm_convr( lchnk, ncol, is_first_step, &

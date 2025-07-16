@@ -75,7 +75,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 }
 
 /*------------------------------------------------------------------------------------------------*/
-void zm_deep_convection::initialize_impl (const RunType /* run_type */)
+void zm_deep_convection::initialize_impl (const RunType)
 {
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -91,25 +91,59 @@ void zm_deep_convection::initialize_impl (const RunType /* run_type */)
 /*------------------------------------------------------------------------------------------------*/
 void zm_deep_convection::run_impl (const double dt)
 {
+
   auto ts_start = start_of_step_ts();
 
   // get fields
-  const auto& T_mid    = get_field_out("T_mid") .get_view<Spack**, Host>();
-  const auto& qv       = get_field_out("qv")    .get_view<Spack**, Host>();
-  const auto& qc       = get_field_out("qc")    .get_view<Spack**, Host>();
-
-  const auto& p_mid    = get_field_in("p_mid")  .get_view<const Spack**, Host>();
-  const auto& p_int    = get_field_in("p_int")  .get_view<const Spack**, Host>();
-  const auto& omega    = get_field_in("omega")  .get_view<const Spack**, Host>();
-  // const auto& rho      = get_field_in("pseudo_density").get_view<const Spack**, Host>();
+  // const auto& phis     = get_field_in("phis")          .get_view<const Real*>();
+  const auto& p_mid    = get_field_in("p_mid")         .get_view<const Spack**, Host>();
+  const auto& p_int    = get_field_in("p_int")         .get_view<const Spack**, Host>();
+  const auto& p_del    = get_field_in("pseudo_density").get_view<const Spack**, Host>();
   
-  const auto& phis     = get_field_in("phis")   .get_view<const Real*>();
+  const auto& T_mid    = get_field_out("T_mid")         .get_view<Spack**, Host>();
+  const auto& qv       = get_field_out("qv")            .get_view<Spack**, Host>();
+  const auto& qc       = get_field_out("qc")            .get_view<Spack**, Host>();
+
+  // const auto& omega    = get_field_in("omega")          .get_view<const Spack**, Host>();
+
+
+  // view_2d<Spack>  z_del;
+  // view_2d<Scalar> z_surf;
+  // // calculate_z_int contains a team-level parallel_scan, which requires a special policy
+  // const auto scan_policy = ekat::ExeSpaceUtils<ZMF::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
+  // Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const TMSFunctions::KT::MemberType& team) {
+  //   const int i = team.league_rank();
+
+  //   const auto z_del_i = ekat::subview(z_del, i);
+  //   const auto z_int_i = ekat::subview(z_int, i);
+  //   const auto z_mid_i = ekat::subview(z_mid, i);
+
+  //   z_surf(i) = phis(i) / PC::gravit;
+
+  //   // Calculate z_mid
+  //   PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, z_del_i);
+  //   const Real z_surf = 0.0; // For now, set z_int(i,nlevs) = z_surf = 0
+  //   team.team_barrier();
+  //   PF::calculate_z_int(team, nlevs, z_del_i, z_surf(i), z_int_i);
+  //   team.team_barrier();
+  //   PF::calculate_z_mid(team, nlevs, z_int_i, z_mid_i);
+  // });
+
 
   // prepare inputs
   zm_input.ncol           = m_ncols;
   zm_input.is_first_step  = (ts_start.get_num_steps()==0);
+
+  // zm_input.phis           = phis;
+  // zm_input.z_mid          = ???;
+  // zm_input.z_int          = ???;
+  zm_input.p_mid          = p_mid;
+  zm_input.p_int          = p_int;
+  zm_input.p_del          = p_del;
+
   zm_input.T_mid          = T_mid;
   zm_input.qv             = qv;
+  zm_input.qc             = qc;
 
   // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 

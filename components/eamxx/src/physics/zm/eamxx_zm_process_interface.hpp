@@ -15,6 +15,8 @@ class zm_deep_convection : public AtmosphereProcess
 {
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using ZMF = zm::Functions<Real, DefaultDevice>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+  using PC  = scream::physics::Constants<Real>;
   
   using Spack                = typename ZMF::Spack;
   using SPackInt             = typename ZMF::SPackInt;
