@@ -36,7 +36,7 @@
 ! ---------------------------------------------------------------------------
       subroutine spcvmc_sw &
             (lchnk, iplon, nlayers, istart, iend, icpr, idelm, iout, &
-             pavel, tavel, pz, tz, tbound, palbd, palbp, &
+             pavel, tavel, pz, tz, tbound, palbd, palbp, vis_frc, &
              pcldfmc, ptaucmc, pasycmc, pomgcmc, ptaormc, &
              ptaua, pasya, pomga, prmu0, coldry, wkl, adjflux, &
              laytrop, layswtch, laylow, jp, jt, jt1, &
@@ -131,6 +131,8 @@
                                                                  !   Dimensions: (nbndsw)
       real(kind=r8), intent(in) :: palbp(:)                    ! surface albedo (direct)
                                                                  !   Dimensions: (nbndsw)
+      real(kind=r8), intent(in) :: vis_frc                     ! Fraction of surface insolation blueward of 0.7microns
+                                                               ! in rrtmg_sw split band
       real(kind=r8), intent(in) :: prmu0                       ! cosine of solar zenith angle
       real(kind=r8), intent(in) :: pcldfmc(:,:)                ! cloud fraction [mcica]
                                                                  !   Dimensions: (nlayers,ngptsw)
@@ -624,24 +626,28 @@
                      puvcddir(ikl) = puvcddir(ikl) + zincflx(iw)*ztdbtc(jk)
                   endif
 ! band 9 is half-NearIR and half-Visible
+! JPT 20250702: Namelist switch "rad_asym_splt" shifts the average flux+albedo of the split
+! band from 50/50, to a more realistic 55.5/44.5 between the VIS and NIR coupling bands,
+! as described in Tolento et al. (2025)
+! Default is still 50/50, which produces a warming bias over cryospheric surfaces
                else if (ibm == 9) then  
-                  puvcd(ikl) = puvcd(ikl) + 0.5_r8*zincflx(iw)*zcd(jk,iw)
-                  puvfd(ikl) = puvfd(ikl) + 0.5_r8*zincflx(iw)*zfd(jk,iw)
-                  pnicd(ikl) = pnicd(ikl) + 0.5_r8*zincflx(iw)*zcd(jk,iw)
-                  pnifd(ikl) = pnifd(ikl) + 0.5_r8*zincflx(iw)*zfd(jk,iw)
+                  puvcd(ikl) = puvcd(ikl) + vis_frc*zincflx(iw)*zcd(jk,iw)
+                  puvfd(ikl) = puvfd(ikl) + vis_frc*zincflx(iw)*zfd(jk,iw)
+                  pnicd(ikl) = pnicd(ikl) + (1.0-vis_frc)*zincflx(iw)*zcd(jk,iw)
+                  pnifd(ikl) = pnifd(ikl) + (1.0-vis_frc)*zincflx(iw)*zfd(jk,iw)
                   if (idelm .eq. 0) then
-                     puvfddir(ikl) = puvfddir(ikl) + 0.5_r8*zincflx(iw)*ztdbt_nodel(jk)
-                     puvcddir(ikl) = puvcddir(ikl) + 0.5_r8*zincflx(iw)*ztdbtc_nodel(jk)
-                     pnifddir(ikl) = pnifddir(ikl) + 0.5_r8*zincflx(iw)*ztdbt_nodel(jk)
-                     pnicddir(ikl) = pnicddir(ikl) + 0.5_r8*zincflx(iw)*ztdbtc_nodel(jk)
+                     puvfddir(ikl) = puvfddir(ikl) + vis_frc*zincflx(iw)*ztdbt_nodel(jk)
+                     puvcddir(ikl) = puvcddir(ikl) + vis_frc*zincflx(iw)*ztdbtc_nodel(jk)
+                     pnifddir(ikl) = pnifddir(ikl) + (1.0-vis_frc)*zincflx(iw)*ztdbt_nodel(jk)
+                     pnicddir(ikl) = pnicddir(ikl) + (1.0-vis_frc)*zincflx(iw)*ztdbtc_nodel(jk)
                   elseif (idelm .eq. 1) then
-                     puvfddir(ikl) = puvfddir(ikl) + 0.5_r8*zincflx(iw)*ztdbt(jk)
-                     puvcddir(ikl) = puvcddir(ikl) + 0.5_r8*zincflx(iw)*ztdbtc(jk)
-                     pnifddir(ikl) = pnifddir(ikl) + 0.5_r8*zincflx(iw)*ztdbt(jk)
-                     pnicddir(ikl) = pnicddir(ikl) + 0.5_r8*zincflx(iw)*ztdbtc(jk)
+                     puvfddir(ikl) = puvfddir(ikl) + vis_frc*zincflx(iw)*ztdbt(jk)
+                     puvcddir(ikl) = puvcddir(ikl) + vis_frc*zincflx(iw)*ztdbtc(jk)
+                     pnifddir(ikl) = pnifddir(ikl) + (1.0-vis_frc)*zincflx(iw)*ztdbt(jk)
+                     pnicddir(ikl) = pnicddir(ikl) + (1.0-vis_frc)*zincflx(iw)*ztdbtc(jk)
                   endif
-                  pnicu(ikl) = pnicu(ikl) + 0.5_r8*zincflx(iw)*zcu(jk,iw)
-                  pnifu(ikl) = pnifu(ikl) + 0.5_r8*zincflx(iw)*zfu(jk,iw)
+                  pnicu(ikl) = pnicu(ikl) + (1.0-vis_frc)*zincflx(iw)*zcu(jk,iw)
+                  pnifu(ikl) = pnifu(ikl) + (1.0-vis_frc)*zincflx(iw)*zfu(jk,iw)
 ! Accumulate direct fluxes for near-IR bands
                else if (ibm == 14 .or. ibm <= 8) then  
                   pnicd(ikl) = pnicd(ikl) + zincflx(iw)*zcd(jk,iw)
