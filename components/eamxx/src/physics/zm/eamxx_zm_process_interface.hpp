@@ -51,14 +51,14 @@ class zm_deep_convection : public AtmosphereProcess
 
     // define ZM process variables
     std::shared_ptr<const AbstractGrid> m_grid;
-    int m_pcols;
-    int m_ncols;
-    int m_nlevs;
+    int m_pcol;
+    int m_ncol;
+    int m_nlev;
 
     // Structures for arguments to ZM
     ZMF::zm_runtime_opt zm_opts;
     ZMF::zm_input_state zm_input;
-    ZMF::zm_output_tend zm_tend;
+    ZMF::zm_output_tend zm_output;
     ZMF::zm_output_diag zm_diag;
     
 }; // class zm_deep_convection

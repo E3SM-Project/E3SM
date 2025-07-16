@@ -11,12 +11,12 @@ using scream::Int;
 // A C++ interface to ZM fortran calls and vice versa
 
 extern "C" {
-  void zm_eamxx_bridge_init_c(Int  pcols_in,
+  void zm_eamxx_bridge_init_c(Int  pcol_in,
                               Int  pver_in );
 
   void zm_eamxx_bridge_run_c( Int  ncol,
                               bool is_first_step,
-                              // Real *state_phis,
+                              const Real *state_phis,
                               const Real *state_p_mid,
                               const Real *state_p_int,
                               const Real *state_p_del,
@@ -28,14 +28,11 @@ extern "C" {
 namespace scream {
 namespace zm {
 
-void zm_eamxx_bridge_init( Int pcols, Int pver ){
-  zm_eamxx_bridge_init_c( pcols, pver );
+void zm_eamxx_bridge_init( Int pcol, Int pver ){
+  zm_eamxx_bridge_init_c( pcol, pver );
 }
 
-void zm_eamxx_bridge_run(ZMF::zm_input_state& zm_input){
-
-  // int ncol = zm_input.T_mid.extent(0);
-  // int nlev = zm_input.T_mid.extent(1);
+void zm_eamxx_bridge_run(Int pver, ZMF::zm_input_state& zm_input, ZMF::zm_output_tend& zm_output  ){
 
   //----------------------------------------------------------------------------
   auto s_p = ekat::scalarize( zm_input.p_mid );
@@ -47,18 +44,23 @@ void zm_eamxx_bridge_run(ZMF::zm_input_state& zm_input){
     }
   }
 
-  zm_input.transpose<ekat::TransposeDirection::c2f>();
-
+  zm_input.transpose<ekat::TransposeDirection::c2f>(pver);
+  zm_output.transpose<ekat::TransposeDirection::c2f>(pver);
   zm_eamxx_bridge_run_c( zm_input.ncol,
                          zm_input.is_first_step,
-                         // zm_input.phis    .data(),
+                         zm_input.phis    .data(),
                          zm_input.f_p_mid .data(),
                          zm_input.f_p_int .data(),
                          zm_input.f_p_del .data(),
                          zm_input.f_T_mid .data(),
                          zm_input.f_qv    .data(),
-                         zm_input.f_qc    .data() );
+                         zm_input.f_qc    .data(),
+                         zm_output.precip .data(),
+                         zm_output.tend_s .data(),
+                         zm_output.tend_q .data(),
+                        );
   zm_input.transpose<ekat::TransposeDirection::f2c>(pver);
+  zm_output.transpose<ekat::TransposeDirection::f2c>(pver);
 
   // zm_eamxx_bridge_run_c( zm_input.ncol,
   //                        zm_input.is_first_step,

@@ -33,12 +33,12 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   const auto comm = m_grid->get_comm();
 
   // retrieve local grid parameters
-  m_ncols = m_grid->get_num_local_dofs();
-  m_nlevs = m_grid->get_num_vertical_levels();
+  m_ncol = m_grid->get_num_local_dofs();
+  m_nlev = m_grid->get_num_vertical_levels();
 
   // get max ncol value across ranks to mimic how pcols is used on the fortran side
-  m_pcols = m_ncols;
-  comm.all_reduce(&m_pcols,1,MPI_MAX);
+  m_pcol = m_ncol;
+  comm.all_reduce(&m_pcol,1,MPI_MAX);
 
   constexpr int pack_size = Spack::n;
 
@@ -64,13 +64,12 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_tracer<Updated>("qv",             m_grid,       kg/kg,            pack_size);
   add_tracer<Updated>("qc",             m_grid,       kg/kg,            pack_size);
 
-  // // Output variables
-  // add_field<Computed>("???", scalar2d    , ???, grid_name);
-  // add_field<Computed>("???", scalar3d_mid, ???, grid_name, pack_size);
+  // Output variables
+  add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_ice_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
 
-  // // Diagnostic Outputs:
-  // add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
-  // add_field<Updated>("precip_ice_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  // Diagnostic Outputs
+  // ???
 
 }
 
@@ -81,11 +80,11 @@ void zm_deep_convection::initialize_impl (const RunType)
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);
 
-  // add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_liq_surf_mass"),m_grid,0.0,false);
-  // add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
+  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_liq_surf_mass"),m_grid,0.0,false);
+  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
 
   // initialize variables on the fortran side
-  zm::zm_eamxx_bridge_init( m_pcols, m_nlevs );
+  zm::zm_eamxx_bridge_init( m_pcol, m_nlev );
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -95,7 +94,7 @@ void zm_deep_convection::run_impl (const double dt)
   auto ts_start = start_of_step_ts();
 
   // get fields
-  // const auto& phis     = get_field_in("phis")          .get_view<const Real*>();
+  const auto& phis     = get_field_in("phis")          .get_view<const Real*>();
   const auto& p_mid    = get_field_in("p_mid")         .get_view<const Spack**, Host>();
   const auto& p_int    = get_field_in("p_int")         .get_view<const Spack**, Host>();
   const auto& p_del    = get_field_in("pseudo_density").get_view<const Spack**, Host>();
@@ -106,11 +105,13 @@ void zm_deep_convection::run_impl (const double dt)
 
   // const auto& omega    = get_field_in("omega")          .get_view<const Spack**, Host>();
 
+  const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
+  const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
   // view_2d<Spack>  z_del;
   // view_2d<Scalar> z_surf;
   // // calculate_z_int contains a team-level parallel_scan, which requires a special policy
-  // const auto scan_policy = ekat::ExeSpaceUtils<ZMF::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncols, nlev_packs);
+  // const auto scan_policy = ekat::ExeSpaceUtils<ZMF::KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol, nlev_packs);
   // Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const TMSFunctions::KT::MemberType& team) {
   //   const int i = team.league_rank();
 
@@ -131,10 +132,11 @@ void zm_deep_convection::run_impl (const double dt)
 
 
   // prepare inputs
-  zm_input.ncol           = m_ncols;
+  zm_input.ncol           = m_ncol;
+  zm_input.pcol           = m_pcol;
   zm_input.is_first_step  = (ts_start.get_num_steps()==0);
 
-  // zm_input.phis           = phis;
+  zm_input.phis           = phis;
   // zm_input.z_mid          = ???;
   // zm_input.z_int          = ???;
   zm_input.p_mid          = p_mid;
@@ -145,10 +147,14 @@ void zm_deep_convection::run_impl (const double dt)
   zm_input.qv             = qv;
   zm_input.qc             = qc;
 
+  // zm_output.tend_s        = ???
+  // zm_output.tend_q        = ???
+  // zm_output.precip        = ???
+
   // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 
   // Run ZM
-  zm_eamxx_bridge_run( zm_input, m_nlevs );
+  zm_eamxx_bridge_run( zm_input, m_nlev );
 
   // Update output fields
   // ???

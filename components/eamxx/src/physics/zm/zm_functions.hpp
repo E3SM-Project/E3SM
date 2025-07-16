@@ -54,9 +54,10 @@ struct Functions
     zm_input_state() = default;
     // -------------------------------------------------------------------------
     Int             ncol;           // number of columns for current task/chunk
+    Int             pcol;           // max number of columns across tasks/chunks
     bool            is_first_step;  // flag for first call
 
-    // view_1d<Scalar>  phis;           // surface geopotential height [m2/s]
+    view_1d<const Scalar>  phis;           // surface geopotential height [m2/s]
     // view_2d<Spack>   z_mid;           // mid-point level altitude [m]
     // view_2d<Spack>   z_int;           // interface level altitude [m]
     view_2d<const Spack>   p_mid;           // mid-point level pressure [Pa]
@@ -72,7 +73,7 @@ struct Functions
     // view_2d<Spack>  qi;             // Ice total mass mixing ratio [kg kg-1]
     // view_2d<Spack>  omega;          // vertical pressure velocity [Pa/s]
 
-    // truncated views for fortran bridging
+    // LayoutLeft views for fortran bridging
     // view_2dl<Real>  f_z_mid;
     // view_2dl<Real>  f_z_int;
     view_2dl<Real>  f_p_mid;
@@ -109,59 +110,38 @@ struct Functions
     template <ekat::TransposeDirection::Enum D>
     void transpose(int pver)
     {
-      // auto ncol = (int)T_mid.extent(0);
       if (D == ekat::TransposeDirection::c2f) {
-        // auto s_z_mid = ekat::scalarize(z_mid);
-        // auto s_z_int = ekat::scalarize(z_int);
-        auto s_p_mid = ekat::scalarize(p_mid);
-        auto s_p_int = ekat::scalarize(p_int);
-        auto s_p_del = ekat::scalarize(p_del);
-        auto s_T_mid = ekat::scalarize(T_mid);
-        auto s_qv    = ekat::scalarize(qv);
-        auto s_qc    = ekat::scalarize(qc);
-
         // f_z_mid = view_2dl<Real>("f_z_mid", ncol, pver);
         // f_z_int = view_2dl<Real>("f_z_int", ncol, pver);
-        f_p_mid = view_2dl<Real>("f_p_mid", ncol, pver);
-        f_p_int = view_2dl<Real>("f_p_int", ncol, pver);
-        f_p_del = view_2dl<Real>("f_p_del", ncol, pver);
-        f_T_mid = view_2dl<Real>("f_T_mid", ncol, pver);
-        f_qv    = view_2dl<Real>("f_qv",    ncol, pver);
-        f_qc    = view_2dl<Real>("f_qc",    ncol, pver);
+        f_p_mid = view_2dl<Real>("f_p_mid", pcol, pver);
+        f_p_int = view_2dl<Real>("f_p_int", pcol, pver);
+        f_p_del = view_2dl<Real>("f_p_del", pcol, pver);
+        f_T_mid = view_2dl<Real>("f_T_mid", pcol, pver);
+        f_qv    = view_2dl<Real>("f_qv",    pcol, pver);
+        f_qc    = view_2dl<Real>("f_qc",    pcol, pver);
 
         for (int i=0; i<ncol; ++i) {
           for (int j=0; j<pver; ++j) {
-            // f_z_mid(i,j) = s_z_mid(i,j);
-            // f_z_int(i,j) = s_z_int(i,j);
-            f_p_mid(i,j) = s_p_mid(i,j);
-            f_p_int(i,j) = s_p_int(i,j);
-            f_p_del(i,j) = s_p_del(i,j);
-            f_T_mid(i,j) = s_T_mid(i,j);
-            f_qv   (i,j) = s_qv   (i,j);
-            f_qc   (i,j) = s_qc   (i,j);
+            // f_z_mid(i,j) = z_mid(i, j / Spack::n)[j % Spack::n];
+            // f_z_int(i,j) = z_int(i, j / Spack::n)[j % Spack::n];
+            f_p_mid(i,j) = p_mid(i, j / Spack::n)[j % Spack::n];
+            f_p_int(i,j) = p_int(i, j / Spack::n)[j % Spack::n];
+            f_p_del(i,j) = p_del(i, j / Spack::n)[j % Spack::n];
+            f_T_mid(i,j) = T_mid(i, j / Spack::n)[j % Spack::n];
+            f_qv   (i,j) = qv   (i, j / Spack::n)[j % Spack::n];
+            f_qc   (i,j) = qc   (i, j / Spack::n)[j % Spack::n];
           }
         }
       }
-      else {
-        // std::vector<view_2dl<Real>::> hst_views = { f_T_mid.data(),
-        //                                             f_qv   .data(),
-        //                                             f_qc   .data(),
-        //                                           };        
-        // std::vector<view_2d<Spack>> dev_views = { T_mid, 
-        //                                           qv,
-        //                                           qc,
-        //                                         };
-        // ekat::host_to_device( hst_views, ncol, pver, dev_views);
-
-        // ekat::host_to_device( { f_T_mid.data(),
-        //                         f_qv   .data(),
-        //                         f_qc   .data(),
-        //                       }, ncol, pver, dviews);
-      }
       // else {
-      //   ekat::host_to_device({T_mid_v .data(),
-      //                         qv_v    .data()},
-      //                        T_mid.extent(0), T_mid.extent(1) * Spack::n, transposed_views, true);
+      //   std::vector<view_2d<Spack>> dev_views = { T_mid,
+      //                                             qv,
+      //                                             qc,
+      //                                           };
+      //   ekat::host_to_device( { f_T_mid.data(),
+      //                           f_qv   .data(),
+      //                           f_qc   .data(),
+      //                         }, ncol, pver, dev_views);
       // }
     }
     // -------------------------------------------------------------------------
@@ -169,6 +149,36 @@ struct Functions
 
   struct zm_output_tend {
     zm_output_tend() = default;
+
+    view_2d<const Spack>   tend_s;           // output tendency of water vapor
+    view_2d<const Spack>   tend_q;           // output tendency of dry statis energy
+    view_1d<const Scalar>  precip;           // surface precipitation [m/s]
+
+    // LayoutLeft views for fortran bridging
+    view_2dl<Real>  f_tend_s;
+    view_2dl<Real>  f_tend_q;
+    // -------------------------------------------------------------------------
+    // transpose method for fortran bridging
+    template <ekat::TransposeDirection::Enum D>
+    void transpose(int pver)
+    {
+      // if (D == ekat::TransposeDirection::c2f) {
+      //   f_p_mid = view_2dl<Real>("f_p_mid", pcol, pver);
+      //   for (int i=0; i<ncol; ++i) {
+      //     for (int j=0; j<pver; ++j) {
+      //       f_p_mid(i,j) = p_mid(i, j / Spack::n)[j % Spack::n];
+      //     }
+      //   }
+      // }
+      if (D == ekat::TransposeDirection::f2c) {
+        std::vector<view_2d<Spack>> dev_views = { tend_s,
+                                                  tend_q,
+                                                };
+        ekat::host_to_device( { f_tend_s.data(),
+                                f_tend_q.data(),
+                              }, ncol, pver, dev_views);
+      }
+    }
   };
 
   struct zm_output_diag {
