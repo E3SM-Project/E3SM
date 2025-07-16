@@ -946,7 +946,7 @@ get_var_dimnames (const FieldLayout& layout) const
     auto tag_name = m_io_grid->has_special_tag_name(t)
                   ? m_io_grid->get_special_tag_name(t)
                   : layout.names()[i];
-    if (tag_name=="dim") {
+    if (tag_name=="dim" or tag_name=="bin") {
       tag_name += std::to_string(layout.dim(i));
     }
     dims.push_back(tag_name); // Add dimensions string to vector of dims.
