@@ -202,34 +202,31 @@ void MAMMicrophysics::set_grids(
   add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
 
   // Diagnostic fields for aerosol microphysics
+
+  //Flag to indicate if we want to compute extra diagnostics
   extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
   if (extra_mam4_aero_microphys_diags_) {
     const FieldLayout vector3d_num_gas_aerosol_constituents =
         grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
-    // Diagnostics: tendencies due to gas phase chemistry [kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
 
-    // Diagnostics: tendencies due to aqueous chemistry [kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    // Diagnostics: tendencies due to aqueous chemistry [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
 
-    // Diagnostics: SO4 in-cloud tendencies[kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+    // Diagnostics: SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, nondim, grid_name);
 
-    // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+    // Diagnostics: H2SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, nondim, grid_name);
 
-    // constexpr ekat::units::Units u_heterogeneous = ekat::units::Units(ekat::units::Units::nondimensional(), "Warning: This array carries quantities with heterogeneous units");
-    add_field<Computed>("mam4_microphys_tendency_condensation", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
-    add_field<Computed>("mam4_microphys_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents, pow(mol, -1), grid_name);
-    // get_field_set_io_docstring("mam4_microphys_tendency_condensation");
-    // get_field_set_io_docstring("mam4_microphys_tendency_renaming");
-    // get_field_set_io_docstring("mam4_microphys_tendency_nucleation");
-    // get_field_set_io_docstring("mam4_microphys_tendency_coagulation");
-    // get_field_set_io_docstring("mam4_microphys_tendency_renaming_cloud_borne");
+    // Diagnostics: tendencies due to aerosol microphysics (gas aerosol exchange) [mixed units: mol/mol/s or #/mol/s]
+    add_field<Computed>("mam4_microphys_tendency_condensation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphys_tendency_nucleation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphys_tendency_coagulation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphys_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -528,6 +525,23 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
+  //Some dignostics fields have mixed units (kg/kg/s, #/kg/s, etc.)
+  //For these fields, we add a docstring to the field to indicate that
+  //the units are mixed and the user should be careful when using these fields.
+  constexpr std::vector<std::string> mixed_units_fields = {
+    "mam4_microphysics_tendency_gas_phase_chemistry", 
+    "mam4_microphysics_tendency_aqueous_chemistry", 
+    "mam4_microphysics_tendency_aqso4",
+    "mam4_microphysics_tendency_aqh2so4",
+    "mam4_microphys_tendency_condensation",
+    "mam4_microphys_tendency_renaming",
+    "mam4_microphys_tendency_nucleation",
+    "mam4_microphys_tendency_coagulation",
+    "mam4_microphys_tendency_renaming_cloud_borne",
+  };
+  // Add docstring to the fields with mixed units
+  add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
+   
   // set field property checks for the fields in this process
   /* e.g.
   using Interval = FieldWithinIntervalCheck;
