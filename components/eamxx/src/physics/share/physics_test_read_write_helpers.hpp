@@ -84,7 +84,7 @@ void write_scalars(std::ofstream& ofile, const T (&data)[N]) {
 
 template <typename T, typename I>
 std::enable_if_t<std::is_integral<I>::value>
-write_scalars(std::ofstream& ofile, const T* const data, I N) {
+write_scalars(std::ofstream& ofile, T* const data, I N) {
   for (I i=0; i<N; ++i) {
     write_scalars(ofile,data[i]);
   }
