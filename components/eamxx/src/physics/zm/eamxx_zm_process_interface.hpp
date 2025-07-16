@@ -3,6 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "zm_functions.hpp"
 
 namespace scream
@@ -14,6 +15,8 @@ class zm_deep_convection : public AtmosphereProcess
 {
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using ZMF = zm::Functions<Real, DefaultDevice>;
+  using PF  = scream::PhysicsFunctions<DefaultDevice>;
+  using PC  = scream::physics::Constants<Real>;
   
   using Spack                = typename ZMF::Spack;
   using SPackInt             = typename ZMF::SPackInt;
