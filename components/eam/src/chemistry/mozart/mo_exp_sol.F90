@@ -114,7 +114,7 @@ contains
        ! SO2 and H2SO4 can be dead zeros due to aerosol processes
        ! use a different equation for them to avoid debug built issues
 
-#if (defined MODAL_AERO_5MODE)  
+#if (defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM)  
        ! for MAM5, H2SO4, SO2, and DMS needs to be solved in the stratosphere     
        elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
          ! V2-like explicit equation is used to solve H2SO4 and SO2 due to dead zero values
@@ -170,7 +170,7 @@ contains
     do m = 1,clscnt1
        l = clsmap(m,1)
 
-#if (defined MODAL_AERO_5MODE)
+#if (defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM)
        if (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
            do i = 1,ncol
               do k = 1,pver

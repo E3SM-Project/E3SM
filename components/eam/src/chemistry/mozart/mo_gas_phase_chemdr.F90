@@ -332,7 +332,7 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
-#if (defined MODAL_AERO_5MODE)
+#if (defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM)
     use aero_model,        only : aero_model_strat_surfarea
 #endif
     implicit none
@@ -653,7 +653,7 @@ contains
        end do
     end do
     ! the prognostic strato_sad
-#if (defined MODAL_AERO_5MODE)    
+#if (defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM)    
   call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
 #endif
     if ( has_strato_chem ) then
@@ -1191,7 +1191,7 @@ contains
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
-#if (defined MODAL_AERO_5MODE)
+#if (defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM)
     ! attribute constant OH and NO3 above tropopause
     ! will be set by after exp_sol
     do i = 1,ncol
@@ -1257,7 +1257,7 @@ contains
     if (uci1_ndx > 0) then
        ! exclude E90 from resetting
        vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
-#if (defined MODAL_AERO_5MODE)       
+#if (defined MODAL_AERO_5MODE || defined MODAL_AERO_4MODE_MOM)       
        ! exclude SO2
        vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) 
        vmr_old2(:,:,ndx_h2so4) = vmr(:,:,ndx_h2so4) 
