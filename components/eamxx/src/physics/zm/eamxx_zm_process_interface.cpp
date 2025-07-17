@@ -147,9 +147,15 @@ void zm_deep_convection::run_impl (const double dt)
   zm_input.qv             = qv;
   zm_input.qc             = qc;
 
-  // zm_output.tend_s        = ???
-  // zm_output.tend_q        = ???
-  // zm_output.precip        = ???
+  // prepare outputs
+  zm_output.ncol          = m_ncol;
+  zm_output.pcol          = m_pcol;
+
+  zm_output.tend_s        = zm_buff.tend_s;
+  zm_output.tend_q        = zm_buff.tend_q;
+  zm_output.precip        = zm_buff.precip;
+  zm_output.prec_flux     = zm_buff.prec_flux;
+  zm_output.mass_flux     = zm_buff.mass_flux;
 
   // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 
@@ -172,11 +178,11 @@ size_t zm_deep_convection::requested_buffer_size_in_bytes() const
 {
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
-  int zm_output_size = 0;
-  zm_output_size+= ZMF::zm_output_tend::num_1d_scl_views * sizeof(Real)  * m_ncol;
-  zm_output_size+= ZMF::zm_output_tend::num_2d_mid_views * sizeof(Spack) * m_ncol * nlevm_packs;
-  zm_output_size+= ZMF::zm_output_tend::num_2d_int_views * sizeof(Spack) * m_ncol * nlevi_packs;
-  return zm_output_size;
+  int zm_buffer_size = 0;
+  zm_buffer_size+= ZMF::zm_buffer_data::num_1d_scl_views * sizeof(Real)  * m_ncol;
+  zm_buffer_size+= ZMF::zm_buffer_data::num_2d_mid_views * sizeof(Spack) * m_ncol * nlevm_packs;
+  zm_buffer_size+= ZMF::zm_buffer_data::num_2d_int_views * sizeof(Spack) * m_ncol * nlevi_packs;
+  return zm_buffer_size;
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -191,14 +197,14 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlevm_packs = ekat::npack<Spack>(m_nlev);
   const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
 
-  auto num_1d_scl_views = ZMF::zm_output_tend::num_1d_scl_views;
-  auto num_2d_mid_views = ZMF::zm_output_tend::num_2d_mid_views;
-  auto num_2d_int_views = ZMF::zm_output_tend::num_2d_int_views;
+  auto num_1d_scl_views = ZMF::zm_buffer_data::num_1d_scl_views;
+  auto num_2d_mid_views = ZMF::zm_buffer_data::num_2d_mid_views;
+  auto num_2d_int_views = ZMF::zm_buffer_data::num_2d_int_views;
 
-  using scalar_1d_view_t = decltype(zm_output.precip);
+  using scalar_1d_view_t = decltype(zm_buff.precip);
 
   // 1D scalar variables
-  scalar_1d_view_t* scl_ptrs[num_1d_scl_views]  = { &zm_output.precip,
+  scalar_1d_view_t* scl_ptrs[num_1d_scl_views]  = { &zm_buff.precip,
                                                   };
   for (int i=0; i<num_1d_scl_views; ++i) {
     *scl_ptrs[i] = scalar_1d_view_t(mem, m_ncol);
@@ -208,8 +214,8 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   Spack* s_mem = reinterpret_cast<Spack*>(mem);
 
   // 2D variables on mid-point levels
-  uview_2d* mid_ptrs[num_2d_mid_views]  = { &zm_output.tend_s,
-                                            &zm_output.tend_q,
+  uview_2d* mid_ptrs[num_2d_mid_views]  = { &zm_buff.tend_s,
+                                            &zm_buff.tend_q,
                                           };
   for (int i=0; i<num_2d_mid_views; ++i) {
     *mid_ptrs[i] = uview_2d(s_mem, m_ncol, nlevm_packs);
@@ -217,8 +223,8 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   }
 
   // 2D variables on interface levels
-  uview_2d* int_ptrs[num_2d_int_views]  = { &zm_output.prec_flux,
-                                            &zm_output.mass_flux,
+  uview_2d* int_ptrs[num_2d_int_views]  = { &zm_buff.prec_flux,
+                                            &zm_buff.mass_flux,
                                           };
   for (int i=0; i<num_2d_int_views; ++i) {
     *int_ptrs[i] = uview_2d(s_mem, m_ncol, nlevi_packs);

@@ -141,16 +141,17 @@ struct Functions {
     Int ncol;                       // number of columns for current task/chunk
     Int pcol;                       // max number of columns across tasks/chunks
 
-    static constexpr int num_1d_scl_views = 1; // number of 1D variables
-    static constexpr int num_2d_mid_views = 2; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_int_views = 2; // number of 2D variables on interface levels
+    // uview_1d<Scalar>  precip;       // surface precipitation [m/s]
+    // uview_2d<Spack>   tend_s;       // output tendency of water vapor
+    // uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
+    // uview_2d<Spack>   prec_flux;    // output convective precipitation flux
+    // uview_2d<Spack>   mass_flux;    // output convective mass flux
 
-    uview_1d<Scalar>  precip;       // surface precipitation [m/s]
-
-    uview_2d<Spack>   tend_s;       // output tendency of water vapor
-    uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
-    uview_2d<Spack>   prec_flux;    // output convective precipitation flux
-    uview_2d<Spack>   mass_flux;    // output convective mass flux
+    view_1d<Scalar>  precip;       // surface precipitation [m/s]
+    view_2d<Spack>   tend_s;       // output tendency of water vapor
+    view_2d<Spack>   tend_q;       // output tendency of dry statis energy
+    view_2d<Spack>   prec_flux;    // output convective precipitation flux
+    view_2d<Spack>   mass_flux;    // output convective mass flux
 
     // LayoutLeft views for fortran bridging
     view_2dl<Real>  f_tend_s;
@@ -202,29 +203,19 @@ struct Functions {
     zm_output_diag() = default;
   };
 
-  // struct zm_runtime_opts {
-  //   zm_runtime_opts() = default;
-  // };
+  // Structure for storing local variables initialized using the ATMBufferManager
+  struct zm_buffer_data {
 
-  // // This struct stores input views for ZM_main.
-  // struct zm_input_state {
-    // zm_input_state() = default;
-  // };
+    static constexpr int num_1d_scl_views = 1; // number of 1D variables
+    static constexpr int num_2d_mid_views = 2; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_int_views = 2; // number of 2D variables on interface levels
 
-  // // This struct stores input/outputs views for ZM_main.
-  // struct zm_inout {
-  //   zm_inout() = default;
-  // };
-
-  // // This struct stores output only views for ZM_main.
-  // struct zm_output {
-  //   zm_output() = default;
-  // };
-
-  // // This struct stores output views for ZM diagnostics for ZM_main.
-  // struct ZMHistoryOutput {
-  //   ZMHistoryOutput() = default;
-  // };
+    uview_1d<Scalar>  precip;       // surface precipitation [m/s]
+    uview_2d<Spack>   tend_s;       // output tendency of water vapor
+    uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
+    uview_2d<Spack>   prec_flux;    // output convective precipitation flux
+    uview_2d<Spack>   mass_flux;    // output convective mass flux
+  };
 
   // ---------------------------------------------------------------------------
   // Functions
