@@ -25,6 +25,7 @@
 #include <string>
 #include <set>
 #include <list>
+#include <any>
 
 namespace scream
 {
@@ -111,7 +112,7 @@ public:
   // TODO: should we check that initialize has been called, when calling run/finalize?
   void initialize (const TimeStamp& t0, const RunType run_type);
   void run (const double dt);
-  void finalize   (/* what inputs? */);
+  void finalize ();
 
   // Return the MPI communicator
   const ekat::Comm& get_comm () const { return m_comm; }
@@ -618,6 +619,20 @@ protected:
   std::list<FieldRequest>   m_computed_field_requests;
   std::list<GroupRequest>   m_required_group_requests;
   std::list<GroupRequest>   m_computed_group_requests;
+
+  void add_py_fields (const Field& f);
+  void add_py_fields (const FieldGroup& g);
+#ifdef EAMXX_HAS_PYTHON
+
+  // NOTE: we need to use std::any instead of pybind11::XYZ to avoid
+  //       namespace visibility warnings. Derived classes need to
+  //       manually call std::any_cast<pybind11::array> on the fields
+  //       and std::any_cast<pybind11::module> on the module
+  std::any  m_py_module;
+
+  strmap_t<strmap_t<std::any>> m_py_fields_dev;
+  strmap_t<strmap_t<std::any>> m_py_fields_host;
+#endif
 };
 
 // ================= IMPLEMENTATION ================== //

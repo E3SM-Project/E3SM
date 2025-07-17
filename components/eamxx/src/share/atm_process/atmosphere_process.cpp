@@ -3,6 +3,14 @@
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "share/field/field_utils.hpp"
 
+#ifdef EAMXX_HAS_PYTHON
+#include "share/field/field_pyutils.hpp"
+#include "share/eamxx_pysession.hpp"
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+namespace py = pybind11;
+#endif
+
 #include "ekat/ekat_assert.hpp"
 
 #include <set>
@@ -64,6 +72,18 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       m_params.get<bool>("enable_column_conservation_checks", false);
 
   m_internal_diagnostics_level = m_params.get<int>("internal_diagnostics_level", 0);
+#ifdef EAMXX_HAS_PYTHON
+  if (m_params.get("py_module_name",std::string(""))!="") {
+    auto& pysession = PySession::get();
+    pysession.initialize();
+
+    const auto& py_module_name = m_params.get<std::string>("py_module_name");
+    const auto& py_module_path = m_params.get<std::string>("py_module_path","./");
+
+    pysession.add_path(py_module_path);
+    m_py_module = pysession.safe_import(py_module_name);
+  }
+#endif
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -162,8 +182,21 @@ void AtmosphereProcess::run (const double dt) {
   stop_timer (m_timer_prefix + this->name() + "::run");
 }
 
-void AtmosphereProcess::finalize (/* what inputs? */) {
+void AtmosphereProcess::finalize () {
   finalize_impl(/* what inputs? */);
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module.has_value()) {
+    // Empty these vars before finalizing the py session, or else
+    // their destructor will NOT find an active py interpreter
+    m_py_module.reset();
+    m_py_fields_dev.clear();
+    m_py_fields_host.clear();
+
+    // Note: In case multiple places have called PySession::get().initialize(),
+    // only the last call to finalize *actually* finalizes the interpreter
+    PySession::get().finalize();
+  }
+#endif
 }
 
 void AtmosphereProcess::setup_tendencies_requests () {
@@ -300,6 +333,8 @@ void AtmosphereProcess::set_required_field (const Field& f) {
   }
 
   set_required_field_impl (f);
+
+  add_py_fields(f);
 }
 
 void AtmosphereProcess::set_computed_field (const Field& f) {
@@ -326,6 +361,8 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
   if (m_compute_proc_tendencies && m_proc_tendencies.count(f.name())==1) {
     m_proc_tendencies[f.name()] = f;
   }
+
+  add_py_fields(f);
 }
 
 void AtmosphereProcess::set_required_group (const FieldGroup& group) {
@@ -353,6 +390,8 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
   }
 
   set_required_group_impl(group);
+
+  add_py_fields(group);
 }
 
 void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
@@ -380,6 +419,8 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   }
 
   set_computed_group_impl(group);
+
+  add_py_fields(group);
 }
 
 void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
@@ -628,6 +669,7 @@ void AtmosphereProcess::add_me_as_customer (const Field& f) {
 
 void AtmosphereProcess::add_internal_field (const Field& f) {
   m_internal_fields.push_back(f);
+  add_py_fields(f);
 }
 
 const Field& AtmosphereProcess::
@@ -1153,6 +1195,37 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
+}
+
+void AtmosphereProcess::add_py_fields (const Field& f)
+{
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module.has_value()) {
+    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+    m_py_fields_dev[grid_name][f.name()] = create_py_field<Device>(f);
+    m_py_fields_host[grid_name][f.name()] = create_py_field<Host>(f);
+  }
+#else
+  (void) f;
+#endif
+}
+
+void AtmosphereProcess::add_py_fields (const FieldGroup& group)
+{
+#ifdef EAMXX_HAS_PYTHON
+  if (m_py_module.has_value()) {
+    if (group.m_monolithic_field) {
+      const auto& f = group.m_monolithic_field;
+      add_py_fields(*f);
+    } else {
+      for (const auto& [name,f] : group.m_individual_fields) {
+        add_py_fields(*f);
+      }
+    }
+  }
+#else
+  (void) group;
+#endif
 }
 
 } // namespace scream
