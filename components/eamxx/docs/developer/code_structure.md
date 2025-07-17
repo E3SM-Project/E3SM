@@ -125,7 +125,7 @@
     enables building and running an individual EAMxx atmosphere process using python/[conda](https://docs.conda.io/en/latest/).
         - As of time of writing, this feature is still in development and should
         e considered a prototype.
-            - See the [pyEAMxx](../user/pyeamxx.md) page in the User Guide for
+            - See the [pyEAMxx](../user/py2eamxx.md) page in the User Guide for
             a more detailed description.
     - `share`: Utilities used by various components within EAMxx. Of note:
         - `io`: EAMxx's interface to the [SCORPIO](https://e3sm.org/scorpio-parallel-io-library/)
