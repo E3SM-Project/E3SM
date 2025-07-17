@@ -26,6 +26,7 @@ module mpaso_cpl_indices
   integer :: index_o2x_Faoo_fco2_ocn
   integer :: index_o2x_Faoo_fdms_ocn
   integer :: index_o2x_So_ssh
+  integer :: index_o2x_So_frac_h2oocn
   integer :: index_o2x_Foxo_ismw
   integer :: index_o2x_Foxo_rrofl
   integer :: index_o2x_Foxo_rrofi
@@ -210,6 +211,9 @@ contains
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
     index_o2x_So_ssh        = mct_avect_indexra(o2x,'So_ssh')
+    if (ocn_lnd_one_way) then
+      index_o2x_So_frac_h2oocn= mct_avect_indexra(o2x,'So_ssh')
+    endif
 
     index_o2x_Foxo_ismw     = mct_avect_indexra(o2x,'Foxo_ismw',perrWith='quiet')
     index_o2x_Foxo_rrofl    = mct_avect_indexra(o2x,'Foxo_rrofl',perrWith='quiet')

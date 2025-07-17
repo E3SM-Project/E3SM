@@ -7,6 +7,7 @@ module lnd_import_export
   use lnd2glcMod   , only: lnd2glc_type
   use atm2lndType  , only: atm2lnd_type
   use glc2lndMod   , only: glc2lnd_type
+  use ocn2lndType  , only: ocn2lnd_type
   use GridcellType , only: grc_pp          ! for access to gridcell topology
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices
@@ -19,7 +20,7 @@ module lnd_import_export
 contains
 
   !===============================================================================
-  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+  subroutine lnd_import( bounds, x2l, atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars, lnd2atm_vars)
 
     !---------------------------------------------------------------------------
     ! !DESCRIPTION:
@@ -49,6 +50,7 @@ contains
     real(r8)           , intent(in)    :: x2l(:,:) ! driver import state to land model
     type(atm2lnd_type) , intent(inout) :: atm2lnd_vars      ! clm internal input data type
     type(glc2lnd_type) , intent(inout) :: glc2lnd_vars      ! clm internal input data type
+    type(ocn2lnd_type) , intent(inout) :: ocn2lnd_vars
     type(lnd2atm_type) , intent(in)    :: lnd2atm_vars
     !
     ! !LOCAL VARIABLES:
@@ -198,6 +200,14 @@ contains
        if (index_x2l_Sr_h2orof /= 0) then
          atm2lnd_vars%h2orof_grc(g)      = x2l(index_x2l_Sr_h2orof,i)
          atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
+       endif
+
+       if (index_x2l_So_ssh /= 0) then
+         ocn2lnd_vars%ssh_grc(g) = x2l(index_x2l_So_ssh,i)
+       endif
+
+       if (index_x2l_So_frac_h2oocn /= 0) then
+         ocn2lnd_vars%frac_h2oocn_grc(g) = x2l(index_x2l_So_frac_h2oocn,i)
        endif
 
        ! Determine required receive fields
