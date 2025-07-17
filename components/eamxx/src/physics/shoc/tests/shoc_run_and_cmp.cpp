@@ -179,13 +179,13 @@ private:
       EKAT_REQUIRE_MSG(dim == f.dim,
                       "For field " << f.name << " read expected dim " <<
                       f.dim << " but got " << dim);
-      std::vector<int> ds(dim);
-      impl::read_scalars(ifile,ds);
+      int extent[3];
+      impl::read_scalars(ifile,extent);
       for (int i = 0; i < dim; ++i)
-        EKAT_REQUIRE_MSG(ds[i] == f.extent[i],
+        EKAT_REQUIRE_MSG(extent[i] == f.extent[i],
                         "For field " << f.name << " read expected dim "
                         << i << " to have extent " << f.extent[i] << " but got "
-                        << ds[i]);
+                        << extent[i]);
       impl::read_scalars(ifile,f.data,f.size);
     }
   }
