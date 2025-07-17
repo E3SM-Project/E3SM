@@ -3981,16 +3981,14 @@ end subroutine wrap_update_hifrq_hist
    ! ---------------------------------------------------------------------------------
 
    ! !USES:
-   use FatesInterfaceMod, only : TransferBCIn
    !
    ! !ARGUMENTS:
-   class(hlm_fates_interface_type), intent(inout) :: this
+   type(hlm_fates_interface_type), intent(inout) :: this
    integer, intent(in) :: nc
 
    ! !LOCAL VARIABLES
    type(canopystate_type) :: canopystate_inst
    integer :: s, p, c, l, i
-
 
    do s=1,this%fates(nc)%nsites
 
@@ -4022,8 +4020,8 @@ end subroutine wrap_update_hifrq_hist
       !     call TransferBC(this%api_tag(ivar), this%hlm_var(ivar))
       ! end do
 
-      call TransferBCIn('decomp_frac_moisture',col_cf%w_scalar)
-      call TransferBCIn('leaf_area_index',canopystate_inst%tlai_patch)
+      call this%fates(nc)%sites(s)%TransferBCIn_1d('leaf_area_index',canopystate_inst%tlai_patch)
+      call this%fates(nc)%sites(s)%TransferBCIn_2d('decomp_frac_moisture',col_cf%w_scalar)
 
    end do
 
