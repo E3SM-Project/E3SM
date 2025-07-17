@@ -24,13 +24,17 @@ void VerticalRemapperMAM4::remap_fwd_impl ()
 
   }
 }
-
+/* The DataInterpolation class only uses this method if the Custom type is employed.
+   We only use this function for elevated emissions. */
 void VerticalRemapperMAM4::
 set_target_pressure (const Field& p)
 {
   m_tgt_pmid=p;
 }
-
+/* It reads altitude from an NC file and sets m_src_pmid as altitude_int_src.
+* DataInterpolation assumes that pressure is the variable for interpolation.
+* Here, we use m_src_pmid to pass altitude, but note that we are using
+* the MAM4XX interpolation for elevated emissions.*/
 void VerticalRemapperMAM4::
 set_source_pressure (const std::string& file_name )
 {
@@ -46,7 +50,7 @@ set_source_pressure (const std::string& file_name )
     m_src_pmid=altitude_int_src;
   }
 }
-
+/* Invokes MAM4XX routines for vertical interpolation.*/
 void VerticalRemapperMAM4::
 apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
                              const Field& p_src, const Field& p_tgt) const
@@ -71,7 +75,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
     const auto p_src_c = p_src.get_view<const Real **>();
 
     Kokkos::parallel_for(
-      "vert_interp", policy,
+      "vert_interp_psref", policy,
       KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto pin_at_icol     = ekat::subview(p_src_c, icol);
@@ -89,7 +93,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
     const auto p_src_c = p_src.get_view<const Real *>();
 
     Kokkos::parallel_for(
-      "vert_interp", policy,
+      "vert_interp_mam4_zonal", policy,
       KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto pmid_at_icol    = ekat::subview(p_tgt_c, icol);
@@ -107,7 +111,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
       constexpr int nlev = mam4::nlev;
       constexpr Real m2km    = 1e-3;
       Kokkos::parallel_for(
-      "tracer_vert_interp_loop", policy,
+      "vert_interpolation_elevated_emissions", policy,
       KOKKOS_LAMBDA(const Team &team) {
         const int icol = team.league_rank();
         const auto datain_at_icol  = ekat::subview(datain, icol);
