@@ -473,16 +473,36 @@
 			    possible_values="any non-negative value"
 		/>
 		<nml_option name="config_ocean_data_extrapolation" type="logical" default_value=".false." units="unitless"
-			    description="If true, extrapolate ocean data (temperature, salinity, thermal forcing) from external source into underneath the ice draft."
+			    description="If true, extrapolate ocean data (temperature and salinity, or thermal forcing) from external source into underneath the ice draft."
 			    possible_values=".true. or .false."
+                />
+      <nml_option name="config_calculate_thermal_forcing" type="logical" default_value=".false." units="unitless"
+             description="If true, ocean temperature and salinity are extrapolated under ice drafts and to glacier termini, where thermal forcing is then calculated according to options config_extrap_sill_blocking, config_TF_vertical_calc, config_TF_iceberg_melt, and config_TF_iceberg_depth. If false, MALI will look for an external thermal forcing field to extrapolate instead, and the subsequent 2d thermal forcing field will be defined at the grounding line. Option is only valid if config_ocean_data_extrapolation is true."
+             possible_values=".true. or .false."
+      />
+		<nml_option name="config_extrap_sill_blocking" type="logical" default_value=".true." units="unitless"
+				  description="Option to account for sill blocking of external water when extrapolated ocean properties to glacier termini. config_ocean_data_extrapolation and config_calculate_thermal_forcing must both be true for this option to be valid. If only config_ocean_data_extrapolation is true while config_calculate_thermal_forcing is false, then sill blocking will automatically be activated during extrapolation."
+				  possible_values=".true. or .false."
+	   />
+		<nml_option name="config_TF_vertical_calc" type="character" default_value="seafloor" units="unitless"
+				  description="Method for calculating 2D thermal forcing from the 3d field. 'seafloor' uses the thermal forcing value immediately above the ocean floor (at grounding line depth); 'average' averages the full water column; '200-500' averages only between 200 - 500 m depth"
+		        possible_values="'seafloor', 'average', '200-500'"		  
 		/>
-		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
+	   <nml_option name="config_TF_iceberg_melt" type="character" default_value="off" units="unitless"
+				  description="Option to modify ocean temperature in the upper portion of the water column (above depth specified by config_TF_iceberg_depth) to resemble iceberg melt-driven cooling. Done before calculating the 3d thermal forcing field if both config_ocean_data_extrapolation and config_calculate_thermal_forcing are also true. 'on' applies modification universally, while 'mask' uses binary mask 'icebergFjordMask' to apply the correction. "
+				  possible_values="'off', 'on', 'mask'"		  
+		/>
+		<nml_option name="config_TF_iceberg_depth" type="real" default_value="-175.0" units="m"
+				  description="Depth above which to iceberg meltwater is important. If config_TF_iceberg_melt is set to 'true' or 'mask', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024)."
+				  possible_values="Any negative real value"
+		/>
+		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="2" units="unitless"
 			    description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
-		/>
-	        <nml_option name="config_invalid_value_TF" type="real" default_value="1.0e36" units="unitless"
-			    description="value assigned to indicate invalid thermal forcing value when config_ocean_data_extrapolation is set to true"
-			    possible_values="Any real value"
-		/>
+      />
+      <nml_option name="config_invalid_value_TF" type="real" default_value="1.0e36" units="unitless"
+             description="value assigned to indicate invalid thermal forcing value when config_ocean_data_extrapolation is set to true"
+             possible_values="Any real value"
+      />                     
 		<nml_option name="config_weight_value_cell" type="real" default_value="0.9" units="unitless"
 			    description="weight used to smooth horizontal extrapolation of ocean data field. Value close to 1 implies more weight of the current cell value versus the averaged value of the neighbouring cells around the cell"
 			    possible_values="any real value between 0 and 1"
@@ -824,12 +844,14 @@
                         <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zBndsOcean" packages="ismip6ShelfMelt;extrapOceanData"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
 			<!-- this variable just for ocean extrapolation -->
                         <var name="orig3dOceanMask" packages="extrapOceanData"/>
+                        <var name="icebergFjordMask" packages="extrapOceanData"/>
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -936,6 +958,9 @@
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
 		        <!-- these variables are just for the ocean thermal forcing re-extrapolation scheme -->
                         <var name="orig3dOceanMask" packages="extrapOceanData" />
+                        <var name="icebergFjordMask" packages="extrapOceanData"/>
+                        <var name="oceanTemperature" packages="extrapOceanData"/>
+                        <var name="oceanSalinity" packages="extrapOceanData"/>
 		</stream>
 
 
@@ -1719,13 +1744,13 @@ is the value of that variable from the *previous* time level!
     <!-- Variables related to the ocean-forcing re-extrapolation -->
         <var_struct name="extrapOceanData" time_levs="1" packages="extrapOceanData">
                 <var name="orig3dOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time"
-                     description="3D mask of original valid ocean data.  Because it is 3d, it can include the ocean domain inside ice-shelf cavities."
+                     description="3D mask of original valid ocean data.  Because it is 3d, it can include the ocean domain inside ice-shelf cavities. orig3dOceanMask is altered online to include ice-dammed inland seas"
                 />
                 <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time"
                      description="3D mask for indicating where ocean data is present (i.e., seed mask).  Initially this is equal to orig3dOceanMask but it grows as the ocean extrapolation scheme iterates.  It indicates anywhere that valid ocean data is present, whether that is the original ocean data or where it has been extrapolated."
                 />
                 <var name="availOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells Time"
-                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask).  These are the locations into which the ocean data can possibly be expanded.  It is defined as cells below sea level connected to the open ocean and shallower than the first ocean layer below the bed.  It remains constant as the extrapolation scheme iterates."
+                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask).  These are the locations into which the ocean data can possibly be expanded.  It is defined as cells below sea level connected to the open ocean. It remains constant as the extrapolation scheme iterates."
                 />
                 <var name="seedOceanMaskHoriz" type="integer" dimensions="nCells Time"
                      description="seedmask for horizontal floodfill used to determine the over-extrapolation region into grounded ice.  It is defined by cells below sea level that are not occupied by grounded ice.  The only purpose is for calculating availOceanMask."
@@ -1733,14 +1758,24 @@ is the value of that variable from the *previous* time level!
                 <var name="growOceanMaskHoriz" type="integer" dimensions="nCells Time"
                      description="growmask for horizontal floodfill used to determine the over-extrapolaton region into grounded ice.  It is initialized as cells where bedTopography is below sea level and represents all the cells that seedOceanMaskHoriz could fill into.  The only purpose is for calculating availOceanMask."
                 />
-                <var name="TFoceanOld" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="C"
-                     default_value="1.0"
-                     description="A copy of TFocean used during iteration of the extrapolation scheme."
+                <var name="oceanTemperature" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="C"
+                     description="ocean potential temperature to be extrapolated to all grounding lines if config_calcuate_thermal_forcing is true."
                 />
-                <var name="TFocean" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="C"
-                     default_value="0.0"
-                     description="The extrapolated version of ismip6shelfMelt_3dThermalForcing.  This is the result of the extrapolation scheme, but the result is assigned to ismip6shelfMelt_3dThermalForcing (replacing the initial value) so this field does not typically need to be output.  This field gets updated on each iteration of the extrapolation scheme."
+                <var name="oceanSalinity" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="g/kg"
+                     description="ocean salinity to be extrapolated to all grounding lines if config_calcuate_thermal_forcing is true."
                 />
+                <var name="icebergFjordMask" type="integer" dimensions="nCells Time" default_value="0"
+                     description="Binary mask depicting where to parameterize iceberg melt-driven cooling if using config_TF_iceberg_melt = mask. 1 parameterizes iceberg melt-driven cooling at that cell, 0 indicates no iceberg-related alteration."
+		/>
+		<var name="oceanField" type="real" dimensions="TWO nISMIP6OceanLayers nCells Time"
+		     description="Generic field used to extrapolate either ocean temperature and salinity, or thermal forcing. This field gets updated on each iteration of the extrapolation scheme. At end of extrapolation, those fields are set equal to oceanField. oceanField thus does not normally need to be output."
+		/>
+		<var name="connectedMarineMask" type="integer" dimensions="nCells Time" default_value="0"
+		     description="Mask of cells below sea level in contact with open ocean (including ice cells)."
+		/>
+		<var name="altConnectedMarineMask" type="integer" dimensions="nCells Time" default_value="0"
+		     description="Mask of ice-free cells below sea level in contact with open ocean."
+		/>
         </var_struct>
 <!-- ================ -->
 
@@ -1818,14 +1853,14 @@ is the value of that variable from the *previous* time level!
 	       description="local indices of each vertex"
 	       persistence="scratch"
 	       />
-       <var name="seedMask" type="integer" dimensions="nCells"
+          <var name="seedMask" type="integer" dimensions="nCells Time"
 	       description="seed mask for flood fill"
 	       persistence="scratch"
-	       />
-       <var name="growMask" type="integer" dimensions="nCells"
-	       description="grow mask for flood fill"
-	       persistence="scratch"
-	       />
+          />
+          <var name="growMask" type="integer" dimensions="nCells Time"
+               description="grow mask for flood fill"
+               persistence="scratch"
+          />
 	</var_struct>
 
 <!-- ================ -->
