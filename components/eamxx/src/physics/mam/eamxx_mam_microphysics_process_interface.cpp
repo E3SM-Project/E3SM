@@ -541,8 +541,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       "mam4_microphysics_tendency_renaming_cloud_borne",
     };
     // Add docstring to the fields with mixed units
-    add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
+    //add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
   }
+
    
   // set field property checks for the fields in this process
   /* e.g.
@@ -694,17 +695,23 @@ void MAMMicrophysics::run_impl(const double dt) {
   view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
           gas_aero_exchange_nucleation, gas_aero_exchange_coagulation,
           gas_aero_exchange_renaming_cloud_borne;
+
   if (extra_mam4_aero_microphys_diags_) {
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
     gas_aero_exchange_condensation = get_field_out("mam4_microphysics_tendency_condensation").get_view<Real***>();
+    printf("BALLI-extents gas_aero_exchange_condensation: %d %d %d\n",
+           gas_aero_exchange_condensation.extent(0),
+           gas_aero_exchange_condensation.extent(1),
+           gas_aero_exchange_condensation.extent(2));
     gas_aero_exchange_renaming = get_field_out("mam4_microphysics_tendency_renaming").get_view<Real***>();
     gas_aero_exchange_nucleation = get_field_out("mam4_microphysics_tendency_nucleation").get_view<Real***>();
     gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
     gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
   }
+
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
@@ -946,17 +953,23 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
         mam4::MicrophysDiagnosticArrays diag_arrays;
+
         if (extra_mam4_aero_microphys_diags) {
 	        diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
+
 	        diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
           diag_arrays.aqso4_incloud_mmr_tendency = ekat::subview(aqso4_incloud_mmr_tendency, icol);
           diag_arrays.aqh2so4_incloud_mmr_tendency = ekat::subview(aqh2so4_incloud_mmr_tendency, icol);
+
           diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
+#if 0
           diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
           diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
           diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
           diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
+#endif
 	      }
+
 
         // Wind speed at the surface
         const Real wind_speed =
