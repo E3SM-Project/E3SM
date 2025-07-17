@@ -101,14 +101,16 @@ contains
 
        c=veg_pp%column(p) ! for hr
 
-       ! Assign values
-       !write(iulog,*) 'TRS0: ', p, c, g, pft, begp, endp, begg, endg
-       !write(iulog,*) 'TRS3: ', col_cf%hr(:)
-       this%hr(g,pft) = col_cf%hr(c)   ! Every pft in this column gets this hr value
-       this%npp(g,pft) = veg_cf%npp(p)
-       ! this is the fraction of actual grid cell
-       this%pftwgt(g,pft) = veg_pp%wtgcell(p) * ldomain%frac(g) * &
+       if (veg_pp%active(p)) then
+         ! Assign values
+         !write(iulog,*) 'TRS0: ', p, c, g, pft, begp, endp, begg, endg
+         !write(iulog,*) 'TRS3: ', col_cf%hr(:)
+         this%hr(g,pft) = col_cf%hr(c)   ! Every pft in this column gets this hr value
+         this%npp(g,pft) = veg_cf%npp(p)
+         ! this is the fraction of actual grid cell
+         this%pftwgt(g,pft) = veg_pp%wtgcell(p) * ldomain%frac(g) * &
                              ldomain%mask(g)
+      end if
     end do
 
     ! Ta da

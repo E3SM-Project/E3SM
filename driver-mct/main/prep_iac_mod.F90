@@ -182,7 +182,7 @@ contains
           write(logunit,F00) 'Initializing mapper_Sa2z'
        end if
 
-       write(logunit, *) 'TRS prep_iac_mod esmf_map_flag', esmf_map_flag
+       !write(logunit, *) 'TRS prep_iac_mod esmf_map_flag', esmf_map_flag
 
        call seq_map_init_rcfile(mapper_Sa2z, atm(1), iac(1), &
           'seq_maps.rc','atm2iac_smapname:','atm2iac_smaptype:',samegrid_az, &
@@ -252,7 +252,7 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     if (l2zacc_lx_cnt > 1 ) then 
        do eli = 1,num_inst_lnd
-          write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
+          !write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
 
           call mct_avect_avg(l2zacc_lx(eli),l2zacc_lx_cnt)
           !call iac_avect_max(l2zacc_lx(eli), l2zmax_lx(eli))
