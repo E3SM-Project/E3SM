@@ -7,7 +7,11 @@ namespace scream
 {
 
 /*
- * A remapper to interpolate fields on a separate vertical grid
+* A remapper is used to interpolate fields on a separate vertical grid.
+* This remapper has three types of vertical interpolation that
+* are required by MAM4XX. We have ported the vertical
+* routines from EAM, and in this remapper,
+* we invoke the ported routines.
  */
 
 class VerticalRemapperMAM4 : public VerticalRemapper
@@ -17,8 +21,8 @@ public:
   enum VertRemapType {
     None,
     MAM4_PSRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
-    MAM4_ZONAL,
-    MAM4_ELEVATED_EMISSIONS,
+    MAM4_ZONAL, // For zonal-type files that are employed in LINOZ.
+    MAM4_ELEVATED_EMISSIONS,// for vertical interpolation using altitude instead of pressure.
   };
 
   VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
