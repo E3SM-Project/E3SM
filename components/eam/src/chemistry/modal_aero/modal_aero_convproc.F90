@@ -32,7 +32,7 @@ module modal_aero_convproc
    use cam_abortutils, only: endrun
    use physconst,    only: spec_class_aerosol, spec_class_gas
    use constituents,  only: pcnst
-   use zm_conv,      only: zm_microp !
+   use zm_conv,      only: zm_param
    implicit none
 
    save
@@ -2071,7 +2071,7 @@ k_loop_main_bb: &
             end if
 
 ! update the vertical velocity from convective cloud microphysics scheme
-           if(zm_microp) then
+           if(zm_param%zm_microp) then
             wup(k) = wuc(icol,k)
             wup(k) = max( 0.1_r8, min( 15.0_r8, wup(k) ) )
            end if

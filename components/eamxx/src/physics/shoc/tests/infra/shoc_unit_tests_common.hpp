@@ -5,7 +5,6 @@
 #include "share/eamxx_types.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 #include "physics/share/physics_test_data.hpp"
 

@@ -9,12 +9,13 @@ The user is expected to prepapre (and then use `atmchange` to point to) nudging 
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.
 The files must contain an arbitary global attribute `case_t0`, and it is recommended to be the same as the time dimension unit (the files must be time-dimensioned).
+The time dimension should be UNLIMITED.
 Finally, the dimension order must be such that `lev` is the last dimension, so most likely, the user must transpose the dimensions.
 
 ## Pressure in the nudging data
 
 Pressure can be explicitly provided in the nudging data as time-varying `p_mid` corresponding to the option `TIME_DEPENDENT_3D_PROFILE` for `source_pressure_type`.
-Alternatively, the data can contain a time-invariant pressure variable `p_lev` corresponding to the option `TIME_DEPENDENT_3D_PROFILE` for `source_pressure_type`.
+Alternatively, the data can contain a time-invariant pressure variable `p_lev` corresponding to the option `STATIC_1D_VERTICAL_PROFILE` for `source_pressure_type`.
 
 ## Weighted nudging for RRM applications
 

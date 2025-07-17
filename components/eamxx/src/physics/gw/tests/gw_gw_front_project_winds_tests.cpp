@@ -73,7 +73,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontProjectWinds : public UnitWrap::UnitTes
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -106,7 +106,7 @@ struct UnitWrap::UnitTest<D>::TestGwFrontProjectWinds : public UnitWrap::UnitTes
     }
     else if (this->m_baseline_action == GENERATE) {
       for (Int i = 0; i < num_runs; ++i) {
-        test_data[i].write(Base::m_fid);
+        test_data[i].write(Base::m_ofile);
       }
     }
   } // run_bfb

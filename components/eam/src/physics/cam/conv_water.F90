@@ -23,7 +23,7 @@ module conv_water
 
   use perf_mod
   use cam_logfile,   only: iulog
-  use zm_conv,      only: zm_microp
+  use zm_conv,      only: zm_param
 
   implicit none
   private
@@ -289,7 +289,7 @@ module conv_water
             endif
             kabs  = kabsl * ( 1._r8 - wrk1 ) + kabsi * wrk1
             alpha = -1.66_r8*kabs*state%pdel(i,k)/gravit*1000.0_r8
-           if (zm_microp) then
+           if (zm_param%zm_microp) then
              sh_iclmr = sh_icwmr(i,k)*(1-wrk1)
              sh_icimr = sh_icwmr(i,k)*wrk1
              dp_iclmr = dp_icwmr(i,k)- dp_icimr(i,k)
@@ -333,10 +333,10 @@ module conv_water
             case default ! Area weighted 'arithmetic in emissivity' average.
 !               call endrun ('CONV_WATER_4_RAD: Unknown option for conv_water_in_rad - exiting')
             end select
-          end if  !zm_microp
+          end if  !zm_param%zm_microp
       end if
 
-     if (.not.zm_microp) then     
+     if (.not.zm_param%zm_microp) then     
       !BSINGH - Logic by Phil R. to account for insignificant condensate in large scale clouds
       if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
          if (state%t(i,k) < 243._r8) then           ! if very cold assume convective condensate is ice

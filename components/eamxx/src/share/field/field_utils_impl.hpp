@@ -1005,6 +1005,32 @@ void print_field_hyperslab (const Field& f,
         }
         break;
       }
+      case 5:
+      {
+        dims_str[dims_left[4]] = ":";
+        auto v = f.get_strided_view<const T*****,Host>();
+        for (int i=0; i<layout.dim(0); ++i) {
+          dims_str[dims_left[0]] = std::to_string(i);
+          for (int j=0; j<layout.dim(1); ++j) {
+            dims_str[dims_left[1]] = std::to_string(j);
+            for (int k=0; k<layout.dim(2); ++k) {
+              dims_str[dims_left[2]] = std::to_string(k);
+              for (int l=0; l<layout.dim(3); ++l) {
+                dims_str[dims_left[3]] = std::to_string(l);
+                out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+                for (int m=0; m<layout.dim(3); ++m) {
+                  if (m%max_per_line==0) {
+                    out << "\n    ";
+                  }
+                  out << v(i,j,k,l,m) << ", ";
+                }
+                out << "\n";
+              }
+            }
+          }
+        }
+        break;
+      }
       default:
         EKAT_ERROR_MSG (
             "Unsupported rank in print_field_hyperslab.\n"
@@ -1197,6 +1223,15 @@ void compute_mask (const Field& x, const ST value, Field& m)
           " - field rank: " << x.rank() << "\n");
   }
 }
+
+#define EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(C) \
+extern template void impl::compute_mask<C, int>(const Field&, const int, Field&); \
+extern template void impl::compute_mask<C, float>(const Field&, const float, Field&); \
+extern template void impl::compute_mask<C, double>(const Field&, const double, Field&)
+
+// Only these two, since they are the only ones used so far (in IO)
+EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::NE);
+EAMXX_FIELD_UTILS_ETI_DECL_COMPUTE_MASK(Comparison::LE);
 
 } // namespace impl
 

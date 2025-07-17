@@ -140,6 +140,9 @@ module prep_ocn_mod
   integer        , target  :: x2oacc_om_cnt ! x2oacc_ox: number of time samples accumulated, in moab array
   integer                  :: arrSize_x2o_om !   this will be a module variable, size moabLocal_size * nof
 
+  ! flag that saves rof_c2_ocn value from init routine, to be used for merge routine
+  logical                  :: rof_c2_ocn_saved
+
   ! other module variables
   integer       :: mpicom_CPLID   ! MPI cpl communicator
   logical       :: iamroot_CPLID  ! .true. => CPLID masterproc
@@ -716,6 +719,7 @@ contains
        endif ! if (ice_present)
        call shr_sys_flush(logunit)
 
+       rof_c2_ocn_saved = rof_c2_ocn  ! save the value, and use it for merge, later
        if (rof_c2_ocn) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -1341,8 +1345,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       endif
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
-       allocate(r2x_om (lsize, nrflds))
-       r2x_om = 0._R8 ! should we zero out all of them ?
+       if (rof_c2_ocn_saved) then
+          allocate(r2x_om (lsize, nrflds))
+          r2x_om = 0._R8 ! should we zero out all of them ?
+       endif
        allocate(xao_om (lsize, nxflds))
        ! allocate fractions too
        ! use the fraclist fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
@@ -1745,13 +1751,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       call shr_sys_abort(subname//' error in getting i2x_om array ')
     endif
 
-    tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-    arrsize = nrflds * lsize !        allocate (r2x_om (lsize, nrflds))
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting r2x_om array ')
+    if (rof_c2_ocn_saved) then
+      tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+      arrsize = nrflds * lsize !        allocate (r2x_om (lsize, nrflds))
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om)
+      if (ierr .ne. 0) then
+        call shr_sys_abort(subname//' error in getting r2x_om array ')
+      endif
     endif
-
     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
     arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om)
@@ -1810,14 +1817,15 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        x2o_om(n,index_x2o_Faxa_prec ) = x2o_om(n,index_x2o_Faxa_rain ) + &
             x2o_om(n,index_x2o_Faxa_snow )
 
-       x2o_om(n,index_x2o_Foxx_rofl) = (r2x_om(n,index_r2x_Forr_rofl ) + &
+       if (rof_c2_ocn_saved) then 
+         x2o_om(n,index_x2o_Foxx_rofl) = (r2x_om(n,index_r2x_Forr_rofl ) + &
             r2x_om(n,index_r2x_Flrr_flood) )
            ! g2x_om(n,index_g2x_Fogg_rofl )) * flux_epbalfact
-       x2o_om(n,index_x2o_Foxx_rofi) = (r2x_om(n,index_r2x_Forr_rofi ) ) * flux_epbalfact
+         x2o_om(n,index_x2o_Foxx_rofi) = (r2x_om(n,index_r2x_Forr_rofi ) ) * flux_epbalfact
           !  g2x_om(n,index_g2x_Fogg_rofi )) * flux_epbalfact
+       endif
 
-
-       if ( index_x2o_Foxx_rofl_16O /= 0 ) then
+       if ( index_x2o_Foxx_rofl_16O /= 0 .and. rof_c2_ocn_saved ) then
           x2o_om(n,index_x2o_Foxx_rofl_16O) = (r2x_om(n,index_r2x_Forr_rofl_16O) + &
                r2x_om(n,index_r2x_Flrr_flood) ) * flux_epbalfact
              !  g2x_om(n,index_g2x_Fogg_rofl )) * flux_epbalfact

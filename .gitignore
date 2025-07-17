@@ -40,6 +40,8 @@ site
 #Ignore vscode dir
 .vscode
 
+# Fortran LSP
+.fortls.json
 
 # Ignore mkdocs site-generated files in eamxx
 components/eamxx/site/*

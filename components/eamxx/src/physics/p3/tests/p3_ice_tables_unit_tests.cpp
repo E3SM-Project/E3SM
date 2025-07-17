@@ -175,10 +175,10 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        lid[i].read(Base::m_fid);
-        lidb[i].read(Base::m_fid);
-        altd[i].read(Base::m_fid);
-        altcd[i].read(Base::m_fid);
+        lid[i].read(Base::m_ifile);
+        lidb[i].read(Base::m_ifile);
+        altd[i].read(Base::m_ifile);
+        altcd[i].read(Base::m_ifile);
       }
     }
 
@@ -276,10 +276,10 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
 
         altcd[s].proc = real_results_mirror(6, s);
 
-        lid[s].write(Base::m_fid);
-        lidb[s].write(Base::m_fid);
-        altd[s].write(Base::m_fid);
-        altcd[s].write(Base::m_fid);
+        lid[s].write(Base::m_ofile);
+        lidb[s].write(Base::m_ofile);
+        altd[s].write(Base::m_ofile);
+        altcd[s].write(Base::m_ofile);
       }
     }
   }

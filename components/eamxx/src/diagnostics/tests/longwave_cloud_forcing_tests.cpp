@@ -96,6 +96,7 @@ void run(std::mt19937_64& engine)
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
+    f.get_header().set_extra_data("radiation_ran", true);
     diag->set_required_field(f.get_const());
     input_fields.emplace(name,f);
   }

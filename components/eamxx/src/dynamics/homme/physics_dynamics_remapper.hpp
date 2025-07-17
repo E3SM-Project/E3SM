@@ -151,7 +151,7 @@ protected:
 
   bool subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
                                    const std::vector<Field>& fields) const;
-  void update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
+  void update_subfields_views (std::map<int,SubviewInfo>& subfield_info,
                                const ViewsRepo& repo,
                                const std::vector<Field>& fields) const;
 

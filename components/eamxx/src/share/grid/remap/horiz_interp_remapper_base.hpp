@@ -76,6 +76,10 @@ public:
 
   ekat::Comm      m_comm;
 
+  // Store whether each field needs remap. Only fields with COL dim do.
+  // NOTE: use int and NOT bool, as vector<bool> is evil
+  std::vector<int>    m_needs_remap;
+
   static std::map<std::string,HorizRemapperData> s_remapper_data;
 };
 

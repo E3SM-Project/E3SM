@@ -210,8 +210,6 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   {
     using namespace ShortFieldTagsNames;
 
-    using view_1d_host = typename KT::view_1d<Real>::HostMirror;
-
     // Note: these functions do not set values for aerosol_optics_device_data_.
     mam4::modal_aer_opt::set_complex_views_modal_aero(
         aerosol_optics_device_data_);
@@ -220,14 +218,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
     mam4::modal_aer_opt::set_aerosol_optics_data_for_modal_aero_lw_views(
         aerosol_optics_device_data_);
 
-    mam_coupling::AerosolOpticsHostData aerosol_optics_host_data;
-
-    std::map<std::string, FieldLayout> layouts;
-    std::map<std::string, view_1d_host> host_views;
-    ekat::ParameterList rrtmg_params;
-
-    mam_coupling::set_parameters_table(aerosol_optics_host_data, rrtmg_params,
-                                       layouts, host_views);
+    auto aerosol_optics_fields = mam_coupling::create_optics_fields(grid_);
 
     for(int imode = 0; imode < ntot_amode; imode++) {
       const auto key =
@@ -235,8 +226,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
       const auto &fname = m_params.get<std::string>(key);
       mam_coupling::read_rrtmg_table(fname,
                                      imode,  // mode No
-                                     rrtmg_params, grid_, host_views, layouts,
-                                     aerosol_optics_host_data,
+                                     grid_,
+                                     aerosol_optics_fields,
                                      aerosol_optics_device_data_);
     }
 
@@ -249,14 +240,8 @@ void MAMOptics::initialize_impl(const RunType run_type) {
                                       aerosol_optics_device_data_.crefwsw);
     //
     {
-      // make a list of host views
-      std::map<std::string, view_1d_host> host_views_aero;
-      // defines layouts
-      std::map<std::string, FieldLayout> layouts_aero;
-      ekat::ParameterList params_aero;
       std::string surname_aero = "aer";
-      mam_coupling::set_refindex_names(surname_aero, params_aero,
-                                       host_views_aero, layouts_aero);
+      auto refindex_fields = mam_coupling::create_refindex_fields (surname_aero,grid_);
 
       constexpr int maxd_aspectype = mam4::ndrop::maxd_aspectype;
       auto specrefndxsw_host       = mam_coupling::complex_view_2d::HostMirror(
@@ -283,14 +268,12 @@ void MAMOptics::initialize_impl(const RunType run_type) {
         const auto &fname = m_params.get<std::string>(table_name);
         // read data
         // need to update table name
-        params_aero.set("filename", fname);
-        AtmosphereInput refindex_aerosol(params_aero, grid_, host_views_aero,
-                                         layouts_aero);
+        AtmosphereInput refindex_aerosol(fname, grid_, refindex_fields);
         refindex_aerosol.read_variables();
         refindex_aerosol.finalize();
         // copy data to device
         mam_coupling::set_refindex_aerosol(
-            species_id, host_views_aero,
+            species_id, refindex_fields,
             specrefndxsw_host,  // complex refractive index for water visible
             specrefndxlw_host);
       }  // done ispec

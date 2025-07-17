@@ -59,6 +59,7 @@ OPTIONS
      -ocn_glc_ismf_coupling  methods for ocn/glc ice-shelf melt flux coupling
                              ['none' | 'data_mpaso' | 'data_mali' | 'internal_mpaso' |
                              'tf' | 'coupler']
+     -glc_two_way_coupling  whether GLC is coupled to LND: FALSE, TRUE
 
 NOTE: The precedence for setting the values of namelist variables is (highest to lowest):
       1. namelist values set by specific command-line options, i.e. (none right now)
@@ -106,6 +107,7 @@ my %opts = ( help              => 0,
              mali_prognostic_mode => undef,
              glc_nzoc          => 0,
              ocn_glc_ismf_coupling => undef,
+             glc_two_way_coupling => undef,
            );
 
 GetOptions(
@@ -127,6 +129,7 @@ GetOptions(
     "mali_prognostic_mode=s" => \$opts{'mali_prognostic_mode'},
     "glc_nzoc=i"          => \$opts{'glc_nzoc'},
     "ocn_glc_ismf_coupling=s" => \$opts{'ocn_glc_ismf_coupling'},
+    "glc_two_way_coupling=s" => \$opts{'glc_two_way_coupling'},
 
 )  or usage();
 
@@ -164,6 +167,7 @@ my $NTASKS_GLC        = $opts{'ntasks_glc'};
 my $MALI_PROGNOSTIC_MODE = uc($opts{'mali_prognostic_mode'});
 my $GLC_NZOC          = $opts{'glc_nzoc'};
 my $OCN_GLC_ISMF_COUPLING = $opts{'ocn_glc_ismf_coupling'};
+my $GLC_TWO_WAY_COUPLING = $opts{'glc_two_way_coupling'};
 
 my $CIMEROOT;
 if ( defined $opts{'cimeroot'} ) {
@@ -425,6 +429,7 @@ print "MALI build-namelist: MALI_PROGNOSTIC_MODE is $MALI_PROGNOSTIC_MODE \n";
 print "MALI build-namelist: MALI_USE_ALBANY is $MALI_USE_ALBANY \n";
 print "MALI build-namelist: GLC_NZOC is $GLC_NZOC  \n";
 print "MALI build-namelist: OCN_GLC_ISMF_COUPLING is $OCN_GLC_ISMF_COUPLING  \n";
+print "MALI build-namelist: GLC_TWO_WAY_COUPLING is $GLC_TWO_WAY_COUPLING  \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -469,6 +474,11 @@ if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_advection_coef_3rd_order');
 add_default($nl, 'config_restore_thickness_after_advection');
+if ($GLC_TWO_WAY_COUPLING eq 'True') {
+    add_default($nl, 'config_smb_source');
+} else {
+    add_default($nl, 'config_smb_source', 'val'=>"file");
+}
 add_default($nl, 'config_zero_sfcMassBalApplied_over_bare_land');
 
 ##############################

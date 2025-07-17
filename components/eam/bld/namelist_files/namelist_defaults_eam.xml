@@ -56,6 +56,7 @@
 <ncdata dyn="se" hgrid="ne45np4"  nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L72_c20200611.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="72"  ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne120np4_L80_c20231010.nc</ncdata>
+<ncdata dyn="se" hgrid="ne256np4" nlev="80"  ic_ymd="101" >atm/cam/inic/homme/v3.ne120np4_mapped_ne256np4-topoadj.eam.i.2006-01-01.nc</ncdata>
 
 <!-- E3SMv3 Atmosphere Initial conditions -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="80"  ic_ymd="101" >atm/cam/inic/homme/eami_mam4_Linoz_ne4np4_L80_c20231010.nc</ncdata>
@@ -120,6 +121,7 @@
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="72"                 >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_antarcticax4v1"            nlev="72"                 >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arcticx4v1"                nlev="72"                 >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L72_c20220127.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_arcticx4v1"                nlev="80"                 >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L80_c20250617.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c141107.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_svalbardx8v1np4_L30_ape_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_sooberingoax4x8v1np4_L30_c141110.nc</ncdata>
@@ -146,7 +148,7 @@
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
 <bnd_topo hgrid="ne256np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</bnd_topo>
-<bnd_topo hgrid="ne256np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</bnd_topo>
+<bnd_topo hgrid="ne256np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne256np4pg2_x6t-SGH_forOroDrag.c20210614_20250521.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
 
@@ -1236,9 +1238,8 @@
 <zmconv_ke                                                            > 3.0E-6 </zmconv_ke>
 <zmconv_ke      dyn="se"                                           > 1.0E-6 </zmconv_ke>
 
-<zmconv_trigdcape_ull                                                 >.false. </zmconv_trigdcape_ull>
-<zmconv_trig_dcape_only                                               >.false. </zmconv_trig_dcape_only>
-<zmconv_trig_ull_only                                                 >.false. </zmconv_trig_ull_only>
+<zmconv_trig_dcape                                                    >.false. </zmconv_trig_dcape>
+<zmconv_trig_ull                                                      >.false. </zmconv_trig_ull>
 <zmconv_tiedke_add                                                    >0.5D0   </zmconv_tiedke_add>
 <zmconv_cape_cin                                                      >5       </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
@@ -1937,7 +1938,8 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <seasalt_emis_scale phys="default" chem="superfast_mam4_resus_mom_soag"> 0.6D0  </seasalt_emis_scale>
 <seasalt_emis_scale phys="default" chem="chemuci_linozv3_mam5_vbs"> 0.55D0 </seasalt_emis_scale>
 <dms_emis_scale phys="default"> 2.0D0 </dms_emis_scale>
-<zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
+<zmconv_trig_dcape phys="default"> .true. </zmconv_trig_dcape>
+<zmconv_trig_ull phys="default"> .true. </zmconv_trig_ull>
 <zmconv_c0_lnd phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default" clubb_sgs="1" microphys="p3"> 0.0020D0   </zmconv_c0_ocn>
 <zmconv_alfa phys="default"> 0.14D0     </zmconv_alfa>

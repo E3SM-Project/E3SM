@@ -10,7 +10,6 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_file_utils.hpp"
 
 #include <thread>
 #include <array>

@@ -2977,22 +2977,15 @@ Maximum downdraft mass flux fraction
 Default: set by build-namelist
 </entry>
 
-<entry id="zmconv_trigdcape_ull" type="logical" category="conv"
+<entry id="zmconv_trig_dcape" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
-DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
+Enable dynamic CAPE (DCAPE) trigger for ZM deep convection
 Default: FALSE
 </entry>
 
-<entry id="zmconv_trig_dcape_only" type="logical" category="conv"
+<entry id="zmconv_trig_ull" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
-DCAPE only trigger for ZM deep convection scheme.
-Default: FALSE
-</entry>
-
-<entry id="zmconv_trig_ull_only" type="logical" category="conv"
-       group="zmconv_nl" valid_values="" >
-Use unrestricted launching level (ULL) only trigger  for ZM deep convection scheme. This is on top of standard CAPE-based ZM trigger
-This is in contrast with zmconv_trigdcape_ull which uses both DCAPE and ULL for trigger
+Enable unrestricted launch level (ULL) mode for ZM deep convection
 Default: FALSE
 </entry>
 
@@ -4498,6 +4491,14 @@ Default: -1
 <entry id="spectralflux" type="logical"  category="radiation"
        group="radiation_nl" valid_values="" >
 Return fluxes per band in addition to the total fluxes.
+Default: FALSE
+</entry>
+
+<entry id="rad_asym_splt" type="logical"  category="radiation"
+group="radiation_nl" valid_values="" > 
+Split surface insolation asymmetrically between VIS/NIR. 
+Coefficient determines fraction of VIS flux (i.e., less than 0.7 um) 
+in RRTMG overlap band that spans 0.625–0.778 um
 Default: FALSE
 </entry>
 

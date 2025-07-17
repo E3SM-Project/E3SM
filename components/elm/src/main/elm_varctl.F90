@@ -569,7 +569,7 @@ module elm_varctl
    !----------------------------------------------------------
    ! SNICAR-AD
    !----------------------------------------------------------
-   character(len=256), public :: snow_shape = 'sphere'
+   character(len=256), public :: snow_shape = 'hexagonal_plate'
    character(len=256), public :: snicar_atm_type = 'default'
    logical, public :: use_dust_snow_internal_mixing = .false.
 

@@ -103,7 +103,7 @@ contains
     ! CNAllocaiton is divided into 3 subroutines:
     ! (1) Allocation1_PlantNPDemand  is called in EcosystemDynNoLeaching1
     ! (2) Allocation2_ResolveNPLimit is called in SoilLittDecompAlloc (this subroutine)
-    ! (3) Allocation3_PlantCNPAlloc  is called in SoilLittDecompAlloc2
+    ! (3) PlantCNPAlloc  is called in SoilLittDecompAlloc2
     !-----------------------------------------------------------------------------
 
     ! !USES:
@@ -578,8 +578,7 @@ contains
     !-----------------------------------------------------------------------------
 
     ! !USES:
-      !$acc routine seq
-    use AllocationMod , only: Allocation3_PlantCNPAlloc ! Phase-3 of CNAllocation
+    use AllocationMod , only: PlantCNPAlloc_RD, PlantCNPAlloc_ECAMIC ! Phase-3 of CNAllocation
     use atm2lndType     , only: atm2lnd_type
 
     !
@@ -763,16 +762,23 @@ contains
       if(.not.use_fates)then
         event = 'CNAllocation - phase-3'
         call t_start_lnd(event)
-        call Allocation3_PlantCNPAlloc (bounds                      , &
+        if(nu_com .eq. 'RD') then
+           call PlantCNPAlloc_RD(bounds                      , &
                   num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                   canopystate_vars                                    , &
                   cnstate_vars, crop_vars, dt)
+         else
+           call PlantCNPAlloc_ECAMIC(bounds                      , &
+                     num_soilc, filter_soilc, num_soilp, filter_soilp    , &
+                     canopystate_vars                                    , &
+                     cnstate_vars, crop_vars, dt)
+         endif 
         call t_stop_lnd(event)
       end if
       !------------------------------------------------------------------
 
     if(use_pflotran.and.pf_cmode) then
-    ! in Allocation3_PlantCNPAlloc():
+    ! in PlantCNPAlloc():
     ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
     ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
       do fc = 1,num_soilc

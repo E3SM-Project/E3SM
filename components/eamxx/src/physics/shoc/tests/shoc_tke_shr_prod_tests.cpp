@@ -186,7 +186,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd : public UnitWrap::UnitTest<D>::
     // Read baseline data
     if (this->m_baseline_action == COMPARE) {
       for (auto& d : baseline_data) {
-        d.read(Base::m_fid);
+        d.read(Base::m_ifile);
       }
     }
 
@@ -208,7 +208,7 @@ struct UnitWrap::UnitTest<D>::TestShocShearProd : public UnitWrap::UnitTest<D>::
     } // SCREAM_BFB_TESTING
     else if (this->m_baseline_action == GENERATE) {
       for (auto& d : cxx_data) {
-        d.write(Base::m_fid);
+        d.write(Base::m_ofile);
       }
     }
   } //run_bfb

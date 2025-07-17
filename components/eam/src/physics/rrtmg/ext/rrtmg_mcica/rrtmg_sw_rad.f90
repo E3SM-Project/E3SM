@@ -87,7 +87,7 @@
             (lchnk   ,ncol    ,nlay    ,icld    ,          &
              play    ,plev    ,tlay    ,tlev    ,tsfc    , &
              h2ovmr  ,o3vmr   ,co2vmr  ,ch4vmr  ,o2vmr   ,n2ovmr  , &
-             asdir   ,asdif   ,aldir   ,aldif   , &
+             asdir   ,asdif   ,aldir   ,aldif   , vis_frc, &
              coszen  ,adjes   ,dyofyr  ,solvar, &
              inflgsw ,iceflgsw,liqflgsw, &
              cldfmcl ,taucmcl ,ssacmcl ,asmcmcl ,fsfcmcl, &
@@ -238,7 +238,8 @@
                                                         !    Dimensions: (ncol)
       real(kind=r8), intent(in) :: aldif(:)             ! Near-IR surface albedo: diffuse rad
                                                         !    Dimensions: (ncol)
-
+      real(kind=r8), intent(in) :: vis_frc              ! Fraction of surface insolation blueward of 0.7microns
+                                                        ! in rrtmg_sw split band
       integer, intent(in) :: dyofyr                     ! Day of the year (used to get Earth/Sun
                                                         !  distance if adjflx not provided)
       real(kind=r8), intent(in) :: adjes                ! Flux adjustment for Earth/Sun distance
@@ -584,9 +585,12 @@
          albdir(nbndsw) = aldir(iplon)
          albdif(nbndsw) = aldif(iplon)
 !  Set band 24 (or, band 9 counting from 1) to use linear average of UV/visible
-!  and near-IR values, since this band straddles 0.7 microns: 
-         albdir(9) = 0.5*(aldir(iplon) + asdir(iplon))
-         albdif(9) = 0.5*(aldif(iplon) + asdif(iplon))
+!  and near-IR values, since this band straddles 0.7 microns:
+! JPT 20250702: Namelist switch "rad_asym_splt" shifts the average flux + albedo of the split
+! band from 50/50, to a more realistic 55.5/44.5 between the VIS and NIR bands, as described in Tolento et al. (2025).
+! Default is still 50/50, which produces a warming bias over cryospheric surfaces 
+         albdir(9) = (1.0-vis_frc)*aldir(iplon) + vis_frc*asdir(iplon)
+         albdif(9) = (1.0-vis_frc)*aldif(iplon) + vis_frc*asdif(iplon)
 !  UV/visible bands 25-28 (10-13), 16000-50000 cm-1, 0.200-0.625 micron
          do ib=10,13
             albdir(ib) = asdir(iplon)
@@ -695,7 +699,7 @@
 
          call spcvmc_sw &
              (lchnk, iplon, nlay, istart, iend, icpr, idelm, iout, &
-              pavel, tavel, pz, tz, tbound, albdif, albdir, &
+              pavel, tavel, pz, tz, tbound, albdif, albdir, vis_frc, &
               zcldfmc, ztaucmc, zasycmc, zomgcmc, ztaormc, &
               ztaua, zasya, zomga, cossza, coldry, wkl, adjflux, &	 
               laytrop, layswtch, laylow, jp, jt, jt1, &

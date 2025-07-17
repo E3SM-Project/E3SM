@@ -81,7 +81,7 @@ get_vertical_layout (const bool midpoints,
 {
   using namespace ShortFieldTagsNames;
   auto l = get_vertical_layout(midpoints);
-  l.append_dim(CMP,vector_dim,vec_dim_name);
+  l.prepend_dim(CMP,vector_dim,vec_dim_name);
   return l;
 }
 
@@ -257,9 +257,10 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Tensor0D:
       // 0d quantities are always ok
       return true;
-    case LayoutType::Scalar1D: [[fallthrough]];
-    case LayoutType::Vector1D:
+    case LayoutType::Scalar1D:
       return layout.congruent(get_vertical_layout(midpoints));
+    case LayoutType::Vector1D:
+        return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:

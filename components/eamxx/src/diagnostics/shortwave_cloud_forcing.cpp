@@ -47,10 +47,20 @@ void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
   const auto default_policy = ESU::get_default_team_policy(m_num_cols,1);
 
   const auto& SWCF              = m_diagnostic_output.get_view<Real*>();
+
   const auto& SW_flux_dn        = get_field_in("SW_flux_dn").get_view<const Real**>();
   const auto& SW_flux_up        = get_field_in("SW_flux_up").get_view<const Real**>();
   const auto& SW_clrsky_flux_dn = get_field_in("SW_clrsky_flux_dn").get_view<const Real**>();
   const auto& SW_clrsky_flux_up = get_field_in("SW_clrsky_flux_up").get_view<const Real**>();
+
+  // NOTE: as part of fixing https://github.com/E3SM-Project/E3SM/issues/6803, this hack
+  //       may have to be revised. Namely, the "radiation_ran" extra data should be removed,
+  //       in favor of a more structured and uniform approach
+  const auto radiation_ran = get_field_in("SW_flux_dn").get_header().get_extra_data<bool>("radiation_ran");
+  if (not radiation_ran) {
+    m_diagnostic_output.deep_copy(constants::DefaultFillValue<Real>().value);
+    return;
+  }
 
   Kokkos::parallel_for("ShortwaveCloudForcingDiagnostic",
                        default_policy,

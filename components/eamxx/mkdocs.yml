@@ -11,7 +11,7 @@ nav:
     - 'COSP': 'user/cosp.md'
     - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
     - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
-    - 'PyEAMxx': 'user/pyeamxx.md'
+    - 'Python support': 'user/python.md'
     - 'IO Metadata': 'user/io_metadata.md'
     - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
     - 'EAMxx runtime parameters': 'user/eamxx_params.md'
