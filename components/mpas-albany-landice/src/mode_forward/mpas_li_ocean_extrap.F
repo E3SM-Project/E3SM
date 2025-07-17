@@ -948,8 +948,6 @@ contains
                   ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = invalid_value_TF
                else 
                   ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = oceanTemperature(iLayer,iCell) - (gamma1 * oceanSalinity(iLayer,iCell) + gamma2 + gamma3 * ismip6shelfMelt_zOcean(iLayer))
-                  ! Ensure thermal forcing does not fall below zero
-                  ismip6shelfMelt_3dThermalForcing(iLayer,iCell) = max(0.0_RKIND, ismip6shelfMelt_3dThermalForcing(iLayer,iCell))
                endif
             enddo
       
