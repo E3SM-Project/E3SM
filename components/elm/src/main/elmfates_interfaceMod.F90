@@ -4020,8 +4020,8 @@ end subroutine wrap_update_hifrq_hist
       !     call TransferBC(this%api_tag(ivar), this%hlm_var(ivar))
       ! end do
 
-      call this%fates(nc)%sites(s)%TransferBCIn_1d('leaf_area_index',canopystate_inst%tlai_patch)
-      call this%fates(nc)%sites(s)%TransferBCIn_2d('decomp_frac_moisture',col_cf%w_scalar)
+      call this%fates(nc)%sites(s)%TransferBCIn('leaf_area_index',canopystate_inst%tlai_patch)
+      call this%fates(nc)%sites(s)%TransferBCIn('decomp_frac_moisture',col_cf%w_scalar)
 
    end do
 
