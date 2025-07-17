@@ -50,6 +50,12 @@ void RefiningRemapperP2P::remap_fwd_impl ()
   // Loop over each field, perform mat-vec
   constexpr auto COL = ShortFieldTagsNames::COL;
   for (int i=0; i<m_num_fields; ++i) {
+    if (m_needs_remap[i]==0) {
+      // No need to do a mat-vec here. Just deep copy and move on
+      m_tgt_fields[i].deep_copy(m_src_fields[i]);
+      continue;
+    }
+
     auto& f_tgt = m_tgt_fields[i];
 
     // It's ok to register fields that do not have the COL tag
@@ -87,6 +93,9 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
   // Get cumulative col size of each field (to be used to compute offsets)
   m_fields_col_sizes_scan_sum.resize(m_num_fields+1,0);
   for (int i=0; i<m_num_fields; ++i) {
+    if (m_needs_remap[i]==0)
+      continue;
+
     const auto& f = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
 
@@ -166,8 +175,6 @@ void RefiningRemapperP2P::pack_and_send ()
   using TeamMember  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  constexpr auto COL = ShortFieldTagsNames::COL;
-
   auto export_pids = m_imp_exp->export_pids();
   auto export_lids = m_imp_exp->export_lids();
   auto ncols_send  = m_imp_exp->num_exports_per_pid();
@@ -176,12 +183,12 @@ void RefiningRemapperP2P::pack_and_send ()
   const int num_exports = export_pids.size();
   const int total_col_size = m_fields_col_sizes_scan_sum.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
-    const auto& f = m_src_fields[ifield];
-    const auto& fl = f.get_header().get_identifier().get_layout();
-    if (not fl.has_tag(COL)) {
+    if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll deep copy src->tgt later
       continue;
-    }
+
+    const auto& f = m_src_fields[ifield];
+    const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_col_sizes_scan_sum = m_fields_col_sizes_scan_sum[ifield];
     switch (fl.rank()) {
       case 1:
@@ -316,8 +323,6 @@ void RefiningRemapperP2P::recv_and_unpack ()
   using TeamMember  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  constexpr auto COL = ShortFieldTagsNames::COL;
-
   auto import_pids = m_imp_exp->import_pids();
   auto import_lids = m_imp_exp->import_lids();
   auto ncols_recv  = m_imp_exp->num_imports_per_pid();
@@ -326,12 +331,12 @@ void RefiningRemapperP2P::recv_and_unpack ()
   const int num_imports = import_pids.size();
   const int total_col_size = m_fields_col_sizes_scan_sum.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
-          auto& f  = m_ov_fields[ifield];
-    const auto& fl = f.get_header().get_identifier().get_layout();
-    if (not fl.has_tag(COL)) {
+    if (m_needs_remap[ifield]==0)
       // No need to process this field. We'll deep copy src->tgt later
       continue;
-    }
+
+          auto& f  = m_ov_fields[ifield];
+    const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_col_sizes_scan_sum = m_fields_col_sizes_scan_sum[ifield];
     switch (fl.rank()) {
       case 1:
