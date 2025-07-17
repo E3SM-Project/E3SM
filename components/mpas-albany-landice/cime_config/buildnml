@@ -60,6 +60,7 @@ def buildnml(case, caseroot, compname):
     decomp_date = ''
     decomp_prefix = ''
     datamode_date = ''
+    region_mask_date = ''
 
     if glc_grid == 'mpas.aisgis20km':
         grid_date += '20190326'
@@ -77,11 +78,13 @@ def buildnml(case, caseroot, compname):
         datamode_date += '20250121'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20231222'
     elif glc_grid == 'mpas.ais4to20km':
         grid_date += '20250625'
         grid_prefix += 'ais_4to20km'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20230105'
     elif glc_grid == 'mpas.gis20km':
         grid_date += '20210824'
         grid_prefix += 'gis_20km_r01'
@@ -102,6 +105,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'gis_1to10km_r02'
         decomp_date += '020223'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20230202'
     else:
         expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
 
@@ -119,6 +123,12 @@ def buildnml(case, caseroot, compname):
             safe_copy(input_file, restart_file)
 
     #------------------------
+    # Set region mask file if needed
+    #------------------------
+    if region_mask_date != '':
+        region_mask_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_region_mask.{region_mask_date}.nc"
+
+    #------------------------
     # Set the datamode file if needed
     #------------------------
     if mali_prognostic_mode == 'DATA':
@@ -129,7 +139,11 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     with open(os.path.join(casebuild, "mali.input_data_list"), "w") as input_list:
-        input_list.write("mesh = {}/glc/mpasli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
+        input_list.write("mesh = {}\n".format(input_file))
+
+        if region_mask_date != '':
+            input_list.write(f"region_mask = {region_mask_file}\n")
+
         if mali_prognostic_mode == 'DATA':
             input_list.write(f"datamode = {datamode_file}\n")
 
@@ -236,6 +250,14 @@ def buildnml(case, caseroot, compname):
         lines.append('    this stream to include more fields.')
         lines.append('    -->')
         lines.append('')
+        if region_mask_date != '':
+            lines.append('    <stream name="regionsInput"')
+            lines.append('            type="input"')
+            lines.append('            filename_template="{}"'.format(region_mask_file))
+            lines.append('            input_interval="initial_only">')
+            lines.append('        <var name="regionCellMasks"/>')
+            lines.append('    </stream>')
+            lines.append('')
         lines.append('    <stream name="output"')
         lines.append('            type="output"')
         lines.append('            filename_template="{}.mali.hist.$Y-$M-$D_$S.nc"'.format(casename))
@@ -300,7 +322,21 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="processLimitingTimestep"/>')
         if mali_use_albany:
             lines.append('    <var name="albanyVelocityError"/>')
-
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="regionalStatsOutput"')
+        lines.append('        type="output"')
+        lines.append('        filename_template="{}.mali.hist.am.regionalStats.$Y-$M-$D_$S.nc"'.format(casename))
+        lines.append('        filename_interval="1000-00-00_00:00:00"')
+        lines.append('        clobber_mode="overwrite"')
+        lines.append('        packages="regionalStatsAMPKG"')
+        lines.append('        output_interval="0000_00:00:01">')
+        lines.append('')
+        lines.append('    <var_struct name="regionalStatsAM"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="deltat"/>')
+        lines.append('    <var name="daysSinceStart"/>')
+        lines.append('    <var name="simulationStartTime"/>')
         lines.append('</stream>')
         lines.append('')
         if mali_prognostic_mode == 'DATA':
