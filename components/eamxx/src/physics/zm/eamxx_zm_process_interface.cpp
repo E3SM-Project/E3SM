@@ -55,8 +55,9 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("p_mid",                scalar3d_mid, Pa,    grid_name, pack_size);
   add_field<Required>("p_int",                scalar3d_int, Pa,    grid_name, pack_size);
   add_field<Required>("pseudo_density",       scalar3d_mid, Pa,    grid_name, pack_size);
-  add_field<Required>("phis",                 scalar2d    , m2/s2, grid_name, pack_size);
+  add_field<Required>("phis",                 scalar2d    , m2/s2, grid_name);
   add_field<Required>("omega",                scalar3d_mid, Pa/s,  grid_name, pack_size);
+  add_field<Required>("pbl_height",           scalar2d    , m,     grid_name);
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,     grid_name, pack_size);
@@ -102,8 +103,8 @@ void zm_deep_convection::run_impl (const double dt)
   const auto& T_mid    = get_field_out("T_mid")         .get_view<Spack**, Host>();
   const auto& qv       = get_field_out("qv")            .get_view<Spack**, Host>();
   const auto& qc       = get_field_out("qc")            .get_view<Spack**, Host>();
-
-  // const auto& omega    = get_field_in("omega")          .get_view<const Spack**, Host>();
+  const auto& omega    = get_field_in("omega")          .get_view<const Spack**, Host>();
+  const auto& pblh     = get_field_in("pbl_height")     .get_view<const Real*>();
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
@@ -135,29 +136,26 @@ void zm_deep_convection::run_impl (const double dt)
   zm_input.ncol           = m_ncol;
   zm_input.pcol           = m_pcol;
   zm_input.is_first_step  = (ts_start.get_num_steps()==0);
-
   zm_input.phis           = phis;
   // zm_input.z_mid          = ???;
   // zm_input.z_int          = ???;
   zm_input.p_mid          = p_mid;
   zm_input.p_int          = p_int;
   zm_input.p_del          = p_del;
-
   zm_input.T_mid          = T_mid;
   zm_input.qv             = qv;
   zm_input.qc             = qc;
+  zm_input.omega          = omega;
+  zm_input.pblh           = pblh;
 
   // prepare outputs
   zm_output.ncol          = m_ncol;
   zm_output.pcol          = m_pcol;
-
   zm_output.tend_s        = zm_buff.tend_s;
   zm_output.tend_q        = zm_buff.tend_q;
   zm_output.precip        = zm_buff.precip;
   zm_output.prec_flux     = zm_buff.prec_flux;
   zm_output.mass_flux     = zm_buff.mass_flux;
-
-  // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 
   // Run ZM
   zm_eamxx_bridge_run( m_nlev, zm_input, zm_output );
@@ -214,21 +212,21 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   Spack* s_mem = reinterpret_cast<Spack*>(mem);
 
   // 2D variables on mid-point levels
-  uview_2d* mid_ptrs[num_2d_mid_views]  = { &zm_buff.tend_s,
-                                            &zm_buff.tend_q,
-                                          };
+  uview_2d* midlv_ptrs[num_2d_mid_views]  = { &zm_buff.tend_s,
+                                              &zm_buff.tend_q,
+                                            };
   for (int i=0; i<num_2d_mid_views; ++i) {
-    *mid_ptrs[i] = uview_2d(s_mem, m_ncol, nlevm_packs);
-    s_mem += mid_ptrs[i]->size();
+    *midlv_ptrs[i] = uview_2d(s_mem, m_ncol, nlevm_packs);
+    s_mem += midlv_ptrs[i]->size();
   }
 
   // 2D variables on interface levels
-  uview_2d* int_ptrs[num_2d_int_views]  = { &zm_buff.prec_flux,
-                                            &zm_buff.mass_flux,
-                                          };
+  uview_2d* intfc_ptrs[num_2d_int_views]  = { &zm_buff.prec_flux,
+                                              &zm_buff.mass_flux,
+                                            };
   for (int i=0; i<num_2d_int_views; ++i) {
-    *int_ptrs[i] = uview_2d(s_mem, m_ncol, nlevi_packs);
-    s_mem += int_ptrs[i]->size();
+    *intfc_ptrs[i] = uview_2d(s_mem, m_ncol, nlevi_packs);
+    s_mem += intfc_ptrs[i]->size();
   }
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);

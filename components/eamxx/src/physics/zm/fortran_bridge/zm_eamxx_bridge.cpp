@@ -16,13 +16,15 @@ extern "C" {
 
   void zm_eamxx_bridge_run_c( Int  ncol,
                               bool is_first_step,
-                              const Real *state_phis,
-                              const Real *state_p_mid,
-                              const Real *state_p_int,
-                              const Real *state_p_del,
+                        const Real *state_phis,
+                        const Real *state_p_mid,
+                        const Real *state_p_int,
+                        const Real *state_p_del,
                               Real *state_t,
                               Real *state_qv,
                               Real *state_qc,
+                              Real *state_omega,
+                        const Real *state_pblh,
                               Real *output_prec,
                               Real *output_tend_s,
                               Real *output_tend_q,
@@ -41,15 +43,14 @@ void zm_eamxx_bridge_run( Int pver,
                           ZMF::zm_input_state& zm_input,
                           ZMF::zm_output_tend& zm_output ){
   //----------------------------------------------------------------------------
-  auto s_p = ekat::scalarize( zm_input.p_mid );
-  auto s_T = ekat::scalarize( zm_input.T_mid );
-  auto s_q = ekat::scalarize( zm_input.qv    );
-  for (int i=0; i<zm_input.ncol; ++i) {
-    for (int k=0; k<12; ++k) {
-      std::cout << "zm_eamxx_bridge_run - p("<<i<<","<<k<<"): " << s_p(i,k) << std::endl;
-    }
-  }
-
+  // auto s_p = ekat::scalarize( zm_input.p_mid );
+  // auto s_T = ekat::scalarize( zm_input.T_mid );
+  // auto s_q = ekat::scalarize( zm_input.qv    );
+  // for (int i=0; i<zm_input.ncol; ++i) {
+  //   for (int k=0; k<12; ++k) {
+  //     std::cout << "zm_eamxx_bridge_run - p("<<i<<","<<k<<"): " << s_p(i,k) << std::endl;
+  //   }
+  // }
   //----------------------------------------------------------------------------
   zm_input.transpose<ekat::TransposeDirection::c2f>(pver);
   zm_output.transpose<ekat::TransposeDirection::c2f>(pver);
@@ -62,6 +63,8 @@ void zm_eamxx_bridge_run( Int pver,
                          zm_input.f_T_mid       .data(),
                          zm_input.f_qv          .data(),
                          zm_input.f_qc          .data(),
+                         zm_input.f_omega       .data(),
+                         zm_input.pblh          .data(),
                          zm_output.precip       .data(),
                          zm_output.f_tend_s     .data(),
                          zm_output.f_tend_q     .data(),
@@ -71,12 +74,13 @@ void zm_eamxx_bridge_run( Int pver,
   zm_output.transpose<ekat::TransposeDirection::f2c>(pver);
 
   //----------------------------------------------------------------------------
-  // auto s_precip = ekat::scalarize( zm_output.precip );
+  auto s_p_mid  = ekat::scalarize( zm_input.p_mid );
   auto s_tend_s = ekat::scalarize( zm_output.tend_s );
+  auto s_tend_q = ekat::scalarize( zm_output.tend_q );
   for (int i=0; i<zm_input.ncol; ++i) {
-    std::cout << "zm_eamxx_bridge_run - prec("<<i<<"): " << zm_output.precip(i) << std::endl;
-    for (int k=0; k<12; ++k) {
-      std::cout << "zm_eamxx_bridge_run - tend_s("<<i<<","<<k<<"): " << s_tend_s(i,k) << std::endl;
+    // std::cout << "zm_eamxx_bridge_run - prec("<<i<<"): " << zm_output.precip(i) << std::endl;
+    for (int k=0; k<6; ++k) {
+      std::cout << "zm_eamxx_bridge_run - ("<<i<<","<<k<<")  p_mid / tend_s / tend_q: " << s_p_mid(i,k) << " / " << s_tend_s(i,k) << s_tend_q(i,k) << std::endl;
     }
   }
   //----------------------------------------------------------------------------
