@@ -69,6 +69,7 @@ class zm_deep_convection : public AtmosphereProcess
     ZMF::zm_input_state zm_input;
     ZMF::zm_output_tend zm_output;
     ZMF::zm_output_diag zm_diag;
+    ZMF::zm_buffer_data zm_buff;
     
 }; // class zm_deep_convection
 
