@@ -52,21 +52,21 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);  // Layout for horiz_wind field
 
   // Input variables
-  add_field<Required>("p_mid",          scalar3d_mid, Pa,    grid_name, pack_size);
-  add_field<Required>("p_int",          scalar3d_int, Pa,    grid_name, pack_size);
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa,    grid_name, pack_size);
-  add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, pack_size);
-  add_field<Required>("omega",          scalar3d_mid, Pa/s,  grid_name, pack_size);
+  add_field<Required>("p_mid",                scalar3d_mid, Pa,    grid_name, pack_size);
+  add_field<Required>("p_int",                scalar3d_int, Pa,    grid_name, pack_size);
+  add_field<Required>("pseudo_density",       scalar3d_mid, Pa,    grid_name, pack_size);
+  add_field<Required>("phis",                 scalar2d    , m2/s2, grid_name, pack_size);
+  add_field<Required>("omega",                scalar3d_mid, Pa/s,  grid_name, pack_size);
 
   // Input/Output variables
-  add_field <Updated>("T_mid",          scalar3d_mid, K,     grid_name, pack_size);
-  add_field <Updated>("horiz_winds",    vector3d_mid, m/s,   grid_name, pack_size);
-  add_tracer<Updated>("qv",             m_grid,       kg/kg,            pack_size);
-  add_tracer<Updated>("qc",             m_grid,       kg/kg,            pack_size);
+  add_field <Updated>("T_mid",                scalar3d_mid, K,     grid_name, pack_size);
+  add_field <Updated>("horiz_winds",          vector3d_mid, m/s,   grid_name, pack_size);
+  add_tracer<Updated>("qv",                   m_grid,       kg/kg,            pack_size);
+  add_tracer<Updated>("qc",                   m_grid,       kg/kg,            pack_size);
 
   // Output variables
-  add_field<Updated>("precip_liq_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
-  add_field<Updated>("precip_ice_surf_mass",     scalar2d_layout,     kg/m2,     grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_liq_surf_mass",  scalar2d,     kg/m2, grid_name, "ACCUMULATED");
+  add_field<Updated>("precip_ice_surf_mass",  scalar2d,     kg/m2, grid_name, "ACCUMULATED");
 
   // Diagnostic Outputs
   // ???
@@ -154,7 +154,7 @@ void zm_deep_convection::run_impl (const double dt)
   // std::cout << "zm::run_impl - ts_start.get_num_steps(): " << ts_start.get_num_steps() << std::endl;
 
   // Run ZM
-  zm_eamxx_bridge_run( zm_input, m_nlev );
+  zm_eamxx_bridge_run( m_nlev, zm_input, zm_output );
 
   // Update output fields
   // ???
@@ -167,5 +167,70 @@ void zm_deep_convection::finalize_impl ()
 }
 
 /*------------------------------------------------------------------------------------------------*/
+
+size_t zm_deep_convection::requested_buffer_size_in_bytes() const
+{
+  const int nlevm_packs = ekat::npack<Spack>(m_nlev);
+  const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
+  int zm_output_size = 0;
+  zm_output_size+= ZMF::zm_output_tend::num_1d_scl_views * sizeof(Real)  * m_ncol;
+  zm_output_size+= ZMF::zm_output_tend::num_2d_mid_views * sizeof(Spack) * m_ncol * nlevm_packs;
+  zm_output_size+= ZMF::zm_output_tend::num_2d_int_views * sizeof(Spack) * m_ncol * nlevi_packs;
+  return zm_output_size;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
+void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
+{
+  auto buffer_chk = ( buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes() );
+  EKAT_REQUIRE_MSG(buffer_chk,"Error! Buffers size not sufficient.\n");
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  const int nlevm_packs = ekat::npack<Spack>(m_nlev);
+  const int nlevi_packs = ekat::npack<Spack>(m_nlev+1);
+
+  auto num_1d_scl_views = ZMF::zm_output_tend::num_1d_scl_views;
+  auto num_2d_mid_views = ZMF::zm_output_tend::num_2d_mid_views;
+  auto num_2d_int_views = ZMF::zm_output_tend::num_2d_int_views;
+
+  using scalar_1d_view_t = decltype(zm_output.precip);
+
+  // 1D scalar variables
+  scalar_1d_view_t* scl_ptrs[num_1d_scl_views]  = { &zm_output.precip,
+                                                  };
+  for (int i=0; i<num_1d_scl_views; ++i) {
+    *scl_ptrs[i] = scalar_1d_view_t(mem, m_ncol);
+    mem += scl_ptrs[i]->size();
+  }
+
+  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+
+  // 2D variables on mid-point levels
+  uview_2d* mid_ptrs[num_2d_mid_views]  = { &zm_output.tend_s,
+                                            &zm_output.tend_q,
+                                          };
+  for (int i=0; i<num_2d_mid_views; ++i) {
+    *mid_ptrs[i] = uview_2d(s_mem, m_ncol, nlevm_packs);
+    s_mem += mid_ptrs[i]->size();
+  }
+
+  // 2D variables on interface levels
+  uview_2d* int_ptrs[num_2d_int_views]  = { &zm_output.prec_flux,
+                                            &zm_output.mass_flux,
+                                          };
+  for (int i=0; i<num_2d_int_views; ++i) {
+    *int_ptrs[i] = uview_2d(s_mem, m_ncol, nlevi_packs);
+    s_mem += int_ptrs[i]->size();
+  }
+
+  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  auto mem_chk = ( used_mem == requested_buffer_size_in_bytes() );
+  EKAT_REQUIRE_MSG(mem_chk,"Error! Used memory != requested memory for zm_deep_convection.");
+}
+
+/*------------------------------------------------------------------------------------------------*/
+
 
 } // namespace scream

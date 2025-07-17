@@ -16,8 +16,7 @@ namespace zm {
  */
 
 template <typename ScalarT, typename DeviceT>
-struct Functions
-{
+struct Functions {
   // ---------------------------------------------------------------------------
   // Types
 
@@ -53,29 +52,30 @@ struct Functions
   struct zm_input_state {
     zm_input_state() = default;
     // -------------------------------------------------------------------------
-    Int             ncol;           // number of columns for current task/chunk
-    Int             pcol;           // max number of columns across tasks/chunks
-    bool            is_first_step;  // flag for first call
+    Int ncol;                       // number of columns for current task/chunk
+    Int pcol;                       // max number of columns across tasks/chunks
 
-    view_1d<const Scalar>  phis;           // surface geopotential height [m2/s]
-    // view_2d<Spack>   z_mid;           // mid-point level altitude [m]
-    // view_2d<Spack>   z_int;           // interface level altitude [m]
-    view_2d<const Spack>   p_mid;           // mid-point level pressure [Pa]
-    view_2d<const Spack>   p_int;           // interface level pressure [Pa]
-    view_2d<const Spack>   p_del;           // pressure thickness [Pa]
+    bool is_first_step;             // flag for first call
 
-    // view_1d<Scalar>  pblh;           // PBL height [m]
+    view_1d<const Scalar>  phis;    // surface geopotential height [m2/s]
+    view_2d<Spack>   z_mid;         // mid-point level altitude [m]
+    view_2d<Spack>   z_int;         // interface level altitude [m]
+    view_2d<const Spack>   p_mid;   // mid-point level pressure [Pa]
+    view_2d<const Spack>   p_int;   // interface level pressure [Pa]
+    view_2d<const Spack>   p_del;   // pressure thickness [Pa]
+
+    view_1d<Scalar>  pblh;          // PBL height [m]
 
     view_2d<Spack>  T_mid;          // Temperature [K]
     view_2d<Spack>  qv;             // Water vapor mixing ratio [kg kg-1]
     view_2d<Spack>  qc;             // Cloud mass mixing ratio [kg kg-1]
 
-    // view_2d<Spack>  qi;             // Ice total mass mixing ratio [kg kg-1]
-    // view_2d<Spack>  omega;          // vertical pressure velocity [Pa/s]
+    view_2d<Spack>  qi;             // Ice total mass mixing ratio [kg kg-1]
+    view_2d<Spack>  omega;          // vertical pressure velocity [Pa/s]
 
     // LayoutLeft views for fortran bridging
-    // view_2dl<Real>  f_z_mid;
-    // view_2dl<Real>  f_z_int;
+    view_2dl<Real>  f_z_mid;
+    view_2dl<Real>  f_z_int;
     view_2dl<Real>  f_p_mid;
     view_2dl<Real>  f_p_int;
     view_2dl<Real>  f_p_del;
@@ -108,8 +108,7 @@ struct Functions
     // -------------------------------------------------------------------------
     // alternate transpose method
     template <ekat::TransposeDirection::Enum D>
-    void transpose(int pver)
-    {
+    void transpose(int pver){
       if (D == ekat::TransposeDirection::c2f) {
         // f_z_mid = view_2dl<Real>("f_z_mid", ncol, pver);
         // f_z_int = view_2dl<Real>("f_z_int", ncol, pver);
@@ -119,7 +118,6 @@ struct Functions
         f_T_mid = view_2dl<Real>("f_T_mid", pcol, pver);
         f_qv    = view_2dl<Real>("f_qv",    pcol, pver);
         f_qc    = view_2dl<Real>("f_qc",    pcol, pver);
-
         for (int i=0; i<ncol; ++i) {
           for (int j=0; j<pver; ++j) {
             // f_z_mid(i,j) = z_mid(i, j / Spack::n)[j % Spack::n];
@@ -133,16 +131,6 @@ struct Functions
           }
         }
       }
-      // else {
-      //   std::vector<view_2d<Spack>> dev_views = { T_mid,
-      //                                             qv,
-      //                                             qc,
-      //                                           };
-      //   ekat::host_to_device( { f_T_mid.data(),
-      //                           f_qv   .data(),
-      //                           f_qc   .data(),
-      //                         }, ncol, pver, dev_views);
-      // }
     }
     // -------------------------------------------------------------------------
   };
@@ -150,33 +138,62 @@ struct Functions
   struct zm_output_tend {
     zm_output_tend() = default;
 
-    view_2d<const Spack>   tend_s;           // output tendency of water vapor
-    view_2d<const Spack>   tend_q;           // output tendency of dry statis energy
-    view_1d<const Scalar>  precip;           // surface precipitation [m/s]
+    Int ncol;                       // number of columns for current task/chunk
+    Int pcol;                       // max number of columns across tasks/chunks
+
+    static constexpr int num_1d_scl_views = 1; // number of 1D variables
+    static constexpr int num_2d_mid_views = 2; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_int_views = 2; // number of 2D variables on interface levels
+
+    uview_1d<Scalar>  precip;       // surface precipitation [m/s]
+
+    uview_2d<Spack>   tend_s;       // output tendency of water vapor
+    uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
+    uview_2d<Spack>   prec_flux;    // output convective precipitation flux
+    uview_2d<Spack>   mass_flux;    // output convective mass flux
 
     // LayoutLeft views for fortran bridging
     view_2dl<Real>  f_tend_s;
     view_2dl<Real>  f_tend_q;
+    view_2dl<Real>  f_prec_flux;
+    view_2dl<Real>  f_mass_flux;
+
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
-    void transpose(int pver)
-    {
-      // if (D == ekat::TransposeDirection::c2f) {
-      //   f_p_mid = view_2dl<Real>("f_p_mid", pcol, pver);
-      //   for (int i=0; i<ncol; ++i) {
-      //     for (int j=0; j<pver; ++j) {
-      //       f_p_mid(i,j) = p_mid(i, j / Spack::n)[j % Spack::n];
-      //     }
-      //   }
-      // }
+    void transpose(int pver) {
+      auto pverp = pver+1;
+      if (D == ekat::TransposeDirection::c2f) {
+        f_tend_s    = view_2dl<Real>("f_tend_s",    pcol, pver);
+        f_tend_q    = view_2dl<Real>("f_tend_q",    pcol, pver);
+        f_prec_flux = view_2dl<Real>("f_prec_flux", pcol, pverp);
+        f_mass_flux = view_2dl<Real>("f_mass_flux", pcol, pverp);
+        for (int i=0; i<ncol; ++i) {
+          for (int j=0; j<pver; ++j) {
+            f_tend_s   (i,j) = tend_s   (i, j / Spack::n)[j % Spack::n];
+            f_tend_q   (i,j) = tend_q   (i, j / Spack::n)[j % Spack::n];
+          }
+          for (int j=0; j<pverp; ++j) {
+            f_prec_flux(i,j) = prec_flux(i, j / Spack::n)[j % Spack::n];
+            f_mass_flux(i,j) = mass_flux(i, j / Spack::n)[j % Spack::n];
+          }
+        }
+      }
       if (D == ekat::TransposeDirection::f2c) {
-        std::vector<view_2d<Spack>> dev_views = { tend_s,
-                                                  tend_q,
-                                                };
+        // mid-point level variables
+        std::vector<view_2d<Spack>> midlv_views = { tend_s,
+                                                    tend_q,
+                                                  };
         ekat::host_to_device( { f_tend_s.data(),
                                 f_tend_q.data(),
-                              }, ncol, pver, dev_views);
+                              }, pcol, pver, midlv_views);
+        // interface level variables
+        std::vector<view_2d<Spack>> intfc_views = { prec_flux,
+                                                    mass_flux,
+                                                  };
+        ekat::host_to_device( { f_prec_flux.data(),
+                                f_mass_flux.data(),
+                              }, pcol, pverp, intfc_views);
       }
     }
   };
