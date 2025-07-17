@@ -541,7 +541,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       "mam4_microphysics_tendency_renaming_cloud_borne",
     };
     // Add docstring to the fields with mixed units
-    //add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
+    add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
   }
 
    
@@ -702,10 +702,6 @@ void MAMMicrophysics::run_impl(const double dt) {
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
     gas_aero_exchange_condensation = get_field_out("mam4_microphysics_tendency_condensation").get_view<Real***>();
-    printf("BALLI-extents gas_aero_exchange_condensation: %d %d %d\n",
-           gas_aero_exchange_condensation.extent(0),
-           gas_aero_exchange_condensation.extent(1),
-           gas_aero_exchange_condensation.extent(2));
     gas_aero_exchange_renaming = get_field_out("mam4_microphysics_tendency_renaming").get_view<Real***>();
     gas_aero_exchange_nucleation = get_field_out("mam4_microphysics_tendency_nucleation").get_view<Real***>();
     gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
@@ -962,12 +958,10 @@ void MAMMicrophysics::run_impl(const double dt) {
           diag_arrays.aqh2so4_incloud_mmr_tendency = ekat::subview(aqh2so4_incloud_mmr_tendency, icol);
 
           diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
-#if 0
           diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
           diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
           diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
           diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
-#endif
 	      }
 
 
