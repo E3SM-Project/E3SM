@@ -152,8 +152,8 @@ contains
     character(1024)  :: outfile, wopts
     character(1024) :: tagname ! hold all fields
     integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
-    integer, dimension(5) :: entity_type
-    real(r8), pointer :: data(:)  ! temporary
+    integer, dimension(2) :: entity_type
+    real(r8) , allocatable :: data(:,:) ! for tags to be set in MOAB
     integer :: g, n, num_neighbor, num_vertex, num_internal_edges
     integer :: ghosted_id_left, ghosted_id_right
     integer :: nat_id_left, nat_id_right
@@ -257,13 +257,13 @@ contains
 
     ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
     entity_type(1) = 0 ! Vertex tag for GLOBAL_ID
-    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_type)
+    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices(1), entity_type(1))
     if (ierr > 0 )  &
       call endrun('Error: fail to synchronize vertex tags for ELM ')
 
     ! ! synchronize: GLOBAL_ID tag defined on elements in the ghost layers
-    entity_type(1) = 1 ! Element tag for GLOBAL_ID
-    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_type)
+    entity_type(2) = 1 ! Element tag for GLOBAL_ID
+    ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices(1), entity_type(2))
     if (ierr > 0 )  &
       call endrun('Error: fail to synchronize element tags for ELM ')
 
@@ -368,35 +368,45 @@ contains
     deallocate(vertex_id)
 
     !  Define and Set Fraction on each mesh
-    tagname='frac:area:aream'//C_NULL_CHAR
     tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(2) )
+    ierr = iMOAB_DefineTagStorage( mlndghostid, 'frac'//C_NULL_CHAR, tagtype, numco, tag_indices(2) )
     if (ierr > 0 )  &
-      call endrun('Error: fail to create frac:area:aream tags')
+      call endrun('Error: fail to create frac tags')
+    ierr = iMOAB_DefineTagStorage( mlndghostid, 'area'//C_NULL_CHAR, tagtype, numco, tag_indices(3) )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create area tags')
+    ierr = iMOAB_DefineTagStorage( mlndghostid, 'aream'//C_NULL_CHAR, tagtype, numco, tag_indices(4) )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create aream tags')
 
-    allocate(data(moab_gcell%num_ghosted * 3))
-    data(:) = -1
+
+    allocate(data(moab_gcell%num_ghosted, 3))
+    data(:,:) = -1
     do g = 1, moab_gcell%num_ghosted
        if (moab_gcell%is_owned(g)) then
-          data((g-1)*3 + 1) = iam
-          data((g-1)*3 + 2) = iam + 0.1_r8
-          data((g-1)*3 + 3) = iam + 0.4_r8
+          data(g, 1) = (iam+1)
+          data(g, 2) = (iam+1) + 0.1_r8
+          data(g, 3) = (iam+1) + 0.4_r8
        end if
     end do
-    ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(1), data )
+
+    ! set all the data in one shot
+    tagname='frac:area:aream'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(2), data )
     if (ierr > 0) call endrun('Error: setting values failed')
 
-    ierr = iMOAB_SynchronizeTags(mlndghostid, 3, tag_indices(1:3), entity_type(2))
+    ! now let us synchonize all tags: frac:area:aream
+    ierr = iMOAB_SynchronizeTags(mlndghostid, 3, tag_indices(2:4), entity_type(2))
     if (ierr > 0) call endrun('Error: synchronize failed')
 
     ! reset the data to some arbitrary value
-    data(:) = -100.0
+    data(:,:) = -100.0
 
     ierr = iMOAB_GetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(2), data )
     if (ierr > 0) call endrun('Error: getting values failed')
 
     do g = 1, moab_gcell%num_ghosted
-       write(iulog,*)'g: ',g, moab_gcell%is_owned(g), data((g-1)*3+1:(g-1)*3+3)
+        write(iulog,*)'g: ',g, moab_gcell%is_owned(g), data(g, :)
     end do
     deallocate(data)
 
@@ -407,7 +417,6 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to write ELM local meshes in h5m format')
 #endif
-
   end subroutine elm_moab_load_grid_file
 
   !------------------------------------------------------------------------
