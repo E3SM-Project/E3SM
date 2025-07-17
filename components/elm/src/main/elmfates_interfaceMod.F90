@@ -154,7 +154,6 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
-   use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
    use EDMainMod             , only : ed_ecosystem_dynamics
@@ -2296,9 +2295,6 @@ contains
                                               ! this is the order increment of patch
                                               ! on the site
       integer  :: nc                          ! clump index
-
-      type(fates_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
-                                              ! BE HIDDEN AS A FATES PRIVATE
 
       associate( forc_solad => top_af_inst%solad, &
                  forc_solai => top_af_inst%solai, &
