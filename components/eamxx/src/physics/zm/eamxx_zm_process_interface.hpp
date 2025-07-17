@@ -30,6 +30,9 @@ class zm_deep_convection : public AtmosphereProcess
   using view_3d_const        = typename ZMF::view_3d<const Spack>;
   using view_3d_strided      = typename ZMF::view_3d_strided<Spack>;
 
+  using uview_1d  = Unmanaged<view_1d>;
+  using uview_2d  = Unmanaged<view_2d>;
+
   public:
 
     // Constructors
@@ -48,6 +51,12 @@ class zm_deep_convection : public AtmosphereProcess
     void initialize_impl (const RunType run_type) override;
     void run_impl        (const double dt) override;
     void finalize_impl   () override;
+
+    // Computes total number of bytes needed for local variables
+    size_t requested_buffer_size_in_bytes() const;
+
+    // Set local variables using memory provided by the ATMBufferManager
+    void init_buffers(const ATMBufferManager &buffer_manager);
 
     // define ZM process variables
     std::shared_ptr<const AbstractGrid> m_grid;
