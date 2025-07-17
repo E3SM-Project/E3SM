@@ -79,7 +79,9 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
                                   state_phis, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_qc, &
-                                  output_prec, output_tend_s, output_tend_q, &
+                                  state_omega, state_pblh, &
+                                  output_prec, &
+                                  output_tend_s, output_tend_q, &
                                   output_prec_flux, output_mass_flux ) bind(C)
   use zm_aero_type,          only: zm_aero_t
   use zm_microphysics_state, only: zm_microp_st
@@ -95,6 +97,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_t           ! input state temperature
   real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_qv          ! input state water vapor
   real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_qc          ! input state cloud liquid water
+  real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_omega       ! input state vertical pressure velocity
+  real(kind=c_real), dimension(pcols),      intent(in ) :: state_pblh        ! input planetary boundary layer height
   real(kind=c_real), dimension(pcols),      intent(out) :: output_prec       ! output total precipitation            (prec)
   real(kind=c_real), dimension(pcols,pver), intent(out) :: output_tend_s     ! output tendency of dry static energy  (ptend_loc_s)
   real(kind=c_real), dimension(pcols,pver), intent(out) :: output_tend_q     ! output tendency of water vapor        (ptend_loc_q)
@@ -173,18 +177,21 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   do i = 1,ncol
     output_prec(i) = i
     do k = 1,pver
-      output_tend_s(i,k) = i*100 + k
+      ! output_tend_s(i,k) = i*100.0_r8 + k*1.0_r8
+      output_tend_s(i,k) = 2.0
+      output_tend_q(i,k) = 3.0
     end do
   end do
   !-----------------------------------------------------------------------------
-  ! do i = 1,ncol
-  !   write(iulog,*) 'zm_eamxx_bridge_run_c - prec(',i,') : ',output_prec(i)
-  !   ! write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,') : ',state_phis(i)
-  !   do k = 1,12
-  !     write(iulog,*) 'zm_eamxx_bridge_run_c - tend_s(',i,',',k,') : ',output_tend_s(i,k)
-  !     ! write(iulog,*) 'zm_eamxx_bridge_run_c - pmid(',i,',',k,') : ',state_p_mid(i,k)
-  !   end do
-  ! end do
+  do i = 1,ncol
+    ! write(iulog,*) 'zm_eamxx_bridge_run_c - prec(',i,') : ',output_prec(i)
+    ! write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,') : ',state_phis(i)
+    do k = 1,6
+      write(iulog,*) 'zm_eamxx_bridge_run_c - (',i,',',k,') pmid / tend_s : ',state_p_mid(i,k),' / ',output_tend_s(i,k)
+      ! write(iulog,*) 'zm_eamxx_bridge_run_c - tend_s(',i,',',k,') : ',output_tend_s(i,k)
+      ! write(iulog,*) 'zm_eamxx_bridge_run_c - pmid(',i,',',k,') : ',state_p_mid(i,k)
+    end do
+  end do
   !-----------------------------------------------------------------------------
   ! ! Call the primary Zhang-McFarlane convection parameterization
   ! call zm_convr( lchnk, ncol, is_first_step, &
@@ -218,6 +225,17 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   !                lambdadpcu, &
   !                microp_st, &
   !                wuc )
+  !-----------------------------------------------------------------------------
+  ! call zm_conv_evap(state1%ncol, state1%lchnk, &
+  !                   state1%t, state1%pmid, state1%pdel, &
+  !                   state1%q(1:pcols,1:pver,1), &
+  !                   ptend_loc%s, &
+  !                   tend_s_snwprd, tend_s_snwevmlt, &
+  !                   ptend_loc%q(:pcols,:pver,1), &
+  !                   rprd, cld, ztodt, prec, snow, &
+  !                   ntprprd, ntsnprd, &
+  !                   flxprec, flxsnow, &
+  !                   sprd, old_snow)
   !-----------------------------------------------------------------------------
   return
 end subroutine zm_eamxx_bridge_run_c
