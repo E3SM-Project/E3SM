@@ -29,7 +29,7 @@ module ELMFatesInterfaceMod
 
    !  use ed_driver_interface, only:
 
-   ! Used CLM Modules
+   ! Used HLM Modules
    use VegetationType    , only : veg_pp
    use shr_kind_mod      , only : r8 => shr_kind_r8
    use decompMod         , only : bounds_type
@@ -38,6 +38,8 @@ module ELMFatesInterfaceMod
    use CanopyStateType   , only : canopystate_type
    use TemperatureType   , only : temperature_type
    use EnergyFluxType    , only : energyflux_type
+   use AllocationMod     , only : suplnitro, suplnNon
+   use AllocationMod     , only : suplphos, suplpNon
 
    use SoilStateType     , only : soilstate_type
    use elm_varctl        , only : iulog
@@ -438,7 +440,8 @@ contains
      integer                                        :: pass_hydro_solver
      integer                                        :: pass_radiation_model
      integer                                        :: pass_electron_transport_model
-     
+     integer                                        :: pass_nitrogen_supl
+     integer                                        :: pass_phosporus_supl
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -507,7 +510,21 @@ contains
 
         call set_fates_ctrlparms('nitrogen_spec',ival=1)
         call set_fates_ctrlparms('phosphorus_spec',ival=1)
-        
+
+        ! Pass the supplemental nutrient status flags
+        if (suplnitro == suplnNon) then
+           pass_nitrogen_supl = 0
+        else
+           pass_nitrogen_supl = 1
+        end if
+        if (suplphos == suplpNon) then
+           pass_phosporus_supl = 0
+        else
+           pass_phosporus_supl = 1
+        end if
+        call set_fates_ctrlparms('nitrogen_supl',ival=pass_nitrogen_supl)
+        call set_fates_ctrlparms('phosphorus_supl',ival=pass_phosporus_supl)
+
         if(is_restart() .or. nsrest == nsrBranch) then
            pass_is_restart = 1
         else
