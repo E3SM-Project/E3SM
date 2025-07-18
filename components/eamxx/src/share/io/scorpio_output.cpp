@@ -725,7 +725,6 @@ register_variables(const std::string& filename,
   }
 
   // Now register the average count variables (if any)
-  std::string unitless = "unitless";
   for (const auto& f : m_avg_counts) {
     const auto& name = f.name();
     const auto& dimnames = m_vars_dims.at(name);
@@ -742,12 +741,6 @@ register_variables(const std::string& filename,
           "  - varname  : " + name + "\n"
           "  - var dims : " + ekat::join(dimnames,",") + "\n"
           "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
-      EKAT_REQUIRE_MSG (var.units==unitless,
-          "Error! Cannot append, due to variable units mismatch.\n"
-          "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
-          "  - var units: " + unitless + "\n"
-          "  - var units from file: " + var.units + "\n");
       EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
           "Error! Cannot append, due to time dependency mismatch.\n"
           "  - filename : " + filename + "\n"
@@ -758,8 +751,7 @@ register_variables(const std::string& filename,
       // Note, unlike with regular output variables, for the average counting
       // variables we don't need to add all of the extra metadata.  So we simply
       // define the variable.
-      scorpio::define_var(filename, name, unitless, dimnames,
-                          "real",fp_precision, m_add_time_dim);
+      scorpio::define_var(filename, name, dimnames, "int", m_add_time_dim);
     }
   }
 } // register_variables
