@@ -243,7 +243,9 @@ contains
       real (kind=RKIND), pointer :: volumeCellGlobal, volumeEdgeGlobal, CFLNumberGlobal, areaCellGlobal, &
                                     areaEdgeGlobal, areaTriangleGlobal, totalVolumeChange, netFreshwaterInput, &
                                     absoluteFreshWaterConservation, relativeFreshWaterConservation, &
-                                    landIceFloatingAreaSum, gsRunningMeanRemovedIceRunoff, runningMeanRemovedIceRunoff
+                                    landIceFloatingAreaSum, gsRunningMeanRemovedIceRunoff, runningMeanRemovedIceRunoff, & 
+                                    gsSFWFScalingFactor,SFWFScalingFactor  
+
       real (kind=RKIND), dimension(:), pointer ::  areaCell, dcEdge, dvEdge, areaTriangle, areaEdge, landIceFloatingArea
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, normalVelocity, &
             lowFreqDivergence, highFreqThickness, &
@@ -1392,6 +1394,14 @@ contains
          call mpas_pool_get_array(forcingPool, 'runningMeanRemovedIceRunoff', runningMeanRemovedIceRunoff)
          gsRunningMeanRemovedIceRunoff = runningMeanRemovedIceRunoff
       end if
+
+      if (config_use_precip_scaling) then
+         block => domain % blocklist
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+         call mpas_pool_get_array(globalStatsAMPool, 'gsSFWFScalingFactor', gsSFWFScalingFactor)
+         call mpas_pool_get_array(forcingPool, 'SFWFScalingFactor', SFWFScalingFactor)
+         gsSFWFScalingFactor = SFWFScalingFactor
+      end if 
 
       ! calculate fresh water conservation check quantities
       absoluteFreshWaterConservation = totalVolumeChange - netFreshwaterInput
