@@ -40,6 +40,7 @@ struct Functions {
   template <typename S> using view_3d_strided   = typename KT::template sview<S***>;
   template <typename S> using uview_1d          = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S> using uview_2d          = typename ekat::template Unmanaged<view_2d<S> >;
+  template <typename S> using uview_2dl         = typename ekat::template Unmanaged<view_2dl<S> >;
   template <typename S> using uview_2d_strided  = typename ekat::template Unmanaged<view_2d_strided<S> >;
 
   // ---------------------------------------------------------------------------
@@ -54,21 +55,21 @@ struct Functions {
     // -------------------------------------------------------------------------
     Int ncol;                       // number of columns for current task/chunk
     Int pcol;                       // max number of columns across tasks/chunks
-
+    Real dtime;                     // model phsyics time step [s]
     bool is_first_step;             // flag for first call
 
     view_1d<const Scalar>  phis;    // surface geopotential height [m2/s]
     // view_2d<Spack>   z_mid;         // mid-point level altitude [m]
     // view_2d<Spack>   z_int;         // interface level altitude [m]
-    view_2d<const Spack>  p_mid;   // mid-point level pressure [Pa]
-    view_2d<const Spack>  p_int;   // interface level pressure [Pa]
-    view_2d<const Spack>  p_del;   // pressure thickness [Pa]
+    view_2d<const Spack>  p_mid;    // mid-point level pressure [Pa]
+    view_2d<const Spack>  p_int;    // interface level pressure [Pa]
+    view_2d<const Spack>  p_del;    // pressure thickness [Pa]
 
-    view_2d<      Spack>  T_mid;          // Temperature [K]
-    view_2d<      Spack>  qv;             // Water vapor mixing ratio [kg kg-1]
-    view_2d<      Spack>  qc;             // Cloud mass mixing ratio [kg kg-1]
-    view_2d<const Spack>  omega;          // vertical pressure velocity [Pa/s]
-    view_1d<const Scalar> pblh;           // PBL height [m]
+    view_2d<      Spack>  T_mid;    // Temperature [K]
+    view_2d<      Spack>  qv;       // Water vapor mixing ratio [kg kg-1]
+    view_2d<      Spack>  qc;       // Cloud mass mixing ratio [kg kg-1]
+    view_2d<const Spack>  omega;    // vertical pressure velocity [Pa/s]
+    view_1d<const Scalar> pblh;     // PBL height [m]
 
     // LayoutLeft views for fortran bridging
     // view_2dl<Real>  f_z_mid;
@@ -164,36 +165,36 @@ struct Functions {
       if (D == ekat::TransposeDirection::c2f) {
         f_tend_s    = view_2dl<Real>("f_tend_s",    pcol, pver);
         f_tend_q    = view_2dl<Real>("f_tend_q",    pcol, pver);
-        for (int i=0; i<ncol; ++i) {
+        f_prec_flux = view_2dl<Real>("f_prec_flux", pcol, pverp);
+        f_mass_flux = view_2dl<Real>("f_mass_flux", pcol, pverp);
+        for (int i=0; i<pcol; ++i) {
+          // mid-point level variables
           for (int j=0; j<pver; ++j) {
             f_tend_s   (i,j) = tend_s   (i, j / Spack::n)[j % Spack::n];
             f_tend_q   (i,j) = tend_q   (i, j / Spack::n)[j % Spack::n];
           }
-        }
-        f_prec_flux = view_2dl<Real>("f_prec_flux", pcol, pverp);
-        f_mass_flux = view_2dl<Real>("f_mass_flux", pcol, pverp);
-        for (int i=0; i<ncol; ++i) {
+          // interface level variables
           for (int j=0; j<pverp; ++j) {
             f_prec_flux(i,j) = prec_flux(i, j / Spack::n)[j % Spack::n];
             f_mass_flux(i,j) = mass_flux(i, j / Spack::n)[j % Spack::n];
           }
         }
+        // sync_to_host?
       }
       if (D == ekat::TransposeDirection::f2c) {
-        // mid-point level variables
-        std::vector<view_2d<Spack>> midlv_views = { tend_s,
-                                                    tend_q,
-                                                  };
-        ekat::host_to_device( { f_tend_s.data(),
-                                f_tend_q.data(),
-                              }, pcol, pver, midlv_views);
-        // interface level variables
-        std::vector<view_2d<Spack>> intfc_views = { prec_flux,
-                                                    mass_flux,
-                                                  };
-        ekat::host_to_device( { f_prec_flux.data(),
-                                f_mass_flux.data(),
-                              }, pcol, pverp, intfc_views);
+        // sync_to_device?
+        for (int i=0; i<pcol; ++i) {
+          // mid-point level variables
+          for (int j=0; j<pver; ++j) {
+            tend_s   (i, j / Spack::n)[j % Spack::n] = f_tend_s   (i,j);
+            tend_q   (i, j / Spack::n)[j % Spack::n] = f_tend_q   (i,j);
+          }
+          // interface level variables
+          for (int j=0; j<pverp; ++j) {
+            prec_flux(i, j / Spack::n)[j % Spack::n] = f_prec_flux(i,j);
+            mass_flux(i, j / Spack::n)[j % Spack::n] = f_mass_flux(i,j);
+          }
+        }
       }
     }
   };
@@ -205,15 +206,42 @@ struct Functions {
   // Structure for storing local variables initialized using the ATMBufferManager
   struct zm_buffer_data {
 
-    static constexpr int num_1d_scl_views = 1; // number of 1D variables
-    static constexpr int num_2d_mid_views = 2; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_int_views = 2; // number of 2D variables on interface levels
+    static constexpr int num_1d_scalr_views = 1; // number of 1D variables
+    static constexpr int num_2d_midlv_views = 2; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_views = 2; // number of 2D variables on interface levels
 
     uview_1d<Scalar>  precip;       // surface precipitation [m/s]
     uview_2d<Spack>   tend_s;       // output tendency of water vapor
     uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
     uview_2d<Spack>   prec_flux;    // output convective precipitation flux
     uview_2d<Spack>   mass_flux;    // output convective mass flux
+
+    uview_2dl<Real>   f_tend_s;       // output tendency of water vapor
+    uview_2dl<Real>   f_tend_q;       // output tendency of dry statis energy
+
+    void init(int ncol,int pver) {
+      auto pverp = pver+1;
+      // 1D scalar variables
+      for (int i=0; i<ncol; ++i) {
+        precip(i) = 0;
+      }
+      // mid-point level variables
+      for (int i=0; i<ncol; ++i) {
+        for (int j=0; j<pver; ++j) {
+          tend_s(i,j/Spack::n)[j%Spack::n] = 0;
+          tend_q(i,j/Spack::n)[j%Spack::n] = 0;
+          f_tend_s(i,j) = 0;
+          f_tend_q(i,j) = 0;
+        }
+      }
+      // interface level variables
+      for (int i=0; i<ncol; ++i) {
+        for (int j=0; j<pverp; ++j) {
+          prec_flux(i,j) = 0;
+          mass_flux(i,j) = 0;
+        }
+      }
+    };
   };
 
   // ---------------------------------------------------------------------------

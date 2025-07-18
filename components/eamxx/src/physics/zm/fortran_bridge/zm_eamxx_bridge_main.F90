@@ -75,13 +75,13 @@ subroutine zm_eamxx_bridge_init_c( pcol_in, pver_in ) bind(C)
 end subroutine zm_eamxx_bridge_init_c
 
 !===================================================================================================
-subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
+
+subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_phis, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_qc, &
                                   state_omega, state_pblh, &
-                                  output_prec, &
-                                  output_tend_s, output_tend_q, &
+                                  output_prec, output_tend_s, output_tend_q, &
                                   output_prec_flux, output_mass_flux ) bind(C)
   use zm_aero_type,          only: zm_aero_t
   use zm_microphysics_state, only: zm_microp_st
@@ -89,6 +89,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int),               value, intent(in ) :: ncol
+  logical(kind=c_real),              value, intent(in ) :: dtime
   logical(kind=c_bool),              value, intent(in ) :: is_first_step
   real(kind=c_real), dimension(pcols),      intent(in ) :: state_phis        ! input state surface geopotential height
   real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_p_mid       ! input state mid-point pressure
@@ -112,24 +113,13 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   ! arguments for zm_convr - order consistent with current interface
   integer :: lchnk = 0
 
-  ! real(r8), dimension(pcols,pver) :: state_t      ! input state temperature
-  ! real(r8), dimension(pcols,pver) :: state_q      ! input state water vapor
-  ! real(r8), dimension(pcols)      :: prec         ! output precipitation
-  ! integer,  dimension(pcols)      :: jctop        ! output top-of-deep-convection indices
-  ! integer,  dimension(pcols)      :: jcbot        ! output bot-of-deep-convection indices
-  ! real(r8), dimension(pcols)      :: pblh         ! input planetary boundary layer height
+  integer,  dimension(pcols)      :: jctop        ! output top-of-deep-convection indices
+  integer,  dimension(pcols)      :: jcbot        ! output bot-of-deep-convection indices
   ! real(r8), dimension(pcols,pver) :: state_zm     ! input state altitude at mid-levels
   ! real(r8), dimension(pcols,pverp):: state_zi     ! input state altitude at interfaces
-  ! real(r8), dimension(pcols,pver) :: ptend_loc_q  ! output tendency of water vapor
-  ! real(r8), dimension(pcols,pver) :: ptend_loc_s  ! output tendency of dry statis energy
-  ! real(r8), dimension(pcols,pver) :: state_pmid   ! input state pressure at mid-levels
-  ! real(r8), dimension(pcols,pverp):: state_pint   ! input state pressure at interfaces
-  ! real(r8), dimension(pcols,pver) :: state_pdel   ! input state pressure thickness
-  ! real(r8), dimension(pcols,pver) :: state_omega  ! input state vertical pressure velocity
-  ! real(r8)                        :: ztodt        ! model time increment x2
-  ! real(r8), dimension(pcols,pverp):: mcon         ! convective mass flux--m sub c
-  ! real(r8), dimension(pcols,pver) :: cme          ! condensation - evaporation
-  ! real(r8), dimension(pcols)      :: cape         ! convective available potential energy
+  real(r8), dimension(pcols,pverp):: mcon         ! convective mass flux--m sub c
+  real(r8), dimension(pcols,pver) :: cme          ! condensation - evaporation
+  real(r8), dimension(pcols)      :: cape         ! convective available potential energy
   ! real(r8), dimension(pcols)      :: tpert        ! thermal temperature excess
   ! real(r8), dimension(pcols,pver) :: dlf          ! detrained convective cloud water mixing ratio
   ! real(r8), dimension(pcols,pverp):: pflx         ! precip flux at each level
@@ -175,23 +165,24 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   !-----------------------------------------------------------------------------
   ! assign fake values for checking data made it back to C++
   do i = 1,ncol
-    output_prec(i) = i
+    output_prec(i) = 1
     do k = 1,pver
-      ! output_tend_s(i,k) = i*100.0_r8 + k*1.0_r8
-      output_tend_s(i,k) = 2.0
-      output_tend_q(i,k) = 3.0
+      output_tend_s(i,k) = 10000 + i*100.0 + k*1.0
+      output_tend_q(i,k) = 20000 + i*100.0 + k*1.0
+      ! output_tend_s(i,k) = 2.0
+      ! output_tend_q(i,k) = 3.0
     end do
   end do
   !-----------------------------------------------------------------------------
-  do i = 1,ncol
-    ! write(iulog,*) 'zm_eamxx_bridge_run_c - prec(',i,') : ',output_prec(i)
-    ! write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,') : ',state_phis(i)
-    do k = 1,6
-      write(iulog,*) 'zm_eamxx_bridge_run_c - (',i,',',k,') pmid / tend_s : ',state_p_mid(i,k),' / ',output_tend_s(i,k)
-      ! write(iulog,*) 'zm_eamxx_bridge_run_c - tend_s(',i,',',k,') : ',output_tend_s(i,k)
-      ! write(iulog,*) 'zm_eamxx_bridge_run_c - pmid(',i,',',k,') : ',state_p_mid(i,k)
-    end do
-  end do
+  ! do i = 1,ncol
+  !   ! write(iulog,*) 'zm_eamxx_bridge_run_c - prec(',i,') : ',output_prec(i)
+  !   ! write(iulog,*) 'zm_eamxx_bridge_run_c - phis(',i,') : ',state_phis(i)
+  !   do k = 1,6
+  !     write(iulog,*) 'zm_eamxx_bridge_run_c - (',i,',',k,') pmid / tend_s / tend_q : ',state_p_mid(i,k),' / ',output_tend_s(i,k),' / ',output_tend_q(i,k)
+  !     ! write(iulog,*) 'zm_eamxx_bridge_run_c - tend_s(',i,',',k,') : ',output_tend_s(i,k)
+  !     ! write(iulog,*) 'zm_eamxx_bridge_run_c - pmid(',i,',',k,') : ',state_p_mid(i,k)
+  !   end do
+  ! end do
   !-----------------------------------------------------------------------------
   ! ! Call the primary Zhang-McFarlane convection parameterization
   ! call zm_convr( lchnk, ncol, is_first_step, &
@@ -200,9 +191,9 @@ subroutine zm_eamxx_bridge_run_c( ncol, is_first_step, &
   !                jctop, jcbot, &
   !                pblh, &
   !                state_zm, state_phis, state_zi, &
-  !                ptend_loc_q, ptend_loc_s, &
-  !                state_pmid, state_pint, state_pdel, state_omega, &
-  !                0.5*ztodt, &
+  !                output_tend_q, output_tend_s, &
+  !                state_p_mid, state_p_int, state_p_del, state_omega, &
+  !                0.5*dtime, &
   !                mcon, &
   !                cme, &
   !                cape, &

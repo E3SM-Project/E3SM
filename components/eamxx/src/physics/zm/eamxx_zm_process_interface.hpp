@@ -25,6 +25,7 @@ class zm_deep_convection : public AtmosphereProcess
   using view_1d              = typename ZMF::view_1d<Real>;
   using view_1d_const        = typename ZMF::view_1d<const Real>;
   using view_2d              = typename ZMF::view_2d<ZMF::Spack>;
+  using view_2dl             = typename ZMF::view_2dl<ZMF::Spack>;
   using view_2d_const        = typename ZMF::view_2d<const Spack>;
   using view_3d              = typename ZMF::view_3d<Spack>;
   using view_3d_const        = typename ZMF::view_3d<const Spack>;
@@ -32,6 +33,7 @@ class zm_deep_convection : public AtmosphereProcess
 
   using uview_1d  = Unmanaged<view_1d>;
   using uview_2d  = Unmanaged<view_2d>;
+  using uview_2dl = Unmanaged<view_2dl>;
 
   public:
 
