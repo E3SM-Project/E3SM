@@ -26,6 +26,7 @@ module prim_driver_base
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
+  use physical_constants, only:rearth, gravit => g
 #if !defined(CAM) && !defined(SCREAM)
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
@@ -1175,6 +1176,7 @@ contains
       endif
 
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
+
     elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
@@ -1462,18 +1464,29 @@ contains
   subroutine set_tracer_transport_derived_values(elem, nets, nete, tl)
     use control_mod,        only: nu_p, transport_alg
     use time_mod,           only: TimeLevel_t
+    use physical_constants, only: rearth, gravit => g
 
     type(element_t),      intent(inout) :: elem(:)
     integer,              intent(in)    :: nets, nete
     type(TimeLevel_t),    intent(in)    :: tl
 
-    integer :: ie
+    integer :: ie, k
+
+#ifdef HOMMEDA
+    real (kind=real_kind) ::  rheighti(np,np,nlevp), rheightm(np,np,nlev), rhatm(np,np,nlev), r0
+    real (kind=real_kind) ::  invrhatm(np,np,nlev), phi_i(np,np,nlevp)
+#endif
+
+#ifdef HOMMEDA
+    r0 = rearth
+#endif
 
     ! ===============
     ! initialize mean flux accumulation variables and save some variables at n0
     ! for use by advection
     ! ===============
     do ie = nets,nete
+
        elem(ie)%derived%eta_dot_dpdn = 0     ! mean vertical mass flux
        elem(ie)%derived%vn0 = 0              ! mean horizontal mass flux
        elem(ie)%derived%omega_p = 0
@@ -1482,7 +1495,25 @@ contains
           elem(ie)%derived%dpdiss_biharmonic = 0
        endif
        if (transport_alg > 0) then
+
+#ifdef HOMMEDA
+          phi_i = elem(ie)%state%phinh_i(:,:,:,tl%n0)
+!repeated code
+          rheighti = phi_i/gravit + r0
+          rheightm(:,:,1:nlev) = (rheighti(:,:,1:nlev) + rheighti(:,:,2:nlevp))/2
+          rhatm = rheightm/r0
+          invrhatm = 1/rhatm
+#endif
+
           elem(ie)%derived%vstar = elem(ie)%state%v(:,:,:,:,tl%n0)
+
+#ifdef HOMMEDA
+       do k = 1, nlev
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*invrhatm(:,:,k)
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*invrhatm(:,:,k)
+       enddo
+#endif
+
        end if
        elem(ie)%derived%dp(:,:,:) = elem(ie)%state%dp3d(:,:,:,tl%n0)
     enddo
@@ -1576,6 +1607,9 @@ contains
   use physical_constants, only : cp, g, kappa, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
+#ifdef HOMMEDA
+  use eos,                only : pnh_and_exner_from_eos2
+#endif
 #ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,            only : bfb_pow
 #endif
@@ -1602,6 +1636,12 @@ contains
   real (kind=real_kind)  :: rstarn1(np,np,nlev)
   real (kind=real_kind)  :: exner(np,np,nlev)
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
+#ifdef HOMMEDA
+  real (kind=real_kind)  :: p_exner(np,np,nlev)
+  real (kind=real_kind)  :: dphi(np,np,nlev)
+  real (kind=real_kind)  :: rs(np,np), r1(np,np), r0, aa, bb
+  real (kind=real_kind)  :: adjp(np,np,nlev)
+#endif
 #endif
 
 #ifdef HOMMEXX_BFB_TESTING
@@ -1644,8 +1684,18 @@ contains
 
    !one can set pprime=0 to hydro regime but it is not done in master
    !compute pnh, here only pnh is needed
+#ifdef HOMMEDA
+   r0=rearth
+   dphi(:,:,1:nlev)=elem%state%phinh_i(:,:,2:nlevp,np1)-elem%state%phinh_i(:,:,1:nlev,np1)
+
+   call pnh_and_exner_from_eos2(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
+        dphi,pnh,exner,dpnh_dp_i,elem%state%phis,'forcing',p_exner=p_exner)
+
+   adjp=pnh
+#else
    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,np1),dp,&
         elem%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i)
+#endif
    do k=1,nlev
       pprime(:,:,k) = pnh(:,:,k)-phydro(:,:,k)
    enddo
@@ -1654,7 +1704,6 @@ contains
 #endif
 
    if (adjustment) then 
-
       ! hard adjust Q from physics.  negativity check done in physics
       do k=1,nlev
          do j=1,np
@@ -1689,6 +1738,9 @@ contains
       end do
 #endif
    else ! end of adjustment
+
+!STANDALONE HOMME runs this part of the code
+
       ! apply forcing to Qdp
       elem%derived%FQps(:,:)=0
       do q=1,qsize
@@ -1707,6 +1759,9 @@ contains
                   if (q==1) then
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
+#ifdef HOMMEDA
+                     adjp(i,j,k)=adjp(i,j,k)+fq
+#endif
                   endif
                enddo
             enddo
@@ -1715,6 +1770,7 @@ contains
 
       ! to conserve dry mass in the precese of Q1 forcing:
       ps(:,:) = ps(:,:) + dt*elem%derived%FQps(:,:)
+
    endif ! if adjustment
 
 
@@ -1748,8 +1804,14 @@ contains
          ! recompute hydrostatic pressure from dp3d
          call get_hydro_pressure(phydro,elem%state%dp3d(:,:,:,np1),hvcoord)
       endif
+
       do k=1,nlev
+#ifdef HOMMEDA
+         pnh(:,:,k)=adjp(:,:,k)
+#else
          pnh(:,:,k)=phydro(:,:,k) + pprime(:,:,k)
+#endif
+
 #ifdef HOMMEXX_BFB_TESTING
          exner(:,:,k)=bfb_pow(pnh(:,:,k)/p0,Rgas/Cp)
 #else
@@ -1761,24 +1823,35 @@ contains
    !update temperature
    call get_R_star(rstarn1,elem%state%Q(:,:,:,1))
    tn1(:,:,:) = tn1(:,:,:) + dt*elem%derived%FT(:,:,:)
-   
-   
+
    ! now we have tn1,dp,pnh - compute corresponding theta and phi:
    vthn1 =  (rstarn1(:,:,:)/Rgas)*tn1(:,:,:)*elem%state%dp3d(:,:,:,np1)/exner(:,:,:)
      
    phi_n1(:,:,nlevp)=elem%state%phinh_i(:,:,nlevp,np1)
+
    do k=nlev,1,-1
+#ifndef HOMMEDA
       phi_n1(:,:,k)=phi_n1(:,:,k+1) + Rgas*vthn1(:,:,k)*exner(:,:,k)/pnh(:,:,k)
+#else
+      !bottom rhat for this midlevel
+      rs = phi_n1(:,:,k+1)/gravit/r0 + 1.0
+     
+      !top rhat for this midlevel
+      r1=( rs**3.0 + 3.0*Rgas*vthn1(:,:,k)/p_exner(:,:,k)/gravit/r0 )**(1.0/3.0)
+
+      phi_n1(:,:,k)=gravit*r0*(r1-1.0)
+!ifdef HOMMEDA
+#endif  
    enddo
    
    !finally, compute difference for FVTheta
    ! this method is using new dp, new exner, new-new r*, new t
    elem%derived%FVTheta(:,:,:) = &
         (vthn1 - elem%state%vtheta_dp(:,:,:,np1))/dt
-   
+ 
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-   
+!if THETA
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
