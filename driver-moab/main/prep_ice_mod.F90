@@ -101,7 +101,7 @@ contains
   subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice)
 
     use iMOAB, only: iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeCoverageMesh
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -140,6 +140,7 @@ contains
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
 
     integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+    integer                  :: arearead
     integer                  :: tagtype, numco, tagindex
     character(CXX)           :: tagName
 
@@ -302,20 +303,13 @@ contains
               call shr_sys_abort(subname//' ERROR in registering ROF-ICE intersection')
             endif
 
-            ! compute the ROF coverage mesh here on coupler pes for ICE context
-            ! ROF mesh was redistributed to cover target (ICE) partition
-            ierr = iMOAB_ComputeCoverageMesh( mbrxid, mbixid, mbintxri )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' cannot compute source LND coverage mesh for ROF'
-               call shr_sys_abort(subname//' ERROR in computing LND-ROF coverage')
-            endif
-
             ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_r2i) then
                type1 = 3 ! this is type of grid
+               arearead = 0
                call moab_map_init_rcfile( mbrxid, mbixid, mbintxri, type1, &
                      'seq_maps.rc', 'rof2ice_rmapname:', 'rof2ice_rmaptype:', samegrid_ro, &
-                     wgtIdSr2i, 'mapper_Rr2i MOAB initialization', esmf_map_flag )
+                     arearead, wgtIdSr2i, 'mapper_Rr2i MOAB initialization', esmf_map_flag )
             end if
             mapper_Rr2i%src_mbid = mbrxid
             mapper_Rr2i%tgt_mbid = mbixid

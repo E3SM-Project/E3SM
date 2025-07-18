@@ -757,12 +757,6 @@ contains
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')
           endif
 
-          ! need to compute coverage of rof over ocean, and comm graph for sending from rof to rof over ocean
-          ierr = iMOAB_ComputeCoverageMesh( mbrxid, mboxid, mbintxro )
-          if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in compute coverage mesh rof for ocean'
-              call shr_sys_abort(subname//' ERROR in compute coverage mesh rof for ocean ')
-          endif
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing MOAB mapper_Rr2o_liq'
