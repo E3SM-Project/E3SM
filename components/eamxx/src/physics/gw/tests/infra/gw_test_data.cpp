@@ -73,12 +73,60 @@ void gw_init(GwInit& init)
   gw_init_c(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit, GWC::Rair, init.alpha);
 }
 
-void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d)
+// Wrapper around gw_init for cxx
+void gw_init_cxx(GwInit& init)
+{
+  using uview_1d = typename GWF::uview_1d<Real>;
+  GWF::gw_common_init(
+    init.pver,
+    init.pgwv,
+    init.dc,
+    uview_1d(init.cref, init.pgwv*2 + 1),
+    init.orographic_only,
+    init.do_molec_diff,
+    init.tau_0_ubc,
+    init.nbot_molec,
+    init.ktop,
+    init.kbotbg,
+    init.fcrit2,
+    init.kwv,
+    uview_1d(init.alpha, init.pver + 1));
+}
+
+void gw_finalize_cxx(GwInit& init)
+{
+  GWF::gw_common_finalize();
+}
+
+void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d)
 {
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gwd_compute_tendencies_from_stress_divergence_c(d.ncol, d.ngwv, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
   d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d)
+{
+  gw_init_cxx(d.init);
+  GWF::gwd_compute_tendencies_from_stress_divergence(
+    d.ncol, d.init.pver, d.init.pgwv, d.ngwv, d.do_taper, d.dt, d.effgw,
+    GWF::uview_1d<Int>(d.tend_level, d.ncol),
+    GWF::uview_1d<Real>(d.lat, d.ncol),
+    GWF::uview_2d<Real>(d.dpm, d.ncol, d.init.pver),
+    GWF::uview_2d<Real>(d.rdpm, d.ncol, d.init.pver),
+    GWF::uview_2d<Real>(d.c, d.ncol, 2*d.init.pgwv + 1),
+    GWF::uview_2d<Real>(d.ubm, d.ncol, d.init.pver),
+    GWF::uview_2d<Real>(d.t, d.ncol, d.init.pver),
+    GWF::uview_2d<Real>(d.nm, d.ncol, d.init.pver),
+    GWF::uview_1d<Real>(d.xv, d.ncol),
+    GWF::uview_1d<Real>(d.yv, d.ncol),
+    GWF::uview_3d<Real>(d.tau, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1),
+    GWF::uview_3d<Real>(d.gwut, d.ncol, d.init.pver, 2*d.ngwv + 1),
+    GWF::uview_2d<Real>(d.utgw,d.ncol, d.init.pver),
+    GWF::uview_2d<Real>(d.vtgw, d.ncol, d.init.pver)
+  );
+  gw_finalize_cxx(d.init);
 }
 
 void gw_prof(GwProfData& d)
