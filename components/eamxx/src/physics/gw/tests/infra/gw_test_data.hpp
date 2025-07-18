@@ -39,12 +39,12 @@ struct GwInit : public PhysicsTestData {
     pver(pver_), pgwv(pgwv_), dc(dc_), orographic_only(orographic_only_), do_molec_diff(do_molec_diff_), tau_0_ubc(tau_0_ubc_), nbot_molec(nbot_molec_), ktop(ktop_), kbotbg(kbotbg_), fcrit2(fcrit2_), kwv(kwv_)
   {
     // Assert valid init data?
-    assert(ktop <= pver);
-    assert(kbotbg >= 0);
-    assert(kbotbg <= ktop);
+    assert(kbotbg <= pver);
+    assert(ktop >= 0);
+    assert(kbotbg >= ktop);
     assert(pgwv > 0);
     assert(nbot_molec >= 0);
-    assert(nbot_molec <= ktop);
+    assert(nbot_molec >= ktop);
   }
 
   PTD_STD_DEF(GwInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
@@ -672,6 +672,7 @@ struct GwOroSrcData : public PhysicsTestData {
 
 // Glue functions to call fortran from from C++ with the Data struct
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d);
+void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
 void momentum_energy_conservation(MomentumEnergyConservationData& d);
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
