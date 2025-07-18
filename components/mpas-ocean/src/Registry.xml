@@ -3991,18 +3991,18 @@
 		/>
 		<var_array name="avgTracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="C"
-				 description="Time averaged potential temperature extrapolated to ocean surface"
+				 description="Time averaged potential temperature in the uppermost active level as determined by minLevelCell"
 			/>
 			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="1.e-3"
-				 description="Time averaged salinity extrapolated to ocean surface"
+				 description="Time averaged salinity in the uppermost active level as determined by minLevelCell"
 			/>
 		</var_array>
 		<var_array name="avgSurfaceVelocity" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="avgSurfaceVelocityZonal" array_group="vel_zonal" units="m s^-1"
-				 description="Time averaged zonal surface velocity"
+				 description="Time averaged zonal surface velocity located in minLevelCell"
 			/>
 			<var name="avgSurfaceVelocityMeridional" array_group="vel_meridional" units="m s^-1"
-				 description="Time averaged meridional surface velocity"
+				 description="Time averaged meridional surface velocity located in minLevelCell"
 			/>
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
