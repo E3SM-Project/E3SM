@@ -135,6 +135,9 @@ contains
 
     ! local variables
     integer :: iCell, iEdge, iVertex, k, idx
+    integer :: count
+    real(kind=RKIND) :: lon, lat
+    real(kind=RKIND) :: lon_min, lon_max, lat_min, lat_max
 
     ! Define dimension pointers
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve 
@@ -230,6 +233,11 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     print*, "Begin cells", nCellsSolve
 
+    lon_min = -79.0
+    lon_max = -70.0
+    lat_min = 35.0
+    lat_max = 42.0
+
     nSubgridTriPerSlice = subgrid_refinement_level**2
     allocate(rSubgridPoints(3,maxEdges*nSubgridTriPerSlice), sSubgridPoints(3,maxEdges*nSubgridTriPerSlice))
     call ocn_init_define_subgrid_points(subgrid_refinement_level, rSubgridPoints, sSubgridPoints)
@@ -243,13 +251,27 @@ contains
     xSubgridCell = 0.0_RKIND  
     ySubgridCell = 0.0_RKIND 
 
-   do iCell = 1,nCellsSolve
+cell:do iCell = 1,nCellsSolve
+
+       lon = xCell(iCell)
+       lat = yCell(iCell)
+       if (lon > pii) then
+           lon = lon - 2.0_RKIND*pii
+       end if
+       lon = lon * 180.0_RKIND/pii
+       lat = lat * 180.0_RKIND/pii
+
+       if ((lon < lon_max) .and. (lon > lon_min) .and. &
+           (lat < lat_max) .and. (lat > lat_min)) then
+       else
+         cycle cell
+       end if
+
       !
       ! Evaluate subgrid bathymetry at centers of sub-triangles for cell slices 
       ! (all subdivided triangles for each cell slice are gathered into 
       !  subgridBathymetryValues and subgridAreas)
       !---------------------------------------------------------------
-
       nSubgridCell = 0  ! Counter for all subgrid triangles over cell slices
       do slice = 1,nEdgesOnCell(iCell) ! Loop over cell slices
 
@@ -282,10 +304,10 @@ contains
       bathymetryMax = minval( subgridBathymetryValues(1:nSubgridCell) )
 
       if (bathymetryMax < -99998) then
-         cycle 
+         cycle cell 
       endif
       if (bathymetryMin > 99998) then
-         cycle
+         cycle cell
       endif
 
       call ocn_init_set_table_range(nSubgridCell, subgridBathymetryValues, subgridSshCellTableRange(:,iCell))
@@ -333,7 +355,7 @@ contains
 !          LayerThickness(1,iCell) = config_drying_min_cell_height ; 
        end if 
 
-    end do
+    end do cell
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Edges
@@ -346,7 +368,21 @@ contains
     cellEdgeBathymetryValues = -99999 ; 
 
 
-    do iEdge = 1,nEdgesSolve
+edge:do iEdge = 1,nEdgesSolve
+
+       lon = xEdge(iEdge)
+       lat = yEdge(iEdge)
+       if (lon > pii) then
+           lon = lon - 2.0_RKIND*pii
+       end if
+       lon = lon * 180.0_RKIND/pii
+       lat = lat * 180.0_RKIND/pii
+
+       if ((lon < lon_max) .and. (lon > lon_min) .and. &
+           (lat < lat_max) .and. (lat > lat_min)) then
+       else
+         cycle edge
+       end if
       !--------------------------------------------------------------
       ! Evaluate subgrid bathymetry at centers of sub-triangles for edge slices
       ! (all subdivided triangles for each edge slice are gathered into 
@@ -385,10 +421,10 @@ contains
       bathymetryMax = minval( subgridBathymetryValues(1:nSubgridEdge) )
 
       if (bathymetryMax < -99998) then
-         cycle 
+         cycle edge
       endif
       if (bathymetryMin > 99998) then
-         cycle
+         cycle edge
       endif
 
       ! Evaluate velocity average
@@ -442,7 +478,7 @@ contains
                     nSubgridCellEdge, cellEdgeBathymetryValues(3,:), dsEdge, subgridWetVolumeEdgeTable, subgridWetFractionEdgeTable )
       endif
 
-    end do
+    end do edge
 
     ! find an ssh value corresponding to drying_min_cell-height 
     ! of each edge 
