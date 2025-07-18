@@ -758,8 +758,7 @@ register_variables(const std::string& filename,
       // Note, unlike with regular output variables, for the average counting
       // variables we don't need to add all of the extra metadata.  So we simply
       // define the variable.
-      scorpio::define_var(filename, name, unitless, dimnames,
-                          "real",fp_precision, m_add_time_dim);
+      scorpio::define_var(filename, name, dimnames, "int", m_add_time_dim);
     }
   }
 } // register_variables
