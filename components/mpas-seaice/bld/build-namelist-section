@@ -359,6 +359,9 @@ add_default($nl, 'config_shortwave_redistribution_threshold');
 
 add_default($nl, 'config_snow_redistribution_scheme');
 add_default($nl, 'config_fallen_snow_radius');
+add_default($nl, 'config_snow_growth_wet_factor');
+add_default($nl, 'config_minimum_snow_growth_factor');
+add_default($nl, 'config_snow_liq_saturation');
 add_default($nl, 'config_use_snow_liquid_ponds');
 add_default($nl, 'config_new_snow_density');
 add_default($nl, 'config_max_snow_density');
