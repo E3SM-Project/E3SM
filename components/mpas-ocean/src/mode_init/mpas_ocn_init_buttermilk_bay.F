@@ -553,10 +553,12 @@ contains
       real (kind=RKIND), intent(in) :: xin, yin
       real (kind=RKIND), intent(out) :: depth
 
-      integer:: ix(2)
+      integer :: ix(2)
+      integer :: i, idx_lon, idx_lat
+
       real (kind=RKIND) :: x, y
       real (kind=RKIND) :: xc(2)
-      real (kind=RKIND) :: dx(2), x0(2), xN(2), bath(4), f(4), den
+      real (kind=RKIND) :: dx(2), bath(4), f(4), den
       real (kind=RKIND) :: xv(2), yv(2)
 
       !--------------------------------------------------------------------
@@ -576,19 +578,18 @@ contains
       end if
      
 
-      x0 = (/ topoLon%array(1), topoLat%array(1) /) ;
-      xN = (/ topoLon%array(nLonTopo), topoLat%array(nLatTopo) /) ;
-      dx = (/ topoLon%array(2) - topoLon%array(1), &
-              topoLat%array(2) - topoLat%array(1) /) ;
-
       ! Bilienar interpolation
       xc = (/ x, y /) ;
-      ix = floor( (xc - x0)/dx ) + 1 ;
 
-      if ( ( ix(1) >= 1 .and. ix(1) < nLonTopo ) .and. &
-              ( ix(2) >= 1 .and. ix(2) < nLatTopo ) ) then
-        ! include the west and soutth bourdaries of
-        ! a given uniform raster DEM
+      ix(1) = bisection_index(x, topoLon%array, nLonTopo)
+      ix(2) = bisection_index(y, topoLat%array, nLatTopo)
+
+      !PRINT*, ix(1), ix(2)
+      if ((ix(1) > 0) .and. (ix(2) > 0)) then
+
+        dx = (/ topoLon%array(ix(1)+1) - topoLon%array(ix(1)), &
+                topoLat%array(ix(2)+1) - topoLat%array(ix(2)) /) ;
+
         bath(1) = TopoIC%array(ix(1),ix(2))  ;
         bath(2) = TopoIC%array(ix(1)+1,ix(2)) ;
         bath(3) = TopoIC%array(ix(1)+1,ix(2)+1) ;
@@ -618,6 +619,10 @@ contains
            call extrapolate_topography( ) ;
 !            depth = config_Buttermilk_bay_topography_extrapolation_constant_value ;  
         end if    
+
+        if ((bath(1) /= bath(1)) .or. (bath(2) /= bath(2)) .or. (bath(3) /= bath(3)) .or. (bath(4) /= bath(4))) then
+            call extrapolate_topography( )
+        end if
 
 !        if (minval(bath) < -99998) then
 !          depth = -1d10
@@ -662,6 +667,40 @@ contains
         end if
            
       end subroutine extrapolate_topography        
+
+      !--------------------------------------------------------------------
+      ! Bisection search to find index such that:
+      !   arr(index) <= value < arr(index+1)
+      ! If value is outside the grid, -9999 is returned.
+      !--------------------------------------------------------------------
+      integer function bisection_index(value, arr, n) result(idx)
+         implicit none
+         integer, intent(in) :: n
+         real(kind=RKIND), intent(in) :: value
+         real(kind=RKIND), intent(in) :: arr(n)
+         integer :: low, high, mid
+
+         if (value < arr(1)) then
+            idx = -9999
+            return
+         end if
+         if (value > arr(n)) then
+            idx = -9999 
+            return
+         end if
+
+         low = 1
+         high = n
+         do while (high - low > 1)
+            mid = (low + high) / 2
+            if (value < arr(mid)) then
+               high = mid
+            else
+               low = mid
+            end if
+         end do
+         idx = low
+         end function bisection_index
    end subroutine ocn_init_Buttermilk_bay_bathymetry!}}}
 
 !***********************************************************************
