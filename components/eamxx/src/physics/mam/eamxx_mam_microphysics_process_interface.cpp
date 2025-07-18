@@ -529,16 +529,35 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     //Some dignostics fields have mixed units (kg/kg/s, #/kg/s, etc.)
     //For these fields, we add a docstring to the field to indicate that
     //the units are mixed and the user should be careful when using these fields.
-    const std::vector<std::string> mixed_units_fields = {
-      "mam4_microphysics_tendency_gas_phase_chemistry", 
-      "mam4_microphysics_tendency_aqueous_chemistry", 
-      "mam4_microphysics_tendency_aqso4",
-      "mam4_microphysics_tendency_aqh2so4",
-      "mam4_microphysics_tendency_condensation",
-      "mam4_microphysics_tendency_renaming",
-      "mam4_microphysics_tendency_nucleation",
-      "mam4_microphysics_tendency_coagulation",
-      "mam4_microphysics_tendency_renaming_cloud_borne",
+    //Following map contains the map of fields with mixed units and their long names.
+    const std::map<std::string, std::string>  mixed_units_fields = {
+      {"mam4_microphysics_tendency_gas_phase_chemistry", 
+      "MAM4xx microphysics tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_aqueous_chemistry",
+      "MAM4xx microphysics tendencies due to aqueous chemistry [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_aqso4", 
+      "MAM4xx microphysics tendencies due to aqueous SO4 [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_aqh2so4", 
+      "MAM4xx microphysics tendencies due to aqueous H2SO4 [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_condensation", 
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (condensation) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_renaming", 
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_nucleation", 
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (nucleation) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_coagulation", 
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (coagulation) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_renaming_cloud_borne", 
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming cloud borne) [mixed units: mol/mol/s or #/mol/s]"},
+      
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);

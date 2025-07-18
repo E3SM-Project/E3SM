@@ -163,15 +163,15 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
-  void add_io_docstring_to_fields_with_mixed_units(const std::vector<std::string> &flds) {
+  void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
     using str_atts_t = std::map<std::string,std::string>;
-    for (const auto &fname : flds) {
+    for (const auto &pair : flds) {
       // Get the field, and add a docstring to its string attributes
       // This is used to document that the field contains heterogeneous
       // quantities, i.e., species have different units.                 
-      auto &f = get_field_out(fname);
+      auto &f = get_field_out(pair.first);
       auto &io_str_atts = f.get_header().get_extra_data<str_atts_t>("io: string attributes");
-      io_str_atts["doc"] = "Collection of heterogeneous quantities--species have different units";
+      io_str_atts["doc"] = pair.second;
     }
   }
 };  // MAMMicrophysics
