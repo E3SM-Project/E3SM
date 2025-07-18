@@ -210,7 +210,7 @@ contains
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
-      iMOAB_WriteMappingWeightsToFile, iMOAB_SetMapGhostLayers
+      iMOAB_WriteMapFile, iMOAB_SetMapGhostLayers
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -278,7 +278,7 @@ contains
     integer noflds   ! used for number of fields in allocating moab accumulated array x2oacc_om
     real (kind=R8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
     integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
-    integer  nghlay_tgt
+    integer  nghlay_tgt, arearead
 
     !---------------------------------------------------------------
 
@@ -540,7 +540,7 @@ contains
                      call shr_sys_abort(subname//' ERROR in computing ATM-OCN weights ')
                   endif
 
-                  ! ierr = iMOAB_WriteMappingWeightsToFile(mbintxao, wgtIda2o_bilinear, 'bilinear_a2o.nc'//C_NULL_CHAR)
+                  ! ierr = iMOAB_WriteMapFile(mbintxao, wgtIda2o_bilinear, 'bilinear_a2o.nc'//C_NULL_CHAR)
 
                   ! Next compute the conservative map for projection of flux fields
                   if (iamroot_CPLID) then
@@ -560,13 +560,15 @@ contains
 
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_fmapname:', 'atm2ocn_fmaptype:',samegrid_ao, &
-                        wgtIda2o_conservative, 'mapper_Fa2o moab initialization', esmf_map_flag)
+                        arearead, wgtIda2o_conservative, 'mapper_Fa2o moab initialization', esmf_map_flag)
 
+                  arearead = 0
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
-                        wgtIda2o_bilinear, 'mapper_Sa2o moab initialization', esmf_map_flag)
+                        arearead, wgtIda2o_bilinear, 'mapper_Sa2o moab initialization', esmf_map_flag)
 
                   context_id = idintx
                   ! again, one coverage set and coverage graph for 2 different maps
@@ -747,9 +749,10 @@ contains
           end if
 
           type_grid = 3 ! this is type of grid, maybe should be saved on imoab app ?
+          arearead = 1 ! read area_a for river model
           call moab_map_init_rcfile(mbrxid, mboxid, mbintxro, type_grid, &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
-               wgtIdr2o_conservative, 'mapper_Rr2o_liq moab initialization',esmf_map_flag)
+               arearead, wgtIdr2o_conservative, 'mapper_Rr2o_liq moab initialization',esmf_map_flag)
 
          type1 = 3 ! fv mesh nowadays
          context_id = rmapid ! ocn(1)%cplcompid
