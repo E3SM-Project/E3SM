@@ -823,15 +823,6 @@ contains
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields on rof cpl')
             endif
 
-            ! compute the ATM coverage mesh here on coupler pes
-            ! ATM mesh was redistributed to cover target (LND) partition
-            ierr = iMOAB_ComputeCoverageMesh( mboxid, mbrxid, mbintxor )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' cannot compute source OCN coverage mesh for ROF'
-               call shr_sys_abort(subname//' ERROR in computing OCN-ROF coverage')
-            endif
-
-
             ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_o2r) then
                type1 = 3 ! this is type of grid

@@ -179,47 +179,47 @@ contains
                    maprcfile, maprcname, maprctype, samegrid, arearead, map_identifier, &
                    description_string, esmf_map, fallback_map_identifier )
 
-   use iMOAB, only: iMOAB_LoadMapFile
-   implicit none
-   !-----------------------------------------------------
-   !
-   ! Arguments
-   !
-   type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
-   type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
-   type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
-   type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
-   ! type(component_type) ,intent(inout)         :: comp_s
-   ! type(component_type) ,intent(inout)         :: comp_d
-   character(len=*)     ,intent(in)            :: maprcfile
-   character(len=*)     ,intent(in)            :: maprcname
-   character(len=*)     ,intent(in)            :: maprctype
-   logical              ,intent(in)            :: samegrid
-   integer              ,intent(in)            :: arearead ! read or not area_a and area_b
-   character(len=*)     ,intent(inout)         :: map_identifier !   /* "scalar", "flux", "custom" */
-   character(len=*)     ,intent(in),optional   :: description_string
-   logical              ,intent(in),optional   :: esmf_map
-   character(len=*)     ,intent(in),optional   :: fallback_map_identifier
-   !
-   ! Local Variables
-   !
-   !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
-   !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
-   integer(IN)                 :: mpicom
-   character(CX)               :: mapfile
-   character(CX)               :: mapfile_term
-   character(CL)               :: maptype
-   integer(IN)                 :: mapid
-   integer                     :: ierr
+    use iMOAB, only: iMOAB_LoadMapFile
+    implicit none
+    !-----------------------------------------------------
+    !
+    ! Arguments
+    !
+    type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
+    type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
+    type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
+    type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
+    ! type(component_type) ,intent(inout)         :: comp_s
+    ! type(component_type) ,intent(inout)         :: comp_d
+    character(len=*)     ,intent(in)            :: maprcfile
+    character(len=*)     ,intent(in)            :: maprcname
+    character(len=*)     ,intent(in)            :: maprctype
+    logical              ,intent(in)            :: samegrid
+    integer              ,intent(in)            :: arearead ! read or not area_a and area_b
+    character(len=*)     ,intent(inout)         :: map_identifier !   /* "scalar", "flux", "custom" */
+    character(len=*)     ,intent(in),optional   :: description_string
+    logical              ,intent(in),optional   :: esmf_map
+    character(len=*)     ,intent(in),optional   :: fallback_map_identifier
+    !
+    ! Local Variables
+    !
+    !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
+    !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
+    integer(IN)                 :: mpicom
+    character(CX)               :: mapfile
+    character(CX)               :: mapfile_term
+    character(CL)               :: maptype
+    integer(IN)                 :: mapid
+    integer                     :: ierr
 
-   character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
-   !-----------------------------------------------------
+    character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
+    !-----------------------------------------------------
 
-   if (seq_comm_iamroot(CPLID) .and. present(description_string)) then
-      write(logunit,'(A)') subname//' called for '//trim(description_string)
-   endif
+    if (seq_comm_iamroot(CPLID) .and. present(description_string)) then
+        write(logunit,'(A)') subname//' called for '//trim(description_string)
+    endif
 
-   call seq_comm_setptrs(CPLID, mpicom=mpicom)
+    call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
    ! --- Initialize Smatp
    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
@@ -250,8 +250,9 @@ contains
             trim(mapfile), ', identifier: ', trim(map_identifier)
          call shr_sys_flush(logunit)
       endif
+    endif
 
-end subroutine moab_map_init_rcfile
+  end subroutine moab_map_init_rcfile
 
   !=======================================================================
 
