@@ -370,15 +370,6 @@ contains
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
                         arearead, wgtIdSo2a, 'mapper_So2a MOAB init', esmf_map_flag)
-                  ! need to call migrate map mesh, which will compute the cov mesh and
-                  !  comm graph too for coverage mesh
-                  context_id = idintx ! intx id
-                  ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
-                     mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                     call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-                  endif
 
                endif
 
@@ -500,6 +491,17 @@ contains
                call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                      'seq_maps.rc', 'ocn2atm_fmapname:', 'ocn2atm_fmaptype:', samegrid_ao, &
                      arearead, wgtIdFo2a, 'mapper_Fo2a MOAB init', esmf_map_flag )
+                
+               ! need to call migrate map mesh, which will compute the cov mesh and
+               !  comm graph too for coverage mesh
+               context_id = idintx ! intx id
+               ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
+                    mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+               endif
+
             end if
             ! now take care of the mapper
             mapper_Fo2a%src_mbid = mboxid
