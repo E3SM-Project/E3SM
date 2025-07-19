@@ -470,8 +470,12 @@ contains
        endif
 #ifdef MOABDEBUG
        ! mblx2id is the id for moab app exposing land cpl 
-       call expose_mct_grid_moab(lnd, mblx2id)
-       call expose_mct_grid_moab(ice, mbix2id)
+       if(mblxid > 0) then
+           call expose_mct_grid_moab(lnd, mblx2id)
+       endif
+       if (mbixid > 0 ) then
+           call expose_mct_grid_moab(ice, mbix2id)
+       endif
 #endif
 
        kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
