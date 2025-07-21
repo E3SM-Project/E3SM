@@ -38,7 +38,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   while (std::getline(stream, token, '_')) {
     bin_values.push_back(std::stod(token));
   }
-  int num_bins = bin_values.size()-1;
+  const int num_bins = bin_values.size()-1;
 
   // allocate histogram field
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
