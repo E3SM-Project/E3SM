@@ -41,7 +41,7 @@ TEST_CASE("zonal_avg") {
   constexpr int nlevs = 3;
   constexpr int dim3  = 4;
   const int ncols    = 6;
-  const int nlats     = 4;
+  const int nlats     = 4; // needs to be <= ncols
 
   const int ngcols = ncols * comm.size();
   auto gm   = create_gm(comm, ngcols, nlevs);
@@ -60,6 +60,8 @@ TEST_CASE("zonal_avg") {
     lat_view_h(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
     zonal_areas[i % nlats] += area_view_h[i];
   }
+  lat_view_h(0) = sp(-90.0); // move column to be directly at southern pole
+  lat_view_h(nlats-1) = sp(90.0); // move column to be directly at northern pole
   lat.sync_to_dev();
   comm.all_reduce(zonal_areas.data(), zonal_areas.size(), MPI_SUM);
 
