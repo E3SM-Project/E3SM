@@ -173,7 +173,8 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
       team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
         const int bin_i      = tm.league_rank();
         const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
-        const Real lat_upper = lat_lower + lat_delta;
+        const Real lat_upper = (bin_i < m_num_zonal_bins-1)
+          ? lat_lower + lat_delta : sp(90.0 + 0.5*lat_delta);
         Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
             [&](int col_i, Int &val) {
               if ((lat_lower <= lat_view(col_i)) && (lat_view(col_i) < lat_upper))
@@ -205,7 +206,8 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   Kokkos::parallel_for("assign_columns_to_zonal_bins_" + field.name(),
       RangePolicy(0, m_num_zonal_bins), [&] (int bin_i) {
         const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
-        const Real lat_upper = lat_lower + lat_delta;
+        const Real lat_upper = (bin_i < m_num_zonal_bins-1)
+          ? lat_lower + lat_delta : sp(90.0 + 0.5*lat_delta);
         bin_to_cols_view(bin_i, 0) = 0;
         for (int col_i=0; col_i < ncols; col_i++)
         {
