@@ -7,16 +7,14 @@
 
 namespace scream {
 
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols, const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
+std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ngcols, const int nlevs) {
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
   gm_params.set("grids_names", vos_t{"Point Grid"});
   auto &pl = gm_params.sublist("Point Grid");
   pl.set<std::string>("type", "point_grid");
   pl.set("aliases", vos_t{"Physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
+  pl.set<int>("number_of_global_columns", ngcols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
   auto gm = create_mesh_free_grids_manager(comm, gm_params);
@@ -41,11 +39,12 @@ TEST_CASE("zonal_avg") {
   // Create a grids manager - single column for these tests
   constexpr int nlevs = 3;
   constexpr int dim3  = 4;
-  const int ngcols    = 6 * comm.size();
-  const int nlats     = 4; // needs to be <= ngcols
+  const int ncols    = 6;
+  const int nlats     = 4; // needs to be <= ncols
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("Physics");
+  const int ngcols = ncols * comm.size();
+  auto gm          = create_gm(comm, ngcols, nlevs);
+  auto grid        = gm->get_grid("Physics");
 
   Field area       = grid->get_geometry_data("area");
   auto area_view_h = area.get_view<const Real *, Host>();
@@ -56,18 +55,19 @@ TEST_CASE("zonal_avg") {
   auto lat_view_h      = lat.get_view<Real *, Host>();
   const Real lat_delta = sp(180.0) / nlats;
   std::vector<Real> zonal_areas(nlats, 0.0);
-  for (int i = 0; i < ngcols; i++) {
+  for (int i = 0; i < ncols; i++) {
     lat_view_h(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
     zonal_areas[i % nlats] += area_view_h[i];
   }
+  comm.all_reduce(zonal_areas.data(), zonal_areas.size(), MPI_SUM);
   lat_view_h(0) = sp(-90.0); // move column to be directly at southern pole
   lat_view_h(nlats-1) = sp(90.0); // move column to be directly at northern pole
   lat.sync_to_dev();
 
   // Input (randomized) qc
-  FieldLayout scalar1d_layout{{COL}, {ngcols}};
-  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
-  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ngcols, dim3, nlevs}};
+  FieldLayout scalar1d_layout{{COL}, {ncols}};
+  FieldLayout scalar2d_layout{{COL, LEV}, {ncols, nlevs}};
+  FieldLayout scalar3d_layout{{COL, CMP, LEV}, {ncols, dim3, nlevs}};
 
   FieldIdentifier qc1_id("qc", scalar1d_layout, kg / kg, grid->name());
   FieldIdentifier qc2_fid("qc", scalar2d_layout, kg / kg, grid->name());
@@ -137,10 +137,12 @@ TEST_CASE("zonal_avg") {
   // calculate the zonal average
   auto qc1_view_h   = qc1.get_view<const Real *, Host>();
   auto diag0_view_h = diag0_field.get_view<Real *, Host>();
-  for (int i = 0; i < ngcols; i++) {
+  for (int i = 0; i < ncols; i++) {
     const int nlat = i % nlats;
     diag0_view_h(nlat) += area_view_h(i) / zonal_areas[nlat] * qc1_view_h(i);
   }
+  comm.all_reduce(diag0_field.template get_internal_view_data<Real, Host>(),
+    diag0_layout.size(), MPI_SUM);
   diag0_field.sync_to_dev();
 
   // Compare
@@ -180,7 +182,7 @@ TEST_CASE("zonal_avg") {
   diag3m_field.allocate_view();
   auto qc3_view_h    = qc3.get_view<Real ***, Host>();
   auto diag3m_view_h = diag3m_field.get_view<Real ***, Host>();
-  for (int i = 0; i < ngcols; i++) {
+  for (int i = 0; i < ncols; i++) {
     const int nlat = i % nlats;
     for (int j = 0; j < dim3; j++) {
       for (int k = 0; k < nlevs; k++) {
@@ -188,6 +190,8 @@ TEST_CASE("zonal_avg") {
       }
     }
   }
+  comm.all_reduce(diag3m_field.template get_internal_view_data<Real, Host>(),
+    diag3m_layout.size(), MPI_SUM);
   diag3m_field.sync_to_dev();
   diag3->set_required_field(qc3);
   diag3->initialize(t0, RunType::Initial);
