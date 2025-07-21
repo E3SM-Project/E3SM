@@ -42,7 +42,7 @@ TEST_CASE("zonal_avg") {
   constexpr int nlevs = 3;
   constexpr int dim3  = 4;
   const int ngcols    = 6 * comm.size();
-  const int nlats     = 4;
+  const int nlats     = 4; // needs to be <= ngcols
 
   auto gm   = create_gm(comm, ngcols, nlevs);
   auto grid = gm->get_grid("Physics");
@@ -60,6 +60,8 @@ TEST_CASE("zonal_avg") {
     lat_view_h(i) = sp(-90.0) + (i % nlats + sp(0.5)) * lat_delta;
     zonal_areas[i % nlats] += area_view_h[i];
   }
+  lat_view_h(0) = sp(-90.0); // move column to be directly at southern pole
+  lat_view_h(nlats-1) = sp(90.0); // move column to be directly at northern pole
   lat.sync_to_dev();
 
   // Input (randomized) qc
