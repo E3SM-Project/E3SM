@@ -2,7 +2,6 @@
 ---
 filename_prefix: surface_coupling_output
 averaging_type: instant
-fill_value: -99999.0
 field_names:
   # IMPORTER
   - sfc_alb_dir_vis

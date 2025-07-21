@@ -48,9 +48,6 @@ void AODVis::initialize_impl(const RunType /*run_type*/) {
   auto nondim = ekat::units::Units::nondimensional();
   const auto &grid_name =
       m_diagnostic_output.get_header().get_identifier().get_grid_name();
-  const auto var_fill_value = constants::fill_value<Real>;
-
-  m_mask_val = m_params.get<double>("mask_value", var_fill_value);
 
   std::string mask_name = name() + " mask";
   FieldLayout mask_layout({COL}, {m_ncols});
@@ -58,8 +55,7 @@ void AODVis::initialize_impl(const RunType /*run_type*/) {
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
 
-  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
-  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
+  m_diagnostic_output.get_header().set_extra_data("mask_field", diag_mask);
 }
 
 void AODVis::compute_diagnostic_impl() {
@@ -68,9 +64,11 @@ void AODVis::compute_diagnostic_impl() {
   using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using RU  = ekat::ReductionUtils<typename KT::ExeSpace>;
 
+  constexpr auto fill_value = constants::fill_value<Real>;
+
   const auto aod     = m_diagnostic_output.get_view<Real *>();
   const auto mask    = m_diagnostic_output.get_header()
-                        .get_extra_data<Field>("mask_data")
+                        .get_extra_data<Field>("mask_field")
                         .get_view<Real *>();
   const auto tau_vis = get_field_in("aero_tau_sw")
                            .subfield(1, m_vis_bnd)
@@ -78,13 +76,12 @@ void AODVis::compute_diagnostic_impl() {
   const auto sunlit = get_field_in("sunlit").get_view<const Real *>();
 
   const auto num_levs = m_nlevs;
-  const auto var_fill_value = m_mask_val;
   const auto policy   = TPF::get_default_team_policy(m_ncols, m_nlevs);
   Kokkos::parallel_for(
       "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         if(sunlit(icol) == 0.0) {
-          aod(icol) = var_fill_value;
+          aod(icol) = fill_value;
           Kokkos::single(Kokkos::PerTeam(team), [&] { mask(icol) = 0; });
         } else {
           auto tau_icol = ekat::subview(tau_vis, icol);

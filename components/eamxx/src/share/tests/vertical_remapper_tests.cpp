@@ -15,7 +15,7 @@ constexpr auto Mask = VerticalRemapper::Mask;
 constexpr auto Top = VerticalRemapper::Top;
 constexpr auto Bot = VerticalRemapper::Bot;
 constexpr auto TopBot = VerticalRemapper::TopAndBot;
-constexpr Real mask_val = -99999.0;
+constexpr Real fill_val = constants::fill_value<Real>;
 
 template<typename... Args>
 void print (const std::string& fmt, const ekat::Comm& comm, Args&&... args) {
@@ -174,9 +174,9 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
         for (int j=0; j<nlevs; ++j) {
           auto p = pval(p1d_tgt,p2d_tgt,i,j,p_tgt.rank());
           if (p>pmax) {
-            v(i,j) = etype_bot==Mask ? mask_val : data_func(i,0,pmax);
+            v(i,j) = etype_bot==Mask ? fill_val : data_func(i,0,pmax);
           } else if (p<pmin) {
-            v(i,j) = etype_top==Mask ? mask_val : data_func(i,0,pmin);
+            v(i,j) = etype_top==Mask ? fill_val : data_func(i,0,pmin);
           }
       }}
     } break;
@@ -190,9 +190,9 @@ void extrapolate (const Field& p_src, const Field& p_tgt, const Field& f,
           for (int k=0; k<nlevs; ++k) {
             auto p = pval(p1d_tgt,p2d_tgt,i,k,p_tgt.rank());
             if (p>pmax) {
-              v(i,j,k) = etype_bot==Mask ? mask_val : data_func(i,j,pmax);
+              v(i,j,k) = etype_bot==Mask ? fill_val : data_func(i,j,pmax);
             } else if (p<pmin) {
-              v(i,j,k) = etype_top==Mask ? mask_val : data_func(i,j,pmin);
+              v(i,j,k) = etype_top==Mask ? fill_val : data_func(i,j,pmin);
             }
       }}}
     } break;
@@ -390,7 +390,6 @@ TEST_CASE ("vertical_remapper") {
 
   const Real ptop_src = 50;
   const Real pbot_src = 1000;
-  const Real mask_val = -99999.0;
 
   // Test tgt grid with 2x and 0.5x as many levels as src grid
   for (int nlevs_tgt : {nlevs_src/2, 2*nlevs_src}) {
@@ -455,8 +454,6 @@ TEST_CASE ("vertical_remapper") {
             remap->set_target_pressure (pmid_tgt, pint_tgt);
             remap->set_extrapolation_type(etype_top,Top);
             remap->set_extrapolation_type(etype_bot,Bot);
-            REQUIRE_THROWS (remap->set_mask_value(std::numeric_limits<Real>::quiet_NaN()));
-            remap->set_mask_value(mask_val); // Only needed if top and/or bot use etype=Mask
 
             remap->register_field(src_s2d,  tgt_s2d);
             remap->register_field(src_v2d,  tgt_v2d);
