@@ -8,7 +8,6 @@
 namespace scream {
 
 std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ngcols, const int nlevs) {
-
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
   gm_params.set("grids_names", vos_t{"Point Grid"});
@@ -128,7 +127,8 @@ TEST_CASE("histogram") {
         diag0_view_h(bin_i) += 1;
     }
   }
-  comm.all_reduce(diag0_field.template get_internal_view_data<Int, Host>(), diag0_layout.size(), MPI_SUM);
+  comm.all_reduce(diag0_field.template get_internal_view_data<Int, Host>(),
+    diag0_layout.size(), MPI_SUM);
   diag0_field.sync_to_dev();
 
   // Compare
@@ -177,7 +177,8 @@ TEST_CASE("histogram") {
       }
     }
   }
-  comm.all_reduce(diag3m_field.template get_internal_view_data<Int, Host>(), diag3m_layout.size(), MPI_SUM);
+  comm.all_reduce(diag3m_field.template get_internal_view_data<Int, Host>(),
+    diag3m_layout.size(), MPI_SUM);
   diag3m_field.sync_to_dev();
   diag3->set_required_field(qc3);
   diag3->initialize(t0, RunType::Initial);
