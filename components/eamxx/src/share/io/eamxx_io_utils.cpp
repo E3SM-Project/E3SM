@@ -141,6 +141,7 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex horiz_avg ("([A-Za-z0-9_]+)_horiz_avg$");
   std::regex vert_contract ("([A-Za-z0-9_]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
   std::regex zonal_avg (R"(([A-Za-z0-9_]+)_zonal_avg_(\d+)_bins$)");
+  std::regex histogram (R"(([A-Za-z0-9_]+)_histogram_(\d+(\.\d+)?(_\d+(\.\d+)?)+)$)");
 
   std::string diag_name;
   std::smatch matches;
@@ -216,6 +217,12 @@ create_diagnostic (const std::string& diag_field_name,
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("number_of_zonal_bins", matches[2].str());
+  }
+  else if (std::regex_search(diag_field_name,matches,histogram)) {
+    diag_name = "HistogramDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_name", matches[1].str());
+    params.set<std::string>("bin_configuration", matches[2].str());
   }
   else
   {
