@@ -32,8 +32,6 @@ TEST_CASE("aodvis") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  Real var_fill_value = constants::fill_value<Real>;
-
   Real some_limit = 0.0025;
 
   // A world comm
@@ -121,7 +119,7 @@ TEST_CASE("aodvis") {
 
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       if(sun_h(icol) < some_limit) {
-        aod_t(icol) = var_fill_value;
+        aod_t(icol) = constants::fill_value<Real>;
       } else {
         for(int ilev = 0; ilev < nlevs; ++ilev) {
           aod_t(icol) += tau_h(icol, swvis, ilev);

@@ -219,13 +219,6 @@ protected:
 
   DefaultMetadata                       m_default_metadata;
 
-  // Use float, so that if output fp_precision=float, this is a representable value.
-  // Otherwise, you would get an error from Netcdf, like
-  //   NetCDF: Numeric conversion not representable
-  // Also, by default, don't pick max float, to avoid any overflow if the value
-  // is used inside other calculation and/or remap.
-  float m_fill_value = constants::fill_value<float>;
-
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;
   std::string m_decomp_dimname = "";

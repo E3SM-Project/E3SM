@@ -47,7 +47,6 @@ public:
   ~VerticalRemapper () = default;
 
   void set_extrapolation_type (const ExtrapType etype, const TopBot where = TopAndBot);
-  void set_mask_value (const Real mask_val);
 
   void set_source_pressure (const Field& p, const ProfileType ptype);
   void set_target_pressure (const Field& p, const ProfileType ptype);
@@ -95,8 +94,7 @@ public:
                                      const Field& p_src, const Field& p_tgt) const;
 
   void extrapolate (const Field& f_src, const Field& f_tgt,
-                    const Field& p_src, const Field& p_tgt,
-                    const Real mask_val) const;
+                    const Field& p_src, const Field& p_tgt) const;
 
   template<int N>
   void setup_lin_interp (const ekat::LinInterp<Real,N>& lin_interp,
@@ -135,7 +133,6 @@ protected:
   // Extrapolation settings at top/bottom. Default to P0 extrapolation
   ExtrapType            m_etype_top = P0;
   ExtrapType            m_etype_bot = P0;
-  Real                  m_mask_val = std::numeric_limits<Real>::quiet_NaN();
 
   // We need to remap mid/int fields separately, and we want to use packs if possible,
   // so we need to divide input fields into 4 separate categories
