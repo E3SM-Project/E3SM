@@ -394,8 +394,8 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-       use_float, file_ind, mask, scolumn)
+  subroutine seq_io_write_av(filename,gsmap,AV,dname,whead,wdata,nx,ny,nt,fillval,dims2din,&
+       dims2do,pre,tavg,use_float, file_ind, mask, scolumn)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -409,6 +409,8 @@ contains
     integer(in),optional,intent(in) :: ny   ! 2d grid size if available
     integer(in),optional,intent(in) :: nt   ! time sample
     real(r8),optional,intent(in) :: fillval ! fill value
+    integer(in),optional,intent(out) :: dims2do(2)   ! dim ids to output
+    integer(in),optional,intent(in) :: dims2din(2)   ! dim ids to output
     character(len=*),optional,intent(in) :: pre      ! prefix to variable name
     logical,optional,intent(in) :: tavg     ! is this a tavg
     logical,optional,intent(in) :: use_float ! write output as float rather than double
@@ -505,8 +507,17 @@ contains
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
+       if (present(dims2do)) then
+          dims2do(1)=dimid2(1)
+          dims2do(2)=dimid2(2)
+       endif
 
        if (present(nt)) then
           dimid3(1:2) = dimid2
@@ -613,8 +624,8 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_write_avs(filename,gsmap,AVS,dname,whead,wdata,nx,ny,nt,fillval,pre,tavg,&
-       use_float,file_ind,scolumn)
+  subroutine seq_io_write_avs(filename,gsmap,AVS,dname,whead,wdata,nx,ny,nt,fillval,dims2din,&
+       dims2do,pre,tavg,use_float,file_ind,scolumn)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -628,6 +639,8 @@ contains
     integer(in),optional,intent(in) :: ny   ! 2d grid size if available
     integer(in),optional,intent(in) :: nt   ! time sample
     real(r8),optional,intent(in) :: fillval ! fill value
+    integer(in),optional,intent(in) :: dims2din(2)   ! dim ids to output
+    integer(in),optional,intent(out) :: dims2do(2)   ! dim ids for output
     character(len=*),optional,intent(in) :: pre      ! prefix to variable name
     logical,optional,intent(in) :: tavg     ! is this a tavg
     logical,optional,intent(in) :: use_float ! write output as float rather than double
@@ -728,8 +741,17 @@ contains
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
+       if (present(dims2do)) then
+          dims2do(1)=dimid2(1)
+          dims2do(2)=dimid2(2)
+       endif
 
        if (ni > 1) then
           rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
@@ -837,7 +859,7 @@ contains
   ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_write_avscomp(filename, comp, flow, dname, &
-       whead, wdata, nx, ny, nt, fillval, pre, tavg, use_float, file_ind, scolumn, mask)
+       whead, wdata, nx, ny, nt, fillval, dims2din, pre, tavg, use_float, file_ind, scolumn, mask)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -851,6 +873,7 @@ contains
     integer(in)      ,optional,intent(in) :: ny        ! 2d grid size if available
     integer(in)      ,optional,intent(in) :: nt        ! time sample
     real(r8)         ,optional,intent(in) :: fillval   ! fill value
+    integer(in) ,optional,intent(in) :: dims2din(2) ! use previously made 2d dims
     character(len=*) ,optional,intent(in) :: pre       ! prefix to variable name
     logical          ,optional,intent(in) :: tavg      ! is this a tavg
     logical          ,optional,intent(in) :: use_float ! write output as float rather than double
@@ -959,8 +982,13 @@ contains
     endif
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
 
        if (ni > 1) then
           rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ni',ni,dimid3(3))
