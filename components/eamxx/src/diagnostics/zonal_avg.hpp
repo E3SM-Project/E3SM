@@ -8,7 +8,10 @@ namespace scream {
  * This diagnostic will calculate area-weighted zonal averages of a field across
  * the COL tag dimension producing an N dimensional field, where the COL tag
  * dimension is replaced by a CMP tag dimension named "bin" that indicates which
- * zonal band the average value corresponds to.
+ * zonal band the average value corresponds to. All bins are "closed" at the
+ * lower value and "open" at the upper value (lat_lower <= lat < lat_upper),
+ * with the exception of the "last" bin that is closed at both ends to capture
+ * any column that is centered at the northern pole (lat_lower <= lat <= 90).
  */
 
 class ZonalAvgDiag : public AtmosphereDiagnostic {
