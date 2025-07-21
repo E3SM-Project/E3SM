@@ -44,13 +44,30 @@ enum class CombineMode {
 //    result = (op beta*result alpha*newVal) (where op can be +, *, /, max, min)
 // This routine should have no overhead compared to a manual
 // update (assuming you call it with the proper CM)
-
-template<CombineMode CM, typename ScalarIn, typename ScalarOut,
+// If fill-aware=true, we only perform the combine operation if either
+//   a) CM is Replace
+//   b) the new value is NOT fill_value
+// In other words, with fill_aware=true we IGNORE new values that are equal to fill_value,
+// unless we are replacing the content.
+// NOTE: the default 'void' for the scalar types is obviously never used, since the
+//       type is deduced from the inputs. The reason for the default is to allow to
+//       give a default to fill_aware.
+template<CombineMode CM, bool fill_aware = false, typename ScalarIn = void, typename ScalarOut = void,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha, const CoeffType beta)
 {
+  // Do compile-time checks first
+  if constexpr (fill_aware) {
+    if constexpr (CM==CombineMode::Replace)
+      combine<CM>(newVal,result,alpha,beta);
+    else if (newVal != constants::fill_value<ScalarIn>())
+      combine<CM>(newVal,result,alpha,beta);
+
+    return;
+  }
+
   using ekat::impl::max;
   using ekat::impl::min;
   switch (CM) {
@@ -73,30 +90,8 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
     case CombineMode::Min:
       result  = min(beta*result,static_cast<const ScalarOut&>(alpha*newVal));
       break;
-  }
-}
-/* Special version of combine that takes a mask into account */
-template<CombineMode CM, typename ScalarIn, typename ScalarOut,
-         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
-KOKKOS_FORCEINLINE_FUNCTION
-void fill_aware_combine (const ScalarIn& newVal, ScalarOut& result, const ScalarOut fill_val,
-              const CoeffType alpha, const CoeffType beta)
-{
-  switch (CM) {
-    case CombineMode::Replace:
-      combine<CM>(newVal,result,alpha,beta);
-      break;
-    case CombineMode::Update:
-    case CombineMode::Multiply:
-    case CombineMode::Divide:
-    case CombineMode::Max:
-    case CombineMode::Min:
-      if (newVal != fill_val)
-        combine<CM>(newVal,result,alpha,beta);
-      break;
-        
     default:
-      EKAT_KERNEL_ERROR_MSG("Unsupported combine mode for 'fill_aware_combine' overload");
+      EKAT_KERNEL_ERROR_MSG ("Unknown/unsupported combine mode.\n");
   }
 }
 
