@@ -167,7 +167,8 @@ if (EAMXX_ENABLE_PYTHON)
   target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
 endif()
 
-target_link_libraries(scream_share PUBLIC ekat pioc)
+target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
+
 target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
 )
