@@ -1153,6 +1153,7 @@ if ($ocn_bgc eq 'eco_only' || $ocn_bgc eq 'eco_and_dms' || $ocn_bgc eq 'eco_and_
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3', 'val'=>".true.");
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4', 'val'=>".true.");
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5', 'val'=>".false.");
+	add_default($nl, 'config_use_ecosys_frazil_tendencies',           'val'=>".true.");
 } else {
         add_default($nl, 'config_use_ecosysTracers', 'val'=>".false.");
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1', 'val'=>".false.");
@@ -1160,6 +1161,7 @@ if ($ocn_bgc eq 'eco_only' || $ocn_bgc eq 'eco_and_dms' || $ocn_bgc eq 'eco_and_
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3', 'val'=>".false.");
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4', 'val'=>".false.");
         add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5', 'val'=>".false.");
+	add_default($nl, 'config_use_ecosys_frazil_tendencies',           'val'=>".false.");
 }
 if ($ocn_co2_type eq 'constant' ) {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"constant");
