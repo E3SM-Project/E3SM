@@ -210,10 +210,6 @@ void MAMMicrophysics::set_grids(
     const FieldLayout vector2d_nmodes =
       grid_->get_2d_vector_layout(nmodes, "nmodes");
 
-    // Register computed diagnostic fields
-    add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
-    add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
-
     // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
 
@@ -225,6 +221,12 @@ void MAMMicrophysics::set_grids(
 
     // Diagnostics: H2SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
     add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, nondim, grid_name);
+
+    // Register computed diagnostic fields
+    //(NOTE: dqdt_so4_aqueous_chemistry is the vertically reduced field of "mam4_microphysics_tendency_aqso4")
+    add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
+    //(NOTE: dqdt_h2so4_uptake is the vertically reduced field of "mam4_microphysics_tendency_aqh2so4")
+    add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
 
     // Diagnostics: tendencies due to aerosol microphysics (gas aerosol exchange) [mixed units: mol/mol/s or #/mol/s]
     add_field<Computed>("mam4_microphysics_tendency_condensation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
