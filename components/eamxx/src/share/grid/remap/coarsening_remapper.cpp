@@ -34,7 +34,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
         continue;
       }
       const auto& src_data = src_grid->get_geometry_data(name);
-      register_field_from_src(src_data);
+      auto tgt_data = register_field_from_src(src_data);
+      m_coarse_grid->set_geometry_data(tgt_data);
     }
     registration_ends();
     if (get_num_fields()>0) {
