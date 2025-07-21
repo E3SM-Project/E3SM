@@ -138,6 +138,7 @@ contains
     integer :: count
     real(kind=RKIND) :: lon, lat
     real(kind=RKIND) :: lon_min, lon_max, lat_min, lat_max
+    real(kind=RKIND) :: bathyVertex
 
     ! Define dimension pointers
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve 
@@ -253,19 +254,18 @@ contains
 
 cell:do iCell = 1,nCellsSolve
 
-       lon = xCell(iCell)
-       lat = yCell(iCell)
-       if (lon > pii) then
-           lon = lon - 2.0_RKIND*pii
-       end if
-       lon = lon * 180.0_RKIND/pii
-       lat = lat * 180.0_RKIND/pii
+       do i = 1,nEdgesOnCell(iCell)
+         v1 = verticesOnCell(i,iCell)
+         
+         lon = xVertex(v1)
+         lat = yVertex(v1)
 
-       if ((lon < lon_max) .and. (lon > lon_min) .and. &
-           (lat < lat_max) .and. (lat > lat_min)) then
-       else
-         cycle cell
-       end if
+         call problem_bathymetry(lon, lat, bathyVertex)
+
+         if (bathyVertex < -99998) then
+            cycle cell 
+         endif
+       end do
 
       !
       ! Evaluate subgrid bathymetry at centers of sub-triangles for cell slices 
@@ -370,19 +370,18 @@ cell:do iCell = 1,nCellsSolve
 
 edge:do iEdge = 1,nEdgesSolve
 
-       lon = xEdge(iEdge)
-       lat = yEdge(iEdge)
-       if (lon > pii) then
-           lon = lon - 2.0_RKIND*pii
-       end if
-       lon = lon * 180.0_RKIND/pii
-       lat = lat * 180.0_RKIND/pii
+       do i = 1,2
+         v1 = verticesOnEdge(i,iEdge)
+         
+         lon = xVertex(v1)
+         lat = yVertex(v1)
 
-       if ((lon < lon_max) .and. (lon > lon_min) .and. &
-           (lat < lat_max) .and. (lat > lat_min)) then
-       else
-         cycle edge
-       end if
+         call problem_bathymetry(lon, lat, bathyVertex)
+
+         if (bathyVertex < -99998) then
+            cycle edge 
+         endif
+       end do
       !--------------------------------------------------------------
       ! Evaluate subgrid bathymetry at centers of sub-triangles for edge slices
       ! (all subdivided triangles for each edge slice are gathered into 
