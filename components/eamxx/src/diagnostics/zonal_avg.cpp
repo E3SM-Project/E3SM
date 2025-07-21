@@ -238,11 +238,15 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   // scale area by 1 / zonal area
   auto zonal_area_view  = zonal_area.get_view<const Real *>();
   auto scaled_area_view = m_scaled_area.get_view<Real *>();
-  Kokkos::parallel_for(
-      "scale_area_by_zonal_area_" + field.name(), RangePolicy(0, ncols),
-      KOKKOS_LAMBDA(const int &i) {
-        const int lat_i = ekat::impl::min(static_cast<int>((lat_view(i) + sp(90.0)) / lat_delta), m_num_zonal_bins-1);
-        scaled_area_view(i) /= zonal_area_view(lat_i);
+  Kokkos::parallel_for("scale_area_by_zonal_area_" + field.name(),
+      team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
+        const int bin_i = tm.league_rank();
+        Kokkos::parallel_for(
+          Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
+            KOKKOS_LAMBDA(int lcol_j) {
+              const int col_i = bin_to_cols_view(bin_i, lcol_j);
+              scaled_area_view(col_i) /= zonal_area_view(bin_i);
+            });
       });
 }
 
