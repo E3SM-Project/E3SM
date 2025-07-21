@@ -1733,12 +1733,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../pyeamxx/" class="md-nav__link">
+      <a href="../python/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    PyEAMxx
+    Python support
     
   </span>
   
@@ -3751,10 +3751,11 @@ Currently, it is possible to nudge EAMxx to the output from a different EAMxx ru
 In practice, this means that the data files must contain variable names known to EAMxx (only U, V, T_mid, and qv are supported now).
 The files can be specified with an explicit list or via pattern matching.
 The files must contain an arbitary global attribute <code>case_t0</code>, and it is recommended to be the same as the time dimension unit (the files must be time-dimensioned).
+The time dimension should be UNLIMITED.
 Finally, the dimension order must be such that <code>lev</code> is the last dimension, so most likely, the user must transpose the dimensions.</p>
 <h2 id="pressure-in-the-nudging-data">Pressure in the nudging data</h2>
 <p>Pressure can be explicitly provided in the nudging data as time-varying <code>p_mid</code> corresponding to the option <code>TIME_DEPENDENT_3D_PROFILE</code> for <code>source_pressure_type</code>.
-Alternatively, the data can contain a time-invariant pressure variable <code>p_lev</code> corresponding to the option <code>TIME_DEPENDENT_3D_PROFILE</code> for <code>source_pressure_type</code>.</p>
+Alternatively, the data can contain a time-invariant pressure variable <code>p_lev</code> corresponding to the option <code>STATIC_1D_VERTICAL_PROFILE</code> for <code>source_pressure_type</code>.</p>
 <h2 id="weighted-nudging-for-rrm-applications">Weighted nudging for RRM applications</h2>
 <p>In regionally refined model applications, it is possible to use weighted nudging, for example, to avoid nudging the refined region.
 To achieve that, the user can use <code>atmchange</code> to set <code>use_nudging_weights</code> (boolean) and provide <code>nudging_weights_file</code> that has the weight to apply for nudging (for example, zeros in the refined region).

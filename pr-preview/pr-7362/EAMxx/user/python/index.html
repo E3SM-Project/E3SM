@@ -20,7 +20,7 @@
     
     
       
-        <title>PyEAMxx - E3SM</title>
+        <title>Python support - E3SM</title>
       
     
     
@@ -90,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pyeamxx" class="md-skip">
+        <a href="#python-support-in-eamxx" class="md-skip">
           Skip to content
         </a>
       
@@ -126,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PyEAMxx
+              Python support
             
           </span>
         </div>
@@ -1664,82 +1664,17 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    PyEAMxx
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    PyEAMxx
+    Python support
     
   </span>
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      Quick Start
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rrtmgp" class="md-nav__link">
-    <span class="md-ellipsis">
-      RRTMGP
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -3671,47 +3606,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      Quick Start
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rrtmgp" class="md-nav__link">
-    <span class="md-ellipsis">
-      RRTMGP
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -3730,75 +3624,20 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/screamuser/pyeamxx.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamuser/python.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="pyeamxx">PyEAMxx</h1>
-<p>PyEAMxx is currently under heavy development and may contain some
-rough edges. If you encounter any issues, please report them on the
-team on
-<a href="https://github.com/E3SM-Project/E3SM/labels/eamxx">github discussions</a>.
-Likewise, if you have questions or would like to request features,
-please post them on the
-<a href="https://github.com/E3SM-Project/E3SM/labels/eamxx">github discussions</a>.</p>
-<h2 id="quick-start">Quick Start</h2>
-<p>For now, the only way to use PyEAMxx is to either build it on your own
-or use our prebuilt conda binaries. We prefer for you to use the latter.
-In a conda environment, please use the following command to install it:</p>
-<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>mahf708<span class="w"> </span><span class="nv">pyeamxx</span><span class="o">=</span><span class="m">0</span>.0.2
-</code></pre></div>
-<p>It is recommended to use the latest version of PyEAMxx, which is
-currently 0.0.2. As you can see, it is a young package with a lot of
-potential. We do not guarantee that the API will remain stable, but we
-will try to document any changes as frequently as we could.</p>
-<h2 id="examples">Examples</h2>
-<p>We provide an example to demo calling the radiation process (RRTMGP).
-More examples are on the way. If you'd like to add your example,
-please feel free to submit a PR.</p>
-<h3 id="rrtmgp">RRTMGP</h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">mpi4py</span><span class="w"> </span><span class="kn">import</span> <span class="n">MPI</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pyeamxx</span>
-
-<span class="n">pyeamxx</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
-
-<span class="n">dt</span> <span class="o">=</span> <span class="mi">1800</span>
-<span class="n">t0_str</span> <span class="o">=</span> <span class="s2">&quot;2020-10-10-00000&quot;</span>
-
-<span class="n">ic_file</span> <span class="o">=</span> <span class="s2">&quot;/lcrc/group/e3sm/public_html/inputdata/atm/scream/init/screami_unit_tests_ne2np4L72_20220822.nc&quot;</span>
-<span class="n">ncols</span> <span class="o">=</span> <span class="mi">218</span>
-<span class="n">nlevs</span> <span class="o">=</span> <span class="mi">72</span>
-<span class="n">pyeamxx</span><span class="o">.</span><span class="n">create_grids_manager</span><span class="p">(</span><span class="n">ncols</span><span class="p">,</span><span class="n">nlevs</span><span class="p">,</span> <span class="n">ic_file</span><span class="p">)</span>
-
-<span class="n">rad_dict</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;column_chunk_size&quot;</span><span class="p">:</span> <span class="mi">123</span><span class="p">,</span>
-    <span class="s2">&quot;active_gases&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;h2o&quot;</span><span class="p">,</span> <span class="s2">&quot;co2&quot;</span><span class="p">,</span> <span class="s2">&quot;o3&quot;</span><span class="p">,</span> <span class="s2">&quot;n2o&quot;</span><span class="p">,</span> <span class="s2">&quot;co&quot;</span> <span class="p">,</span> <span class="s2">&quot;ch4&quot;</span><span class="p">,</span> <span class="s2">&quot;o2&quot;</span><span class="p">,</span> <span class="s2">&quot;n2&quot;</span><span class="p">],</span>
-    <span class="s2">&quot;orbital_year&quot;</span><span class="p">:</span> <span class="mi">1990</span><span class="p">,</span>
-    <span class="s2">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;info&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;do_aerosol_rad&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_coefficients_file_sw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-data-sw-g112-210809.nc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_coefficients_file_lw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-data-lw-g128-210809.nc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_cloud_optics_file_sw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_cloud_optics_file_lw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc&quot;</span><span class="p">,</span>
-<span class="p">}</span>
-
-<span class="n">rad</span> <span class="o">=</span> <span class="n">pyeamxx</span><span class="o">.</span><span class="n">AtmProc</span><span class="p">(</span><span class="n">rad_dict</span><span class="p">,</span> <span class="s1">&#39;RRTMGP&#39;</span><span class="p">)</span>
-<span class="n">rad</span><span class="o">.</span><span class="n">read_ic</span><span class="p">(</span><span class="n">ic_file</span><span class="p">)</span>
-<span class="n">rad</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">t0_str</span><span class="p">)</span>
-
-<span class="n">t</span> <span class="o">=</span> <span class="n">rad</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="s2">&quot;T_mid&quot;</span><span class="p">)</span>
-<span class="n">tm</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">tm</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="n">rad</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
-<span class="n">rad</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">tm</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</code></pre></div>
+<h1 id="python-support-in-eamxx">Python support in EAMxx</h1>
+<p>EAMxx has some limited support for interfacing with external python code.
+In particular, we allow calling EAMxx C++ code from a python module, as well
+as calling python code from inside an EAMxx atmosphere process. The former
+is described in <a href="../py2eamxx/">this page</a>, while the latter is described in
+<a href="../eamxx2py/">this page</a>. The two cannot be used at the same time.</p>
+<p>NOTE: This feature is currently under development, so details may change in the future.</p>
 
 
 

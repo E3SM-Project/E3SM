@@ -1655,12 +1655,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pyeamxx/" class="md-nav__link">
+      <a href="../../python/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    PyEAMxx
+    Python support
     
   </span>
   
@@ -3749,7 +3749,11 @@
 <p>In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
-We can also automatically calculate zonal averages.</p>
+We can also automatically calculate zonal averages.
+We have <em>experimental</em> support for composing diagnostics; below,
+the horizontal and vertical reductions can be composed
+sequentially, but if using dp- or dz-weighted reductions,
+one must do the vertical reduction first.</p>
 <h2 id="horizontal-reduction">Horizontal reduction</h2>
 <p>We currently offer only one horizontal reduction <span class="arithmatex">\(C\)</span>, and it is defined as</p>
 <div class="arithmatex">\[
@@ -3837,6 +3841,9 @@ a field name <code>X</code> with <code>_vert_(avg|sum)_(dp|dz)_weighted</code> o
 </ul>
 <p>In the case of <code>pseudo_density</code>, the weighting is scaled by 1/g,
 where g is the gravitational acceleration, in units of m/s<span class="arithmatex">\(^2\)</span>.</p>
+<p>It is important to note that in the case of dp- and dz-weighted
+reductions, the field provided to the reduction utility must be
+at least 2 in rank, e.g., (ncol, nlev).</p>
 <h2 id="zonal-reduction">Zonal reduction</h2>
 <p>We currently have a utility to calculate zonal averages online.
 To select the zonal average, you need to suffix
@@ -3881,6 +3888,10 @@ And so on...</p>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted</span><span class="w">  </span><span class="c1"># K * m</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_horiz_sum</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_horiz_avg_vert_sum</span><span class="w">  </span><span class="c1"># K</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_sum_dz_weighted_horiz_avg</span><span class="w">  </span><span class="c1"># K * m</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_vert_avg_dp_weighted_horiz_avg</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_180_bins</span><span class="w">  </span><span class="c1"># K</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_zonal_avg_90_bins</span><span class="w">  </span><span class="c1"># K</span>
 <span class="nt">output_control</span><span class="p">:</span>
