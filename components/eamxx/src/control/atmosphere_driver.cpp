@@ -955,7 +955,7 @@ void AtmosphereDriver::restart_model ()
 
   for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
-          auto& any  = it.second;
+          auto& any  = *it.second;
 
     if (any.type()==typeid(int)) {
       std::any_cast<int&>(any) = scorpio::get_attribute<int>(filename,"GLOBAL",name);
