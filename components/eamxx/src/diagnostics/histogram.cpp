@@ -2,7 +2,6 @@
 
 namespace scream {
 
-
 HistogramDiag::HistogramDiag(const ekat::Comm &comm, const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
   const auto &field_name = m_params.get<std::string>("field_name");
@@ -44,7 +43,7 @@ void HistogramDiag::initialize_impl(const RunType /*run_type*/) {
   FieldLayout diagnostic_layout({CMP}, {num_bins}, {"bin"});
   FieldIdentifier diagnostic_id(m_diag_name, diagnostic_layout,
                                 FieldIdentifier::Units::nondimensional(),
-                                field_id.get_grid_name(), DataType::IntType);
+                                field_id.get_grid_name());
   m_diagnostic_output = Field(diagnostic_id);
   m_diagnostic_output.allocate_view();
 
@@ -68,8 +67,9 @@ void HistogramDiag::compute_diagnostic_impl() {
   auto histogram_layout = m_diagnostic_output.get_header().get_identifier().get_layout();
   const int num_bins = histogram_layout.dim(0);
 
+  m_diagnostic_output.deep_copy(sp(0.0));
   auto bin_values_view = m_bin_values.get_view<Real *>();
-  auto histogram_view = m_diagnostic_output.get_view<Int *>();
+  auto histogram_view = m_diagnostic_output.get_view<Real *>();
   using KT         = ekat::KokkosTypes<DefaultDevice>;
   using TeamPolicy = Kokkos::TeamPolicy<Field::device_t::execution_space>;
   using TeamMember = typename TeamPolicy::member_type;
@@ -86,9 +86,9 @@ void HistogramDiag::compute_diagnostic_impl() {
             const Real bin_lower = bin_values_view(bin_i);
             const Real bin_upper = bin_values_view(bin_i+1);
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1),
-                [&](int i, Int &val) {
+                [&](int i, Real &val) {
                   if ((bin_lower <= field_view(i)) && (field_view(i) < bin_upper))
-                    val++;
+                    val += sp(1.0);
                 },
                 histogram_view(bin_i));
           });
@@ -105,11 +105,11 @@ void HistogramDiag::compute_diagnostic_impl() {
             const Real bin_upper = bin_values_view(bin_i+1);
             histogram_view(bin_i) = 0;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1*d2),
-                [&](int ind, Int &val) {
+                [&](int ind, Real &val) {
                   const int i1 = ind / d2;
                   const int i2 = ind % d2;
                   if ((bin_lower <= field_view(i1,i2)) && (field_view(i1,i2) < bin_upper))
-                    val += 1;
+                    val += sp(1.0);
                 },
                 histogram_view(bin_i));
           });
@@ -127,13 +127,13 @@ void HistogramDiag::compute_diagnostic_impl() {
             const Real bin_upper = bin_values_view(bin_i+1);
             histogram_view(bin_i) = 0;
             Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, d1*d2*d3),
-                [&](int ind, Int &val) {
+                [&](int ind, Real &val) {
                   const int i1 = ind / (d2*d3);
                   const int ind2 = ind % (d2*d3);
                   const int i2 = ind2 / d3;
                   const int i3 = ind2 % d3;
                   if ((bin_lower <= field_view(i1,i2,i3)) && (field_view(i1,i2,i3) < bin_upper))
-                    val += 1;
+                    val += sp(1.0);
                 },
                 histogram_view(bin_i));
           });
@@ -148,7 +148,7 @@ void HistogramDiag::compute_diagnostic_impl() {
   // TODO: doing cuda-aware MPI allreduce would be ~10% faster
   Kokkos::fence();
   m_diagnostic_output.sync_to_host();
-  m_comm.all_reduce(m_diagnostic_output.template get_internal_view_data<Int, Host>(),
+  m_comm.all_reduce(m_diagnostic_output.template get_internal_view_data<Real, Host>(),
                       histogram_layout.size(), MPI_SUM);
   m_diagnostic_output.sync_to_dev();
 }
