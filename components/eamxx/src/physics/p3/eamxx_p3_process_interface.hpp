@@ -2,9 +2,10 @@
 #define SCREAM_P3_MICROPHYSICS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 

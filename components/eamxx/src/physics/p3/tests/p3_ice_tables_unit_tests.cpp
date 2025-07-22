@@ -1,12 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
 #include "p3_test_data.hpp"
-
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -291,7 +289,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
     init_table_linear_dimension(ice_table_vals, 0);
 
     int nerr = 0;
-    TeamPolicy policy(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ice_table_vals.extent(0), ice_table_vals.extent(1)));
+    TeamPolicy policy(ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ice_table_vals.extent(0), ice_table_vals.extent(1)));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
       //int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ice_table_vals.extent(1)), [&] (const int& j) {

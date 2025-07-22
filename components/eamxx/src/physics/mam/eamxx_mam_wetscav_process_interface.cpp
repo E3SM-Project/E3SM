@@ -1,5 +1,7 @@
 #include "physics/mam/eamxx_mam_wetscav_process_interface.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 /*
 -----------------------------------------------------------------
 NOTES:
@@ -335,8 +337,9 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMWetscav::run_impl(const double dt) {
-  const auto scan_policy = ekat::ExeSpaceUtils<
-      KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
@@ -409,8 +412,7 @@ void MAMWetscav::run_impl(const double dt) {
   const auto qaerwat = get_field_out("qaerwat").get_view<Real ***>();
   const auto wetdens = get_field_out("wetdens").get_view<Real ***>();
 
-  const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
 
   // Making a local copy of 'nlev_' because we cannot use a member of a class
   // inside a parallel_for.

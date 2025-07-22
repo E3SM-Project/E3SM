@@ -4,7 +4,7 @@
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_comm.hpp>
 
 #include <memory>
 #include <map>

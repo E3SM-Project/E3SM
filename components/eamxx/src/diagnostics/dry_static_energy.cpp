@@ -1,7 +1,7 @@
 #include "diagnostics/dry_static_energy.hpp"
 #include "share/util/eamxx_common_physics_functions.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -51,8 +51,9 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
 {
   using MemberType = typename KT::MemberType;
   using PF = PhysicsFunctions<DefaultDevice>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, m_num_levs);
+  const auto default_policy = TPF::get_thread_range_parallel_scan_team_policy(m_num_cols, m_num_levs);
 
   const auto& dse                = m_diagnostic_output.get_view<Real**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Real**>();

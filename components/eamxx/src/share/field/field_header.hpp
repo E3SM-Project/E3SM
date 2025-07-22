@@ -6,11 +6,10 @@
 #include "share/field/field_alloc_prop.hpp"
 #include "share/util/eamxx_family_tracking.hpp"
 #include "share/eamxx_types.hpp"
-
 #include "share/util/eamxx_time_stamp.hpp"
-#include "ekat/std_meta/ekat_std_any.hpp"
 
 #include <vector>
+#include <any>
 #include <map>
 #include <memory>   // For std::shared_ptr and std::weak_ptr
 
@@ -38,7 +37,7 @@ public:
 
   using identifier_type = FieldIdentifier;
   using tracking_type   = FieldTracking;
-  using extra_data_type = std::map<std::string,ekat::any>;
+  using extra_data_type = std::map<std::string,std::any>;
 
   // Constructor(s)
   FieldHeader (const FieldHeader&) = default;
@@ -49,15 +48,14 @@ public:
 
   // Set extra data
   void set_extra_data (const std::string& key,
-                       const ekat::any& data,
+                       const std::any& data,
                        const bool throw_if_existing = false);
 
   template<typename T>
   void set_extra_data (const std::string& key,
                        const T& data,
                        const bool throw_if_existing = false) {
-    ekat::any data_any;
-    data_any.reset<T>(data);
+    std::any data_any(data);;
     set_extra_data(key,data_any,throw_if_existing);
   }
 
@@ -127,15 +125,15 @@ get_extra_data (const std::string& key) const
       "Error! Extra data not found in field header.\n"
       "  - field name: " + m_identifier.name() + "\n"
       "  - extra data: " + key + "\n");
-  auto a = m_extra_data->at(key);
-  EKAT_REQUIRE_MSG ( a.isType<T>(),
+  const auto& a = m_extra_data->at(key);
+  EKAT_REQUIRE_MSG ( a.type()==typeid(T),
       "Error! Attempting to access extra data using the wrong type.\n"
       "  - field name    : " + m_identifier.name() + "\n"
       "  - extra data    : " + key + "\n"
-      "  - actual type   : " + std::string(a.content().type().name()) + "\n"
+      "  - actual type   : " + std::string(a.type().name()) + "\n"
       "  - requested type: " + std::string(typeid(T).name()) + ".\n");
 
-  return ekat::any_cast<T>(a);
+  return std::any_cast<const T&>(a);
 }
 
 template<typename T>
@@ -146,30 +144,21 @@ get_extra_data (const std::string& key)
       "Error! Extra data not found in field header.\n"
       "  - field name: " + m_identifier.name() + "\n"
       "  - extra data: " + key + "\n");
-  auto a = m_extra_data->at(key);
-  EKAT_REQUIRE_MSG ( a.isType<T>(),
+  auto& a = m_extra_data->at(key);
+  EKAT_REQUIRE_MSG ( a.type()==typeid(T),
       "Error! Attempting to access extra data using the wrong type.\n"
       "  - field name    : " + m_identifier.name() + "\n"
       "  - extra data    : " + key + "\n"
-      "  - actual type   : " + std::string(a.content().type().name()) + "\n"
+      "  - actual type   : " + std::string(a.type().name()) + "\n"
       "  - requested type: " + std::string(typeid(T).name()) + ".\n");
 
-  return ekat::any_cast<T>(a);
+  return std::any_cast<T&>(a);
 }
 
 inline bool FieldHeader::
 has_extra_data (const std::string& key) const
 {
   return m_extra_data->find(key)!=m_extra_data->end();
-}
-
-// Use this free function to exploit features of enable_from_this
-template<typename... Args>
-inline std::shared_ptr<FieldHeader>
-create_header(const Args&... args) {
-  auto ptr = std::make_shared<FieldHeader>(args...);
-  ptr->setSelfPointer(ptr);
-  return ptr;
 }
 
 // Use this free function to create a header for a field that

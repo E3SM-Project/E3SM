@@ -2,7 +2,8 @@
 #define SHOC_TRIDIAG_SOLVER_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/util/ekat_tridiag.hpp"
+
+#include <ekat_tridiag.hpp>
 
 namespace scream {
 namespace shoc {

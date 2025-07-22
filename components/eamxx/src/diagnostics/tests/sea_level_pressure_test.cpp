@@ -10,9 +10,8 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
