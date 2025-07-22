@@ -607,6 +607,7 @@ contains
          tracersPool,            &! tracer variables
          tracersTendPool,        &! tracer tendencies
          tracersSurfaceFluxPool, &! surface fluxes
+         ecosysFrazilForcingPool, & ! ecosys tracers frazil tendencies
          tracersSurfaceRestoringFieldsPool, &! surface restoring
          tracersInteriorRestoringFieldsPool,&! interior restoring
          tracersExponentialDecayFieldsPool, &! exponential decay
@@ -700,6 +701,8 @@ contains
                                                tracersTendPool)
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', &
                                                tracersSurfaceFluxPool)
+      call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', &
+                                               ecosysFrazilForcingPool)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
                                                  indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
@@ -1404,7 +1407,7 @@ contains
          ! Compute tracer tendency due to production/destruction of
          ! frazil ice
          call ocn_frazil_forcing_tracers(meshPool, tracersPool, &
-                     groupName, forcingPool, tracerGroupTend, err)
+                     groupName, forcingPool, tracerGroupTend, ecosysFrazilForcingPool, err)
 
 
       end if ! config use flag on
