@@ -153,7 +153,6 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
-   use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
    use EDMainMod             , only : ed_ecosystem_dynamics
@@ -965,7 +964,7 @@ contains
          this%fates(nc)%nsites = s
 
          ! Allocate the FATES sites
-         allocate (this%fates(nc)%sites(this%fates(nc)%nsites))
+         allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
 
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
@@ -985,6 +984,13 @@ contains
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
          do s = 1, this%fates(nc)%nsites
+
+            ! Allocate HLM-FATES mapping arrays
+            ! TODO: update this to be agnostic to fates column run mode
+            allocate(this%fates(nc)%sites(s)%column_map(1))
+            allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
+
+            ! TODO: Assign column_map and patch_map values
 
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
@@ -1554,8 +1560,7 @@ contains
 
        ! Canopy diagnostics for FATES
        call canopy_summarization(this%fates(nc)%nsites, &
-            this%fates(nc)%sites,  &
-            this%fates(nc)%bc_in)
+            this%fates(nc)%sites)
 
        ! Canopy diagnostic outputs for HLM, including LUC
        call update_hlm_dynamics(this%fates(nc)%nsites, &
@@ -2106,7 +2111,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
-              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),this%fates(nc)%bc_out(s) )
+              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s) )
               call zero_site(this%fates(nc)%sites(s))
            end do
 
@@ -2288,9 +2293,6 @@ contains
                                               ! this is the order increment of patch
                                               ! on the site
       integer  :: nc                          ! clump index
-
-      type(fates_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
-                                              ! BE HIDDEN AS A FATES PRIVATE
 
       associate( forc_solad => top_af_inst%solad, &
                  forc_solai => top_af_inst%solai, &
@@ -2720,7 +2722,6 @@ contains
     call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
                                this%fates(nc)%sites, &
                                this%fates(nc)%bc_in,  &
-                               this%fates(nc)%bc_out, &
                                dtime)
     return
  end subroutine wrap_accumulatefluxes
@@ -3873,5 +3874,65 @@ end subroutine wrap_update_hifrq_hist
    call ncd_pio_closefile(ncid)
 
  end subroutine GetLandusePFTData
+
+! ======================================================================================
+
+ subroutine UpdateBCIn(this, nc)
+
+   ! !DESCRIPTION:
+   ! ---------------------------------------------------------------------------------
+   ! This call updates the HLM inputs to FATES
+   ! Currently this handles a subset of bc_in variables in an effort to stage the
+   ! refactor over time
+   ! ---------------------------------------------------------------------------------
+
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   type(hlm_fates_interface_type), intent(inout) :: this
+   integer, intent(in) :: nc
+
+   ! !LOCAL VARIABLES
+   type(canopystate_type) :: canopystate_inst
+   integer :: s, p, c, l, i
+
+   do s=1,this%fates(nc)%nsites
+
+      ! TODO - create a new type that holds tag names and pointers to hlm arrays
+      ! Note that the hlm_var is going to be clump bound, so this new type would
+      ! need to be clump bound as well.  I.e. `newtype` would need to be specific
+      ! to site.  The idea here is to "directly" input the BC values into fates
+      ! patch data structures.  This associates a particular hlm variable with
+      ! a generic tag name that acts as the common denominator between hlm and fates
+      ! similar to `set_fates_ctrlparams`.
+      !
+      ! Call this below somewhere during initialization:
+      ! subroutine SetAPIAssociation(this,num_hlmvar)
+      !     ivar = 1
+      !     this%api_tag(ivar) = 'decomp_frac_moisture'
+      !     this%hlm_var(ivar) => col_cf%w_scalar
+      !
+      !     ivar = ivar + 1
+      !     this%api_tag(ivar) = 'decomp_frac_temperature'
+      !     this%hlm_var(ivar) => col_cf%t_scalar
+      !
+      !     num_hlmvar = ivar
+      ! end subroutine SetAPIAssociation
+      !
+      !...
+
+      ! num_hlmvar = 1
+      ! do ivar = 1,num_hlmvar
+      !     call TransferBC(this%api_tag(ivar), this%hlm_var(ivar))
+      ! end do
+
+      call this%fates(nc)%sites(s)%TransferBCIn('leaf_area_index',canopystate_inst%tlai_patch)
+      call this%fates(nc)%sites(s)%TransferBCIn('decomp_frac_moisture',col_cf%w_scalar)
+
+   end do
+
+ end subroutine UpdateBCIn
+
+! ======================================================================================
 
 end module ELMFatesInterfaceMod
