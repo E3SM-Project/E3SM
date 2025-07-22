@@ -35,7 +35,8 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // LINOZ namelist parameters
-  config_.linoz.compute = m_params.get<bool>("mam4_run_linoz", true);
+  // Compute LINOZ only for prognostic Ozone (i.e. !use_prescribed_ozone_)
+  config_.linoz.compute = !use_prescribed_ozone_;
 
   if (config_.linoz.compute) {
     config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
