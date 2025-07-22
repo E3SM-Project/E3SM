@@ -296,7 +296,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 }
 
 void OutputManager::
-add_global (const std::string& name, const std::any& global) {
+add_global (const std::string& name, const std::shared_ptr<std::any>& global) {
   EKAT_REQUIRE_MSG (m_globals.find(name)==m_globals.end(),
       "Error! Global attribute was already set in this output manager.\n"
       "  - global att name: " + name + "\n");
@@ -540,17 +540,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       // Write all stored globals
       for (const auto& it : m_globals) {
         const auto& name = it.first;
-        const auto& any = it.second;
+        const auto& any = *it.second;
         if (any.type()==typeid(int)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<int>(any));
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const int&>(any));
         } else if (any.type()==typeid(std::int64_t)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<std::int64_t>(any));
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const std::int64_t&>(any));
         } else if (any.type()==typeid(float)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<float>(any));
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const float&>(any));
         } else if (any.type()==typeid(double)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<double>(any));
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const double&>(any));
         } else if (any.type()==typeid(std::string)) {
-          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<std::string>(any));
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const std::string&>(any));
         } else {
           EKAT_ERROR_MSG (
               "Error! Invalid concrete type for IO global.\n"
