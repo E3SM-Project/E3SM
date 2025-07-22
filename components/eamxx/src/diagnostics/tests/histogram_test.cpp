@@ -27,6 +27,9 @@ TEST_CASE("histogram") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
+  // A numerical tolerance
+  const auto tol = std::numeric_limits<Real>::epsilon() * 100;
+
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -114,20 +117,21 @@ TEST_CASE("histogram") {
   const std::string bin_dim_name = diag1_field.get_header().get_identifier().get_layout().name(0);
   FieldLayout diag0_layout({CMP}, {num_bins}, {bin_dim_name});
   FieldIdentifier diag0_id("qc_histogram_manual", diag0_layout,
-    FieldIdentifier::Units::nondimensional(), grid->name(), DataType::IntType);
+    FieldIdentifier::Units::nondimensional(), grid->name());
   Field diag0_field(diag0_id);
   diag0_field.allocate_view();
 
   // calculate the histogram
+  diag0_field.deep_copy(sp(0.0));
   auto qc1_view_h   = qc1.get_view<const Real *, Host>();
-  auto diag0_view_h = diag0_field.get_view<Int *, Host>();
+  auto diag0_view_h = diag0_field.get_view<Real *, Host>();
   for (int bin_i = 0; bin_i < num_bins; bin_i++) {
     for (int col_i = 0; col_i < ncols; col_i++) {
       if (bin_values[bin_i] <= qc1_view_h(col_i) && qc1_view_h(col_i) < bin_values[bin_i+1])
-        diag0_view_h(bin_i) += 1;
+        diag0_view_h(bin_i) += sp(1.0);
     }
   }
-  comm.all_reduce(diag0_field.template get_internal_view_data<Int, Host>(),
+  comm.all_reduce(diag0_field.template get_internal_view_data<Real, Host>(),
     diag0_layout.size(), MPI_SUM);
   diag0_field.sync_to_dev();
 
@@ -139,10 +143,10 @@ TEST_CASE("histogram") {
   const Real zavg1 = sp(0.5*(bin_values[0]+bin_values[1]));
   qc1.deep_copy(zavg1);
   diag1->compute_diagnostic();
-  auto diag1_view_host = diag1_field.get_view<Int *, Host>();
-  REQUIRE(diag1_view_host(0) == ngcols);
+  auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
+  REQUIRE_THAT(diag1_view_host(0), Catch::Matchers::WithinRel(ngcols, tol));
   for (int bin_i = 1; bin_i < num_bins; bin_i++) {
-    REQUIRE(diag1_view_host(bin_i) == 0);
+    REQUIRE(diag1_view_host(bin_i) == sp(0.0));
   }
 
   // other diags
@@ -153,31 +157,31 @@ TEST_CASE("histogram") {
   diag2->initialize(t0, RunType::Initial);
   diag2->compute_diagnostic();
   auto diag2_field = diag2->get_diagnostic();
-  auto diag2_view_host = diag2_field.get_view<Int *, Host>();
-  REQUIRE(diag2_view_host(num_bins-1) == ngcols*nlevs);
+  auto diag2_view_host = diag2_field.get_view<const Real *, Host>();
+  REQUIRE_THAT(diag2_view_host(num_bins-1), Catch::Matchers::WithinRel(ngcols*nlevs, tol));
   for (int bin_i = num_bins-2; bin_i >=0; bin_i--) {
-    REQUIRE(diag2_view_host(bin_i) == 0);
+    REQUIRE(diag2_view_host(bin_i) == sp(0.0));
   }
 
   // Try a random case with qc3
   FieldLayout diag3m_layout({CMP}, {num_bins}, {bin_dim_name});
   FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout,
-    FieldIdentifier::Units::nondimensional(), grid->name(), DataType::IntType);
+    FieldIdentifier::Units::nondimensional(), grid->name());
   Field diag3m_field(diag3m_id);
   diag3m_field.allocate_view();
-  auto qc3_view_h    = qc3.get_view<Real ***, Host>();
-  auto diag3m_view_h = diag3m_field.get_view<Int *, Host>();
+  auto qc3_view_h    = qc3.get_view<const Real ***, Host>();
+  auto diag3m_view_h = diag3m_field.get_view<Real *, Host>();
   for (int bin_i = 0; bin_i < num_bins; bin_i++) {
     for (int i = 0; i < ncols; i++) {
       for (int j = 0; j < dim3; j++) {
         for (int k = 0; k < nlevs; k++) {
           if (bin_values[bin_i] <= qc3_view_h(i,j,k) && qc3_view_h(i,j,k) < bin_values[bin_i+1])
-            diag3m_view_h(bin_i) += 1;
+            diag3m_view_h(bin_i) += sp(1.0);
         }
       }
     }
   }
-  comm.all_reduce(diag3m_field.template get_internal_view_data<Int, Host>(),
+  comm.all_reduce(diag3m_field.template get_internal_view_data<Real, Host>(),
     diag3m_layout.size(), MPI_SUM);
   diag3m_field.sync_to_dev();
   diag3->set_required_field(qc3);
