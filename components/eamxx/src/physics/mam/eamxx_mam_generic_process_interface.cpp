@@ -172,16 +172,15 @@ void MAMGenericInterface::add_tracers_gases() {
   //{"O3",  "H2O2", "H2SO4", "SO2", "DMS",  "SOAG"}
   using namespace ekat::units;
   constexpr auto q_unit = kg / kg;  // units of mass mixing ratios of tracers
-
   const auto &grid_name = grid_->name();
 
   //Layout for 3D scalar fields at midpoints(col, level))
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
-  
-  //Special treatmenet for Ozone (O3):
   // O3 can be prescribed or prognostic depending upon the user input
-  constexpr int o3_id = 0; //Index of Ozone in the gas list
+  //Index of Ozone in the gas list (currently order of species is fixed)
+  constexpr int o3_id = 0;
+  static_assert(mam_coupling::gas_mmr_name[o3_id] == "O3", "The first gas must be O3");
   if (use_prescribed_ozone_) {
     // If using prescribed O3, we add it as a field
     add_field<Updated>(std::string(mam_coupling::gas_mmr_name[o3_id]), scalar3d_mid, q_unit, grid_name);
