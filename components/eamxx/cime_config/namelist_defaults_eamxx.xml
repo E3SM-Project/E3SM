@@ -274,8 +274,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Basic options for each mam4 atm process -->
     <mam4_atm_proc_base inherit="atm_proc_base">
       <create_fields_interval_checks type="logical" doc="Create field interval checks for all fields that are computed and requested in mam4xx." >false</create_fields_interval_checks>
+      <use_mam4_precribed_ozone type="logical" doc="Switch to enable prescribed ozone in MAM4xx">false</use_mam4_precribed_ozone>
     </mam4_atm_proc_base>
-
 
     <!-- MAM4xx-ACI -->
     <mam4_aci inherit="mam4_atm_proc_base">
@@ -311,7 +311,6 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mam4_do_newnuc type="logical" doc="Switch to enable aerosol microphysics nucleation process">true</mam4_do_newnuc>
       <mam4_do_coag   type="logical" doc="Switch to enable aerosol microphysics coagulation process">true</mam4_do_coag>
       <mam4_do_rename type="logical" doc="Switch to enable aerosol microphysics rename process">true</mam4_do_rename>
-      <use_mam4_precribed_ozone type="logical" doc="Switch to enable prescribed ozone in MAM4xx">false</use_mam4_precribed_ozone>
       <!-- LINOZ parameters -->
       <mam4_o3_tau    type="real"    doc="Linoz tau parameter">172800.0</mam4_o3_tau>
       <mam4_o3_sfc    type="real"    doc="Linoz surface parameter">3.0E-008</mam4_o3_sfc>
