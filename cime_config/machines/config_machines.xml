@@ -4852,23 +4852,13 @@
         <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_node }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread</arg>
       </arguments>
     </mpirun>
-    <module_system type="module">
-      <init_path lang="python">/usr/share/modules/init/python.py</init_path>
-      <init_path lang="perl">/usr/share/modules/init/perl.pm</init_path>
-      <init_path lang="sh">/usr/share/modules/init/sh</init_path>
-      <init_path lang="csh">/usr/share/modules/init/csh</init_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <modules>
-        <command name="purge"/>
-        <command name="load">hdf5</command>
-        <command name="load">netcdf-c</command>
-        <command name="load">netcdf-fortran</command>
-        <command name="load">esmf</command>
-      </modules>
+    <module_system type="none">
     </module_system>
+    <environment_variables compiler="gnu" >
+      <env name="NETCDF_C_PATH">/home/glemieux/Repos/spack/opt/spack/linux-pop22-skylake_avx512/gcc-11.4.0/netcdf-c-4.9.2-ko2blxkpb6mpnwx4bg6tberacqwfyzjq</env>
+      <env name="NETCDF_FORTRAN_PATH">/home/glemieux/Repos/spack/opt/spack/linux-pop22-skylake_avx512/gcc-11.4.0/netcdf-fortran-4.6.1-5og4oaakxzqvpc3avqzmr6jvupxsurj3</env>
+    </environment_variables>
+
 </machine>
 
   <machine MACH="eddi">
