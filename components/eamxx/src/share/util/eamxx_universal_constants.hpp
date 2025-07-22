@@ -18,7 +18,7 @@ struct DefaultFillValue {
   static constexpr bool is_float = std::is_floating_point<T>::value;
   static constexpr bool is_int   = std::is_integral<T>::value;
   static constexpr T value = is_int ? std::numeric_limits<int>::max() / 2 :
-	  is_float ? std::numeric_limits<float>::max() / 1e5 : std::numeric_limits<char>::max();
+	  is_float ? std::numeric_limits<float>::max() / static_cast<float>(1e5) : std::numeric_limits<char>::max();
 };
 
 template<typename T>
