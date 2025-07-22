@@ -85,13 +85,7 @@ void MAMOptics::set_grids(
   add_tracers_gases();
   // add fields e.g., num_c1, soa_c1
   add_fields_cloudborne_aerosol();
-
-  // aerosol-related gases: mass mixing ratios
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
-    const char *gas_mmr_field_name = mam_coupling::gas_mmr_field_name(g);
-    add_tracer<Updated>(gas_mmr_field_name, grid_, kg / kg);
-  }
-}
+} //set_grids
 
 size_t MAMOptics::requested_buffer_size_in_bytes() const {
   return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
