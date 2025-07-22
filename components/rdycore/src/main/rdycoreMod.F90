@@ -128,10 +128,11 @@ contains
     PetscCallA(RDyGetTimeUnit(rdy_, time_unit, ierr))
     PetscCallA(RDySetCouplingInterval(rdy_, time_unit, dtime, ierr))
 
+    ! Set water source term in RDycore
+    PetscCallA(RDySetDomainWaterSource(rdy_, num_cells_owned, total_runoff_data, ierr))
+
     ! Run the simulation to completion.
     PetscCallA(RDyAdvance(rdy_, ierr))
-
-    PetscCallA(RDySetDomainWaterSource(rdy_, num_cells_owned, total_runoff_data, ierr))
 
   end subroutine rdycore_run
 
