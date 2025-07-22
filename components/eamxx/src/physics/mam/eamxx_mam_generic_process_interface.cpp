@@ -177,7 +177,7 @@ void MAMGenericInterface::add_tracers_gases() {
   //Layout for 3D scalar fields at midpoints(col, level))
   const FieldLayout scalar3d_mid = grid_->get_3d_scalar_layout(true);
 
-  // O3 can be prescribed or prognostic depending upon the user input
+  //O3 can be prescribed or prognostic depending upon the user input
   //Index of Ozone in the gas list (currently order of species is fixed)
   constexpr int o3_id = 0;
   static_assert(mam_coupling::gas_mmr_name[o3_id] == "O3", "The first gas must be O3");
