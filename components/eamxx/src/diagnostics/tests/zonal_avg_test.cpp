@@ -28,7 +28,7 @@ TEST_CASE("zonal_avg") {
   using namespace ekat::units;
 
   // A numerical tolerance
-  auto tol = std::numeric_limits<Real>::epsilon() * 100;
+  const auto tol = std::numeric_limits<Real>::epsilon() * 100;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -153,7 +153,7 @@ TEST_CASE("zonal_avg") {
   const Real zavg1 = sp(1.0);
   qc1.deep_copy(zavg1);
   diag1->compute_diagnostic();
-  auto diag1_view_host = diag1_field.get_view<Real *, Host>();
+  auto diag1_view_host = diag1_field.get_view<const Real *, Host>();
   for (int nlat = 0; nlat < nlats; nlat++) {
     REQUIRE_THAT(diag1_view_host(nlat), Catch::Matchers::WithinRel(zavg1, tol));
   }
@@ -167,7 +167,7 @@ TEST_CASE("zonal_avg") {
   diag2->compute_diagnostic();
   auto diag2_field = diag2->get_diagnostic();
 
-  auto diag2_view_host = diag2_field.get_view<Real **, Host>();
+  auto diag2_view_host = diag2_field.get_view<const Real **, Host>();
   for (int i = 0; i < nlevs; ++i) {
     for (int nlat = 0; nlat < nlats; nlat++) {
       REQUIRE_THAT(diag2_view_host(nlat, i), Catch::Matchers::WithinRel(zavg2, tol));
@@ -180,7 +180,7 @@ TEST_CASE("zonal_avg") {
   FieldIdentifier diag3m_id("qc_zonal_avg_manual", diag3m_layout, kg / kg, grid->name());
   Field diag3m_field(diag3m_id);
   diag3m_field.allocate_view();
-  auto qc3_view_h    = qc3.get_view<Real ***, Host>();
+  auto qc3_view_h    = qc3.get_view<const Real ***, Host>();
   auto diag3m_view_h = diag3m_field.get_view<Real ***, Host>();
   for (int i = 0; i < ncols; i++) {
     const int nlat = i % nlats;
