@@ -391,6 +391,9 @@
 <!-- snow -->
 <config_snow_redistribution_scheme>'ITDrdg'</config_snow_redistribution_scheme>
 <config_fallen_snow_radius>54.526</config_fallen_snow_radius>
+<config_snow_growth_wet_factor>4.22e5</config_snow_growth_wet_factor>
+<config_minimum_snow_growth_factor>0.0</config_minimum_snow_growth_factor>
+<config_snow_liq_saturation>0.033</config_snow_liq_saturation>
 <config_use_snow_liquid_ponds>true</config_use_snow_liquid_ponds>
 <config_new_snow_density>100.0</config_new_snow_density>
 <config_max_snow_density>450.0</config_max_snow_density>
