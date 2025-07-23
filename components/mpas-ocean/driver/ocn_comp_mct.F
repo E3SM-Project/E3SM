@@ -1080,7 +1080,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ocn
-    modelStr='ocn run'
+    modelStr='ocn run import'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
@@ -1335,6 +1335,23 @@ contains
 
          if (debugOn) call mpas_log_write('Finished writing restart streams')
       end if
+
+#ifdef HAVE_MOAB
+#ifdef MOABCOMP
+    ! loop over all fields in seq_flds_o2x_fields
+    call mct_list_init(temp_list ,seq_flds_o2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ocn
+    modelStr='ocn run export'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, o2x_o, mct_field,  MPOID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
+#endif
 
       ! Export state to coupler
       if (debugOn) call mpas_log_write('Exporting ocean state')
