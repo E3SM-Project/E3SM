@@ -910,7 +910,7 @@ CONTAINS
 
    call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
-   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
+   call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kfraz, mpoid, data, lsize)
 
    if (kswp /= 0) then
       call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
