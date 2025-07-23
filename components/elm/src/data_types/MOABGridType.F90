@@ -101,6 +101,8 @@ module MOABGridType
      integer           :: num             ! number of edges
      integer, pointer  :: cell_ids(:,:)   ! ghosted cell IDs left and right of the edge
      real(r8), pointer :: vertex_ids(:,:) ! ghosted ID vertices forming the edge
+     real(r8), pointer :: lat_vertex(:,:) ! latitude of vertices forming the edge
+     real(r8), pointer :: lon_vertex(:,:) ! longitude of vertices forming the edge
   end type grid_edge
 
   ! topological entity list
@@ -431,6 +433,9 @@ contains
       ! Read lat/lon for cell centers and cell vertices
       call read_grid_cell_lat_lon()
 
+      ! Now determine the lat/lon of vertices of internal edges
+      call set_internal_edge_lat_lon()
+
     end subroutine elm_moab_load_grid_file
 
    subroutine read_grid_cell_lat_lon()
@@ -618,6 +623,58 @@ contains
      deallocate(compdof)
 
    end subroutine read_grid_cell_lat_lon
+
+   subroutine set_internal_edge_lat_lon()
+     !
+     ! !DESCRIPTION:
+     ! For each internal edge, determine the lat/lon of vertex forming an edge
+     !
+     implicit none
+     !
+     integer             :: e, gup, gdn, vertex_count
+     integer             :: v1, v2, min_v2
+     real(r8)            :: latv_up, lonv_up, latv_dn, lonv_dn, dist, min_dist
+     real(r8), parameter :: dist_threshold = 1.e-10
+
+     allocate(moab_edge_internal%lat_vertex(moab_edge_internal%num, 2))
+     allocate(moab_edge_internal%lon_vertex(moab_edge_internal%num, 2))
+
+     do e = 1, moab_edge_internal%num
+        gup = moab_edge_internal%cell_ids(e, 1)
+        gdn = moab_edge_internal%cell_ids(e, 2)
+
+        vertex_count = 0
+
+        do v1 = 1, moab_gcell%nv
+           latv_up = moab_gcell%latv(gup, v1)
+           lonv_up = moab_gcell%lonv(gup, v1)
+
+           do v2 = 1, moab_gcell%nv
+              latv_dn = moab_gcell%latv(gdn, v2)
+              lonv_dn = moab_gcell%lonv(gdn, v2)
+
+              dist = (latv_dn - latv_up)**2._r8 + (lonv_dn - lonv_up)**2._r8
+              if (v2 == 1) then
+                 min_dist = dist;
+                 min_v2   = v2;
+              else if (dist < min_dist) then
+                 min_dist = dist;
+                 min_v2   = v2;
+              end if
+           end do ! v2
+
+           if (min_dist < dist_threshold) then
+              vertex_count = vertex_count
+              if (vertex_count > 2) then
+                 call endrun('Found more than 2 vertices that are shared between cells')
+              end if
+              moab_edge_internal%lat_vertex(e, vertex_count) = latv_up
+              moab_edge_internal%lon_vertex(e, vertex_count) = lonv_up
+           end if
+        end do ! v1
+     end do ! e
+
+   end subroutine set_internal_edge_lat_lon
 
   !------------------------------------------------------------------------
   subroutine elm_moab_finalize()
