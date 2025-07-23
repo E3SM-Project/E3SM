@@ -381,49 +381,6 @@ contains
     deallocate(neighbor_id)
     deallocate(vertex_id)
 
-    !  Define and Set Fraction on each mesh
-    tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage( mlndghostid, 'frac'//C_NULL_CHAR, tagtype, numco, tag_indices(2) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create frac tags')
-    ierr = iMOAB_DefineTagStorage( mlndghostid, 'area'//C_NULL_CHAR, tagtype, numco, tag_indices(3) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create area tags')
-    ierr = iMOAB_DefineTagStorage( mlndghostid, 'aream'//C_NULL_CHAR, tagtype, numco, tag_indices(4) )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create aream tags')
-
-
-    allocate(data(moab_gcell%num_ghosted, 3))
-    data(:,:) = -1
-    do g = 1, moab_gcell%num_ghosted
-       if (moab_gcell%is_owned(g)) then
-          data(g, 1) = (iam+1)
-          data(g, 2) = (iam+1) + 0.1_r8
-          data(g, 3) = (iam+1) + 0.4_r8
-       end if
-    end do
-
-    ! set all the data in one shot
-    tagname='frac:area:aream'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(2), data )
-    if (ierr > 0) call endrun('Error: setting values failed')
-
-    ! now let us synchonize all tags: frac:area:aream
-    ierr = iMOAB_SynchronizeTags(mlndghostid, 3, tag_indices(2:4), entity_type(2))
-    if (ierr > 0) call endrun('Error: synchronize failed')
-
-    ! reset the data to some arbitrary value
-    data(:,:) = -100.0
-
-    ierr = iMOAB_GetDoubleTagStorage( mlndghostid, tagname, moab_gcell%num_ghosted*3, entity_type(2), data )
-    if (ierr > 0) call endrun('Error: getting values failed')
-
-    do g = 1, moab_gcell%num_ghosted
-        write(iulog,*)'g: ',g, moab_gcell%is_owned(g), data(g, :)
-    end do
-    deallocate(data)
-
 #ifdef MOABDEBUG
       ! write out the local mesh file to disk (np tasks produce np files)
       outfile = 'elm_local_mesh'//CHAR(0)
