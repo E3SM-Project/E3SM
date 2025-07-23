@@ -855,7 +855,7 @@ _TESTS = {
         "tests" : (
             "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
             "PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
-            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
+            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
             "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",
             "ERS_Lh6.ne256pg2_ne256pg2.F2010-SCREAMv1.eamxx-prod"
