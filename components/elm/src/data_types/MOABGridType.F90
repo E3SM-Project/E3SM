@@ -100,9 +100,12 @@ module MOABGridType
   type, public :: grid_edge
      integer           :: num             ! number of edges
      integer, pointer  :: cell_ids(:,:)   ! ghosted cell IDs left and right of the edge
-     real(r8), pointer :: vertex_ids(:,:) ! ghosted ID vertices forming the edge
+
      real(r8), pointer :: lat_vertex(:,:) ! latitude of vertices forming the edge
      real(r8), pointer :: lon_vertex(:,:) ! longitude of vertices forming the edge
+
+     real(r8), pointer :: dc(:)           ! distance between the cell centers left and right of the edge
+     real(r8), pointer :: lv(:)           ! length of the edge shared by the cells
   end type grid_edge
 
   ! topological entity list
@@ -355,7 +358,6 @@ contains
 
     moab_edge_internal%num = num_internal_edges
     allocate(moab_edge_internal%cell_ids(num_internal_edges,2))
-    allocate(moab_edge_internal%vertex_ids(num_internal_edges,2))
 
     num_internal_edges = 0
     do g = 1, moab_gcell%num_ghosted
@@ -436,9 +438,11 @@ contains
       ! Now determine the lat/lon of vertices of internal edges
       call set_internal_edge_lat_lon()
 
+      call compute_length_for_internal_edge()
+
     end subroutine elm_moab_load_grid_file
 
-   subroutine read_grid_cell_lat_lon()
+    subroutine read_grid_cell_lat_lon()
      !
      ! !DESCRIPTION:
      ! Reads latitude/longitude for:
@@ -664,7 +668,7 @@ contains
            end do ! v2
 
            if (min_dist < dist_threshold) then
-              vertex_count = vertex_count
+              vertex_count = vertex_count + 1
               if (vertex_count > 2) then
                  call endrun('Found more than 2 vertices that are shared between cells')
               end if
@@ -675,6 +679,69 @@ contains
      end do ! e
 
    end subroutine set_internal_edge_lat_lon
+
+   subroutine haversine_dist(lat1, lon1, lat2, lon2, dist)
+     !
+     use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_REARTH
+     !
+     implicit none
+     !
+     real(r8) :: lat1, lon1, lat2, lon2, dist
+     !
+     real(r8) :: a, c, dlat, dlon
+
+     ! Convert degrees to radians
+     dlat = (lat2 - lat1) * SHR_CONST_PI / 180._r8
+     dlon = (lon2 - lon1) * SHR_CONST_PI / 180._r8
+
+     dist = 0.0_r8
+     a = sin(dlat / 2.0_r8)**2._r8 + cos(lat1 * SHR_CONST_PI / 180.0_r8) * cos(lat2 * SHR_CONST_PI / 180._r8) * &
+          sin(dlon / 2.0_r8)**2._r8
+     c = 2._r8 * atan2(sqrt(a), sqrt(1._r8 - a))
+
+     dist = SHR_CONST_REARTH * c
+
+   end subroutine haversine_dist
+
+   subroutine compute_length_for_internal_edge()
+     !
+     ! !DESCRIPTION:
+     ! For each internal edge, compute:
+     ! - Distance between cells, and
+     ! - Length of the edge shared by the cells
+     !
+     implicit none
+     !
+     integer  :: e, gup, gdn
+     real(r8) :: lat1, lon1, lat2, lon2
+
+     allocate(moab_edge_internal%dc(moab_edge_internal%num))
+     allocate(moab_edge_internal%lv(moab_edge_internal%num))
+
+     do e = 1, moab_edge_internal%num
+        gup = moab_edge_internal%cell_ids(e, 1)
+        gdn = moab_edge_internal%cell_ids(e, 2)
+
+        lat1 = moab_gcell%lat(gup)
+        lon1 = moab_gcell%lon(gup)
+
+        lat2 = moab_gcell%lat(gdn)
+        lon2 = moab_gcell%lon(gdn)
+
+        call haversine_dist(lat1, lon1, lat2, lon2, moab_edge_internal%dc(e))
+
+        lat1 = moab_edge_internal%lat_vertex(e, 1)
+        lon1 = moab_edge_internal%lon_vertex(e, 1)
+
+        lat2 = moab_edge_internal%lat_vertex(e, 2)
+        lon2 = moab_edge_internal%lon_vertex(e, 2)
+
+        call haversine_dist(lat1, lon1, lat2, lon2, moab_edge_internal%lv(e))
+
+     end do
+
+   end subroutine compute_length_for_internal_edge
+
 
   !------------------------------------------------------------------------
   subroutine elm_moab_finalize()
