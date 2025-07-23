@@ -461,12 +461,14 @@ contains
                      write(logunit,*) subname,' error in setting the number of ghost layers'
                      call shr_sys_abort(subname//' error in setting the number of ghost layers')
                   endif
+
                   ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mboxid, mbintxao )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing ATM-OCN mesh intersection'
                      call shr_sys_abort(subname//' ERROR in computing ATM-OCN mesh intersection')
                   endif
+
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection completed between ATM and OCN with id:', idintx
                   end if
@@ -475,6 +477,7 @@ contains
                   else
                      type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
                   endif
+
                   type2 = 3;  ! FV mesh on coupler OCN
                   ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                              atm(1)%cplcompid, idintx)
@@ -482,6 +485,7 @@ contains
                      write(logunit,*) subname,' error in computing comm graph for second hop, ATM-OCN'
                      call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-OCN')
                   endif
+
 #ifdef MOABDEBUG
                   wopts = C_NULL_CHAR
                   call shr_mpi_commrank( mpicom_CPLID, rank )
@@ -496,6 +500,7 @@ contains
                   endif
 #endif
                end if
+
                ! To project fields from ATM to OCN grid, we need to define
                ! ATM a2x fields to OCN grid on coupler side
                tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
@@ -506,6 +511,7 @@ contains
                   write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
                endif
+
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (atm_pg_active) then
@@ -562,17 +568,16 @@ contains
 
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-                  arearead = 0
+                  arearead = 0 ! no need to read areas
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_fmapname:', 'atm2ocn_fmaptype:',samegrid_ao, &
                         arearead, wgtIdFa2o, 'mapper_Fa2o moab initialization', esmf_map_flag)
 
-                  arearead = 0
                   call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
                         arearead, wgtIdSa2o, 'mapper_Sa2o moab initialization', esmf_map_flag)
-
                endif
+
             else ! if (samegrid_ao)
 
                ! ATM and OCN components use the same mesh and DoF numbering (OCN is a subset of ATM);
@@ -586,6 +591,7 @@ contains
               else
                   type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
               endif
+
               type2 = 3;  ! FV mesh on coupler OCN
               ierr = iMOAB_ComputeCommGraph( mbaxid, mboxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       atm(1)%cplcompid, ocn(1)%cplcompid )
@@ -634,7 +640,7 @@ contains
             ! now take care of the 2 new mappers
             if (iamroot_CPLID) then
                write(logunit,*) ' '
-               write(logunit,F00) 'Finish initializing MOAB mapper_Sa2o bilinear'
+               write(logunit,F00) 'Finish initializing MOAB mapper_Sa2o'
             end if
 
             mapper_Sa2o%src_mbid = mbaxid
@@ -647,7 +653,7 @@ contains
 
             if (iamroot_CPLID) then
                write(logunit,*) ' '
-               write(logunit,F00) 'Initializing MOAB mapper_Va2o bilinear same as Sa2o'
+               write(logunit,F00) 'Initializing MOAB mapper_Va2o'
             end if
 
             ! If loading map from disk, then load the scalar map as well
@@ -666,7 +672,8 @@ contains
                   write(logunit,*) subname,' error in migrating atm mesh for map atm c2 ocn '
                   call shr_sys_abort(subname//' ERROR in migrating atm mesh for map atm c2 ocn ')
                endif
-
+            else ! if (.not. compute_maps_online_a2o)
+               wgtIdVa2o = wgtIdFa2o ! use the same map as Sa2o
             end if
             mapper_Va2o%src_mbid = mbaxid
             mapper_Va2o%tgt_mbid = mboxid

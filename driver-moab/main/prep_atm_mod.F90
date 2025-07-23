@@ -361,6 +361,10 @@ contains
                      call shr_sys_abort(subname//' ERROR in iMOAB_ComputeScalarProjectionWeights ocn atm ')
                   endif
 
+                  ! we do not compute anything different for the flux map.
+                  ! set identifier to the same as scalar map
+                  wgtIdFo2a = wgtIdSo2a
+
                   ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
                   ! ocean for the intx ocean-atm context (coverage)
                   type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
@@ -375,41 +379,11 @@ contains
                else
 
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-                  arearead = 3 ! read both area_a and area_b
-                  ! maybe we should read the moab map for fmap, not smap; are rhey always the same?
-                  ! the bigger question is about aream, they are read using smap , not fmap, as a
-                  ! consequence; we do not read acn2atm_fmap in moab, we read only ocn2atm_smap
+                  arearead = 0 ! do not read area_a and area_b from scalar map file
+                  ! set up the scalar map for OCN to ATM
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
                         arearead, wgtIdSo2a, 'mapper_So2a MOAB init', esmf_map_flag)
-
-                  ! Condition::
-                  !      (ocn_c2_atm .and. (mbaxid .ge. 0) .and.  (mboxid .ge. 0) .and. .not. samegrid_ao .and. &
-                  !         (.not. cpl_compute_maps_online))
-
-                  ! need to call migrate map mesh, which will compute the cov mesh and
-                  !  comm graph too for coverage mesh
-                  if (.false.) then
-                     wgtIdFo2a = wgtIdSo2a
-                     context_id = idintx ! intx id
-                     ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
-                        mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
-                     if (ierr .ne. 0) then
-                        write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                        call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-                     endif
-
-                     ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-                     ! ocean for the intx ocean-atm context (coverage)
-                     type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-                     type2 = 3;
-                     ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                                ocn(1)%cplcompid, idintx)
-                     if (ierr .ne. 0) then
-                        write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
-                        call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
-                     endif
-                  endif
 
                endif
 
@@ -471,7 +445,7 @@ contains
             ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_o2a .and. .not. samegrid_ao) then
                type1 = 3 ! this is type of grid
-               arearead = 0 ! no need for areas
+               arearead = 3 ! read area_a and area_b from flux map file
                call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                      'seq_maps.rc', 'ocn2atm_fmapname:', 'ocn2atm_fmaptype:', samegrid_ao, &
                      arearead, wgtIdFo2a, 'mapper_Fo2a MOAB init', esmf_map_flag )
@@ -738,7 +712,8 @@ contains
                   write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
                   call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
                endif
-
+            else
+               wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
             end if
 
             mapper_Fi2a%src_mbid = mbixid
@@ -876,6 +851,9 @@ contains
                      write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights lnd atm '
                      call shr_sys_abort(subname//' error in iMOAB_ComputeScalarProjectionWeights lnd atm ')
                   endif
+
+                  ! now we can initialize the scalar map
+                  wgtIdSl2a = wgtIdFl2a ! use the same weights
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! do not read areas, we do not need it
