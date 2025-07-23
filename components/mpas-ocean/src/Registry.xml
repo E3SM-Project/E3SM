@@ -122,9 +122,6 @@
 		<dim name="nAccumulatedSFWFHistory" definition="namelist:config_precip_scaling_history_years"
 			description="The number of years stored in the history of surface freshwater fluxes."
 		/>
-                <dim name="nAccumulatedSFWFHistory" definition="namelist:config_precip_scaling_history_years"
-                         description="The number of years stored in the history of surface freshwater fluxes."
-                />
 	</dims>
 
 	<!--*************************************-->
