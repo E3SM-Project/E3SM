@@ -19,6 +19,12 @@ module MOABGridType
   use spmdmod  , only: iam, masterproc, mpicom
   use elm_varctl  ,  only : iulog, fatmlndfrc  ! for messages and domain file name
   use abortutils , only : endrun
+  use ncdio_pio , only : PIO_subsystem, io_type
+  use pio       , only : file_desc_t, var_desc_t, io_desc_t
+  use pio       , only : pio_nowrite, pio_noerr
+  use pio       , only : pio_openfile, pio_closefile, pio_inq_varid, pio_inq_vartype
+  use pio       , only : pio_inq_dimid, pio_inq_dimlen, pio_initdecomp, pio_freedecomp
+  use pio       , only : pio_read_darray
 
   use iMOAB  , only: iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
   iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
@@ -69,6 +75,10 @@ module MOABGridType
 
      real(r8), pointer :: lat(:)        ! [num_ghosted] latitude of the cell
      real(r8), pointer :: lon(:)        ! [num_ghosted] longitude of the cell
+
+     integer           :: nv            ! length of 'nv' dimension in the mesh
+     real(r8), pointer :: latv(:,:)     ! [num_ghosted, nv] latitude of cell vertices
+     real(r8), pointer :: lonv(:,:)     ! [num_ghosted, nv] longitude of cell vertices
 
   end type grid_cell
   
@@ -417,7 +427,197 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to write ELM local meshes in h5m format')
 #endif
-  end subroutine elm_moab_load_grid_file
+
+      ! Read lat/lon for cell centers and cell vertices
+      call read_grid_cell_lat_lon()
+
+    end subroutine elm_moab_load_grid_file
+
+   subroutine read_grid_cell_lat_lon()
+     !
+     ! !DESCRIPTION:
+     ! Reads latitude/longitude for:
+     ! - Cell centers, and
+     ! - Cell vertices
+     !
+     implicit none
+     !
+     type(file_desc_t) :: ncid
+     type(var_desc_t)  :: varid
+     type(io_desc_t)   :: iodescNCells
+     character (1024)  :: varname
+     integer           :: vartype
+     integer           :: dim2d(2), dim3d(3)
+     integer, pointer  :: compdof(:)
+     integer           :: g, v
+     integer           :: ierr
+     integer           :: ni, nj, dimid, count
+     real(r8), pointer :: data2d(:,:)
+
+     ierr = pio_openfile(pio_subsystem, ncid, io_type, trim(fatmlndfrc), PIO_NOWRITE)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: Unable to open file : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_dimid(ncid, 'ni', dimid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: ni dimension not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_dimlen(ncid, dimid, ni)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: Unable to determine length of ni dimension : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_dimid(ncid, 'nj', dimid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: nj dimension not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_dimlen(ncid, dimid, nj)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: Unable to determine length of nj dimension : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_dimid(ncid, 'nv', dimid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: nv dimension not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_dimlen(ncid, dimid, moab_gcell%nv)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: Unable to determine length of nv dimension : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ! set dims for reading lat/lon for cell centers
+     dim2d(1) = ni
+     dim2d(2) = nj
+
+     ! set dims for reading lat/lon for cell vertices
+     dim3d(1) = moab_gcell%nv
+     dim3d(2) = ni
+     dim3d(3) = nj
+
+     !
+     ! Read lat/lon for cell centers
+     !
+
+     allocate(moab_gcell%lat(moab_gcell%num_ghosted))
+     allocate(moab_gcell%lon(moab_gcell%num_ghosted))
+
+     varname = 'xc'
+     ierr = pio_inq_varid(ncid, trim(varname), varid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: xc variable not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_vartype(ncid, varid, vartype)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: could not determine the type of xc variable in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ! Create the I/O decomposition for owned+ghost cells
+     call pio_initdecomp(pio_subsystem, vartype, dim2d, moab_gcell%natural_id, iodescNCells)
+
+     ! Read the data
+     call pio_read_darray(ncid, varid, iodescNCells, moab_gcell%lon, ierr)
+
+     varname = 'yc'
+     ierr = pio_inq_varid(ncid, trim(varname), varid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: yc variable not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ! Read the data using the previously created I/O decomposition
+     call pio_read_darray(ncid, varid, iodescNCells, moab_gcell%lat, ierr)
+
+     ! Free up memory
+     call pio_freedecomp(pio_subsystem, iodescNCells)
+
+     !
+     ! Read lat/lon for cell vertices
+     !
+
+     allocate(moab_gcell%latv(moab_gcell%num_ghosted, moab_gcell%nv))
+     allocate(moab_gcell%lonv(moab_gcell%num_ghosted, moab_gcell%nv))
+     allocate(data2d(moab_gcell%nv, moab_gcell%num_ghosted))
+
+     varname = 'xv'
+     ierr = pio_inq_varid(ncid, trim(varname), varid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: xv variable not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_vartype(ncid, varid, vartype)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: could not determine the type of xv variable in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ! Create a temporary variable that has the indices for reading the data
+     ! for owned+ghost cells
+     allocate(compdof(moab_gcell%num_ghosted * moab_gcell%nv))
+     count = 0
+     do g = 1, moab_gcell%num_ghosted
+        do v = 1, moab_gcell%nv
+           count = count + 1;
+           compdof(count) = (moab_gcell%natural_id(g) - 1 ) * moab_gcell%nv + v
+        enddo
+     enddo
+
+     ! Create the I/O decomposition
+     call pio_initdecomp(pio_subsystem, vartype, dim3d, compdof, iodescNCells)
+
+     ! Read the data
+     call pio_read_darray(ncid, varid, iodescNCells, data2d, ierr)
+
+     ! Copy the data
+     do g = 1, moab_gcell%num_ghosted
+        do v = 1, moab_gcell%nv
+           moab_gcell%lonv(g, v) = data2d(v, g)
+        end do
+     end do
+
+     varname = 'yv'
+     ierr = pio_inq_varid(ncid, trim(varname), varid)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: yv variable not present in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ierr = pio_inq_vartype(ncid, varid, vartype)
+     if (ierr /= pio_noerr) then
+        write(iulog,*) 'Error: could not determine the type of xc variable in : ' // trim(fatmlndfrc)
+        call endrun(msg=errMsg(__FILE__, __LINE__))
+     end if
+
+     ! Read the data
+     call pio_read_darray(ncid, varid, iodescNCells, data2d, ierr)
+
+     ! Copy the data
+     do g = 1, moab_gcell%num_ghosted
+        do v = 1, moab_gcell%nv
+           moab_gcell%latv(g, v) = data2d(v, g)
+        end do
+     end do
+
+     ! Clean up
+     call pio_freedecomp(pio_subsystem, iodescNCells)
+     call pio_closefile(ncid)
+     deallocate(compdof)
+
+   end subroutine read_grid_cell_lat_lon
 
   !------------------------------------------------------------------------
   subroutine elm_moab_finalize()
