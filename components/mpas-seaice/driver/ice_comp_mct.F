@@ -854,6 +854,22 @@ contains
     endif
 #ifdef HAVE_MOAB
     call ice_export_moab(EClock)
+#ifdef MOABCOMP
+    mpicom_moab = mpicom_i ! save it for run method
+    ! loop over all fields in seq_flds_x2i_fields
+    call mct_list_init(temp_list ,seq_flds_i2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ice
+    modelStr='ice init export'
+
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, i2x_i, mct_field,  MPSIID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
 #endif
 
     call t_stopf ('mpassi_mct_init')
@@ -870,14 +886,14 @@ contains
     endif
 !-----------------------------------------------------------------------
 #ifdef HAVE_MOAB
+    call ice_import_moab(Eclock)
 
 #ifdef MOABCOMP
-    mpicom_moab = mpicom_i ! save it for run method
     ! loop over all fields in seq_flds_x2i_fields
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ice
-    modelStr='ice init'
+    modelStr='ice init import'
 
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
@@ -888,7 +904,6 @@ contains
     call mct_list_clean(temp_list)
 #endif
 
-    call ice_import_moab(Eclock)
 #endif
 
 
@@ -1224,7 +1239,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ice
-    modelStr='ice run'
+    modelStr='ice run import'
 
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
@@ -1374,6 +1389,21 @@ contains
       if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
       call ice_export_mct(i2x_i, ierr)
 #ifdef HAVE_MOAB
+#ifdef MOABCOMP
+    ! loop over all fields in seq_flds_i2x_fields
+    call mct_list_init(temp_list ,seq_flds_i2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ice
+    modelStr='ice run export'
+
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, i2x_i, mct_field,  MPSIID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
       call ice_export_moab(EClock)
 #endif
       if (debugOn) call mpas_log_write('Finished exporting state', masterOnly=.true.)
@@ -3554,6 +3584,7 @@ contains
                i2x_im(n, index_i2x_Si_tref)  = atmosReferenceTemperature2m(i)
                i2x_im(n, index_i2x_Si_qref)  = atmosReferenceHumidity2m(i)
                i2x_im(n, index_i2x_Si_snowh)  = snowVolumeCell(i) / ailohi
+               i2x_im(n, index_i2x_Si_ithick)  = iceVolumeCell(i) / ailohi
 
                !--- a/i fluxes computed by ice
                i2x_im(n, index_i2x_Faii_taux) = tauxa
@@ -3592,7 +3623,7 @@ contains
                   i2x_im(n, index_i2x_Fioi_algae3) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
                   i2x_im(n, index_i2x_Fioi_doc1  ) = oceanDOCFlux(1,i)
                   i2x_im(n, index_i2x_Fioi_doc2  ) = oceanDOCFlux(2,i)
-                  i2x_im(n, index_i2x_Fioi_doc3  ) = oceanDOCFlux(3,i) !JW set to 0?
+                  i2x_im(n, index_i2x_Fioi_doc3  ) = oceanDONFlux(1,i) * carbonToNitrogenRatioDON(1)
                   i2x_im(n, index_i2x_Fioi_dic1  ) = oceanDICFlux(1,i)
                   i2x_im(n, index_i2x_Fioi_don1  ) = oceanDONFlux(1,i)
                   i2x_im(n, index_i2x_Fioi_no3   ) = oceanNitrateFlux(i)
