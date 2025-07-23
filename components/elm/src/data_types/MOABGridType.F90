@@ -158,21 +158,23 @@ contains
   end subroutine elm_moab_initialize
 
   subroutine elm_moab_load_grid_file(meshfile)
-
+    !
     use elm_varctl  ,  only : iulog  ! for messages and domain file name
-    integer   ::  ierr
-    character(1024), intent(in) :: meshfile
-    integer tagtype, numco !, mbtype, block_ID
-    integer :: num_components !, mbtype, block_ID
-    character(1024)  :: outfile, wopts
-    character(1024) :: tagname ! hold all fields
-    integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
-    integer, dimension(2) :: entity_type
-    real(r8) , allocatable :: data(:,:) ! for tags to be set in MOAB
-    integer :: g, n, num_neighbor, num_vertex, num_internal_edges
-    integer :: ghosted_id_left, ghosted_id_right
-    integer :: nat_id_left, nat_id_right
-    integer, pointer :: neighbor_id(:), vertex_id(:)
+    !
+    character(1024), intent(in)   :: meshfile
+    !
+    integer                 :: tagtype, numco
+    integer                 :: num_components
+    character(1024)         :: outfile, wopts
+    character(1024)         :: tagname                                            ! hold all fields
+    integer                 :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
+    integer  , dimension(2) :: entity_type
+    real(r8) , allocatable  :: data(:,:)                                          ! for tags to be set in MOAB
+    integer                 :: g, n, num_neighbor, num_vertex, num_internal_edges
+    integer                 :: ghosted_id_left, ghosted_id_right
+    integer                 :: nat_id_left, nat_id_right
+    integer  , pointer      :: neighbor_id(:), vertex_id(:)
+    integer                 :: ierr
 
     if(masterproc) &
         write(iulog,*) "elm_moab_load_grid_file(): reading mesh file: ", trim(meshfile)
@@ -222,7 +224,6 @@ contains
 
     ! now consolidate/reduce data to root and print information
     ! not really necessary for actual code -- for verbose info only
-    ! TODO: combine the Allreduce calls
     call MPI_Allreduce(moab_gvertex%num_owned, moab_gvertex%num_global, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     call MPI_Allreduce(moab_gcell%num_owned  , moab_gcell%num_global  , 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     if (masterproc) then
@@ -233,7 +234,6 @@ contains
     endif
 
     ! Determine the cell id offset on each processor
-    !call MPI_Scan(neoproc, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     call MPI_Scan(moab_gcell%num_owned, proc_offset, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
     if (ierr /= 0) then
        write(iulog,*) 'load_grid_file(): MPI_Scan error failed to get proc_offset'
@@ -243,32 +243,12 @@ contains
     entity_type(:) = 1 ! default: Element-based tags
 
     ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
-    !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
     tagtype = 0 ! dense, integer
     numco = 1
     tagname='GLOBAL_ID'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage( mlndghostid, tagname, tagtype, numco, tag_indices(1) )
     if (ierr > 0 )  &
       call endrun('Error: fail to retrieve GLOBAL_ID tag ')
-
-    ! use data array as a data holder
-    ! Note that loop bounds are typical for locally owned points
-    ! allocate(data(neproc*3))
-    ! do i = 1, neproc
-    !   n = i-1 + bounds%begg
-    !   data(i) = ldomain%frac(n)               ! frac = area fractions
-    !   data(i+neproc) = ldomain%area(n)/(re*re)   ! area = element area
-    !   data(i+2*neproc) = data(i+neproc)             ! aream = model area
-    ! enddo
-
-    ! set the values on the internal mesh, halo values aren't set
-    ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, neproc*3, entity_type, data )
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to set frac:area:aream tag ')
-
-    ! ierr = iMOAB_UpdateMeshInfo( mlndghostid )
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to update mesh info ')
 
     ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
     entity_type(1) = 0 ! Vertex tag for GLOBAL_ID
@@ -324,6 +304,8 @@ contains
 
     num_internal_edges = 0
 
+    ! poppulate the moab_gcell data structure and determine number of unique
+    ! internal edges
     do g = 1, moab_gcell%num_ghosted
 
        ! get data about cell neighbors
@@ -333,6 +315,7 @@ contains
        moab_gcell%num_neighbor(g)                = num_neighbor
        moab_gcell%neighbor_id(g, 1:num_neighbor) = neighbor_id(1:num_neighbor) + 1 ! convert to 1-based index
 
+       ! determine unqiue edges between cells
        do n = 1, moab_gcell%num_neighbor(g)
           ghosted_id_left  = g
           ghosted_id_right = moab_gcell%neighbor_id(g, n)
@@ -340,6 +323,7 @@ contains
           nat_id_left  = moab_gcell%natural_id(ghosted_id_left)
           nat_id_right = moab_gcell%natural_id(ghosted_id_right)
 
+          ! check if the edge hasn't been already included
           if (nat_id_left < nat_id_right) then
              num_internal_edges = num_internal_edges + 1
           endif
@@ -356,6 +340,7 @@ contains
 
     enddo
 
+    ! populate data structure for internal edges
     moab_edge_internal%num = num_internal_edges
     allocate(moab_edge_internal%cell_ids(num_internal_edges,2))
 
