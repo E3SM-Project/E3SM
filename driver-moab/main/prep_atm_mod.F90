@@ -360,6 +360,18 @@ contains
                      write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ocn atm   '
                      call shr_sys_abort(subname//' ERROR in iMOAB_ComputeScalarProjectionWeights ocn atm ')
                   endif
+
+                  ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+                  ! ocean for the intx ocean-atm context (coverage)
+                  type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+                  type2 = 3;
+                  ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             ocn(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+                  endif
+
                else
 
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
@@ -371,17 +383,34 @@ contains
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
                         arearead, wgtIdSo2a, 'mapper_So2a MOAB init', esmf_map_flag)
 
-               endif
+                  ! Condition::
+                  !      (ocn_c2_atm .and. (mbaxid .ge. 0) .and.  (mboxid .ge. 0) .and. .not. samegrid_ao .and. &
+                  !         (.not. cpl_compute_maps_online))
 
-               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-               ! ocean for the intx ocean-atm context (coverage)
-               type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-               type2 = 3;
-               ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          ocn(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+                  ! need to call migrate map mesh, which will compute the cov mesh and
+                  !  comm graph too for coverage mesh
+                  if (.false.) then
+                     wgtIdFo2a = wgtIdSo2a
+                     context_id = idintx ! intx id
+                     ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
+                        mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                        call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+                     endif
+
+                     ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+                     ! ocean for the intx ocean-atm context (coverage)
+                     type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+                     type2 = 3;
+                     ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                                ocn(1)%cplcompid, idintx)
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                        call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+                     endif
+                  endif
+
                endif
 
             else ! samegrid_ao = TRUE
@@ -409,8 +438,79 @@ contains
             endif ! if (.not. samegrid_ao)
          endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
+! endif for HAVE_MOAB
+#endif
+
+      endif  ! if (ocn_c2_atm) then
+
+      ! needed for domain checking
+      if (ocn_present) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fo2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fo2a initialization',esmf_map_flag, no_match)
+
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fof2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fof2a initialization',esmf_map_flag, no_match)
+
+#ifdef HAVE_MOAB
+         if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fo2a with copy of mapper_So2a'
+            endif
+
+            ! If loading map from disk, then load the scalar map as well
+            if (.not. compute_maps_online_o2a .and. .not. samegrid_ao) then
+               type1 = 3 ! this is type of grid
+               arearead = 0 ! no need for areas
+               call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
+                     'seq_maps.rc', 'ocn2atm_fmapname:', 'ocn2atm_fmaptype:', samegrid_ao, &
+                     arearead, wgtIdFo2a, 'mapper_Fo2a MOAB init', esmf_map_flag )
+
+               ! need to call migrate map mesh, which will compute the cov mesh and
+               !  comm graph too for coverage mesh
+               context_id = idintx ! intx id
+               ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
+                    mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+               endif
+
+               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+               ! ocean for the intx ocean-atm context (coverage)
+               type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          ocn(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+               endif
+
+            end if
+            ! now take care of the mapper
+            mapper_Fo2a%src_mbid = mboxid
+            mapper_Fo2a%tgt_mbid = mbaxid
+            mapper_Fo2a%intx_mbid = mbintxoa
+            mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
+            mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
+            mapper_Fo2a%weight_identifier = wgtIdFo2a
+            mapper_Fo2a%mbname = 'mapper_Fo2a'
+         endif
+
          ! FLUX make the app and mapper for the a2o flux mappings
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+
             if (iamroot_CPLID) then
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing MOAB mapper_Sof2a with copy of mapper_So2a'
@@ -435,6 +535,19 @@ contains
             mapper_Sof2a%weight_identifier = wgtIdSo2a
             mapper_Sof2a%mbname = 'mapper_Sof2a'
 
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fof2a with copy of mapper_Sof2a'
+            endif
+            ! now take care of the mapper
+            mapper_Fof2a%src_mbid = mbofxid
+            mapper_Fof2a%tgt_mbid = mbaxid
+            mapper_Fof2a%intx_mbid = mbintxoa
+            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ?
+            mapper_Fof2a%intx_context = mapper_Sof2a%intx_context ! depends on samegrid_ao
+            mapper_Fof2a%weight_identifier = wgtIdFo2a
+            mapper_Fof2a%mbname = 'mapper_Fof2a'
+
             type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
             type2 = 3;
             if (.not. samegrid_ao) then ! data-OCN case
@@ -452,80 +565,6 @@ contains
             endif
          endif
 
-! endif for HAVE_MOAB
-#endif
-
-      endif  ! if (ocn_c2_atm) then
-
-      ! needed for domain checking
-      if (ocn_present) then
-         if (iamroot_CPLID) then
-            write(logunit,*) ' '
-            write(logunit,F00) 'Initializing mapper_Fo2a'
-         endif
-         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fo2a initialization',esmf_map_flag, no_match)
-
-         if (iamroot_CPLID) then
-            write(logunit,*) ' '
-            write(logunit,F00) 'Initializing mapper_Fof2a'
-         endif
-         no_match = .true. ! force to create a new mapper object
-         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fof2a initialization',esmf_map_flag, no_match)
-
-! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
-#ifdef HAVE_MOAB
-         if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
-            if (iamroot_CPLID) then
-              write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fo2a with copy of mapper_So2a'
-            endif
-
-            ! If loading map from disk, then load the scalar map as well
-            if (.not. compute_maps_online_o2a) then
-               type1 = 3 ! this is type of grid
-               arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
-                     'seq_maps.rc', 'ocn2atm_fmapname:', 'ocn2atm_fmaptype:', samegrid_ao, &
-                     arearead, wgtIdFo2a, 'mapper_Fo2a MOAB init', esmf_map_flag )
-                
-               ! need to call migrate map mesh, which will compute the cov mesh and
-               !  comm graph too for coverage mesh
-               context_id = idintx ! intx id
-               ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
-                    mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-               endif
-
-            end if
-            ! now take care of the mapper
-            mapper_Fo2a%src_mbid = mboxid
-            mapper_Fo2a%tgt_mbid = mbaxid
-            mapper_Fo2a%intx_mbid = mbintxoa
-            mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
-            mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
-            mapper_Fo2a%weight_identifier = wgtIdFo2a
-            mapper_Fo2a%mbname = 'mapper_Fo2a'
-         endif
-         if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
-            if (iamroot_CPLID) then
-              write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fof2a with copy of mapper_Sof2a'
-            endif
-            ! now take care of the mapper
-            mapper_Fof2a%src_mbid = mbofxid
-            mapper_Fof2a%tgt_mbid = mbaxid
-            mapper_Fof2a%intx_mbid = mbintxoa
-            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ?
-            mapper_Fof2a%intx_context = mapper_Sof2a%intx_context ! depends on samegrid_ao
-            mapper_Fof2a%weight_identifier = wgtIdFo2a
-            mapper_Fof2a%mbname = 'mapper_Fof2a'
-         endif
 ! endif for HAVE_MOAB
 #endif
 
@@ -552,7 +591,6 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Si2a'
          endif
-         no_match = .true. ! force to create a new mapper object
          ! otherwise it may find ocean map, and this will not work on ice vars
          call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
@@ -673,7 +711,6 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fi2a'
          endif
-         no_match = .true. ! force a different map, we do not want to match to ocean
          call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
             'mapper_Fi2a initialization',esmf_map_flag, no_match)
@@ -841,10 +878,25 @@ contains
                   endif
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-                  arearead = 0 ! do not read area, we do not need it
-                  call moab_map_init_rcfile(mblxid, mbaxid, mbintxla, type1, &
+                  arearead = 0 ! do not read areas, we do not need it
+                  call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
                         'seq_maps.rc', 'lnd2atm_fmapname:', 'lnd2atm_fmaptype:', samegrid_al, &
                         arearead, wgtIdFl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
+
+                  ! If loading map from disk, then load the scalar map as well for the tri grid case
+                  call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
+                        'seq_maps.rc', 'lnd2atm_smapname:', 'lnd2atm_smaptype:', samegrid_al, &
+                        arearead, wgtIdSl2a, 'mapper_Sl2a MOAB initialization', esmf_map_flag, wgtIdFl2a )
+
+                  ! need to call migrate map mesh, which will compute the right covering mesh
+                  context_id = idintx ! intx id
+                  ierr = iMOAB_MigrateMapMesh (mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, &
+                     mpigrp_CPLID, type1, lnd(1)%cplcompid, context_id)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in migrating lnd mesh for map lnd c2 atm '
+                     call shr_sys_abort(subname//' ERROR in migrating lnd mesh for map lnd c2 atm  ')
+                  endif
+
                endif
 
                type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
@@ -894,24 +946,6 @@ contains
               write(logunit,F00) 'Initializing MOAB mapper_Sl2a with copy from mapper_Fl2a'
             endif
 
-            ! If loading map from disk, then load the scalar map as well for the tri grid case
-            if (.not. compute_maps_online_l2a .and. .not. samegrid_al) then
-               type1 = 3 ! this is type of grid
-               arearead = 0 ! do not read area, we do not need it
-               call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
-                     'seq_maps.rc', 'lnd2atm_smapname:', 'lnd2atm_smaptype:', samegrid_al, &
-                     arearead, wgtIdSl2a, 'mapper_Sl2a MOAB initialization', esmf_map_flag, wgtIdFl2a )
-
-               ! need to call migrate map mesh, which will compute the right covering mesh
-               context_id = idintx ! intx id
-               ierr = iMOAB_MigrateMapMesh (mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, &
-                  mpigrp_CPLID, type1, lnd(1)%cplcompid, context_id)
-
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in migrating lnd mesh for map lnd c2 atm '
-                  call shr_sys_abort(subname//' ERROR in migrating lnd mesh for map lnd c2 atm  ')
-               endif
-            end if
             mapper_Sl2a%src_mbid = mblxid
             mapper_Sl2a%tgt_mbid = mapper_Fl2a%tgt_mbid !
             mapper_Sl2a%intx_mbid = mbintxla
