@@ -16,8 +16,8 @@ module shr_moab_mod
  private
 
  public :: mbGetnCells 
- public :: mbGetTagVals
- public :: mbSetTagVals
+ public :: mbGetCellTagVals
+ public :: mbSetCellTagVals
 
 contains
 
@@ -61,7 +61,7 @@ contains
 !===============================================================================
 ! !BOP =========================================================================
 !
-! !IROUTINE: mbGetTagVals -- get values from input tagname and mpid and return in input array
+! !IROUTINE: mbGetCellTagVals -- get values from input tagname and mpid and return in input array
 !
 ! !DESCRIPTION:
 !
@@ -71,7 +71,7 @@ contains
 !     2024-Jan-05 - R. Jacob - initial version
 ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine mbGetTagVals(mbid, intag,inarray,nMax)
+  subroutine mbGetCellTagVals(mbid, intag,inarray,nMax)
     use iMOAB , only : iMOAB_GetDoubleTagStorage
 
     integer,intent(in)                   :: mbid
@@ -82,7 +82,7 @@ contains
 ! Local variables
     integer :: ierr, ent_type
     character(CXX)           :: tagname
-    character(*), parameter   :: subname = '(mbGetTagVals) '
+    character(*), parameter   :: subname = '(mbGetCellTagVals) '
 !-----------------------------------------------------------------------
 !
 
@@ -99,7 +99,7 @@ contains
 !===============================================================================
 ! !BOP =========================================================================
 !
-! !IROUTINE: mbSetTagVals -- Set values to input tagname and mpid using input array
+! !IROUTINE: mbSetCellTagVals -- Set values to input tagname and mpid using input array
 !
 ! !DESCRIPTION:
 !
@@ -109,7 +109,7 @@ contains
 !     2024-Jan-05 - R. Jacob - initial version
 ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine mbSetTagVals(mbid, intag,inarray,nMax)
+  subroutine mbSetCellTagVals(mbid, intag,inarray,nMax)
     use iMOAB , only : iMOAB_SetDoubleTagStorage
 
     integer,intent(in)                   :: mbid
@@ -120,7 +120,7 @@ contains
 ! Local variables
     integer :: ierr, ent_type
     character(CXX)           :: tagname
-    character(*), parameter   :: subname = '(mbSetTagVals) '
+    character(*), parameter   :: subname = '(mbSetCellTagVals) '
 !-----------------------------------------------------------------------
 !
 
