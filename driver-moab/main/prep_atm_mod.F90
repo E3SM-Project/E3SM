@@ -161,7 +161,7 @@ contains
    integer                  :: ierr, idintx, rank
    character*32             :: appname, outfile, wopts, lnum
    character*32             :: dm1, dm2, dofnameS, dofnameT
-   character*32             :: wgtIdo2a, wgtIdi2a, wgtIdl2a
+   character*32             :: wgtIdSo2a, wgtIdFo2a, wgtIdSi2a, wgtIdFi2a, wgtIdSl2a, wgtIdFl2a
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
    integer                  :: fNoBubble, monotonicity
 ! will do comm graph over coupler PES, in 2-hop strategy
@@ -226,13 +226,17 @@ contains
       if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
 
       ! TODO: make these namelists
-      wgtIdo2a = 'conservative_o2a'//C_NULL_CHAR
-      wgtIdi2a = 'conservative_i2a'//C_NULL_CHAR
-      wgtIdl2a = 'conservative_l2a'//C_NULL_CHAR
+      wgtIdSo2a = 'scalar_o2a'//C_NULL_CHAR
+      wgtIdFo2a = 'flux_o2a'//C_NULL_CHAR
+      wgtIdSi2a = 'scalar_i2a'//C_NULL_CHAR
+      wgtIdFi2a = 'flux_i2a'//C_NULL_CHAR
+      wgtIdSl2a = 'scalar_l2a'//C_NULL_CHAR
+      wgtIdFl2a = 'flux_l2a'//C_NULL_CHAR
       compute_maps_online_o2a = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_i2a = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_l2a = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_l2a = .false. ! Explicitly force read from disk
+      no_match = .true. ! force to create a new mapper object
 
       if (ocn_c2_atm) then
          if (iamroot_CPLID) then
@@ -241,13 +245,12 @@ contains
          endif
          call seq_map_init_rcfile(mapper_So2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_So2a initialization',esmf_map_flag)
+            'mapper_So2a initialization',esmf_map_flag, no_match)
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sof2a'
          endif
-         no_match = .true. ! force to create a new mapper object
          call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
             'mapper_Sof2a initialization',esmf_map_flag, no_match)
@@ -264,8 +267,8 @@ contains
             idintx = 100*ocn(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in registering atm ocn intx'
-              call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
+              write(logunit,*) subname,' error in registering ATM-OCN intersection application'
+              call shr_sys_abort(subname//' ERROR in registering ATM-OCN intersection application')
             endif
 
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
@@ -274,7 +277,7 @@ contains
             mapper_So2a%tgt_mbid = mbaxid !
             mapper_So2a%intx_mbid = mbintxoa
             mapper_So2a%src_context = ocn(1)%cplcompid
-            mapper_So2a%weight_identifier = wgtIdo2a
+            mapper_So2a%weight_identifier = wgtIdSo2a
             mapper_So2a%mbname = 'mapper_So2a'
             mapper_So2a%intx_context = idintx
 
@@ -323,17 +326,6 @@ contains
                   endif
 ! endif for MOABDEBUG
 #endif
-                  ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-                  ! ocean for the intx ocean-atm context (coverage)
-                  type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
-                  type2 = 3;
-                  ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                             ocn(1)%cplcompid, idintx)
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
-                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
-                  endif
-
                   if (atm_pg_active) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
@@ -353,13 +345,13 @@ contains
                   fInverseDistanceMap = 0
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                   if (iamroot_CPLID) then
-                     write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdo2a, &
+                     write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdSo2a, &
                         'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdo2a, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdSo2a, &
                                                    trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -368,24 +360,30 @@ contains
                      write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ocn atm   '
                      call shr_sys_abort(subname//' ERROR in iMOAB_ComputeScalarProjectionWeights ocn atm ')
                   endif
+
+                  ! we do not compute anything different for the flux map.
+                  ! set identifier to the same as scalar map
+                  wgtIdFo2a = wgtIdSo2a
+
+                  ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+                  ! ocean for the intx ocean-atm context (coverage)
+                  type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+                  type2 = 3;
+                  ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                             ocn(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                     call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+                  endif
+
                else
+
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-                  arearead = 3 ! read both area a and area b
-                  ! maybe we should read the moab map for fmap, not smap; are rhey always the same?
-                  ! the bigger question is about aream, they are read using smap , not fmap, as a 
-                  ! consequence; we do not read acn2atm_fmap in moab, we read only ocn2atm_smap
+                  arearead = 0 ! do not read area_a and area_b from scalar map file
+                  ! set up the scalar map for OCN to ATM
                   call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
-                        arearead, wgtIdo2a, 'mapper_So2a MOAB init', esmf_map_flag)
-                  ! need to call migrate map mesh, which will compute the cov mesh and
-                  !  comm graph too for coverage mesh
-                  context_id = idintx ! intx id
-                  ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
-                     mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                     call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-                  endif
+                        arearead, wgtIdSo2a, 'mapper_So2a MOAB init', esmf_map_flag)
 
                endif
 
@@ -414,8 +412,79 @@ contains
             endif ! if (.not. samegrid_ao)
          endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
-! FLUX make the app and mapper for the a2o flux mappings
+! endif for HAVE_MOAB
+#endif
+
+      endif  ! if (ocn_c2_atm) then
+
+      ! needed for domain checking
+      if (ocn_present) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fo2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fo2a initialization',esmf_map_flag, no_match)
+
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fof2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fof2a initialization',esmf_map_flag, no_match)
+
+#ifdef HAVE_MOAB
+         if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fo2a with copy of mapper_So2a'
+            endif
+
+            ! If loading map from disk, then load the scalar map as well
+            if (.not. compute_maps_online_o2a .and. .not. samegrid_ao) then
+               type1 = 3 ! this is type of grid
+               arearead = 3 ! read area_a and area_b from flux map file
+               call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
+                     'seq_maps.rc', 'ocn2atm_fmapname:', 'ocn2atm_fmaptype:', samegrid_ao, &
+                     arearead, wgtIdFo2a, 'mapper_Fo2a MOAB init', esmf_map_flag )
+
+               ! need to call migrate map mesh, which will compute the cov mesh and
+               !  comm graph too for coverage mesh
+               context_id = idintx ! intx id
+               ierr = iMOAB_MigrateMapMesh (mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, &
+                    mpigrp_CPLID, type1, ocn(1)%cplcompid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+               endif
+
+               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+               ! ocean for the intx ocean-atm context (coverage)
+               type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          ocn(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+               endif
+
+            end if
+            ! now take care of the mapper
+            mapper_Fo2a%src_mbid = mboxid
+            mapper_Fo2a%tgt_mbid = mbaxid
+            mapper_Fo2a%intx_mbid = mbintxoa
+            mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
+            mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
+            mapper_Fo2a%weight_identifier = wgtIdFo2a
+            mapper_Fo2a%mbname = 'mapper_Fo2a'
+         endif
+
+         ! FLUX make the app and mapper for the a2o flux mappings
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+
             if (iamroot_CPLID) then
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing MOAB mapper_Sof2a with copy of mapper_So2a'
@@ -437,8 +506,21 @@ contains
             mapper_Sof2a%intx_mbid = mbintxoa
             mapper_Sof2a%src_context = context_id
             mapper_Sof2a%intx_context = mapper_So2a%intx_context ! basically will use the same intx as ocean on coupler
-            mapper_Sof2a%weight_identifier = wgtIdo2a
+            mapper_Sof2a%weight_identifier = wgtIdSo2a
             mapper_Sof2a%mbname = 'mapper_Sof2a'
+
+            if (iamroot_CPLID) then
+              write(logunit,*) ' '
+              write(logunit,F00) 'Initializing MOAB mapper_Fof2a with copy of mapper_Sof2a'
+            endif
+            ! now take care of the mapper
+            mapper_Fof2a%src_mbid = mbofxid
+            mapper_Fof2a%tgt_mbid = mbaxid
+            mapper_Fof2a%intx_mbid = mbintxoa
+            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ?
+            mapper_Fof2a%intx_context = mapper_Sof2a%intx_context ! depends on samegrid_ao
+            mapper_Fof2a%weight_identifier = wgtIdFo2a
+            mapper_Fof2a%mbname = 'mapper_Fof2a'
 
             type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
             type2 = 3;
@@ -457,60 +539,6 @@ contains
             endif
          endif
 
-! endif for HAVE_MOAB
-#endif
-
-      endif  ! if (ocn_c2_atm) then
-
-      ! needed for domain checking
-      if (ocn_present) then
-         if (iamroot_CPLID) then
-            write(logunit,*) ' '
-            write(logunit,F00) 'Initializing mapper_Fo2a'
-         endif
-         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fo2a initialization',esmf_map_flag)
-
-         if (iamroot_CPLID) then
-            write(logunit,*) ' '
-            write(logunit,F00) 'Initializing mapper_Fof2a'
-         endif
-         no_match = .true. ! force to create a new mapper object
-         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
-            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fof2a initialization',esmf_map_flag, no_match)
-
-! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
-#ifdef HAVE_MOAB
-         if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
-            if (iamroot_CPLID) then
-              write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fo2a with copy of mapper_So2a'
-            endif
-            ! now take care of the mapper
-            mapper_Fo2a%src_mbid = mboxid
-            mapper_Fo2a%tgt_mbid = mbaxid
-            mapper_Fo2a%intx_mbid = mbintxoa
-            mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
-            mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
-            mapper_Fo2a%weight_identifier = wgtIdo2a
-            mapper_Fo2a%mbname = 'mapper_Fo2a'
-         endif
-         if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
-            if (iamroot_CPLID) then
-              write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fof2a with copy of mapper_Sof2a'
-            endif
-            ! now take care of the mapper
-            mapper_Fof2a%src_mbid = mbofxid
-            mapper_Fof2a%tgt_mbid = mbaxid
-            mapper_Fof2a%intx_mbid = mbintxoa
-            mapper_Fof2a%src_context = mapper_Sof2a%src_context ! we use the same source 1000 + ?
-            mapper_Fof2a%intx_context = mapper_Sof2a%intx_context ! depends on samegrid_ao
-            mapper_Fof2a%weight_identifier = wgtIdo2a
-            mapper_Fof2a%mbname = 'mapper_Fof2a'
-         endif
 ! endif for HAVE_MOAB
 #endif
 
@@ -537,7 +565,6 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Si2a'
          endif
-         no_match = .true. ! force to create a new mapper object
          ! otherwise it may find ocean map, and this will not work on ice vars
          call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
@@ -555,18 +582,18 @@ contains
             idintx = 100*ice(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxia)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in registering ice atm intx'
-              call shr_sys_abort(subname//' ERROR in registering ice atm intx')
+              write(logunit,*) subname,' error in registering ICE-ATM intersection'
+              call shr_sys_abort(subname//' ERROR in registering ICE-ATM intersection')
             endif
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
             if (compute_maps_online_i2a) then
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mbixid, mbaxid, mbintxia )
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing ice atm intx'
-                  call shr_sys_abort(subname//' ERROR in computing ice atm intx')
+                  write(logunit,*) subname,' error in computing ICE-ATM intersection'
+                  call shr_sys_abort(subname//' ERROR in computing ICE-ATM intersection')
                endif
                if (iamroot_CPLID) then
-                  write(logunit,*) 'iMOAB intersection between ice and atm with id:', idintx
+                  write(logunit,*) 'iMOAB intersection between ICE and ATM with id:', idintx
                endif
                ! we also need to compute the comm graph for the second hop, from the ice on coupler to the
                ! ice for the intx ice-atm context (coverage)
@@ -579,12 +606,12 @@ contains
                   ierr = iMOAB_WriteMesh(mbintxia, outfile, wopts) ! write local intx file
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in writing intx file ice-atm '
-                     call shr_sys_abort(subname//' ERROR in writing intx file ice-atm ')
+                     call shr_sys_abort(subname//' ERROR in writing ICE-ATM intersection mesh file ')
                   endif
                endif
 #endif
-               type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
-               type2 = 3;
+               type1 = 3; !  FV for ICE
+               type2 = 3; !  FV for ATM
                ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                              ice(1)%cplcompid, idintx)
                if (ierr .ne. 0) then
@@ -598,7 +625,7 @@ contains
             mapper_Si2a%intx_mbid = mbintxia
             mapper_Si2a%src_context = ice(1)%cplcompid
             mapper_Si2a%intx_context = idintx
-            mapper_Si2a%weight_identifier = wgtIdi2a
+            mapper_Si2a%weight_identifier = wgtIdSi2a
             mapper_Si2a%mbname = 'mapper_Si2a'
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
@@ -621,13 +648,13 @@ contains
                fInverseDistanceMap = 0
                if (iamroot_CPLID) then
                   write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxia=', mbintxia, &
-                                             ' wgtIdef=', wgtIdi2a, 'dm1=', trim(dm1), ' orderS=',  orderS, &
+                                             ' wgtIdef=', wgtIdSi2a, 'dm1=', trim(dm1), ' orderS=',  orderS, &
                                              'dm2=', trim(dm2), ' orderT=', orderT, &
                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                               noConserve, validate, &
                                               trim(dofnameS), trim(dofnameT)
                endif
-               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxia, wgtIdi2a, &
+               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxia, wgtIdSi2a, &
                                                 trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                 fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                 noConserve, validate, &
@@ -639,18 +666,10 @@ contains
 
             else
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-               arearead = 0
+               arearead = 0 ! do not read area, we do not need it
                call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
                      'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
-                     arearead, wgtIdi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
-               context_id = idintx ! intx id
-               ierr = iMOAB_MigrateMapMesh (mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
-                     mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-               endif
-
+                     arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
             endif
 
 
@@ -666,7 +685,6 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fi2a'
          endif
-         no_match = .true. ! force a different map, we do not want to match to ocean
          call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
             'mapper_Fi2a initialization',esmf_map_flag, no_match)
@@ -679,12 +697,31 @@ contains
               write(logunit,F00) 'Initializing MOAB mapper_Fi2a with copy of mapper_Si2a'
             endif
 
+            if (.not. compute_maps_online_i2a) then
+               type1 = 3 ! this is type of grid
+               arearead = 0 ! no need for areas
+               call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
+                     'seq_maps.rc', 'ice2atm_fmapname:', 'ice2atm_fmaptype:', samegrid_ao, &
+                     arearead, wgtIdFi2a, 'mapper_Fi2a MOAB init', esmf_map_flag )
+
+               ! need to call migrate map mesh, which will compute the right covering mesh
+               context_id = idintx ! intx id
+               ierr = iMOAB_MigrateMapMesh( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
+                                          mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+               endif
+            else
+               wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
+            end if
+
             mapper_Fi2a%src_mbid = mbixid
             mapper_Fi2a%tgt_mbid = mbaxid
             mapper_Fi2a%intx_mbid = mbintxia
             mapper_Fi2a%src_context = ice(1)%cplcompid
             mapper_Fi2a%intx_context = idintx
-            mapper_Fi2a%weight_identifier = wgtIdi2a
+            mapper_Fi2a%weight_identifier = wgtIdFi2a
             mapper_Fi2a%mbname = 'mapper_Fi2a'
          endif
 #endif
@@ -716,7 +753,7 @@ contains
          endif
          call seq_map_init_rcfile(mapper_Fl2a, lnd(1), atm(1), &
             'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
-            'mapper_Fl2a initialization',esmf_map_flag)
+            'mapper_Fl2a initialization', esmf_map_flag, no_match)
 
 #ifdef HAVE_MOAB
          ! important change: do not compute intx at all between atm and land when we have samegrid_al
@@ -741,7 +778,7 @@ contains
             mapper_Fl2a%intx_mbid = mbintxla
             mapper_Fl2a%src_context = lnd(1)%cplcompid
             mapper_Fl2a%intx_context = idintx
-            mapper_Fl2a%weight_identifier = wgtIdl2a
+            mapper_Fl2a%weight_identifier = wgtIdSl2a
             mapper_Fl2a%mbname = 'mapper_Fl2a'
 
             if (.not. samegrid_al) then ! tri grid case
@@ -799,13 +836,13 @@ contains
                   validate = 0 ! less verbose
                   fInverseDistanceMap = 0
                   if (iamroot_CPLID) then
-                     write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxla=', mbintxla, ' wgtIdef=', wgtIdl2a, &
+                     write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxla=', mbintxla, ' wgtIdef=', wgtIdFl2a, &
                         'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdl2a, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdFl2a, &
                                                    trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -814,28 +851,46 @@ contains
                      write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights lnd atm '
                      call shr_sys_abort(subname//' error in iMOAB_ComputeScalarProjectionWeights lnd atm ')
                   endif
+
+                  ! now we can initialize the scalar map
+                  wgtIdSl2a = wgtIdFl2a ! use the same weights
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-                  arearead = 0
-                  call moab_map_init_rcfile(mblxid, mbaxid, mbintxla, type1, &
+                  arearead = 0 ! do not read areas, we do not need it
+                  call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
                         'seq_maps.rc', 'lnd2atm_fmapname:', 'lnd2atm_fmaptype:', samegrid_al, &
-                        arearead, wgtIdl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
+                        arearead, wgtIdFl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
 
+                  ! If loading map from disk, then load the scalar map as well for the tri grid case
+                  call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
+                        'seq_maps.rc', 'lnd2atm_smapname:', 'lnd2atm_smaptype:', samegrid_al, &
+                        arearead, wgtIdSl2a, 'mapper_Sl2a MOAB initialization', esmf_map_flag, wgtIdFl2a )
+
+                  ! need to call migrate map mesh, which will compute the right covering mesh
                   context_id = idintx ! intx id
                   ierr = iMOAB_MigrateMapMesh (mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, &
                      mpigrp_CPLID, type1, lnd(1)%cplcompid, context_id)
-
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in migrating lnd mesh for map lnd c2 atm '
                      call shr_sys_abort(subname//' ERROR in migrating lnd mesh for map lnd c2 atm  ')
                   endif
+
+               endif
+
+               type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          lnd(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
                endif
 
             else  ! the same mesh , atm and lnd use the same dofs, but restricted
                ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
                ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm
                ! land is point cloud in this case, type1 = 2
-               call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
+               call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
                type1 = 3; !  full mesh for land now
                type2 = 3;  ! fv for target atm
                ierr = iMOAB_ComputeCommGraph( mblxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
@@ -861,19 +916,20 @@ contains
          endif
          call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
             'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
-            'mapper_Sl2a initialization',esmf_map_flag)
+            'mapper_Sl2a initialization', esmf_map_flag, no_match )
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing MOAB mapper_Sl2a with copy from mapper_Fl2a'
             endif
+
             mapper_Sl2a%src_mbid = mblxid
             mapper_Sl2a%tgt_mbid = mapper_Fl2a%tgt_mbid !
             mapper_Sl2a%intx_mbid = mbintxla
             mapper_Sl2a%src_context = lnd(1)%cplcompid
             mapper_Sl2a%intx_context = mapper_Fl2a%intx_context
-            mapper_Sl2a%weight_identifier = wgtIdl2a
+            mapper_Sl2a%weight_identifier = wgtIdSl2a
             mapper_Sl2a%mbname = 'mapper_Sl2a'
          endif
 #endif
