@@ -1261,6 +1261,57 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- precip_scaling -->
+
+<entry id="config_use_precip_scaling" type="logical"
+	category="precip_scaling" group="precip_scaling">
+If enabled, precipitation fluxes from the data atmosphere are scalled to ensure freshwater balance in the ocean model.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_mode" type="char*1024"
+	category="precip_scaling" group="precip_scaling">
+Option for precipitation scaling to ensure freshwater balance in the ocean model.
+
+Valid values: 'constant' or 'time-dependent'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_initial_factor" type="real"
+	category="precip_scaling" group="precip_scaling">
+Initial guess scaling factor on precipitation for config_precip_scaling_mode = 'time-dependent'.
+
+Valid values: Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_constant_factor" type="real"
+	category="precip_scaling" group="precip_scaling">
+Prescribed constant scaling factor on precipitation for config_precip_scaling_mode = 'constant'.
+
+Valid values: Any non-negative value ranged from 0 to 1.0, no scaling if set to 1.0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_history_years" type="integer"
+	category="precip_scaling" group="precip_scaling">
+The number of years over for which the history span of precipitational scaling factor is computed.
+
+Valid values: Must be a positive integer greater than or equal to 1.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_precip_scaling_write_to_logfile" type="logical"
+	category="precip_scaling" group="precip_scaling">
+Logical flag indicating whether precipitation flux scaling information is written to the log file.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- coupling -->
 
 <entry id="config_remove_ais_river_runoff" type="logical"
