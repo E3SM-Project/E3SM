@@ -740,7 +740,6 @@ contains
     ! do dynamic gas-aerosol mass transfer for dtchem [s]
     
     if(mGAS_AER_XFER .eq. mON)then
-       !        call wall_loss(dtchem)
        
        if(mDYNAMIC_SOLVER .eq. mASTEM)then
           call ASTEM( mcall_print_aer,          dtchem,           &!intent-ins
@@ -841,46 +840,6 @@ contains
 
     return
   end subroutine MOSAIC_dynamic_solver
-
-
-
-  !***********************************************************************
-  ! applies first-order wall loss to number and mass
-  !
-  ! author: Rahul A. Zaveri
-  ! update: jun 2003
-  !-----------------------------------------------------------------------
-  subroutine wall_loss(dtchem,aer,num_a)
-    use module_data_mosaic_aero, only: nbin_a_max,naer,jtotal,jsolid,jliquid,   & !Parameters
-         nbin_a !Input
-
-    implicit none
-    ! subr arguments
-    real(r8), intent(in) :: dtchem
-    real(r8), intent(inout), dimension(nbin_a_max) :: num_a
-    real(r8), intent(inout), dimension(naer,3,nbin_a_max) :: aer
-    ! local variables
-    integer  :: iaer, ibin
-    real(r8) :: kwall
-
-
-    kwall =  5.55e-5  ! 1/s
-
-    do ibin = 1, nbin_a
-
-       do iaer = 1, naer
-          aer(iaer,jtotal,ibin)  = aer(iaer,jtotal,ibin)*exp(-kwall*dtchem)
-          aer(iaer,jsolid,ibin)  = aer(iaer,jsolid,ibin)*exp(-kwall*dtchem)
-          aer(iaer,jliquid,ibin) = aer(iaer,jliquid,ibin)*exp(-kwall*dtchem)
-       enddo
-
-       num_a(ibin) = num_a(ibin)*exp(-kwall*dtchem)
-
-    enddo
-
-
-    return
-  end subroutine wall_loss
 
 
 
