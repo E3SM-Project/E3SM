@@ -1127,11 +1127,16 @@ contains
     type(mct_avect), pointer :: x2g_gx
     !---------------------------------------------------------------
 
-
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
-       call mct_aVect_zero(x2g_gx)
+       if (associated(x2g_gx)) then
+          call mct_aVect_zero(x2g_gx)
+       else
+          write(logunit,*) ' '
+          write(logunit,*) 'Warning: x2g_gx not associated for glc(', egi, ')'
+       end if
     end do
+
   end subroutine prep_glc_zero_fields
 
   !================================================================================================

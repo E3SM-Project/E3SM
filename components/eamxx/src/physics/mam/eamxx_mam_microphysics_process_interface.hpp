@@ -79,12 +79,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   struct Config {
     // stratospheric chemistry parameters
-    struct {
-      int o3_lbl;   // number of layers with ozone decay from the surface
-      Real o3_sfc;  // set from namelist input linoz_sfc
-      Real o3_tau;  // set from namelist input linoz_tau
-      Real psc_T;   // set from namelist input linoz_psc_T
-    } linoz;
+    mam4::microphysics::LinozConf linoz;
 
     // aqueous chemistry parameters
     mam4::mo_setsox::Config setsox;
@@ -163,6 +158,17 @@ class MAMMicrophysics final : public MAMGenericInterface {
   void init_temporary_views();
   int len_temporary_views_{0};
 
+  void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
+    using str_atts_t = std::map<std::string,std::string>;
+    for (const auto &pair : flds) {
+      // Get the field, and add a docstring to its string attributes
+      // This is used to document that the field contains heterogeneous
+      // quantities, i.e., species have different units.
+      auto &f = get_field_out(pair.first);
+      auto &io_str_atts = f.get_header().get_extra_data<str_atts_t>("io: string attributes");
+      io_str_atts["doc"] = pair.second;
+    }
+  }
 };  // MAMMicrophysics
 
 }  // namespace scream

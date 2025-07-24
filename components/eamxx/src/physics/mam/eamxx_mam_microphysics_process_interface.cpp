@@ -35,10 +35,16 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
   config_.amicphys.newnuc_h2so4_conc_optaa = 2;
 
   // LINOZ namelist parameters
-  config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
-  config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
-  config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
-  config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
+  // Compute LINOZ only for prognostic Ozone (i.e. !use_prescribed_ozone_)
+  config_.linoz.compute = !use_prescribed_ozone_;
+
+  if (config_.linoz.compute) {
+    config_.linoz.o3_lbl = m_params.get<int>("mam4_o3_lbl");
+    config_.linoz.o3_tau = m_params.get<double>("mam4_o3_tau");
+    config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
+    config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
+  }
+
 }
 // ================================================================
 //  SET_GRIDS
@@ -193,36 +199,46 @@ void MAMMicrophysics::set_grids(
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
   add_field<Computed>("mam4_external_forcing", vector3d_extcnt, kg / m3 / s, grid_name);
 
-  // Diagnostic fluxes
-  const FieldLayout vector2d_nmodes =
-      grid_->get_2d_vector_layout(nmodes, "nmodes");
-
-  // Register computed diagnostic fields
-  add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
-  add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
-
   // Diagnostic fields for aerosol microphysics
+
+  //Flag to indicate if we want to compute extra diagnostics
   extra_mam4_aero_microphys_diags_ = m_params.get<bool>("extra_mam4_aero_microphys_diags", false);
   if (extra_mam4_aero_microphys_diags_) {
     const FieldLayout vector3d_num_gas_aerosol_constituents =
         grid_->get_3d_vector_layout(true, mam_coupling::gas_pcnst(), "num_gas_aerosol_constituents");
 
-    // Diagnostics: tendencies due to gas phase chemistry [kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    const FieldLayout vector2d_nmodes =
+      grid_->get_2d_vector_layout(nmodes, "nmodes");
 
-    // Diagnostics: tendencies due to aqueous chemistry [kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, kg / kg / s, grid_name);
+    // Diagnostics: tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_gas_phase_chemistry", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
 
-    // Diagnostics: SO4 in-cloud tendencies[kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+    // Diagnostics: tendencies due to aqueous chemistry [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqueous_chemistry", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
 
-    // Diagnostics: H2SO4 in-cloud tendencies[kg/kg/s]
-    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, kg / kg / s, grid_name);
+    // Diagnostics: SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqso4", vector3d_mid_nmodes, nondim, grid_name);
+
+    // Diagnostics: H2SO4 in-cloud tendencies [mixed units: kg/kg/s or #/kg/s]
+    add_field<Computed>("mam4_microphysics_tendency_aqh2so4", vector3d_mid_nmodes, nondim, grid_name);
+
+    // Register computed diagnostic fields
+    //(NOTE: dqdt_so4_aqueous_chemistry is the vertically reduced field of "mam4_microphysics_tendency_aqso4")
+    add_field<Computed>("dqdt_so4_aqueous_chemistry", vector2d_nmodes, kg/m2/s,  grid_name);
+    //(NOTE: dqdt_h2so4_uptake is the vertically reduced field of "mam4_microphysics_tendency_aqh2so4")
+    add_field<Computed>("dqdt_h2so4_uptake", vector2d_nmodes, kg/m2/s,  grid_name);
+
+    // Diagnostics: tendencies due to aerosol microphysics (gas aerosol exchange) [mixed units: mol/mol/s or #/mol/s]
+    add_field<Computed>("mam4_microphysics_tendency_condensation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_renaming", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_nucleation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_coagulation", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
+    add_field<Computed>("mam4_microphysics_tendency_renaming_cloud_borne", vector3d_num_gas_aerosol_constituents, nondim, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
   // from a file and configuring the necessary parameters for the Linoz model.
-  {
+  if (config_.linoz.compute) {
     linoz_file_name_ = m_params.get<std::string>("mam4_linoz_file_name");
     const std::string linoz_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -374,6 +390,7 @@ void MAMMicrophysics::set_grids(
     mam_coupling::find_season_index_reader(season_wes_file, clat,
                                            index_season_lai_);
   }
+
 }  // set_grids
 
 // ================================================================
@@ -474,7 +491,6 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"sfc_alb_dir_vis", {-1e10, 1e10}},       // FIXME
       {"snow_depth_land", {-1e10, 1e10}},       // FIXME
       {"surf_radiative_T", {-1e10, 1e10}},      // FIXME
-      {"dqdt_so4_aqueous_chemistry", {-1e10, 1e10}},      // FIXME
       {"dqdt_h2so4_uptake", {-1e10, 1e10}}       // FIXME
   };
   set_ranges_process(ranges_microphysics);
@@ -516,6 +532,45 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // cloudborne aerosol, e.g., soa_c_1
   populate_cloudborne_dry_aero(dry_aero_, buffer_);
 
+  if (extra_mam4_aero_microphys_diags_) {
+    //Some dignostics fields have mixed units (kg/kg/s, #/kg/s, etc.)
+    //For these fields, we add a docstring to the field to indicate that
+    //the units are mixed and the user should be careful when using these fields.
+    //Following map contains the map of fields with mixed units and their long names.
+    const std::map<std::string, std::string>  mixed_units_fields = {
+      {"mam4_microphysics_tendency_gas_phase_chemistry",
+      "MAM4xx microphysics tendencies due to gas phase chemistry [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_aqueous_chemistry",
+      "MAM4xx microphysics tendencies due to aqueous chemistry [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_aqso4",
+      "MAM4xx microphysics tendencies due to aqueous SO4 [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_aqh2so4",
+      "MAM4xx microphysics tendencies due to aqueous H2SO4 [mixed units: kg/kg/s or #/kg/s]"},
+
+      {"mam4_microphysics_tendency_condensation",
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (condensation) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_renaming",
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_nucleation",
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (nucleation) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_coagulation",
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (coagulation) [mixed units: mol/mol/s or #/mol/s]"},
+
+      {"mam4_microphysics_tendency_renaming_cloud_borne",
+      "MAM4xx microphysics tendencies due to gas aerosol exchange (renaming cloud borne) [mixed units: mol/mol/s or #/mol/s]"},
+
+    };
+    // Add docstring to the fields with mixed units
+    add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
+  }
+
+
   // set field property checks for the fields in this process
   /* e.g.
   using Interval = FieldWithinIntervalCheck;
@@ -526,7 +581,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
   */
 
-  {
+  if (config_.linoz.compute) {
     // climatology data for linear stratospheric chemistry
     auto linoz_o3_clim = buffer_.scratch[0];  // ozone (climatology) [vmr]
     auto linoz_o3col_clim =
@@ -551,7 +606,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
     scream::mam_coupling::create_linoz_chlorine_reader(
         linoz_chlorine_file, ts, chlorine_loading_ymd, chlorine_values_,
         chlorine_time_secs_);
-  }  // LINOZ
+  }
 
   init_temporary_views();
   // FIXME : why are we only using nlev_ instead of ncol_xnlev?
@@ -560,10 +615,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Note: At the first time step, the data will be moved into extfrc_lst_beg,
   //       and extfrc_lst_end will be reloaded from file with the new month.
   const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
-
-  scream::mam_coupling::update_tracer_data_from_file(
+  if (config_.linoz.compute) {
+    scream::mam_coupling::update_tracer_data_from_file(
       LinozDataReader_, curr_month, *LinozHorizInterp_, linoz_data_);
-
+  }
   scream::mam_coupling::update_tracer_data_from_file(
       TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
 
@@ -593,7 +648,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy =
        ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol, team_size);
 
@@ -656,45 +711,57 @@ void MAMMicrophysics::run_impl(const double dt) {
   const const_view_1d snow_depth_land =
       get_field_in("snow_depth_land").get_view<const Real *>();
 
-  // Constituent fluxes
-  view_2d aqso4_flx = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
-  view_2d aqh2so4_flx = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
-
   // - dvmr/dt: Tendencies for mixing ratios  [kg/kg/s]
+  view_2d dqdt_so4_aqueous_chemistry, dqdt_h2so4_uptake;
   view_3d gas_phase_chemistry_dvmrdt, aqueous_chemistry_dvmrdt;
   view_3d aqso4_incloud_mmr_tendency, aqh2so4_incloud_mmr_tendency;
+  view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
+          gas_aero_exchange_nucleation, gas_aero_exchange_coagulation,
+          gas_aero_exchange_renaming_cloud_borne;
+
   if (extra_mam4_aero_microphys_diags_) {
+    dqdt_so4_aqueous_chemistry = get_field_out("dqdt_so4_aqueous_chemistry").get_view<Real **>();
+    dqdt_h2so4_uptake = get_field_out("dqdt_h2so4_uptake").get_view<Real **>();
     gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
     aqueous_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_aqueous_chemistry").get_view<Real ***>();
     aqso4_incloud_mmr_tendency   = get_field_out("mam4_microphysics_tendency_aqso4").get_view<Real ***>();
     aqh2so4_incloud_mmr_tendency = get_field_out("mam4_microphysics_tendency_aqh2so4").get_view<Real ***>();
+    gas_aero_exchange_condensation = get_field_out("mam4_microphysics_tendency_condensation").get_view<Real***>();
+    gas_aero_exchange_renaming = get_field_out("mam4_microphysics_tendency_renaming").get_view<Real***>();
+    gas_aero_exchange_nucleation = get_field_out("mam4_microphysics_tendency_nucleation").get_view<Real***>();
+    gas_aero_exchange_coagulation = get_field_out("mam4_microphysics_tendency_coagulation").get_view<Real***>();
+    gas_aero_exchange_renaming_cloud_borne = get_field_out("mam4_microphysics_tendency_renaming_cloud_borne").get_view<Real***>();
   }
+
 
   // climatology data for linear stratospheric chemistry
   // ozone (climatology) [vmr]
-  auto linoz_o3_clim = buffer_.scratch[0];
+  view_2d linoz_o3_clim;
   // column o3 above box (climatology) [Dobson Units (DU)]
-  auto linoz_o3col_clim = buffer_.scratch[1];
-  auto linoz_t_clim     = buffer_.scratch[2];  // temperature (climatology) [K]
-  auto linoz_PmL_clim = buffer_.scratch[3];  // P minus L (climatology) [vmr/s]
+  view_2d linoz_o3col_clim;
+  // temperature (climatology) [K]
+  view_2d linoz_t_clim;
+  // P minus L (climatology) [vmr/s]
+  view_2d linoz_PmL_clim;
   // sensitivity of P minus L to O3 [1/s]
-  auto linoz_dPmL_dO3 = buffer_.scratch[4];
+  view_2d linoz_dPmL_dO3;
   // sensitivity of P minus L to T3 [K]
-  auto linoz_dPmL_dT = buffer_.scratch[5];
+  view_2d linoz_dPmL_dT;
   // sensitivity of P minus L to overhead O3 column [vmr/DU]
-  auto linoz_dPmL_dO3col = buffer_.scratch[6];
+  view_2d linoz_dPmL_dO3col;
   // Cariolle parameter for PSC loss of ozone [1/s]
-  auto linoz_cariolle_pscs = buffer_.scratch[7];
+  view_2d linoz_cariolle_pscs;
 
-  view_2d linoz_output[8];
-  linoz_output[0] = linoz_o3_clim;
-  linoz_output[1] = linoz_o3col_clim;
-  linoz_output[2] = linoz_t_clim;
-  linoz_output[3] = linoz_PmL_clim;
-  linoz_output[4] = linoz_dPmL_dO3;
-  linoz_output[5] = linoz_dPmL_dT;
-  linoz_output[6] = linoz_dPmL_dO3col;
-  linoz_output[7] = linoz_cariolle_pscs;
+  if (config_.linoz.compute) {
+    linoz_o3_clim = buffer_.scratch[0];
+    linoz_o3col_clim = buffer_.scratch[1];
+    linoz_t_clim     = buffer_.scratch[2];
+    linoz_PmL_clim = buffer_.scratch[3];
+    linoz_dPmL_dO3 = buffer_.scratch[4];
+    linoz_dPmL_dT = buffer_.scratch[5];
+    linoz_dPmL_dO3col = buffer_.scratch[6];
+    linoz_cariolle_pscs = buffer_.scratch[7];
+  }
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
@@ -702,8 +769,11 @@ void MAMMicrophysics::run_impl(const double dt) {
   /* Gather time and state information for interpolation */
   const auto ts = end_of_step_ts();
 
+  if (config_.linoz.compute) {
   const Real chlorine_loading = scream::mam_coupling::chlorine_loading_advance(
       ts, chlorine_values_, chlorine_time_secs_);
+    config_.linoz.chlorine_loading=chlorine_loading;
+  }
 
   // Update the TracerTimeState to reflect the current time
   trace_time_state_.t_now = ts.frac_of_year_in_days();
@@ -716,15 +786,26 @@ void MAMMicrophysics::run_impl(const double dt) {
       cnst_offline_);                    // out
   Kokkos::fence();
 
-  scream::mam_coupling::advance_tracer_data(
+  if (config_.linoz.compute) {
+    view_2d linoz_output[8];
+    linoz_output[0] = linoz_o3_clim;
+    linoz_output[1] = linoz_o3col_clim;
+    linoz_output[2] = linoz_t_clim;
+    linoz_output[3] = linoz_PmL_clim;
+    linoz_output[4] = linoz_dPmL_dO3;
+    linoz_output[5] = linoz_dPmL_dT;
+    linoz_output[6] = linoz_dPmL_dO3col;
+    linoz_output[7] = linoz_cariolle_pscs;
+
+    scream::mam_coupling::advance_tracer_data(
       LinozDataReader_,                  // in
       *LinozHorizInterp_,                // out
       ts,                                // in
       linoz_time_state_, linoz_data_,    // out
       dry_atm_.p_mid, dry_atm_.z_iface,  // in
       linoz_output);                     // out
-  Kokkos::fence();
-
+    Kokkos::fence();
+  }
 
   int i                            = 0;
   for(const auto &var_name : extfrc_lst_) {
@@ -745,6 +826,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   mam_coupling::AerosolState &dry_aero = dry_aero_;
+
 
   mam4::mo_photo::PhotoTableData &photo_table = photo_table_;
   const Config &config                        = config_;
@@ -836,10 +918,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &index_season_lai = index_season_lai_;
   const int pcnst              = mam4::pcnst;
   const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
-
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
-  // loop over atmosphere columns and compute aerosol microphyscs
+  // loop over atmosphere columns and compute aerosol microphysics
+
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -885,7 +967,6 @@ void MAMMicrophysics::run_impl(const double dt) {
         for(int i = 0; i < mam4::mo_setinv::num_tracer_cnst; ++i) {
           cnst_offline_icol[i] = ekat::subview(cnst_offline[i], icol);
         }
-
         // calculate o3 column densities (first component of col_dens in Fortran
         // code)
         auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
@@ -894,28 +975,42 @@ void MAMMicrophysics::run_impl(const double dt) {
 
         const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
 
-        const auto linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
-        const auto linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
-        const auto linoz_o3col_clim_icol =
+        mam4::microphysics::LinozData linoz_data;
+        if (config.linoz.compute) {
+          linoz_data.linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
+          linoz_data.linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
+          linoz_data.linoz_o3col_clim_icol =
             ekat::subview(linoz_o3col_clim, icol);
-        const auto linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
-        const auto linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
-        const auto linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
-        const auto linoz_dPmL_dO3col_icol =
+          linoz_data.linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
+          linoz_data.linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
+          linoz_data.linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
+          linoz_data.linoz_dPmL_dO3col_icol =
             ekat::subview(linoz_dPmL_dO3col, icol);
-        const auto linoz_cariolle_pscs_icol =
+          linoz_data.linoz_cariolle_pscs_icol =
             ekat::subview(linoz_cariolle_pscs, icol);
+        }
         const auto nevapr_icol       = ekat::subview(nevapr, icol);
         const auto prain_icol        = ekat::subview(prain, icol);
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
         mam4::MicrophysDiagnosticArrays diag_arrays;
+
         if (extra_mam4_aero_microphys_diags) {
-	        diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
-	        diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
+          diag_arrays.dqdt_so4_aqueous_chemistry = ekat::subview(dqdt_so4_aqueous_chemistry, icol);
+          diag_arrays.dqdt_h2so4_uptake          = ekat::subview(dqdt_h2so4_uptake, icol);
+          diag_arrays.gas_phase_chemistry_dvmrdt = ekat::subview(gas_phase_chemistry_dvmrdt, icol);
+
+          diag_arrays.aqueous_chemistry_dvmrdt   = ekat::subview(aqueous_chemistry_dvmrdt, icol);
           diag_arrays.aqso4_incloud_mmr_tendency = ekat::subview(aqso4_incloud_mmr_tendency, icol);
           diag_arrays.aqh2so4_incloud_mmr_tendency = ekat::subview(aqh2so4_incloud_mmr_tendency, icol);
-	      }
+
+          diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
+          diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
+          diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
+          diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
+          diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
+        }
+
 
         // Wind speed at the surface
         const Real wind_speed =
@@ -959,8 +1054,6 @@ void MAMMicrophysics::run_impl(const double dt) {
           }
         }
         // These output values need to be put somewhere:
-        const auto aqso4_flx_col = ekat::subview(aqso4_flx, icol);  // deposition flux of so4 [mole/mole/s]
-        const auto aqh2so4_flx_col = ekat::subview(aqh2so4_flx, icol);  // deposition flux of h2so4 [mole/mole/s]
         Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
         Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
         // Output: values are dvel, dflx
@@ -969,19 +1062,17 @@ void MAMMicrophysics::run_impl(const double dt) {
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
-            photo_table, chlorine_loading, config.setsox, config.amicphys,
-            config.linoz.psc_T, zenith_angle(icol), d_sfc_alb_dir_vis(icol),
+            photo_table,  config.setsox, config.amicphys,
+             zenith_angle(icol), d_sfc_alb_dir_vis(icol),
             o3_col_dens_i, photo_rates_icol, extfrc_icol, invariants_icol,
-            work_photo_table_icol, linoz_o3_clim_icol, linoz_t_clim_icol,
-            linoz_o3col_clim_icol, linoz_PmL_clim_icol, linoz_dPmL_dO3_icol,
-            linoz_dPmL_dT_icol, linoz_dPmL_dO3col_icol,
-            linoz_cariolle_pscs_icol, eccf, adv_mass_kg_per_moles,
+            work_photo_table_icol,
+            config.linoz, linoz_data,
+             eccf, adv_mass_kg_per_moles,
             fraction_landuse_icol, index_season, clsmap_4, permute_4,
-            offset_aerosol, config.linoz.o3_sfc, config.linoz.o3_tau,
-            config.linoz.o3_lbl, dry_diameter_icol, wet_diameter_icol,
+            offset_aerosol,
+            dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, aqso4_flx_col,  aqh2so4_flx_col, diag_arrays, 
-	    dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, diag_arrays, dvel_col, dflx_col, progs);
 
         team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
@@ -1023,6 +1114,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
+
 }  // MAMMicrophysics::run_impl
 
 }  // namespace scream

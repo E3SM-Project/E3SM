@@ -2225,6 +2225,30 @@ Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_snow_growth_wet_factor" type="real"
+	category="snow" group="snow">
+wet metamorphism parameter
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_minimum_snow_growth_factor" type="real"
+	category="snow" group="snow">
+minimum snow grain growth factor
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_snow_liq_saturation" type="real"
+	category="snow" group="snow">
+irreducible saturation fraction
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_snow_liquid_ponds" type="logical"
 	category="snow" group="snow">
 use snow liquid tracer for ponds

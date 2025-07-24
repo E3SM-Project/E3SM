@@ -3083,7 +3083,7 @@ contains
           if (glcrun_alarm) then
              call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
           else
-             call prep_glc_zero_fields()
+             if (iamin_CPLID) call prep_glc_zero_fields()
           endif
        endif
 

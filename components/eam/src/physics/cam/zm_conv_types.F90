@@ -2,7 +2,15 @@ module zm_conv_types
    !----------------------------------------------------------------------------
    ! Purpose: utility methods for ZM deep convection scheme
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8, masterproc
+#else
    use shr_kind_mod,     only: r8=>shr_kind_r8
+   use spmd_utils,       only: masterproc
+   use mpishorthand
+#endif
+   use cam_logfile,      only: iulog
+   use shr_sys_mod,      only: shr_sys_flush
 
    public :: zm_const_set_to_global    ! set constant values using global values from physconst/shr_const_mod
    public :: zm_const_set_for_testing  ! set constant values consistent with shr_const_mod for testing
@@ -83,7 +91,11 @@ subroutine zm_const_set_to_global(zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: set constant values using global values from physconst/shr_const_mod
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_physconst, only: pi,gravit,rair,cpair,cpwv,cpliq,rh2o,tmelt,latvap,latice,epsilo
+#else
    use physconst, only: pi,gravit,rair,cpair,cpwv,cpliq,rh2o,tmelt,latvap,latice,epsilo
+#endif
    !----------------------------------------------------------------------------
    type(zm_const_t), intent(inout) :: zm_const
    !----------------------------------------------------------------------------
@@ -144,13 +156,9 @@ subroutine zm_const_print(zm_const)
    !----------------------------------------------------------------------------
    ! Purpose: print constant values for log file
    !----------------------------------------------------------------------------
-   use cam_logfile,  only: iulog
-   use shr_sys_mod,  only: shr_sys_flush
-   use spmd_utils,   only: masterproc
-   !----------------------------------------------------------------------------
    type(zm_const_t), intent(in) :: zm_const
    !----------------------------------------------------------------------------
-   character(len=2) :: indent = '  '
+   character(len=32) :: indent = '  '
    !----------------------------------------------------------------------------
    if (masterproc) then
       write(iulog,*) ''
@@ -216,10 +224,12 @@ subroutine zm_param_mpi_broadcast(zm_param)
    !----------------------------------------------------------------------------
    ! Purpose: broadcast parameter values to all MPI ranks
    !----------------------------------------------------------------------------
-   use mpishorthand
-   !----------------------------------------------------------------------------
    type(zm_param_t), intent(inout) :: zm_param
    !----------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   ! The EAMXx bridge to ZM will rely on zm_param_set_for_testing()
+   ! so MPI broadcasting of ZM parameter is unnecessary
+#else
    call mpibcast(zm_param%tau,               1, mpir8,  0, mpicom)
    call mpibcast(zm_param%alfa,              1, mpir8,  0, mpicom)
    call mpibcast(zm_param%ke,                1, mpir8,  0, mpicom)
@@ -236,17 +246,16 @@ subroutine zm_param_mpi_broadcast(zm_param)
    call mpibcast(zm_param%trig_ull,          1, mpilog, 0, mpicom)
    call mpibcast(zm_param%clos_dyn_adj,      1, mpilog, 0, mpicom)
    call mpibcast(zm_param%no_deep_pbl,       1, mpilog, 0, mpicom)
-   ! ZM micro parameters
-   call mpibcast(zm_param%zm_microp,         1, mpilog, 0, mpicom)
+   call mpibcast(zm_param%zm_microp,         1, mpilog, 0, mpicom) ! ZM micro parameters
    call mpibcast(zm_param%auto_fac,          1, mpir8,  0, mpicom)
    call mpibcast(zm_param%accr_fac,          1, mpir8,  0, mpicom)
    call mpibcast(zm_param%micro_dcs,         1, mpir8,  0, mpicom)
-   ! MCSP parameters
-   call mpibcast(zm_param%mcsp_enabled,      1, mpilog, 0, mpicom)
+   call mpibcast(zm_param%mcsp_enabled,      1, mpilog, 0, mpicom) ! MCSP parameters
    call mpibcast(zm_param%mcsp_t_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(zm_param%mcsp_q_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(zm_param%mcsp_u_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(zm_param%mcsp_v_coeff,      1, mpir8,  0, mpicom)
+#endif
 end subroutine zm_param_mpi_broadcast
 
 !===================================================================================================
@@ -255,13 +264,9 @@ subroutine zm_param_print(zm_param)
    !----------------------------------------------------------------------------
    ! Purpose: print parameter values for log file
    !----------------------------------------------------------------------------
-   use cam_logfile,  only: iulog
-   use shr_sys_mod,  only: shr_sys_flush
-   use spmd_utils,   only: masterproc
-   !----------------------------------------------------------------------------
    type(zm_param_t), intent(in) :: zm_param
    !----------------------------------------------------------------------------
-   character(len=2) :: indent = '  '
+   character(len=32) :: indent = '  '
    !----------------------------------------------------------------------------
    if (masterproc) then
       write(iulog,*) ''

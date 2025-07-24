@@ -1860,6 +1860,30 @@ Valid values: 'upwind', 'centered', 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_spatially_variable_upwind" type="logical"
+	category="advection" group="advection">
+If true, use upwindFactor to scale layerThickEdgeFlux by centered and upwind values.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_spatially_variable_upwind_hmin" type="real"
+	category="advection" group="advection">
+Column thickness above which we start weighting upwind with centered advection.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_spatially_variable_upwind_hmax" type="real"
+	category="advection" group="advection">
+Column thickness above which advection is no longer upwinded.
+
+Valid values: Any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- bottom_drag -->
 
@@ -3121,6 +3145,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosys_frazil_tendencies" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, use ecosys tendencies from internal ocean frazil formation
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

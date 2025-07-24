@@ -113,6 +113,8 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   const auto& gn = grid.name();
   Field f;
   switch (lt) {
+    case LayoutType::Scalar1D:
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(midpoints),u,gn)); break;
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
@@ -161,6 +163,10 @@ Field all_gather_field_impl (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
+  if (not fl.has_tag(COL)) {
+    // Not partitioned
+    return f;
+  }
   int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
@@ -310,6 +316,7 @@ TEST_CASE("coarsening_remap")
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_coarse_grid();
 
+  auto src_s1d   = create_field("s1d",  LayoutType::Scalar1D, *src_grid, true, engine);
   auto src_s2d   = create_field("s2d",  LayoutType::Scalar2D, *src_grid, false, engine);
   auto src_v2d   = create_field("v2d",  LayoutType::Vector2D, *src_grid, false, engine);
   auto src_t2d   = create_field("t2d",  LayoutType::Tensor2D, *src_grid, false, engine);
@@ -320,6 +327,7 @@ TEST_CASE("coarsening_remap")
   auto src_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *src_grid, true,  engine);
   auto src_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *src_grid, false, engine);
 
+  auto tgt_s1d   = create_field("s1d",  LayoutType::Scalar1D, *tgt_grid, true);
   auto tgt_s2d   = create_field("s2d",  LayoutType::Scalar2D, *tgt_grid, false);
   auto tgt_v2d   = create_field("v2d",  LayoutType::Vector2D, *tgt_grid, false);
   auto tgt_t2d   = create_field("t2d",  LayoutType::Tensor2D, *tgt_grid, false);
@@ -330,8 +338,8 @@ TEST_CASE("coarsening_remap")
   auto tgt_t3d_m = create_field("t3d_m",LayoutType::Tensor3D, *tgt_grid, true );
   auto tgt_t3d_i = create_field("t3d_i",LayoutType::Tensor3D, *tgt_grid, false);
 
-  std::vector<Field> src_f = {src_s2d,src_v2d,src_t2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i,src_t3d_m,src_t3d_i};
-  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_t2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i,tgt_t3d_m,tgt_t3d_i};
+  std::vector<Field> src_f = {src_s1d,src_s2d,src_v2d,src_t2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i,src_t3d_m,src_t3d_i};
+  std::vector<Field> tgt_f = {tgt_s1d,tgt_s2d,tgt_v2d,tgt_t2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i,tgt_t3d_m,tgt_t3d_i};
 
   // -------------------------------------- //
   //     Register fields in the remapper    //
@@ -373,6 +381,11 @@ TEST_CASE("coarsening_remap")
       root_print (msg + "\n",comm);
       bool ok = true;
       switch (l.type()) {
+        case LayoutType::Scalar1D:
+        {
+          CHECK ( views_are_equal(gsrc,gtgt) );
+          ok &= catch_capture.lastAssertionPassed();
+        } break;
         case LayoutType::Scalar2D:
         {
           const auto v_src = gsrc.get_view<const Real*,Host>();

@@ -43,6 +43,7 @@ def buildnml(case, caseroot, compname):
     mali_prognostic_mode = case.get_value("MALI_PROGNOSTIC_MODE")
     glc_nzoc          = case.get_value("GLC_NZOC")
     ocn_glc_ismf_coupling = case.get_value("OCN_GLC_ISMF_COUPLING")
+    glc_two_way_coupling = case.get_value("GLC_TWO_WAY_COUPLING")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.yaml'
 
@@ -59,6 +60,7 @@ def buildnml(case, caseroot, compname):
     decomp_date = ''
     decomp_prefix = ''
     datamode_date = ''
+    region_mask_date = ''
 
     if glc_grid == 'mpas.aisgis20km':
         grid_date += '20190326'
@@ -71,16 +73,18 @@ def buildnml(case, caseroot, compname):
         decomp_date += '150910'
         decomp_prefix += 'mpasli.graph.info.'
     elif glc_grid == 'mpas.ais8to30km':
-        grid_date += '20250411'
+        grid_date += '20250625'
         grid_prefix += 'ais_8to30km'
         datamode_date += '20250121'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20231222'
     elif glc_grid == 'mpas.ais4to20km':
-        grid_date += '20250411'
+        grid_date += '20250625'
         grid_prefix += 'ais_4to20km'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20230105'
     elif glc_grid == 'mpas.gis20km':
         grid_date += '20210824'
         grid_prefix += 'gis_20km_r01'
@@ -91,6 +95,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'gis_4to40km'
         decomp_date += '20250214'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20250214'
     elif glc_grid == 'mpas.gis1to10km':
         grid_date += '20210824'
         grid_prefix += 'gis_1to10km_r01'
@@ -101,6 +106,7 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'gis_1to10km_r02'
         decomp_date += '020223'
         decomp_prefix += 'mpasli.graph.info.'
+        region_mask_date += '20230202'
     else:
         expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
 
@@ -118,6 +124,12 @@ def buildnml(case, caseroot, compname):
             safe_copy(input_file, restart_file)
 
     #------------------------
+    # Set region mask file if needed
+    #------------------------
+    if region_mask_date != '':
+        region_mask_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_region_mask.{region_mask_date}.nc"
+
+    #------------------------
     # Set the datamode file if needed
     #------------------------
     if mali_prognostic_mode == 'DATA':
@@ -128,7 +140,11 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     with open(os.path.join(casebuild, "mali.input_data_list"), "w") as input_list:
-        input_list.write("mesh = {}/glc/mpasli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
+        input_list.write("mesh = {}\n".format(input_file))
+
+        if region_mask_date != '':
+            input_list.write(f"region_mask = {region_mask_file}\n")
+
         if mali_prognostic_mode == 'DATA':
             input_list.write(f"datamode = {datamode_file}\n")
 
@@ -180,6 +196,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -mali_prognostic_mode '{}'".format(mali_prognostic_mode)
         sysmod += " -glc_nzoc '{}'".format(glc_nzoc)
         sysmod += " -ocn_glc_ismf_coupling '{}'".format(ocn_glc_ismf_coupling)
+        sysmod += " -glc_two_way_coupling '{}'".format(glc_two_way_coupling)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 
@@ -234,59 +251,45 @@ def buildnml(case, caseroot, compname):
         lines.append('    this stream to include more fields.')
         lines.append('    -->')
         lines.append('')
+        if region_mask_date != '':
+            lines.append('    <stream name="regionsInput"')
+            lines.append('            type="input"')
+            lines.append('            filename_template="{}"'.format(region_mask_file))
+            lines.append('            input_interval="initial_only">')
+            lines.append('        <var name="regionCellMasks"/>')
+            lines.append('    </stream>')
+            lines.append('')
         lines.append('    <stream name="output"')
         lines.append('            type="output"')
         lines.append('            filename_template="{}.mali.hist.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('            filename_interval="0001-00-00_00:00:00"')
         lines.append('            clobber_mode="truncate"')
         lines.append('            output_interval="0000-00-01_00:00:00">')
-        # Note: if output_interval is less than dt, then multiples of that interval will be checked.
-        # There is some performance hit for making this too small.  For now making it 1 day.
         lines.append('')
         lines.append('    <stream name="basicmesh"/>')
         lines.append('    <var name="xtime"/>')
-        lines.append('    <var name="layerCenterSigma"/>')
-        lines.append('    <var name="layerInterfaceSigma"/>')
         lines.append('    <var name="thickness"/>')
-        lines.append('    <var name="bedTopography"/>')
         lines.append('    <var name="lowerSurface"/>')
-        lines.append('    <var name="upperSurface"/>')
         lines.append('    <var name="cellMask"/>')
-        lines.append('    <var name="edgeMask"/>')
-        lines.append('    <var name="uReconstructX"/>')
-        lines.append('    <var name="uReconstructY"/>')
         lines.append('    <var name="surfaceSpeed"/>')
-        lines.append('    <var name="basalSpeed"/>')
-        lines.append('    <var name="sfcMassBal"/>')
         lines.append('    <var name="sfcMassBalApplied"/>')
-        lines.append('    <var name="basalMassBalApplied"/>')
         lines.append('    <var name="bareIceAblationApplied"/>')
-        lines.append('    <var name="avgBareIceAblation"/>')
         lines.append('    <var name="avgBareIceAblationApplied"/>')
-        lines.append('    <var name="floatingBasalMassBal"/>')
-        lines.append('    <var name="floatingBasalMassBalApplied"/>')
+        lines.append('    <var name="avgFloatingBMBFlux"/>')
         lines.append('    <var name="groundedBasalMassBalApplied"/>')
-        lines.append('    <var name="calvingThickness"/>')
         lines.append('    <var name="avgCalvingFlux"/>')
+        lines.append('    <var name="avgFaceMeltFlux"/>')
         lines.append('    <var name="restoreThickness"/>')
         lines.append('    <var name="dHdt"/>')
-        lines.append('    <var name="ismip6_2dThermalForcing"/>')
-        lines.append('    <var name="ismip6shelfMelt_3dThermalForcing"/>')
-        lines.append('    <var name="orig3dOceanMask"/>')
         lines.append('    <var name="ismip6shelfMelt_TFdraft"/>')
-        lines.append('    <var name="ismip6shelfMelt_zOcean"/>')
-        lines.append('    <var name="ismip6shelfMelt_zBndsOcean"/>')
-        lines.append('    <var name="faceMeltSpeed"/>')
-        lines.append('    <var name="faceMeltingThickness"/>')
+        lines.append('    <var name="ismip6_2dThermalForcing"/>')
         lines.append('    <var name="deltat"/>')
         lines.append('    <var name="daysSinceStart"/>')
         lines.append('    <var name="simulationStartTime"/>')
         lines.append('    <var name="allowableDtACFL"/>')
         lines.append('    <var name="allowableDtDCFL"/>')
-        lines.append('    <var name="temperature"/>')
         lines.append('    <var name="basalTemperature"/>')
         lines.append('    <var name="surfaceTemperature"/>')
-        lines.append('    <var name="surfaceAirTemperature"/>')
         lines.append('')
         lines.append('</stream>')
         lines.append('')
@@ -298,9 +301,10 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="globalStatsOutput"')
         lines.append('        type="output"')
-        lines.append('        filename_template="{}.mali.hist.am.$Y-$M-$D_$S.nc"'.format(casename))
-        lines.append('        filename_interval="0001-00-00_00:00:00"')
-        lines.append('        clobber_mode="truncate"')
+        lines.append('        filename_template="{}.mali.hist.am.globalStats.$Y-$M-$D_$S.nc"'.format(casename))
+        lines.append('        filename_interval="5000-00-00_00:00:00"')
+        lines.append('        reference_time ="0001-01-01_00:00:00"')
+        lines.append('        clobber_mode="overwrite"')
         lines.append('        packages="globalStatsAMPKG"')
         lines.append('        output_interval="0000_00:00:01">')
         lines.append('')
@@ -311,9 +315,31 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="simulationStartTime"/>')
         lines.append('    <var name="allowableDtACFL"/>')
         lines.append('    <var name="allowableDtDCFL"/>')
+        lines.append('    <var name="calvingCFLdt"/>')
+        lines.append('    <var name="dtCalvingCFLratio"/>')
+        lines.append('    <var name="totalRatebasedCalvedVolume"/>')
+        lines.append('    <var name="totalRatebasedUncalvedVolume"/>')
+        lines.append('    <var name="faceMeltingCFLdt"/>')
+        lines.append('    <var name="dtFaceMeltingCFLratio"/>')
+        lines.append('    <var name="processLimitingTimestep"/>')
         if mali_use_albany:
             lines.append('    <var name="albanyVelocityError"/>')
-
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="regionalStatsOutput"')
+        lines.append('        type="output"')
+        lines.append('        filename_template="{}.mali.hist.am.regionalStats.$Y-$M-$D_$S.nc"'.format(casename))
+        lines.append('        filename_interval="5000-00-00_00:00:00"')
+        lines.append('        reference_time ="0001-01-01_00:00:00"')
+        lines.append('        clobber_mode="overwrite"')
+        lines.append('        packages="regionalStatsAMPKG"')
+        lines.append('        output_interval="0000_00:00:01">')
+        lines.append('')
+        lines.append('    <var_struct name="regionalStatsAM"/>')
+        lines.append('    <var name="xtime"/>')
+        lines.append('    <var name="deltat"/>')
+        lines.append('    <var name="daysSinceStart"/>')
+        lines.append('    <var name="simulationStartTime"/>')
         lines.append('</stream>')
         lines.append('')
         if mali_prognostic_mode == 'DATA':

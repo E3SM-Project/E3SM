@@ -29,6 +29,11 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
 
   m_nfields = m_fields.size();
   m_comm = model_grid->get_comm();
+
+  using namespace ShortFieldTagsNames;
+  m_input_files_dimnames[COL] = "ncol";
+  m_input_files_dimnames[LEV] = "lev";
+  e2str(LEV);
 }
 
 void DataInterpolation::run (const util::TimeStamp& ts)
@@ -156,8 +161,10 @@ update_end_fields ()
 void DataInterpolation::
 init_data_interval (const util::TimeStamp& t0)
 {
-  EKAT_REQUIRE_MSG (m_remappers_created,
+  EKAT_REQUIRE_MSG (m_vert_remapper!=nullptr,
       "[DataInterpolation] Error! Cannot call 'init_data_interval' until after remappers creation.\n");
+
+  register_fields_in_remappers ();
 
   // Create a bare reader. Fields and filename are set inside the update_end_fields call
   strvec_t fnames;
@@ -290,21 +297,6 @@ setup_time_database (const strvec_t& input_files,
   m_time_db_created = true;
 }
 
-void DataInterpolation::
-setup_remappers (const RemapData& data)
-{
-  // 1. Horiz remapper
-  setup_horiz_remappers (data);
-
-  // 2. Vertical remapper
-  setup_vert_remapper(data);
-
-  // 3. Register fields
-  register_fields_in_remappers();
-
-  m_remappers_created = true;
-}
-
 int DataInterpolation::TimeDatabase::
 get_next_idx (int prev) const
 {
@@ -383,40 +375,41 @@ get_input_files_dimlen (const std::string& dimname) const
 }
 
 void DataInterpolation::
-setup_horiz_remappers (const RemapData& data)
+create_horiz_remappers (const std::string& map_file)
 {
-  EKAT_REQUIRE_MSG (data.hremap_file=="" or not data.has_iop,
-      "Error! Cannot both use a hremap file and set iop lat/lon coordinates.\n");
+  using namespace ShortFieldTagsNames;
+
+  EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
+      "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
   // Create hremap tgt grid
-  int nlevs_data = get_input_files_dimlen ("lev");
-  int ncols_data = get_input_files_dimlen ("ncol");
+  int nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+  int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
   m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
   m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
 
-  if (data.has_iop) {
-    EKAT_REQUIRE_MSG (not ekat::is_invalid(data.iop_lat) and not ekat::is_invalid(data.iop_lon),
-        "Error! At least one between iop_lat and iop_lon appears to be valid in RemapData.\n"
-        "  - iop_lat: " << data.iop_lat << "\n"
-        "  - iop_lon: " << data.iop_lon << "\n");
-    // Create grid for IO and load lat/lon field in IO grid from any data file
-    auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
-    auto lat_f = data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout());
-    auto lon_f = data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout());
-    AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,{lat_f,lon_f});
-    latlon_reader.read_variables();
+  int ncols_model = m_model_grid->get_num_global_dofs();
+  if (map_file!="") {
+    m_horiz_remapper_beg = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,map_file);
+    m_horiz_remapper_end = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,map_file);
 
-    // Create IOP remappers
-    m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,data.iop_lat,data.iop_lon);
-    m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,data.iop_lat,data.iop_lon);
-  } else if (data.hremap_file!="") {
-    m_horiz_remapper_beg = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,data.hremap_file);
-    m_horiz_remapper_end = std::make_shared<RefiningRemapperP2P>(m_grid_after_hremap,data.hremap_file);
+    int map_ncols_src = m_horiz_remapper_beg->get_src_grid()->get_num_global_dofs();
+    int map_ncols_tgt = m_horiz_remapper_beg->get_tgt_grid()->get_num_global_dofs();
+
+    // Ensure that the map file was compatible with data/model grids
+    EKAT_REQUIRE_MSG (map_ncols_src==ncols_data,
+        "[DataInterpolation] Error! Map file src grid is incompatible with the input data.\n"
+        " - map file ncols src: " + std::to_string(map_ncols_src) + "\n"
+        " - data file ncols   : " + std::to_string(ncols_data) + "\n");
+    EKAT_REQUIRE_MSG (map_ncols_tgt==ncols_model,
+        "[DataInterpolation] Error! Map file tgt grid is incompatible with the model grid.\n"
+        " - map file ncols tgt: " + std::to_string(map_ncols_tgt) + "\n"
+        " - model file ncols  : " + std::to_string(ncols_model) + "\n");
   } else {
-    // NO hremap of any kind. 'ncols' from the data must then match the model grid (nlev can differ)
-    EKAT_REQUIRE_MSG (ncols_data==m_model_grid->get_num_global_dofs(),
-        "Error! No horiz remap was requested, but the 'ncol' dim from file does not match with the model grid one.\n"
-        " - model grid num global cols: " + std::to_string(m_model_grid->get_num_global_dofs()) + "\n"
+    // No hremap: 'ncols' from the data must match the model grid (nlev can differ; vremap is not set yet)
+    EKAT_REQUIRE_MSG (ncols_data==ncols_model,
+        "[DataInterpolation] Error! No horiz remap requested, but the 'ncol' dim from data does not match the model grid one.\n"
+        " - model grid num global cols: " + std::to_string(ncols_model) + "\n"
         " - input data num global cols: " + std::to_string(ncols_data) + "\n");
 
     using IDR = IdentityRemapper;
@@ -428,11 +421,57 @@ setup_horiz_remappers (const RemapData& data)
 }
 
 void DataInterpolation::
-setup_vert_remapper (const RemapData& data)
+create_horiz_remappers (const Real iop_lat, const Real iop_lon)
 {
+  using namespace ShortFieldTagsNames;
+
+  EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
+      "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
+
+  EKAT_REQUIRE_MSG (not ekat::is_invalid(iop_lat) and not ekat::is_invalid(iop_lon),
+      "[DataInterpolation] Error! At least one between iop_lat and iop_lon appears to be invalid.\n"
+      "  - iop_lat: " << iop_lat << "\n"
+      "  - iop_lon: " << iop_lon << "\n");
+
+  int nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+  int ncols_data = get_input_files_dimlen (m_input_files_dimnames[COL]);
+
+  // Create grid for IO and load lat/lon field in IO grid from any data file
+  auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
+  std::vector<Field> latlon = {
+    data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout()),
+    data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout())
+  };
+  AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,latlon);
+  latlon_reader.read_variables();
+
+  // Create iop remap tgt grid
+  m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
+  m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
+
+  // Create IOP remappers
+  m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+}
+
+void DataInterpolation::
+create_vert_remapper ()
+{
+  create_vert_remapper(VertRemapData());
+}
+
+void DataInterpolation::
+create_vert_remapper (const VertRemapData& data)
+{
+  EKAT_REQUIRE_MSG (m_vert_remapper==nullptr,
+      "[DataInterpolation] Error! Vertical remapper was already setup.\n");
+  EKAT_REQUIRE_MSG (m_horiz_remapper_beg!=nullptr,
+      "[DataInterpolation] Error! You must call `create_horiz_remappers` before `create_vert_remapper`.\n");
+
   m_vr_type = data.vr_type;
 
-  if (m_vr_type==None) {
+  if (m_vr_type==VRemapType::None) {
+    // Not much to do. Set up a do-nothing remapper and return
     using IDR = IdentityRemapper;
     constexpr auto SAT = IDR::SrcAliasTgt;
 
@@ -440,76 +479,123 @@ setup_vert_remapper (const RemapData& data)
     int model_nlevs = m_model_grid->get_num_vertical_levels();
     int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
     EKAT_REQUIRE_MSG (model_nlevs==data_nlevs,
-        "Error! No vertical remap was requested, but the 'lev' dim from file does not match the model grid one.\n"
+        "[DataInterpolation] Error! No vertical remap was requested, but the 'lev' dim from file does not match the model grid one.\n"
         " - model grid num vert levels: " + std::to_string(model_nlevs) + "\n"
         " - input data num vert levels: " + std::to_string(data_nlevs) + "\n");
     m_vert_remapper = std::make_shared<IDR>(m_grid_after_hremap,SAT);
     return;
   }
 
-  auto s2et = [](const std::string& s) {
-    if (s=="P0") {
-      return VerticalRemapper::P0;
-    } else if (s=="Mask") {
-      return VerticalRemapper::Mask;
-    } else {
-      EKAT_ERROR_MSG (
-          "Error! Invalid/unsupported extrapolation type.\n"
-          " - input value : " + s + "\n"
-          " - valid values: P0, Mask\n");
-      return static_cast<VerticalRemapper::ExtrapType>(-1);
+  if (data.custom_remapper) {
+    // The user provided a remapper. If vr_type is not Custom, this MUST be a VerticalRemapper.
+    EKAT_REQUIRE_MSG (m_vr_type==Custom or std::dynamic_pointer_cast<VerticalRemapper>(data.custom_remapper),
+        "[DataInterpolation] Error! Input vertical remapper MUST be of type VerticalRemapper (or derive from it) if the remap type is not 'Custom'.\n");
+
+    // Sanity checks on src/tgt grids
+    auto src_ncols = data.custom_remapper->get_src_grid()->get_num_global_dofs();
+    auto tgt_ncols = data.custom_remapper->get_tgt_grid()->get_num_global_dofs();
+    auto src_nlevs = data.custom_remapper->get_src_grid()->get_num_vertical_levels();
+    auto tgt_nlevs = data.custom_remapper->get_tgt_grid()->get_num_vertical_levels();
+
+    EKAT_REQUIRE_MSG (src_ncols==m_grid_after_hremap->get_num_global_dofs(),
+        "[DataInterpolation] Error! Custom vert remapper src grid incompatible with the grid after horiz remap.\n"
+        " - grid after horiz remap num global cols: " + std::to_string(m_grid_after_hremap->get_num_global_dofs()) + "\n"
+        " - custom remapper num global cols       : " + std::to_string(src_ncols) + "\n");
+    EKAT_REQUIRE_MSG (tgt_ncols==m_model_grid->get_num_global_dofs(),
+        "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
+        " - model grid num global cols      : " + std::to_string(m_model_grid->get_num_global_dofs()) + "\n"
+        " - custom remapper num global cols : " + std::to_string(tgt_ncols) + "\n");
+    EKAT_REQUIRE_MSG (src_nlevs==m_grid_after_hremap->get_num_vertical_levels(),
+        "[DataInterpolation] Error! Custom vert remapper src grid incompatible with the grid after horiz remap.\n"
+        " - grid after horiz remap num levels: " + std::to_string(m_grid_after_hremap->get_num_vertical_levels()) + "\n"
+        " - custom remapper num levels       : " + std::to_string(src_nlevs) + "\n");
+    EKAT_REQUIRE_MSG (tgt_nlevs==m_model_grid->get_num_vertical_levels(),
+        "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
+        " - model grid num levels      : " + std::to_string(m_model_grid->get_num_vertical_levels()) + "\n"
+        " - custom remapper num levels : " + std::to_string(tgt_nlevs) + "\n");
+
+    m_vert_remapper = data.custom_remapper;
+  } else {
+    auto s2et = [](const std::string& s) {
+      if (s=="P0") {
+        return VerticalRemapper::P0;
+      } else if (s=="Mask") {
+        return VerticalRemapper::Mask;
+      } else {
+        EKAT_ERROR_MSG (
+            "Error! Invalid/unsupported extrapolation type.\n"
+            " - input value : " + s + "\n"
+            " - valid values: P0, Mask\n");
+        return static_cast<VerticalRemapper::ExtrapType>(-1);
+      }
+    };
+
+    // We need to build a vert remapper based on the input data.
+    // Note: on src grid, we don't distinguish midpoints from interfaces, while on tgt we do.
+    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid,true,false);
+
+    vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
+    vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
+
+    // Set the mask value only if needed. RemapData has a default that is invalid for VerticalRemapper
+    if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
+      vremap->set_mask_value(data.mask_value);
     }
-  };
-
-  auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
-
-  vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
-  vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
-
-  // Set the mask value only if needed. RemapData has a default that is invalid for VerticalRemapper
-  if (data.extrap_bot=="Mask" or data.extrap_top=="Mask") {
-    vremap->set_mask_value(data.mask_value);
+    m_vert_remapper = vremap;
   }
 
-  // Setup vertical pressure profiles (which can add 1 extra field to hremap)
-  // NOTES:
-  //  - both Dynamic3D and Dynamic3DRef use a 3d profile for the data
-  //  - p_data is the full 3d pressure where data is defined, while p_file is the field
-  //    we read from file. For Static1D and Dynamic3D they are the same, but for
-  //    Dynamic3DRef, p_file is the surf pressure (2d), while p_data is the full 3d pmid
-  auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(true)
-                                      : m_grid_after_hremap->get_3d_scalar_layout(true);
-  auto& p_data = m_helper_pressure_fields ["p_data"];
-  p_data = Field (FieldIdentifier("p_data",p_layout,ekat::units::Pa,m_grid_after_hremap->name()));
-  p_data.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
-  p_data.allocate_view();
-  if (m_vr_type==Dynamic3D) {
-    // We load a full 3d profile, so p_file IS p_data
-    m_helper_pressure_fields ["p_file"] = p_data.alias(data.pname);
-  } else if (m_vr_type==Dynamic3DRef) {
-    // We load the surface pressure, and reconstruct p_data via p=ps*hybm(k) + p0*hyam(k)
-    auto& ps = m_helper_pressure_fields ["p_file"];
-    ps = Field(FieldIdentifier(data.pname,m_grid_after_hremap->get_2d_scalar_layout(),ekat::units::Pa,m_grid_after_hremap->name()));
-    ps.allocate_view();
+  // If the vremap type is not CUSTOM, we need to setup the source pressure profile
+  if (m_vr_type!=Custom) {
+    // If the remapper is not "custom", we MUST be able to cast down to VerticalRemapper
+    auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
 
-    // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
-    // We read and store hyam/hybm in the vremap src grid
-    auto layout = m_grid_after_hremap->get_vertical_layout(true);
-    auto nondim = ekat::units::Units::nondimensional();
-    DataType real_t = DataType::RealType;
-    auto hyam = m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE);
-    auto hybm = m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE);
-    AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,{hyam,hybm},true);
-    hvcoord_reader.read_variables();
-  } else if (m_vr_type==Static1D) {
-    // Can load p now, since it's static
-    AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,{p_data.alias(data.pname)},true);
-    p_data_reader.read_variables();
+    // Setup vertical pressure profiles (which can add 1 extra field to hremap)
+    // NOTES:
+    //  - both Dynamic3D and Dynamic3DRef use a 3d profile for the data
+    //  - p_data is the full 3d pressure where data is defined, while p_file is the field
+    //    we read from file. For Static1D and Dynamic3D they are the same, but for
+    //    Dynamic3DRef, p_file is the surf pressure (2d), while p_data is the full 3d pmid
+    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(true)
+                                        : m_grid_after_hremap->get_3d_scalar_layout(true);
+    auto& p_data = m_helper_pressure_fields ["p_data"];
+    p_data = Field (FieldIdentifier("p_data",p_layout,ekat::units::Pa,m_grid_after_hremap->name()));
+    p_data.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+    p_data.allocate_view();
+    if (m_vr_type==VRemapType::Dynamic3D) {
+      // We load a full 3d profile, so p_file IS p_data
+      m_helper_pressure_fields ["p_file"] = p_data.alias(data.pname);
+    } else if (m_vr_type==VRemapType::Dynamic3DRef) {
+      // We load the surface pressure, and reconstruct p_data via p=ps*hybm(k) + p0*hyam(k)
+      auto& ps = m_helper_pressure_fields ["p_file"];
+      ps = Field(FieldIdentifier(data.pname,m_grid_after_hremap->get_2d_scalar_layout(),ekat::units::Pa,m_grid_after_hremap->name()));
+      ps.allocate_view();
+
+      // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
+      // We read and store hyam/hybm in the vremap src grid
+      auto layout = m_grid_after_hremap->get_vertical_layout(true);
+      auto nondim = ekat::units::Units::nondimensional();
+      DataType real_t = DataType::RealType;
+      std::vector<Field> fields = {
+        m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE),
+        m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE)
+      };
+      AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
+      hvcoord_reader.read_variables();
+    } else if (m_vr_type==Static1D) {
+      // Can load p now, since it's static
+      std::vector<Field> fields = {p_data.alias(data.pname)};
+      AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
+      p_data_reader.read_variables();
+    }
+    vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);
+
+    if (data.pint.is_allocated()) {
+      vremap->set_target_pressure(data.pint,VerticalRemapper::Interfaces);
+    }
+    if (data.pmid.is_allocated()) {
+      vremap->set_target_pressure(data.pmid,VerticalRemapper::Midpoints);
+    }
   }
-  vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);
-  vremap->set_target_pressure(data.pmid,data.pint);
-
-  m_vert_remapper = vremap;
 }
 
 void DataInterpolation::register_fields_in_remappers ()

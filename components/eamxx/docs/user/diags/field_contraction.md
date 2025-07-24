@@ -4,6 +4,10 @@ In EAMxx, we can automatically calculate field reductions
 across the horizontal columns and across the model vertical levels.
 We call these horizontal and vertical reductions.
 We can also automatically calculate zonal averages.
+We have *experimental* support for composing diagnostics; below,
+the horizontal and vertical reductions can be composed
+sequentially, but if using dp- or dz-weighted reductions,
+one must do the vertical reduction first.
 
 ## Horizontal reduction
 
@@ -59,6 +63,10 @@ The supported weighting options for now are
 In the case of `pseudo_density`, the weighting is scaled by 1/g,
 where g is the gravitational acceleration, in units of m/s$^2$.
 
+It is important to note that in the case of dp- and dz-weighted
+reductions, the field provided to the reduction utility must be
+at least 2 in rank, e.g., (ncol, nlev).
+
 ## Zonal reduction
 
 We currently have a utility to calculate zonal averages online.
@@ -96,6 +104,10 @@ fields:
       - T_mid_vert_sum_dz_weighted  # K * m
       - T_mid_vert_avg  # K
       - T_mid_vert_sum  # K
+      - T_mid_vert_sum_horiz_sum  # K
+      - T_mid_horiz_avg_vert_sum  # K
+      - T_mid_vert_sum_dz_weighted_horiz_avg  # K * m
+      - T_mid_vert_avg_dp_weighted_horiz_avg  # K
       - T_mid_zonal_avg_180_bins  # K
       - T_mid_zonal_avg_90_bins  # K
 output_control:
