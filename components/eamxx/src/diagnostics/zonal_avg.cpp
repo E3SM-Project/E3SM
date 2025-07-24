@@ -168,12 +168,13 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   const Real lat_delta = sp(180.0) / m_num_zonal_bins;
   auto lat_view    = m_lat.get_view<const Real *>();
   auto ncols_per_bin_view = ncols_per_bin.get_view<Int *>();
+  const int num_zonal_bins = m_num_zonal_bins; // for use inside lambdas
   TeamPolicy team_policy = TPF::get_default_team_policy(m_num_zonal_bins, ncols);
   Kokkos::parallel_for("count_columns_per_zonal_bin_" + field.name(),
       team_policy, KOKKOS_LAMBDA(const TeamMember &tm) {
         const int bin_i      = tm.league_rank();
         const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
-        const Real lat_upper = (bin_i < m_num_zonal_bins-1)
+        const Real lat_upper = (bin_i < num_zonal_bins-1)
           ? lat_lower + lat_delta : sp(90.0 + 0.5*lat_delta);
         Kokkos::parallel_reduce(Kokkos::TeamVectorRange(tm, ncols),
             [&](int col_i, Int &val) {
@@ -206,7 +207,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   Kokkos::parallel_for("assign_columns_to_zonal_bins_" + field.name(),
       RangePolicy(0, m_num_zonal_bins), [&] (int bin_i) {
         const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
-        const Real lat_upper = (bin_i < m_num_zonal_bins-1)
+        const Real lat_upper = (bin_i < num_zonal_bins-1)
           ? lat_lower + lat_delta : sp(90.0 + 0.5*lat_delta);
         bin_to_cols_view(bin_i, 0) = 0;
         for (int col_i=0; col_i < ncols; col_i++)
@@ -243,7 +244,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
         const int bin_i = tm.league_rank();
         Kokkos::parallel_for(
           Kokkos::TeamVectorRange(tm, 1, 1+bin_to_cols_view(bin_i,0)),
-            KOKKOS_LAMBDA(int lcol_j) {
+            [&](int lcol_j) {
               const int col_i = bin_to_cols_view(bin_i, lcol_j);
               scaled_area_view(col_i) /= zonal_area_view(bin_i);
             });
