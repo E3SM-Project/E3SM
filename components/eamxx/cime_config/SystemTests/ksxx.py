@@ -200,6 +200,7 @@ def load_mpas_climatology_ensemble(files, field_name, mask_value=None):
 
 
 def variable_set(name):
+    # TODO: edit ksxx_vars.json to add more vars
     var_sets = fn.read_json(os.path.join(os.path.dirname(__file__), "ksxx_vars.json"))
     try:
         the_set = var_sets[name.lower()]
