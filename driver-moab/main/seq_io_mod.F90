@@ -1592,13 +1592,44 @@ contains
 
   end subroutine seq_io_write_time
 
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, file_ind )
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_io_write_moab_tags - write MOAB mesh tags to netcdf file
+  !
+  ! !DESCRIPTION:
+  !    Writes one or more MOAB mesh tags (fields) from a MOAB mesh instance to a NetCDF file using PIO.
+  !    The tags are written as variables, with support for writing multiple fields at once, and optional
+  !    matrix input for direct data writing. Handles global cell ordering and reordering for correct output.
+  !    Used for writing mesh-based data (e.g., from iMOAB) into the driver output files.
+  !
+  ! !ARGUMENTS:
+  !    filename   [in]  - Name of the NetCDF file to write to
+  !    mbxid      [in]  - iMOAB application ID (mesh handle)
+  !    dname      [in]  - Prefix for variable names in the output file
+  !    tag_list   [in]  - Colon-separated list of MOAB tag (field) names to write
+  !    whead      [in, optional] - Logical flag to write NetCDF header/define variables
+  !    wdata      [in, optional] - Logical flag to write data values
+  !    matrix     [in, optional] - 2D array of data to write directly (overrides reading from MOAB)
+  !    nx         [in, optional] - Number of global cells (overrides value from MOAB)
+  !    file_ind   [in, optional] - File index for multi-file support
+  !
+  ! !NOTES:
+  !    - Only cell-type entities are supported (ent_type=1).
+  !    - Handles reordering of local/global cell IDs for correct output.
+  !    - If matrix is not present, data is read from MOAB tags; if present, matrix is written directly.
+  !    - Skips writing the field "hgt" as a temporary exclusion.
+  !    - Uses fillvalue for missing data.
+  !
+  ! !REVISION HISTORY:
+  !    2025-07-20 - Cursor - initial documentation
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, file_ind, dims2din, dims2do, mask )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
-
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
         iMOAB_GetIntTagStorage
-
     use m_MergeSorts,     only: IndexSet, IndexSort
 
      ! !INPUT/OUTPUT PARAMETERS:
@@ -1612,9 +1643,11 @@ contains
     real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
     integer, optional,intent(in):: nx
     integer,optional,intent(in) :: file_ind
+    integer,optional,intent(in) :: dims2din(2)   ! dim ids to output
+    integer,optional,intent(out):: dims2do(2)    ! dim ids for output
+    real(r8)         ,optional,intent(in) :: mask(:)
 
     logical :: lwhead, lwdata
-    !integer :: start(2),count(2)
     character(*),parameter :: subName = '(seq_io_write_moab_tags) '
     integer :: ndims, lfile_ind, iam, rcode
     integer(in)              :: ns, ng, lnx, lny, ix
@@ -1626,17 +1659,14 @@ contains
     character(CL)    :: cunit       ! var units
     character(CL)    :: lname       ! long name
     character(CL)    :: sname       ! standard name
-
     character(CL)  :: lpre
-
     type(mct_list) :: temp_list
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
-
     integer(in)        :: dimid2(2)
     integer(in)              :: dummy, ent_type, ierr
-    real(r8)                 :: lfillvalue ! or just use fillvalue ?
+    real(r8)                 :: lfillvalue
     integer, allocatable         :: indx(:) !  this will be ordered
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
     integer, allocatable         :: Dof_reorder(:)  !
@@ -1684,8 +1714,17 @@ contains
     ns = nvise(1) ! local cells 
 
     if (lwhead) then
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
-       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       if (present(dims2din)) then
+          dimid2(1)=dims2din(1)
+          dimid2(2)=dims2din(2)
+       else
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_nx',lnx,dimid2(1))
+          rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(lpre)//'_ny',lny,dimid2(2))
+       endif
+       if (present(dims2do)) then
+          dims2do(1)=dimid2(1)
+          dims2do(2)=dimid2(2)
+       endif
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
@@ -1760,9 +1799,29 @@ contains
                   endif
                endif
              endif
-             do ix=1,ns
-                data_reorder(ix) = data1(indx(ix)) ! 
+
+             ! remove MOAB default values
+             do ix = 1, ns
+               if (data1(ix) < -9.99999E+9_r8) then
+                  data1(ix) = 0.0_r8
+               endif
              enddo
+
+
+             ! rearrange data for writing and handle mask
+             if(present(mask)) then
+               do ix=1,ns
+                 if(mask(indx(ix)) /= 0) then
+                   data_reorder(ix) = data1(indx(ix))
+                 else
+                   data_reorder(ix) = lfillvalue
+                 endif
+               enddo
+             else
+               do ix=1,ns
+                  data_reorder(ix) = data1(indx(ix))
+               enddo
+             endif
              
              call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
           endif
@@ -2517,6 +2576,37 @@ contains
     call pio_closefile(pioid)
 
   end subroutine seq_io_read_char
+
+  !===============================================================================
+  !BOP ===========================================================================
+  !
+  ! !IROUTINE: seq_io_read_moab_tags - read MOAB mesh tags from netcdf file
+  !
+  ! !DESCRIPTION:
+  !    Reads one or more MOAB mesh tags (fields) from a NetCDF file using PIO and stores them
+  !    into a MOAB mesh instance or a provided matrix. Supports reading multiple fields at once,
+  !    and handles global cell ordering and reordering for correct mapping to the mesh. Used for
+  !    restoring mesh-based data (e.g., from iMOAB) from driver output files.
+  !
+  ! !ARGUMENTS:
+  !    filename   [in]  - Name of the NetCDF file to read from
+  !    mbxid      [in]  - iMOAB application ID (mesh handle)
+  !    dname      [in]  - Prefix for variable names in the input file
+  !    tag_list   [in]  - Colon-separated list of MOAB tag (field) names to read
+  !    matrix     [in, optional] - 2D array to store data directly (if present, data is written here instead of MOAB)
+  !    nx         [in, optional] - Number of global cells (overrides value from MOAB)
+  !
+  ! !NOTES:
+  !    - Only cell-type entities are supported (ent_type=1).
+  !    - Handles reordering of local/global cell IDs for correct mapping.
+  !    - If matrix is present, data is stored in the matrix; otherwise, data is set as MOAB tags.
+  !    - Skips reading the field "hgt" as a temporary exclusion.
+  !    - Uses fillvalue for missing data.
+  !
+  ! !REVISION HISTORY:
+  !    2025-07-20 - Cursor - initial documentation
+  !
+  ! !INTERFACE: ------------------------------------------------------------------
 
   subroutine seq_io_read_moab_tags(filename, mbxid, dname, tag_list, matrix, nx)
 
