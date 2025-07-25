@@ -12,10 +12,11 @@ module dcmip16_wrapper
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
 use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
      sub_case, case_planar_bubble, bubble_prec_type
-use baroclinic_wave,      only: baroclinic_wave_test
+use baroclinic_wave,      only: baroclinic_wave_test, baroclinic_topo_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
-use derivative_mod,       only: derivative_t, gradient_sphere
+use derivative_mod,       only: derivative_t, gradient_sphere, get_deriv
+use viscosity_mod,        only: make_c0
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use element_state,        only: nt=>timelevels
@@ -80,7 +81,11 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   integer,            intent(in)            :: nets,nete                ! start, end element index
 
   integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
+#ifdef HOMMEDA
+  integer,  parameter :: is_deep      = 1                               ! use deep atmosphere approximation
+#else
   integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
+#endif
   integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
   real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
   integer :: moist                                                      ! use moist version
@@ -93,6 +98,12 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np,nlev,6):: q
 
   real(rl) :: min_thetav, max_thetav
+  if (sub_case==2) then
+     ! call the Hughes and Jablonowski version with topography
+     call bw_topo_test(elem,hybrid,hvcoord,nets,nete)
+     return
+  endif
+  
   min_thetav = +huge(rl)
   max_thetav = -huge(rl)
 
@@ -150,8 +161,142 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   sample_period = 1800.0 ! sec
   !print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
 
+  end subroutine dcmip2016_test1
+  
+!_____________________________________________________________________subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
+subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
+
+  ! moist baroclinic wave test
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+
+  integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
+  integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
+  integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
+  real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
+  integer :: moist                                                      ! use moist version
+  integer :: i,j,k,ie                                                   ! loop indices
+  real(rl):: lon,lat                                                    ! pointwise coordiantes
+
+  real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,thetav,rho,dp           ! field values
+  real(rl), dimension(np,np,nlevp):: p_i,w_i,z_i
+  real(rl), dimension(np,np,nlev,nets:nete):: w_i_dss                   ! needs ie dimension for DSS
+  real(rl), dimension(np,np):: ps, phis
+  real(rl), dimension(np,np,nlev,6):: q
+
+  type (derivative_t) :: deriv
+ 
+  call get_deriv(deriv)
+  moist = 0
+  if (use_moisture) moist=1
+
+  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
+
+  if (qsize<6) call abortmp('ERROR: test requires qsize>=6')
+
+  ! set initial conditions
+  do ie = nets,nete
+     do j=1,np; do i=1,np
+        ! use the test case to initialize ps (and phi), so we can compute pressure
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+        k=1
+        p_i(i,j,k)  = p0*hvcoord%hyai(k)
+        call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+             z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,k,1))
+     enddo; enddo
+     
+     if (hybrid%masterthread) print *,'z_i loop'
+     do k=1,nlevp
+        do j=1,np; do i=1,np
+           lon = elem(ie)%spherep(i,j)%lon
+           lat = elem(ie)%spherep(i,j)%lat
+           p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
+            
+           ! compute z_i
+           call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+                z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,1,1))
+        enddo; enddo
+        call w_bw_topo_test(z_i(:, :, k), u(:, :, 1), w_i(:, :, k), deriv, elem(ie))
+     enddo
+     ! save a copy of w to apply DSS later
+     w_i_dss(:,:,1:nlev,ie)=w_i(:,:,2:nlevp)
+  enddo
+
+  ! make w_i continious at element edges since it is initialized by grad(z)
+  ! make_C0 only works on nlev fields (not nlevp), but w(:,:,1)=0 
+  call make_C0(w_i_dss(:,:,:,nets:nete),elem,hybrid,nets,nete) ! no make_C0 for 1:nlevp arrays
+  
+  
+  do ie = nets,nete
+     ! recompute ps and z_i (since we didn't save it for each ie above)
+     ps=0  
+     do k=1,nlevp
+     do j=1,np; do i=1,np
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+        ! for k=1, hybi(1)=0, so ok to use ps() before it has been computed 
+        p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
+        call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+             z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,k,1))
+     enddo; enddo
+     enddo
+
+     w=0 ! dont bother to init w, only w_i is needed
+     w_i(:,:,1)=0  
+     w_i(:,:,2:nlevp)=w_i_dss(:,:,1:nlev,ie)
+     do k=1,nlev
+        do j=1,np; do i=1,np
+           !p(i,j,k)  = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybi(k)
+           p(i,j,k)  = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybm(k)
+           dp(i,j,k) = p_i(i,j,k+1)-p_i(i,j,k)
+
+           lon = elem(ie)%spherep(i,j)%lon
+           lat = elem(ie)%spherep(i,j)%lat
+           
+           q(i,j,k,1:5) = 0.0d0
+           q(i,j,k,6) = 1
+           
+           call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
+                z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
+           
+           ! initialize tracer chemistry
+           call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
+           call set_tracers(q(i,j,k,1:6),6,dp(i,j,k),i,j,k,lat,lon,elem(ie))
+           
+        enddo; enddo
+     enddo
+     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
+     call tests_finalize(elem(ie),hvcoord)
+  enddo
+  
+  sample_period = 1800.0 ! sec
 
 end subroutine
+
+
+subroutine w_bw_topo_test(z_eta, u, w, deriv, elem)
+   use physical_constants,   only: p0, rearth
+   use derivative_mod, only: gradient_sphere
+   
+   real(kind=rl), intent(in) :: z_eta(np,np)
+   real(kind=rl), intent(in) :: u(np,np)
+   real(kind=rl), intent(out) :: w(np,np)
+   type(element_t), intent(in) :: elem
+   type (derivative_t), intent(in) :: deriv
+   
+
+   ! local
+   real(rl),  dimension(np, np, 2) :: grad_z
+   
+   grad_z = gradient_sphere(z_eta, deriv, elem%Dinv)
+   w = -u / (rearth * cos(elem%spherep(:,:)%lat)) * grad_z(:,:,2)
+    
+end subroutine w_bw_topo_test
+
 
 subroutine dcmip2016_pg_init(elem,hybrid,hvcoord,nets,nete,nphys)
   use gllfvremap_mod, only: gfr_init
@@ -265,6 +410,9 @@ end subroutine
 subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
 
   ! supercell storm test case
+#ifdef HOMMEDA
+  use eos,             only: pnh_and_exner_from_eos
+#endif
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -280,8 +428,8 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
   real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
 
   real(rl), dimension(np,np,nlev,3) :: q
-  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
-  real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i
+  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom, exner, pnh
+  real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i,  munew
   real(rl), dimension(np,np) :: phis, ps
 
   real(rl) :: p1,thetav1,rho1,q1
@@ -366,6 +514,16 @@ subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
     call tests_finalize(elem(ie),hvcoord,ie)
 
   enddo
+
+#ifdef HOMMEDA
+!print *, 'HELLLLLLLLLLLLLLLLLLLLLLo'
+!stop
+!temp code to check init
+
+   call pnh_and_exner_from_eos(hvcoord,elem(1)%state%vtheta_dp(:,:,:,1),&
+       elem(1)%state%dp3d(:,:,:,1),elem(1)%state%phinh_i(:,:,:,1),pnh,exner,munew,caller='NEW MU')
+if (elem(1)%globalid==1)    print *,'after tests_f MU= ', munew(1,1,1:10)
+#endif
 
   sample_period = 1 ! 60 orig sec
 end subroutine

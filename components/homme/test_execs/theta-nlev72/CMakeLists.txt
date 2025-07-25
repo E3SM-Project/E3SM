@@ -1,7 +1,7 @@
 #_______________________________________________________________________
 # create executable needed by DCMIP2016_test3 (interpolated output)
 
-thetal_setup()
+thetal_setup(0)
 #              name                 target NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
 createTestExec(theta-nlev72         theta-l  4  4  72   FALSE   FALSE       10)
 
