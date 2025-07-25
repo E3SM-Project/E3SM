@@ -2610,8 +2610,7 @@ contains
           call t_startf('CPL:seq_hist_write-init')
           call seq_hist_write(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-               fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
+               samegrid_al,samegrid_lr, trim(cpl_inst_tag))
           call t_stopf('CPL:seq_hist_write-init')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -5141,8 +5140,7 @@ contains
           call t_startf('CPL:seq_hist_write')
           call seq_hist_write(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-               fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
+               samegrid_al,samegrid_lr, trim(cpl_inst_tag))
           call t_stopf('CPL:seq_hist_write')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
