@@ -751,7 +751,7 @@ contains
     if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
     endif
-    ierrmb = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im )
+    ierrmb = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im(1,1) )
     if ( ierrmb /= 0 ) then
        call mpas_log_write('cannot set tags for MOAB i2x fields to zero' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
     endif
@@ -760,7 +760,7 @@ contains
     if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_x2i_fields), MPAS_LOG_ERR)
     endif
-    ierrmb = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im )
+    ierrmb = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im(1,1) )
     if ( ierrmb /= 0 ) then
        call mpas_log_write('cannot set tags for MOAB x2i fields to zero' // trim(seq_flds_x2i_fields), MPAS_LOG_ERR)
     endif
@@ -1234,6 +1234,7 @@ contains
       ! Import state from coupler
       call ice_import_mct(x2i_i, ierr)
 #ifdef HAVE_MOAB
+      call ice_import_moab(Eclock)
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2i_fields
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
@@ -1249,7 +1250,6 @@ contains
     enddo
     call mct_list_clean(temp_list)
 #endif
-      call ice_import_moab(Eclock)
 #endif
 
       ! Post coupling calls
@@ -1389,6 +1389,7 @@ contains
       if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
       call ice_export_mct(i2x_i, ierr)
 #ifdef HAVE_MOAB
+      call ice_export_moab(EClock)
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_i2x_fields
     call mct_list_init(temp_list ,seq_flds_i2x_fields)
@@ -1404,7 +1405,6 @@ contains
     enddo
     call mct_list_clean(temp_list)
 #endif
-      call ice_export_moab(EClock)
 #endif
       if (debugOn) call mpas_log_write('Finished exporting state', masterOnly=.true.)
 
@@ -3651,7 +3651,7 @@ contains
       ent_type = 1 ! cells
       !  set all tags in one method
       tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im )
+      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im(1,1) )
       if ( ierr /= 0 ) then
          write(iceLogUnit,*) 'Fail to set MOAB fields '
       endif
@@ -3919,7 +3919,7 @@ contains
    ent_type = 1 ! cells
   !  set all tags in one method
    tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
-   ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im )
+   ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im(1,1) )
    if ( ierr /= 0 ) then
       write(iceLogUnit,*) 'Fail to get seq_flds_x2i_fields '
    endif
