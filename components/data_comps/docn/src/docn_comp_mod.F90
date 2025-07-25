@@ -71,7 +71,7 @@ module docn_comp_mod
 
   integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
-  integer(IN)   :: kh,kqbot,kfraz
+  integer(IN)   :: kh,kqbot,kfraz,kssh,kh2ot
   integer(IN)   :: k10uu           ! index for u10
   integer(IN)   :: kRSO_bckgrd_sst ! index for background SST (relaxed slab ocean)
   integer(IN)   :: index_lat, index_lon
@@ -284,9 +284,11 @@ CONTAINS
     kv    = mct_aVect_indexRA(o2x,'So_v')
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
+    kssh  = mct_aVect_indexRA(o2x,'So_ssh')
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
     kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
+    kh2ot = mct_aVect_indexRA(o2x,'Faoo_h2otemp') ! ocn frazil
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
@@ -904,6 +906,8 @@ CONTAINS
 
    call moab_set_tag_from_av( 'So_v'//C_NULL_CHAR, o2x, kv, mpoid, data, lsize)
 
+   call moab_set_tag_from_av( 'So_ssh'//C_NULL_CHAR, o2x, kssh, mpoid, data, lsize)
+
    call moab_set_tag_from_av( 'So_dhdx'//C_NULL_CHAR, o2x, kdhdx, mpoid, data, lsize)
 
    call moab_set_tag_from_av( 'So_dhdy'//C_NULL_CHAR, o2x, kdhdy, mpoid, data, lsize)
@@ -911,6 +915,8 @@ CONTAINS
    call moab_set_tag_from_av( 'Fioo_q'//C_NULL_CHAR, o2x, kq, mpoid, data, lsize)
 
    call moab_set_tag_from_av( 'Fioo_frazil'//C_NULL_CHAR, o2x, kfraz, mpoid, data, lsize)
+
+   call moab_set_tag_from_av( 'Faoo_h2otemp'//C_NULL_CHAR, o2x, kh2ot, mpoid, data, lsize)
 
    if (kswp /= 0) then
       call moab_set_tag_from_av( 'So_fswpen'//C_NULL_CHAR, o2x, kswp, mpoid, data, lsize)
