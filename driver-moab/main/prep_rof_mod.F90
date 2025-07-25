@@ -1399,24 +1399,22 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       if(trim(cime_model) .eq. 'e3sm') then
-          index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
-          index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
-       endif
+       index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+
+       index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
-       if(trim(cime_model) .eq. 'e3sm') then
-         index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
-         index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
-         index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
-         index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
-       endif
+       index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
+       index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
+       index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
+       index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
 
        index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
        if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
@@ -1454,18 +1452,14 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
             trim(fracstr)//'*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofi'
-       if (trim(cime_model).eq.'e3sm') then
-          mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+       mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
                trim(fracstr)//'*l2x%Flrl_demand'
-       endif
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                trim(fracstr)//'*l2x%Flrl_irrig'
        end if
-       if(trim(cime_model) .eq. 'e3sm') then
-          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
-          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
-       endif
+       mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
+       mrgstr(index_x2r_Flrl_Tqsub) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
                trim(fracstr)//'*l2x%Flrl_rofl_16O'
@@ -1538,16 +1532,12 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * frac
-       if (trim(cime_model).eq.'e3sm') then
-          x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * frac
-       endif
+       x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * frac
        if (have_irrig_field) then
           x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * frac
        end if
-       if(trim(cime_model) .eq. 'e3sm') then
-         x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
-         x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
-       endif
+       x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
+       x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
        if ( flds_wiso_rof ) then
           x2r_r%rAttr(index_x2r_Flrl_rofl_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofl_16O,i) * frac
           x2r_r%rAttr(index_x2r_Flrl_rofi_16O,i) = l2x_r%rAttr(index_l2x_Flrl_rofi_16O,i) * frac
@@ -1742,24 +1732,23 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       if(trim(cime_model) .eq. 'e3sm') then
-          index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
-          index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
-       endif
+       index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+       !index_l2x_coszen_str  = mct_aVect_indexRA(l2x_r,'coszen_str' )
+
+       index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       !index_x2r_coszen_str  = mct_aVect_indexRA(x2r_r,'coszen_str' )
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
-       if(trim(cime_model) .eq. 'e3sm') then
-         index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
-         index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
-         index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
-         index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
-       endif
+       index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
+       index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
+       index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
+       index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
 
        index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
        if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
@@ -1798,18 +1787,16 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
             trim(fracstr)//'*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofi'
-       if (trim(cime_model).eq.'e3sm') then
-          mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
-               trim(fracstr)//'*l2x%Flrl_demand'
-       endif
+       mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_demand'
+       !mrgstr(index_x2r_coszen_str) = trim(mrgstr(index_x2r_coszen_str))//' = '// &
+       !     trim(fracstr)//'*l2x%coszen_str'
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                trim(fracstr)//'*l2x%Flrl_irrig'
        end if
-       if(trim(cime_model) .eq. 'e3sm') then
-          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
-          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
-       endif
+       mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
+       mrgstr(index_x2r_Flrl_Tqsub) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
        if ( flds_wiso_rof ) then
           mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
                trim(fracstr)//'*l2x%Flrl_rofl_16O'
@@ -1904,16 +1891,13 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
        x2r_rm(i,index_x2r_Flrl_rofsub) = l2x_rm(i,index_l2x_Flrl_rofsub) * frac
        x2r_rm(i,index_x2r_Flrl_rofdto) = l2x_rm(i,index_l2x_Flrl_rofdto) * frac
        x2r_rm(i,index_x2r_Flrl_rofi) = l2x_rm(i,index_l2x_Flrl_rofi) * frac
-       if (trim(cime_model).eq.'e3sm') then
-          x2r_rm(i,index_x2r_Flrl_demand) = l2x_rm(i,index_l2x_Flrl_demand) * frac
-       endif
+       !x2r_rm(i,index_x2r_coszen_str) = l2x_rm(i,index_l2x_coszen_str)
+       x2r_rm(i,index_x2r_Flrl_demand) = l2x_rm(i,index_l2x_Flrl_demand) * frac
        if (have_irrig_field) then
           x2r_rm(i,index_x2r_Flrl_irrig) = l2x_rm(i,index_l2x_Flrl_irrig) * frac
        end if
-       if(trim(cime_model) .eq. 'e3sm') then
-         x2r_rm(i,index_x2r_Flrl_Tqsur) = l2x_rm(i,index_l2x_Flrl_Tqsur)
-         x2r_rm(i,index_x2r_Flrl_Tqsub) = l2x_rm(i,index_l2x_Flrl_Tqsub)
-       endif
+       x2r_rm(i,index_x2r_Flrl_Tqsur) = l2x_rm(i,index_l2x_Flrl_Tqsur)
+       x2r_rm(i,index_x2r_Flrl_Tqsub) = l2x_rm(i,index_l2x_Flrl_Tqsub)
        if ( flds_wiso_rof ) then
           x2r_rm(i,index_x2r_Flrl_rofl_16O) = l2x_rm(i,index_l2x_Flrl_rofl_16O) * frac
           x2r_rm(i,index_x2r_Flrl_rofi_16O) = l2x_rm(i,index_l2x_Flrl_rofi_16O) * frac
