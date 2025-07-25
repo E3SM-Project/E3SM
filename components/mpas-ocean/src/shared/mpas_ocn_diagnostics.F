@@ -401,9 +401,9 @@ contains
 
       !
       ! extrapolate tracer values to ocean surface
-      ! this eventually be a modelled process
-      ! at present, just copy k=1 tracer values onto surface values
-      ! field will be updated below is better approximations are available
+      ! this eventually could be a modelled process
+      ! at present, just copy minLevelCell tracer values onto surface values
+      ! field will be updated below as better approximations are available
 
 !TDR need to consider how to handle tracersSurfaceValues
 #ifdef MPAS_OPENACC
