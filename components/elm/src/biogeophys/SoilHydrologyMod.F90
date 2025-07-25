@@ -182,7 +182,8 @@ contains
             if (use_vichydro) then
                fsat(c) =  A(c)
             else
-               fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
+               fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt_perched(c))
+!               fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
             end if
          else
             if ( frost_table(c) > zwt_perched(c)) then
@@ -506,7 +507,7 @@ contains
                         + top_max_moist(c) * basis**(1._r8 + b_infil(c)))/dtime
                 end if
                 rsurf_vic = min(qflx_in_soil(c), rsurf_vic)
-                qinmax = (1._r8 - fsat(c)) * 10._r8**(-e_ice*top_icefrac)*(qflx_in_soil(c) - rsurf_vic)
+                qinmax = (1._r8 - fsat(c)) * 10._r8**(-e_ice*top_icefrac)*(qflx_in_soil(c) - rsurf_vic) 
              else
                 if ( use_modified_infil ) then
                   qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3))

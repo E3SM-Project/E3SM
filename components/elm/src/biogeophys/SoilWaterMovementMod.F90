@@ -512,7 +512,8 @@ contains
                     (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
             else
                s1 = 0.5_r8*(vwc_liq(c,j) + vwc_liq(c,min(nlevsoi, j+1))) / &
-                    (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
+                    (0.5_r8*(eff_porosity(c,j)+eff_porosity(c,min(nlevsoi,j+1))))
+!                    (0.5_r8*(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
             endif
             s1 = min(1._r8, s1)
             s2 = hksat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
@@ -525,7 +526,8 @@ contains
             endif
             hk(c,j) = imped(c,j)*s1*s2
             dhkdw(c,j) = imped(c,j)*(2._r8*bsw(c,j)+3._r8)*s2* &
-                 (1._r8/(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
+                  (1._r8/(eff_porosity(c,j)+eff_porosity(c,min(nlevsoi,j+1))))
+!                 (1._r8/(watsat(c,j)+watsat(c,min(nlevsoi, j+1))))
 
             !compute un-restricted hydraulic conductivity
             !call soil_water_retention_curve%soil_hk(hksat(c,j), imped(c,j), s1, bsw(c,j), hktmp, dhkds)
@@ -541,7 +543,8 @@ contains
             if (origflag == 1) then
                s_node = max(h2osoi_vol(c,j)/watsat(c,j), 0.01_r8)
             else
-               s_node = max(vwc_liq(c,j)/watsat(c,j), 0.01_r8)
+               s_node = max(vwc_liq(c,j)/eff_porosity(c,j), 0.01_r8)
+!               s_node = max(vwc_liq(c,j)/watsat(c,j), 0.01_r8)
             endif
             s_node = min(1.0_r8, s_node)
 
@@ -553,6 +556,8 @@ contains
             !dsmpdw(c,j) = dsmpds/watsat(c,j)
 
             if (origflag == 1) then
+               smp(c,j) = max(smpmin(c), 0.5_r8 * smp(c,j))
+               hk_l(c,j) = 10._r8 * hk(c,j)
                dsmpdw(c,j) = -bsw(c,j)*smp(c,j)/(s_node*watsat(c,j))
             else
                dsmpdw(c,j) = -bsw(c,j)*smp(c,j)/vwc_liq(c,j)
@@ -652,18 +657,21 @@ contains
             if(origflag == 1) then
                s_node = max(0.5*(1.0_r8+h2osoi_vol(c,j)/watsat(c,j)), 0.01_r8)
             else
-               s_node = max(0.5*((vwc_zwt(c)+vwc_liq(c,j))/watsat(c,j)), 0.01_r8)
+               s_node = max(0.5*((vwc_zwt(c)+vwc_liq(c,j))/eff_porosity(c,j)), 0.01_r8)
+!               s_node = max(0.5*((vwc_zwt(c)+vwc_liq(c,j))/watsat(c,j)), 0.01_r8)
             endif
             s_node = min(1.0_r8, s_node)
 
             ! compute smp for aquifer layer
             !call soil_water_retention_curve%soil_suction(sucsat(c,j), s_node, bsw(c,j), smp1, dsmpds)
             smp1 = -sucsat(c,j)*s_node**(-bsw(c,j))
-            smp1 = max(smpmin(c), smp1)
+            smp1 = 0.6 * max(smpmin(c), smp1)
+!            smp1 = max(smpmin(c), smp1)
 
             ! compute dsmpdw for aquifer layer
             !dsmpdw1 = dsmpds/watsat(c,j)
-            dsmpdw1 = -bsw(c,j)*smp1/(s_node*watsat(c,j))
+            dsmpsw1 = -bsw(c,j)*smp1/(s_node*eff_porosity(c,j))
+!            dsmpdw1 = -bsw(c,j)*smp1/(s_node*watsat(c,j))
 
             ! first set up bottom layer of soil column
             den    = (zmm(c,j) - zmm(c,j-1))
@@ -757,7 +765,8 @@ contains
                wh_zwt = 0._r8   !since wh_zwt = -sucsat - zq_zwt, where zq_zwt = -sucsat
 
                ! Recharge rate qcharge to groundwater (positive to aquifer)
-               s_node = max(h2osoi_vol(c,jwt(c)+1)/watsat(c,jwt(c)+1), 0.01_r8)
+!               s_node = max(h2osoi_vol(c,jwt(c)+1)/watsat(c,jwt(c)+1), 0.01_r8)
+               s_node = max(h2osoi_vol(c,jwt(c)+1)/eff_porosity(c,jwt(c)+1), 0.01_r8)
                s1 = min(1._r8, s_node)
 
                !scs: this is the expression for unsaturated hk
@@ -770,7 +779,8 @@ contains
                !apply ice impedance
                !ka = imped(c,jwt(c)+1) * ka
                ! Recharge rate qcharge to groundwater (positive to aquifer)
-               smp1 = max(smpmin(c), smp(c,max(1,jwt(c))))
+!               smp1 = max(smpmin(c), smp(c,max(1,jwt(c))))
+               smp1 = 0.6 * max(smpmin(c), smp(c,max(1,jwt(c))))
                wh      = smp1 - zq(c,max(1,jwt(c)))
 
                !scs: original formulation
