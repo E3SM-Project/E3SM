@@ -845,6 +845,34 @@ _TESTS = {
         )
     },
 
+
+    #ndk: suggest to remove above eamxx suites and start with new suite names (in a diff PR), perhaps:
+    # e3sm_eamxx        (base, if only running one suite, use this one)
+    # e3sm_eamxx_small  (1 node, quick -- which is most of our current tests.  could be 2 or 4 nodes as well)
+    # e3sm_eamxx_mam4xx (or any other special purpose suite as we have been doing)
+    # e3sm_eamxx_large  (basically ne256, but throw in a couple of ne120 as can be very useful)
+    # e3sm_eamxx_extra_large (ne512/ne1024 -- not only do these require larger node counts, they write large files)
+    "e3sm_eamxx_large" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
+            "PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
+            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
+            "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",
+            "ERS_Lh6.ne256pg2_ne256pg2.F2010-SCREAMv1.eamxx-prod"
+            )
+    },
+
+    "e3sm_eamxx_extra_large" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Ld1.ne512pg2_ne512pg2.F2010-SCREAMv1",
+            "ERS_Lh6.ne512pg2_ne512pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS_Ld1.ne1024pg2_ne1024pg2.F2010-SCREAMv1"
+            )
+    },
+
     "e3sm_moab_dev" : {
         "time"  : "01:00:00",
         "tests" : (
