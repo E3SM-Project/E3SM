@@ -141,6 +141,7 @@ subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
   pver = pver_in
   pgwv = pgwv_in
   dc = dc_in
+  if (allocated(cref)) deallocate(cref)
   allocate(cref(-pgwv:pgwv), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   cref = cref_in
@@ -154,6 +155,7 @@ subroutine gw_common_init(pver_in, pgwv_in, dc_in, cref_in, &
   kwv = kwv_in
   gravit = gravit_in
   rair = rair_in
+  if (allocated(alpha)) deallocate(alpha)
   allocate(alpha(0:pver), stat=ierr, errmsg=errstring)
   if (ierr /= 0) return
   alpha = alpha_in
