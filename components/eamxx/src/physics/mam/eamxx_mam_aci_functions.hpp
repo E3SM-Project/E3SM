@@ -6,7 +6,7 @@
 #include <share/util/eamxx_common_physics_functions.hpp>
 
 namespace scream {
-
+ 
 namespace {
 
 void compute_w0_and_rho(haero::ThreadTeamPolicy team_policy,
