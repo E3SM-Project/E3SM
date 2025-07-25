@@ -188,7 +188,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   using RangePolicy     = Kokkos::RangePolicy<Field::device_t::execution_space>;
   Int max_ncols_per_bin = 0;
   Kokkos::parallel_reduce(RangePolicy(0, m_num_zonal_bins),
-      [&](int bin_i, Int &val) {
+      KOKKOS_LAMBDA(int bin_i, Int &val) {
         if (ncols_per_bin_view(bin_i) > max_ncols_per_bin)
           val = ncols_per_bin_view(bin_i);
       },
@@ -205,7 +205,7 @@ void ZonalAvgDiag::initialize_impl(const RunType /*run_type*/) {
   //   - for j>0, the entry is a column index in the i-th zonal bin
   auto bin_to_cols_view = m_bin_to_cols.get_view<Int **>();
   Kokkos::parallel_for("assign_columns_to_zonal_bins_" + field.name(),
-      RangePolicy(0, m_num_zonal_bins), [&] (int bin_i) {
+      RangePolicy(0, m_num_zonal_bins), KOKKOS_LAMBDA(int bin_i) {
         const Real lat_lower = sp(-90.0) + bin_i * lat_delta;
         const Real lat_upper = (bin_i < num_zonal_bins-1)
           ? lat_lower + lat_delta : sp(90.0 + 0.5*lat_delta);
