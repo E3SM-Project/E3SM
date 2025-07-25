@@ -69,7 +69,7 @@ module docn_comp_mod
   real(R8),parameter :: latice  = shr_const_latice      ! latent heat of fusion
   real(R8),parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
 
-  integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp  ! field indices
+  integer(IN)   :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp,kssh,kh2o ! field indices
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot,kfraz
   integer(IN)   :: k10uu           ! index for u10
@@ -90,14 +90,17 @@ module docn_comp_mod
 #endif
 
   !--------------------------------------------------------------------------
-  integer(IN)     , parameter :: ktrans = 8
-  character(12)   , parameter :: avifld(1:ktrans) = &
-       (/ "t           ","u           ","v           ","dhdx        ",&
-          "dhdy        ","s           ","h           ","qbot        "/)
-  character(12)   , parameter  :: avofld(1:ktrans) = &
-       (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
-          "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
+  integer(IN)     , parameter :: ktrans = 10
+  character(14)   , parameter :: avifld(1:ktrans) = &
+       (/ "t             ","u             ","v             ","dhdx          ",&
+          "dhdy          ","s             ","h             ","qbot          ",&
+          "ssh           ","frac_h2oocn   "/)
+  character(14)   , parameter  :: avofld(1:ktrans) = &
+       (/ "So_t          ","So_u          ","So_v          ","So_dhdx       ",&
+          "So_dhdy       ","So_s          ","strm_h        ","strm_qbot     ",&
+          "So_ssh        ","So_frac_h2oocn"/)
   character(len=*),parameter :: flds_strm = 'strm_h:strm_qbot:So_t'
+
   !--------------------------------------------------------------------------
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -227,6 +230,8 @@ CONTAINS
            datamode == 'SOM_AQUAP' .or. datamode == 'SST_AQUAP_CONSTANT' ) then
           ! Special logic for either prescribed or som aquaplanet - overwrite and
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
+       elseif (trim(datamode) == 'GTSM') then
+          call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, dmodel_domain_fracname_from_stream='frac')
        else
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar)
        end if
@@ -287,6 +292,8 @@ CONTAINS
     kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q') ! ocn freezing melting potential
     kfraz = mct_aVect_indexRA(o2x,'Fioo_frazil') ! ocn frazil
+    kssh  = mct_aVect_indexRa(o2x,'So_ssh', perrwith='quiet')
+    kh2o  = mct_aVect_indexRA(o2x,'So_frac_h2oocn', perrwith='quiet')
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
     call mct_aVect_zero(x2o)
@@ -643,6 +650,12 @@ CONTAINS
        o2x%rAttr(kq   ,n) = 0.0_R8
 ! make sure frazil is 0. MPAS-seaice will still use it.
        o2x%rAttr(kfraz,n) = 0.0_R8
+       if (kh2o /= 0) then
+         o2x%rAttr(kssh, n) = 0.0_R8
+       endif
+       if (kh2o /= 0) then
+         o2x%rAttr(kh2o, n) = 0.0_R8
+       endif
        if (kswp /= 0) then
           o2x%rAttr(kswp ,n) = swp
        end if
@@ -884,7 +897,33 @@ CONTAINS
              somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
           enddo
        endif   ! firstcall
-
+    case('GTSM')
+       lsize = mct_avect_lsize(o2x)
+       do n = 1,lsize
+          if (ksomask /= 0) then
+             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          end if
+          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
+          o2x%rAttr(ks   ,n) = ocnsalt
+          o2x%rAttr(ku   ,n) = 0.0_R8
+          o2x%rAttr(kv   ,n) = 0.0_R8
+          o2x%rAttr(kdhdx,n) = 0.0_R8
+          o2x%rAttr(kdhdy,n) = 0.0_R8
+          o2x%rAttr(kq   ,n) = 0.0_R8
+          if (kssh /= 0) then
+            o2x%rAttr(kssh, n) = o2x%rAttr(kssh, n)
+          endif
+          if (kh2o /= 0) then
+             if (o2x%rAttr(kh2o, n) < 0.0_R8) then
+                o2x%rAttr(kh2o, n) = 0.0_R8 ! Inundation cannot be negative
+             else
+                o2x%rAttr(kh2o, n) = o2x%rAttr(kh2o, n)
+             endif
+          endif
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          end if
+       enddo
     end select
 
     call t_stopf('docn_datamode')
