@@ -47,7 +47,7 @@ void AODVis::initialize_impl(const RunType /*run_type*/) {
   auto nondim = ekat::units::Units::nondimensional();
   const auto &grid_name =
       m_diagnostic_output.get_header().get_identifier().get_grid_name();
-  const auto var_fill_value = constants::DefaultFillValue<Real>().value;
+  const auto var_fill_value = Real(constants::DefaultFillValue<float>::value);
 
   m_mask_val = m_params.get<double>("mask_value", var_fill_value);
 
