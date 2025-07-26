@@ -9,6 +9,9 @@ on:
       - 'components/eamxx/**/*.cpp'
       - 'components/eamxx/**/*.hpp'
 
+  # Manual run
+  workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
@@ -33,10 +36,34 @@ jobs:
     # 3. the E3SM-Project fork of DoozyX/clang-format-lint-action@v0.20
     #    adds a Step summary to the workflow page, and, on failure, lists the
     #    files that fail the clang-format test
-    - uses: E3SM-Project/clang-format-lint-action@v1.0.0
+    - uses: E3SM-Project/clang-format-lint-action@v1.1.0
       with:
         source: ${{ steps.changed-files.outputs.all_changed_files }}
         exclude: ''
         extensions: 'hpp,cpp'
         clangFormatVersion: 14
         style: 'file:components/eamxx/.clang-format'
+        inplace: True
+        write_summary: False
+    - name: diff format changes
+      run: git diff >> "components/eamxx/clang-format-patch.diff"
+    - name: reset to re-run clang-format
+      run: git reset --hard HEAD
+    - uses: E3SM-Project/clang-format-lint-action@v1.1.0
+      with:
+        source: ${{ steps.changed-files.outputs.all_changed_files }}
+        exclude: ''
+        extensions: 'hpp,cpp'
+        clangFormatVersion: 14
+        style: 'file:components/eamxx/.clang-format'
+        inplace: False
+        write_summary: True
+    - name: upload diff patch
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: clang-format-patch_${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}.diff
+        path: |
+          components/eamxx/clang-format-patch.diff
+      env:
+        NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
