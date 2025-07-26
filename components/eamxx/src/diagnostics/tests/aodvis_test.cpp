@@ -31,7 +31,7 @@ TEST_CASE("aodvis") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
+  Real var_fill_value = Real(constants::DefaultFillValue<float>::value);
 
   Real some_limit = 0.0025;
 
