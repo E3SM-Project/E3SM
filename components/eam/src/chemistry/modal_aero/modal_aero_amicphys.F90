@@ -2633,15 +2633,6 @@ do_newnuc_if_block50: &
         logical,parameter ::  convergence_pt_trk = .true. !For tracking points where convergence failed, let the run proceed
 !       logical :: f_neg_vol_tmp
 
-        ! temporarily delcare some variables for coupling between VBS and MOSAIC
-#if ( defined VBS_SOA )
-        real(r8), dimension(1:max_gas, 1:max_mode) :: uptkaer
-        real(r8), dimension(1:max_gas) :: gas_diffus     ! gas diffusivity at current temp and pres (m2/s) 
-        real(r8), dimension(1:max_gas) :: gas_freepath   ! gas mean free path at current temp and pres (m)
-        real(r8), dimension(max_mode) :: uptkrate
-        real(r8) tmpa, tmpb
-#endif
-
 
         ! allocate the allocatable parts of mosaic_vars_aa
         allocate( mosaic_vars_aa%iter_mesa(nbin_a_max), stat=ierr )
@@ -2804,52 +2795,7 @@ do_newnuc_if_block50: &
         dens_dry_a(:)        = nan
         water_a_hyst(:)      = nan
         aH2O_a(:)            = nan
-        gam_ratio(:)         = nan
-
-#if ( defined VBS_SOA )
-        uptkaer(:,:) = 0.0_r8
-        uptkrate(:)  = 0.0_r8
-
-        ! calc gas uptake (mass transfer) rates
-        if (jtsubstep == 1) then
-
-           tmpa = pmid/1.013e5_r8
-           do igas = 1, ngas
-              gas_diffus(igas) = gas_diffusivity(temp, tmpa, mw_gas(igas), vol_molar_gas(igas))
-
-              tmpb = mean_molecular_speed(temp, mw_gas(igas))
-
-              gas_freepath(igas) = 3.0_r8 * gas_diffus(igas) / tmpb
-
-              call gas_aer_uptkrates_1box1gas( &
-                     accom_coef_gas(igas), gas_diffus(igas), gas_freepath(igas), &
-                     0.0_r8, ntot_amode, dgn_awet, alnsg_aer, uptkrate )
-
-              if (igas <= nsoag) then
-                 iaer = 1
-              else
-                 iaer = igas - nsoag + 1
-              endif
-
-              do imode = 1, ntot_amode
-                 if ( lmap_aer(iaer,imode) > 0 .or. &
-                      mode_aging_optaa(imode) > 0 ) then
-                    ! uptkrate is for number = 1 #/m3, so mult. by number conc. (#/m3)
-                    uptkaer(igas,imode) = uptkrate(imode) * (qnum_cur(imode) * aircon)
-                 else
-                    ! mode does not contain this species
-                    uptkaer(igas,imode) = 0.0_r8
-                 end if
-              end do
-           end do ! igas
-
-           do igas = 1, ngas
-           ! use cam5.1.00 uptake rates
-              if (igas <= nsoag   ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
-           end do ! igas
-
-        end if ! (jtsubstep == 1) 
-#endif        
+        gam_ratio(:)         = nan  
         
         !------------------------------------------------------------!
         !------------------------------------------------------------!
@@ -2981,24 +2927,6 @@ do_newnuc_if_block50: &
              dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
              uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn                   )
 
-! temporarily couple the SOA partition in this way, need to change later
-#if ( defined VBS_SOA )
-
-        call mam_soaexch_vbs_1subarea(                                   &
-                nstep,             lchnk,                                  &
-                i_in,              k_in,             jsub_in,              &
-                latndx,            lonndx,           lund,                 &
-                dtsubstep,                                                 &
-                temp,              pmid,             aircon,               &
-                n_mode,                                                    &
-                qgas_cur,          qgas_avg,                               &
-                qaer_cur,                                                  &
-                qnum_cur,                                                  &
-                qwtr_cur,                                                  &
-                uptkaer                                                    )
-
-#endif
-
         if (mosaic_vars_aa%flag_itr_kel) then
            misc_vars_aa_sub%max_kelvin_iter_1grid = misc_vars_aa_sub%max_kelvin_iter_1grid + 1.0_r8
         endif
@@ -3101,11 +3029,7 @@ do_newnuc_if_block50: &
            !5. CAM units are (mol/mol of air) and  Mosaic units are (nano mol/m3).
 
            qaer_cur(iaer_nh4, imode) = aer(inh4_a,  jtotal , imode) * nano_mult_cair_inv
-#if ( defined VBS_SOA )
-           ! temporarily not update soa from MOSAIC, should be removed later
-#else
            qaer_cur(iaer_soa, imode) = aer(ilim2_a, jtotal , imode) * nano_mult_cair_inv
-#endif
            qaer_cur(iaer_so4, imode) = aer(iso4_a,  jtotal , imode) * nano_mult_cair_inv
            qaer_cur(iaer_ncl, imode) = aer(ina_a,   jtotal , imode) * nano_mult_cair_inv
            if (iaer_cl  > 0) &
@@ -3132,22 +3056,30 @@ do_newnuc_if_block50: &
         !SOAG is stored in LIM2 gas species as of now
 
 #if ( defined VBS_SOA )
-!        qgas_cur(igas_soag1)   = gas(iaro2_g)  * nano_mult_cair_inv
-!        qgas_cur(igas_soag2)   = gas(ialk1_g)  * nano_mult_cair_inv
-!        qgas_cur(igas_soag3)   = gas(iole1_g)  * nano_mult_cair_inv
-!        qgas_cur(igas_soag4)   = gas(iapi1_g)  * nano_mult_cair_inv
-!        qgas_cur(igas_soag5)   = gas(iapi2_g)  * nano_mult_cair_inv
-!        qgas_cur(igas_soag6)   = gas(ilim1_g)  * nano_mult_cair_inv
-!        qgas_cur(igas_soag7)   = gas(ilim2_g)  * nano_mult_cair_inv
-
-! temporarily not update SOAG from MOSAIC
+        qgas_cur(igas_soag1)   = gas(iaro2_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag2)   = gas(ialk1_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag3)   = gas(iole1_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag4)   = gas(iapi1_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag5)   = gas(iapi2_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag6)   = gas(ilim1_g)  * nano_mult_cair_inv
+        qgas_cur(igas_soag7)   = gas(ilim2_g)  * nano_mult_cair_inv
 #else
         qgas_cur(igas_soa)   = gas(ilim2_g)  * nano_mult_cair_inv
 #endif
         qgas_cur(igas_h2so4) = gas(ih2so4_g) * nano_mult_cair_inv 
         qgas_cur(igas_nh3)   = gas(inh3_g)   * nano_mult_cair_inv 
 
+#if ( defined VBS_SOA )
+        qgas_avg(igas_soag1)   = gas_avg(iaro2_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag2)   = gas_avg(ialk1_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag3)   = gas_avg(iole1_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag4)   = gas_avg(iapi1_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag5)   = gas_avg(iapi2_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag6)   = gas_avg(ilim1_g)  * nano_mult_cair_inv
+        qgas_avg(igas_soag7)   = gas_avg(ilim2_g)  * nano_mult_cair_inv
+#else
         qgas_avg(igas_soa)   = gas_avg(ilim2_g)  * nano_mult_cair_inv
+#endif
         qgas_avg(igas_h2so4) = gas_avg(ih2so4_g) * nano_mult_cair_inv
         qgas_avg(igas_nh3)   = gas_avg(inh3_g)   * nano_mult_cair_inv
 
