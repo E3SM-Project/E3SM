@@ -261,13 +261,13 @@ contains
                nt=1,whead=whead, wdata=wdata)
           if (atm_present) then
              call seq_io_write(hist_file, mbaxid, 'doma',  &
-                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata,dims2do=alatlonid)
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata,dims2do=alatlonid,nt=1)
              call seq_io_write(hist_file, mbaxid, 'fraca',  &
-                  'afrac:ifrac:ofrac:lfrac:lfrin',whead=whead, wdata=wdata, dims2din=alatlonid)
+                  'afrac:ifrac:ofrac:lfrac:lfrin',whead=whead, wdata=wdata, nt=1,dims2din=alatlonid)
              call seq_io_write(hist_file, mbaxid, 'x2a', &
-                  trim(seq_flds_x2a_fields),whead=whead, wdata=wdata, dims2din=alatlonid)
+                  trim(seq_flds_x2a_fields),whead=whead, wdata=wdata, nt=1, dims2din=alatlonid)
              call seq_io_write(hist_file, mbaxid, 'a2x', &
-                  trim(seq_flds_a2x_fields),whead=whead, wdata=wdata, dims2din=alatlonid)
+                  trim(seq_flds_a2x_fields),whead=whead, wdata=wdata, nt=1,dims2din=alatlonid)
           endif
 
           if (lnd_present) then
@@ -275,92 +275,92 @@ contains
                 ! nx for land will be from global nb atmosphere
                 ierr = iMOAB_GetGlobalInfo(mbaxid, dummy, nx_lnd) ! max id for land will come from atm
                 call seq_io_write(hist_file, mblxid, 'doml', &
-                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid,nx=nx_lnd)
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid,nx=nx_lnd,nt=1)
                 call seq_io_write(hist_file, mblxid, 'fracl',  &
-                  'afrac:lfrac:lfrin', whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd)
+                  'afrac:lfrac:lfrin', whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd,nt=1)
                 call seq_io_write(hist_file, mblxid, 'l2x', &
-                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd)
+                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd,nt=1)
                 call seq_io_write(hist_file, mblxid, 'x2l',&
-                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd)
+                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd,nt=1)
              else if(samegrid_lr) then
                ! nx for land will be from global nb atmosphere
                ierr = iMOAB_GetGlobalInfo(mbrxid, dummy, nx_lnd) ! max id for land will come from rof
                 call seq_io_write(hist_file, mblxid, 'doml', &
-                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid, nx=nx_lnd)
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid, nx=nx_lnd,nt=1)
                 call seq_io_write(hist_file, mblxid, 'fracl',  &
-                  'afrac:lfrac:lfrin', whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd)
+                  'afrac:lfrac:lfrin', whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd,nt=1)
                 call seq_io_write(hist_file, mblxid, 'l2x', &
-                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd)
+                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd,nt=1)
                 call seq_io_write(hist_file, mblxid, 'x2l',&
-                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd)
+                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, dims2din=latlonid,nx=nx_lnd,nt=1)
              else
                 call seq_io_write(hist_file, mblxid, 'doml', &
-                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata,dims2do=latlonid)
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata,dims2do=latlonid,nt=1)
                 call seq_io_write(hist_file, mblxid, 'fracl',  &
-                    'afrac:lfrac:lfrin', whead=whead, wdata=wdata, dims2din=latlonid)
+                    'afrac:lfrac:lfrin', whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
                 call seq_io_write(hist_file, mblxid, 'l2x', &
-                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata, dims2din=latlonid)
+                  trim(seq_flds_l2x_fields),whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
                 call seq_io_write(hist_file, mblxid, 'x2l',&
-                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, dims2din=latlonid)
+                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
              endif
           endif
 
           if (rof_present) then
              call seq_io_write(hist_file, mbrxid, 'domr',  &
-                  trim(seq_flds_dom_fields),whead=whead, wdata=wdata, dims2do=latlonid)
+                  trim(seq_flds_dom_fields),whead=whead, wdata=wdata, dims2do=latlonid,nt=1)
              call seq_io_write(hist_file, mbrxid, 'fracr',  &
-                  'lfrac:lfrin:rfrac', whead=whead, wdata=wdata, dims2din=latlonid)
+                  'lfrac:lfrin:rfrac', whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
              call seq_io_write(hist_file, mbrxid,  'r2x', &
-                  trim(seq_flds_r2x_fields), whead=whead, wdata=wdata, dims2din=latlonid)
+                  trim(seq_flds_r2x_fields), whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
              call seq_io_write(hist_file, mbrxid, 'x2r',  &
-                  trim(seq_flds_x2r_fields), whead=whead, wdata=wdata, dims2din=latlonid)
+                  trim(seq_flds_x2r_fields), whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
           endif
 
           if (ocn_present) then
              call seq_io_write(hist_file, mboxid, 'domo',  &
-                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid)
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid,nt=1)
              call seq_io_write(hist_file, mboxid, 'fraco',  &
-                  'afrac:ifrac:ofrac:ifrad:ofrad', whead=whead, wdata=wdata, dims2din=latlonid)
+                  'afrac:ifrac:ofrac:ifrad:ofrad', whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
              call seq_io_write(hist_file, mboxid,  'o2x', &
-                  trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, dims2din=latlonid)
+                  trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
 
              ! instead of writing x2o, write x2oacc
              p_x2oacc_om => prep_ocn_get_x2oacc_om()
              call seq_io_write(hist_file, mboxid, 'x2oacc', &
                   trim(seq_flds_x2o_fields), &
-                  whead=whead, wdata=wdata, dims2din=latlonid,  matrix=p_x2oacc_om)
+                  whead=whead, wdata=wdata, dims2din=latlonid,  matrix=p_x2oacc_om,nt=1)
 
              x2oacc_ox_cnt => prep_ocn_get_x2oacc_om_cnt()
              call seq_io_write(hist_file, x2oacc_ox_cnt, 'x2oacc_ox_cnt',  &
                   whead=whead, wdata=wdata)
 
              call seq_io_write(hist_file, mbofxid, 'xaoo',  &
-                   trim(seq_flds_xao_fields), whead=whead, wdata=wdata, dims2din=latlonid)
+                   trim(seq_flds_xao_fields), whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
 
              call seq_io_write(hist_file, mbaxid, 'o2xa',  &
-                  trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, dims2din=alatlonid)
+                  trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, dims2din=alatlonid,nt=1)
 
              call seq_io_write(hist_file, mbaxid,  'xaoa',  &
-                  trim(seq_flds_xao_fields), whead=whead, wdata=wdata, dims2din=alatlonid)
+                  trim(seq_flds_xao_fields), whead=whead, wdata=wdata, dims2din=alatlonid,nt=1)
           endif
 
           if (rof_present .and. ocnrof_prognostic) then
              call seq_io_write(hist_file, mboxid, 'r2xo',  &
-                  trim(seq_flds_r2x_fields), whead=whead, wdata=wdata, dims2din=latlonid)
+                  trim(seq_flds_r2x_fields), whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
           endif
 
           if (ice_present) then
              call seq_io_write(hist_file, mbixid, 'domi',  &
-                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid)
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid,nt=1)
              call seq_io_write(hist_file, mbixid, 'fraci',  &
-                  'afrac:ifrac:ofrac', whead=whead, wdata=wdata, dims2din=latlonid)
+                  'afrac:ifrac:ofrac', whead=whead, wdata=wdata, dims2din=latlonid,nt=1)
              numpts = mbGetnCells(mbixid)
              allocate(mask(numpts))
              call mbGetCellTagVals(mbixid, 'mask',mask,numpts)
              call seq_io_write(hist_file, mbixid, 'i2x', &
-                  trim(seq_flds_i2x_fields), whead=whead, wdata=wdata, dims2din=latlonid,mask=mask)
+                  trim(seq_flds_i2x_fields), whead=whead, wdata=wdata, dims2din=latlonid,mask=mask,nt=1)
              call seq_io_write(hist_file, mbixid, 'x2i', &
-                  trim(seq_flds_x2i_fields), whead=whead, wdata=wdata, dims2din=latlonid,mask=mask)
+                  trim(seq_flds_x2i_fields), whead=whead, wdata=wdata, dims2din=latlonid,mask=mask,nt=1)
              deallocate(mask)
           endif
 

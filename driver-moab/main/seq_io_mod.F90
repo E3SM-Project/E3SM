@@ -1625,7 +1625,7 @@ contains
   !    2025-07-20 - Cursor - initial documentation
   !
   ! !INTERFACE: ------------------------------------------------------------------
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, file_ind, dims2din, dims2do, mask )
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, nt, file_ind, dims2din, dims2do, mask )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
@@ -1642,6 +1642,7 @@ contains
     logical,optional,intent(in) :: wdata         ! write data
     real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
     integer, optional,intent(in):: nx
+    integer, optional,intent(in):: nt
     integer,optional,intent(in) :: file_ind
     integer,optional,intent(in) :: dims2din(2)   ! dim ids to output
     integer,optional,intent(out):: dims2do(2)    ! dim ids for output
@@ -1661,10 +1662,13 @@ contains
     character(CL)    :: sname       ! standard name
     character(CL)  :: lpre
     type(mct_list) :: temp_list
+    integer(kind=Pio_Offset_Kind) :: frame
     integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) ::tagname, field
-    integer(in)        :: dimid2(2)
+    integer(in),target  :: dimid2(2)
+    integer(in),target  :: dimid3(3)
+    integer(in),pointer :: dimid(:)
     integer(in)              :: dummy, ent_type, ierr
     real(r8)                 :: lfillvalue
     integer, allocatable         :: indx(:) !  this will be ordered
@@ -1681,7 +1685,10 @@ contains
     lfillvalue = fillvalue 
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
-
+    frame = -1
+    if (present(nt)) then
+       frame = nt
+    endif
     if (.not.lwhead .and. .not.lwdata) then
        ! should we write a warning?
        return
@@ -1725,6 +1732,15 @@ contains
           dims2do(1)=dimid2(1)
           dims2do(2)=dimid2(2)
        endif
+
+       if (present(nt)) then
+          dimid3(1:2) = dimid2
+          rcode = pio_inq_dimid(cpl_io_file(lfile_ind),'time',dimid3(3))
+          dimid => dimid3
+       else
+          dimid => dimid2
+       endif
+
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
@@ -1736,7 +1752,7 @@ contains
             !     rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid1,varid)
             !     rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
             !  else
-             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid2,varid)
+             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
              !end if
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
@@ -1784,7 +1800,7 @@ contains
           if (trim(field) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(field)
              rcode = pio_inq_varid(cpl_io_file(lfile_ind),trim(name1),varid)
-             !call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
+             call pio_setframe(cpl_io_file(lfile_ind),varid,frame)
              if (present(matrix)) then
                do ix = 1, ns
                  data1(ix) = matrix(ix, index_list) ! 
