@@ -216,7 +216,12 @@ void VertContractDiag::compute_diagnostic_impl() {
   }
 
   // call the vert_contraction impl that will take care of everything
-  vert_contraction<Real>(d, f, m_weighting);
+  // if f has a mask and we are averaging, need to call the avg specialization
+  if (m_contract_method == "avg" && f.get_header().has_extra_data("mask_data")) {
+    vert_contraction<Real,1>(d, f, m_weighting);
+  } else {
+    vert_contraction<Real,0>(d, f, m_weighting);
+  }
 }
 
 } // namespace scream

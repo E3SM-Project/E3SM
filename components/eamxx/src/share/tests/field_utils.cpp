@@ -212,6 +212,30 @@ TEST_CASE("utils") {
     Real wavg = sp(sum_n_sq(dim0)) / sp(sum_n(dim0) * sum_n(dim0));
     REQUIRE_THAT(v(), Catch::Matchers::WithinRel(wavg, tol));
 
+    // Repeat but with masked values
+    result = fieldsc.clone();
+    // inject a mask as the last entry
+    auto field00_masked = field00.clone();
+    auto mask_of_field00 = field00_masked.clone();
+    mask_of_field00.deep_copy(sp(1.0));
+    mask_of_field00.sync_to_host();
+    auto mask = mask_of_field00.get_view<Real *, Host>();
+    mask(dim0 - 1) = sp(0.0);
+    mask_of_field00.sync_to_dev();
+    field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
+    field00_masked.sync_to_dev();
+    horiz_contraction<Real>(result, field00_masked, field00);
+    result.sync_to_host();
+    v = result.get_view<Real, Host>();
+    Real wavg_sum1 = 0;
+    Real wavg_sum2 = 0;
+    auto wavg_v00 = field00.get_view<const Real *, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      wavg_sum1 += mask(i) * wavg_v00(i) * wavg_v00(i);
+      wavg_sum2 += mask(i) * wavg_v00(i);
+    }
+    REQUIRE_THAT(v(), Catch::Matchers::WithinRel(wavg_sum1/wavg_sum2, tol));
+
     // Test higher-order cases
     result = field_z.clone();
     horiz_contraction<Real>(result, field10, field00);
@@ -350,6 +374,30 @@ TEST_CASE("utils") {
       // integers squared (analytically known)
       Real havg = sp(sum_n_sq(dim2)) / sp(sum_n(dim2) * sum_n(dim2));
       REQUIRE_THAT(v(), Catch::Matchers::WithinRel(havg, tol));
+
+      // Repeat but with masked values
+      result = fieldsc.clone();
+      // inject a mask as the last entry
+      auto field00_masked = field00.clone();
+      auto mask_of_field00 = field00_masked.clone();
+      mask_of_field00.deep_copy(sp(1.0));
+      mask_of_field00.sync_to_host();
+      auto mask = mask_of_field00.get_view<Real *, Host>();
+      mask(dim0 - 1) = sp(0.0);
+      mask_of_field00.sync_to_dev();
+      field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
+      field00_masked.sync_to_dev();
+      vert_contraction<Real,1>(result, field00_masked, field00);
+      result.sync_to_host();
+      v = result.get_view<Real, Host>();
+      Real wavg_sum1 = sp(0.0);
+      Real wavg_sum2 = sp(0.0);
+      auto wavg_v00 = field00.get_view<const Real *, Host>();
+      for(int i = 0; i < dim2; ++i) {
+        wavg_sum1 += mask(i) * wavg_v00(i) * wavg_v00(i);
+        wavg_sum2 += mask(i) * wavg_v00(i);
+      }
+      REQUIRE_THAT(v(), Catch::Matchers::WithinRel(wavg_sum1/wavg_sum2, tol));
 
       // Test higher-order cases
       result = field_x.clone();
