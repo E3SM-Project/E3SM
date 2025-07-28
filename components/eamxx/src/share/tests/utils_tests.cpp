@@ -7,6 +7,16 @@
 #include "share/util/eamxx_setup_random_test.hpp"
 #include "share/eamxx_config.hpp"
 
+TEST_CASE("fill_value") {
+  using namespace scream::constants;
+
+  // Ensure we have the SAME numerical value for both float and double
+  auto fv_d = fill_value<double>;
+  auto fv_f = fill_value<float>;
+
+  REQUIRE (fv_d==fv_f);
+}
+
 TEST_CASE("contiguous_superset") {
   using namespace scream;
 

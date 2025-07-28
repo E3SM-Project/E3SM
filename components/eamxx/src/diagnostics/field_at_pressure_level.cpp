@@ -85,7 +85,7 @@ initialize_impl (const RunType /*run_type*/)
   // Add a field representing the mask as extra data to the diagnostic field.
   auto nondim = ekat::units::Units::nondimensional();
   const auto& gname = fid.get_grid_name();
-  m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
+  m_mask_val = m_params.get<double>("mask_value",Real(constants::fill_value<double>));
 
 
   std::string mask_name = m_diag_name + " mask";

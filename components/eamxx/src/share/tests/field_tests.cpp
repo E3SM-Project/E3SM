@@ -968,6 +968,7 @@ TEST_CASE ("update") {
       // Same, but we discard current content of f3
       f3.update(f_int,2,0);
       REQUIRE (views_are_equal(f3,f2));
+
     }
   }
 }
