@@ -81,15 +81,17 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_qc, &
                                   state_omega, state_pblh, &
-                                  output_prec, output_tend_s, output_tend_q, &
+                                  output_prec, output_cape, &
+                                  output_tend_s, output_tend_q, &
                                   output_prec_flux, output_mass_flux ) bind(C)
+
   use zm_aero_type,          only: zm_aero_t
   use zm_microphysics_state, only: zm_microp_st
   use zm_conv,               only: zm_convr
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int),               value, intent(in ) :: ncol
-  logical(kind=c_real),              value, intent(in ) :: dtime
+  real(kind=c_real),                 value, intent(in ) :: dtime
   logical(kind=c_bool),              value, intent(in ) :: is_first_step
   real(kind=c_real), dimension(pcols),      intent(in ) :: state_phis        ! input state surface geopotential height
   real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_p_mid       ! input state mid-point pressure
@@ -101,6 +103,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real), dimension(pcols,pver), intent(in ) :: state_omega       ! input state vertical pressure velocity
   real(kind=c_real), dimension(pcols),      intent(in ) :: state_pblh        ! input planetary boundary layer height
   real(kind=c_real), dimension(pcols),      intent(out) :: output_prec       ! output total precipitation            (prec)
+  real(kind=c_real), dimension(pcols),      intent(out) :: output_cape       ! output convective avail. pot. energy  (cape)
   real(kind=c_real), dimension(pcols,pver), intent(out) :: output_tend_s     ! output tendency of dry static energy  (ptend_loc_s)
   real(kind=c_real), dimension(pcols,pver), intent(out) :: output_tend_q     ! output tendency of water vapor        (ptend_loc_q)
   real(kind=c_real), dimension(pcols,pverp),intent(out) :: output_prec_flux  ! output precip flux at each mid-levels (pflx)
@@ -108,18 +111,18 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   !-----------------------------------------------------------------------------
   ! Local variables
-  integer :: i,j,k
+  integer :: i,k
 
   ! arguments for zm_convr - order consistent with current interface
-  integer :: lchnk = 0
+  ! integer :: lchnk = 0
 
-  integer,  dimension(pcols)      :: jctop        ! output top-of-deep-convection indices
-  integer,  dimension(pcols)      :: jcbot        ! output bot-of-deep-convection indices
+  ! integer,  dimension(pcols)      :: jctop        ! output top-of-deep-convection indices
+  ! integer,  dimension(pcols)      :: jcbot        ! output bot-of-deep-convection indices
   ! real(r8), dimension(pcols,pver) :: state_zm     ! input state altitude at mid-levels
   ! real(r8), dimension(pcols,pverp):: state_zi     ! input state altitude at interfaces
-  real(r8), dimension(pcols,pverp):: mcon         ! convective mass flux--m sub c
-  real(r8), dimension(pcols,pver) :: cme          ! condensation - evaporation
-  real(r8), dimension(pcols)      :: cape         ! convective available potential energy
+  ! real(r8), dimension(pcols,pverp):: mcon         ! convective mass flux--m sub c
+  ! real(r8), dimension(pcols,pver) :: cme          ! condensation - evaporation
+  ! real(r8), dimension(pcols)      :: cape         ! convective available potential energy
   ! real(r8), dimension(pcols)      :: tpert        ! thermal temperature excess
   ! real(r8), dimension(pcols,pver) :: dlf          ! detrained convective cloud water mixing ratio
   ! real(r8), dimension(pcols,pverp):: pflx         ! precip flux at each level
@@ -166,11 +169,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! assign fake values for checking data made it back to C++
   do i = 1,ncol
     output_prec(i) = 1
+    output_cape(i) = 2
     do k = 1,pver
       output_tend_s(i,k) = 10000 + i*100.0 + k*1.0
       output_tend_q(i,k) = 20000 + i*100.0 + k*1.0
-      ! output_tend_s(i,k) = 2.0
-      ! output_tend_q(i,k) = 3.0
     end do
   end do
   !-----------------------------------------------------------------------------

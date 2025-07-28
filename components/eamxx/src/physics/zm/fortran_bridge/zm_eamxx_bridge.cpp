@@ -27,10 +27,12 @@ extern "C" {
                               Real *state_omega,
                         const Real *state_pblh,
                               Real *output_prec,
+                              Real *output_cape,
                               Real *output_tend_s,
                               Real *output_tend_q,
                               Real *output_prec_flux,
-                              Real *output_mass_flux );
+                              Real *output_mass_flux
+                            );
 } // extern "C" : end _c decls
 
 namespace scream {
@@ -42,8 +44,8 @@ void zm_eamxx_bridge_init( Int pcol, Int pver ){
 
 void zm_eamxx_bridge_run( Int pver,
                           ZMF::zm_input_state& zm_input,
-                          ZMF::zm_output_tend& zm_output,
-                          ZMF::zm_buffer_data& zm_buff ){
+                          ZMF::zm_output_tend& zm_output
+                        ){
   //----------------------------------------------------------------------------
   // auto s_p = ekat::scalarize( zm_input.p_mid );
   // auto s_T = ekat::scalarize( zm_input.T_mid );
@@ -56,6 +58,23 @@ void zm_eamxx_bridge_run( Int pver,
   //----------------------------------------------------------------------------
   zm_input.transpose<ekat::TransposeDirection::c2f>(pver);
   zm_output.transpose<ekat::TransposeDirection::c2f>(pver);
+
+  for (int i=0; i<zm_output.ncol; ++i) {
+    for (int k=0; k<pver; ++k) {
+      std::cout << "zm_eamxx_bridge_run (pre fortran) - ("<<i<<","<<k<<") - "
+      << "precip "    << " / "
+      <<"cape "       << " / "
+      <<"f_tend_s "   << " / "
+      <<"f_tend_q "
+      <<" : "
+      << zm_output.precip(i)      << " / "
+      << zm_output.cape(i)        << " / "
+      << zm_output.f_tend_s(i,k)  << " / "
+      << zm_output.f_tend_q(i,k)
+      << std::endl;
+    }
+  }
+
   zm_eamxx_bridge_run_c( zm_input.ncol,
                          zm_input.dtime,
                          zm_input.is_first_step,
@@ -69,27 +88,33 @@ void zm_eamxx_bridge_run( Int pver,
                          zm_input.f_omega       .data(),
                          zm_input.pblh          .data(),
                          zm_output.precip       .data(),
+                         zm_output.cape         .data(),
                          zm_output.f_tend_s     .data(),
                          zm_output.f_tend_q     .data(),
                          zm_output.f_prec_flux  .data(),
-                         zm_output.f_mass_flux  .data() );
+                         zm_output.f_mass_flux  .data()
+                        );
 
   for (int i=0; i<zm_output.ncol; ++i) {
+    // std::cout << "zm_eamxx_bridge_run (post fortran) - ("<<i<<") - "<<"precip   : "<< zm_output.precip(i)     << std::endl;
+    // std::cout << "zm_eamxx_bridge_run (post fortran) - ("<<i<<") - "<<"cape     : "<< zm_output.cape(i)       << std::endl;
     for (int k=0; k<pver; ++k) {
-      std::cout << "zm_eamxx_bridge_run - ("<<i<<","<<k<<") "
-      // << "precip / "
-      << "f_tend_s / "
-      << "f_tend_q / "
-      <<" : "
-      // << zm_output.precip(i) << " / " 
-      << zm_output.f_tend_s(i,k) << " / " 
-      << zm_output.f_tend_q(i,k) << " / " 
-      // << zm_buff.precip(i) << " / " 
-      << zm_buff.tend_s(i,k/16)[k%16] << " / " 
-      << zm_buff.tend_q(i,k/16)[k%16] << " / " 
-      << zm_buff.f_tend_s(i,k) << " / " 
-      << zm_buff.f_tend_q(i,k) << " / " 
-      << std::endl;
+      // std::cout << "zm_eamxx_bridge_run (post fortran) - ("<<i<<","<<k<<") - "<< std::endl;
+
+      // std::cout << "zm_eamxx_bridge_run (post fortran) - ("<<i<<","<<k<<") - "
+      // <<"precip "     << " / "
+      // <<"cape "       << " / "
+      // <<"f_tend_s "   << " / "
+      // <<"f_tend_q "
+      // <<" : "
+      // << zm_output.precip(i)      << " / "
+      // << zm_output.cape(i)        << " / "
+      // << zm_output.f_tend_s(i,k)  << " / "
+      // << zm_output.f_tend_q(i,k)
+      // << std::endl;
+
+      std::cout << "zm_eamxx_bridge_run (post fortran) - ("<<i<<","<<k<<") - "<<"f_tend_s : "<< zm_output.f_tend_s(i,k) << std::endl;
+      std::cout << "zm_eamxx_bridge_run (post fortran) - ("<<i<<","<<k<<") - "<<"f_tend_q : "<< zm_output.f_tend_q(i,k) << std::endl;
     }
   }
 
