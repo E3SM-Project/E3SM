@@ -12,7 +12,7 @@
 #include "share/util/eamxx_timing.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
-#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
+#include "share/property_checks/mass_and_energy_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -420,13 +420,12 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 {
   // Query m_atm_process_group if any process enables the conservation check,
   // and if not, return before creating and passing the check.
-  if (not m_atm_process_group->are_column_conservation_checks_enabled()) {
+  if (not m_atm_process_group->are_conservation_checks_enabled()) {
     return;
   }
 
   auto phys_grid = m_grids_manager->get_grid("physics");
   const auto phys_grid_name = phys_grid->name();
-
   // Get fields needed to run the mass and energy conservation checks. Require that
   // all fields exist.
   EKAT_REQUIRE_MSG (
@@ -467,7 +466,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const auto heat_flux      = m_field_mgr->get_field("heat_flux",      phys_grid_name);
 
   auto conservation_check =
-    std::make_shared<MassAndEnergyColumnConservationCheck>(phys_grid,
+    std::make_shared<MassAndEnergyConservationCheck>(m_atm_comm,phys_grid,
                                                            mass_error_tol, energy_error_tol,
                                                            pseudo_density, ps, phis,
                                                            horiz_winds, T_mid, qv,

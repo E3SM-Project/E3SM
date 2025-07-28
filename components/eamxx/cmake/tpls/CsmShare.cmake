@@ -35,6 +35,8 @@ macro (CreateCsmShareTarget)
         ${SCREAM_BASE_DIR}/../../share/util/shr_orb_mod.F90
         ${SCREAM_BASE_DIR}/../../share/util/shr_strconvert_mod.F90
         ${SCREAM_BASE_DIR}/../../share/util/shr_sys_mod.F90
+        ${SCREAM_BASE_DIR}/../../share/util/shr_reprosum_mod.F90
+        ${SCREAM_BASE_DIR}/../../share/util/shr_reprosumx86.c
     )
     # Process genf90 template files. This adds a custom command (and hence target) for each f90 source
     # that needs to be built from the genf90 template files listed in GENF90_SOURCE.
@@ -57,7 +59,8 @@ macro (CreateCsmShareTarget)
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:GNU>>:CPRGNU>
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Intel>>:CPRINTEL>
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Clang>>:CPRCRAY>
-      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:clang>>:CPRCRAY>)
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:clang>>:CPRCRAY>
+      EAMXX_STANDALONE)
 
 
     if (${CMAKE_SYSTEM} MATCHES "Linux")

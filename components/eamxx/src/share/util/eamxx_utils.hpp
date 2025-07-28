@@ -443,6 +443,10 @@ struct DefaultMetadata {
   }
 };
 
+extern "C"
+void eamxx_repro_sum(const Real* send, Real* recv,
+                       Int nlocal, Int nfld, Int fcomm);
+
 } // namespace scream
 
 #endif // SCREAM_UTILS_HPP
