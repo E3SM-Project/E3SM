@@ -1,7 +1,7 @@
 include(ScreamUtils)
 
-function (createDiagTest test_name test_srcs)
-  CreateUnitTest(${test_name} "${test_srcs}"
+function (CreateDiagTest test_name test_srcs)
+  CreateUnitTest(${test_name} ${test_srcs} ${ARGN}
     LIBS diagnostics physics_share
     LABELS diagnostics)
 endfunction ()
@@ -79,4 +79,4 @@ CreateDiagTest(horiz_avg "horiz_avg_test.cpp")
 CreateDiagTest(vert_contract "vert_contract_test.cpp")
 
 # Test zonal averaging
-CreateDiagTest(zonal_avg "zonal_avg_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+CreateDiagTest(zonal_avg zonal_avg_test.cpp MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
