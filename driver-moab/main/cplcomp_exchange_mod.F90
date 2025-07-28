@@ -1401,7 +1401,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:frac:mask'//C_NULL_CHAR
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='afm')
          endif 
 
@@ -1750,7 +1750,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:frac:mask'//C_NULL_CHAR
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, MPSIID, mbixid, 0, tagname)
          endif 
 #ifdef MOABDEBUG
