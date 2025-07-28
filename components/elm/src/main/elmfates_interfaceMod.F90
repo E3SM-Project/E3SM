@@ -1237,6 +1237,9 @@ contains
          end if
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
+         
+         ! Decomposition fluxes
+         call this%fates(nc)%UpdateBCIn(s)
 
          ! Soil water
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
@@ -3966,7 +3969,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
 
- subroutine UpdateBCIn(this, nc)
+ subroutine UpdateBCIn(this, s)
 
    ! !DESCRIPTION:
    ! ---------------------------------------------------------------------------------
