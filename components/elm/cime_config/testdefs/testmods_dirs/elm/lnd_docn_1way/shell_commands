@@ -1,8 +1,10 @@
 ./xmlchange DATM_MODE=CLMGSWP3v1
 ./xmlchange LND_DOMAIN_FILE=domain_global_coastline_merit_90m.nc
 ./xmlchange ATM_DOMAIN_FILE=domain_global_coastline_merit_90m.nc
-./xmlchange LND_DOMAIN_PATH=/compyfs/xudo627/lnd-docn-1way/inputdata
-./xmlchange ATM_DOMAIN_PATH=/compyfs/xudo627/lnd-docn-1way/inputdata
+./xmlchange LND_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains"
+./xmlchange ATM_DOMAIN_PATH="\$DIN_LOC_ROOT/share/domains"
+
+./xmlchange DOCN_GTSM_FILENAME=domain_global_coastline_merit_90m.nc
 
 ./xmlchange --file env_run.xml --id SSTICE_YEAR_START     --val 1980
 ./xmlchange --file env_run.xml --id SSTICE_YEAR_END       --val 1981
