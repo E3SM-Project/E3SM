@@ -328,10 +328,10 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
 
   if (is_comm_avg_masked) {
     // make sure f_tmp is allocated correctly
-    EKAT_REQUIRE_MSG(f_tmp.data_type() == f_in.data_type(),
-                     "Error! Temporary field must have the same data type as input fields.");
     EKAT_REQUIRE_MSG(f_tmp.is_allocated(),
                      "Error! Temporary field must be allocated.");
+    EKAT_REQUIRE_MSG(f_tmp.data_type() == f_in.data_type(),
+                     "Error! Temporary field must have the same data type as input fields.");
     EKAT_REQUIRE_MSG(f_tmp.get_header().get_identifier().get_layout() == l_out,
                      "Error! Temporary field must have the same layout as output field.");
   }

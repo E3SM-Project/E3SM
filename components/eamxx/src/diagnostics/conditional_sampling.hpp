@@ -31,6 +31,8 @@ public:
 protected:
   void initialize_impl(const RunType /*run_type*/);
 
+  Real m_mask_val;
+
   std::string m_diag_name;    // X_where_Y_comp_VAL
   std::string m_input_f;      // X
   std::string m_condition_f;  // Y

@@ -35,9 +35,10 @@ int get_operator_code(const std::string& op) {
 void apply_conditional_sampling_1d(
     const Field &output_field, const Field &input_field, const Field &condition_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = constants::DefaultFillValue<Real>::value) {
+    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
 
   const auto output_v    = output_field.get_view<Real *>();
+  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
   const auto input_v     = input_field.get_view<const Real *>();
   const auto condition_v = condition_field.get_view<const Real *>();
 
@@ -50,8 +51,10 @@ void apply_conditional_sampling_1d(
       "ConditionalSampling1D", Kokkos::RangePolicy<>(0, n_elements), KOKKOS_LAMBDA(const int &idx) {
         if (evaluate_condition(condition_v(idx), op_code, condition_val)) {
           output_v(idx) = input_v(idx);
+          mask_v(idx) = 1;
         } else {
           output_v(idx) = fill_value;
+          mask_v(idx) = 0;
         }
       });
 }
@@ -60,9 +63,10 @@ void apply_conditional_sampling_1d(
 void apply_conditional_sampling_2d(
     const Field &output_field, const Field &input_field, const Field &condition_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = constants::DefaultFillValue<Real>::value) {
+    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
 
   const auto output_v    = output_field.get_view<Real **>();
+  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
   const auto input_v     = input_field.get_view<const Real **>();
   const auto condition_v = condition_field.get_view<const Real **>();
 
@@ -80,8 +84,10 @@ void apply_conditional_sampling_2d(
 
         if (evaluate_condition(condition_v(icol, ilev), op_code, condition_val)) {
           output_v(icol, ilev) = input_v(icol, ilev);
+          mask_v(icol, ilev) = 1;
         } else {
           output_v(icol, ilev) = fill_value;
+          mask_v(icol, ilev) = 0;
         }
       });
 }
@@ -90,9 +96,10 @@ void apply_conditional_sampling_2d(
 void apply_conditional_sampling_1d_lev(
     const Field &output_field, const Field &input_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = constants::DefaultFillValue<Real>::value) {
+    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
 
   const auto output_v = output_field.get_view<Real *>();
+  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
   const auto input_v  = input_field.get_view<const Real *>();
 
   const int n_elements = output_field.get_header().get_identifier().get_layout().dims()[0];
@@ -108,8 +115,10 @@ void apply_conditional_sampling_1d_lev(
         
         if (evaluate_condition(level_idx, op_code, condition_val)) {
           output_v(idx) = input_v(idx);
+          mask_v(idx) = 1;
         } else {
           output_v(idx) = fill_value;
+          mask_v(idx) = 0;
         }
       });
 }
@@ -118,9 +127,10 @@ void apply_conditional_sampling_1d_lev(
 void apply_conditional_sampling_2d_lev(
     const Field &output_field, const Field &input_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = constants::DefaultFillValue<Real>::value) {
+    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
 
   const auto output_v = output_field.get_view<Real **>();
+  const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
   const auto input_v  = input_field.get_view<const Real **>();
 
   const int ncols = output_field.get_header().get_identifier().get_layout().dims()[0];
@@ -140,8 +150,10 @@ void apply_conditional_sampling_2d_lev(
 
         if (evaluate_condition(level_idx, op_code, condition_val)) {
           output_v(icol, ilev) = input_v(icol, ilev);
+          mask_v(icol, ilev) = 1;
         } else {
           output_v(icol, ilev) = fill_value;
+          mask_v(icol, ilev) = 0;
         }
       });
 }
@@ -183,6 +195,16 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
 
+  FieldIdentifier mask_fid(m_diag_name + "_mask", ifid.get_layout().clone(), ifid.get_units(), ifid.get_grid_name());
+  Field diag_mask(mask_fid);
+  diag_mask.allocate_view();
+
+  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
+
+  const auto var_fill_value = Real(constants::DefaultFillValue<float>::value);
+  m_mask_val = m_params.get<double>("mask_value", var_fill_value);
+
   // Special case: if condition field is "lev", we don't need to check layout compatibility
   // since "lev" is geometric information, not an actual field
   if (m_condition_f == "lev") {
@@ -213,16 +235,15 @@ void ConditionalSampling::compute_diagnostic_impl() {
                    "Valid operators are: eq, ==, ne, !=, gt, >, ge, >=, lt, <, le, <=\n");
 
   // Get the fill value from constants
-  const Real fill_value = constants::DefaultFillValue<Real>::value;
+  const Real fill_value = m_mask_val;
 
   // Determine field layout and apply appropriate conditional sampling
   const auto &layout = f.get_header().get_identifier().get_layout();
   const int rank     = layout.rank();
 
-  // Check if we're doing level-based conditional sampling
   if (rank > 2) {
       // no support for now, contact devs
-      EKAT_ERROR_MSG("Error! ConditionalSampling with 'lev' only supports 1D or 2D field layouts.\n"
+      EKAT_ERROR_MSG("Error! ConditionalSampling only supports 1D or 2D field layouts.\n"
                      " - field layout: " + layout.to_string() + "\n"
                      " - field rank: " + std::to_string(rank) + "\n");
   }
