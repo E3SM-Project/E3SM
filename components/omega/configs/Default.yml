@@ -59,6 +59,20 @@ Omega:
       DRhoDT: -0.2
       DRhoDS: 0.8
       RhoT0S0: 1000.0
+  VertMix:
+    VertMixType: PP
+    Background:
+      Diffusivity: 1.0e-5
+      Viscosity: 1.0e-4
+    Convective:
+      Enable: true
+      Diffusivity: 1.0
+      TriggerBVF: 0.0
+    Shear:
+      Enable: true
+      NuZero: 0.005
+      Alpha: 5.0
+      Exponent: 2.0
   IOStreams:
     InitialVertCoord:
       UsePointerFile: false
