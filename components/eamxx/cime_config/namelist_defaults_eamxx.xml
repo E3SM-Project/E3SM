@@ -193,6 +193,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <moisture>moist</moisture>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <enable_energy_fixer>true</enable_energy_fixer>
+      <!-- true means 2 more calls to AllReduce after dycore -->
+      <enable_energy_fixer_debug_info>false</enable_energy_fixer_debug_info>
       <bfb_hash type="integer">18</bfb_hash>
     </homme>
 
