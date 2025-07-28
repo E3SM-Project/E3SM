@@ -13,4 +13,5 @@ my @groups = qw(velocity_solver
                 subglacial_hydro
                 am_globalstats
                 am_regionalstats
+                am_fluxgates
                 );
