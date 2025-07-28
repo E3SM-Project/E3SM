@@ -138,6 +138,7 @@ module cime_comp_mod
   use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   use seq_flux_mct, only: seq_flux_atmocn_moab ! will set the ao fluxes on atm or ocn coupler mesh
+  use seq_flux_mct, only: seq_flux_atmocn_moab_sw_only
 
   ! domain fraction routines
   use seq_frac_mct, only : seq_frac_init, seq_frac_set
@@ -4031,6 +4032,7 @@ contains
        xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
        a2x_ox => prep_ocn_get_a2x_ox()
        call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+       call seq_flux_atmocn_moab_sw_only(ocn(eoi), xao_ox(exi))
     enddo
     call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
 

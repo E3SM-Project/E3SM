@@ -41,6 +41,7 @@ module seq_flux_mct
 
   public seq_flux_atmocn_mct
   public seq_flux_atmocn_moab
+  public seq_flux_atmocn_moab_sw_only
 
   public seq_flux_atmocnexch_mct
 
@@ -1901,6 +1902,81 @@ contains
 
 
   end subroutine seq_flux_atmocn_moab
+  !===============================================================================
+
+  subroutine seq_flux_atmocn_moab_sw_only(comp, xao)
+     type(component_type), intent(inout) :: comp
+     type(mct_aVect)       , intent(inout)      :: xao
+
+     real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
+     real(r8) , allocatable :: swdn_values(:) ! shortwave downward values
+     real(r8) , allocatable :: swup_values(:) ! shortwave upward values
+     integer  appId ! moab app id
+     integer n
+     integer nloc
+     integer :: index_swdn, index_swup
+
+     ! moab
+     integer                  :: ent_type, ierr, arrSize
+     character(CXX)           :: tagname
+
+     character(*),parameter   :: subName =   '(seq_flux_atmocn_moab_sw_only) '
+
+     if (comp%oneletterid == 'a' ) then
+        appId = mbaxid ! atm on coupler
+        local_xao_mct => prep_aoflux_get_xao_amct()
+     else if (comp%oneletterid == 'o') then
+        appId = mbofxid  ! atm phys
+        local_xao_mct => prep_aoflux_get_xao_omct()
+     else
+        call mct_die(subName,'call for either ocean or atm',1)
+     endif
+
+     ! Get indices for swdn and swup fields
+     index_swdn = mct_aVect_indexRA(xao,'Faox_swdn')
+     index_swup = mct_aVect_indexRA(xao,'Faox_swup')
+
+     ! Get local size
+     nloc = mct_avect_lsize(xao)
+
+     ! Allocate arrays for swdn and swup values
+     allocate(swdn_values(nloc))
+     allocate(swup_values(nloc))
+
+     ! Update local_xao_mct with the new swdn and swup values
+     do n = 1, nloc
+        local_xao_mct(n, index_swdn) = xao%rAttr(index_swdn, n)
+        local_xao_mct(n, index_swup) = xao%rAttr(index_swup, n)
+     enddo
+
+     do n = 1, nloc
+        swdn_values(n) = local_xao_mct(n, index_swdn)
+        swup_values(n) = local_xao_mct(n, index_swup)
+     enddo
+
+     ! Set swdn values in MOAB
+     tagname = 'Faox_swdn'//C_NULL_CHAR
+     arrSize = nloc
+     ent_type = 1 ! cells
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, swdn_values, GlobalIds )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting Faox_swdn  '
+       call shr_sys_abort(subname//' ERROR in setting Faox_swdn')
+     endif
+
+     ! Set swup values in MOAB
+     tagname = 'Faox_swup'//C_NULL_CHAR
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, swup_values, GlobalIds )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting Faox_swup  '
+       call shr_sys_abort(subname//' ERROR in setting Faox_swup')
+     endif
+
+     ! Clean up
+     deallocate(swdn_values)
+     deallocate(swup_values)
+
+  end subroutine seq_flux_atmocn_moab_sw_only
   !===============================================================================
 
 end module seq_flux_mct
