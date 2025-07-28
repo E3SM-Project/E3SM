@@ -1625,7 +1625,7 @@ contains
   !    2025-07-20 - Cursor - initial documentation
   !
   ! !INTERFACE: ------------------------------------------------------------------
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, nt, file_ind, dims2din, dims2do, mask )
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
@@ -1642,6 +1642,7 @@ contains
     logical,optional,intent(in) :: wdata         ! write data
     real(r8), dimension(:,:), pointer, optional :: matrix  ! this may or may not be passed
     integer, optional,intent(in):: nx
+    integer, optional,intent(in):: ny
     integer, optional,intent(in):: nt
     integer,optional,intent(in) :: file_ind
     integer,optional,intent(in) :: dims2din(2)   ! dim ids to output
@@ -1686,9 +1687,6 @@ contains
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
     frame = -1
-    if (present(nt)) then
-       frame = nt
-    endif
     if (.not.lwhead .and. .not.lwdata) then
        ! should we write a warning?
        return
@@ -1713,10 +1711,21 @@ contains
     ! find out the number of global cells, needed for defining the variables length
     ierr = iMOAB_GetGlobalInfo( mbxid, dummy, ng)
     lnx = ng
+    lny = 1
+
     ! it is needed to overwrite that for land, ng is too small
     !  ( for ne4pg2 it is 201 instead of 384)
-    if (present(nx)) lnx = nx 
-    lny = 1 ! do we need 2 var, or just 1 
+    if (present(nx)) then
+       if (nx /= 0) lnx = nx
+    endif
+    if (present(ny)) then
+       if( ny /= 0) lny = ny
+    endif
+    if (present(nt)) then
+       frame = nt
+    endif
+
+    ! get the local size ns
     ierr = iMOAB_GetMeshInfo ( mbxid, nvert, nvise, nbl, nsurf, nvisBC )
     ns = nvise(1) ! local cells 
 
