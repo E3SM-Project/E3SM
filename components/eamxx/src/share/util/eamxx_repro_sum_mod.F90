@@ -7,12 +7,7 @@ contains
   subroutine eamxx_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
     use iso_c_binding, only: c_int, c_double
 
-!standalone scream -- does it have access to shared libs?
-!#ifdef CAM
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
-!#else
-!else what?
-!#endif
 
     integer(kind=c_int), value, intent(in) :: nlocal, nfld, comm
     real(kind=c_double), intent(in) :: send(nlocal,nfld)
