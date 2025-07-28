@@ -36,6 +36,9 @@ class HorizAvgDiag : public AtmosphereDiagnostic {
 
   // Need area field, let's store it scaled by its norm
   Field m_scaled_area;
+
+  // May need to allocate an extra field if masking
+  Field m_dummy_field;
 };
 
 }  // namespace scream
