@@ -142,20 +142,27 @@ struct Functions {
   struct zm_output_tend {
     zm_output_tend() = default;
 
+    static constexpr int num_1d_scalr_views   = 2; // number of 1D variables
+    static constexpr int num_2d_midlv_c_views = 2; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_midlv_f_views = 2; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_c_views = 2; // number of 2D variables on interface levels
+    static constexpr int num_2d_intfc_f_views = 2; // number of 2D variables on interface levels
+
     Int ncol;                       // number of columns for current task/chunk
     Int pcol;                       // max number of columns across tasks/chunks
 
-    view_1d<Scalar> precip;         // surface precipitation [m/s]
-    view_2d<Spack>  tend_s;         // output tendency of water vapor
-    view_2d<Spack>  tend_q;         // output tendency of dry statis energy
-    view_2d<Spack>  prec_flux;      // output convective precipitation flux
-    view_2d<Spack>  mass_flux;      // output convective mass flux
+    uview_1d<Scalar> precip;         // surface precipitation [m/s]
+    uview_1d<Scalar> cape;           // convective available potential energy [J]
+    uview_2d<Spack>  tend_s;         // output tendency of water vapor
+    uview_2d<Spack>  tend_q;         // output tendency of dry statis energy
+    uview_2d<Spack>  prec_flux;      // output convective precipitation flux
+    uview_2d<Spack>  mass_flux;      // output convective mass flux
 
     // LayoutLeft views for fortran bridging
-    view_2dl<Real>  f_tend_s;
-    view_2dl<Real>  f_tend_q;
-    view_2dl<Real>  f_prec_flux;
-    view_2dl<Real>  f_mass_flux;
+    uview_2dl<Real>  f_tend_s;
+    uview_2dl<Real>  f_tend_q;
+    uview_2dl<Real>  f_prec_flux;
+    uview_2dl<Real>  f_mass_flux;
 
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
@@ -163,86 +170,114 @@ struct Functions {
     void transpose(int pver) {
       auto pverp = pver+1;
       if (D == ekat::TransposeDirection::c2f) {
-        f_tend_s    = view_2dl<Real>("f_tend_s",    pcol, pver);
-        f_tend_q    = view_2dl<Real>("f_tend_q",    pcol, pver);
-        f_prec_flux = view_2dl<Real>("f_prec_flux", pcol, pverp);
-        f_mass_flux = view_2dl<Real>("f_mass_flux", pcol, pverp);
         for (int i=0; i<pcol; ++i) {
           // mid-point level variables
           for (int j=0; j<pver; ++j) {
-            f_tend_s   (i,j) = tend_s   (i, j / Spack::n)[j % Spack::n];
-            f_tend_q   (i,j) = tend_q   (i, j / Spack::n)[j % Spack::n];
+            f_tend_s   (i,j) = tend_s   (i,j/Spack::n)[j%Spack::n];
+            f_tend_q   (i,j) = tend_q   (i,j/Spack::n)[j%Spack::n];
           }
           // interface level variables
           for (int j=0; j<pverp; ++j) {
-            f_prec_flux(i,j) = prec_flux(i, j / Spack::n)[j % Spack::n];
-            f_mass_flux(i,j) = mass_flux(i, j / Spack::n)[j % Spack::n];
+            f_prec_flux(i,j) = prec_flux(i,j/Spack::n)[j%Spack::n];
+            f_mass_flux(i,j) = mass_flux(i,j/Spack::n)[j%Spack::n];
           }
         }
-        // sync_to_host?
+        // sync_to_host here?
       }
       if (D == ekat::TransposeDirection::f2c) {
         // sync_to_device?
         for (int i=0; i<pcol; ++i) {
           // mid-point level variables
           for (int j=0; j<pver; ++j) {
-            tend_s   (i, j / Spack::n)[j % Spack::n] = f_tend_s   (i,j);
-            tend_q   (i, j / Spack::n)[j % Spack::n] = f_tend_q   (i,j);
+            tend_s   (i,j/Spack::n)[j%Spack::n] = f_tend_s   (i,j);
+            tend_q   (i,j/Spack::n)[j%Spack::n] = f_tend_q   (i,j);
           }
           // interface level variables
           for (int j=0; j<pverp; ++j) {
-            prec_flux(i, j / Spack::n)[j % Spack::n] = f_prec_flux(i,j);
-            mass_flux(i, j / Spack::n)[j % Spack::n] = f_mass_flux(i,j);
+            prec_flux(i,j/Spack::n)[j%Spack::n] = f_prec_flux(i,j);
+            mass_flux(i,j/Spack::n)[j%Spack::n] = f_mass_flux(i,j);
           }
         }
       }
-    }
+    };
+    // -------------------------------------------------------------------------
+    void init(int ncol,int pver) {
+      auto pverp = pver+1;
+      // 1D scalar variables
+      for (int i=0; i<ncol; ++i) {
+        precip(i) = -111;
+        cape(i)   = -222;
+      }
+      // mid-point level variables
+      for (int i=0; i<ncol; ++i) {
+        for (int j=0; j<pver; ++j) {
+          tend_s(i,j/Spack::n)[j%Spack::n] = -333;
+          tend_q(i,j/Spack::n)[j%Spack::n] = -444;
+          f_tend_s(i,j) = -555;
+          f_tend_q(i,j) = -666;
+        }
+      }
+      // interface level variables
+      for (int i=0; i<ncol; ++i) {
+        for (int j=0; j<pverp; ++j) {
+          prec_flux(i,j/Spack::n)[j%Spack::n] = -999;
+          mass_flux(i,j/Spack::n)[j%Spack::n] = -999;
+          f_prec_flux(i,j) = -999;
+          f_mass_flux(i,j) = -999;
+        }
+      }
+    };
+    // -------------------------------------------------------------------------
   };
 
   struct zm_output_diag {
     zm_output_diag() = default;
   };
 
-  // Structure for storing local variables initialized using the ATMBufferManager
-  struct zm_buffer_data {
+  // // Structure for storing local variables initialized using the ATMBufferManager
+  // struct zm_buffer_data {
 
-    static constexpr int num_1d_scalr_views = 1; // number of 1D variables
-    static constexpr int num_2d_midlv_views = 2; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_intfc_views = 2; // number of 2D variables on interface levels
+  //   static constexpr int num_1d_scalr_views = 2; // number of 1D variables
+  //   static constexpr int num_2d_midlv_views = 2; // number of 2D variables on mid-point levels
+  //   static constexpr int num_2d_intfc_views = 2; // number of 2D variables on interface levels
 
-    uview_1d<Scalar>  precip;       // surface precipitation [m/s]
-    uview_2d<Spack>   tend_s;       // output tendency of water vapor
-    uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
-    uview_2d<Spack>   prec_flux;    // output convective precipitation flux
-    uview_2d<Spack>   mass_flux;    // output convective mass flux
+  //   uview_1d<Scalar>  precip;       // surface precipitation [m/s]
+  //   uview_1d<Scalar>  cape;         // convective available potential energy [J]
+  //   uview_2d<Spack>   tend_s;       // output tendency of water vapor
+  //   uview_2d<Spack>   tend_q;       // output tendency of dry statis energy
+  //   uview_2d<Spack>   prec_flux;    // output convective precipitation flux
+  //   uview_2d<Spack>   mass_flux;    // output convective mass flux
 
-    uview_2dl<Real>   f_tend_s;       // output tendency of water vapor
-    uview_2dl<Real>   f_tend_q;       // output tendency of dry statis energy
+  //   uview_2dl<Real>   f_tend_s;     // output tendency of water vapor
+  //   uview_2dl<Real>   f_tend_q;     // output tendency of dry statis energy
 
-    void init(int ncol,int pver) {
-      auto pverp = pver+1;
-      // 1D scalar variables
-      for (int i=0; i<ncol; ++i) {
-        precip(i) = 0;
-      }
-      // mid-point level variables
-      for (int i=0; i<ncol; ++i) {
-        for (int j=0; j<pver; ++j) {
-          tend_s(i,j/Spack::n)[j%Spack::n] = 0;
-          tend_q(i,j/Spack::n)[j%Spack::n] = 0;
-          f_tend_s(i,j) = 0;
-          f_tend_q(i,j) = 0;
-        }
-      }
-      // interface level variables
-      for (int i=0; i<ncol; ++i) {
-        for (int j=0; j<pverp; ++j) {
-          prec_flux(i,j) = 0;
-          mass_flux(i,j) = 0;
-        }
-      }
-    };
-  };
+  //   // -------------------------------------------------------------------------
+  //   void init(int ncol,int pver) {
+  //     auto pverp = pver+1;
+  //     // 1D scalar variables
+  //     for (int i=0; i<ncol; ++i) {
+  //       precip(i) = 0;
+  //       cape(i)   = 0;
+  //     }
+  //     // mid-point level variables
+  //     for (int i=0; i<ncol; ++i) {
+  //       for (int j=0; j<pver; ++j) {
+  //         tend_s(i,j/Spack::n)[j%Spack::n] = 0;
+  //         tend_q(i,j/Spack::n)[j%Spack::n] = 0;
+  //         f_tend_s(i,j) = 0;
+  //         f_tend_q(i,j) = 0;
+  //       }
+  //     }
+  //     // interface level variables
+  //     for (int i=0; i<ncol; ++i) {
+  //       for (int j=0; j<pverp; ++j) {
+  //         prec_flux(i,j) = 0;
+  //         mass_flux(i,j) = 0;
+  //       }
+  //     }
+  //   };
+  //   // -------------------------------------------------------------------------
+  // };
 
   // ---------------------------------------------------------------------------
   // Functions
