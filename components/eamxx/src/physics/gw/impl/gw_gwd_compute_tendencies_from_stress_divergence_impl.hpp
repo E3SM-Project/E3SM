@@ -50,7 +50,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   const Real ptaper = do_taper ? std::cos(lat) : 1.;
 
   // Force tau at the top of the model to zero, if requested.
-  if (s_common_init.tau_0_ubc) {
+  if (init.tau_0_ubc) {
     for (size_t i = 0; i < tau.extent(0); ++i) {
       tau(i,0) = 0.;
     }
@@ -58,7 +58,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 
   // Loop over levels from top to bottom
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, s_common_init.ktop, max_level+1), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, init.ktop, max_level+1), [&] (const int k) {
     //  Accumulate the mean wind tendency over wavenumber.
     ubt(k) = 0.;
 
@@ -70,12 +70,12 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       // from above.
       Real ubtl = C::gravit * (tau(pl_idx,k+1)-tau(pl_idx,k)) * rdpm(k);
 
-      if (s_common_init.orographic_only) {
+      if (init.orographic_only) {
         // Require that the tendency be no larger than the analytic
         // solution for a saturated region [proportional to (u-c)^3].
         Real temp = c(pl_idx)-ubm(k);
         temp = temp * temp * temp; // BFB with fortran **3
-        Real ubtlsat = s_common_init.effkwv * std::abs(temp) / (2*GWC::rog*t(k)*nm(k));
+        Real ubtlsat = init.effkwv * std::abs(temp) / (2*GWC::rog*t(k)*nm(k));
         ubtl = std::min(ubtl, ubtlsat);
       }
 
@@ -85,14 +85,14 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       // 2. du/dt < tndmax    so that ridicuously large tendencies are not
       //    permitted
       ubtl = std::min(ubtl, GWC::umcfac * std::abs(c(pl_idx)-ubm(k)) / dt);
-      ubtl = std::min(ubtl, s_common_init.tndmax);
+      ubtl = std::min(ubtl, init.tndmax);
 
       if (k <= tend_level) {
         // Save tendency for each wave (for later computation of kzz),
         // applying efficiency and taper:
         gwut(k,nl_idx) = sign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
 
-        if (!s_common_init.orographic_only) {
+        if (!init.orographic_only) {
           ubt(k) = ubt(k) + gwut(k,nl_idx);
         }
         else {
@@ -111,7 +111,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 
     // Project the mean wind tendency onto the components.
     if (k <= tend_level) {
-      if (!s_common_init.orographic_only) {
+      if (!init.orographic_only) {
         utgw(k) = ubt(k) * xv;
         vtgw(k) = ubt(k) * yv;
       }
