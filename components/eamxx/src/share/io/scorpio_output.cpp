@@ -633,6 +633,7 @@ register_variables(const std::string& filename,
   for (auto const& name : m_fields_names) {
     const auto& f = m_field_mgrs[Scorpio]->get_field(name);
     const auto& fid  = f.get_header().get_identifier();
+    const auto& fl   = fid.get_layout();
     const auto& dimnames = m_vars_dims.at(name);
     std::string units = fid.get_units().to_string();
 
@@ -721,6 +722,30 @@ register_variables(const std::string& filename,
         auto standardname = m_default_metadata.get_standardname(name);
         scorpio::set_attribute(filename, name, "standard_name", standardname);
       }
+
+      // If output represents an statistic over a time range add a "cell methods"
+      // attribute.
+      switch (m_avg_type) {
+        case OutputAvgType::Instant:
+          break;  // Don't add the attribute
+        case OutputAvgType::Max:
+          scorpio::set_attribute(filename, name, "cell_methods", "time: max");
+          break;
+        case OutputAvgType::Min:
+          scorpio::set_attribute(filename, name, "cell_methods", "time: min");
+          break;
+        case OutputAvgType::Average:
+          scorpio::set_attribute(filename, name, "cell_methods", "time: mean");
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
+      }
+
+      // If output contains the column dimension add a "coordinates" attribute.
+      if (fl.has_tag(COL)) {
+        scorpio::set_attribute(filename, name, "coordinates", "lat lon");
+      }
+
     }
   }
 
