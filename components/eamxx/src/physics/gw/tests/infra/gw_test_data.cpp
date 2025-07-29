@@ -176,6 +176,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
 
   WSM wsm(d.init.pver, 1, policy);
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int col = team.league_rank();
@@ -196,6 +197,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
     GWF::gwd_compute_tendencies_from_stress_divergence(
       team,
       wsm.get_workspace(team),
+      init_cp,
       d.init.pver, d.init.pgwv, d.ngwv, d.do_taper, d.dt, d.effgw,
       tend_level(col),
       max_level,
