@@ -633,7 +633,6 @@ register_variables(const std::string& filename,
   for (auto const& name : m_fields_names) {
     const auto& f = m_field_mgrs[Scorpio]->get_field(name);
     const auto& fid  = f.get_header().get_identifier();
-    const auto& fl   = fid.get_layout();
     const auto& dimnames = m_vars_dims.at(name);
     std::string units = fid.get_units().to_string();
 
@@ -727,12 +726,13 @@ register_variables(const std::string& filename,
       // attribute.
       switch (m_avg_type) {
         case OutputAvgType::Instant:
+          scorpio::set_attribute(filename, name, "cell_methods", "time: point");
           break;  // Don't add the attribute
         case OutputAvgType::Max:
-          scorpio::set_attribute(filename, name, "cell_methods", "time: max");
+          scorpio::set_attribute(filename, name, "cell_methods", "time: maximum");
           break;
         case OutputAvgType::Min:
-          scorpio::set_attribute(filename, name, "cell_methods", "time: min");
+          scorpio::set_attribute(filename, name, "cell_methods", "time: minimum");
           break;
         case OutputAvgType::Average:
           scorpio::set_attribute(filename, name, "cell_methods", "time: mean");
@@ -742,7 +742,7 @@ register_variables(const std::string& filename,
       }
 
       // If output contains the column dimension add a "coordinates" attribute.
-      if (fl.has_tag(COL)) {
+      if (fid.get_layout().has_tag(COL)) {
         scorpio::set_attribute(filename, name, "coordinates", "lat lon");
       }
 
