@@ -837,55 +837,55 @@ contains
 
 #endif
 
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Rr2o_ice'
-          end if
-          ! is this the same map as above ?
-          call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
-               'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
-               'mapper_Rr2o_ice  initialization', esmf_map_flag, no_match )
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Rr2o_ice'
+         end if
+         ! is this the same map as above ?
+         call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
+            'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
+            'mapper_Rr2o_ice  initialization', esmf_map_flag, no_match )
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing MOAB mapper_Rr2o_ice same as mapper_Rr2o_liq'
+         end if
+
+         ! If loading map from disk, then load the R2O_ice map
+         if (.not. compute_maps_online_r2o) then
+            type_grid = 3 ! this is type of grid
+            arearead = 0 ! no need for areas
+            call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+                  'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
+                  arearead, wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
+         end if
+         mapper_Rr2o_ice%src_mbid = mbrxid
+         mapper_Rr2o_ice%tgt_mbid = mboxid
+         mapper_Rr2o_ice%intx_mbid = mbintxro
+         mapper_Rr2o_ice%src_context = rof(1)%cplcompid
+         mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
+         mapper_Rr2o_ice%weight_identifier = wgtIdFr2oi
+         mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
+#endif
+         if (flood_present) then
             if (iamroot_CPLID) then
                write(logunit,*) ' '
-               write(logunit,F00) 'Initializing MOAB mapper_Rr2o_ice same as mapper_Rr2o_liq'
+               write(logunit,F00) 'Initializing mapper_Fr2o'
             end if
-
-            ! If loading map from disk, then load the R2O_ice map
-            if (.not. compute_maps_online_r2o) then
-               type_grid = 3 ! this is type of grid
-               arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
-                     'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
-                     arearead, wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
-            end if
-            mapper_Rr2o_ice%src_mbid = mbrxid
-            mapper_Rr2o_ice%tgt_mbid = mboxid
-            mapper_Rr2o_ice%intx_mbid = mbintxro
-            mapper_Rr2o_ice%src_context = rof(1)%cplcompid
-            mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
-            mapper_Rr2o_ice%weight_identifier = wgtIdFr2oi
-            mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
-#endif
-          if (flood_present) then
-             if (iamroot_CPLID) then
-                write(logunit,*) ' '
-                write(logunit,F00) 'Initializing mapper_Fr2o'
-             end if
-             no_match = .true. ! force to create a new mapper object
-             call seq_map_init_rcfile( mapper_Fr2o, rof(1), ocn(1), &
+            no_match = .true. ! force to create a new mapper object
+            call seq_map_init_rcfile( mapper_Fr2o, rof(1), ocn(1), &
                   'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:',samegrid_ro, &
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag, no_match=no_match )
 
 #ifdef HAVE_MOAB
-             ! now take care of the mapper for MOAB mapper_Fr2o
-             if (iamroot_CPLID) then
-                write(logunit,*) ' '
-                write(logunit,F00) 'Initializing MOAB mapper_Fr2o'
-             end if
-             ! If loading map from disk, then load the scalar map as well
+            ! now take care of the mapper for MOAB mapper_Fr2o
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Fr2o'
+            end if
+            ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_r2o) then
                type_grid = 3 ! this is type of grid
                arearead = 0 ! no need for areas
@@ -893,29 +893,29 @@ contains
                      'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:', samegrid_ro, &
                      arearead, wgtIdFr2o, 'mapper_Fr2o MOAB initialization', esmf_map_flag, wgtIdFr2ol )
 
-               context_id = rmapid ! ocn(1)%cplcompid
-               ! this creates a parallel communication graph between mbrxid and mbintxro,
-               ! with ids rof(1)%cplcompid, rmapid (rmapid is 100*src+tgt)
-               ! this will be used in send/receive mappers
-               ierr = iMOAB_MigrateMapMesh ( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, &
-                                             mpigrp_CPLID, type_grid, rof(1)%cplcompid, context_id )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
-                  call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
-               endif
-
             end if
 
-             mapper_Fr2o%src_mbid = mbrxid
-             mapper_Fr2o%tgt_mbid = mboxid ! special
-             mapper_Fr2o%intx_mbid = mbintxro
-             mapper_Fr2o%src_context = rof(1)%cplcompid
-             mapper_Fr2o%intx_context = rmapid ! read map is the same context as intersection now
-             mapper_Fr2o%weight_identifier = wgtIdFr2o
-             mapper_Fr2o%mbname = 'mapper_Fr2o'
+            mapper_Fr2o%src_mbid = mbrxid
+            mapper_Fr2o%tgt_mbid = mboxid ! special
+            mapper_Fr2o%intx_mbid = mbintxro
+            mapper_Fr2o%src_context = rof(1)%cplcompid
+            mapper_Fr2o%intx_context = rmapid ! read map is the same context as intersection now
+            mapper_Fr2o%weight_identifier = wgtIdFr2o
+            mapper_Fr2o%mbname = 'mapper_Fr2o'
 #endif
-          endif
+         endif
 
+         context_id = rmapid ! ocn(1)%cplcompid
+         ! this creates a parallel communication graph between mbrxid and mbintxro,
+         ! with ids rof(1)%cplcompid, rmapid (rmapid is 100*src+tgt)
+         ! this will be used in send/receive mappers
+         type_grid = 3 ! this is type of grid
+         ierr = iMOAB_MigrateMapMesh ( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, &
+                                       mpigrp_CPLID, type_grid, rof(1)%cplcompid, context_id )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
+            call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
+         endif
          ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxro, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
                                           type_grid, type_grid, rof(1)%cplcompid, rmapid )
          if (ierr .ne. 0) then
