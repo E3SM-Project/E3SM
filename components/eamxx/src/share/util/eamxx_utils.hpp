@@ -71,6 +71,13 @@ void sort (std::list<T>& l) {
   l.sort();
 }
 
+// Provides functionality identical to fortran's SIGN function
+template <typename T>
+KOKKOS_INLINE_FUNCTION
+T sign(T a, T b) {
+    return (b >= 0) ? std::abs(a) : -std::abs(a);
+}
+
 // This routine tries to find an arrangment of elements that allow each
 // of the input groups to be a contiguous subarray of the global arrangement.
 // E.g., given the groups of elments
