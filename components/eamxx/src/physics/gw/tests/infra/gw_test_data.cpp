@@ -3,6 +3,7 @@
 #include <ekat_math_utils.hpp>
 #include <ekat_kokkos_types.hpp>
 #include <ekat_assert.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <random>
 
@@ -16,8 +17,18 @@ using scream::Int;
 namespace scream {
 namespace gw {
 
-using GWF = Functions<Real, HostDevice>;
+using GWF = Functions<Real, DefaultDevice>;
 using GWC = typename GWF::C;
+
+using ExeSpace   = typename GWF::KT::ExeSpace;
+using MemberType = typename GWF::KT::MemberType;
+
+using view1di_d = GWF::view_1d<Int>;
+using view1dr_d = GWF::view_1d<Real>;
+using view2dr_d = GWF::view_2d<Real>;
+using view3dr_d = GWF::view_3d<Real>;
+
+using WSM = typename GWF::WorkspaceManager;
 
 extern "C" {
 
@@ -109,23 +120,107 @@ void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStr
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d)
 {
   gw_init_cxx(d.init);
-  GWF::gwd_compute_tendencies_from_stress_divergence(
-    d.ncol, d.init.pver, d.init.pgwv, d.ngwv, d.do_taper, d.dt, d.effgw,
-    GWF::uview_1d<Int>(d.tend_level, d.ncol),
-    GWF::uview_1d<Real>(d.lat, d.ncol),
-    GWF::uview_2d<Real>(d.dpm, d.ncol, d.init.pver),
-    GWF::uview_2d<Real>(d.rdpm, d.ncol, d.init.pver),
-    GWF::uview_2d<Real>(d.c, d.ncol, 2*d.init.pgwv + 1),
-    GWF::uview_2d<Real>(d.ubm, d.ncol, d.init.pver),
-    GWF::uview_2d<Real>(d.t, d.ncol, d.init.pver),
-    GWF::uview_2d<Real>(d.nm, d.ncol, d.init.pver),
-    GWF::uview_1d<Real>(d.xv, d.ncol),
-    GWF::uview_1d<Real>(d.yv, d.ncol),
-    GWF::uview_3d<Real>(d.tau, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1),
-    GWF::uview_3d<Real>(d.gwut, d.ncol, d.init.pver, 2*d.ngwv + 1),
-    GWF::uview_2d<Real>(d.utgw,d.ncol, d.init.pver),
-    GWF::uview_2d<Real>(d.vtgw, d.ncol, d.init.pver)
-  );
+
+  // create device views and copy
+  std::vector<view1di_d> one_d_ints_in(1);
+  std::vector<view1dr_d> one_d_reals_in(3);
+  std::vector<view2dr_d> two_d_reals_in(8);
+  std::vector<view3dr_d> three_d_reals_in(2);
+
+  ekat::host_to_device({d.tend_level}, d.ncol, one_d_ints_in);
+  ekat::host_to_device({d.lat, d.xv, d.yv}, d.ncol, one_d_reals_in);
+  ekat::host_to_device({d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.utgw, d.vtgw},
+                       std::vector<int>(8, d.ncol),
+                       std::vector<int>{    // dim2 sizes
+                         d.init.pver,       // dpm
+                         d.init.pver,       // rdpm
+                         2*d.init.pgwv + 1, // c
+                         d.init.pver,       // ubm
+                         d.init.pver,       // t
+                         d.init.pver,       // nm
+                         d.init.pver,       // utgw
+                         d.init.pver},      // vtgw
+                       two_d_reals_in);
+  ekat::host_to_device({d.tau, d.gwut},
+                       std::vector<int>(2, d.ncol),
+                       std::vector<int>{2*d.init.pgwv + 1, d.init.pver},
+                       std::vector<int>{d.init.pver + 1, 2*d.ngwv + 1},
+                       three_d_reals_in);
+
+  const auto tend_level = one_d_ints_in[0];
+
+  const auto lat        = one_d_reals_in[0];
+  const auto xv         = one_d_reals_in[1];
+  const auto yv         = one_d_reals_in[2];
+
+  const auto dpm        = two_d_reals_in[0];
+  const auto rdpm       = two_d_reals_in[1];
+  const auto c          = two_d_reals_in[2];
+  const auto ubm        = two_d_reals_in[3];
+  const auto t          = two_d_reals_in[4];
+  const auto nm         = two_d_reals_in[5];
+  const auto utgw       = two_d_reals_in[6];
+  const auto vtgw       = two_d_reals_in[7];
+
+  const auto tau        = three_d_reals_in[0];
+  const auto gwut       = three_d_reals_in[1];
+
+  // Find max tend_level
+  int max_level = 0;
+  Kokkos::parallel_reduce("find max level", d.ncol, KOKKOS_LAMBDA(const int i, int& lmax) {
+    if (tend_level(i) > lmax) {
+      lmax = tend_level(i);
+    }
+  }, Kokkos::Max<int>(max_level));
+
+  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  WSM wsm(d.init.pver, 1, policy);
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto dpm_c  = ekat::subview(dpm, col);
+    const auto rdpm_c = ekat::subview(rdpm, col);
+    const auto c_c    = ekat::subview(c, col);
+    const auto ubm_c  = ekat::subview(ubm, col);
+    const auto t_c    = ekat::subview(t, col);
+    const auto nm_c   = ekat::subview(nm, col);
+    const auto tau_c  = ekat::subview(tau, col);
+    const auto utgw_c = ekat::subview(utgw, col);
+    const auto vtgw_c = ekat::subview(vtgw, col);
+    const auto gwut_c = ekat::subview(gwut, col);
+
+    GWF::gwd_compute_tendencies_from_stress_divergence(
+      team,
+      wsm.get_workspace(team),
+      d.init.pver, d.init.pgwv, d.ngwv, d.do_taper, d.dt, d.effgw,
+      tend_level(col),
+      max_level,
+      lat(col),
+      dpm_c,
+      rdpm_c,
+      c_c,
+      ubm_c,
+      t_c,
+      nm_c,
+      xv(col),
+      yv(col),
+      tau_c,
+      gwut_c,
+      utgw_c,
+      vtgw_c
+    );
+  });
+
+  // Get outputs back
+  std::vector<view2dr_d> two_d_reals_out = {utgw, vtgw};
+  std::vector<view3dr_d> three_d_reals_out = {gwut};
+  ekat::device_to_host({d.utgw, d.vtgw}, d.ncol, d.init.pver, two_d_reals_out);
+  ekat::device_to_host({d.gwut}, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1, three_d_reals_out);
+
   gw_finalize_cxx(d.init);
 }
 

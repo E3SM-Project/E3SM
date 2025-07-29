@@ -60,7 +60,7 @@ struct Functions
 
   using MemberType = typename KT::MemberType;
 
-  using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
+  using WorkspaceManager = typename ekat::WorkspaceManager<Scalar, Device>;
   using Workspace        = typename WorkspaceManager::Workspace;
 
   //
@@ -175,29 +175,31 @@ struct Functions
   KOKKOS_FUNCTION
   static void gwd_compute_tendencies_from_stress_divergence(
     // Inputs
-    const Int& ncol,
+    const MemberType& team,
+    const Workspace& workspace,
     const Int& pver,
     const Int& pgwv,
     const Int& ngwv,
     const bool& do_taper,
     const Real& dt,
     const Real& effgw,
-    const uview_1d<const Int>& tend_level,
-    const uview_1d<const Real>& lat,
-    const uview_2d<const Real>& dpm,
-    const uview_2d<const Real>& rdpm,
-    const uview_2d<const Real>& c,
-    const uview_2d<const Real>& ubm,
-    const uview_2d<const Real>& t,
-    const uview_2d<const Real>& nm,
-    const uview_1d<const Real>& xv,
-    const uview_1d<const Real>& yv,
+    const Int& tend_level,
+    const Int& max_level,
+    const Real& lat,
+    const uview_1d<const Real>& dpm,
+    const uview_1d<const Real>& rdpm,
+    const uview_1d<const Real>& c,
+    const uview_1d<const Real>& ubm,
+    const uview_1d<const Real>& t,
+    const uview_1d<const Real>& nm,
+    const Real& xv,
+    const Real& yv,
     // Inputs/Outputs
-    const uview_3d<Real>& tau,
+    const uview_2d<Real>& tau,
     // Outputs
-    const uview_3d<Real>& gwut,
-    const uview_2d<Real>& utgw,
-    const uview_2d<Real>& vtgw);
+    const uview_2d<Real>& gwut,
+    const uview_1d<Real>& utgw,
+    const uview_1d<Real>& vtgw);
 
   KOKKOS_FUNCTION
   static void gw_prof(
