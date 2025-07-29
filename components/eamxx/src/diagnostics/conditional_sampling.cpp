@@ -233,11 +233,11 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
 
-  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
-  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
-
   const auto var_fill_value = Real(constants::DefaultFillValue<float>::value);
   m_mask_val = m_params.get<double>("mask_value", var_fill_value);
+
+  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
 
   // Special case: if condition field is "lev", we don't need to check layout compatibility
   // since "lev" is geometric information, not an actual field

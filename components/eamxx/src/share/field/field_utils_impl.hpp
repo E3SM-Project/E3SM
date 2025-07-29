@@ -343,6 +343,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       auto v_in  = f_in.get_view<const ST *>();
       auto v_m   = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST *>() : v_in;
       auto v_out = f_out.get_view<ST>();
+      auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST>() : v_out;
       auto v_tmp = is_comm_avg_masked ? f_tmp.get_view<ST>() : v_out; 
       ST n = 0, d = 0;
       Kokkos::parallel_reduce(
@@ -359,12 +360,15 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       } else if (is_avg_masked) {
         ST tmp = d != 0 ? n / d : fill_value;
         Kokkos::deep_copy(v_out, tmp);
+        ST mask_val = d != 0 ? 1 : 0;
+        Kokkos::deep_copy(v_m_out, mask_val);
       }
     } break;
     case 2: {
       auto v_in    = f_in.get_view<const ST **>();
       auto v_m     = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST **>() : v_in;
       auto v_out   = f_out.get_view<ST *>();
+      auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST *>() : v_out;
       auto v_tmp   = is_comm_avg_masked ? f_tmp.get_view<ST *>() : v_out;
       const int d1 = l_in.dim(1);
       auto p       = ESU::get_default_team_policy(d1, ncols);
@@ -385,6 +389,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
               v_tmp(j) = d;
             } else if (is_avg_masked) {
               v_out(j) = d != 0 ? n / d : fill_value;
+              v_m_out(j) = d != 0 ? 1 : 0;
             }
           });
     } break;
@@ -392,6 +397,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       auto v_in    = f_in.get_view<const ST ***>();
       auto v_m     = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST ***>() : v_in;
       auto v_out   = f_out.get_view<ST **>();
+      auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST **>() : v_out;
       auto v_tmp   = is_comm_avg_masked ? f_tmp.get_view<ST **>() : v_out;
       const int d1 = l_in.dim(1);
       const int d2 = l_in.dim(2);
@@ -415,6 +421,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
               v_tmp(j, k) = d;
             } else if (is_avg_masked) {
               v_out(j, k) = d != 0 ? n / d : fill_value;
+              v_m_out(j, k) = d != 0 ? 1 : 0;
             }
           });
     } break;
@@ -441,24 +448,29 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       switch(l_out.rank()) {
         case 0: {
           auto v_out = f_out.get_view<ST>();
+          auto v_m_out = f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST>();
           auto v_tmp = f_tmp.get_view<const ST>();
           Kokkos::parallel_for(
               f_out.name(), RangePolicy(0, 1),
               KOKKOS_LAMBDA(const int idx) {
                 v_out() = v_tmp() != 0 ? v_out() / v_tmp() : fill_value;
+                v_m_out() = v_tmp() != 0 ? 1 : 0;
               });
         } break;
         case 1: {
           auto v_out = f_out.get_view<ST *>();
+          auto v_m_out = f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST *>();
           auto v_tmp = f_tmp.get_view<const ST *>();
           Kokkos::parallel_for(
               f_out.name(), RangePolicy(0, l_out.dim(0)),
               KOKKOS_LAMBDA(const int i) {
                 v_out(i) = v_tmp(i) != 0 ? v_out(i) / v_tmp(i) : fill_value;
+                v_m_out(i) = v_tmp(i) != 0 ? 1 : 0;
               });
         } break;
         case 2: {
           auto v_out = f_out.get_view<ST **>();
+          auto v_m_out = f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST **>();
           auto v_tmp = f_tmp.get_view<const ST **>();
           const int d0 = l_out.dim(0);
           const int d1 = l_out.dim(1);
@@ -468,6 +480,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
                 const int i = tm.league_rank() / d1;
                 const int j = tm.league_rank() % d1;
                 v_out(i, j) = v_tmp(i, j) != 0 ? v_out(i, j) / v_tmp(i, j) : fill_value;
+                v_m_out(i, j) = v_tmp(i, j) != 0 ? 1 : 0;
               });
         } break;
         default:
@@ -512,6 +525,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_in  = f_in.get_view<const ST *>();
       auto v_m   = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST *>() : v_in;
       auto v_out = f_out.get_view<ST>();
+      auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST>() : v_out;
       ST n = 0, d = 0;
       Kokkos::parallel_reduce(
           f_out.name(), RangePolicy(0, nlevs),
@@ -525,6 +539,8 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       if (is_avg_masked) {
         ST tmp = d != 0 ? n / d : fill_value;
         Kokkos::deep_copy(v_out, tmp);
+        ST mask_val = d != 0 ? 1 : 0;
+        Kokkos::deep_copy(v_m_out, mask_val);
       } else {
         Kokkos::deep_copy(v_out, n);
       }
@@ -533,6 +549,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_in    = f_in.get_view<const ST **>();
       auto v_m     = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST **>() : v_in;
       auto v_out   = f_out.get_view<ST *>();
+      auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST *>() : v_out;
       const int d0 = l_in.dim(0);
       auto p       = ESU::get_default_team_policy(d0, nlevs);
       Kokkos::parallel_for(
@@ -550,6 +567,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                 Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
             if (is_avg_masked) {
               v_out(i) = d != 0 ? n / d : fill_value;
+              v_m_out(i) = d != 0 ? 1 : 0;
             } else {
               v_out(i) = n;
             }
@@ -559,6 +577,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto v_in    = f_in.get_view<const ST ***>();
       auto v_m     = is_masked ? f_in.get_header().get_extra_data<Field>("mask_data").get_view<const ST ***>() : v_in;
       auto v_out   = f_out.get_view<ST **>();
+      auto v_m_out = is_avg_masked ? f_out.get_header().get_extra_data<Field>("mask_data").get_view<ST **>() : v_out;
       const int d0 = l_in.dim(0);
       const int d1 = l_in.dim(1);
       auto p       = ESU::get_default_team_policy(d0 * d1, nlevs);
@@ -579,6 +598,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                 Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
             if (is_avg_masked) {
               v_out(i, j) = d != 0 ? n / d : fill_value;
+              v_m_out(i, j) = d != 0 ? 1 : 0;
             } else {
               v_out(i, j) = n;
             }
