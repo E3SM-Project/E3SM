@@ -177,6 +177,7 @@ struct Functions
     // Inputs
     const MemberType& team,
     const Workspace& workspace,
+    const GwCommonInit& init,
     const Int& pver,
     const Int& pgwv,
     const Int& ngwv,

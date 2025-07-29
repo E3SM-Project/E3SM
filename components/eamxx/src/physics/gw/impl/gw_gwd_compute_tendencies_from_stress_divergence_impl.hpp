@@ -19,6 +19,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   // Inputs
   const MemberType& team,
   const Workspace& workspace,
+  const GwCommonInit& init,
   const Int& pver,
   const Int& pgwv,
   const Int& ngwv,
