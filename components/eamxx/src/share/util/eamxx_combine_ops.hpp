@@ -88,9 +88,11 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
 template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
-void fill_aware_combine (const ScalarIn& newVal, ScalarOut& result,
-              const typename ekat::ScalarTraits<ScalarIn>::scalar_type fill_val,
-              const CoeffType alpha, const CoeffType beta)
+std::enable_if_t<ekat::ScalarTraits<ScalarIn>::is_simd or
+                 ekat::ScalarTraits<ScalarOut>::is_simd>
+fill_aware_combine (const ScalarIn& newVal, ScalarOut& result,
+                    const typename ekat::ScalarTraits<ScalarIn>::scalar_type fill_val,
+                    const CoeffType alpha, const CoeffType beta)
 {
   if constexpr (CM==CombineMode::Replace) {
     return combine<CM>(newVal,result,alpha,beta);
@@ -109,6 +111,24 @@ void fill_aware_combine (const ScalarIn& newVal, ScalarOut& result,
     auto tmp = result;
     combine<CM>(newVal,tmp,alpha,beta);
     where = tmp;
+  }
+}
+
+template<CombineMode CM, typename ScalarIn, typename ScalarOut,
+         typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
+KOKKOS_FORCEINLINE_FUNCTION
+std::enable_if_t<not ekat::ScalarTraits<ScalarIn>::is_simd and
+                 not ekat::ScalarTraits<ScalarOut>::is_simd>
+fill_aware_combine (const ScalarIn& newVal, ScalarOut& result,
+                    const typename ekat::ScalarTraits<ScalarIn>::scalar_type fill_val,
+                    const CoeffType alpha, const CoeffType beta)
+{
+  if constexpr (CM==CombineMode::Replace) {
+    return combine<CM>(newVal,result,alpha,beta);
+  }
+
+  if (newVal!=fill_val) {
+    combine<CM>(newVal,result,alpha,beta);
   }
 }
 
