@@ -159,6 +159,7 @@ int nctype () {
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type.\n");
   }
+  return PIO_NAT;
 }
 
 template<typename T>

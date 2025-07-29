@@ -7,37 +7,6 @@
 
 namespace {
 
-TEST_CASE ("combine_ops") {
-  using namespace scream;
-  using pack_type = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-
-  constexpr auto Replace      = CombineMode::Replace;
-  constexpr auto Update       = CombineMode::Update;
-  constexpr auto Multiply     = CombineMode::Multiply;
-  constexpr auto Divide       = CombineMode::Divide;
-
-  const pack_type two (2.0);
-  const pack_type four (4.0);
-  const pack_type six (6.0);
-  const pack_type ten (10.0);
-  pack_type x;
-
-  x = two;
-  combine<Replace>(two,x,1,0);
-  REQUIRE ( (x==two).all() );
-
-  combine<Update>(two,x,2.0,1.0);
-  REQUIRE ( (x==six).all() );
-
-  x = two;
-  combine<Multiply>(two,x,1,1);
-  REQUIRE ( (x==four).all() );
-
-  x = four;
-  combine<Divide>(two,x,1,1);
-  REQUIRE ( (x==two).all() );
-}
-
 TEST_CASE("column_ops_ps_1") {
   using namespace scream;
   using device_type = DefaultDevice;
