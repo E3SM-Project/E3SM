@@ -326,6 +326,8 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   bool is_avg_masked = AVG && is_masked;
   bool is_comm_avg_masked = comm && is_avg_masked;
 
+  const auto fill_value = is_masked ? f_in.get_header().get_extra_data<Real>("mask_value") : 0;
+
   if (is_comm_avg_masked) {
     // make sure f_tmp is allocated correctly
     EKAT_REQUIRE_MSG(f_tmp.data_type() == f_in.data_type(),
@@ -355,7 +357,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
       if (is_comm_avg_masked) {
         Kokkos::deep_copy(v_tmp, d);
       } else if (is_avg_masked) {
-        ST tmp = d != 0 ? n / d : 0;
+        ST tmp = d != 0 ? n / d : fill_value;
         Kokkos::deep_copy(v_out, tmp);
       }
     } break;
@@ -382,7 +384,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
             if (is_comm_avg_masked) {
               v_tmp(j) = d;
             } else if (is_avg_masked) {
-              v_out(j) = d != 0 ? n / d : 0;
+              v_out(j) = d != 0 ? n / d : fill_value;
             }
           });
     } break;
@@ -412,7 +414,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
             if (is_comm_avg_masked) {
               v_tmp(j, k) = d;
             } else if (is_avg_masked) {
-              v_out(j, k) = d != 0 ? n / d : 0;
+              v_out(j, k) = d != 0 ? n / d : fill_value;
             }
           });
     } break;
@@ -443,7 +445,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
           Kokkos::parallel_for(
               f_out.name(), RangePolicy(0, 1),
               KOKKOS_LAMBDA(const int idx) {
-                v_out() = v_tmp() != 0 ? v_out() / v_tmp() : 0;
+                v_out() = v_tmp() != 0 ? v_out() / v_tmp() : fill_value;
               });
         } break;
         case 1: {
@@ -452,7 +454,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
           Kokkos::parallel_for(
               f_out.name(), RangePolicy(0, l_out.dim(0)),
               KOKKOS_LAMBDA(const int i) {
-                v_out(i) = v_tmp(i) != 0 ? v_out(i) / v_tmp(i) : 0;
+                v_out(i) = v_tmp(i) != 0 ? v_out(i) / v_tmp(i) : fill_value;
               });
         } break;
         case 2: {
@@ -465,7 +467,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
               f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
                 const int i = tm.league_rank() / d1;
                 const int j = tm.league_rank() % d1;
-                v_out(i, j) = v_tmp(i, j) != 0 ? v_out(i, j) / v_tmp(i, j) : 0;
+                v_out(i, j) = v_tmp(i, j) != 0 ? v_out(i, j) / v_tmp(i, j) : fill_value;
               });
         } break;
         default:
@@ -489,6 +491,8 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
   bool is_masked = f_in.get_header().has_extra_data("mask_data");
   bool is_avg_masked = AVG && is_masked;
+
+  const auto fill_value = is_masked ? f_in.get_header().get_extra_data<Real>("mask_value") : 0;
 
   const int nlevs = l_in.dim(l_in.rank() - 1);
 
@@ -518,10 +522,11 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
             d_acc += w * mask;
           },
           Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
-      Kokkos::deep_copy(v_out, n);
       if (is_avg_masked) {
-        ST tmp = d != 0 ? n / d : 0;
+        ST tmp = d != 0 ? n / d : fill_value;
         Kokkos::deep_copy(v_out, tmp);
+      } else {
+        Kokkos::deep_copy(v_out, n);
       }
     } break;
     case 2: {
@@ -543,9 +548,10 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                   d_acc += w * mask;
                 },
                 Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
-            v_out(i) = n;
             if (is_avg_masked) {
-              v_out(i) = d != 0 ? n / d : 0;
+              v_out(i) = d != 0 ? n / d : fill_value;
+            } else {
+              v_out(i) = n;
             }
           });
     } break;
@@ -571,9 +577,10 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
                   d_acc += w * mask;
                 },
                 Kokkos::Sum<ST>(n), Kokkos::Sum<ST>(d));
-            v_out(i, j) = n;
             if (is_avg_masked) {
-              v_out(i, j) = d != 0 ? n / d : 0;
+              v_out(i, j) = d != 0 ? n / d : fill_value;
+            } else {
+              v_out(i, j) = n;
             }
           });
     } break;

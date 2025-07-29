@@ -8,6 +8,7 @@
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include "share/grid/point_grid.hpp"
 
@@ -223,6 +224,7 @@ TEST_CASE("utils") {
     mask(dim0 - 1) = sp(0.0);
     mask_of_field00.sync_to_dev();
     field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
+    field00_masked.get_header().set_extra_data("mask_value", Real(constants::DefaultFillValue<float>::value));
     field00_masked.sync_to_dev();
     horiz_contraction<Real>(result, field00_masked, field00);
     result.sync_to_host();
@@ -235,6 +237,27 @@ TEST_CASE("utils") {
       wavg_sum2 += mask(i) * wavg_v00(i);
     }
     REQUIRE_THAT(v(), Catch::Matchers::WithinRel(wavg_sum1/wavg_sum2, tol));
+
+    // Repeat but with ALL masked values
+    result = fieldsc.clone();
+    // inject a mask as the last entry
+    field00_masked = field00.clone();
+    mask_of_field00 = field00_masked.clone();
+    mask_of_field00.deep_copy(sp(1.0));
+    mask_of_field00.sync_to_host();
+    mask = mask_of_field00.get_view<Real *, Host>();
+    for(int i = 0; i < dim0; ++i) {
+      mask(i) = sp(0.0);
+    }
+    mask_of_field00.sync_to_dev();
+    field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
+    Real mask_v = constants::DefaultFillValue<float>::value;
+    field00_masked.get_header().set_extra_data("mask_value", mask_v);
+    field00_masked.sync_to_dev();
+    horiz_contraction<Real>(result, field00_masked, field00);
+    result.sync_to_host();
+    v = result.get_view<Real, Host>();
+    REQUIRE(v() == mask_v);
 
     // Test higher-order cases
     result = field_z.clone();
@@ -386,6 +409,7 @@ TEST_CASE("utils") {
       mask(dim0 - 1) = sp(0.0);
       mask_of_field00.sync_to_dev();
       field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
+      field00_masked.get_header().set_extra_data("mask_value", Real(constants::DefaultFillValue<float>::value));
       field00_masked.sync_to_dev();
       vert_contraction<Real,1>(result, field00_masked, field00);
       result.sync_to_host();
@@ -398,6 +422,27 @@ TEST_CASE("utils") {
         wavg_sum2 += mask(i) * wavg_v00(i);
       }
       REQUIRE_THAT(v(), Catch::Matchers::WithinRel(wavg_sum1/wavg_sum2, tol));
+
+      // Repeat but with ALL masked values
+      result = fieldsc.clone();
+      // inject a mask as the last entry
+      field00_masked = field00.clone();
+      mask_of_field00 = field00_masked.clone();
+      mask_of_field00.deep_copy(sp(1.0));
+      mask_of_field00.sync_to_host();
+      mask = mask_of_field00.get_view<Real *, Host>();
+      for (int i=0; i < dim2; ++i) {
+        mask(i) = sp(0.0);
+      }
+      mask_of_field00.sync_to_dev();
+      field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
+      Real mask_v = constants::DefaultFillValue<float>::value;
+      field00_masked.get_header().set_extra_data("mask_value", mask_v);
+      field00_masked.sync_to_dev();
+      vert_contraction<Real,1>(result, field00_masked, field00);
+      result.sync_to_host();
+      v = result.get_view<Real, Host>();
+      REQUIRE(v() == mask_v);
 
       // Test higher-order cases
       result = field_x.clone();
