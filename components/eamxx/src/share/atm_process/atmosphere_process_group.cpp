@@ -276,17 +276,6 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservatio
       continue;
     }
 
-//OG do we really need this check? It gets triggered for homme, but i do not see much use of this, disabling.
-#if 0    
-    // Since the checker is column local, require that an atm
-    // process that enables the check is a Physics process.
-    EKAT_REQUIRE_MSG(atm_proc->type() == AtmosphereProcessType::Physics,
-                     "Error! enable_column_conservation_checks=true "
-                     "for non-physics process \"" + atm_proc->name() + "\". "
-                     "This check is column local and therefore can only be run "
-                     "on physics processes.\n");
-#endif
-
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
