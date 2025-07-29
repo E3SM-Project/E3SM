@@ -217,9 +217,13 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
 
   // Get outputs back
   std::vector<view2dr_d> two_d_reals_out = {utgw, vtgw};
-  std::vector<view3dr_d> three_d_reals_out = {gwut};
+  std::vector<view3dr_d> three_d_reals_out = {tau, gwut};
   ekat::device_to_host({d.utgw, d.vtgw}, d.ncol, d.init.pver, two_d_reals_out);
-  ekat::device_to_host({d.gwut}, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1, three_d_reals_out);
+  ekat::device_to_host({d.tau, d.gwut},
+                       std::vector<int>(2, d.ncol),
+                       std::vector<int>{2*d.init.pgwv + 1, d.init.pver},
+                       std::vector<int>{d.init.pver + 1, 2*d.ngwv + 1},
+                       three_d_reals_out);
 
   gw_finalize_cxx(d.init);
 }
