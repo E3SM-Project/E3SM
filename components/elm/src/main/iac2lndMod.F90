@@ -78,7 +78,6 @@ contains
     this%frac_pft(:,:) = 1.0_r8
     this%frac_pft_prev(:,:) = 1.0_r8
     this%harvest_frac(:,:) = 1.0_r8
-    harvest_rates(:,:) = 0.0_r8
 
   end subroutine Init
 
