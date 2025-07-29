@@ -56,6 +56,8 @@ void HorizAvgDiag::initialize_impl(const RunType /*run_type*/) {
 
   if (f.get_header().has_extra_data("mask_data")) {
     m_dummy_field = m_diagnostic_output.clone(m_diag_name + "_dummy_field");
+    m_diagnostic_output.get_header().set_extra_data("mask_data", m_diagnostic_output.clone(m_diag_name+"_mask"));
+    m_diagnostic_output.get_header().set_extra_data("mask_value", f.get_header().get_extra_data<Real>("mask_value"));
   }
 }
 

@@ -42,6 +42,12 @@ void apply_conditional_sampling_1d(
   const auto input_v     = input_field.get_view<const Real *>();
   const auto condition_v = condition_field.get_view<const Real *>();
 
+  // Try to get input and condition masks, if present
+  bool has_input_mask = input_field.get_header().has_extra_data("mask_data");
+  bool has_condition_mask = condition_field.get_header().has_extra_data("mask_data");
+  auto input_mask_v = has_input_mask ? input_field.get_header().get_extra_data<Field>("mask_data").get_view<const Real *>() : input_v;
+  auto condition_mask_v = has_condition_mask ? condition_field.get_header().get_extra_data<Field>("mask_data").get_view<const Real *>() : condition_v;
+
   const int n_elements = output_field.get_header().get_identifier().get_layout().dims()[0];
 
   // Convert operator string to integer code for device use
@@ -49,7 +55,12 @@ void apply_conditional_sampling_1d(
 
   Kokkos::parallel_for(
       "ConditionalSampling1D", Kokkos::RangePolicy<>(0, n_elements), KOKKOS_LAMBDA(const int &idx) {
-        if (evaluate_condition(condition_v(idx), op_code, condition_val)) {
+        bool input_masked = has_input_mask && (input_mask_v(idx) == 0);
+        bool condition_masked = has_condition_mask && (condition_mask_v(idx) == 0);
+        if (input_masked || condition_masked) {
+          output_v(idx) = fill_value;
+          mask_v(idx) = 0;
+        } else if (evaluate_condition(condition_v(idx), op_code, condition_val)) {
           output_v(idx) = input_v(idx);
           mask_v(idx) = 1;
         } else {
@@ -70,6 +81,12 @@ void apply_conditional_sampling_2d(
   const auto input_v     = input_field.get_view<const Real **>();
   const auto condition_v = condition_field.get_view<const Real **>();
 
+  // Try to get input and condition masks, if present
+  bool has_input_mask = input_field.get_header().has_extra_data("mask_data");
+  bool has_condition_mask = condition_field.get_header().has_extra_data("mask_data");
+  auto input_mask_v = has_input_mask ? input_field.get_header().get_extra_data<Field>("mask_data").get_view<const Real **>() : input_v;
+  auto condition_mask_v = has_condition_mask ? condition_field.get_header().get_extra_data<Field>("mask_data").get_view<const Real **>() : condition_v;
+
   const int ncols = output_field.get_header().get_identifier().get_layout().dims()[0];
   const int nlevs = output_field.get_header().get_identifier().get_layout().dims()[1];
 
@@ -81,8 +98,12 @@ void apply_conditional_sampling_2d(
       KOKKOS_LAMBDA(const int &idx) {
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
-
-        if (evaluate_condition(condition_v(icol, ilev), op_code, condition_val)) {
+        bool input_masked = has_input_mask && (input_mask_v(icol, ilev) == 0);
+        bool condition_masked = has_condition_mask && (condition_mask_v(icol, ilev) == 0);
+        if (input_masked || condition_masked) {
+          output_v(icol, ilev) = fill_value;
+          mask_v(icol, ilev) = 0;
+        } else if (evaluate_condition(condition_v(icol, ilev), op_code, condition_val)) {
           output_v(icol, ilev) = input_v(icol, ilev);
           mask_v(icol, ilev) = 1;
         } else {
@@ -102,6 +123,10 @@ void apply_conditional_sampling_1d_lev(
   const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
   const auto input_v  = input_field.get_view<const Real *>();
 
+  // Try to get input mask, if present
+  bool has_input_mask = input_field.get_header().has_extra_data("mask_data");
+  auto input_mask_v = has_input_mask ? input_field.get_header().get_extra_data<Field>("mask_data").get_view<const Real *>() : input_v;
+
   const int n_elements = output_field.get_header().get_identifier().get_layout().dims()[0];
 
   // Convert operator string to integer code for device use
@@ -112,8 +137,11 @@ void apply_conditional_sampling_1d_lev(
       KOKKOS_LAMBDA(const int &idx) {
         // For 1D case, the level index is just the element index
         const Real level_idx = static_cast<Real>(idx);
-        
-        if (evaluate_condition(level_idx, op_code, condition_val)) {
+        bool input_masked = has_input_mask && (input_mask_v(idx) == 0);
+        if (input_masked) {
+          output_v(idx) = fill_value;
+          mask_v(idx) = 0;
+        } else if (evaluate_condition(level_idx, op_code, condition_val)) {
           output_v(idx) = input_v(idx);
           mask_v(idx) = 1;
         } else {
@@ -133,6 +161,10 @@ void apply_conditional_sampling_2d_lev(
   const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
   const auto input_v  = input_field.get_view<const Real **>();
 
+  // Try to get input mask, if present
+  bool has_input_mask = input_field.get_header().has_extra_data("mask_data");
+  auto input_mask_v = has_input_mask ? input_field.get_header().get_extra_data<Field>("mask_data").get_view<const Real **>() : input_v;
+
   const int ncols = output_field.get_header().get_identifier().get_layout().dims()[0];
   const int nlevs = output_field.get_header().get_identifier().get_layout().dims()[1];
 
@@ -144,11 +176,13 @@ void apply_conditional_sampling_2d_lev(
       KOKKOS_LAMBDA(const int &idx) {
         const int icol = idx / nlevs;
         const int ilev = idx % nlevs;
-        
         // The level index is the second dimension index (ilev)
         const Real level_idx = static_cast<Real>(ilev);
-
-        if (evaluate_condition(level_idx, op_code, condition_val)) {
+        bool input_masked = has_input_mask && (input_mask_v(icol, ilev) == 0);
+        if (input_masked) {
+          output_v(icol, ilev) = fill_value;
+          mask_v(icol, ilev) = 0;
+        } else if (evaluate_condition(level_idx, op_code, condition_val)) {
           output_v(icol, ilev) = input_v(icol, ilev);
           mask_v(icol, ilev) = 1;
         } else {
@@ -199,11 +233,11 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
 
-  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
-  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
-
   const auto var_fill_value = Real(constants::DefaultFillValue<float>::value);
   m_mask_val = m_params.get<double>("mask_value", var_fill_value);
+
+  m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
 
   // Special case: if condition field is "lev", we don't need to check layout compatibility
   // since "lev" is geometric information, not an actual field

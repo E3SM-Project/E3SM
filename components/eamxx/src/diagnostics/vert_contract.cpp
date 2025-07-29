@@ -118,6 +118,11 @@ void VertContractDiag::initialize_impl(const RunType /*run_type*/) {
   FieldIdentifier d_fid(m_diag_name, layout.clone().strip_dim(LEV), diag_units, fid.get_grid_name());
   m_diagnostic_output = Field(d_fid);
   m_diagnostic_output.allocate_view();
+
+  if (f.get_header().has_extra_data("mask_data")) {
+    m_diagnostic_output.get_header().set_extra_data("mask_data", m_diagnostic_output.clone(m_diag_name+"_mask"));
+    m_diagnostic_output.get_header().set_extra_data("mask_value", f.get_header().get_extra_data<Real>("mask_value"));
+  }
 }
 
 // TODO: move this to field_utils.hpp
