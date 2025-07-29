@@ -2680,7 +2680,7 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
 
   // Sync back to host
   std::vector<view_2d> inout_views = {dz_zt_d, dz_zi_d, rho_zt_d};
-  ekat::device_to_host<Int>({dz_zt, dz_zi, rho_zt}, {shcol, shcol, shcol}, {nlev, nlevi, nlev}, inout_views);
+  ekat::device_to_host({dz_zt, dz_zi, rho_zt}, std::vector<int>{shcol, shcol, shcol}, std::vector<int>{nlev, nlevi, nlev}, inout_views);
 }
 
 void eddy_diffusivities_host(Int nlev, Int shcol, bool shoc_1p5tke, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
