@@ -514,12 +514,27 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
 
 else()
   # Enable all EKAT packages
-  set(EKAT_ENABLE_KOKKOS ON)
-  set(EKAT_ENABLE_PACK ON)
-  set(EKAT_ENABLE_ALGORITHM ON)
-  set(EKAT_ENABLE_LOGGING ON)
-  set(EKAT_ENABLE_YAML_PARSER ON)
+  set(EKAT_ENABLE_ALL_PACKAGES ON)
   set(EKAT_DISABLE_TPL_WARNINGS ON)
+
+  # Disable tests by default (user can override via -D EKAT_ENABLE_TESTS=ON)
+  set (EKAT_ENABLE_TESTS OFF)
+
+  # Ensure testing options are consistent with EAMxx settings (threads, ranks, packs, etc)
+  set (EKAT_TEST_MAX_THREADS ${SCREAM_TEST_MAX_THREADS} CACHE STRING "Max number of threads for tests")
+  set (EKAT_TEST_THREAD_INC ${SCREAM_TEST_THREAD_INC} CACHE STRING "Thread count increment for threaded tests")
+  set (EKAT_TEST_MAX_RANKS ${SCREAM_TEST_MAX_RANKS} CACHE STRING "Max number of ranks for tests")
+  set (EKAT_TEST_PACK_SIZE ${SCREAM_PACK_SIZE} CACHE STRING
+    " The number of scalars in a pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
+
+  if (SCREAM_DOUBLE_PRECISION)
+    set (EKAT_TEST_SINGLE_PRECISION OFF)
+    set (EKAT_TEST_DOUBLE_PRECISION ON)
+  else()
+    set (EKAT_TEST_SINGLE_PRECISION ON)
+    set (EKAT_TEST_DOUBLE_PRECISION OFF)
+  endif()
+
   add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
