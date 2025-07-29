@@ -334,14 +334,15 @@ contains
       end do
 
       if (config_eddy_killing_correction_enable) then
-         leadingCoeff = 1.5_RKIND*config_eddy_killing_cd*config_eddy_killing_rhoa
+!         leadingCoeff = 1.5_RKIND*config_eddy_killing_cd*config_eddy_killing_rhoa
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             u10m = 0.5_RKIND*(windSpeed10m(cell1) + windSpeed10m(cell2))
             eddyKillingCorrection(iEdge) = 0.0_RKIND
             if (iceFraction(cell1) < 0.05_RKIND .and. iceFraction(cell2) < 0.05_RKIND) then
-               eddyKillingCorrection(iEdge) = 0.3_RKIND*leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)*u10m
+               leadingCoeff = -(-2.9E-3_RKIND*u10m + 0.008_RKIND)
+               eddyKillingCorrection(iEdge) = leadingCoeff*normalVelocity(minLevelEdgeBot(iEdge),iEdge)
                sfcStress(iEdge) = sfcStress(iEdge) + eddyKillingCorrection(iEdge)
             end if
 
@@ -364,8 +365,9 @@ contains
 #endif
       if (config_eddy_killing_correction_enable) then
       do iCell = 1, nCells
-        eddyKillCorrZon = leadingCoeff*windSpeed10m(iCell)*velocityZonal(minLevelCell(iCell),iCell)
-        eddyKillCorrMer = leadingCoeff*windSpeed10m(icell)*velocityMeridional(minLevelCell(iCell),iCell)
+        leadingCoeff = -(-2.9E-3_RKIND*windSpeed10m(iCell) + 0.008_RKIND)
+        eddyKillCorrZon = leadingCoeff*velocityZonal(minLevelCell(iCell),iCell)
+        eddyKillCorrMer = leadingCoeff*velocityMeridional(minLevelCell(iCell),iCell)
 
         if (iceFraction(iCell) > 0.05_RKIND) then
            eddyKillCorrZon = 0.0_RKIND
@@ -373,8 +375,8 @@ contains
         end if
 
         sfcStressMag(iCell) = sfcStressMag(iCell) + &
-                              sqrt( (windStressZonal(iCell) + 0.3_RKIND*eddyKillCorrZon)**2 &
-                                  + (windStressMerid(iCell) + 0.3_RKIND*eddyKillCorrMer)**2 )
+                              sqrt( (windStressZonal(iCell) + eddyKillCorrZon)**2 &
+                                  + (windStressMerid(iCell) + eddyKillCorrMer)**2 )
       end do
       else
       do iCell = 1, nCells
