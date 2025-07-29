@@ -887,6 +887,13 @@ TEST_CASE ("update") {
       Field f4 = two.clone();
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
+
+      // Check that updating with rhs==fill_value ignores the rhs
+      f3.deep_copy(constants::fill_value<Real>);
+      f3.get_header().set_extra_data("mask_value",constants::fill_value<Real>);
+      f2.deep_copy(1.0);
+      f2.max(f3);
+      REQUIRE (views_are_equal(f2,one));
     }
 
     SECTION ("int") {
@@ -904,6 +911,13 @@ TEST_CASE ("update") {
       Field f4 = two.clone();
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
+
+      // Check that updating with rhs==fill_value ignores the rhs
+      f3.deep_copy(constants::fill_value<int>);
+      f3.get_header().set_extra_data("mask_value",constants::fill_value<int>);
+      f2.deep_copy(1);
+      f2.max(f3);
+      REQUIRE (views_are_equal(f2,one));
     }
   }
 
@@ -949,6 +963,19 @@ TEST_CASE ("update") {
       // Same, but we discard current content of f3
       f3.update(f_real,2,0);
       REQUIRE (views_are_equal(f3,f2));
+
+      // Check that updating with rhs==fill_value ignores the rhs
+      Field one = f_real.clone();
+      one.deep_copy(1.0);
+
+      f3.deep_copy(constants::fill_value<Real>);
+      f3.get_header().set_extra_data("mask_value",constants::fill_value<Real>);
+      f2.deep_copy(1.0);
+      f2.update(f3,1,1);
+      if (not views_are_equal(f2,one)) {
+        print_field_hyperslab(f2);
+      }
+      REQUIRE (views_are_equal(f2,one));
     }
 
     SECTION ("int") {
@@ -968,6 +995,16 @@ TEST_CASE ("update") {
       // Same, but we discard current content of f3
       f3.update(f_int,2,0);
       REQUIRE (views_are_equal(f3,f2));
+
+      // Check that updating with rhs==fill_value ignores the rhs
+      Field one = f_int.clone();
+      one.deep_copy(1);
+
+      f3.deep_copy(constants::fill_value<int>);
+      f3.get_header().set_extra_data("mask_value",constants::fill_value<int>);
+      f2.deep_copy(1);
+      f2.update(f3,1,1);
+      REQUIRE (views_are_equal(f2,one));
     }
   }
 }

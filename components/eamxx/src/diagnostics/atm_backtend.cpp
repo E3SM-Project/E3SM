@@ -63,7 +63,7 @@ void AtmBackTendDiag::init_timestep(const util::TimeStamp &start_of_step) {
 }
 
 void AtmBackTendDiag::compute_diagnostic_impl() {
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
+  Real var_fill_value = constants::fill_value<Real>;
   std::int64_t dt;
 
   const auto &f       = get_field_in(m_name);

@@ -344,7 +344,7 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    Real var_fill_value = constants::DefaultFillValue<Real>().value;
+    Real var_fill_value = constants::fill_value<Real>;
     // Query the helper field for the fill value, if not present use default
     if (f.get_header().has_extra_data("mask_value")) {
       var_fill_value = f.get_header().get_extra_data<Real>("mask_value");

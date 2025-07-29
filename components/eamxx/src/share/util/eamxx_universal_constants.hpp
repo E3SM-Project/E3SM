@@ -12,15 +12,15 @@ constexpr int seconds_per_day       = 86400;
 constexpr int days_per_nonleap_year = 365;
 
 // Universal fill value for variables
-// TODO: When we switch to supporting C++17 we can use a simple `inline constexpr` rather than a struct
+// NOTE: for floating point numbers, use the SAME numerical value, so that
+//       we don't need to be aware of the precision of variables when checking
+//       against fill_value (e.g., when reading in double data that was saved
+//       in single precision)
 template<typename T>
-struct DefaultFillValue {
-  static constexpr bool is_float = std::is_floating_point<T>::value;
-  static constexpr bool is_int   = std::is_integral<T>::value;
-  static constexpr T value = is_int ? std::numeric_limits<int>::max() / 2 :
-	  is_float ? std::numeric_limits<float>::max() / 1e5 : std::numeric_limits<char>::max();
-
-};
+constexpr T fill_value =
+  std::is_integral_v<T> ? std::numeric_limits<int>::max() / 2
+                        : std::is_floating_point_v<T> ? std::numeric_limits<float>::max() / static_cast<float>(1e5)
+                                                      : std::numeric_limits<char>::max();
 
 } // namespace constants
 

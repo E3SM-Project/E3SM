@@ -65,7 +65,7 @@ TEST_CASE("atm_backtend") {
   REQUIRE_THROWS(diag_factory.create("AtmBackTendDiag", comm,
                                      params));  // No 'tendency_name'
 
-  Real var_fill_value = constants::DefaultFillValue<Real>().value;
+  Real var_fill_value = constants::fill_value<Real>;
 
   // Set time for qc and randomize its values
   qc.get_header().get_tracking().update_time_stamp(t0);
