@@ -83,3 +83,6 @@ CreateDiagTest(zonal_avg zonal_avg_test.cpp MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 
 # Test conditional sampling
 CreateDiagTest(conditional_sampling "conditional_sampling_test.cpp")
+
+# Test binary ops
+CreateDiagTest(binary_ops "binary_ops_test.cpp")

@@ -129,21 +129,25 @@ create_diagnostic (const std::string& diag_field_name,
   //       of each group in the matches output var!
   // Note: use raw string syntax R"(<string>)" to avoid having to escape the \ character
   // Note: the number for field_at_p/h can match positive integer/floating-point numbers
-  std::regex field_at_l (R"(([A-Za-z0-9_.+-]+)_at_(lev_(\d+)|model_(top|bot))$)");
-  std::regex field_at_p (R"(([A-Za-z0-9_.+-]+)_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
-  std::regex field_at_h (R"(([A-Za-z0-9_.+-]+)_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
+  // Start with a generic for a field name allowing for all letters, all numbers, dash, dot, plus, minus, product, and division
+  // Escaping all the special ones just in case
+  std::string generic_field = "([A-Za-z0-9_.+\\-\\*\\÷]+)"; 
+  std::regex field_at_l (R"()" + generic_field + R"(_at_(lev_(\d+)|model_(top|bot))$)");
+  std::regex field_at_p (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
+  std::regex field_at_h (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
   std::regex surf_mass_flux ("precip_(liq|ice|total)_surf_mass_flux$");
   std::regex water_path ("(Ice|Liq|Rain|Rime|Vap)WaterPath$");
   std::regex number_path ("(Ice|Liq|Rain)NumberPath$");
   std::regex aerocom_cld ("AeroComCld(Top|Bot)$");
   std::regex vap_flux ("(Meridional|Zonal)VapFlux$");
-  std::regex backtend ("([A-Za-z0-9_.+-]+)_atm_backtend$");
+  std::regex backtend (generic_field + "_atm_backtend$");
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
-  std::regex horiz_avg ("([A-Za-z0-9_.+-]+)_horiz_avg$");
-  std::regex vert_contract ("([A-Za-z0-9_.+-]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
-  std::regex zonal_avg (R"(([A-Za-z0-9_.+-]+)_zonal_avg_(\d+)_bins$)");
-  std::regex conditional_sampling (R"(([A-Za-z0-9_.+-]+)_where_([A-Za-z0-9_.+-]+)_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?)$)");
+  std::regex horiz_avg (generic_field + "_horiz_avg$");
+  std::regex vert_contract (generic_field + "_vert_(avg|sum)(_((dp|dz)_weighted))?$");
+  std::regex zonal_avg (R"()" + generic_field + R"(_zonal_avg_(\d+)_bins$)");
+  std::regex conditional_sampling (R"()" + generic_field + R"(_where_)" + generic_field + R"(_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?)$)");
+  std::regex binary_ops (R"()" + generic_field + R"(_(\+|\-|\*|\÷)_)" + generic_field + R"($)");
 
   std::string diag_name;
   std::smatch matches;
@@ -235,6 +239,13 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("condition_field", matches[2].str());
     params.set<std::string>("condition_operator", matches[3].str());
     params.set<std::string>("condition_value", matches[4].str());
+  }
+  else if (std::regex_search(diag_field_name,matches,binary_ops)) {
+    diag_name = "BinaryOpsDiag";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("field_1", matches[1].str());
+    params.set<std::string>("field_2", matches[3].str());
+    params.set<std::string>("binary_op", matches[2].str());
   }
   else
   {
