@@ -73,7 +73,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
         Real temp = c(pl_idx)-ubm(k);
         temp = temp * temp * temp; // BFB with fortran **3
         Real ubtlsat = init.effkwv * std::abs(temp) / (2*GWC::rog*t(k)*nm(k));
-        ubtl = min(ubtl, ubtlsat);
+        ubtl = ekat::impl::min(ubtl, ubtlsat);
       }
 
       // Apply tendency limits to maintain numerical stability.
@@ -81,8 +81,8 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       //    (u^n+1 = u^n + du/dt * dt)
       // 2. du/dt < tndmax    so that ridicuously large tendencies are not
       //    permitted
-      ubtl = min(ubtl, GWC::umcfac * std::abs(c(pl_idx)-ubm(k)) / dt);
-      ubtl = min(ubtl, init.tndmax);
+      ubtl = ekat::impl::min(ubtl, GWC::umcfac * std::abs(c(pl_idx)-ubm(k)) / dt);
+      ubtl = ekat::impl::min(ubtl, init.tndmax);
 
       if (k <= tend_level) {
         // Save tendency for each wave (for later computation of kzz),
