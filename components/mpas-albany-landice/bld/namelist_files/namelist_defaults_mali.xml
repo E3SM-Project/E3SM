@@ -110,7 +110,7 @@
 <config_subglacial_discharge_coefficient>3.0e-4</config_subglacial_discharge_coefficient>
 <config_subglacial_discharge_intercept>0.15</config_subglacial_discharge_intercept>
 <config_uniform_face_melt_rate>0.0</config_uniform_face_melt_rate>
-<config_ocean_data_extrapolation>.false.</config_ocean_data_extrapolation>
+<config_ocean_data_extrapolation>.true.</config_ocean_data_extrapolation>
 <config_calculate_thermal_forcing>.false.</config_calculate_thermal_forcing>
 <config_extrap_sill_blocking>.true.</config_extrap_sill_blocking>
 <config_TF_vertical_calc>'seafloor'</config_TF_vertical_calc>
