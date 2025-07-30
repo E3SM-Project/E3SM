@@ -3764,6 +3764,33 @@ end subroutine wrap_update_hifrq_hist
    return
  end subroutine wrap_hydraulics_drive
 
+! ======================================================================================
+
+ subroutine WrapTransferBC(this, nc)
+
+   ! !DESCRIPTION:
+   ! ---------------------------------------------------------------------------------
+   ! This call passes the HLM inputs to FATES patch-level boundary conditions
+   ! ---------------------------------------------------------------------------------
+
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer, intent(in) :: nc 
+   
+   ! !LOCAL:
+   integer :: s, ivar  ! indices and loop counters
+   
+   do s = 1, this%fates(nc)%nsites
+      do ivar = 1,this%num_hlmvar
+         call this%fates(nc)%sites(s)%TransferBCIn(this%api_str(ivar), &
+                                                   this%hlm_var_2darray(ivar)%hlm_var)
+      end do
+   end do
+
+ end subroutine WrapTransferBC
+
  ! ======================================================================================
 
  subroutine hlm_bounds_to_fates_bounds(hlm, fates)
@@ -4036,31 +4063,5 @@ end subroutine wrap_update_hifrq_hist
    call ncd_pio_closefile(ncid)
 
  end subroutine GetLandusePFTData
-
-! ======================================================================================
-
- subroutine WrapTransferBC(this, nc)
-
-   ! !DESCRIPTION:
-   ! ---------------------------------------------------------------------------------
-   ! This call updates the HLM inputs to FATES using the 
-   ! ---------------------------------------------------------------------------------
-
-   ! !USES:
-   !
-   ! !ARGUMENTS:
-   class(hlm_fates_interface_type), intent(inout) :: this
-   integer, intent(in) :: nc 
-   
-   ! !LOCAL:
-   integer :: s, ivar  ! indices and loop counters
-   
-   do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%num_hlmvar
-         call this%fates(nc)%sites(s)%TransferBC(this%api_str(ivar), this%hlm_var(ivar))
-      end do
-   end do
-
- end subroutine WrapTransferBC
 
 end module ELMFatesInterfaceMod
