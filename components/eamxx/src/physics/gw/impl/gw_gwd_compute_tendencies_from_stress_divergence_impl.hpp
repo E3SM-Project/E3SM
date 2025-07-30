@@ -44,9 +44,6 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   const uview_1d<Real>& utgw,
   const uview_1d<Real>& vtgw)
 {
-  // Temporary ubar tendencies (overall, at wave l, and at saturation).
-  uview_1d<Real> ubt = workspace.take("ubt");
-
   const Real ptaper = do_taper ? std::cos(lat) : 1.;
 
   // Force tau at the top of the model to zero, if requested.
@@ -60,7 +57,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, init.ktop, max_level+1), [&] (const int k) {
     //  Accumulate the mean wind tendency over wavenumber.
-    ubt(k) = 0.;
+    Real ubt = 0.;
 
     for (int l = -ngwv; l <= ngwv; ++l) { // loop over wave
       int nl_idx = l + ngwv; // 0-based idx for -ngwv:ngwv arrays
@@ -76,7 +73,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
         Real temp = c(pl_idx)-ubm(k);
         temp = temp * temp * temp; // BFB with fortran **3
         Real ubtlsat = init.effkwv * std::abs(temp) / (2*GWC::rog*t(k)*nm(k));
-        ubtl = std::min(ubtl, ubtlsat);
+        ubtl = min(ubtl, ubtlsat);
       }
 
       // Apply tendency limits to maintain numerical stability.
@@ -84,8 +81,8 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       //    (u^n+1 = u^n + du/dt * dt)
       // 2. du/dt < tndmax    so that ridicuously large tendencies are not
       //    permitted
-      ubtl = std::min(ubtl, GWC::umcfac * std::abs(c(pl_idx)-ubm(k)) / dt);
-      ubtl = std::min(ubtl, init.tndmax);
+      ubtl = min(ubtl, GWC::umcfac * std::abs(c(pl_idx)-ubm(k)) / dt);
+      ubtl = min(ubtl, init.tndmax);
 
       if (k <= tend_level) {
         // Save tendency for each wave (for later computation of kzz),
@@ -93,10 +90,10 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
         gwut(k,nl_idx) = sign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
 
         if (!init.orographic_only) {
-          ubt(k) = ubt(k) + gwut(k,nl_idx);
+          ubt += gwut(k,nl_idx);
         }
         else {
-          ubt(k) = ubt(k) + sign(ubtl, c(pl_idx)-ubm(k));
+          ubt += sign(ubtl, c(pl_idx)-ubm(k));
         }
 
         // Redetermine the effective stress on the interface below from
@@ -112,17 +109,15 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
     // Project the mean wind tendency onto the components.
     if (k <= tend_level) {
       if (!init.orographic_only) {
-        utgw(k) = ubt(k) * xv;
-        vtgw(k) = ubt(k) * yv;
+        utgw(k) = ubt * xv;
+        vtgw(k) = ubt * yv;
       }
       else {
-        utgw(k) = ubt(k) * xv * effgw * ptaper;
-        vtgw(k) = ubt(k) * yv * effgw * ptaper;
+        utgw(k) = ubt * xv * effgw * ptaper;
+        vtgw(k) = ubt * yv * effgw * ptaper;
       }
     }
   });
-
-  workspace.release(ubt);
 }
 
 } // namespace gw
