@@ -178,6 +178,8 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
   WSM wsm(d.init.pver, 1, policy);
   GWF::GwCommonInit init_cp = GWF::s_common_init;
 
+  view3dr_d work("work", d.ncol, d.init.pver, 2*d.ngwv + 1);
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int col = team.league_rank();
 
@@ -190,6 +192,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
     const auto t_c    = ekat::subview(t, col);
     const auto nm_c   = ekat::subview(nm, col);
     const auto tau_c  = ekat::subview(tau, col);
+    const auto work_c = ekat::subview(work, col);
     const auto utgw_c = ekat::subview(utgw, col);
     const auto vtgw_c = ekat::subview(vtgw, col);
     const auto gwut_c = ekat::subview(gwut, col);
@@ -211,6 +214,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
       xv(col),
       yv(col),
       tau_c,
+      work_c,
       gwut_c,
       utgw_c,
       vtgw_c

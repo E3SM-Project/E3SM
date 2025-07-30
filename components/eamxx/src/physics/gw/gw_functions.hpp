@@ -197,6 +197,7 @@ struct Functions
     const Real& yv,
     // Inputs/Outputs
     const uview_2d<Real>& tau,
+    const uview_2d<Real>& work,
     // Outputs
     const uview_2d<Real>& gwut,
     const uview_1d<Real>& utgw,
