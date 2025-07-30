@@ -332,6 +332,54 @@ Region-level CO2 emission file from GCAM
 Downscaling methods for CO2 emission: 1. Linear; 2: Convergence
 </entry>
 
+<entry id="crop_addtreeonly"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Add only trees upon crop abandonment
+</entry>
+
+<entry id="crop_setherbfracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Herbaceous retention upon crop addition: 0 to 2, 1 is proportional to existing, 0 maximizes herbaceous
+</entry>
+
+<entry id="crop_setavailtreefracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Remaining tree availability upon crop abandonment: 0 to 2, 1 is proportional to avaailable, 0 maximizes forest
+</entry>
+
+<entry id="pasture_addtreeonly"
+        type="integer"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Add only trees upon pasture abandonment
+</entry>
+
+<entry id="pasture_setherbfracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Herbaceous retention upon pasture addition: 0 to 2, 1 is proportional to existing, 0 maximizes herbaceous
+</entry>
+
+<entry id="pasture_setavailtreefracrem"
+        type="real"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Remaining tree availability upon pasture abandonment: 0 to 2, 1 is proportional to avaailable, 0 maximizes forest
+</entry>
+
 <entry id="fdyndat_ehc"
         type="char*256"
         category="gcam"

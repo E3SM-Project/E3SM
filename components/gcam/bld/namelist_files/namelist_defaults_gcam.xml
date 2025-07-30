@@ -64,6 +64,14 @@ for the iac data in the e3sm distribution
 <co2_gcam_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/GCAMRegionalCO2Data.csv</co2_gcam_file>
 <surface_co2_downscaling_method>Linear</surface_co2_downscaling_method>
 
+<!-- future (>=2015) land conversion assumptions -->
+<crop_addtreeonly>0</crop_addtreeonly>
+<crop_setherbfracrem>1.0</crop_setherbfracrem>
+<crop_setavailtreefracrem>0.0</crop_setavailtreefracrem>
+<pasture_addtreeonly>0</pasture_addtreeonly>
+<pasture_setherbfracrem>1.0</pasture_setherbfracrem>
+<pasture_setavailtreefracrem>0.0</pasture_setavailtreefracrem>
+
 <!-- Name of dynamic landuse timeseries file  -->
 <fdyndat_ehc>surfdata_iESM_dyn.nc</fdyndat_ehc>
 
