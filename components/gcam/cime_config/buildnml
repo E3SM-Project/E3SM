@@ -30,7 +30,6 @@ def buildnml(case, caseroot, compname):
     ninst_iac            = case.get_value("NINST_IAC")
     get_refcase          = case.get_value("GET_REFCASE")
     iac_grid             = case.get_value("IAC_GRID")
-    #glm_grid             = case.get_value("GLM_GRID") # 
     gcam_bldnml_opts   = case.get_value("GCAM_BLDNML_OPTS")
     gcam_namelist_opts = case.get_value("GCAM_NAMELIST_OPTS")
     rundir               = case.get_value("RUNDIR")
@@ -54,8 +53,18 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     # Have to update this when we build grids more
-    iac_grid_supported = ("0.9x1.25", "1.9x2.5", "null")
+    iac_grid_supported = ("r0125", "r05","0.9x1.25", "1.9x2.5", "null")
     expect(iac_grid in iac_grid_supported, "IAC_GRID '{}' is not supported in GCAM. Choose from: {}".format(iac_grid,iac_grid_supported))
+
+    #--------------------------------------------------------------------
+    # There is no configure script!
+    # So for now make a simple one that just sets hgrid in config_cache.xml
+    # - remove the creation of config_cache.xml from build-namelist
+    #--------------------------------------------------------------------
+    
+    sysmod = os.path.join(srcroot, "components/gcam/bld/configure")
+    sysmod += " -hgrid {}".format(iac_grid)
+    run_cmd_no_fail(sysmod, from_dir=iacconf_dir)    
 
     #--------------------------------------------------------------------
     # Invoke gcam build-namelist - output will go in $CASEBUILD/gcamconf

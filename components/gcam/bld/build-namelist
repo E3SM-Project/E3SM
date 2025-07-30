@@ -85,7 +85,8 @@ my $outdirname = "$cwd";                  # Default name of output directory nam
 #-----------------------------------------------------------------------------------------------
 # Process command-line options.
 #
-my %opts = ( help        => 0,
+my %opts = ( config      => $cfg_cache,
+             help        => 0,
 	     silent      => 0,
 	     caseroot    => 0,
 	     scriptsroot => 0,
@@ -129,24 +130,26 @@ print "print = $print";
 
 if ($print>=2) { print "Setting gcam configuration script directory to $cfgdir$eol"; }
 
+#### delete this cuz the config_cache is now created by configure
+
 #-----------------------------------------------------------------------------------------------
 # Create config_cache.xml file (needed below)
 # Apparently, this actually creates the config_cache.xml file, from the
 # various configs and inputs stored elsewhere.  Following mosart here...
 
-my $config_cache = "$CASEROOT/Buildconf/gcamconf/config_cache.xml";
-my  $fh = new IO::File;
-$fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
-print $fh  <<"EOF";
-<?xml version="1.0"?>
-<config_definition>
-</config_definition>
-EOF
-$fh->close;
-if ($print>=1) { print "Wrote file $config_cache $eol"; }
-(-f "$config_cache")  or  die <<"EOF";
-** $ProgName - Cannot find configuration cache file: $config_cache\" **
-EOF
+#my $config_cache = "$CASEROOT/Buildconf/gcamconf/config_cache.xml";
+#my  $fh = new IO::File;
+#$fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
+#print $fh  <<"EOF";
+#<?xml version="1.0"?>
+#<config_definition>
+#</config_definition>
+#EOF
+#$fh->close;
+#if ($print>=1) { print "Wrote file $config_cache $eol"; }
+#(-f "$config_cache")  or  die <<"EOF";
+#** $ProgName - Cannot find configuration cache file: $config_cache\" **
+#EOF
 
 #-----------------------------------------------------------------------------------------------
 # Make sure we can find required perl modules, definition, and defaults files.
@@ -219,7 +222,7 @@ require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
 # Create a configuration object from the GCAM config_cache.xml file. 
-my $cfg = Build::Config->new('config_cache.xml');
+my $cfg = Build::Config->new($opts{'config'});
 
 # Create a namelist definition object.  This object provides a method for verifying that the
 # output namelist variables are in the definition file, and are output in the correct
@@ -378,6 +381,81 @@ add_default($nl, 'ehc_eam_co2_emissions');
 add_default($nl, 'gcam_spinup');
 add_default($nl, 'run_gcam');
 
+#####################################
+## namelist group: mksrf           ##
+#####################################
+
+# resolution dependent items
+add_default($nl, 'mksrf_fgrid');
+add_default($nl, 'map_fpft');
+add_default($nl, 'map_fharvest');
+add_default($nl, 'map_fglacier');
+add_default($nl, 'map_fsoicol');
+add_default($nl, 'map_fsoiord');
+add_default($nl, 'map_furban');
+add_default($nl, 'map_fmax');
+add_default($nl, 'map_forganic');
+add_default($nl, 'map_flai');
+add_default($nl, 'map_flakwat');
+add_default($nl, 'map_fwetlnd');
+add_default($nl, 'map_fvocef');
+add_default($nl, 'map_fsoitex');
+add_default($nl, 'map_furbtopo');
+add_default($nl, 'map_flndtopo');
+add_default($nl, 'map_fgdp');
+add_default($nl, 'map_fpeat');
+add_default($nl, 'map_fabm');
+add_default($nl, 'map_ftopostats');
+add_default($nl, 'map_fvic');
+add_default($nl, 'map_fch4');
+add_default($nl, 'map_fphosphorus');
+add_default($nl, 'map_fgrvl');
+add_default($nl, 'map_fslp10');
+add_default($nl, 'map_fero');
+
+# data files
+add_default($nl, 'mksrf_fvegtyp');
+add_default($nl, 'mksrf_fglacier');
+add_default($nl, 'mksrf_fsoicol');
+add_default($nl, 'mksrf_fsoiord');
+add_default($nl, 'mksrf_furban');
+add_default($nl, 'mksrf_fmax');
+add_default($nl, 'mksrf_forganic');
+add_default($nl, 'mksrf_flai');
+add_default($nl, 'mksrf_flakwat');
+add_default($nl, 'mksrf_fwetlnd');
+add_default($nl, 'mksrf_fvocef');
+add_default($nl, 'mksrf_fsoitex');
+add_default($nl, 'mksrf_furbtopo');
+add_default($nl, 'mksrf_flndtopo');
+add_default($nl, 'mksrf_fgdp');
+add_default($nl, 'mksrf_fpeat');
+add_default($nl, 'mksrf_fabm');
+add_default($nl, 'mksrf_ftopostats');
+add_default($nl, 'mksrf_fvic');
+add_default($nl, 'mksrf_fch4');
+add_default($nl, 'mksrf_fphosphorus');
+add_default($nl, 'mksrf_fgrvl');
+add_default($nl, 'mksrf_fslp10');
+add_default($nl, 'mksrf_fero');
+add_default($nl, 'mksrf_fdynuse');
+
+# logical switches
+add_default($nl, 'all_urban');
+add_default($nl, 'no_inlandwet');
+add_default($nl, 'outnc_double');
+
+# integer settings
+add_default($nl, 'nglcec');
+add_default($nl, 'outnc_dims');
+
+# generated file names
+add_default($nl, 'fsurdat');
+add_default($nl, 'fsurlog');
+add_default($nl, 'fdyndat');
+
+
+
 #-----------------------------------------------------------------------------------------------
 # Validate that the entire resultant namelist is valid
 #
@@ -389,7 +467,7 @@ $definition->validate($nl);
 my $note = "";
 
 # gcam_in
-my @groups = qw(gcam_inparm);
+my @groups = qw(gcam_inparm mksrf);
 my $outfile = "./gcam_in";
 $nl->write($outfile, 'groups'=>\@groups, 'note'=>"$note" );
 if ($print>=2) { print "Writing gcam namelist to $outfile $eol"; }
@@ -643,7 +721,3 @@ sub quote_string {
     }
     return $str;
 }
-
-
-
-

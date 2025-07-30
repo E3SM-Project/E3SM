@@ -16,13 +16,21 @@ for the iac data in the e3sm distribution
 
 <namelist_defaults>
 
-<case_name>gcam_test</case_name>
+<!-- gcam_inparm  -->
+
+<case_name>e3sm_gcam</case_name>
 
 <!-- Grid and region size parameters -->
 <num_pft>17</num_pft>
 <num_harvest>5</num_harvest>
-<num_lat>192</num_lat>
-<num_lon>288</num_lon>
+<num_lat hgrid="r0125">1440</num_lat>
+<num_lon hgrid="r0125">2880</num_lon>
+<num_lat hgrid="r05">360</num_lat>
+<num_lon hgrid="r05">720</num_lon>
+<num_lat hgrid="0.91.25">192</num_lat>
+<num_lon hgrid="0.91.25">288</num_lon>
+<num_lat hgrid="1.9x2.5">96</num_lat>
+<num_lon hgrid="1.9x2.5">144</num_lon>
 <num_gcam_energy_regions>32</num_gcam_energy_regions>
 <num_gcam_land_regions>392</num_gcam_land_regions>
 <num_iac2elm_landtypes>9</num_iac2elm_landtypes>
@@ -34,12 +42,30 @@ for the iac data in the e3sm distribution
 <gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
 <base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_regional.csv</base_gcam_co2_file>
 <base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
-<base_co2_surface_file>iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_surface_file>
-<base_co2_shipment_file>iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_shipment_file>
-<base_co2_aircraft_file>iac/giac/gcam/gcam_6_0/data/CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_aircraft_file>
-<base_npp_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
-<base_hr_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
-<base_pft_file>iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_co2_surface_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.125x0.125_input4MIPs_2014.csv</base_co2_surface_file>
+<base_co2_surface_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.5x0.5_input4MIPs_2014.csv</base_co2_surface_file>
+<base_co2_surface_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_surface_file>
+<base_co2_surface_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_1.9x2.5_input4MIPs_2014.csv</base_co2_surface_file>
+<base_co2_shipment_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_0.125x0.125_input4MIPs_2014.csv</base_co2_shipment_file>
+<base_co2_shipment_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_0.5x0.5_input4MIPs_2014.csv</base_co2_shipment_file>
+<base_co2_shipment_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_shipment_file>
+<base_co2_shipment_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/CO2-em-SHIP-anthro_1.9x2.5_input4MIPs_2014.csv</base_co2_shipment_file>
+<base_co2_aircraft_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/CO2-em-AIR-2lvl-anthro_0.125x0.125_input4MIPs_2014.csv</base_co2_aircraft_file>
+<base_co2_aircraft_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/CO2-em-AIR-2lvl-anthro_0.5x0.5_input4MIPs_2014.csv</base_co2_aircraft_file>
+<base_co2_aircraft_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/CO2-em-AIR-2lvl-anthro_0.9x1.25_input4MIPs_2014.csv</base_co2_aircraft_file>
+<base_co2_aircraft_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/CO2-em-AIR-2lvl-anthro_1.9x2.5_input4MIPs_2014.csv</base_co2_aircraft_file>
+<base_npp_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_npp_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_npp_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_npp_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_annAvgMonthly_2010-2014_npp.csv</base_npp_file>
+<base_hr_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_hr_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_hr_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_hr_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_annAvgMonthly_2010-2014_hr.csv</base_hr_file>
+<base_pft_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_pft_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_pft_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_pft_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_regional.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
@@ -47,15 +73,24 @@ for the iac data in the e3sm distribution
 
 <!-- Grid and mapping and initialization files with relative paths from
      inputdata directory -->
-<gcam_gridfile>iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc</gcam_gridfile>
-<elm2gcam_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_mapping_file>
+<gcam_gridfile hgrid="r0125">iac/giac/glm2iac/landuse.timeseries_0.125x0.125_HIST_simyr2015_c241204.nc</gcam_gridfile>
+<gcam_gridfile hgrid="r05">iac/giac/glm2iac/landuse.timeseries_0.5x0.5_HIST_simyr2015_c241204.nc</gcam_gridfile>
+<gcam_gridfile hgrid="0.9x1.25">iac/giac/glm2iac/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc</gcam_gridfile>
+<gcam_gridfile hgrid="1.9x2.5">iac/giac/glm2iac/landuse.timeseries_1.9x2.5_HIST_simyr2015_c241204.nc</gcam_gridfile>
+<elm2gcam_mapping_file hgrid="r0125">iac/giac/iac2gcam/elm0.125x0.125togcam_mapping.csv</elm2gcam_mapping_file>
+<elm2gcam_mapping_file hgrid="r05">iac/giac/iac2gcam/elm0.5x0.5togcam_mapping.csv</elm2gcam_mapping_file>
+<elm2gcam_mapping_file hgrid="0.9x1.25">iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_mapping_file>
+<elm2gcam_mapping_file hgrid="1.9x2.5">iac/giac/iac2gcam/elm1.9x2.5togcam_mapping.csv</elm2gcam_mapping_file>
 <gcam2glm_glumap>iac/giac/glm/inputs/gcam2glm_mapping.csv</gcam2glm_glumap>
 <gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
 <gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>
 
 <!-- Config and input files for emiss downscaling, with relative paths from
      inputdata directory -->
-<country2grid_map>iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm0.9x1.25tocountry_mapping_iso.csv</country2grid_map>
+<country2grid_map hgrid="r0125">iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm0.125x0.125tocountry_mapping_iso.csv</country2grid_map>
+<country2grid_map hgrid="r05">iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm0.5x0.5tocountry_mapping_iso.csv</country2grid_map>
+<country2grid_map hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm0.9x1.25tocountry_mapping_iso.csv</country2grid_map>
+<country2grid_map hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/emission_downscaling/elm1.9x2.5tocountry_mapping_iso.csv</country2grid_map>
 <country2region_map>iac/giac/gcam/gcam_6_0/data/emission_downscaling/iso_GCAM_regID_32reg.csv</country2region_map>
 <pop_iiasa_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/IIASAPOPData.csv</pop_iiasa_file>
 <gdp_iiasa_file>iac/giac/gcam/gcam_6_0/data/emission_downscaling/IIASAGDPData.csv</gdp_iiasa_file>
@@ -84,4 +119,173 @@ for the iac data in the e3sm distribution
 <ehc_eam_co2_emissions>.true.</ehc_eam_co2_emissions>
 <gcam_spinup>.false.</gcam_spinup>
 <run_gcam>.true.</run_gcam>
+
+
+<!-- mksrf  -->
+
+<!-- this group is used by mksurfdata to create the land data  -->
+
+<!-- resolution dependent grid/mapping files  -->
+
+<!-- r0125  -->
+
+<mksrf_fgrid hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</mksrf_fgrid>
+<map_fpft hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fpft>
+<map_fharvest hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fharvest>
+<map_fglacier hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_3x3min_GLOBE-Gardner_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fglacier>
+<map_fsoicol hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fsoicol>
+<map_fsoiord hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fsoiord>
+<map_furban hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_3x3min_LandScan2004_to_0.125x0.125_nomask_aave_da_c190725.nc</map_furban>
+<map_fmax hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_3x3min_USGS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fmax>
+<map_forganic hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_5x5min_ISRIC-WISE_to_0.125x0.125_nomask_aave_da_c190725.nc</map_forganic>
+<map_flai hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_flai>
+<map_flakwat hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_3x3min_MODIS_to_0.125x0.125_nomask_aave_da_c190725.nc</map_flakwat>
+<map_fwetlnd hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fwetlnd>
+<map_fvocef hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fvocef>
+<map_fsoitex hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_5x5min_IGBP-GSDP_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fsoitex>
+<map_furbtopo hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_10x10min_nomask_to_0.125x0.125_nomask_aave_da_c190725.nc</map_furbtopo>
+<map_flndtopo hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_10x10min_nomask_to_0.125x0.125_nomask_aave_da_c190725.nc</map_flndtopo>
+<map_fgdp hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fgdp>
+<map_fpeat hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fpeat>
+<map_fabm hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fabm>
+<map_ftopostats hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.125x0.125_nomask_aave_da_c190725.nc</map_ftopostats>
+<map_fvic hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.9x1.25_GRDC_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fvic>
+<map_fch4 hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_360x720cru_cruncep_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fch4>
+<map_fphosphorus hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_GSDTG2000_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fphosphorus>
+<map_fgrvl hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_5x5min_ISRIC-WISE_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fgrvl>
+<map_fslp10 hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fslp10>
+<map_fero hgrid="r0125">lnd/clm2/mappingdata/maps/0.125x0.125/map_0.5x0.5_AVHRR_to_0.125x0.125_nomask_aave_da_c190725.nc</map_fero>
+
+<!-- r05  -->
+
+<mksrf_fgrid hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</mksrf_fgrid>
+<map_fpft hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fpft>
+<map_fharvest hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fharvest>
+<map_fglacier hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_3x3min_GLOBE-Gardner_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fglacier>
+<map_fsoicol hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fsoicol>
+<map_fsoiord hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fsoiord>
+<map_furban hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_3x3min_LandScan2004_to_0.5x0.5_nomask_aave_da_c190417.nc</map_furban>
+<map_fmax hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_3x3min_USGS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fmax>
+<map_forganic hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_5x5min_ISRIC-WISE_to_0.5x0.5_nomask_aave_da_c190417.nc</map_forganic>
+<map_flai hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_flai>
+<map_flakwat hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_3x3min_MODIS_to_0.5x0.5_nomask_aave_da_c190417.nc</map_flakwat>
+<map_fwetlnd hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fwetlnd>
+<map_fvocef hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fvocef>
+<map_fsoitex hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_5x5min_IGBP-GSDP_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fsoitex>
+<map_furbtopo hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_10x10min_nomask_to_0.5x0.5_nomask_aave_da_c190417.nc</map_furbtopo>
+<map_flndtopo hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_10x10min_nomask_to_0.5x0.5_nomask_aave_da_c190417.nc</map_flndtopo>
+<map_fgdp hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fgdp>
+<map_fpeat hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fpeat>
+<map_fabm hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fabm>
+<map_ftopostats hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.5x0.5_nomask_aave_da_c190417.nc</map_ftopostats>
+<map_fvic hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.9x1.25_GRDC_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fvic>
+<map_fch4 hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_360x720cru_cruncep_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fch4>
+<map_fphosphorus hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_GSDTG2000_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fphosphorus>
+<map_fgrvl hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_5x5min_ISRIC-WISE_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fgrvl>
+<map_fslp10 hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fslp10>
+<map_fero hgrid="r05">lnd/clm2/mappingdata/maps/0.5x0.5/map_0.5x0.5_AVHRR_to_0.5x0.5_nomask_aave_da_c190417.nc</map_fero>
+
+<!-- f09  -->
+
+<mksrf_fgrid hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc</mksrf_fgrid>
+<map_fpft hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc</map_fpft>
+<map_fharvest hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc</map_fharvest>
+<map_fglacier hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_3x3min_GLOBE-Gardner_to_0.9x1.25_nomask_aave_da_c120923.nc</map_fglacier>
+<map_fsoicol hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc</map_fsoicol>
+<map_fsoiord hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc</map_fsoiord>
+<map_furban hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_3x3min_LandScan2004_to_0.9x1.25_nomask_aave_da_c120522.nc</map_furban>
+<map_fmax hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_3x3min_USGS_to_0.9x1.25_nomask_aave_da_c120926.nc</map_fmax>
+<map_forganic hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_5x5min_ISRIC-WISE_to_0.9x1.25_nomask_aave_da_c120525.nc</map_forganic>
+<map_flai hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_landuse_to_0.9x1.25_aave_da_110307.nc</map_flai>
+<map_flakwat hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_3x3min_MODIS_to_0.9x1.25_nomask_aave_da_c120523.nc</map_flakwat>
+<map_fwetlnd hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fwetlnd>
+<map_fvocef hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fvocef>
+<map_fsoitex hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_5minx5min_soitex_to_0.9x1.25_aave_da_110722.nc</map_fsoitex>
+<map_furbtopo hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_10minx10min_topo_to_0.9x1.25_aave_da_110630.nc</map_furbtopo>
+<map_flndtopo hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_10minx10min_topo_to_0.9x1.25_aave_da_110630.nc</map_flndtopo>
+<map_fgdp hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fgdp>
+<map_fpeat hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fpeat>
+<map_fabm hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fabm>
+<map_ftopostats hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.9x1.25_nomask_aave_da_c130405.nc</map_ftopostats>
+<map_fvic hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.9x1.25_GRDC_to_0.9x1.25_nomask_aave_da_c130308.nc</map_fvic>
+<map_fch4 hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_360x720_cruncep_to_0.9x1.25_nomask_aave_da_c130326.nc</map_fch4>
+<map_fphosphorus hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_GSDTG2000_to_0.9x1.25_nomask_aave_da_c161010.nc</map_fphosphorus>
+<map_fgrvl hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_5x5min_ISRIC-WISE_to_0.9x1.25_nomask_aave_da_c120525.nc</map_fgrvl>
+<map_fslp10 hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fslp10>
+<map_fero hgrid="0.9x1.25">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_lanwat_to_0.9x1.25_aave_da_110307.nc</map_fero>
+
+<!-- f19  -->
+
+<mksrf_fgrid hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</mksrf_fgrid>
+<map_fpft hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</map_fpft>
+<map_fharvest hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</map_fharvest>
+<map_fglacier hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_3x3min_GLOBE-Gardner_to_1.9x2.5_nomask_aave_da_c120923.nc</map_fglacier>
+<map_fsoicol hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</map_fsoicol>
+<map_fsoiord hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</map_fsoiord>
+<map_furban hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_3x3min_LandScan2004_to_1.9x2.5_nomask_aave_da_c120522.nc</map_furban>
+<map_fmax hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_3x3min_USGS_to_1.9x2.5_nomask_aave_da_c120926.nc</map_fmax>
+<map_forganic hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_5x5min_ISRIC-WISE_to_1.9x2.5_nomask_aave_da_c111115.nc</map_forganic>
+<map_flai hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_landuse_to_1.9x2.5_aave_da_110307.nc</map_flai>
+<map_flakwat hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_3x3min_MODIS_to_1.9x2.5_nomask_aave_da_c111111.nc</map_flakwat>
+<map_fwetlnd hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fwetlnd>
+<map_fvocef hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fvocef>
+<map_fsoitex hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_5minx5min_soitex_to_1.9x2.5_aave_da_110307.nc</map_fsoitex>
+<map_furbtopo hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_10minx10min_topo_to_1.9x2.5_aave_da_110307.nc</map_furbtopo>
+<map_flndtopo hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_10minx10min_topo_to_1.9x2.5_aave_da_110307.nc</map_flndtopo>
+<map_fgdp hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fgdp>
+<map_fpeat hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fpeat>
+<map_fabm hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fabm>
+<map_ftopostats hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_1.9x2.5_nomask_aave_da_c130405.nc</map_ftopostats>
+<map_fvic hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.9x1.25_GRDC_to_1.9x2.5_nomask_aave_da_c130308.nc</map_fvic>
+<map_fch4 hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_360x720_cruncep_to_1.9x2.5_nomask_aave_da_c130326.nc</map_fch4>
+<map_fphosphorus hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_GSDTG2000_to_1.9x2.5_nomask_aave_da_c161010.nc</map_fphosphorus>
+<map_fgrvl hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_5x5min_ISRIC-WISE_to_1.9x2.5_nomask_aave_da_c111115.nc</map_fgrvl>
+<map_fslp10 hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fslp10>
+<map_fero hgrid="1.9x2.5">lnd/clm2/mappingdata/maps/1.9x2.5/map_0.5x0.5_lanwat_to_1.9x2.5_aave_da_110307.nc</map_fero>
+
+<!-- data files  -->
+
+<mksrf_fvegtyp>lnd/clm2/rawdata/LUT_LUH2_HIST_LUH1f_07082020/LUT_LUH2_historical_2015_c07082020.nc</mksrf_fvegtyp>
+<mksrf_fglacier>lnd/clm2/rawdata/mksrf_glacier_3x3min_simyr2000.c120926.nc</mksrf_fglacier>
+<mksrf_fsoicol>lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_soilcol_global_c090324.nc</mksrf_fsoicol>
+<mksrf_fsoiord>lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_soilord_global_c150313.nc</mksrf_fsoiord>
+<mksrf_furban>lnd/clm2/rawdata/mksrf_urban_0.05x0.05_simyr2000.c120621.nc</mksrf_furban>
+<mksrf_fmax>lnd/clm2/rawdata/mksrf_fmax_3x3min_USGS_c120911.nc</mksrf_fmax>
+<mksrf_forganic>lnd/clm2/rawdata/mksrf_organic_10level_5x5min_ISRIC-WISE-NCSCD_nlev7_c120830.nc</mksrf_forganic>
+<mksrf_flai>lnd/clm2/rawdata/pftlandusedyn.0.5x0.5.simyr1850-2005.c090630/mksrf_lai_global_c090506.nc</mksrf_flai>
+<mksrf_flakwat>lnd/clm2/rawdata/mksrf_LakePnDepth_3x3min_simyr2004_c111116.nc</mksrf_flakwat>
+<mksrf_fwetlnd>lnd/clm2/rawdata/mksrf_lanwat.050425.nc</mksrf_fwetlnd>
+<mksrf_fvocef>lnd/clm2/rawdata/mksrf_vocef_0.5x0.5_simyr2000.c110531.nc</mksrf_fvocef>
+<mksrf_fsoitex>lnd/clm2/rawdata/mksrf_soitex.10level.c010119.nc</mksrf_fsoitex>
+<mksrf_furbtopo>lnd/clm2/rawdata/mksrf_topo.10min.c080912.nc</mksrf_furbtopo>
+<mksrf_flndtopo>lnd/clm2/rawdata/topodata_10min_USGS_071205.nc</mksrf_flndtopo>
+<mksrf_fgdp>lnd/clm2/rawdata/mksrf_gdp_0.5x0.5_AVHRR_simyr2000.c130228.nc</mksrf_fgdp>
+<mksrf_fpeat>lnd/clm2/rawdata/mksrf_peatf_0.5x0.5_AVHRR_simyr2000.c130228.nc</mksrf_fpeat>
+<mksrf_fabm>lnd/clm2/rawdata/mksrf_abm_0.5x0.5_AVHRR_simyr2000.c130201.nc</mksrf_fabm>
+<mksrf_ftopostats>lnd/clm2/rawdata/mksrf_topostats_1km-merge-10min_HYDRO1K-merge-nomask_simyr2000.c130402.nc</mksrf_ftopostats>
+<mksrf_fvic>lnd/clm2/rawdata/mksrf_vic_0.9x1.25_GRDC_simyr2000.c130307.nc</mksrf_fvic>
+<mksrf_fch4>lnd/clm2/rawdata/mksrf_ch4inversion_360x720_cruncep_simyr2000.c130322.nc</mksrf_fch4>
+<mksrf_fphosphorus>lnd/clm2/rawdata/mksrf_soilphos_0.5x0.5_simyr1850.c170623.nc</mksrf_fphosphorus>
+<mksrf_fgrvl>lnd/clm2/rawdata/mksrf_gravel_10level_5min.c190603.nc</mksrf_fgrvl>
+<mksrf_fslp10>lnd/clm2/rawdata/mksrf_slope_10p_0.5x0.5.c190603.nc</mksrf_fslp10>
+<mksrf_fero>lnd/clm2/rawdata/mksrf_soilero_0.5x0.5.c190603.nc</mksrf_fero>
+<mksrf_fdynuse>mksurf_landuse_iESM_720x360.nc</mksrf_fdynuse>
+
+<!-- logical switches  -->
+
+<all_urban>.false.</all_urban>
+<no_inlandwet>.true.</no_inlandwet>
+<outnc_double>.true.</outnc_double>
+
+<!-- integer settings  -->
+
+<nglcec>0</nglcec>
+<outnc_dims>2</outnc_dims>
+
+<!-- mksurfdata generated files names  -->
+
+<fsurdat>surfdata_iESM.nc</fsurdat>
+<fsurlog>surfdata_iESM.log</fsurlog>
+<fdyndat>surfdata_iESM_dyn.nc</fdyndat>
+
 </namelist_defaults>
