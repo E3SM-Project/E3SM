@@ -257,7 +257,7 @@ module ELMFatesInterfaceMod
       
       ! This is the array that contains the common API vocabulary
       ! between FATES and the host land model.
-      character(len=*), allocatable :: api_str(:)
+      character(len=:), allocatable :: api_str(:)
       
       ! This is the array that contains the host land model variable
       ! associated with the common API vocabulary string
@@ -3543,11 +3543,12 @@ end subroutine wrap_update_hifrq_hist
    class(hlm_fates_interface_type), intent(inout) :: this
 
    ! !LOCAL:
-   integer :: ivar = 0               ! array index
-   integer, parameter :: num_hlmvar  ! number of HLM variables
+   integer :: ivar = 0                           ! array index
+   integer, parameter :: max_string_length = 24  ! maximum length of common vocab string
+   integer, parameter :: num_hlmvar = 2          ! number of HLM variables
    
    ! Allocate the arrays
-   allocate(this%api_str(num_hlmvar))
+   allocate(character(len=max_string_length) :: this%api_str(num_hlmvar))
    allocate(this%hlm_var(num_hlmvar))
    
    ! Increment through the arrays and assign HLM variables to common API vocab
