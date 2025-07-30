@@ -1245,7 +1245,7 @@ contains
          gdp_lf_col = this%fates_fire_data_method%GetGDP()
       end if
       
-      ! Transfer boundary conditions to the FATES patch data structure
+      ! Transfer decomposition fluxes to the FATES patch data structure
       call this%WrapTransferBC(nc)
 
       do s=1,this%fates(nc)%nsites
@@ -1273,9 +1273,6 @@ contains
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
          
-         ! Decomposition fluxes
-         call this%fates(nc)%UpdateBCIn(s)
-
          ! Soil water
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
                col_ws%h2osoi_vol(c,1:nlevsoil)
