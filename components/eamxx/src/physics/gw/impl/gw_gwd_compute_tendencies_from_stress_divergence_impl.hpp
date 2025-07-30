@@ -39,6 +39,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   const Real& yv,
   // Inputs/Outputs
   const uview_2d<Real>& tau,
+  const uview_2d<Real>& work,
   // Outputs
   const uview_2d<Real>& gwut,
   const uview_1d<Real>& utgw,
@@ -53,15 +54,16 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
     }
   }
 
-  // Loop over levels from top to bottom
+  // Loop waves
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, init.ktop, max_level+1), [&] (const int k) {
+    Kokkos::TeamVectorRange(team, -ngwv, ngwv+1), [&] (const int l) {
     //  Accumulate the mean wind tendency over wavenumber.
-    Real ubt = 0.;
+    int nl_idx = l + ngwv; // 0-based idx for -ngwv:ngwv arrays
+    int pl_idx = nl_idx + (pgwv - ngwv); // 0-based idx -pgwv:pgwv arrays
 
-    for (int l = -ngwv; l <= ngwv; ++l) { // loop over wave
-      int nl_idx = l + ngwv; // 0-based idx for -ngwv:ngwv arrays
-      int pl_idx = nl_idx + (pgwv - ngwv); // 0-based idx -pgwv:pgwv arrays
+    // Loop over levels from top to bottom. Each level reads and writes to
+    // the next level, so this loop must be serialized.
+    for (int k = init.ktop; k <= max_level; ++k) {
 
       // Determine the wind tendency, including excess stress carried down
       // from above.
@@ -89,11 +91,14 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
         // applying efficiency and taper:
         gwut(k,nl_idx) = sign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
 
+        // atomic_sum for a workspace item ubt(k) are another option here. It works
+        // but, since the order of operations is non-deterministic, there are
+        // non-deterministic round-off differences from run to run.
         if (!init.orographic_only) {
-          ubt += gwut(k,nl_idx);
+          work(k, nl_idx) = gwut(k,nl_idx);
         }
         else {
-          ubt += sign(ubtl, c(pl_idx)-ubm(k));
+          work(k, nl_idx) = sign(ubtl, c(pl_idx)-ubm(k));
         }
 
         // Redetermine the effective stress on the interface below from
@@ -105,17 +110,26 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
         tau(pl_idx,k+1) = tau(pl_idx,k) + ubtl * dpm(k) / C::gravit;
       }
     }
+  });
+
+  team.team_barrier();
+
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, init.ktop, tend_level+1), [&] (const int k) {
+    // Serialize the sum so it's repeatable
+    Real ubt = 0.;
+    for (size_t i = 0; i < work.extent(1); ++i) {
+      ubt += work(k, i);
+    }
 
     // Project the mean wind tendency onto the components.
-    if (k <= tend_level) {
-      if (!init.orographic_only) {
-        utgw(k) = ubt * xv;
-        vtgw(k) = ubt * yv;
-      }
-      else {
-        utgw(k) = ubt * xv * effgw * ptaper;
-        vtgw(k) = ubt * yv * effgw * ptaper;
-      }
+    if (!init.orographic_only) {
+      utgw(k) = ubt * xv;
+      vtgw(k) = ubt * yv;
+    }
+    else {
+      utgw(k) = ubt * xv * effgw * ptaper;
+      vtgw(k) = ubt * yv * effgw * ptaper;
     }
   });
 }
