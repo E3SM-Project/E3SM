@@ -47,7 +47,7 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeTendenciesFromStressDivergence : pub
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (Int i = 0; i < num_runs; ++i) {
       GwdComputeTendenciesFromStressDivergenceData& d = baseline_data[i];
-      d.randomize(engine,  { {d.tend_level, {init_data[i].ktop+1, init_data[i].kbotbg}} });
+      d.randomize(engine,  { {d.tend_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
