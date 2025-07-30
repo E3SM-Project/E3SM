@@ -228,6 +228,14 @@ module ELMFatesInterfaceMod
       integer, allocatable :: hsites  (:)
 
    end type f2hmap_type
+   
+   type, public :: hlm_fates_api_var_type
+
+      ! This is the pointer to the host land model variable
+      ! data associated with the common API vocabulary string
+      real(r8), pointer :: hlm_var(:,:)
+
+   end type hlm_fates_api_var_type
 
 
    type, public :: hlm_fates_interface_type
@@ -259,9 +267,8 @@ module ELMFatesInterfaceMod
       ! between FATES and the host land model.
       character(len=:), allocatable :: api_str(:)
       
-      ! This is the array that contains the host land model variable
-      ! associated with the common API vocabulary string
-      real(r8), allocatable :: hlm_var(:)
+      ! This is the array of pointers to the host land model data
+      type(hlm_fates_api_var_type), allocatable :: hlm_var_2darray(:)
       
       ! This is the number of HLM variables that are being passed to FATES
       integer :: num_hlmvar
@@ -3549,22 +3556,26 @@ end subroutine wrap_update_hifrq_hist
    
    ! Allocate the arrays
    allocate(character(len=max_string_length) :: this%api_str(num_hlmvar))
-   allocate(this%hlm_var(num_hlmvar))
+   allocate(this%hlm_var_2darray(num_hlmvar))
    
    ! Increment through the arrays and assign HLM variables to common API vocab
+   ! 1D arrays
+   ! 2D arrays
    ivar = ivar + 1
    this%api_str(ivar) = 'decomp_frac_moisture'
-   this%hlm_var(ivar) => col_cf%w_scalar
+   this%hlm_var_2darray(ivar)%hlm_var => col_cf%w_scalar
 
    ivar = ivar + 1
    this%api_str(ivar) = 'decomp_frac_temperature'
-   this%hlm_var(ivar) => col_cf%t_scalar
+   this%hlm_var_2darray(ivar)%hlm_var => col_cf%t_scalar
+   
+   ! 3D arrays
    
    ! Check that the number of variables set matches
    ! specifically in the case in which the number set
    ! is lower than the allocated amount
    if (ivar /= num_hlmvar) then
-      write(iulog,*) 'FATES API: Number of variables does not match the expected array size'
+      write(iulog,*) 'FATES API: Number of API variables does not match the expected array size'
       call endrun(msg=errMsg(sourcefile, __LINE__))
    else
       this%num_hlmvar = num_hlmvar
