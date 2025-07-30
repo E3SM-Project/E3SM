@@ -3,9 +3,10 @@
 
 #include "share/util/eamxx_universal_constants.hpp"
 
-#include <ekat/ekat_scalar_traits.hpp>
-#include <ekat/util/ekat_math_utils.hpp>
-#include <ekat/util/ekat_where.hpp>
+#include <ekat_scalar_traits.hpp>
+#include <ekat_math_utils.hpp>
+#include <ekat_pack_where.hpp>
+#include <ekat_kernel_assert.hpp>
 
 // For KOKKOS_INLINE_FUNCTION
 #include <Kokkos_Core.hpp>

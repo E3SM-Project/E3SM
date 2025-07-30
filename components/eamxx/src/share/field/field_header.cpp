@@ -1,13 +1,13 @@
 #include "share/field/field_header.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
+#include <ekat_std_utils.hpp>
 
 namespace scream {
 
 FieldHeader::FieldHeader (const identifier_type& id)
  : m_identifier (id)
- , m_tracking (create_tracking())
 {
+  m_tracking   = std::make_shared<FieldTracking>();
   m_alloc_prop = std::make_shared<FieldAllocProp>(get_type_size(id.data_type()));
   m_extra_data = std::make_shared<extra_data_type>();
 
@@ -19,7 +19,7 @@ FieldHeader::FieldHeader (const identifier_type& id)
 
 void FieldHeader::
 set_extra_data (const std::string& key,
-                const ekat::any& data,
+                const std::any& data,
                 const bool throw_if_existing)
 {
   if (throw_if_existing) {
@@ -33,7 +33,7 @@ set_extra_data (const std::string& key,
 }
 
 std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name) const {
-  auto fh = create_header(get_identifier().alias(name));
+  auto fh = std::make_shared<FieldHeader>(get_identifier().alias(name));
   if (get_parent() != nullptr) {
     // If we're aliasing, we MUST keep track of the parent
     fh->create_parent_child_link(get_parent());
@@ -76,11 +76,11 @@ create_subfield_header (const FieldIdentifier& id,
       "Error! Invalid pointer for parent header.\n");
 
   // Create header, and set up parent/child
-  auto fh = create_header(id);
+  auto fh = std::make_shared<FieldHeader>(id);
   fh->create_parent_child_link(parent);
 
   // Create tracking, and set up parent/child
-  fh->m_tracking = create_tracking();
+  fh->m_tracking = std::make_shared<FieldTracking>();
   fh->m_tracking->create_parent_child_link(parent->get_tracking_ptr());
   if (parent->get_tracking().get_time_stamp().is_valid()) {
     fh->m_tracking->update_time_stamp(parent->get_tracking().get_time_stamp());
@@ -104,11 +104,11 @@ create_subfield_header(const FieldIdentifier& id,
                    "Error! Slice indices are invalid (non-increasing).\n");
 
   // Create header, and set up parent/child
-  auto fh = create_header(id);
+  auto fh = std::make_shared<FieldHeader>(id);
   fh->create_parent_child_link(parent);
 
   // Create tracking, and set up parent/child
-  fh->m_tracking = create_tracking();
+  fh->m_tracking = std::make_shared<FieldTracking>();
   fh->m_tracking->create_parent_child_link(parent->get_tracking_ptr());
   if (parent->get_tracking().get_time_stamp().is_valid()) {
     fh->m_tracking->update_time_stamp(parent->get_tracking().get_time_stamp());

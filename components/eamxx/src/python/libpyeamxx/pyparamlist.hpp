@@ -1,7 +1,7 @@
 #ifndef PYPARAMLIST_HPP
 #define PYPARAMLIST_HPP
 
-#include <ekat/ekat_parameter_list.hpp>
+#include <ekat_parameter_list.hpp>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/list.h>

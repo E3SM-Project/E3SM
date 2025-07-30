@@ -11,10 +11,9 @@
 #include "share/grid/grids_manager.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
-#include "ekat/logging/ekat_logger.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
+#include <ekat_logger.hpp>
+#include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
 
 namespace scream
 {
@@ -64,7 +63,7 @@ class OutputManager
 public:
   using fm_type = FieldManager;
   using gm_type = GridsManager;
-  using globals_map_t = std::map<std::string,ekat::any>;
+  using globals_map_t = std::map<std::string,std::shared_ptr<std::any>>;
 
   // Constructor(s) & Destructor
   OutputManager() = default;
@@ -106,7 +105,7 @@ public:
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase>& atm_logger) {
       m_atm_logger = atm_logger;
   }
-  void add_global (const std::string& name, const ekat::any& global);
+  void add_global (const std::string& name, const std::shared_ptr<std::any>& global);
 
   void init_timestep (const util::TimeStamp& start_of_step, const Real dt);
   void run (const util::TimeStamp& current_ts);

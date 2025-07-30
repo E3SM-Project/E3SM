@@ -15,7 +15,8 @@
 #include "control/atmosphere_surface_coupling_importer.hpp"
 
 // EKAT headers
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
+#include <ekat_kokkos_types.hpp>
+#include <ekat_yaml.hpp>
 
 TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   using namespace scream;

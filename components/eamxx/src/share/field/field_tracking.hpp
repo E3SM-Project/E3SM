@@ -6,9 +6,9 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_family_tracking.hpp"
 
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_string_utils.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>   // For std::weak_ptr
 #include <string>
@@ -92,17 +92,6 @@ protected:
   // Here, we keep track of the names of all the groups that this field belongs to.
   std::set<ci_string> m_groups;
 };
-
-// Use this free function to exploit features of enable_shared_from_this,
-// as well as features from FamilyTracking.
-template<typename... Args>
-inline std::shared_ptr<FieldTracking>
-create_tracking(const Args&... args) {
-  auto ptr = std::make_shared<FieldTracking>(args...);
-  ptr->setSelfPointer(ptr);
-  return ptr;
-}
-
 
 } // namespace scream
 

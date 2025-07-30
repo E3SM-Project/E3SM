@@ -6,9 +6,6 @@
 #include "physics/share/physics_constants.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <algorithm>
 #include <array>

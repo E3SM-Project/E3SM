@@ -1,7 +1,6 @@
 set(PHYSICS_SHARE_SRCS
   physics_share_f2c.F90
   physics_share.cpp
-  physics_test_data.cpp
   eamxx_trcmix.cpp
 )
 
@@ -22,6 +21,11 @@ target_include_directories(physics_share PUBLIC
 target_link_libraries(physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
+
+  target_sources(scream_test_support PRIVATE
+    physics_test_data.cpp
+  )
+
   add_subdirectory(tests)
 endif()
 
