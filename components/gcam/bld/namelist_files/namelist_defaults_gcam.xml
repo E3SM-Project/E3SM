@@ -27,8 +27,8 @@ for the iac data in the e3sm distribution
 <num_lon hgrid="r0125">2880</num_lon>
 <num_lat hgrid="r05">360</num_lat>
 <num_lon hgrid="r05">720</num_lon>
-<num_lat hgrid="0.91.25">192</num_lat>
-<num_lon hgrid="0.91.25">288</num_lon>
+<num_lat hgrid="0.9x1.25">192</num_lat>
+<num_lon hgrid="0.9x1.25">288</num_lon>
 <num_lat hgrid="1.9x2.5">96</num_lat>
 <num_lon hgrid="1.9x2.5">144</num_lon>
 <num_gcam_energy_regions>32</num_gcam_energy_regions>
