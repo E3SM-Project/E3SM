@@ -92,7 +92,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       if (k <= tend_level) {
         // Save tendency for each wave (for later computation of kzz),
         // applying efficiency and taper:
-        gwut(k,nl_idx) = sign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
+        gwut(k,nl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
 
         // atomic_sum for a workspace item ubt(k) are another option here. It works
         // but, since the order of operations is non-deterministic, there are
@@ -101,7 +101,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
           work(k, nl_idx) = gwut(k,nl_idx);
         }
         else {
-          work(k, nl_idx) = sign(ubtl, c(pl_idx)-ubm(k));
+          work(k, nl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k));
         }
 
         // Redetermine the effective stress on the interface below from
