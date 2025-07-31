@@ -1261,7 +1261,7 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- precip scaling -->
+<!-- precip_scaling -->
 
 <entry id="config_use_precip_scaling" type="logical"
 	category="precip_scaling" group="precip_scaling">
