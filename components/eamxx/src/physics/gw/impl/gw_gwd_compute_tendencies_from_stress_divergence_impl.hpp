@@ -49,10 +49,13 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 
   // Force tau at the top of the model to zero, if requested.
   if (init.tau_0_ubc) {
-    for (size_t i = 0; i < tau.extent(0); ++i) {
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, 0, tau.extent(0)), [&] (const int i) {
       tau(i,0) = 0.;
-    }
+    });
   }
+
+  team.team_barrier();
 
   // Loop waves
   Kokkos::parallel_for(
