@@ -20,11 +20,13 @@ template <typename Engine>
 inline auto get_common_init_data(Engine& engine)
 {
   std::array<GwInit, 4> rv = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   0,     72,    .67, 6.28e-5),
+    // gw_ediff::vd_lu_decomp breaks if kbot==pver
+
+    //     pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
+    GwInit(  72,   20, 0.75,     false,      false,     false,         16,   8,     66,    .67, 6.28e-5),
+    GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   6,     68,    .67, 6.28e-5),
+    GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   3,     70,    .67, 6.28e-5),
+    GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   0,     71,    .67, 6.28e-5),
   };
 
   for (auto& d : rv) {
