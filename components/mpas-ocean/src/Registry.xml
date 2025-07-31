@@ -764,27 +764,27 @@
 	</nml_record>
 	<nml_record name="precip_scaling" mode="init;forward">
 		<nml_option name="config_use_precip_scaling" type="logical" default_value=".false."
-					description="If true, precipitation fluxes are scalled to ensure freshwater balance in the ocean model. This option should be used when the ocean model is driven by a data atmosphere with prescribed precipitation (rain + snow) fluxes."
+					description="If true, precipitation fluxes will be scalled to ensure freshwater balance in FOSI runs referring to forced ocean-sea ice simulation where ocean model is driven by a data atmosphere with prescribed precipitation (rain + snow) fluxes."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_precip_scaling_mode" type="character" default_value="constant"
-					description="Option for precipitation scaling to ensure freshwater balance in the ocean model.config_precip_scaling_mode='constant' uses a prescribed constant factor applied to precipitation fluxes. config_precip_scaling_mode='time-dependent' enables the dynamical caclulation of scaling factors using annual and global mean precipitation (rain + snow) and sea surface height changes over one-year or multi-year period."
-					possible_values="'constant' or 'time-dependent'"
+					description="Option for scaling precipitation fluxes to ensure freshwater balance in FOSI runs. config_precip_scaling_mode='constant' uses a prescribed constant factor applied to precipitation fluxes. config_precip_scaling_mode='time-dependent' enables the dynamical caclulation of scaling factors using annual and global mean precipitation (rain + snow) and sea surface height changes over one-year or multi-year period."
+					possible_values="'off', 'constant' or 'time-dependent'"
 		/>
 		<nml_option name="config_precip_scaling_initial_factor" type="real" default_value="1.0" units="unitless"
-					description="Initial guess scaling factor on precipitation for config_precip_scaling_mode = 'time-dependent'."
-					possible_values="Any non-negative number between 0 and 1.0. A value of 1.0 means no scaling."
+					description="Initial guess scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'time-dependent'."
+					possible_values="Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling."
 		/>
 		<nml_option name="config_precip_scaling_constant_factor" type="real" default_value="1.0" units="unitless"
-					description="Prescribed constant scaling factor on precipitation for config_precip_scaling_mode = 'constant'."
-					possible_values="Any non-negative number between 0 and 1.0. A value of 1.0 means no scaling is applied."
+					description="Prescribed constant scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'constant'."
+					possible_values="Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling."
 		/>
 		<nml_option name="config_precip_scaling_history_years" type="integer" default_value="1" units="years"
-					description="The number of years over which precipitation scaling factor is computed. The default is 1 year."
-					possible_values="Must be a positive integer greater than or equal to 1."
+					description="The number of years over which scaling factor on precipitation fluxes is computed in FOSI runs. Default value is 1 year."
+					possible_values="Positive integer greater than or equal to 1."
 		/>
 		<nml_option name="config_precip_scaling_write_to_logfile" type="logical" default_value=".false."
-					description="Logical flag indicating whether precipitation flux scaling information is written to the log file."
+					description="Logical flag indicating whether information for precipitation flux scaling in FOSI runs will be written to the log file."
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
