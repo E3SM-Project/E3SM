@@ -6,9 +6,8 @@
 #include "share/field/field.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include "ekat_comm.hpp"
 
 namespace scream {
 
