@@ -663,7 +663,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        const int team_size=nlev;
 #else
        const int team_size=1;
-#endif  
+#endif
   const auto policy = TPF::get_default_team_policy(ncol, team_size);
 
   // preprocess input -- needs a scan for the calculation of atm height
@@ -1037,7 +1037,6 @@ void MAMMicrophysics::run_impl(const double dt) {
                               photo_work_arrays_icol); // out
   });
 
-#if 0
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl::sethet", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1053,35 +1052,74 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     const auto work_set_het_icol = ekat::subview(work_set_het, icol);
     auto work_set_het_ptr = (Real *)work_set_het_icol.data();
-    const auto het_rates = View2D(work_set_het_ptr, nlev, num_gas_aerosol_constituents);
+    const auto het_rates = view_2d(work_set_het_ptr, nlev, num_gas_aerosol_constituents);
     work_set_het_ptr += nlev * num_gas_aerosol_constituents;
     // vmr0 stores mixing ratios before chemistry changes the mixing
-    view_1d vmr_col[num_gas_aerosol_constituents];
+    mam4::ColumnView vmr_col[num_gas_aerosol_constituents];
     for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
-     vmr_col[i] = view_1d(work_set_het_ptr, nlev);
+     vmr_col[i] = mam4::ColumnView(work_set_het_ptr, nlev);
      work_set_het_ptr += nlev;
     }
-
-    const auto work_sethet_call = View1D(work_set_het_ptr, sethet_work_len);
+    const int sethet_work_len = mam4::mo_sethet::get_work_len_sethet();
+    const auto work_sethet_call = view_1d(work_set_het_ptr, sethet_work_len);
     work_set_het_ptr += sethet_work_len;
 
-    const int sethet_work_len = mam4::mo_sethet::get_work_len_sethet();
-    EKAT_KERNEL_ASSERT_MSG(
-      mam4::mo_sethet::get_total_work_len_sethet() ==
-          work_set_het_ptr - work_set_het_icol.data(),
-      "Error: Work buffer memory allocation exceeds expected value.");
+    //EKAT_KERNEL_ASSERT_MSG(
+    //  mam4::mo_sethet::get_total_work_len_sethet() ==
+    //      work_set_het_ptr - work_set_het_icol.data(),
+    //  "Error: Work buffer memory allocation exceeds expected value.");
 
     // fetch column-specific subviews into aerosol prognostics
     mam4::Prognostics progs =
             mam_coupling::aerosols_for_column(dry_aero, icol);
     // het_rates_icol work array.
-    mam4::microphysics::mmr2vmr_col(team, atm, progs, adv_mass_kg_per_moles, offset_aerosol, vmr_col);
+    mam4::microphysics::mmr2vmr_col(team, atm, progs, adv_mass_kg_per_moles,
+       offset_aerosol, vmr_col);
     team.team_barrier();
 
     mam4::mo_sethet::sethet(team, atm, het_rates, rlats, phis, cmfdqr, prain_icol,
                           nevapr_icol, dt, invariants_icol, vmr_col,
                           work_sethet_call);
   });
+#if 0
+  Kokkos::parallel_for(
+      "MAMMicrophysics::run_impl::extract_stateq", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+  // extract aerosol state variables into "working arrays" (mass
+    // mixing ratios) (in EAM, this is done in the gas_phase_chemdr
+    // subroutine defined within
+    //  mozart/mo_gas_phase_chemdr.F90)
+    state_q(pcnst)
+    qqcw_pcnst(pcnst)
+    qq[gas_pcnst]
+    qqcw[gas_pcnst]
+    vmr[gas_pcnst]
+    vmrcw[gas_pcnst]
+
+    Real state_q[pcnst] = {};
+    Real qqcw_pcnst[pcnst] = {};
+    // output (state_q)
+    mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q, kk);
+    // output (qqcw_pcnst)
+    mam4::utils::extract_qqcw_from_prognostics(progs, qqcw_pcnst, kk);
+    Real qq[gas_pcnst] = {};
+    Real qqcw[gas_pcnst] = {};
+    for (int i = offset_aerosol; i < pcnst; ++i) {
+      qq[i - offset_aerosol] = state_q[i];
+      qqcw[i - offset_aerosol] = qqcw_pcnst[i];
+    }
+
+    // convert mass mixing ratios to volume mixing ratios (VMR),
+    // equivalent to tracer mixing ratios (TMR)
+    Real vmr[gas_pcnst] = {}, vmrcw[gas_pcnst] = {};
+    // output (vmr)
+    mam4::microphysics::mmr2vmr(qq, adv_mass_kg_per_moles, vmr);
+    // output (vmrcw)
+    mam4::microphysics::mmr2vmr(qqcw, adv_mass_kg_per_moles, vmrcw);
+
+  });
+
+
 #endif
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
@@ -1272,6 +1310,38 @@ void MAMMicrophysics::run_impl(const double dt) {
       extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
   });
 
+#if 0
+  for (int mm = 0; mm < extcnt; ++mm) {
+    const auto field_n = ekat::subview(extfrc_test,mm);
+    const auto field_o = ekat::subview(extfrc,mm);
+    scream::impl::compute_and_print_hash(field_n, "extfrc_new_",mm,0);
+    scream::impl::compute_and_print_hash(field_o, "extfrc_old_",mm,0);
+    scream::impl::compute_and_print_diff(field_n,field_o,"DIFF_",mm,0);
+  }
+
+
+  for (int mm = 0; mm < mam4::gas_chemistry::nfs; ++mm) {
+    const auto field_n = ekat::subview(invariants_test,mm);
+    const auto field_o = ekat::subview(invariants,mm);
+    scream::impl::compute_and_print_hash(field_n, "invariants_new_",mm,0);
+    scream::impl::compute_and_print_hash(field_o, "invariants_old_",mm,0);
+    scream::impl::compute_and_print_diff(field_n,field_o,"DIFF_",mm,0);
+  }
+
+  scream::impl::compute_and_print_hash(o3_col_dens_test, "o3_col_dens_new_",0,0);
+  scream::impl::compute_and_print_hash(o3_col_dens, "o3_col_dens_old_",0,0);
+
+  // scream::impl::compute_and_print_diff(o3_col_dens_test,o3_col_dens,"DIFF_",0,0);
+  for (int mm = 0; mm < mam4::mo_photo::phtcnt; ++mm) {
+    const auto field_n = ekat::subview(photo_rates_test,mm);
+    const auto field_o = ekat::subview(photo_rates,mm);
+    scream::impl::compute_and_print_hash(field_n, "photo_rates_new_",mm,0);
+    scream::impl::compute_and_print_hash(field_o, "photo_rates_old_",mm,0);
+    scream::impl::compute_and_print_diff(field_n,field_o,"DIFF_",mm,0);
+
+  }
+  //
+#endif
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
