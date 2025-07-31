@@ -181,7 +181,7 @@ void AtmosphereProcess::run (const double dt) {
       // Print hash of INPUTS before run
       print_global_state_hash(name() + "-pre-sc-" + std::to_string(m_subcycle_iter),
                               m_start_of_step_ts,
-                              true, false, true);
+                              true, false, false);
 
     // Run derived class implementation
     run_impl(dt_sub);
@@ -190,7 +190,7 @@ void AtmosphereProcess::run (const double dt) {
       // Print hash of OUTPUTS/INTERNALS after run
       print_global_state_hash(name() + "-pst-sc-" + std::to_string(m_subcycle_iter),
                               m_end_of_step_ts,
-                              false, true, true);
+                              true, true, true);
 
     if (has_energy_fixer()){
       const bool & debug_info = has_energy_fixer_debug_info();
