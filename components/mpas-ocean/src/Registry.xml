@@ -782,7 +782,7 @@
 		<nml_option name="config_precip_scaling_history_years" type="integer" default_value="1" units="years"
 					description="The number of years over which scaling factor on precipitation fluxes is computed in FOSI runs. Default value is 1 year."
 					possible_values="Positive integer greater than or equal to 1."
-                />
+		/>
 		<nml_option name="config_precip_scaling_write_to_logfile" type="logical" default_value=".false."
 					description="Logical flag indicating whether information for precipitation flux scaling in FOSI runs will be written to the log file."
 					possible_values=".true. or .false."
