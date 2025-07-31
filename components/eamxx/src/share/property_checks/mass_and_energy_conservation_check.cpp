@@ -296,6 +296,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
 
 void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
 {
+  using TPF = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
@@ -320,7 +321,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   const auto ice_flux   = m_fields.at("ice_flux"  ).get_view<const Real*>();
   const auto heat_flux  = m_fields.at("heat_flux" ).get_view<const Real*>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
+  const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -476,10 +477,11 @@ compute_gas_mass_on_column (const KT::MemberType&       team,
                             const int                   nlevs,
                             const uview_1d<const Real>& pseudo_density)
 {
+  using RU = ekat::ReductionUtils<DefaultDevice::execution_space>;
   using PC = scream::physics::Constants<Real>;
   const Real gravit = PC::gravit;
 
-  return ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs,
+  return RU::parallel_reduce<Real>(team, 0, nlevs,
                                               [&] (const int lev, Real& local_mass) {
     local_mass += pseudo_density(lev)/gravit;
   });
