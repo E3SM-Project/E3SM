@@ -150,21 +150,20 @@ void AtmosphereProcess
   } else if (m_internal_diagnostics_level==2) {
     // Hash fields individually. Notice that, if a field is requested individually
     // as well as part of a group, it will be hashed twice (independently)
-    auto make_hash_name = [](const Field& f) -> std::string {
-      const auto& fid = f.get_header().get_identifier();
-      const auto& fl = fid.get_layout();
-      return f.name() + " (" + ekat::join(fl.names(),",") + ") <" + fid.get_grid_name() + ">";
+    auto layout = [](const Field& f) -> std::string {
+      const auto& fl = f.get_header().get_identifier().get_layout();
+      return " (" + ekat::join(fl.names(),",") + ")";
     };
     if (compute[0]) {
       for (const auto& f : m_fields_in) {
         laccum.emplace_back();
-        hash_names.push_back(make_hash_name(f));
+        hash_names.push_back(f.name()+layout(f));
         hash(f,laccum.back());
       }
       for (const auto& g : m_groups_in) {
         for (const auto& [fn,f] : g.m_individual_fields) {
           laccum.emplace_back();
-          hash_names.push_back(make_hash_name(*f));
+          hash_names.push_back(fn+layout(*f));
           hash(*f,laccum.back());
         }
       }
@@ -172,13 +171,13 @@ void AtmosphereProcess
     if (compute[1]) {
       for (const auto& f : m_fields_out) {
         laccum.emplace_back();
-        hash_names.push_back(make_hash_name(f));
+        hash_names.push_back(f.name()+layout(f));
         hash(f,laccum.back());
       }
       for (const auto& g : m_groups_out) {
         for (const auto& [fn,f] : g.m_individual_fields) {
           laccum.emplace_back();
-          hash_names.push_back(make_hash_name(*f));
+          hash_names.push_back(fn+layout(*f));
           hash(*f,laccum.back());
         }
       }
@@ -186,7 +185,7 @@ void AtmosphereProcess
     if (compute[2]) {
       for (const auto& f : m_internal_fields) {
         laccum.emplace_back();
-        hash_names.push_back(make_hash_name(f));
+        hash_names.push_back(f.name()+layout(f));
         hash(f,laccum.back());
       }
     }
