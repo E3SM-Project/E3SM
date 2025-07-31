@@ -756,11 +756,11 @@
 		/>
 		<nml_option name="config_precip_scaling_initial_factor" type="real" default_value="1.0" units="unitless"
 					description="Initial guess scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'time-dependent'."
-					possible_values="Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling."
+					possible_values="Non-negative number. A default value of 1.0 indicates no scaling, but values greater than 1.0 can be used to scale up precipitation fluxes in order to achieve freshwater balance in FOSI runs."
 		/>
 		<nml_option name="config_precip_scaling_constant_factor" type="real" default_value="1.0" units="unitless"
 					description="Prescribed constant scaling factor on precipitation fluxes in FOSI runs when config_precip_scaling_mode = 'constant'."
-					possible_values="Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling."
+					possible_values="Non-negative number between 0 and 1.0. Default value of 1.0 means no scaling, but values greater than 1.0 can be used to scale up precipitation fluxes in order to achieve freshwater balance in FOSI runs."
 		/>
 		<nml_option name="config_precip_scaling_history_years" type="integer" default_value="1" units="years"
 					description="The number of years over which scaling factor on precipitation fluxes is computed in FOSI runs. Default value is 1 year."
