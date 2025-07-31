@@ -35,7 +35,8 @@ struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Bas
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine);
+      // ni must be very small or else we risk a FPE due to a huge exp
+      d.randomize(engine, { {d.ni, {1.E-08, 2.E-08}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
