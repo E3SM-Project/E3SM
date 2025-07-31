@@ -436,11 +436,12 @@ int MAMMicrophysics::get_len_temporary_views() {
   // work_set_het_
   work_len += ncol_ * sethet_work_len;
   // photo_rates_
-  work_len += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
+  work_len += 2*ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   // invariants_
-  work_len += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
+  work_len += 2*ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   // extfrc_
-  work_len += ncol_ * nlev_ * extcnt;
+  work_len += 2*ncol_ * nlev_ * extcnt;
+  work_len += ncol_ * nlev_ ;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
@@ -456,10 +457,19 @@ void MAMMicrophysics::init_temporary_views() {
   // here's where we store per-column photolysis rates
   photo_rates_ = view_3d(work_ptr, ncol_, nlev_, mam4::mo_photo::phtcnt);
   work_ptr += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
+  photo_rates_test_ = view_3d(work_ptr, ncol_, nlev_, mam4::mo_photo::phtcnt);
+  work_ptr += ncol_ * nlev_ * mam4::mo_photo::phtcnt;
   invariants_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
+  work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
+  invariants_test_ = view_3d(work_ptr, ncol_, nlev_, mam4::gas_chemistry::nfs);
   work_ptr += ncol_ * nlev_ * mam4::gas_chemistry::nfs;
   extfrc_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
   work_ptr += ncol_ * nlev_ * extcnt;
+  extfrc_test_ = view_3d(work_ptr, ncol_, nlev_, extcnt);
+  work_ptr += ncol_ * nlev_ * extcnt;
+
+  o3_col_dens_test_=view_2d(work_ptr, ncol_, nlev_);
+  work_ptr += ncol_ * nlev_;
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -836,6 +846,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const Config &config                        = config_;
   const auto &work_photo_table                = work_photo_table_;
   const auto &photo_rates                     = photo_rates_;
+  const auto &photo_rates_test                     = photo_rates_test_;
 
   const auto &invariants   = invariants_;
   const auto &cnst_offline = cnst_offline_;
@@ -924,8 +935,154 @@ void MAMMicrophysics::run_impl(const double dt) {
   const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
+  Kokkos::deep_copy(photo_rates_test_,0.0);
   // loop over atmosphere columns and compute aerosol microphysics
+  const auto& extfrc_test = extfrc_test_;
+  Kokkos::deep_copy(extfrc_test,0.0);
+  for (int mm = 0; mm < extcnt; ++mm) {
+    // Fortran to C++ indexing
+    const int nn = forcings_[mm].frc_ndx - 1;
+    for (int isec = 0; isec < forcings_[mm].nsectors; ++isec) {
+    const auto& field = forcings_[mm].fields[isec];
+    if (forcings_[mm].file_alt_data) {
+      Kokkos::parallel_for(
+        "MAMMicrophysics::run_impl::forcing", policy,
+        KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const int icol     = team.league_rank();   // column index
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev),
+         [&](int kk) {
+          extfrc_test(icol,kk,nn) += field(icol,nlev - 1 - kk);
+        });
+      });
 
+   } else {
+     Kokkos::parallel_for(
+      "MAMMicrophysics::run_impl::forcing", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+        extfrc_test(icol,kk,nn) += field(icol,kk);
+      });
+    });
+   }
+  } // isec
+  }   // end mm
+
+  // invariants
+  const auto invariants_test= invariants_test_;
+  Kokkos::parallel_for(
+      "MAMMicrophysics::run_impl::setinv", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      // fetch column-specific atmosphere state data
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto invariants_icol = ekat::subview(invariants_test, icol);
+      view_1d cnst_offline_icol[mam4::mo_setinv::num_tracer_cnst];
+        for(int i = 0; i < mam4::mo_setinv::num_tracer_cnst; ++i) {
+          cnst_offline_icol[i] = ekat::subview(cnst_offline[i], icol);
+        }
+      mam4::mo_setinv::setinv(team,                                    // in
+                          invariants_icol,                         // out
+                          atm.temperature, atm.vapor_mixing_ratio, // in
+                          cnst_offline_icol, atm.pressure);        // in
+
+      });
+      const auto o3_col_dens_test= o3_col_dens_test_;
+
+      Kokkos::parallel_for(
+      "MAMMicrophysics::run_impl::compute_o3_column_density", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      // calculate o3 column densities (first component of col_dens in Fortran
+        // code)
+      auto o3_col_dens_i = ekat::subview(o3_col_dens_test, icol);
+      const auto invariants_icol = ekat::subview(invariants_test, icol);
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      // fetch column-specific subviews into aerosol prognostics
+      mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+
+      mam4::microphysics::compute_o3_column_density(team, atm, progs,      // in
+                                                invariants_icol,       // in
+                                                adv_mass_kg_per_moles, // in
+                                                o3_col_dens_i);        // out
+      });
+
+
+  Kokkos::parallel_for(
+      "MAMMicrophysics::run_impl::photo_table", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+  const int icol     = team.league_rank();   // column index
+  const auto o3_col_dens_i = ekat::subview(o3_col_dens_test, icol);
+  const auto &work_photo_table_icol =
+            ekat::subview(work_photo_table, icol);
+  const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+  const auto &photo_rates_icol = ekat::subview(photo_rates_test, icol);
+        // set up photolysis work arrays for this column.
+  mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays_icol;
+
+  //  set work view using 1D photo_work_arrays_icol
+  // Note: We are not allocating views here.
+  mam4::mo_photo::set_photo_table_work_arrays(photo_table,
+                                              work_photo_table_icol,   // in
+                                              photo_work_arrays_icol); // out
+
+  team.team_barrier();
+  mam4::mo_photo::table_photo(team, photo_rates_icol,                    // out
+                              atm.pressure, atm.hydrostatic_dp,          // in
+                              atm.temperature, o3_col_dens_i,            // in
+                              zenith_angle(icol), d_sfc_alb_dir_vis(icol), // in
+                              atm.liquid_mixing_ratio, atm.cloud_fraction, // in
+                              eccf, photo_table,                           // in
+                              photo_work_arrays_icol); // out
+  });
+
+#if 0
+  Kokkos::parallel_for(
+      "MAMMicrophysics::run_impl::sethet", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+    const int icol     = team.league_rank();   // column index
+    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto phis= dry_atm.phis(icol);
+    const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
+    // convert column latitude to radians
+    const Real rlats = col_lat * M_PI / 180.0;
+    const auto prain_icol        = ekat::subview(prain, icol);
+    const auto nevapr_icol       = ekat::subview(nevapr, icol);
+    const auto invariants_icol = ekat::subview(invariants_test, icol);
+
+    const auto work_set_het_icol = ekat::subview(work_set_het, icol);
+    auto work_set_het_ptr = (Real *)work_set_het_icol.data();
+    const auto het_rates = View2D(work_set_het_ptr, nlev, num_gas_aerosol_constituents);
+    work_set_het_ptr += nlev * num_gas_aerosol_constituents;
+    // vmr0 stores mixing ratios before chemistry changes the mixing
+    view_1d vmr_col[num_gas_aerosol_constituents];
+    for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
+     vmr_col[i] = view_1d(work_set_het_ptr, nlev);
+     work_set_het_ptr += nlev;
+    }
+
+    const auto work_sethet_call = View1D(work_set_het_ptr, sethet_work_len);
+    work_set_het_ptr += sethet_work_len;
+
+    const int sethet_work_len = mam4::mo_sethet::get_work_len_sethet();
+    EKAT_KERNEL_ASSERT_MSG(
+      mam4::mo_sethet::get_total_work_len_sethet() ==
+          work_set_het_ptr - work_set_het_icol.data(),
+      "Error: Work buffer memory allocation exceeds expected value.");
+
+    // fetch column-specific subviews into aerosol prognostics
+    mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+    // het_rates_icol work array.
+    mam4::microphysics::mmr2vmr_col(team, atm, progs, adv_mass_kg_per_moles, offset_aerosol, vmr_col);
+    team.team_barrier();
+
+    mam4::mo_sethet::sethet(team, atm, het_rates, rlats, phis, cmfdqr, prain_icol,
+                          nevapr_icol, dt, invariants_icol, vmr_col,
+                          work_sethet_call);
+  });
+#endif
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
