@@ -24,11 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwDiffTend : public UnitWrap::UnitTest<D>::Bas
 
     // Set up inputs
     GwDiffTendData baseline_data[] = {
-      // ncol, kbot, ktop, dt
-      GwDiffTendData(5, 20, 59, 0.1, init_data[0]),
-      GwDiffTendData(6, 21, 58, 0.2, init_data[1]),
-      GwDiffTendData(7, 22, 57, 0.3, init_data[2]),
-      GwDiffTendData(8, 23, 56, 0.4, init_data[3]),
+      //          ncol, kbot, ktop,  dt
+      GwDiffTendData(5,   59,   20, 0.1, init_data[0]),
+      GwDiffTendData(6,   58,   19, 0.2, init_data[1]),
+      GwDiffTendData(7,   57,   18, 0.3, init_data[2]),
+      GwDiffTendData(8,   56,   17, 0.4, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwDiffTendData);

@@ -17,7 +17,6 @@ void Functions<S,D>::gw_ediff(
 // Inputs
 const Int& ncol,
 const Int& pver,
-const Int& ngwv,
 const Int& kbot,
 const Int& ktop,
 const uview_1d<const Int>& tend_level,

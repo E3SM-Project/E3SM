@@ -18,7 +18,6 @@ void Functions<S,D>::gw_cm_src(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const Int& kbot,
 const uview_1d<const Spack>& u,
 const uview_1d<const Spack>& v,

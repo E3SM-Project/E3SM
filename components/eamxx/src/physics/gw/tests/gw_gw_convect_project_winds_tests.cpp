@@ -37,6 +37,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectProjectWinds : public UnitWrap::UnitT
 
     // Set up inputs
     GwConvectProjectWindsData baseline_data[] = {
+      //                       ncol
       GwConvectProjectWindsData(10, front_init_data[0]),
       GwConvectProjectWindsData(11, front_init_data[1]),
       GwConvectProjectWindsData(12, front_init_data[2]),

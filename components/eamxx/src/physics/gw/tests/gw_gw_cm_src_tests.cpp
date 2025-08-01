@@ -37,10 +37,11 @@ struct UnitWrap::UnitTest<D>::TestGwCmSrc : public UnitWrap::UnitTest<D>::Base {
 
     // Set up inputs
     GwCmSrcData baseline_data[] = {
-      GwCmSrcData(2, 10, 3, front_init_data[0]),
-      GwCmSrcData(3, 11, 4, front_init_data[1]),
-      GwCmSrcData(4, 12, 5, front_init_data[2]),
-      GwCmSrcData(5, 13, 6, front_init_data[3]),
+      //       ncol, kbot
+      GwCmSrcData(2,   53, front_init_data[0]),
+      GwCmSrcData(3,   54, front_init_data[1]),
+      GwCmSrcData(4,   55, front_init_data[2]),
+      GwCmSrcData(5,   56, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwCmSrcData);

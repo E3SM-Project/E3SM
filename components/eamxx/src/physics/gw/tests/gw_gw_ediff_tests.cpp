@@ -24,11 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
 
     // Set up inputs
     GwEdiffData baseline_data[] = {
-      // ncol, ngwv, kbot, ktop, dt
-      GwEdiffData(5, 2, 20, 59, 0.1, init_data[0]),
-      GwEdiffData(6, 3, 21, 58, 0.2, init_data[1]),
-      GwEdiffData(7, 4, 22, 57, 0.3, init_data[2]),
-      GwEdiffData(8, 5, 23, 56, 0.4, init_data[3]),
+      //       ncol, kbot, ktop,  dt
+      GwEdiffData(5,   59,   20, 0.1, init_data[0]),
+      GwEdiffData(6,   58,   19, 0.2, init_data[1]),
+      GwEdiffData(7,   57,   18, 0.3, init_data[2]),
+      GwEdiffData(8,   56,   17, 0.4, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwEdiffData);

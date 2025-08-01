@@ -37,11 +37,11 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
 
     // Set up inputs
     GwBeresSrcData baseline_data[] = {
-      // ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old
-      GwBeresSrcData(10, 20, 0.1, 0.2, 2000., 1., false, front_init_data[0]),
-      GwBeresSrcData(11, 21, 0.2, 0.3, 3000., 2., false, front_init_data[1]),
-      GwBeresSrcData(12, 22, 0.3, 0.4, 4000., 3., true,  front_init_data[2]),
-      GwBeresSrcData(13, 23, 0.4, 0.5, 5000., 4., true,  front_init_data[3]),
+      //           ncol, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old
+      GwBeresSrcData(10,                     0.1,                   0.2,      2000.,              1., false,  front_init_data[0]),
+      GwBeresSrcData(11,                     0.2,                   0.3,      3000.,              2., false,  front_init_data[1]),
+      GwBeresSrcData(12,                     0.3,                   0.4,      4000.,              3., true,   front_init_data[2]),
+      GwBeresSrcData(13,                     0.4,                   0.5,      5000.,              4., true,   front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwBeresSrcData);

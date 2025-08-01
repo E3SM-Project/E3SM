@@ -36,10 +36,11 @@ struct UnitWrap::UnitTest<D>::TestGwFrontProjectWinds : public UnitWrap::UnitTes
 
     // Set up inputs
     GwFrontProjectWindsData baseline_data[] = {
-      GwFrontProjectWindsData(10, 60, front_init_data[0]),
-      GwFrontProjectWindsData(11, 61, front_init_data[1]),
-      GwFrontProjectWindsData(12, 62, front_init_data[2]),
-      GwFrontProjectWindsData(13, 63, front_init_data[3]),
+      //                   ncol, kbot
+      GwFrontProjectWindsData(2,   50, front_init_data[0]),
+      GwFrontProjectWindsData(3,   51, front_init_data[1]),
+      GwFrontProjectWindsData(4,   52, front_init_data[2]),
+      GwFrontProjectWindsData(5,   53, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwFrontProjectWindsData);

@@ -24,10 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwdProjectTau : public UnitWrap::UnitTest<D>::
 
     // Set up inputs
     GwdProjectTauData baseline_data[] = {
-      GwdProjectTauData(2, 10, init_data[0]),
-      GwdProjectTauData(3, 11, init_data[1]),
-      GwdProjectTauData(4, 12, init_data[2]),
-      GwdProjectTauData(5, 13, init_data[3]),
+      //             ncol
+      GwdProjectTauData(2, init_data[0]),
+      GwdProjectTauData(3, init_data[1]),
+      GwdProjectTauData(4, init_data[2]),
+      GwdProjectTauData(5, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdProjectTauData);

@@ -24,10 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwdPrecalcRhoi : public UnitWrap::UnitTest<D>:
 
     // Set up inputs
     GwdPrecalcRhoiData baseline_data[] = {
-      GwdPrecalcRhoiData(5, 2, 10, .4, init_data[0]),
-      GwdPrecalcRhoiData(6, 3, 11, .8, init_data[1]),
-      GwdPrecalcRhoiData(7, 4, 12, 1.4, init_data[2]),
-      GwdPrecalcRhoiData(8, 5, 13, 2.4, init_data[3]),
+      //             pcnst, ncol,  dt
+      GwdPrecalcRhoiData(5,    2,  .4, init_data[0]),
+      GwdPrecalcRhoiData(6,    3,  .8, init_data[1]),
+      GwdPrecalcRhoiData(7,    4, 1.4, init_data[2]),
+      GwdPrecalcRhoiData(8,    5, 2.4, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdPrecalcRhoiData);
