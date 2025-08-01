@@ -46,21 +46,16 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 {
   const Real ptaper = do_taper ? std::cos(lat) : 1.;
 
-  // Force tau at the top of the model to zero, if requested.
-  if (init.tau_0_ubc) {
-    Kokkos::parallel_for(
-      Kokkos::TeamVectorRange(team, 0, tau.extent(0)), [&] (const int i) {
-      tau(i,0) = 0.;
-    });
-  }
-
-  team.team_barrier();
-
   // Loop waves
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
     //  Accumulate the mean wind tendency over wavenumber.
     int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+
+    // Force tau at the top of the model to zero, if requested.
+    if (init.tau_0_ubc) {
+      tau(pl_idx,0) = 0.;
+    }
 
     // Loop over levels from top to bottom. Each level reads and writes to
     // the next level, so this loop must be serialized.
