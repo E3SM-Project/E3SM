@@ -429,6 +429,8 @@ CONTAINS
     integer(IN)   :: nu                ! unit number
     integer(IN)   :: nflds_r2x
     character(len=18) :: date_str
+    real(R8) latv, lonv
+    integer ilat, ilon
 #ifdef HAVE_MOAB
     real(R8), allocatable, target :: datam(:)
     type(mct_list) :: temp_list
@@ -505,6 +507,24 @@ CONTAINS
 
     case('COPYALL')
        ! do nothing extra
+
+       ! TEST ZERO OUT SOME PARTS
+       ! zero out a geographic area
+       lsize = mct_avect_lsize(r2x)
+       nflds_r2x = mct_avect_nRattr(r2x)
+       ilat = mct_aVect_indexRA(ggrid%data,'lat')
+       ilon = mct_aVect_indexRA(ggrid%data,'lon')
+       do nf=1,nflds_r2x
+          do n=1,lsize
+             lonv = ggrid%data%rAttr(ilon, n)
+             latv = ggrid%data%rAttr(ilat, n)
+             if (lonv > 90.0_r8) then
+                r2x%rAttr(nf,n) = 0.0_r8
+             end if
+          enddo
+       enddo
+
+
 
     end select
     call t_stopf('drof_datamode')
