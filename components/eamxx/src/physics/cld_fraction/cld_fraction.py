@@ -1,5 +1,10 @@
 import numpy as np
 
+# Any initialization step can be done here
+# This method is called during CldFraction::initialize_impl
+def init ():
+    pass
+
 #########################################################
 def main (ice_threshold, ice_4out_threshold,
           qi, liq_cld_frac,
