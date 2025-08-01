@@ -24,6 +24,7 @@ struct UnitWrap::UnitTest<D>::TestMomentumEnergyConservation : public UnitWrap::
 
     // Set up inputs
     MomentumEnergyConservationData baseline_data[] = {
+      //                          ncol, dt
       MomentumEnergyConservationData(2, .4, init_data[0]),
       MomentumEnergyConservationData(3, .8, init_data[1]),
       MomentumEnergyConservationData(4, 1.4, init_data[2]),

@@ -37,12 +37,11 @@ struct UnitWrap::UnitTest<D>::TestGwHeatingDepth : public UnitWrap::UnitTest<D>:
 
     // Set up inputs
     GwHeatingDepthData baseline_data[] = {
-      // TODO
-      // ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old
-      GwHeatingDepthData(10, 0.42, 0.43, false, front_init_data[0]),
-      GwHeatingDepthData(11, 0.43, 0.44, false, front_init_data[1]),
-      GwHeatingDepthData(12, 0.44, 0.45, true, front_init_data[2]),
-      GwHeatingDepthData(13, 0.45, 0.46, true, front_init_data[3]),
+      //               ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old
+      GwHeatingDepthData(2,                    0.42,                  0.43,         false, front_init_data[0]),
+      GwHeatingDepthData(3,                    0.43,                  0.44,         false, front_init_data[1]),
+      GwHeatingDepthData(4,                    0.44,                  0.45,         true,  front_init_data[2]),
+      GwHeatingDepthData(5,                    0.45,                  0.46,         true,  front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwHeatingDepthData);

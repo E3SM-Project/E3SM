@@ -22,7 +22,6 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   const GwCommonInit& init,
   const Int& pver,
   const Int& pgwv,
-  const Int& ngwv,
   const bool& do_taper,
   const Real& dt,
   const Real& effgw,
@@ -59,10 +58,9 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
 
   // Loop waves
   Kokkos::parallel_for(
-    Kokkos::TeamVectorRange(team, -ngwv, ngwv+1), [&] (const int l) {
+    Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
     //  Accumulate the mean wind tendency over wavenumber.
-    int nl_idx = l + ngwv; // 0-based idx for -ngwv:ngwv arrays
-    int pl_idx = nl_idx + (pgwv - ngwv); // 0-based idx -pgwv:pgwv arrays
+    int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
 
     // Loop over levels from top to bottom. Each level reads and writes to
     // the next level, so this loop must be serialized.
@@ -92,16 +90,16 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       if (k <= tend_level) {
         // Save tendency for each wave (for later computation of kzz),
         // applying efficiency and taper:
-        gwut(k,nl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
+        gwut(k,pl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k)) * effgw * ptaper;
 
         // atomic_sum for a workspace item ubt(k) are another option here. It works
         // but, since the order of operations is non-deterministic, there are
         // non-deterministic round-off differences from run to run.
         if (!init.orographic_only) {
-          work(k, nl_idx) = gwut(k,nl_idx);
+          work(k, pl_idx) = gwut(k,pl_idx);
         }
         else {
-          work(k, nl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k));
+          work(k, pl_idx) = Kokkos::copysign(ubtl, c(pl_idx)-ubm(k));
         }
 
         // Redetermine the effective stress on the interface below from

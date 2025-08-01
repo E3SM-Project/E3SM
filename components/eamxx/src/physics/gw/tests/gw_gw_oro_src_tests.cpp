@@ -24,11 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwOroSrc : public UnitWrap::UnitTest<D>::Base 
 
     // Set up inputs
     GwOroSrcData baseline_data[] = {
-      // ncol
-      GwOroSrcData(5, init_data[0]),
-      GwOroSrcData(6, init_data[1]),
-      GwOroSrcData(7, init_data[2]),
-      GwOroSrcData(8, init_data[3]),
+      //        ncol
+      GwOroSrcData(2, init_data[0]),
+      GwOroSrcData(3, init_data[1]),
+      GwOroSrcData(4, init_data[2]),
+      GwOroSrcData(5, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwOroSrcData);

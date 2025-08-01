@@ -24,10 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwDragProf : public UnitWrap::UnitTest<D>::Bas
 
     // Set up inputs
     GwDragProfData baseline_data[] = {
-      GwDragProfData(5, 2, 10, true, .4, 1.8, init_data[0]),
-      GwDragProfData(6, 3, 11, false, .8, 2.4, init_data[1]),
-      GwDragProfData(7, 4, 12, true, 1.4, 3.4, init_data[2]),
-      GwDragProfData(8, 5, 13, false, 2.4, 4.4, init_data[3]),
+      //         pcnst, ncol, do_taper,  dt, effgw
+      GwDragProfData(5,    2,     true,  .4, 1.8,  init_data[0]),
+      GwDragProfData(6,    3,    false,  .8, 2.4,  init_data[1]),
+      GwDragProfData(7,    4,     true, 1.4, 3.4,  init_data[2]),
+      GwDragProfData(8,    5,    false, 2.4, 4.4,  init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwDragProfData);

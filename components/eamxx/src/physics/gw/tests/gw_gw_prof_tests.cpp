@@ -24,8 +24,9 @@ struct UnitWrap::UnitTest<D>::TestGwProf : public UnitWrap::UnitTest<D>::Base {
 
     // Set up inputs
     GwProfData baseline_data[] = {
-      GwProfData(2, .4,  init_data[0]),
-      GwProfData(3, .8,  init_data[1]),
+      //      ncol, cpair
+      GwProfData(2,  .4, init_data[0]),
+      GwProfData(3,  .8, init_data[1]),
       GwProfData(4, 1.4, init_data[2]),
       GwProfData(5, 2.4, init_data[3]),
     };

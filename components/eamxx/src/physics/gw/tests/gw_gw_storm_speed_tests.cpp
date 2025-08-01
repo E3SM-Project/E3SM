@@ -37,11 +37,11 @@ struct UnitWrap::UnitTest<D>::TestGwStormSpeed : public UnitWrap::UnitTest<D>::B
 
     // Set up inputs
     GwStormSpeedData baseline_data[] = {
-      // ncol, storm_speed_min
-      GwStormSpeedData(10, .5,  front_init_data[0]),
-      GwStormSpeedData(11, 1.5, front_init_data[1]),
-      GwStormSpeedData(12, 2.5, front_init_data[2]),
-      GwStormSpeedData(13, 3.5, front_init_data[3]),
+      //             ncol, storm_speed_min
+      GwStormSpeedData(10,              .5, front_init_data[0]),
+      GwStormSpeedData(11,             1.5, front_init_data[1]),
+      GwStormSpeedData(12,             2.5, front_init_data[2]),
+      GwStormSpeedData(13,             3.5, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwStormSpeedData);

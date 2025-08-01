@@ -24,10 +24,11 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
 
     // Set up inputs
     GwdComputeStressProfilesAndDiffusivitiesData baseline_data[] = {
-      GwdComputeStressProfilesAndDiffusivitiesData(2, 10, init_data[0]),
-      GwdComputeStressProfilesAndDiffusivitiesData(3, 11, init_data[1]),
-      GwdComputeStressProfilesAndDiffusivitiesData(4, 12, init_data[2]),
-      GwdComputeStressProfilesAndDiffusivitiesData(5, 13, init_data[3]),
+      //                                        ncol
+      GwdComputeStressProfilesAndDiffusivitiesData(2, init_data[0]),
+      GwdComputeStressProfilesAndDiffusivitiesData(3, init_data[1]),
+      GwdComputeStressProfilesAndDiffusivitiesData(4, init_data[2]),
+      GwdComputeStressProfilesAndDiffusivitiesData(5, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeStressProfilesAndDiffusivitiesData);

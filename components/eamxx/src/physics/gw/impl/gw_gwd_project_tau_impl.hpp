@@ -18,7 +18,6 @@ void Functions<S,D>::gwd_project_tau(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const uview_1d<const Int>& tend_level,
 const uview_1d<const Spack>& tau,
 const uview_1d<const Spack>& ubi,
