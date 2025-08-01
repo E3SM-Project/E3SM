@@ -1,0 +1,5 @@
+# Exclude build directories
+components/eamxx/build/
+/tmp/
+*.tmp
+build/
