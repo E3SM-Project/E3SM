@@ -81,11 +81,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
   std::string io_grid_name = fm_grid->name();
+  std::vector<std::string> field_specs; // Raw field specifications from YAML (may include aliases)
+  
   if (params.isParameter("field_names")) {
     // This simple parameter list option does *not* allow to remap fields
     // to an io grid different from that of the field manager. In order to
     // use that functionality, you need the full syntax
-    m_fields_names = params.get<vos_t>("field_names");
+    field_specs = params.get<vos_t>("field_names");
   } else if (params.isSublist("fields")){
     const auto& f_pl = params.sublist("fields");
     bool grid_found = false;
@@ -94,11 +96,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
         if (pl.isType<vos_t>("field_names")) {
-          m_fields_names = pl.get<vos_t>("field_names");
+          field_specs = pl.get<vos_t>("field_names");
         } else if (pl.isType<std::string>("field_names")) {
-          m_fields_names.resize(1, pl.get<std::string>("field_names"));
-          if (m_fields_names[0]=="NONE") {
-            m_fields_names.clear();
+          field_specs.resize(1, pl.get<std::string>("field_names"));
+          if (field_specs[0]=="NONE") {
+            field_specs.clear();
           }
         }
 
@@ -113,6 +115,22 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         "Error! Bad formatting of output yaml file. Missing 'fields->$grid_name` sublist.\n");
   }
 
+  // Process field specifications to extract aliases and internal field names
+  auto [alias_to_field_map, alias_names] = process_field_aliases(field_specs);
+  m_alias_to_field_map = alias_to_field_map;
+  m_alias_names = alias_names;
+  
+  // Extract internal field names for further processing
+  m_fields_names.clear();
+  for (const auto& spec : field_specs) {
+    auto [alias, field_name] = parse_field_alias(spec);
+    m_fields_names.push_back(field_name);
+  }
+
+  EKAT_REQUIRE_MSG (not has_duplicates(m_alias_names),
+      "[AtmosphereOutput] Error! One of the output yaml files has duplicate field alias entries.\n"
+      " - yaml file: " + params.name() + "\n"
+      " - alias names; " + ekat::join(m_alias_names,",") + "\n");
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
       "[AtmosphereOutput] Error! One of the output yaml files has duplicate field entries.\n"
       " - yaml file: " + params.name() + "\n"
@@ -265,7 +283,9 @@ void AtmosphereOutput::init()
 
   // Create FM for scorpio. The fields in this FM are guaranteed to NOT have parents/padding
   auto fm_scorpio = m_field_mgrs[Scorpio] = std::make_shared<FieldManager>(fm_after_hr->get_grid(),RepoState::Closed);
-  for (const auto& fname : m_fields_names) {
+  for (size_t i = 0; i < m_fields_names.size(); ++i) {
+    const auto& fname = m_fields_names[i];
+    const auto& alias = m_alias_names[i];
     const auto& f = fm_after_hr->get_field(fname);
     const auto& fh = f.get_header();
     const auto& fid = fh.get_identifier();
@@ -288,31 +308,31 @@ void AtmosphereOutput::init()
       fm_scorpio->add_field(f);
     }
 
-    // Store the field layout, so that calls to setup_output_file are easier
+    // Store the field layout using alias name, so that calls to setup_output_file are easier
     const auto& layout = fid.get_layout();
-    m_vars_dims[fname] = get_var_dimnames(layout);
+    m_vars_dims[alias] = get_var_dimnames(layout);
 
     // Now check that all the dims of this field are already set to be registered.
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
-    for (int i=0; i<layout.rank(); ++i) {
+    for (int j=0; j<layout.rank(); ++j) {
       // check tag against m_dims_len map.  If not in there, then add it.
-      std::string dimname = m_io_grid->has_special_tag_name(tags[i])
-                          ? m_io_grid->get_special_tag_name(tags[i])
-                          : layout.names()[i];
+      std::string dimname = m_io_grid->has_special_tag_name(tags[j])
+                          ? m_io_grid->get_special_tag_name(tags[j])
+                          : layout.names()[j];
 
       // If t==CMP, and the name stored in the layout is "dim" (the default) or "bin",
       // we append also the extent, to allow different vector dims in the file
       // TODO: generalize this to all tags, for now hardcoding to dim and bin only
-      dimname += (dimname=="dim" or dimname=="bin") ? std::to_string(dims[i]) : "";
+      dimname += (dimname=="dim" or dimname=="bin") ? std::to_string(dims[j]) : "";
 
-      auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[i];
+      auto is_partitioned = m_io_grid->get_partitioned_dim_tag()==tags[j];
       int dimlen = is_partitioned
                   ? m_io_grid->get_partitioned_dim_global_size()
-                  : layout.dim(i);
+                  : layout.dim(j);
       auto it_bool = m_dims_len.emplace(dimname,dimlen);
       EKAT_REQUIRE_MSG(it_bool.second or it_bool.first->second==dimlen,
-        "Error! Dimension " + dimname + " on field " + fname + " has conflicting lengths.\n"
+        "Error! Dimension " + dimname + " on field " + fname + " (alias: " + alias + ") has conflicting lengths.\n"
         "  - old length: " + std::to_string(it_bool.first->second) + "\n"
         "  - new length: " + std::to_string(dimlen) + "\n"
         "If same name applies to different dims (e.g. PhysicsGLL and PhysicsPG2 define "
@@ -457,10 +477,13 @@ run (const std::string& filename,
   }
 
   // Take care of updating and possibly writing fields.
-  for (auto const& name : m_fields_names) {
+  for (size_t i = 0; i < m_fields_names.size(); ++i) {
+    const auto& field_name = m_fields_names[i];
+    const auto& alias_name = m_alias_names[i];
+    
     // Get all the info for this field.
-    const auto& f_in  = fm_after_hr->get_field(name);
-          auto& f_out = fm_scorpio->get_field(name);
+    const auto& f_in  = fm_after_hr->get_field(field_name);
+          auto& f_out = fm_scorpio->get_field(field_name);
 
     switch (m_avg_type) {
       case OutputAvgType::Instant:
@@ -480,7 +503,7 @@ run (const std::string& filename,
       if (output_step and m_avg_type==OutputAvgType::Average) {
         // Even if m_track_avg_cnt=true, this field may not need it
         if (m_track_avg_cnt) {
-          auto avg_count = m_field_to_avg_count.at(name);
+          auto avg_count = m_field_to_avg_count.at(field_name);
 
           f_out.scale_inv(avg_count);
 
@@ -495,9 +518,9 @@ run (const std::string& filename,
       // Bring data to host
       f_out.sync_to_host();
 
-      // Write
+      // Write using alias name for netcdf variable
       auto func_start = std::chrono::steady_clock::now();
-      scorpio::write_var(filename,name,f_out.get_internal_view_data<Real,Host>());
+      scorpio::write_var(filename,alias_name,f_out.get_internal_view_data<Real,Host>());
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
       duration_write += duration_loc.count();
@@ -629,11 +652,13 @@ register_variables(const std::string& filename,
       "  - input value: " + fp_precision + "\n"
       "  - supported values: float, single, double, real\n");
 
-  // Cycle through all fields and register.
-  for (auto const& name : m_fields_names) {
-    const auto& f = m_field_mgrs[Scorpio]->get_field(name);
+  // Cycle through all fields and register using alias names.
+  for (size_t i = 0; i < m_fields_names.size(); ++i) {
+    const auto& field_name = m_fields_names[i];
+    const auto& alias_name = m_alias_names[i];
+    const auto& f = m_field_mgrs[Scorpio]->get_field(field_name);
     const auto& fid  = f.get_header().get_identifier();
-    const auto& dimnames = m_vars_dims.at(name);
+    const auto& dimnames = m_vars_dims.at(alias_name);
     std::string units = fid.get_units().to_string();
 
     // TODO  Need to change dtype to allow for other variables.
@@ -642,31 +667,31 @@ register_variables(const std::string& filename,
 
     if (mode==scorpio::FileMode::Append) {
       // Simply check that the var is in the file, and has the right properties
-      EKAT_REQUIRE_MSG (scorpio::has_var(filename,name),
+      EKAT_REQUIRE_MSG (scorpio::has_var(filename,alias_name),
           "Error! Cannot append, due to variable missing from the file.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n");
-      const auto& var = scorpio::get_var(filename,name);
+          "  - varname  : " + alias_name + "\n");
+      const auto& var = scorpio::get_var(filename,alias_name);
       EKAT_REQUIRE_MSG (var.dim_names()==dimnames,
           "Error! Cannot append, due to variable dimensions mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
+          "  - varname  : " + alias_name + "\n"
           "  - var dims : " + ekat::join(dimnames,",") + "\n"
           "  - var dims from file: " + ekat::join(var.dim_names(),",") + "\n");
       EKAT_REQUIRE_MSG (var.units==units,
           "Error! Cannot append, due to variable units mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
+          "  - varname  : " + alias_name + "\n"
           "  - var units: " + units + "\n"
           "  - var units from file: " + var.units + "\n");
       EKAT_REQUIRE_MSG (var.time_dep==m_add_time_dim,
           "Error! Cannot append, due to time dependency mismatch.\n"
           "  - filename : " + filename + "\n"
-          "  - varname  : " + name + "\n"
+          "  - varname  : " + alias_name + "\n"
           "  - var time dep: " + (m_add_time_dim ? "yes" : "no") + "\n"
           "  - var time dep from file: " + (var.time_dep ? "yes" : "no") + "\n");
     } else {
-      scorpio::define_var (filename, name, units, dimnames,
+      scorpio::define_var (filename, alias_name, units, dimnames,
                             "real",fp_precision, m_add_time_dim);
 
       // Add FillValue as an attribute of each variable
@@ -674,10 +699,10 @@ register_variables(const std::string& filename,
       if (fp_precision=="double" or
           (fp_precision=="real" and std::is_same<Real,double>::value)) {
         double fill_value = m_fill_value;
-        scorpio::set_attribute(filename, name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, alias_name, "_FillValue",fill_value);
       } else {
         float fill_value = m_fill_value;
-        scorpio::set_attribute(filename, name, "_FillValue",fill_value);
+        scorpio::set_attribute(filename, alias_name, "_FillValue",fill_value);
       }
 
       // If this is has subfields, add list of its children
@@ -694,32 +719,32 @@ register_variables(const std::string& filename,
         children_list.pop_back();
         children_list.pop_back();
         children_list += " ]";
-        scorpio::set_attribute(filename,name,"sub_fields",children_list);
+        scorpio::set_attribute(filename,alias_name,"sub_fields",children_list);
       }
 
       // If tracking average count variables then add the name of the tracking variable for this variable
-      if (m_field_to_avg_count.count(name)) {
-        const auto& count = m_field_to_avg_count.at(name);
-        scorpio::set_attribute(filename,name,"averaging_count_tracker",count.name());
+      if (m_field_to_avg_count.count(field_name)) {
+        const auto& count = m_field_to_avg_count.at(field_name);
+        scorpio::set_attribute(filename,alias_name,"averaging_count_tracker",count.name());
       }
 
       // Atm procs may have set some request for metadata.
       using stratts_t = std::map<std::string,std::string>;
       const auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
       for (const auto& [att_name,att_val] : str_atts) {
-        scorpio::set_attribute(filename,name,att_name,att_val);
+        scorpio::set_attribute(filename,alias_name,att_name,att_val);
       }
 
       // Gather longname (if not already in the io: string attributes)
       if (str_atts.count("long_name")==0) {
-        auto longname = m_default_metadata.get_longname(name);
-        scorpio::set_attribute(filename, name, "long_name", longname);
+        auto longname = m_default_metadata.get_longname(field_name);
+        scorpio::set_attribute(filename, alias_name, "long_name", longname);
       }
 
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
-        auto standardname = m_default_metadata.get_standardname(name);
-        scorpio::set_attribute(filename, name, "standard_name", standardname);
+        auto standardname = m_default_metadata.get_standardname(field_name);
+        scorpio::set_attribute(filename, alias_name, "standard_name", standardname);
       }
     }
   }
