@@ -669,9 +669,11 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
                               ztodt, jctop, zm_const, zm_param, &
                               state%pmid, state%pint, state%pdel, &
                               state%s, state%q, state%u, state%v, &
-                              ptend_loc%s, ptend_loc%q(:,:,1), ptend_mcsp )
+                              ptend_loc%s, ptend_loc%q(:,:,1), &
+                              ptend_mcsp%s(:,:), ptend_mcsp%q(:,:,1), &
+                              ptend_mcsp%u(:,:), ptend_mcsp%v(:,:) )
 
-      ! add MCSP tendencies to ZM onvective tendencies
+      ! add MCSP tendencies to ZM convective tendencies
       call physics_ptend_sum( ptend_mcsp, ptend_loc, ncol)
       call physics_ptend_dealloc(ptend_mcsp)
 
@@ -835,12 +837,12 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    call outfld('ZMICVU', icwu(1,1,2), pcols, lchnk )
    call outfld('ZMICVD', icwd(1,1,2), pcols, lchnk )
 
+   !----------------------------------------------------------------------------
+   ! convective tracer transport
+
    ! Transport cloud water and ice only
    call cnst_get_ind('CLDLIQ', ixcldliq)
    call cnst_get_ind('CLDICE', ixcldice)
-
-   !----------------------------------------------------------------------------
-   ! convective tracer transport
 
    lq(:)  = .FALSE.
    lq(2:) = cnst_is_convtran1(2:)

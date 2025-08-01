@@ -63,10 +63,10 @@ subroutine zm_eamxx_bridge_init_c( pcol_in, pver_in ) bind(C)
   !-----------------------------------------------------------------------------
   ! make sure we are turning off the extra stuff
   zm_param%zm_microp       = .false.
-  zm_param%mcsp_enabled    = .false.
   zm_param%trig_dcape      = .false.
   zm_param%trig_ull        = .false.
   zm_param%clos_dyn_adj    = .false.
+  zm_param%mcsp_enabled    = .true.
   !-----------------------------------------------------------------------------
   call wv_sat_init()
   !-----------------------------------------------------------------------------
@@ -78,16 +78,20 @@ end subroutine zm_eamxx_bridge_init_c
 subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_phis, state_zm, state_zi, &
                                   state_p_mid, state_p_int, state_p_del, &
-                                  state_t, state_qv, state_qc, &
+                                  state_t, state_qv, state_qc, state_u, state_v, &
                                   state_omega, state_cldfrac, state_pblh, landfrac, &
                                   output_prec, output_cape, &
                                   output_tend_s, output_tend_q, &
+                                  output_tend_u, output_tend_v, &
                                   output_prec_flux, output_mass_flux ) bind(C)
-
+  use zm_conv,                  only: zm_const, zm_param
   use zm_aero_type,             only: zm_aero_t
   use zm_microphysics_state,    only: zm_microp_st
+  use zm_eamxx_bridge_methods,  only: zm_tend_init, zm_physics_update
   use zm_conv,                  only: zm_convr, zm_conv_evap
-  use zm_eamxx_bridge_methods,  only: zm_physics_update
+  use zm_conv_mcsp,             only: zm_conv_mcsp_tend
+  use zm_transport,             only: zm_transport_momentum
+  ! use zm_transport,             only: zm_transport_tracer
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int),               value, intent(in   ) :: ncol
@@ -102,6 +106,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_t            ! input state temperature
   real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_qv           ! input state water vapor
   real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_qc           ! input state cloud liquid water          (ql)
+  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_u            ! input state zonal wind
+  real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_v            ! input state meridional wind
   real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_omega        ! input state vertical pressure velocity
   real(kind=c_real), dimension(pcols,pver), intent(in   ) :: state_cldfrac      ! input state cloud fraction              (cld)
   real(kind=c_real), dimension(pcols),      intent(in   ) :: state_pblh         ! input planetary boundary layer height   (pblh)
@@ -110,6 +116,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real), dimension(pcols),      intent(  out) :: output_cape        ! output convective avail. pot. energy    (cape)
   real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_s      ! output tendency of dry static energy    (ptend_loc_s)
   real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_q      ! output tendency of water vapor          (ptend_loc_q)
+  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_u      ! output tendency of zonal wind           (ptend_loc_u)
+  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_v      ! output tendency of meridional wind      (ptend_loc_v)
   real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_prec_flux   ! output precip flux at each mid-levels   (pflx)
   real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_mass_flux   ! output convective mass flux--m sub c    (mcon)
   !-----------------------------------------------------------------------------
@@ -126,7 +134,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   integer,  dimension(pcols)      :: jctop          ! output top-of-deep-convection indices
   integer,  dimension(pcols)      :: jcbot          ! output bot-of-deep-convection indices
-  real(r8), dimension(pcols,pverp):: mcon           ! convective mass flux--m sub c
+  ! real(r8), dimension(pcols,pverp):: mcon           ! convective mass flux--m sub c
   real(r8), dimension(pcols,pver) :: cme            ! condensation - evaporation
   ! real(r8), dimension(pcols)      :: cape           ! convective available potential energy
   real(r8), dimension(pcols)      :: tpert          ! thermal temperature excess
@@ -164,6 +172,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   type(zm_microp_st)              :: microp_st      ! ZM microphysics data structure
   real(r8), dimension(pcols,pver) :: wuc            ! pbuf variable for in-cloud vertical velocity
 
+  real(r8), dimension(pcols,pver) :: state_s
+
   ! local copy of state variables for calling zm_conv_evap()
   real(r8), dimension(pcols,pver) :: local_state_t
   real(r8), dimension(pcols,pver) :: local_state_qv
@@ -173,14 +183,24 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! temporary local tendencies for calling zm_conv_evap()
   real(r8), dimension(pcols,pver) :: local_tend_s        ! output tendency of dry static energy   (ptend_loc_s)
   real(r8), dimension(pcols,pver) :: local_tend_q        ! output tendency of water vapor         (ptend_loc_q)
+  real(r8), dimension(pcols,pver) :: local_tend_u        ! output tendency of zonal wind
+  real(r8), dimension(pcols,pver) :: local_tend_v        ! output tendency of meridional wind
 
   real(r8), dimension(pcols,pver) :: tend_s_snwprd
   real(r8), dimension(pcols,pver) :: tend_s_snwevmlt
   real(r8), dimension(pcols,pver) :: snow
   real(r8), dimension(pcols,pver) :: ntprprd
   real(r8), dimension(pcols,pver) :: ntsnprd
-  real(r8), dimension(pcols,pverp):: flxprec
+  ! real(r8), dimension(pcols,pverp):: flxprec
   real(r8), dimension(pcols,pverp):: flxsnow
+
+  ! used in momentum transport calculations
+   real(r8), dimension(pcols,pver,2) :: tx_winds
+   real(r8), dimension(pcols,pver,2) :: tx_wind_tend
+   real(r8), dimension(pcols,pver,2) :: tx_pguall
+   real(r8), dimension(pcols,pver,2) :: tx_pgdall
+   real(r8), dimension(pcols,pver,2) :: tx_icwu
+   real(r8), dimension(pcols,pver,2) :: tx_icwd
   
   logical :: old_snow  = .true. ! flag to use snow production from zm_conv_evap - set false to use zm microphysics
   !-----------------------------------------------------------------------------
@@ -210,8 +230,18 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
     do k = 1,pver
       output_tend_s(i,k) = 0
       output_tend_q(i,k) = 0
-      local_tend_s (i,k) = 0
-      local_tend_q (i,k) = 0
+      output_tend_u(i,k) = 0
+      output_tend_v(i,k) = 0
+    end do
+  end do
+  !-----------------------------------------------------------------------------
+  ! update local copy of state variables for zm_conv_evap()
+  do i = 1,ncol
+    do k = 1,pver
+      local_state_t (i,k) = state_t (i,k)
+      local_state_qv(i,k) = state_qv(i,k)
+      local_state_zm(i,k) = state_zm(i,k)
+      local_state_zi(i,k) = state_zi(i,k)
     end do
   end do
   !-----------------------------------------------------------------------------
@@ -232,7 +262,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  output_tend_q, output_tend_s, &
                  state_p_mid, state_p_int, state_p_del, state_omega, &
                  0.5*dtime, &
-                 mcon, &
+                 output_mass_flux, &
                  cme, &
                  output_cape, &
                  tpert, &
@@ -260,52 +290,57 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   !   !   write(iulog,*) 'zm_eamxx_bridge_run_c 1 - (',i,',',k,') pmid / tend_s / tend_q : ',state_p_mid(i,k),' / ',output_tend_s(i,k),' / ',output_tend_q(i,k)
   !   ! end do
   ! end do
+
   !----------------------------------------------------------------------------
   ! mesoscale coherent structure parameterization (MCSP)
-  ! Note that this modifies the tendencies produced by zm_convr(), such that
-  ! history variables like ZMDT will include the effects of MCSP
+  ! This modifies the tendencies from zm_convr() prior to updating the state
+  if (zm_param%mcsp_enabled) then
 
-  ! if (zm_param%mcsp_enabled) then
+    ! initialize local output tendencies for MCSP
+    call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
 
-  !   if (zm_param%mcsp_t_coeff>0) do_mcsp_t    = .true.
-  !   if (zm_param%mcsp_q_coeff>0) do_mcsp_q(1) = .true.
-  !   if (zm_param%mcsp_u_coeff>0) do_mcsp_u    = .true.
-  !   if (zm_param%mcsp_v_coeff>0) do_mcsp_v    = .true.
-
-  !   call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
-  !                            ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
-
-  !   call zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
-  !                           ztodt, jctop, zm_const, zm_param, &
-  !                           state%pmid, state%pint, state%pdel, &
-  !                           state%s, state%q, state%u, state%v, &
-  !                           ptend_loc%s, ptend_loc%q(:,:,1), ptend_mcsp )
-
-  !   ! add MCSP tendencies to ZM onvective tendencies
-  !   call physics_ptend_sum( ptend_mcsp, ptend_loc, ncol)
-  !   call physics_ptend_dealloc(ptend_mcsp)
-
-  ! end if
-
-  !-----------------------------------------------------------------------------
-  ! update local copy of state variables for zm_conv_evap()
-  do i = 1,ncol
-    do k = 1,pver
-      local_state_t (i,k) = state_t (i,k)
-      local_state_qv(i,k) = state_qv(i,k)
-      local_state_zm(i,k) = state_zm(i,k)
-      local_state_zi(i,k) = state_zi(i,k)
+    do i = 1,ncol
+      do k = 1,pver
+        state_s(i,k) = state_t(i,k)*zm_const%cpair
+      end do
     end do
-  end do
-  ! apply tendencies from zm_convr()
+
+    ! perform the MCSP calculations
+    call zm_conv_mcsp_tend( lchnk, pcols, ncol, pver, pverp, &
+                            dtime, jctop, zm_const, zm_param, &
+                            state_p_mid, state_p_int, state_p_del, &
+                            state_s, state_qv, state_u, state_v, &
+                            output_tend_s, output_tend_q, &
+                            local_tend_s, local_tend_q, &
+                            local_tend_u, local_tend_v )
+
+    ! add MCSP tendencies to ZM convective tendencies
+    do i = 1,ncol
+      do k = 1,pver
+        output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
+        output_tend_q(i,k) = output_tend_q(i,k) + local_tend_q(i,k)
+        output_tend_u(i,k) = output_tend_u(i,k) + local_tend_u(i,k)
+        output_tend_v(i,k) = output_tend_v(i,k) + local_tend_v(i,k)
+      end do
+    end do
+
+  end if
+
+  !----------------------------------------------------------------------------
+  ! apply tendencies from zm_convr() & MCSP to local copy of state variables
   call zm_physics_update( ncol, dtime, state_phis, local_state_zm, local_state_zi, &
                           state_p_mid, state_p_int, state_p_del, &
                           local_state_t, local_state_qv, &
                           output_tend_s, output_tend_q)
-  
+
   !-----------------------------------------------------------------------------
   ! Compute the precipitation, rain evaporation, and snow formation/melting
   ! Note - this routine expects an updated state following zm_convr() (+MCSP)
+
+  ! initialize local output tendencies for zm_conv_evap()
+  call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
+
+  ! perform the convective evaporation calculations
   call zm_conv_evap(ncol, lchnk, &
                     local_state_t, state_p_mid, state_p_del, local_state_qv, &
                     local_tend_s, &
@@ -318,22 +353,55 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     snow, &
                     ntprprd, &
                     ntsnprd, &
-                    flxprec, &
+                    output_prec_flux, &
                     flxsnow, &
                     sprd, old_snow)
-  !-----------------------------------------------------------------------------
+
+  ! add tendencies from zm_conv_evap() to output tendencies
   do i = 1,ncol
     do k = 1,pver
-      ! add tendencies from zm_conv_evap() to output tendencies
       output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
       output_tend_q(i,k) = output_tend_q(i,k) + local_tend_q(i,k)
     end do
-    do k = 1,pverp
-      ! update other output variables
-      output_prec_flux(i,k) = flxprec (i,k)
-      output_mass_flux(i,k) = mcon    (i,k)
+  end do
+
+  ! apply tendencies from zm_conv_evap() to local copy of state variables
+  call zm_physics_update( ncol, dtime, state_phis, local_state_zm, local_state_zi, &
+                          state_p_mid, state_p_int, state_p_del, &
+                          local_state_t, local_state_qv, &
+                          local_tend_s, local_tend_q)
+
+  !----------------------------------------------------------------------------
+  ! convective momentum transport
+
+  ! initialize local output tendencies for zm_conv_evap()
+  call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, tx_wind_tend(:,:,1), tx_wind_tend(:,:,2) )
+
+  do i = 1,ncol
+    do k = 1,pver
+      tx_winds(i,k,1) = state_u(i,k)
+      tx_winds(i,k,2) = state_v(i,k)
     end do
   end do
+
+  call zm_transport_momentum( ncol, tx_winds, 2, &
+                              mu, md, du, eu, ed, dp, &
+                              jt, maxg, ideep, 1, lengath, &
+                              tx_wind_tend, tx_pguall, tx_pgdall, &
+                              tx_icwu, tx_icwd, dtime, local_tend_s )
+
+  ! add tendencies from zm_transport_momentum() to output tendencies
+  do i = 1,ncol
+    do k = 1,pver
+      output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
+      output_tend_u(i,k) = output_tend_u(i,k) + tx_wind_tend(i,k,1)
+      output_tend_v(i,k) = output_tend_v(i,k) + tx_wind_tend(i,k,2)
+    end do
+  end do
+
+  !----------------------------------------------------------------------------
+  ! convective tracer transport
+
   !-----------------------------------------------------------------------------
   ! do i = 1,ncol
   !   write(iulog,*) 'zm_eamxx_bridge_run_c 2 - (',i,') prec / cape : ',output_prec(i),' / ',output_cape(i)

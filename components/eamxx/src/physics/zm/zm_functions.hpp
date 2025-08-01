@@ -53,31 +53,29 @@ struct Functions {
   struct zm_input_state {
     zm_input_state() = default;
     // -------------------------------------------------------------------------
-    Int ncol;                       // number of columns for current task/chunk
-    Int pcol;                       // max number of columns across tasks/chunks
     Real dtime;                     // model phsyics time step [s]
     bool is_first_step;             // flag for first call
 
     static constexpr int num_2d_midlv_c_views = 2;
-    static constexpr int num_2d_midlv_f_views = 8;
+    static constexpr int num_2d_midlv_f_views = 10;
     static constexpr int num_2d_intfc_c_views = 1;
     static constexpr int num_2d_intfc_f_views = 2;
 
-    view_1d<const Scalar> phis;     // surface geopotential height [m2/s]
-    uview_2d<Spack>       z_mid;    // mid-point level altitude [m]
-    uview_2d<Spack>       z_int;    // interface level altitude [m]
-    uview_2d<Spack>       z_del;    // altitude thickness       [m]
-    view_2d<const Spack>  p_mid;    // mid-point level pressure [Pa]
-    view_2d<const Spack>  p_int;    // interface level pressure [Pa]
-    view_2d<const Spack>  p_del;    // pressure thickness       [Pa]
-
-    view_2d<      Spack>  T_mid;    // Temperature [K]
-    view_2d<      Spack>  qv;       // Water vapor mixing ratio [kg kg-1]
-    view_2d<      Spack>  qc;       // Cloud mass mixing ratio [kg kg-1]
-    view_2d<const Spack>  omega;    // vertical pressure velocity [Pa/s]
+    view_1d<const Scalar> phis;     // surface geopotential height  [m2/s]
+    uview_2d<     Spack>  z_mid;    // mid-point level altitude     [m]
+    uview_2d<     Spack>  z_int;    // interface level altitude     [m]
+    uview_2d<     Spack>  z_del;    // altitude thickness           [m]
+    view_2d<const Spack>  p_mid;    // mid-point level pressure     [Pa]
+    view_2d<const Spack>  p_int;    // interface level pressure     [Pa]
+    view_2d<const Spack>  p_del;    // pressure thickness           [Pa]
+    view_2d<      Spack>  T_mid;    // temperature [K]
+    view_2d<      Spack>  qv;       // water vapor mixing ratio     [kg kg-1]
+    view_2d<      Spack>  qc;       // cloud mass mixing ratio      [kg kg-1]
+    view_2d<      Spack>  u;        // zonal wind                   [m/s]
+    view_2d<      Spack>  v;        // meridional wind              [m/s]
+    view_2d<const Spack>  omega;    // vertical pressure velocity   [Pa/s]
     view_2d<const Spack>  cldfrac;  // total cloud fraction
-
-    view_1d<const Scalar> pblh;     // PBL height [m]
+    view_1d<const Scalar> pblh;     // PBL height                   [m]
     view_1d<const Scalar> landfrac; // land area fraction
 
     // unmanaged LayoutLeft views for fortran bridging
@@ -90,6 +88,8 @@ struct Functions {
     uview_2dl<Real>  f_T_mid;
     uview_2dl<Real>  f_qv;
     uview_2dl<Real>  f_qc;
+    uview_2dl<Real>  f_u;
+    uview_2dl<Real>  f_v;
     uview_2dl<Real>  f_omega;
     uview_2dl<Real>  f_cldfrac;
 
@@ -117,27 +117,19 @@ struct Functions {
     // -------------------------------------------------------------------------
     // alternate transpose method
     template <ekat::TransposeDirection::Enum D>
-    void transpose(int pver){
-      auto pverp = pver+1;
+    void transpose(int ncol_in, int pver_in) {
+      auto pverp = pver_in+1;
       if (D == ekat::TransposeDirection::c2f) {
-        // f_z_mid   = uview_2dl<Real>("f_z_mid",   pcol, pver);
-        // f_z_int   = uview_2dl<Real>("f_z_int",   pcol, pverp);
-        // f_p_mid   = uview_2dl<Real>("f_p_mid",   pcol, pver);
-        // f_p_int   = uview_2dl<Real>("f_p_int",   pcol, pverp);
-        // f_p_del   = uview_2dl<Real>("f_p_del",   pcol, pver);
-        // f_T_mid   = uview_2dl<Real>("f_T_mid",   pcol, pver);
-        // f_qv      = uview_2dl<Real>("f_qv",      pcol, pver);
-        // f_qc      = uview_2dl<Real>("f_qc",      pcol, pver);
-        // f_omega   = uview_2dl<Real>("f_omega",   pcol, pver);
-        // f_cldfrac = uview_2dl<Real>("f_cldfrac", pcol, pver);
-        for (int i=0; i<ncol; ++i) {
-          for (int j=0; j<pver; ++j) {
-            f_z_mid   (i,j) = z_mid(i, j / Spack::n)[j % Spack::n];
+        for (int i=0; i<ncol_in; ++i) {
+          for (int j=0; j<pver_in; ++j) {
+            f_z_mid   (i,j) = z_mid   (i, j / Spack::n)[j % Spack::n];
             f_p_mid   (i,j) = p_mid   (i, j / Spack::n)[j % Spack::n];
             f_p_del   (i,j) = p_del   (i, j / Spack::n)[j % Spack::n];
             f_T_mid   (i,j) = T_mid   (i, j / Spack::n)[j % Spack::n];
             f_qv      (i,j) = qv      (i, j / Spack::n)[j % Spack::n];
             f_qc      (i,j) = qc      (i, j / Spack::n)[j % Spack::n];
+            f_u       (i,j) = u       (i, j / Spack::n)[j % Spack::n];
+            f_v       (i,j) = v       (i, j / Spack::n)[j % Spack::n];
             f_omega   (i,j) = omega   (i, j / Spack::n)[j % Spack::n];
             f_cldfrac (i,j) = cldfrac (i, j / Spack::n)[j % Spack::n];
           }
@@ -155,38 +147,41 @@ struct Functions {
     zm_output_tend() = default;
 
     static constexpr int num_1d_scalr_views   = 2; // number of 1D variables
-    static constexpr int num_2d_midlv_c_views = 2; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_midlv_f_views = 2; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_midlv_c_views = 4; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_midlv_f_views = 4; // number of 2D variables on mid-point levels
     static constexpr int num_2d_intfc_c_views = 2; // number of 2D variables on interface levels
     static constexpr int num_2d_intfc_f_views = 2; // number of 2D variables on interface levels
 
-    Int ncol;                       // number of columns for current task/chunk
-    Int pcol;                       // max number of columns across tasks/chunks
-
     uview_1d<Scalar> precip;         // surface precipitation [m/s]
     uview_1d<Scalar> cape;           // convective available potential energy [J]
-    uview_2d<Spack>  tend_s;         // output tendency of water vapor
-    uview_2d<Spack>  tend_q;         // output tendency of dry statis energy
+    uview_2d<Spack>  tend_s;         // output tendency of dry static energy
+    uview_2d<Spack>  tend_q;         // output tendency of water vapor
+    uview_2d<Spack>  tend_u;         // output tendency of zonal wind
+    uview_2d<Spack>  tend_v;         // output tendency of meridional wind
     uview_2d<Spack>  prec_flux;      // output convective precipitation flux
     uview_2d<Spack>  mass_flux;      // output convective mass flux
 
     // LayoutLeft views for fortran bridging
     uview_2dl<Real>  f_tend_s;
     uview_2dl<Real>  f_tend_q;
+    uview_2dl<Real>  f_tend_u;
+    uview_2dl<Real>  f_tend_v;
     uview_2dl<Real>  f_prec_flux;
     uview_2dl<Real>  f_mass_flux;
 
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
-    void transpose(int pver) {
-      auto pverp = pver+1;
+    void transpose(int ncol_in, int pver_in) {
+      auto pverp = pver_in+1;
       if (D == ekat::TransposeDirection::c2f) {
-        for (int i=0; i<ncol; ++i) {
+        for (int i=0; i<ncol_in; ++i) {
           // mid-point level variables
-          for (int j=0; j<pver; ++j) {
+          for (int j=0; j<pver_in; ++j) {
             f_tend_s   (i,j) = tend_s   (i,j/Spack::n)[j%Spack::n];
             f_tend_q   (i,j) = tend_q   (i,j/Spack::n)[j%Spack::n];
+            f_tend_u   (i,j) = tend_u   (i,j/Spack::n)[j%Spack::n];
+            f_tend_v   (i,j) = tend_v   (i,j/Spack::n)[j%Spack::n];
           }
           // interface level variables
           for (int j=0; j<pverp; ++j) {
@@ -198,11 +193,13 @@ struct Functions {
       }
       if (D == ekat::TransposeDirection::f2c) {
         // sync_to_device?
-        for (int i=0; i<ncol; ++i) {
+        for (int i=0; i<ncol_in; ++i) {
           // mid-point level variables
-          for (int j=0; j<pver; ++j) {
+          for (int j=0; j<pver_in; ++j) {
             tend_s   (i,j/Spack::n)[j%Spack::n] = f_tend_s   (i,j);
             tend_q   (i,j/Spack::n)[j%Spack::n] = f_tend_q   (i,j);
+            tend_u   (i,j/Spack::n)[j%Spack::n] = f_tend_u   (i,j);
+            tend_v   (i,j/Spack::n)[j%Spack::n] = f_tend_v   (i,j);
           }
           // interface level variables
           for (int j=0; j<pverp; ++j) {
@@ -213,25 +210,29 @@ struct Functions {
       }
     };
     // -------------------------------------------------------------------------
-    void init(int ncol,int pver) {
+    void init(int ncol_in,int pver_in) {
       Real init_fill_value = -999;
       // 1D scalar variables
-      for (int i=0; i<ncol; ++i) {
+      for (int i=0; i<ncol_in; ++i) {
         precip(i) = init_fill_value;
         cape(i)   = init_fill_value;
       }
       // mid-point level variables
-      for (int i=0; i<ncol; ++i) {
-        for (int j=0; j<pver; ++j) {
+      for (int i=0; i<ncol_in; ++i) {
+        for (int j=0; j<pver_in; ++j) {
           tend_s(i,j/Spack::n)[j%Spack::n] = init_fill_value;
           tend_q(i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          tend_u(i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          tend_v(i,j/Spack::n)[j%Spack::n] = init_fill_value;
           f_tend_s(i,j) = init_fill_value;
           f_tend_q(i,j) = init_fill_value;
+          f_tend_u(i,j) = init_fill_value;
+          f_tend_v(i,j) = init_fill_value;
         }
       }
-      auto pverp = pver+1;
+      auto pverp = pver_in+1;
       // interface level variables
-      for (int i=0; i<ncol; ++i) {
+      for (int i=0; i<ncol_in; ++i) {
         for (int j=0; j<pverp; ++j) {
           prec_flux(i,j/Spack::n)[j%Spack::n] = init_fill_value;
           mass_flux(i,j/Spack::n)[j%Spack::n] = init_fill_value;
