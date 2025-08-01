@@ -126,10 +126,10 @@ TEST_CASE("output_aliases_integration", "[io][alias]") {
   auto gm = create_mesh_free_grids_manager(comm, 0, 0, nlevs, ncols);
   gm->build_grids();
   
-  auto grid = gm->get_grid("Physics GLL");
+  auto grid = gm->get_grid("Physics GLL");  
   FieldManager fm(grid);
   
-  // Create some test fields
+  // Create some test fields with realistic EAMxx names
   FieldIdentifier fid1("qv", {COL,LEV}, kg/kg, grid->name());
   FieldIdentifier fid2("T_mid", {COL,LEV}, K, grid->name());
   FieldIdentifier fid3("ps", {COL}, Pa, grid->name());
@@ -156,6 +156,7 @@ TEST_CASE("output_aliases_integration", "[io][alias]") {
   params.set<std::string>("filename_prefix", "alias_test");
   params.set<std::string>("averaging_type", "instant");
   
+  // Test field specifications with aliases
   std::vector<std::string> field_specs = {
     "QV:=:qv",        // Alias QV for qv
     "TEMP:=:T_mid",   // Alias TEMP for T_mid  
@@ -165,11 +166,30 @@ TEST_CASE("output_aliases_integration", "[io][alias]") {
   
   util::TimeStamp t0({2023,1,1},{0,0,0});
   
-  // Test that AtmosphereOutput can be created with aliases
-  REQUIRE_NOTHROW([&]() {
-    AtmosphereOutput out(comm, params, &fm, gm, t0, t0, false);
-    // Basic construction should succeed with alias syntax
-  }());
+  // Test that AtmosphereOutput can be created and initialized with aliases
+  SECTION("construction_with_aliases") {
+    REQUIRE_NOTHROW([&]() {
+      AtmosphereOutput out(comm, params, &fm, gm, t0, t0, false);
+      // Constructor should succeed with alias syntax
+      out.init();
+      // Initialization should also succeed
+    }());
+  }
+  
+  // Test mixed alias and non-alias field specifications
+  SECTION("mixed_aliases") {
+    std::vector<std::string> mixed_specs = {
+      "qv",             // No alias - use original name
+      "TEMP:=:T_mid",   // With alias
+      "ps"              // No alias - use original name
+    };
+    params.set("field_names", mixed_specs);
+    
+    REQUIRE_NOTHROW([&]() {
+      AtmosphereOutput out(comm, params, &fm, gm, t0, t0, false);
+      out.init();
+    }());
+  }
 }
 
 } // namespace scream
