@@ -213,6 +213,10 @@ protected:
   strmap_t<int>                         m_dims_len;
   std::list<diag_ptr_type>              m_diagnostics;
 
+  // Field aliasing support
+  strmap_t<std::string>                 m_alias_to_field_map;  // Map from alias names to internal field names
+  strvec_t                              m_alias_names;         // List of alias names (for netcdf variables)
+
   DefaultMetadata                       m_default_metadata;
 
   // Use float, so that if output fp_precision=float, this is a representable value.

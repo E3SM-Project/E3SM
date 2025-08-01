@@ -231,4 +231,53 @@ create_diagnostic (const std::string& diag_field_name,
   return diag;
 }
 
+std::pair<std::string, std::string>
+parse_field_alias (const std::string& field_spec)
+{
+  const std::string delimiter = ":=:";
+  auto pos = field_spec.find(delimiter);
+  
+  if (pos == std::string::npos) {
+    // No alias found, return the field_spec as both alias and field name
+    return {field_spec, field_spec};
+  }
+  
+  // Extract alias and field name
+  std::string alias = field_spec.substr(0, pos);
+  std::string field_name = field_spec.substr(pos + delimiter.length());
+  
+  // Trim whitespace from both strings
+  alias.erase(alias.find_last_not_of(" \t") + 1);
+  alias.erase(0, alias.find_first_not_of(" \t"));
+  field_name.erase(field_name.find_last_not_of(" \t") + 1);
+  field_name.erase(0, field_name.find_first_not_of(" \t"));
+  
+  EKAT_REQUIRE_MSG(!alias.empty() && !field_name.empty(),
+      "Error! Invalid field alias specification: '" + field_spec + "'\n"
+      "Expected format: 'alias:=:field_name' where both alias and field_name are non-empty.\n");
+  
+  return {alias, field_name};
+}
+
+std::pair<std::map<std::string, std::string>, std::vector<std::string>>
+process_field_aliases (const std::vector<std::string>& field_specs)
+{
+  std::map<std::string, std::string> alias_to_field_map;
+  std::vector<std::string> alias_names;
+  
+  for (const auto& spec : field_specs) {
+    auto [alias, field_name] = parse_field_alias(spec);
+    
+    // Check for duplicate aliases
+    EKAT_REQUIRE_MSG(alias_to_field_map.find(alias) == alias_to_field_map.end(),
+        "Error! Duplicate field alias found: '" + alias + "'\n"
+        "Each alias must be unique within the field list.\n");
+    
+    alias_to_field_map[alias] = field_name;
+    alias_names.push_back(alias);
+  }
+  
+  return {alias_to_field_map, alias_names};
+}
+
 } // namespace scream

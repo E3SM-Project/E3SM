@@ -3,6 +3,7 @@
 
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_logger.hpp>
@@ -121,6 +122,10 @@ protected:
 
   std::string               m_filename;
   std::vector<std::string>  m_fields_names;
+
+  // Field aliasing support
+  std::map<std::string, std::string> m_alias_to_field_map;  // Map from alias names to internal field names
+  std::vector<std::string>           m_alias_names;         // List of alias names (for netcdf variables)
 
   bool m_fields_inited  = false;
   bool m_scorpio_inited = false;
