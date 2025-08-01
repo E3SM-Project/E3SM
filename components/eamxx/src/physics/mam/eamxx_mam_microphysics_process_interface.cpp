@@ -430,6 +430,8 @@ int MAMMicrophysics::get_len_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  constexpr int pcnst              = mam4::pcnst;
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -442,12 +444,22 @@ int MAMMicrophysics::get_len_temporary_views() {
   // extfrc_
   work_len += 2*ncol_ * nlev_ * extcnt;
   work_len += ncol_ * nlev_ ;
+  //state_q_, qqcw_pcnst_
+  work_len += 2*ncol_ * nlev_*pcnst;
+  //qq_, qqcw_, vmr_,vmr0_, vmrcw_
+  work_len += 5 * ncol_ * nlev_*gas_pcnst;
+  // het_rates_
+  work_len += ncol_ * nlev_*gas_pcnst;
+  //   vmr_pregas_ vmr_precld_
+  work_len += 2* ncol_ * nlev_*gas_pcnst;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
   const int photo_table_len = get_photo_table_work_len(photo_table_);
   const int sethet_work_len = mam4::mo_sethet::get_total_work_len_sethet();
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
+  constexpr int pcnst              = mam4::pcnst;
+  constexpr int gas_pcnst = mam_coupling::gas_pcnst();
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
@@ -470,6 +482,29 @@ void MAMMicrophysics::init_temporary_views() {
 
   o3_col_dens_test_=view_2d(work_ptr, ncol_, nlev_);
   work_ptr += ncol_ * nlev_;
+
+  state_q_=view_3d(work_ptr, ncol_, nlev_, pcnst );
+  work_ptr += ncol_ * nlev_*pcnst;
+  qqcw_pcnst_=view_3d(work_ptr, ncol_, nlev_,pcnst );
+  work_ptr += ncol_ * nlev_*pcnst;
+  qq_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  qqcw_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmr_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmr0_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  vmrcw_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ * nlev_*gas_pcnst;
+  het_rates_ = view_3d(work_ptr, ncol_, nlev_, gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  vmr_pregas_ = view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+  vmr_precld_ =view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
+  work_ptr += ncol_ *nlev_*gas_pcnst;
+
 
   // Error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -1009,6 +1044,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       });
 
 
+
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl::photo_table", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1037,6 +1073,8 @@ void MAMMicrophysics::run_impl(const double dt) {
                               photo_work_arrays_icol); // out
   });
 
+  const auto het_rates =het_rates_;
+
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl::sethet", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1049,11 +1087,12 @@ void MAMMicrophysics::run_impl(const double dt) {
     const auto prain_icol        = ekat::subview(prain, icol);
     const auto nevapr_icol       = ekat::subview(nevapr, icol);
     const auto invariants_icol = ekat::subview(invariants_test, icol);
+    const auto het_rates_icol  = ekat::subview(het_rates, icol);
 
     const auto work_set_het_icol = ekat::subview(work_set_het, icol);
     auto work_set_het_ptr = (Real *)work_set_het_icol.data();
-    const auto het_rates = view_2d(work_set_het_ptr, nlev, num_gas_aerosol_constituents);
-    work_set_het_ptr += nlev * num_gas_aerosol_constituents;
+    // const auto het_rates = view_2d(work_set_het_ptr, nlev, num_gas_aerosol_constituents);
+    // work_set_het_ptr += nlev * num_gas_aerosol_constituents;
     // vmr0 stores mixing ratios before chemistry changes the mixing
     mam4::ColumnView vmr_col[num_gas_aerosol_constituents];
     for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
@@ -1077,11 +1116,17 @@ void MAMMicrophysics::run_impl(const double dt) {
        offset_aerosol, vmr_col);
     team.team_barrier();
 
-    mam4::mo_sethet::sethet(team, atm, het_rates, rlats, phis, cmfdqr, prain_icol,
+    mam4::mo_sethet::sethet(team, atm, het_rates_icol, rlats, phis, cmfdqr, prain_icol,
                           nevapr_icol, dt, invariants_icol, vmr_col,
                           work_sethet_call);
   });
-#if 0
+#if 1
+  const auto& state_q = state_q_;
+  const auto& qqcw_pcnst = qqcw_pcnst_;
+  const auto& qq = qq_;
+  const auto& qqcw = qqcw_;
+  const auto& vmr = vmr_;
+  const auto& vmrcw = vmrcw_;
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl::extract_stateq", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1089,36 +1134,471 @@ void MAMMicrophysics::run_impl(const double dt) {
     // mixing ratios) (in EAM, this is done in the gas_phase_chemdr
     // subroutine defined within
     //  mozart/mo_gas_phase_chemdr.F90)
-    state_q(pcnst)
-    qqcw_pcnst(pcnst)
-    qq[gas_pcnst]
-    qqcw[gas_pcnst]
-    vmr[gas_pcnst]
-    vmrcw[gas_pcnst]
+    const int icol     = team.league_rank();   // column index
+    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
 
-    Real state_q[pcnst] = {};
-    Real qqcw_pcnst[pcnst] = {};
-    // output (state_q)
-    mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q, kk);
-    // output (qqcw_pcnst)
-    mam4::utils::extract_qqcw_from_prognostics(progs, qqcw_pcnst, kk);
-    Real qq[gas_pcnst] = {};
-    Real qqcw[gas_pcnst] = {};
-    for (int i = offset_aerosol; i < pcnst; ++i) {
-      qq[i - offset_aerosol] = state_q[i];
-      qqcw[i - offset_aerosol] = qqcw_pcnst[i];
+    const auto state_q_icol = ekat::subview(state_q,icol);
+    const auto qqcw_pcnst_icol = ekat::subview(qqcw_pcnst,icol);
+    const auto qq_icol = ekat::subview(qq,icol);
+    const auto qqcw_icol = ekat::subview(qqcw,icol);
+    const auto vmr_icol = ekat::subview(vmr,icol);
+    const auto vmrcw_icol = ekat::subview(vmrcw,icol);
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, nlev),
+      [&](const int kk) {
+        const auto state_q_kk = ekat::subview(state_q_icol,kk);
+        const auto qqcw_pcnst_kk = ekat::subview(qqcw_pcnst_icol,kk);
+        const auto qq_kk = ekat::subview(qq_icol,kk);
+        const auto qqcw_kk = ekat::subview(qqcw_icol,kk);
+        const auto vmr_kk = ekat::subview(vmr_icol,kk);
+        const auto vmrcw_kk = ekat::subview(vmrcw_icol,kk);
+        // output (state_q)
+        mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q_kk, kk);
+        // output (qqcw_pcnst)
+        mam4::utils::extract_qqcw_from_prognostics(progs, qqcw_pcnst_kk, kk);
+        for (int i = offset_aerosol; i < pcnst; ++i) {
+          qq_kk[i - offset_aerosol] = state_q_kk[i];
+          qqcw_kk[i - offset_aerosol] = qqcw_pcnst_kk[i];
+        }
+        // convert mass mixing ratios to volume mixing ratios (VMR),
+        // equivalent to tracer mixing ratios (TMR)
+        // output (vmr)
+        mam4::microphysics::mmr2vmr(qq_kk.data(), adv_mass_kg_per_moles, vmr_kk.data());
+        // output (vmrcw)
+        mam4::microphysics::mmr2vmr(qqcw_kk.data(), adv_mass_kg_per_moles, vmrcw_kk.data());
+    });
+  });
+  Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::drydep_xactive", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+    const int icol     = team.league_rank();   // column index
+    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    // Snow depth on land [m]
+    const Real snow_height = snow_depth_land(icol);
+
+    Real fraction_landuse_icol[mam4::mo_drydep::n_land_type];
+    for(int i = 0; i < mam4::mo_drydep::n_land_type; ++i) {
+      fraction_landuse_icol[i] = fraction_landuse(icol, i);
     }
 
-    // convert mass mixing ratios to volume mixing ratios (VMR),
-    // equivalent to tracer mixing ratios (TMR)
-    Real vmr[gas_pcnst] = {}, vmrcw[gas_pcnst] = {};
-    // output (vmr)
-    mam4::microphysics::mmr2vmr(qq, adv_mass_kg_per_moles, vmr);
-    // output (vmrcw)
-    mam4::microphysics::mmr2vmr(qqcw, adv_mass_kg_per_moles, vmrcw);
+    int index_season[mam4::mo_drydep::n_land_type];
+    {
+      //-------------------------------------------------------------------------------------
+      // define which season (relative to Northern hemisphere climate)
+      //-------------------------------------------------------------------------------------
 
-  });
+      //-------------------------------------------------------------------------------------
+      // define season index based on fixed LAI
+      //-------------------------------------------------------------------------------------
+      for(int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
+            index_season[lt] = index_season_lai(icol, month - 1);
+      }
 
+      //-------------------------------------------------------------------------------------
+      // special case for snow covered terrain
+      //-------------------------------------------------------------------------------------
+      if(snow_height > 0.01) {  // BAD_CONSTANT
+        for(int lt = 0; lt < mam4::mo_drydep::n_land_type; ++lt) {
+          index_season[lt] = 3;
+        }
+        }
+      }
+      const int surface_lev = nlev - 1; // Surface level
+      // specific humidity [kg/kg]
+      const Real spec_hum = atm.vapor_mixing_ratio(surface_lev);
+      // surface air temperature [K]
+      const Real air_temp = atm.temperature(surface_lev);
+      // potential temperature [K] *(temp*(1+vapor_mixing_ratio))
+      //(FIXME: We followed Fortran, compare it with MAM4xx's potential temp
+      // func)
+      const Real tv = air_temp * (1.0 + spec_hum);
+      // 10-meter pressure [Pa]
+      // Surface pressure at 10m (Followed the fortran code)
+      const Real pressure_10m = atm.pressure(surface_lev);
+
+      // Wind speed at the surface
+      const Real wind_speed =
+            haero::sqrt(u_wind(icol, surface_lev) * u_wind(icol, surface_lev) +
+                        v_wind(icol, surface_lev) * v_wind(icol, surface_lev));
+      // Total rain at the surface
+      const Real rain =
+            precip_liq_surf_mass(icol) + precip_ice_surf_mass(icol);
+      // Downwelling solar flux at the surface (value at interface) [w/m2]
+      const Real solar_flux = sw_flux_dn(icol, surface_lev + 1);
+      const auto qq_icol = ekat::subview(qq,icol);
+      const auto qq_sfc = ekat::subview(qq_icol,surface_lev);
+      // These output values need to be put somewhere:
+      Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
+      Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
+
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+       mam4::mo_drydep::drydep_xactive(
+        drydep_data,
+        fraction_landuse_icol, // fraction of land use for column by land type
+        index_season,     // column-specific mapping of month indices to
+                          // seasonal land-type indices [-]
+        sfc_temperature(icol),         // surface temperature [K]
+        air_temp,         // surface air temperature [K]
+        tv,               // potential temperature [K]
+        sfc_pressure(icol),     // surface pressure [Pa]
+        pressure_10m,     // 10-meter pressure [Pa]
+        spec_hum,         // specific humidity [kg/kg]
+        wind_speed,       // 10-meter wind spped [m/s]
+        rain,             // rain content [??]
+        solar_flux,       // direct shortwave surface radiation [W/m^2]
+        qq_sfc.data(),               // constituent MMRs [kg/kg]
+        dvel_col,             // deposition velocity [1/cm/s]
+        dflx_col              // deposition flux [1/cm^2/s]
+      );
+      });
+    });
+
+    // Store mixing ratios before gas chemistry changes the mixing ratios
+    const auto& vmr0 = vmr0_;
+    Kokkos::deep_copy(vmr,vmr0);
+
+    Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::gas_phase_chemistry", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto &photo_rates_icol = ekat::subview(photo_rates_test, icol);
+      const auto invariants_icol = ekat::subview(invariants_test, icol);
+      const auto extfrc_icol = ekat::subview(extfrc_test, icol);
+      const auto het_rates_icol = ekat::subview(het_rates, icol);
+      const auto& vmr_icol = ekat::subview(vmr, icol);
+
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        const auto &extfrc_k = ekat::subview(extfrc_icol, kk);
+        const auto &invariants_k = ekat::subview(invariants_icol, kk);
+        const auto &photo_rates_k = ekat::subview(photo_rates_icol, kk);
+        const auto &het_rates_k = ekat::subview(het_rates_icol, kk);
+        // extract atm state variables (input)
+        const Real temperature = atm.temperature(kk);
+        const auto &vmr_kk = ekat::subview(vmr_icol, kk);
+        mam4::microphysics::gas_phase_chemistry(
+        // in
+        temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
+        clsmap_4, permute_4, het_rates_k.data(),
+        // out
+        vmr_kk);
+      });
+
+    });
+
+    if (gas_phase_chemistry_dvmrdt.size()) {
+
+    Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::gas_phase_chemistry_dvmrdt", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        Real pdel = atm.hydrostatic_dp(kk);
+        const Real mbar = haero::Constants::molec_weight_dry_air;
+      const Real gravit = haero::Constants::gravity;
+      const Real x = 1.0 / mbar * pdel / gravit;
+      for (int m = 0; m < num_gas_aerosol_constituents; ++m)
+        gas_phase_chemistry_dvmrdt(icol, m, kk) =
+            x * adv_mass_kg_per_moles[m] * (vmr(icol,kk,m) - vmr0(icol,kk,m)) / dt;
+       });
+
+    });
+  }
+
+  const auto& vmr_pregas =vmr_pregas_;
+  const auto& vmr_precld=vmr_precld_;
+  Kokkos::deep_copy(vmr, vmr_pregas);
+  Kokkos::deep_copy(vmrcw, vmr_precld);
+
+  const auto& vmr_bef_aq_chem= vmr_pregas;
+  const auto& config_setsox = config.setsox;
+
+  Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::setsox_single_level", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+
+    const int icol     = team.league_rank();   // column index
+    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    //----------------------
+    // Aerosol microphysics
+    //----------------------
+    // the logic below is taken from the aero_model_gasaerexch
+    // subroutine in eam/src/chemistry/modal_aero/aero_model.F90
+    const auto work_set_het_icol = ekat::subview(work_set_het, icol);
+    auto work_set_het_ptr = (Real *)work_set_het_icol.data();
+    const auto dqdt_aqso4 = view_2d(work_set_het_ptr,  nlev, num_gas_aerosol_constituents);
+    work_set_het_ptr += nlev * num_gas_aerosol_constituents;
+    const auto dqdt_aqh2so4 = view_2d(work_set_het_ptr, nlev, num_gas_aerosol_constituents);
+    work_set_het_ptr += nlev * num_gas_aerosol_constituents;
+
+    const auto invariants_icol = ekat::subview(invariants_test, icol);
+    const auto & vmrcw_icol = ekat::subview(vmrcw,icol);
+    const auto & vmr_icol = ekat::subview(vmr,icol);
+
+    Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        // extract atm state variables (input)
+        Real temp = atm.temperature(kk);
+        Real pmid = atm.pressure(kk);
+        Real pdel = atm.hydrostatic_dp(kk);
+        Real lwc = atm.liquid_mixing_ratio(kk);
+        Real cldfrac = atm.cloud_fraction(kk);
+        Real cldnum = atm.cloud_liquid_number_mixing_ratio(kk);
+        const auto &invariants_k = ekat::subview(invariants_icol, kk);
+        // aqueous chemistry ...
+       constexpr Real mbar = haero::Constants::molec_weight_dry_air;
+       constexpr int indexm = mam4::gas_chemistry::indexm;
+       const auto &dqdt_aqso4_k = ekat::subview(dqdt_aqso4, kk);
+       const auto &dqdt_aqh2so4_k = ekat::subview(dqdt_aqso4, kk);
+       const auto & vmrcw_k = ekat::subview(vmrcw_icol,kk);
+       const auto & vmr_k = ekat::subview(vmr_icol,kk);
+
+    mam4::mo_setsox::setsox_single_level(
+        // in
+        offset_aerosol, dt, pmid, pdel, temp, mbar, lwc, cldfrac, cldnum,
+        invariants_k(indexm), config_setsox,
+        // out
+        dqdt_aqso4_k.data(), dqdt_aqh2so4_k.data(), vmrcw_k.data(), vmr_k.data());
+    });
+    });
+
+    if (aqueous_chemistry_dvmrdt.size()) {
+        Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::aqueous_chemistry_dvmrdt", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        Real pdel = atm.hydrostatic_dp(kk);
+        const Real mbar = haero::Constants::molec_weight_dry_air;
+      const Real gravit = haero::Constants::gravity;
+      const Real x = 1.0 / mbar * pdel / gravit;
+      for (int m = 0; m < num_gas_aerosol_constituents; ++m)
+        aqueous_chemistry_dvmrdt(icol, m, kk) =
+            x * adv_mass_kg_per_moles[m] * (vmr(icol,kk,m) - vmr_bef_aq_chem(icol,kk,m)) / dt;
+       });
+
+    });
+    }
+
+    const auto& config_amicphys = config.amicphys;
+    constexpr int nmodes = mam4::AeroConfig::num_modes();
+     Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::modal_aero_amicphys_intr", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+
+      const int icol     = team.league_rank();   // column index
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto wet_diameter_icol =
+            ekat::subview(wet_geometric_mean_diameter_i, icol);
+      const auto dry_diameter_icol =
+            ekat::subview(dry_geometric_mean_diameter_i, icol);
+      const auto wetdens_icol = ekat::subview(wetdens, icol);
+
+      mam4::MicrophysDiagnosticArrays diag_arrays;
+
+      if (extra_mam4_aero_microphys_diags) {
+          diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
+          diag_arrays.gas_aero_exchange_renaming = ekat::subview(gas_aero_exchange_renaming, icol);
+          diag_arrays.gas_aero_exchange_nucleation = ekat::subview(gas_aero_exchange_nucleation, icol);
+          diag_arrays.gas_aero_exchange_coagulation = ekat::subview(gas_aero_exchange_coagulation, icol);
+          diag_arrays.gas_aero_exchange_renaming_cloud_borne = ekat::subview(gas_aero_exchange_renaming_cloud_borne, icol);
+      }
+      auto vmrcw_icol = ekat::subview(vmrcw,icol);
+      auto vmr_icol = ekat::subview(vmr,icol);
+      const auto & vmr0_icol = ekat::subview(vmr0,icol);
+      const auto & vmr_pregas_icol = ekat::subview(vmr_pregas,icol);
+      const auto & vmr_precld_icol = ekat::subview(vmr_precld,icol);
+
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        // calculate aerosol water content using water uptake treatment
+        // * dry and wet diameters [m]
+        // * wet densities [kg/m3]
+        // * aerosol water mass mixing ratio [kg/kg]
+        const Real temp = atm.temperature(kk);
+        const Real pmid = atm.pressure(kk);
+        const Real pdel = atm.hydrostatic_dp(kk);
+        const Real zm = atm.height(kk);
+        const Real pblh = atm.planetary_boundary_layer_height;
+        const Real qv = atm.vapor_mixing_ratio(kk);
+        const Real cldfrac = atm.cloud_fraction(kk);
+
+        Real dgncur_a_kk[nmodes] = {};
+        Real dgncur_awet_kk[nmodes] = {};
+        Real wetdens_kk[nmodes] = {};
+
+        for (int imode = 0; imode < nmodes; imode++) {
+         dgncur_awet_kk[imode] = wet_diameter_icol(imode, kk);
+         dgncur_a_kk[imode] = dry_diameter_icol(imode, kk);
+         wetdens_kk[imode] = wetdens_icol(imode, kk);
+        }
+        auto vmr_kk = ekat::subview(vmr_icol,kk);
+        auto vmrcw_kk = ekat::subview(vmrcw_icol,kk);
+        const auto & vmr0_kk = ekat::subview(vmr0_icol,kk);
+        const auto & vmr_pregas_kk = ekat::subview(vmr_pregas_icol,kk);
+        const auto & vmr_precld_kk = ekat::subview(vmr_precld_icol,kk);
+    // Perform aerosol microphysics (gas-aerosol exchange, nucleation,
+    // coagulation)
+    mam4::microphysics::modal_aero_amicphys_intr(
+        // in
+        config_amicphys, dt, temp, pmid, pdel, zm, pblh, qv, cldfrac,
+        // out
+        vmr_kk, vmrcw_kk,
+        // diagnostics (out)
+        kk, diag_arrays.gas_aero_exchange_condensation,
+        diag_arrays.gas_aero_exchange_renaming,
+        diag_arrays.gas_aero_exchange_nucleation,
+        diag_arrays.gas_aero_exchange_coagulation,
+        diag_arrays.gas_aero_exchange_renaming_cloud_borne,
+        // in
+        vmr0_kk, vmr_pregas_kk, vmr_precld_kk, dgncur_a_kk, dgncur_awet_kk, wetdens_kk);
+});
+    });
+
+    Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::vmr2mmr_cw", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      auto vmrcw_icol = ekat::subview(vmrcw,icol);
+      auto qqcw_icol = ekat::subview(qqcw,icol);
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        auto vmrcw_kk = ekat::subview(vmrcw_icol,kk);
+        auto qqcw_kk = ekat::subview(qqcw_icol,kk);
+        mam4::microphysics::vmr2mmr(vmrcw_kk.data(),
+           adv_mass_kg_per_moles, qqcw_kk.data());
+       });
+    });
+
+    if (config.linoz.compute) {
+      const auto& linoz_conf=config.linoz;
+      const int o3_ndx = static_cast<int>(mam4::GasId::O3);
+      Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::linoz", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
+      const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+      const auto o3_col_dens_i = ekat::subview(o3_col_dens_test, icol);
+      // convert column latitude to radians
+      const Real rlats = col_lat * M_PI / 180.0;
+      mam4::microphysics::LinozData linoz_data;
+      if (config.linoz.compute) {
+          linoz_data.linoz_o3_clim_icol = ekat::subview(linoz_o3_clim, icol);
+          linoz_data.linoz_t_clim_icol  = ekat::subview(linoz_t_clim, icol);
+          linoz_data.linoz_o3col_clim_icol =
+            ekat::subview(linoz_o3col_clim, icol);
+          linoz_data.linoz_PmL_clim_icol = ekat::subview(linoz_PmL_clim, icol);
+          linoz_data.linoz_dPmL_dO3_icol = ekat::subview(linoz_dPmL_dO3, icol);
+          linoz_data.linoz_dPmL_dT_icol  = ekat::subview(linoz_dPmL_dT, icol);
+          linoz_data.linoz_dPmL_dO3col_icol =
+            ekat::subview(linoz_dPmL_dO3col, icol);
+          linoz_data.linoz_cariolle_pscs_icol =
+            ekat::subview(linoz_cariolle_pscs, icol);
+      }
+      const auto& vmr_icol = ekat::subview(vmr,icol);
+
+      Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+      //-----------------
+      // LINOZ chemistry
+      //-----------------
+      const Real temp = atm.temperature(kk);
+      const Real pmid = atm.pressure(kk);
+      const Real pdel = atm.hydrostatic_dp(kk);
+
+      // the following things are diagnostics, which we're not
+      // including in the first rev
+      Real do3_linoz = 0, do3_linoz_psc = 0, ss_o3 = 0, o3col_du_diag = 0,
+           o3clim_linoz_diag = 0, zenith_angle_degrees = 0;
+
+
+      const auto& vmr_kk = ekat::subview(vmr_icol,kk);
+
+      // index of "O3" in solsym array (in EAM)
+      mam4::lin_strat_chem::lin_strat_chem_solve_kk(
+          // in
+          o3_col_dens_i(kk), temp, zenith_angle(icol), pmid, dt, rlats,
+          linoz_data.linoz_o3_clim_icol(kk), linoz_data.linoz_t_clim_icol(kk),
+          linoz_data.linoz_o3col_clim_icol(kk),
+          linoz_data.linoz_PmL_clim_icol(kk),
+          linoz_data.linoz_dPmL_dO3_icol(kk), linoz_data.linoz_dPmL_dT_icol(kk),
+          linoz_data.linoz_dPmL_dO3col_icol(kk),
+          linoz_data.linoz_cariolle_pscs_icol(kk), linoz_conf.chlorine_loading,
+          linoz_conf.psc_T,
+          // out
+          vmr_kk[o3_ndx],
+          // outputs that are not used
+          do3_linoz, do3_linoz_psc, ss_o3, o3col_du_diag, o3clim_linoz_diag,
+          zenith_angle_degrees);
+
+      // Update source terms above the ozone decay threshold
+      if (kk >= nlev - linoz_conf.o3_lbl) {
+        const Real o3l_vmr_old = vmr_kk(o3_ndx);
+        Real do3mass = 0;
+        const Real o3l_vmr_new =
+            mam4::lin_strat_chem::lin_strat_sfcsink_kk(dt, pdel,          // in
+                                                       o3l_vmr_old,       // in
+                                                       linoz_conf.o3_sfc, // in
+                                                       linoz_conf.o3_tau, // in
+                                                       do3mass);          // out
+        // Update the mixing ratio (vmr) for O3
+        vmr_kk(o3_ndx) = o3l_vmr_new;
+      }
+        });
+        });
+
+    }
+
+    Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::inject_to_progs", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+      const auto& vmr_icol = ekat::subview(vmr,icol);
+      const auto& qq_icol = ekat::subview(qq,icol);
+      const auto& state_q_icol = ekat::subview(state_q,icol);
+      const auto& qqcw_pcnst_icol = ekat::subview(qqcw_pcnst,icol);
+      // fetch column-specific subviews into aerosol prognostics
+      mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+     Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+      // Check for negative values and reset to zero
+    for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
+      if (vmr(icol,kk,i) < 0.0)
+        vmr(icol,kk,i) = 0.0;
+    }
+    const auto& vmr_kk = ekat::subview(vmr_icol,kk);
+    const auto& qq_kk = ekat::subview(qq_icol,kk);
+
+    mam4::microphysics::vmr2mmr(vmr_kk.data(), adv_mass_kg_per_moles, qq_kk.data());
+    for (int i = offset_aerosol; i < pcnst; ++i) {
+      state_q(icol, kk,i) = qq(icol, kk,i - offset_aerosol);
+      qqcw_pcnst(icol, kk,i) = qqcw(icol, kk,i - offset_aerosol);
+    }
+    const auto& state_q_kk = ekat::subview(state_q_icol,kk);
+    const auto& qqcw_pcnst_kk = ekat::subview(qqcw_pcnst_icol,kk);
+    mam4::utils::inject_stateq_to_prognostics(state_q_kk, progs, kk);
+    mam4::utils::inject_qqcw_to_prognostics(qqcw_pcnst_kk, progs, kk);
+    });
+    });
 
 #endif
   Kokkos::parallel_for(
