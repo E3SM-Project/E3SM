@@ -166,8 +166,8 @@ public:
     return m_postcondition_checks;
   }
   std::pair<CheckFailHandling,prop_check_ptr>
-  get_column_conservation_check() {
-    return m_column_conservation_check;
+  get_conservation() {
+    return m_conservation;
   }
 
 
@@ -271,7 +271,9 @@ public:
         strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
-  bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
+  bool has_column_conservation_check () { return m_conservation_data.has_column_conservation_check; }
+  bool has_energy_fixer () { return m_conservation_data.has_energy_fixer; }
+  bool has_energy_fixer_debug_info () { return m_conservation_data.has_energy_fixer_debug_info; }
 
   // Print a global hash of internal fields (useful for debugging non-bfbness)
   // Note: (mem, nmem) describe an arbitrary device array. If mem!=nullptr,
@@ -536,7 +538,9 @@ private:
 
   // Compute/store data needed for this processes mass and energy conservation
   // check: dt, tolerance, current mass and energy value per column.
-  void compute_column_conservation_checks_data (const int dt);
+  void compute_column_conservation_checks_data (const double dt);
+
+  void fix_energy (const double dt, const bool & print_debug_info);
 
   // Run an individual property check. The input property_check_category_name
   void run_property_check (const prop_check_ptr&       property_check,
@@ -574,17 +578,20 @@ private:
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
 
   // Column local mass and energy conservation check
-  std::pair<CheckFailHandling,prop_check_ptr> m_column_conservation_check;
+  std::pair<CheckFailHandling,prop_check_ptr> m_conservation;
 
   // Store data related to this processes conservation check.
-  struct ColumnConservationCheckData {
+  struct ConservationData {
     // Boolean which dictates whether or not this process
     // contains the mass and energy conservation checks.
-    bool has_check;
+    bool has_column_conservation_check;
     // Tolerance used for the conservation check
+    // mass or energy or both? rename
     Real tolerance;
+    bool has_energy_fixer;
+    bool has_energy_fixer_debug_info;
   };
-  ColumnConservationCheckData m_column_conservation_check_data;
+  ConservationData m_conservation_data;
 
   // This process's copy of the timestamps (current, as well as beg/end of step)
   TimeStamp m_start_of_step_ts;
