@@ -1,12 +1,12 @@
 #ifndef SCREAM_ABSTRACT_GRID_HPP
 #define SCREAM_ABSTRACT_GRID_HPP
 
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "share/grid/grid_utils.hpp"
 #include "share/field/field_layout.hpp"
 #include "share/field/field.hpp"
 
-#include "ekat/mpi//ekat_comm.hpp"
+#include <ekat_std_enable_shared_from_this.hpp>
+#include <ekat_comm.hpp>
 
 #include <map>
 #include <list>
@@ -38,7 +38,7 @@ namespace scream
  * like spatial dimension or "physical" rank.
  */
 
-class AbstractGrid : public ekat::enable_shared_from_this<AbstractGrid>
+class AbstractGrid : public std::enable_shared_from_this<AbstractGrid>
 {
 public:
   // TODO: use int64_t? int? template class on gid_type?

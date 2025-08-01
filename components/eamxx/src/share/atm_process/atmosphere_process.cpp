@@ -11,7 +11,7 @@
 namespace py = pybind11;
 #endif
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_assert.hpp>
 
 #include <set>
 #include <stdexcept>

@@ -13,17 +13,16 @@
 #include "share/field/field_group.hpp"
 #include "share/grid/grids_manager.hpp"
 
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/util/ekat_factory.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
-#include "ekat/std_meta/ekat_std_any.hpp"
-#include "ekat/logging/ekat_logger.hpp"
+#include <ekat_comm.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_factory.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_logger.hpp>
 
 #include <memory>
 #include <string>
 #include <set>
+#include <any>
 #include <list>
 #include <any>
 
@@ -71,7 +70,7 @@ namespace scream
  *     to override the get_internal_fields method.
  */
 
-class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess>
+class AtmosphereProcess : public std::enable_shared_from_this<AtmosphereProcess>
 {
 public:
   using TimeStamp = util::TimeStamp;
@@ -264,11 +263,11 @@ public:
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
   // Assumptions:
-  //  - these maps are: data_name -> ekat::any
+  //  - these maps are: data_name -> std::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<ekat::any>& get_restart_extra_data () const { return m_restart_extra_data; }
-        strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
+  const strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data () const { return m_restart_extra_data; }
+        strmap_t<std::shared_ptr<std::any>>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
@@ -507,7 +506,7 @@ protected:
   std::shared_ptr<logger_t>  m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<ekat::any>  m_restart_extra_data;
+  strmap_t<std::shared_ptr<std::any>>  m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize
@@ -673,9 +672,7 @@ using AtmosphereProcessFactory =
 template <typename AtmProcType>
 inline std::shared_ptr<AtmosphereProcess>
 create_atmosphere_process (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmProcType>(comm,p);
-  ptr->setSelfPointer(ptr);
-  return ptr;
+  return std::make_shared<AtmProcType>(comm,p);
 }
 
 } // namespace scream

@@ -1,8 +1,9 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -34,7 +35,9 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& nevapr, const uview_2d<Spack>& precip_liq_flux, const uview_2d<Spack>& precip_ice_flux)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
 
   Kokkos::parallel_for("p3_main_init",
          policy, KOKKOS_LAMBDA(const MemberType& team) {

@@ -15,9 +15,9 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 
 // EKAT headers
-#include <ekat/ekat_parse_yaml_file.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_yaml.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_test_utils.hpp>
 
 // RRTMGP
 #include <mo_gas_concentrations.h>
@@ -37,6 +37,7 @@ using namespace scream;
 using namespace scream::control;
 using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = KT::ExeSpace;
+using TPF = ekat::TeamPolicyFactory<ExeSpace>;
 using MemberType = KT::MemberType;
 using PC = scream::physics::Constants<Real>;
 
@@ -255,7 +256,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   // Gather molecular weights of all the active gases in the test for conversion
   // to mass-mixing-ratio.
   {
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
+    const auto policy = TPF::get_default_team_policy(ncol, nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
 
@@ -320,7 +321,7 @@ TEST_CASE("rrtmgp_scream_standalone_k", "") {
   auto lw_flux_up_test = real2dk("lw_flux_up_test", ncol, nlay+1);
   auto lw_flux_dn_test = real2dk("lw_flux_dn_test", ncol, nlay+1);
   {
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
+    const auto policy = TPF::get_default_team_policy(ncol, nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
 

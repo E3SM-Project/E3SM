@@ -4,6 +4,8 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream
 {
 
@@ -164,12 +166,13 @@ void VerticalLayerDiagnostic::do_compute_diagnostic_impl()
   using KT    = KokkosTypes<DefaultDevice>;
   using MemberType = typename KT::MemberType;
   using PF    = PhysicsFunctions<DefaultDevice>;
+  using TPF   = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   // To use in column_ops, since we integrate from surface
   constexpr bool FromTop = false;
 
   const auto npacks = ekat::npack<PackT>(m_num_levs);
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
+  const auto policy = TPF::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
 
   const auto& T    = get_field_in("T_mid").get_view<const PackT**>();
   const auto& p    = get_field_in("p_mid").get_view<const PackT**>();

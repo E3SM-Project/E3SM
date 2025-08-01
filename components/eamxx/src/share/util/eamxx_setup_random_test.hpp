@@ -2,7 +2,8 @@
 #define SCREAM_SETUP_RANDOM_TEST_HPP
 
 #include "catch2/catch.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+
+#include <ekat_comm.hpp>
 
 #include <random>
 #include <iostream>

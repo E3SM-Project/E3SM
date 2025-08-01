@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include <ekat/kokkos/ekat_kokkos_types.hpp>
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_kokkos_types.hpp>
+#include <ekat_comm.hpp>
 
 namespace scream {
 namespace bfbhash {

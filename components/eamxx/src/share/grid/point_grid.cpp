@@ -1,5 +1,4 @@
 #include "share/grid/point_grid.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 
 #include <numeric>
@@ -161,7 +160,6 @@ create_point_grid (const std::string& grid_name,
   }
 
   auto grid = std::make_shared<PointGrid>(grid_name,num_my_cols,num_vertical_lev,comm);
-  grid->setSelfPointer(grid);
 
   auto dofs_gids = grid->get_dofs_gids();
   auto h_dofs_gids = dofs_gids.get_view<AbstractGrid::gid_type*,Host>();

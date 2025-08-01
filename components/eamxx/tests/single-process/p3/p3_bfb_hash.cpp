@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
-#include <ekat/util/ekat_test_utils.hpp>
+#include <ekat_test_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <fstream>
 

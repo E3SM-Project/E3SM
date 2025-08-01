@@ -3,7 +3,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
 
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <memory>
 #include <numeric>
