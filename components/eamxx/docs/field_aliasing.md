@@ -1,6 +1,6 @@
 # EAMxx Field Aliasing Feature
 
-This document demonstrates the new field aliasing feature for EAMxx I/O operations.
+This document demonstrates the field aliasing feature for EAMxx I/O operations.
 
 ## Overview
 
@@ -14,7 +14,7 @@ The field aliasing feature allows users to specify custom names for variables in
 
 The alias syntax uses the delimiter `:=:` to separate the alias name from the internal field name:
 
-```
+```yaml
 alias_name:=:internal_field_name
 ```
 
@@ -32,7 +32,7 @@ output_streams:
         field_names:
           - "LWP:=:LiqWaterPath"      # Alias LWP for LiqWaterPath
           - "SWP:=:SolidWaterPath"    # Alias SWP for SolidWaterPath  
-          - "T:=:Temperature"         # Alias T for Temperature
+          - "T:=:T_mid"               # Alias T for T_mid
           - "qv"                      # Regular field name (no alias)
 ```
 
@@ -42,9 +42,9 @@ You can mix aliased and non-aliased fields in the same configuration:
 
 ```yaml
 field_names:
-  - "temperature"                    # Regular field name
+  - "T_mid"                          # Regular field name
   - "LWP:=:LiqWaterPath"            # Aliased field
-  - "pressure"                      # Regular field name
+  - "ps"                            # Regular field name  
   - "RH:=:RelativeHumidity"         # Aliased field
 ```
 
@@ -54,11 +54,11 @@ When using aliases:
 
 1. **NetCDF Variables**: The netcdf file will contain variables named according to the aliases
    - `LWP` instead of `LiqWaterPath`
-   - `T` instead of `Temperature`
+   - `T` instead of `T_mid`
    - `RH` instead of `RelativeHumidity`
 
 2. **Internal Processing**: All internal model operations use the original field names
-   - Field validation uses `LiqWaterPath`, `Temperature`, etc.
+   - Field validation uses `LiqWaterPath`, `T_mid`, etc.
    - Diagnostic calculations use original names
    - Memory management uses original field structures
 
@@ -74,7 +74,7 @@ input_streams:
     filename: ic_file.nc
     field_names:
       - "LWP:=:LiqWaterPath"    # Read variable LWP from file into field LiqWaterPath
-      - "T:=:Temperature"       # Read variable T from file into field Temperature
+      - "T:=:T_mid"             # Read variable T from file into field T_mid
 ```
 
 ## Error Handling
@@ -86,10 +86,11 @@ The system provides comprehensive error checking:
 - **Empty Names**: Both alias and field names must be non-empty
 
 Example error cases:
+
 ```yaml
 field_names:
   - "LWP:=:"                    # Error: empty field name
-  - ":=:LiqWaterPath"          # Error: empty alias name
+  - ":=:LiqWaterPath"          # Error: empty alias name  
   - "LWP:=:Field1"             # OK
   - "LWP:=:Field2"             # Error: duplicate alias LWP
 ```
@@ -106,23 +107,23 @@ field_names:
 ### 1. Climate Model Output
 ```yaml
 field_names:
-  - "LWCF:=:LongwaveCloudForcing"
-  - "SWCF:=:ShortwaveCloudForcing"  
-  - "PRECT:=:PrecipitationRate"
+  - "T:=:T_mid"
+  - "RH:=:RelativeHumidity"  
+  - "P:=:ps"
 ```
 
 ### 2. Atmospheric Chemistry
 ```yaml
 field_names:
-  - "O3:=:Ozone"
-  - "CO2:=:CarbonDioxide"
-  - "CH4:=:Methane"
+  - "QC:=:qc"
+  - "QI:=:qi"
+  - "QV:=:qv"
 ```
 
 ### 3. Diagnostic Output
 ```yaml
 field_names:
-  - "LWP:=:LiqWaterPath"
-  - "IWP:=:IceWaterPath"
-  - "PWV:=:PrecipitableWater"
+  - "CLDTOT:=:cldfrac_tot_for_analysis"
+  - "CLDLIQ:=:cldfrac_liq"
+  - "CLDICE:=:cldfrac_ice_for_analysis"
 ```
