@@ -30,6 +30,7 @@ module ColumnDataType
   use elm_varctl      , only : pf_hmode, nu_com
   use elm_varctl      , only : use_extrasnowlayers, use_polygonal_tundra
   use elm_varctl      , only : use_fan
+  use elm_varctl      , only : use_ocn_lnd_one_way
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
@@ -169,6 +170,7 @@ module ColumnDataType
     real(r8), pointer :: vsfm_soilp_col_1d  (:)   => null() ! 1D soil liquid pressure from VSFM [Pa]
     real(r8), pointer :: h2orof             (:)   => null() ! floodplain inundation volume received from rof (mm)
     real(r8), pointer :: frac_h2orof        (:)   => null() ! floodplain inundation fraction received from rof (-)
+    real(r8), pointer :: frac_h2oocn        (:)   => null() ! coastal inundation fraction received from ocn (-)
    ! polygonal tundra (NGEE Arctic IM1)
     real(r8), pointer :: iwp_microrel     (:) => null() ! ice wedge polygon microtopographic relief (m)
     real(r8), pointer :: iwp_exclvol      (:) => null() ! ice wedge polygon excluded volume (m)
@@ -519,6 +521,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_h2osfc2topsoi   (:)   => null() ! liquid water coming from surface standing water top soil (mm H2O/s)
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
     real(r8), pointer :: qflx_lateral         (:)   => null() ! lateral subsurface flux (mm H2O /s)
+    real(r8), pointer :: qflx_lnd2ocn         (:)   => null() ! lateral flux between water table and sea surface height (mm H2O/s)
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
 
@@ -528,6 +531,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
     real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation
     real(r8), pointer :: qflx_h2orof_drain    (:)   => null() ! drainage from floodplain inundation volume (mm H2O/s))
+    real(r8), pointer :: qflx_h2oocn_drain    (:)   => null() ! drainage from coastal inundation volume (mm H2O/s)
     real(r8), pointer :: qflx_from_uphill     (:)   => null() ! input to top soil layer from uphill topounit(s) (mm H2O/s))
     real(r8), pointer :: qflx_to_downhill     (:)   => null() ! output from column to the downhill topounit (mm H2O/s))
 
@@ -1461,6 +1465,7 @@ contains
     allocate(this%vsfm_soilp_col_1d  (ncells))                        ; this%vsfm_soilp_col_1d  (:)   = spval
     allocate(this%h2orof             (begc:endc))                     ; this%h2orof             (:)   = spval
     allocate(this%frac_h2orof        (begc:endc))                     ; this%frac_h2orof        (:)   = spval
+    allocate(this%frac_h2oocn        (begc:endc))                     ; this%frac_h2oocn        (:)   = nan
     if (use_polygonal_tundra) then
       ! polygonal tundra/ice wedge polygons:
       allocate(this%iwp_microrel       (begc:endc))                   ; this%iwp_microrel     (:) = spval
@@ -1690,6 +1695,7 @@ contains
        this%frac_h2osfc_act(c)        = 0._r8
        this%h2orof(c)                 = 0._r8
        this%frac_h2orof(c)            = 0._r8
+       this%frac_h2oocn(c)            = 0._r8
 
        if (lun_pp%urbpoi(l)) then
           ! From Bonan 1996 (LSM technical note)
@@ -5828,6 +5834,7 @@ contains
     allocate(this%qflx_h2osfc2topsoi     (begc:endc))             ; this%qflx_h2osfc2topsoi   (:)   = spval
     allocate(this%qflx_snow2topsoi       (begc:endc))             ; this%qflx_snow2topsoi     (:)   = spval
     allocate(this%qflx_lateral           (begc:endc))             ; this%qflx_lateral         (:)   = 0._r8
+    allocate(this%qflx_lnd2ocn           (begc:endc))             ; this%qflx_lnd2ocn         (:)   = spval
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = spval
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = spval
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = spval
@@ -5836,6 +5843,7 @@ contains
     allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = spval
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = spval
     allocate(this%qflx_h2orof_drain      (begc:endc))             ; this%qflx_h2orof_drain    (:)   = spval
+    allocate(this%qflx_h2oocn_drain      (begc:endc))             ; this%qflx_h2oocn_drain    (:)   = spval
     allocate(this%qflx_from_uphill       (begc:endc))             ; this%qflx_from_uphill     (:)   = spval
     allocate(this%qflx_to_downhill       (begc:endc))             ; this%qflx_to_downhill     (:)   = spval
 
@@ -5892,6 +5900,17 @@ contains
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
+
+    if (use_ocn_lnd_one_way) then
+      call hist_addfld1d (fname='QH2OOCN',  units='mm/s',  &
+           avgflag='A', long_name='Ocean inundation infiltration', &
+           ptr_col=this%qflx_h2oocn_drain, c2l_scale_type='urbanf')
+
+      this%qflx_lnd2ocn(begc:endc) = spval
+      call hist_addfld1d (fname='QLND2OCN',  units='mm/s',  &
+           avgflag='A', long_name='land to ocean drainage', &
+           ptr_col=this%qflx_lnd2ocn, c2l_scale_type='urbanf')
+    endif
 
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
@@ -6027,14 +6046,18 @@ contains
     this%qflx_grnd_irrig(begc:endc) = 0._r8
     this%qflx_over_supply(begc:endc) = 0._r8
     this%qflx_h2orof_drain(begc:endc)= 0._r8
+    this%qflx_h2oocn_drain(begc:endc)= 0._r8
+
     this%qflx_from_uphill(begc:endc) = 0._r8
     this%qflx_to_downhill(begc:endc) = 0._r8
+
     ! needed for CNNLeaching
     do c = begc, endc
        l = col_pp%landunit(c)
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%qflx_drain(c) = 0._r8
           this%qflx_surf(c)  = 0._r8
+          this%qflx_lnd2ocn(c) = 0._r8
        end if
     end do
 

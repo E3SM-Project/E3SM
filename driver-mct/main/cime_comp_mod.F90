@@ -414,6 +414,7 @@ module cime_comp_mod
 
   logical  :: atm_prognostic         ! .true.  => atm comp expects input
   logical  :: lnd_prognostic         ! .true.  => lnd comp expects input
+  logical  :: lndocn_prognostic      ! .ture.  => lnd comp expects ocean inputs
   logical  :: ice_prognostic         ! .true.  => ice comp expects input
   logical  :: iceberg_prognostic     ! .true.  => ice comp can handle iceberg input
   logical  :: ocn_prognostic         ! .true.  => ocn comp expects input
@@ -440,6 +441,7 @@ module cime_comp_mod
   logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
   logical  :: ocn_c2_rof             ! .true.  => ocn to rof coupling on
+  logical  :: ocn_c2_lnd             ! .true.  => ocn to lnd coupling on
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
   logical  :: ice_c2_wav             ! .true.  => ice to wav coupling on
@@ -1677,6 +1679,7 @@ contains
          flood_present=flood_present,           &
          atm_prognostic=atm_prognostic,         &
          lnd_prognostic=lnd_prognostic,         &
+         lndocn_prognostic=lndocn_prognostic,   &
          ice_prognostic=ice_prognostic,         &
          iceberg_prognostic=iceberg_prognostic, &
          ocn_prognostic=ocn_prognostic,         &
@@ -1750,6 +1753,7 @@ contains
     ocn_c2_ice = .false.
     ocn_c2_wav = .false.
     ocn_c2_rof = .false.
+    ocn_c2_lnd = .false.
     ice_c2_atm = .false.
     ice_c2_ocn = .false.
     ice_c2_wav = .false.
@@ -1788,7 +1792,7 @@ contains
        if (glc_prognostic .and. (glc_nzoc > 0)) ocn_c2_glctf = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
        if (rofocn_prognostic) ocn_c2_rof = .true.
-
+       if (lndocn_prognostic) ocn_c2_lnd = .true.
     endif
     if (ice_present) then
        if (atm_prognostic) ice_c2_atm = .true.
@@ -1865,6 +1869,7 @@ contains
        write(logunit,F0L)'atm model prognostic  = ',atm_prognostic
        write(logunit,F0L)'lnd model prognostic  = ',lnd_prognostic
        write(logunit,F0L)'ocn model prognostic  = ',ocn_prognostic
+       write(logunit,F0L)'lnd ocn   prognostic  = ',lndocn_prognostic
        write(logunit,F0L)'ice model prognostic  = ',ice_prognostic
        write(logunit,F0L)'iceberg   prognostic  = ',iceberg_prognostic
        write(logunit,F0L)'glc model prognostic  = ',glc_prognostic
@@ -1889,6 +1894,7 @@ contains
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
        write(logunit,F0L)'ocn_c2_rof            = ',ocn_c2_rof
+       write(logunit,F0L)'ocn_c2_lnd            = ',ocn_c2_lnd
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
        write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
        write(logunit,F0L)'ice_c2_wav            = ',ice_c2_wav
@@ -1989,6 +1995,12 @@ contains
           call shr_sys_flush(logunit)
        endif
     endif
+    if (lndocn_prognostic .and. .not.ocn_present) then
+       if (iamroot_CPLID) then
+          write(logunit,F00) 'WARNING: lndocn_prognostic is TRUE but ocn_present is FALSE'
+          call shr_sys_flush(logunit)
+       endif
+    endif
 
     !----------------------------------------------------------
     !| Samegrid checks
@@ -2032,7 +2044,7 @@ contains
 
        call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd)
 
-       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
+       call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd, ocn_c2_lnd)
 
        call prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
@@ -4074,6 +4086,8 @@ contains
 
        if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
 
+       if (ocn_c2_lnd) call prep_lnd_accum_ocn(timer='CPL:ocnpost_acco2l')
+
        call cime_run_ocnglc_coupling()
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4306,6 +4320,11 @@ contains
        ! IAC export onto lnd grid
        if (iac_c2_lnd) then
           call prep_lnd_calc_z2x_lx(timer='CPL:lndprep_iac2lnd')
+       endif
+
+       if (ocn_c2_lnd) then 
+          call prep_lnd_accum_avg(timer='CPL:lndprep_o2xavg')
+          call prep_lnd_calc_o2x_lx(timer='CPL:lndprep_ocn2lnd')
        endif
 
        if (lnd_prognostic) then
