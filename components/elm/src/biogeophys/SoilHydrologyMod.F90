@@ -2415,8 +2415,7 @@ filter_hydrologyc, num_urbanc, filter_urbanc,  &
           ! allow jwt to equal zero when zwt is in top layer
           do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
-                if (zengdecker_2009_with_var_soil_thick .and. zwt(c) ==
-zi(c,nlevbed)) then
+                if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                    exit
                 else
                    jwt(c) = j-1
@@ -2474,8 +2473,7 @@ zi(c,nlevbed)) then
              wtsub = 0._r8
              q_perch = 0._r8
              do k = jwt(c)+1, k_frz
-                imped=10._r8**(-e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi,
-k+1)))))
+                imped=10._r8**(-e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi,k+1)))))
                 q_perch = q_perch + imped*hksat(c,k)*dzmm(c,k)
                 wtsub = wtsub + dzmm(c,k)
              end do
@@ -2516,8 +2514,7 @@ k+1)))))
              jwt(c) = nlevbed
              do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
-                   if (zengdecker_2009_with_var_soil_thick .and. zwt(c) ==
-zi(c,nlevbed)) then
+                   if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                       exit
                    else
                       jwt(c) = j-1
@@ -2555,11 +2552,9 @@ zi(c,nlevbed)) then
                 ! interpolate between k_perch and k_perch+1 to find perched
                 ! water table height
                 s1 = (h2osoi_liq(c,k_perch)/(dz(c,k_perch)*denh2o) &
-                     +
-h2osoi_ice(c,k_perch)/(dz(c,k_perch)*denice))/watsat(c,k_perch)
+                     + h2osoi_ice(c,k_perch)/(dz(c,k_perch)*denice))/watsat(c,k_perch)
                 s2 = (h2osoi_liq(c,k_perch+1)/(dz(c,k_perch+1)*denh2o) &
-                     +
-h2osoi_ice(c,k_perch+1)/(dz(c,k_perch+1)*denice))/watsat(c,k_perch+1)
+                     + h2osoi_ice(c,k_perch+1)/(dz(c,k_perch+1)*denice))/watsat(c,k_perch+1)
 
                 m=(z(c,k_perch+1)-z(c,k_perch))/(s2-s1)
                 b=z(c,k_perch+1)-m*s2
@@ -2569,8 +2564,7 @@ h2osoi_ice(c,k_perch+1)/(dz(c,k_perch+1)*denice))/watsat(c,k_perch+1)
                 wtsub = 0._r8
                 q_perch = 0._r8
                 do k = k_perch, k_frz
-                   imped=10._r8**(-e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi,
-k+1)))))
+                   imped=10._r8**(-e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi,k+1)))))
                    q_perch = q_perch + imped*hksat(c,k)*dzmm(c,k)
                    wtsub = wtsub + dzmm(c,k)
                 end do
@@ -2593,8 +2587,7 @@ k+1)))))
                    h2osoi_liq(c,k) = h2osoi_liq(c,k) + rsub_top_layer
 
                    if (rsub_top_tot >= 0.) then 
-                      zwt_perched(c) = zwt_perched(c) -
-rsub_top_layer/eff_porosity(c,k)/1000._r8
+                      zwt_perched(c) = zwt_perched(c) - rsub_top_layer/eff_porosity(c,k)/1000._r8
                       exit
                    else
                       zwt_perched(c) = zi(c,k)
@@ -2606,8 +2599,7 @@ rsub_top_layer/eff_porosity(c,k)/1000._r8
                 ! table), 
                 !     then decrease qflx_drain_perched by residual amount for
                 !     water balance
-                qflx_drain_perched(c) = qflx_drain_perched(c) +
-rsub_top_tot/dtime
+                qflx_drain_perched(c) = qflx_drain_perched(c) + rsub_top_tot/dtime
 
              else
                 qflx_drain_perched(c) = 0._r8
@@ -2625,11 +2617,9 @@ rsub_top_tot/dtime
              ! add ice impedance factor to baseflow
              if(origflag == 1) then 
                 if (use_vichydro) then
-                   call endrun(msg="VICHYDRO is not available for
-origflag=1"//errmsg(__FILE__, __LINE__))
+                   call endrun(msg="VICHYDRO is not available for origflag=1"//errmsg(__FILE__, __LINE__))
                 else
-                   fracice_rsub(c) =
-max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
+                   fracice_rsub(c) = max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
                         - exp(-3._r8))/(1.0_r8-exp(-3._r8))
                    imped=(1._r8 - fracice_rsub(c))
                    rsub_top_max = 5.5e-3_r8
@@ -2641,8 +2631,7 @@ max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
                    rsub_top_max = dsmax_tmp(c)
                 else
                    imped=10._r8**(-e_ice*(icefracsum/dzsum))
-                   rsub_top_max = min(10._r8 * sin((rpi/180.) *
-col_pp%topo_slope(c)), rsub_top_globalmax)
+                   rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
                 end if
              endif
              if (use_vichydro) then
@@ -2651,21 +2640,18 @@ col_pp%topo_slope(c)), rsub_top_globalmax)
                 ! moisture from previous time step
                 ! use watmin instead for resid_moist to be consistent with
                 ! default hydrology
-                rel_moist = (moist(c,nlayer) -
-watmin)/(max_moist(c,nlayer)-watmin) 
+                rel_moist = (moist(c,nlayer) - watmin)/(max_moist(c,nlayer)-watmin) 
                 frac = (Ds(c) * rsub_top_max )/Wsvic(c)
                 rsub_tmp = (frac * rel_moist)/dtime
                 if(rel_moist > Wsvic(c))then
                    frac = (rel_moist - Wsvic(c))/(1.0_r8 - Wsvic(c))
-                   rsub_tmp = rsub_tmp + (rsub_top_max * (1.0_r8 -
-Ds(c)/Wsvic(c)) *frac**c_param(c))/dtime
+                   rsub_tmp = rsub_tmp + (rsub_top_max * (1.0_r8 - Ds(c)/Wsvic(c)) *frac**c_param(c))/dtime
                 end if
                 rsub_top(c) = imped * rsub_tmp
                 ! make sure baseflow isn't negative
                 rsub_top(c) = max(0._r8, rsub_top(c))
              else
-                if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick)
-then
+                if (jwt(c) == nlevbed .and. zengdecker_2009_with_var_soil_thick) then
                    rsub_top(c)    = 0._r8
                 else
                    rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c))
@@ -2676,8 +2662,6 @@ then
 
              !no need to compute drainage for h3d soil columns
              if (use_h3d .and. col_pp%h3d_active(c)) then
-                !write(iulog,*) '*********************************'
-                !write(iulog,*) 'default rsub_top',rsub_top(c)
                 tmp_rsub_top(c) = rsub_top(c) / 1000._r8 !mm/s -> m/s
                 rsub_top(c) = 0._r8
                 h3d_imped(c) = imped
@@ -2687,35 +2671,25 @@ then
 
              ! use analytical expression for aquifer specific yield
              rous = watsat(c,nlevbed) &
-                  * ( 1. -
-(1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
+                  * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
              rous=max(rous,0.02_r8)
 
 
              !--  water table is below the soil column
              !--------------------------------------
-         !write(6,*) "==============before subsurfaca draniage================"
-         !write(6,*) c,jwt(c),zwt(c),rsub_top(c)
              if(jwt(c) == nlevbed) then             
                 if (zengdecker_2009_with_var_soil_thick) then
-                   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed))
-then
+                   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
                       zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
                    end if
                    rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
-         !write(6,*) "==============before subsurfaca draniage
-         !1================"
-         !write(6,*) c,jwt(c),zwt(c),rsub_top(c)
                    rsub_top_tot = - rsub_top(c) * dtime
                    s_y = watsat(c,nlevbed) &
-                     * ( 1. -
-(1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
+                     * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
                    s_y=max(s_y,0.02_r8)     
-                   rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) -
-zwt(c))*1.e3))
+                   rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
                    rsub_top_layer=min(rsub_top_layer,0._r8)
-                   h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) +
-rsub_top_layer
+                   h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
                    rsub_top_tot = rsub_top_tot - rsub_top_layer
                    if (rsub_top_tot >= 0.) then 
                       zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
@@ -2729,8 +2703,7 @@ rsub_top_layer
                 else
                    wa(c)  = wa(c) - rsub_top(c) * dtime
                    zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
-                   h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) +
-max(0._r8,(wa(c)-5000._r8))
+                   h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) + max(0._r8,(wa(c)-5000._r8))
                    wa(c)  = min(wa(c), 5000._r8)
                 end if
              else                                
@@ -2740,13 +2713,10 @@ max(0._r8,(wa(c)-5000._r8))
                 !=========================================
                 !--  Now remove water via rsub_top
                 rsub_top_tot = - rsub_top(c) * dtime
-         !write(6,*) "==============before subsurfaca draniage================"
-         !write(6,*) c,jwt(c),zwt(c),rsub_top(c)
                 !should never be positive... but include for completeness
                 if(rsub_top_tot > 0.) then !rising water table
 
-                   call endrun(msg="RSUB_TOP IS POSITIVE in
-Drainage!"//errmsg(__FILE__, __LINE__))
+                   call endrun(msg="RSUB_TOP IS POSITIVE in Drainage!"//errmsg(__FILE__, __LINE__))
 
                 else ! deepening water table
                    if (use_vichydro) then
@@ -2756,8 +2726,7 @@ Drainage!"//errmsg(__FILE__, __LINE__))
                       end do
 
                       do j = (nlvic(1)+nlvic(2)+1), nlevbed
-                         rsub_top_layer=max(rsub_top_tot,
-rsub_top_tot*hk_l(c,j)*dzmm(c,j)/wtsub_vic)
+                         rsub_top_layer=max(rsub_top_tot, rsub_top_tot*hk_l(c,j)*dzmm(c,j)/wtsub_vic)
                          rsub_top_layer=min(rsub_top_layer,0._r8)
                          if (use_vsfm) rsub_top_layer = 0._r8
                          h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
@@ -2767,12 +2736,10 @@ rsub_top_tot*hk_l(c,j)*dzmm(c,j)/wtsub_vic)
                       do j = jwt(c)+1, nlevbed
                          ! use analytical expression for specific yield
                          s_y = watsat(c,j) &
-                              * ( 1. -
-(1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
+                              * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
                          s_y=max(s_y,0.02_r8)
 
-                         rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) -
-zwt(c))*1.e3))
+                         rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) - zwt(c))*1.e3))
                          rsub_top_layer=min(rsub_top_layer,0._r8)
                          if (use_vsfm) rsub_top_layer = 0._r8
                          h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
@@ -2808,8 +2775,7 @@ zwt(c))*1.e3))
                 jwt(c) = nlevbed
                 do j = 1,nlevbed
                    if(zwt(c) <= zi(c,j)) then
-                      if (zengdecker_2009_with_var_soil_thick .and. zwt(c) ==
-zi(c,nlevbed)) then
+                      if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                          exit
                       else
                          jwt(c) = j-1
@@ -2843,8 +2809,7 @@ zi(c,nlevbed)) then
           end if
         end do
 
-        CALL  H3D_DRI(bounds, num_h3dc, filter_h3dc,  jwt,zwt_h3d,
-tmp_rsub_top,h3d_rsub_top_max,fff,&
+        CALL  H3D_DRI(bounds, num_h3dc, filter_h3dc,  jwt,zwt_h3d, tmp_rsub_top,h3d_rsub_top_max,fff,&
               soilhydrology_vars, soilstate_vars, dtime)
 
 
@@ -2859,61 +2824,44 @@ tmp_rsub_top,h3d_rsub_top_max,fff,&
                 rsub_top_tot = - rsub_top(c) * dtime
 
                 if (zengdecker_2009_with_var_soil_thick) then
-                   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed))
-then
+                   if (-1._r8 * smp_l(c,nlevbed) < 0.5_r8 * dzmm(c,nlevbed)) then
                       zwt(c) = z(c,nlevbed) - (smp_l(c,nlevbed) / 1000._r8)
                    end if
                    !rsub_top(c) = imped * rsub_top_max * exp(-fff(c) * zwt(c))
 
                    if(rsub_top_tot > 0.) then !rising water table
                      !h3d allows water table rise
-                     !call endrun(msg="RSUB_TOP IS POSITIVE in
-                     !Drainage!"//errmsg(__FILE__, __LINE__))
-                     !write(iulog,*) '------------rasing WTD from
-                     !bedrock-------'
                      do j = jwt(c), 1,-1
                        !scs: use analytical expression for specific yield
                        s_y = watsat(c,j) &
-                           * ( 1. -
-(1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
+                           * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
                        s_y=max(s_y,0.02_r8)
 
-                       rsub_top_layer=min(rsub_top_tot,(s_y*(zwt(c) -
-zi(c,j-1))*1.e3))
+                       rsub_top_layer=min(rsub_top_tot,(s_y*(zwt(c) - zi(c,j-1))*1.e3))
                        rsub_top_layer=max(rsub_top_layer,0._r8)
 
-                       !write(iulog,*) c,j,rsub_top_tot,rsub_top_layer
-
                        h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
-                       if(s_y > 0._r8) zwt(c) = zwt(c) -
-rsub_top_layer/s_y/1000._r8
+                       if(s_y > 0._r8) zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
 
                        rsub_top_tot = rsub_top_tot - rsub_top_layer
                        if (rsub_top_tot <= 0.) then
-                         if (rsub_top_tot < 0.) write(iulog,*) 'negtive
-rsub_top_tot',c,rsub_top_tot
+                         if (rsub_top_tot < 0.) write(iulog,*) 'negtive rsub_top_tot',c,rsub_top_tot
                          exit
                        end if
                       enddo
 
                       if (rsub_top_tot > 0._r8) then
-                         !write(iulog,*) '------------saturation excess
-                         !runoff-------'
-                         qflx_rsub_sat(c) = qflx_rsub_sat(c) + rsub_top_tot /
-dtime
+                         qflx_rsub_sat(c) = qflx_rsub_sat(c) + rsub_top_tot / dtime
                       end if
 
                    else
                       s_y = watsat(c,nlevbed) &
-                        * ( 1. -
-(1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
+                        * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
                       s_y=max(s_y,0.02_r8)     
 
-                      rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) -
-zwt(c))*1.e3))
+                      rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,nlevbed) - zwt(c))*1.e3))
                       rsub_top_layer=min(rsub_top_layer,0._r8)
-                      h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) +
-rsub_top_layer
+                      h2osoi_liq(c,nlevbed) = h2osoi_liq(c,nlevbed) + rsub_top_layer
                       rsub_top_tot = rsub_top_tot - rsub_top_layer
                       zwt(c) = zi(c,nlevbed)
 
@@ -2927,8 +2875,7 @@ rsub_top_layer
                    rsub_top(c) =  h3d_imped(c) * qflx_drain_h3d(c) !from h3d
                    wa(c)  = wa(c) - rsub_top(c) * dtime
                    zwt(c)     = zwt(c) + (rsub_top(c) * dtime)/1000._r8/rous
-                   h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) +
-max(0._r8,(wa(c)-5000._r8))
+                   h2osoi_liq(c,nlevsoi) = h2osoi_liq(c,nlevsoi) + max(0._r8,(wa(c)-5000._r8))
                    wa(c)  = min(wa(c), 5000._r8)
                 end if
              else                                
@@ -2943,54 +2890,41 @@ max(0._r8,(wa(c)-5000._r8))
 
                 if(rsub_top_tot > 0._r8) then !rising water table
                    !h3d allows water table rise
-                   !call endrun(msg="RSUB_TOP IS POSITIVE in
-                   !Drainage!"//errmsg(__FILE__, __LINE__))
                   do j = jwt(c)+1, 1,-1
                    !scs: use analytical expression for specific yield
                     s_y = watsat(c,j) &
                         * ( 1. -  (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
                     s_y=max(s_y,0.02_r8)
 
-                    rsub_top_layer=min(rsub_top_tot,(s_y*(zwt(c) -
-zi(c,j-1))*1.e3))
+                    rsub_top_layer=min(rsub_top_tot,(s_y*(zwt(c) - zi(c,j-1))*1.e3))
                     rsub_top_layer=max(rsub_top_layer,0._r8)
 
-                    !write(iulog,*) c,j,rsub_top_tot,rsub_top_layer
-
                     h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
-                    if(s_y > 0._r8) zwt(c) = zwt(c) -
-rsub_top_layer/s_y/1000._r8
+                    if(s_y > 0._r8) zwt(c) = zwt(c) - rsub_top_layer/s_y/1000._r8
 
                     rsub_top_tot = rsub_top_tot - rsub_top_layer
                     if (rsub_top_tot <= 0.) then
-                      if (rsub_top_tot < 0.) write(iulog,*) 'negtive
-rsub_top_tot',c,rsub_top_tot
+                      if (rsub_top_tot < 0.) write(iulog,*) 'negtive rsub_top_tot',c,rsub_top_tot
                       exit
                     end if
                   enddo
 
                   if (rsub_top_tot > 0._r8) then
-                     !write(iulog,*) '------------saturation excess
-                     !runoff-------',c
-                     qflx_rsub_sat_h3d(c) = qflx_rsub_sat_h3d(c) + rsub_top_tot
-/dtime
+                     qflx_rsub_sat_h3d(c) = qflx_rsub_sat_h3d(c) + rsub_top_tot/dtime
                      !qflx_rsub_sat(c) = qflx_rsub_sat(c) + rsub_top_tot / dtime
                   end if
 
                 else ! deepening water table
                    if (use_vichydro) then
-                     call endrun(msg="H3D cannot work with
-VICHYDRO!"//errmsg(__FILE__, __LINE__))
+                     call endrun(msg="H3D cannot work with VICHYDRO!"//errmsg(__FILE__, __LINE__))
                    else
                       do j = jwt(c)+1, nlevbed
                          ! use analytical expression for specific yield
                          s_y = watsat(c,j) &
-                              * ( 1. -
-(1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
+                              * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,j))**(-1./bsw(c,j)))
                          s_y=max(s_y,0.02_r8)
 
-                         rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) -
-zwt(c))*1.e3))
+                         rsub_top_layer=max(rsub_top_tot,-(s_y*(zi(c,j) - zwt(c))*1.e3))
                          rsub_top_layer=min(rsub_top_layer,0._r8)
                          if (use_vsfm) rsub_top_layer = 0._r8
                          h2osoi_liq(c,j) = h2osoi_liq(c,j) + rsub_top_layer
@@ -3029,8 +2963,7 @@ zwt(c))*1.e3))
                 jwt(c) = nlevbed
                 do j = 1,nlevbed
                    if(zwt(c) <= zi(c,j)) then
-                      if (zengdecker_2009_with_var_soil_thick .and. zwt(c) ==
-zi(c,nlevbed)) then
+                      if (zengdecker_2009_with_var_soil_thick .and. zwt(c) == zi(c,nlevbed)) then
                          exit
                       else
                          jwt(c) = j-1
@@ -3057,13 +2990,11 @@ zi(c,nlevbed)) then
           c = filter_hydrologyc(fc)
           nlevbed = nlev2bed(c)
           do j = nlevbed,2,-1
-             xsi(c)            =
-max(h2osoi_liq(c,j)-eff_porosity(c,j)*dzmm(c,j),0._r8)
+             xsi(c)            = max(h2osoi_liq(c,j)-eff_porosity(c,j)*dzmm(c,j),0._r8)
              if (use_vsfm) then
                 xsi(c) = 0._r8
              else
-                h2osoi_liq(c,j)   = min(eff_porosity(c,j)*dzmm(c,j),
-h2osoi_liq(c,j))
+                h2osoi_liq(c,j)   = min(eff_porosity(c,j)*dzmm(c,j),h2osoi_liq(c,j))
                 h2osoi_liq(c,j-1) = h2osoi_liq(c,j-1) + xsi(c)
              endif
           end do
@@ -3094,10 +3025,8 @@ h2osoi_liq(c,j))
           if (use_vsfm) qflx_rsub_sat(c) = 0._r8
 
           ! add in ice check
-          xs1(c)          =
-max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
-          h2osoi_ice(c,1) =
-min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
+          xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
+          h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
           qflx_snwcp_ice(c) = qflx_snwcp_ice(c) + xs1(c) / dtime
        end do
 
@@ -3190,8 +3119,7 @@ min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
 
 
        !map zwt from col_pp to lun_pp for output
-       do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that
-belong to same land unit
+       do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that belong to same land unit
          c0 = filter_h3dc(fc)
          l  = col_pp%landunit(c0)
 
@@ -3202,8 +3130,7 @@ belong to same land unit
 
        !double check if negtive drainage exists
        if (use_h3d) then
-       do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that
-belong to same land unit
+       do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that belong to same land unit
          c0 = filter_h3dc(fc)
          l  = col_pp%landunit(c0)
 
@@ -3220,18 +3147,7 @@ belong to same land unit
 
          end do
 
-         !if (tmp_sum_drain1 .lt. 0._r8) then
-         !   write(iulog,*) '-------------------------------------'
-         !   write(iulog,*) 'negtive qflx_drain at gridcell'
-         !   write(iulog,*) tmp_sum_drain1,tmp_sum_drain2
-         !   write(iulog,*)  c0
-         !   write(iulog,*) h3d_imped(c0:c0+nh3dc_per_lunit-1)
-         !   write(iulog,*) qflx_drain(c0:c0+nh3dc_per_lunit-1)
-         !   write(iulog,*) qflx_drain_h3d(c0:c0+nh3dc_per_lunit-1)
-         !   write(iulog,*) col_pp%wtgcell(c0:c0+nh3dc_per_lunit-1)
-         !   write(iulog,*) lun_pp%hs_dA(l,1:nh3dc_per_lunit)
-         !end if
-       end do
+        end do
        end if
 
      end associate
@@ -3241,8 +3157,7 @@ belong to same land unit
 
 
    !-----------------------------------------------------------------------
-   subroutine H3D_DRI(bounds, num_h3dc, filter_h3dc, jwt,zwt_h3d,
-tmp_rsub_top,h3d_rsub_top_max,fff,&
+   subroutine H3D_DRI(bounds, num_h3dc, filter_h3dc, jwt,zwt_h3d, tmp_rsub_top,h3d_rsub_top_max,fff,&
         soilhydrology_vars, soilstate_vars, dtime)
      !
      ! !DESCRIPTION:
@@ -3263,26 +3178,18 @@ tmp_rsub_top,h3d_rsub_top_max,fff,&
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
      use spmdMod          , only : masterproc, iam, npes, mpicom, comp_id
-!yhfang test
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds               
-     integer                  , intent(in)    :: num_h3dc       ! number of
-column h3d points in column filter
-     integer                  , intent(in)    :: filter_h3dc(:) ! columnfilter
-for h3d points
-     integer                  , intent(in)    :: jwt(bounds%begc:bounds%endc)
-! index of the soil layer right above the water table (-)
-     real(r8)                 , intent(in)    ::
-tmp_rsub_top(bounds%begc:bounds%endc)   
-     real(r8)                 , intent(in)    ::
-h3d_rsub_top_max(bounds%begc:bounds%endc)   
-      real(r8)                , intent(in)    :: fff(bounds%begc:bounds%endc)
-!decay factor (m-1)
+     integer                  , intent(in)    :: num_h3dc       ! number of column h3d points in column filter
+     integer                  , intent(in)    :: filter_h3dc(:) ! columnfilter for h3d points
+     integer                  , intent(in)    :: jwt(bounds%begc:bounds%endc) ! index of the soil layer right above the water table (-)
+     real(r8)                 , intent(in)    :: tmp_rsub_top(bounds%begc:bounds%endc)   
+     real(r8)                 , intent(in)    :: h3d_rsub_top_max(bounds%begc:bounds%endc)   
+      real(r8)                , intent(in)    :: fff(bounds%begc:bounds%endc) !decay factor (m-1)
      type(soilstate_type)     , intent(in)    :: soilstate_vars
      type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
-     real(r8)                 , intent(inout) ::
-zwt_h3d(bounds%begc:bounds%endc) !  (bounds%begc:bounds%endc)        
+     real(r8)                 , intent(inout) :: zwt_h3d(bounds%begc:bounds%endc) !  (bounds%begc:bounds%endc)        
      real(r8)                 , intent(in)    :: dtime
      !
      ! !LOCAL VARIABLES:
@@ -3293,35 +3200,22 @@ zwt_h3d(bounds%begc:bounds%endc) !  (bounds%begc:bounds%endc)
      integer  :: h3dc
      logical  :: iter_conv
 
-     real(r8) :: dt_h3d                                     !h3d midel time step
-(sec)
-     real(r8) :: rsub_top_default                           !default rsub_top
-using SIMTOP scheme [m/s]
+     real(r8) :: dt_h3d                                     !h3d midel time step (sec)
+     real(r8) :: rsub_top_default                           !default rsub_top using SIMTOP scheme [m/s]
 
-     real(r8) :: h_sat_prev(bounds%begc:bounds%endc)        !Saturated zone
-level at previous h3d iteration step [m]
-     real(r8) :: h_sat_old (bounds%begc:bounds%endc)        !Saturated zone
-level at previous h3d timestep [m]
-     real(r8) :: h_sat_begin (bounds%begc:bounds%endc)      !Saturated zone
-level at previous elm timestep [m]
-     real(r8) :: h_sat     (bounds%begc:bounds%endc)        !Saturated zone
-level at current  iteration step [m]
+     real(r8) :: h_sat_prev(bounds%begc:bounds%endc)        !Saturated zone level at previous h3d iteration step [m]
+     real(r8) :: h_sat_old (bounds%begc:bounds%endc)        !Saturated zone level at previous h3d timestep [m]
+     real(r8) :: h_sat_begin (bounds%begc:bounds%endc)      !Saturated zone level at previous elm timestep [m]
+     real(r8) :: h_sat     (bounds%begc:bounds%endc)        !Saturated zone level at current  iteration step [m]
 
-     real(r8) :: hs_R_sub  (bounds%begc:bounds%endc)        !Subsurface runoff
-of h3d soil column [m]
-     real(r8) :: hs_Q_sub  (bounds%begc:bounds%endc)        !Subsurface runoff
-of h3d soil column [m/s]
-     real(r8) :: hs_R_of   (bounds%begc:bounds%endc)        !Soil
-saturation-excess of h3d soil column [m]
-     real(r8) :: hs_Q_of   (bounds%begc:bounds%endc)        !Soil
-saturation-excess of h3d soil column [m/s]
-     real(r8) :: hs_dS_sat (bounds%begc:bounds%endc)        !Saturated storage
-change of h3d soil column [m]
+     real(r8) :: hs_R_sub  (bounds%begc:bounds%endc)        !Subsurface runoff of h3d soil column [m]
+     real(r8) :: hs_Q_sub  (bounds%begc:bounds%endc)        !Subsurface runoff of h3d soil column [m/s]
+     real(r8) :: hs_R_of   (bounds%begc:bounds%endc)        !Soil saturation-excess of h3d soil column [m]
+     real(r8) :: hs_Q_of   (bounds%begc:bounds%endc)        !Soil saturation-excess of h3d soil column [m/s]
+     real(r8) :: hs_dS_sat (bounds%begc:bounds%endc)        !Saturated storage change of h3d soil column [m]
 
-     real(r8) :: hs_dS_sat_tot                              !Total Ssturated
-storage change of h3d soil column in same land unit [m]
-     real(r8) :: dt_h3d_tot(bounds%begc:bounds%endc)        !accumulated h3d
-iteration timestep (s) [m]
+     real(r8) :: hs_dS_sat_tot                              !Total Ssturated storage change of h3d soil column in same land unit [m]
+     real(r8) :: dt_h3d_tot(bounds%begc:bounds%endc)        !accumulated h3d iteration timestep (s) [m]
 
      
      real(r8) :: zwt_h3d_avg,h3d_rsub_top_max_avg,fff_avg
@@ -3329,27 +3223,17 @@ iteration timestep (s) [m]
 
    !-----------------------------------------------------------------------
      associate(                                                               &
-          hs_dA             =>    lun_pp%hs_dA                            ,   &
-! Input:  [real(r8) (:,:) ] surface area of h3d soil column (m2)  
-          hs_area           =>    lun_pp%hs_area                          ,   &
-! Input:  [real(r8) (:)   ] surface area of h3d hillslope (m2) !
-          zibed             =>    col_pp%zibed                            ,   &
-! Input:  [real(r8) (:)   ] bedrock depth in model (interface level at nlevbed)
-          f_drain           =>    col_pp%f_drain                          ,   &
-! Inout:  [real(r8) (:)   ] drainable prosity, now = specific prosity s_y
-          dt_h3d            =>    col_pp%dt_h3d                           ,   &
-! Inout:  [real(r8) (:)   ] h3d iteration timestep (s)
-          zwt               =>    soilhydrology_vars%zwt_col              ,   &
-! Inout:  [real(r8) (:)   ] water table depth (m)                             
-          zwtbed            =>    soilhydrology_vars%zwtbed_h3d_col       ,   &
-! Inout:  [real(r8) (:)   ] col max. zwt allowed" zibed if var_soil_thichness;25
-! otherwisw 
-          qflx_rsub_sat_h3d =>    col_wf%qflx_rsub_sat_h3dcol     ,   &
-! Output: [real(r8) (:)   ] soil saturation excess from h3d [mm h2o/s]                 
-          qflx_drain_h3d    =>    col_wf%qflx_drain_h3dcol        ,   &
-! Output: [real(r8) (:)   ] sub-surface runoff from h3d(mm H2O /s)                    
-          qflx_drain        =>    col_wf%qflx_drain_col               &
-! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
+          hs_dA             =>    lun_pp%hs_dA                            ,   & ! Input:  [real(r8) (:,:) ] surface area of h3d soil column (m2)  
+          hs_area           =>    lun_pp%hs_area                          ,   & ! Input:  [real(r8) (:)   ] surface area of h3d hillslope (m2) !
+          zibed             =>    col_pp%zibed                            ,   & ! Input:  [real(r8) (:)   ] bedrock depth in model (interface level at nlevbed)
+          f_drain           =>    col_pp%f_drain                          ,   & ! Inout:  [real(r8) (:)   ] drainable prosity, now = specific prosity s_y
+          dt_h3d            =>    col_pp%dt_h3d                           ,   & ! Inout:  [real(r8) (:)   ] h3d iteration timestep (s)
+          zwt               =>    soilhydrology_vars%zwt_col              ,   & ! Inout:  [real(r8) (:)   ] water table depth (m)                             
+          zwtbed            =>    soilhydrology_vars%zwtbed_h3d_col       ,   & ! Inout:  [real(r8) (:)   ] col max. zwt allowed" zibed if var_soil_thichness; 25
+! otherwise
+          qflx_rsub_sat_h3d =>    col_wf%qflx_rsub_sat_h3dcol     ,   & ! Output: [real(r8) (:)   ] soil saturation excess from h3d [mm h2o/s]                 
+          qflx_drain_h3d    =>    col_wf%qflx_drain_h3dcol        ,   & ! Output: [real(r8) (:)   ] sub-surface runoff from h3d(mm H2O /s)                    
+          qflx_drain        =>    col_wf%qflx_drain_col               & ! Output: [real(r8) (:)   ] sub-surface runoff (mm H2O /s)                    
           )
 
 
@@ -3378,15 +3262,11 @@ iteration timestep (s) [m]
 !-----------------------------------------------------------------------------------------------------
 !(1)update h_sat (at h3d timestep)
 !-----------------------------------------------------------------------------------------------------
-     do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that belong
-to same land unit
+     do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that belong to same land unit
         c0 = filter_h3dc(fc)
         h3d_begc = c0
         h3d_endc = c0+nh3dc_per_lunit-1
         l  = col_pp%landunit(c0)
-
-        !write(iulog,*) 'h3d sc'
-        !write(iulog,*) fc,c0,h3d_begc,h3d_endc
 
         if (lun_pp%hs_area(l) == 0._r8) cycle
 
@@ -3395,21 +3275,17 @@ to same land unit
         h3d_rsub_top_max_avg = 0._r8
         fff_avg = 0._r8
         do c = h3d_begc,h3d_endc
-          rsub_top_default = rsub_top_default + tmp_rsub_top(c)*hs_dA(l,c-c0+1)
-!m3/s
-          !write(*,*) fc,c,col_pp%landunit(c) 
+          rsub_top_default = rsub_top_default + tmp_rsub_top(c)*hs_dA(l,c-c0+1) !m3/s
 
           zwt_h3d_avg = zwt_h3d_avg + zwt_h3d(c)*hs_dA(l,c-c0+1)  
-          h3d_rsub_top_max_avg = h3d_rsub_top_max_avg +
-h3d_rsub_top_max(c)*hs_dA(l,c-c0+1)  
+          h3d_rsub_top_max_avg = h3d_rsub_top_max_avg + h3d_rsub_top_max(c)*hs_dA(l,c-c0+1)  
           fff_avg = fff_avg + fff(c)*hs_dA(l,c-c0+1)  
         end do
         zwt_h3d_avg = zwt_h3d_avg / lun_pp%hs_area(l)
         h3d_rsub_top_max_avg = h3d_rsub_top_max_avg / lun_pp%hs_area(l)
         fff_avg = fff_avg / lun_pp%hs_area(l)
    
-        rsub_top_default  = h3d_rsub_top_max_avg* exp(-fff_avg*zwt_h3d_avg) *
-lun_pp%hs_area(l)
+        rsub_top_default  = h3d_rsub_top_max_avg* exp(-fff_avg*zwt_h3d_avg) * lun_pp%hs_area(l)
 
 
         do while(dt_h3d_tot(c0) < dtime)
@@ -3417,7 +3293,6 @@ lun_pp%hs_area(l)
 
            do c = h3d_begc,h3d_endc
              h_sat_old(c) = zwtbed(c) - zwt_h3d(c)
-             !write(*,*) fc,c,col_pp%landunit(c) 
            end do
 
            if (any(h_sat_old(h3d_begc:h3d_endc) == 0.)) then
@@ -3427,28 +3302,13 @@ lun_pp%hs_area(l)
            end if
  
 
-           call
-LateralResponse(soilstate_vars,soilhydrology_vars,l,c0,dt_h3d(c0),&
-                                rsub_top_default,jwt(h3d_begc:h3d_endc),h_sat_old(h3d_begc:h3d_endc),h_sat(h3d_begc:h3d_endc),iter_conv)
-
-           !if (c0 == 2265 ) then
-              !write(iulog,*) 'checking h3d dt',dt_h3d(c0)
-              !write(iulog,*) 'checking h3d h_sat_old',h_sat_old(c0)
-              !write(iulog,*) 'checking h3d h_sat',h_sat(c0)
-              !write(iulog,*) 'checking h3d',iter_conv
-           !end if
+           call LateralResponse(soilstate_vars,soilhydrology_vars,l,c0,dt_h3d(c0),&
+                rsub_top_default,jwt(h3d_begc:h3d_endc),h_sat_old(h3d_begc:h3d_endc),h_sat(h3d_begc:h3d_endc),iter_conv)
 
            if (iter_conv) then
              do c = h3d_begc,h3d_endc
-               !zwt(c) = col_pp%zibed(c) - h_sat(c)
                h_sat(c) = max(0._r8,h_sat(c))
                zwt_h3d(c) = zwtbed(c) - h_sat(c)
-               !write(*,*) fc,c,col_pp%landunit(c) 
-               !write(iulog,*) 'debug h3d after drainage',c,zwt_h3d(c)
-
-               !if (c == 2124 ) then
-               !    write(iulog,*) 'checking h3d:after iteration',c,zwt_h3d(c)
-               !end if
              end do
            else
              dt_h3d_tot(c0) = dt_h3d_tot(c0) - dt_h3d(c0)
@@ -3462,8 +3322,7 @@ LateralResponse(soilstate_vars,soilhydrology_vars,l,c0,dt_h3d(c0),&
 !-----------------------------------------------------------------------------------------------------
 !(2)update q_sub (at ELM timestep)
 !-----------------------------------------------------------------------------------------------------
-     do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that belong
-to same land unit
+     do fc = 1,num_h3dc,nh3dc_per_lunit  !loop for all soil columns that belong to same land unit
         c0 = filter_h3dc(fc)
         h3d_begc = c0
         h3d_endc = c0+nh3dc_per_lunit-1
@@ -3490,13 +3349,6 @@ to same land unit
           tmp_sum_drain = tmp_sum_drain + qflx_drain(c) * hs_dA(l,h3dc)
         end do
 
-          !write(iulog,*) '...check h3D discharge...' 
-          !write(iulog,*) 'hs_dS_sat_tot',hs_dS_sat_tot / lun_pp%hs_area(l)
-          !write(iulog,*) hs_dS_sat_tot / dtime
-          !write(iulog,*) 'h_sat',h_sat(h3d_begc:h3d_endc)
-          !write(iulog,*) 'h_sat_bgin',h_sat_begin(h3d_begc:h3d_endc)
-          !write(iulog,*) 'qflx_drain_h3d',qflx_drain_h3d(h3d_begc:h3d_endc)
-
         if (hs_dS_sat_tot > 0._r8) then
           write(iulog,*) '----------negtive discharge--------',c0,l
           write(iulog,*) 'hs_dS_sat_tot',hs_dS_sat_tot / lun_pp%hs_area(l)
@@ -3516,11 +3368,6 @@ to same land unit
           write(iulog,*) 'f_drain',f_drain(h3d_begc:h3d_endc)
         end if
 
-
-       !if (c == 2124 ) then
-       !   write(iulog,*) 'checking h3d',c,zwt_h3d(c),h_sat_begin(c),jwt(c)
-       !end if
-
      end do
 
      end associate
@@ -3528,8 +3375,7 @@ to same land unit
    end subroutine H3D_DRI
 
    !-----------------------------------------------------------------------
-   subroutine
-LateralResponse(soilstate_vars,soilhydrology_vars,l,c0,dt_h3d,rsub_top_default,jwt,h_sat_old,h_sat,iter_conv)
+   subroutine LateralResponse(soilstate_vars,soilhydrology_vars,l,c0,dt_h3d,rsub_top_default,jwt,h_sat_old,h_sat,iter_conv)
      !
      ! !DESCRIPTION:
      ! Calculate lateral subsurface drainage and water table variation using h3d
@@ -3544,39 +3390,25 @@ LateralResponse(soilstate_vars,soilhydrology_vars,l,c0,dt_h3d,rsub_top_default,j
      type(soilstate_type)     , intent(in)    :: soilstate_vars
      type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
      integer  , intent(in)   :: l                              !landunit index                             
-     integer  , intent(in)   :: c0                             !soil column
-index pointing to the first colum in landunit l                           
-     real(r8) , intent(in)   :: dt_h3d                         !h3d time step
-(sec)
-     integer  , intent(in)   :: jwt(:)                         ! index of
-thesoil layer right above the water table (-)
-     real(r8) , intent(in)   :: h_sat_old(:)                   !Saturated zone
-level at previous timestep [m]
-     real(r8) , intent(out)  :: h_sat    (:)                   !Saturated zone
-level at current iteration [m]
-     logical  , intent(out)  :: iter_conv                      !if h3d
-interation converges
+     integer  , intent(in)   :: c0                             !soil column index pointing to the first colum in landunit l                           
+     real(r8) , intent(in)   :: dt_h3d                         !h3d time step (sec)
+     integer  , intent(in)   :: jwt(:)                         ! index of the soil layer right above the water table (-)
+     real(r8) , intent(in)   :: h_sat_old(:)                   !Saturated zone level at previous timestep [m]
+     real(r8) , intent(out)  :: h_sat    (:)                   !Saturated zone level at current iteration [m]
+     logical  , intent(out)  :: iter_conv                      !if h3d iteration converges
      !real(r8) , intent(in)   :: hs_slope (:)
      real(r8) , intent(in)   :: rsub_top_default
      !
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'LateralResponse'          ! subroutine name
      integer  :: c,i,j,k                                       ! indices
-     real(r8) :: h_sat_prev (1:nh3dc_per_lunit)                !Saturated zone
-level at previous iteration [m]
-     real(r8) :: amx(1:nh3dc_per_lunit)                        ! "a" left off
-diagonal of tridiagonal matrix
-     real(r8) :: bmx(1:nh3dc_per_lunit)                        ! "b" diagonal
-column for tridiagonal matrix
-     real(r8) :: cmx(1:nh3dc_per_lunit)                        ! "c" right off
-diagonal tridiagonal matrix
-     real(r8) :: rmx(1:nh3dc_per_lunit)                        ! "r" forcing
-term of tridiagonal matrix
-     real(r8) :: w_kl_h(1:nh3dc_per_lunit)                     ! Product of the
-hillslope width function, saturated conductivity and saturated zone level [m^3
-s^-1]
-     real(r8) :: h_sat_thres = 1.e-4_r8                        ! threshold of
-h_sat for iteration converge [m]
+     real(r8) :: h_sat_prev (1:nh3dc_per_lunit)                !Saturated zone level at previous iteration [m]
+     real(r8) :: amx(1:nh3dc_per_lunit)                        ! "a" left off diagonal of tridiagonal matrix
+     real(r8) :: bmx(1:nh3dc_per_lunit)                        ! "b" diagonal column for tridiagonal matrix
+     real(r8) :: cmx(1:nh3dc_per_lunit)                        ! "c" right off diagonal tridiagonal matrix
+     real(r8) :: rmx(1:nh3dc_per_lunit)                        ! "r" forcing term of tridiagonal matrix
+     real(r8) :: w_kl_h(1:nh3dc_per_lunit)                     ! Product of the hillslope width function, saturated conductivity and saturated zone level [m^3 s^-1]
+     real(r8) :: h_sat_thres = 1.e-4_r8                        ! threshold of h_sat for iteration converge [m]
      integer  :: niter_max   = 20
      integer  :: niter
      logical  :: ierror
@@ -3646,17 +3478,6 @@ h_sat for iteration converge [m]
 
      h_sat_prev(:) = h_sat_old(:)
 
-     !write(iulog,*) 'check width function landunit:',l,col_pp%landunit(c0)
-     !write(iulog,*) hs_dx(l,:)   
-     !write(iulog,*) hs_dx_nod(l,:)   
-     !write(iulog,*) hs_w_itf(l,:)   
-     !write(iulog,*) hs_x_itf(l,:)   
-     !write(iulog,*) hs_w_nod(l,:)   
-     !write(iulog,*) hs_x_nod(l,:)   
- 
-     !write(iulog,*) 'checking slope:',hs_slope
-     !write(iulog,*) 'checking hksat:',hksat(c0,:) / 1000._r8
-
      do while ((.not. iter_conv) .and. (niter < niter_max))
   
        niter = niter + 1
@@ -3665,34 +3486,21 @@ h_sat for iteration converge [m]
          c = c0+k-1 
          idx = min(jwt(k)+1,nlev2bed(c))
          f_drain(c) = watsat(c,idx) &
-                  * ( 1. - (1.+1.e3*max(0._r8,(zwtbed(c) - h_sat_prev(k)))
-/sucsat(c,idx))**(-1./bsw(c,idx)))
+                  * ( 1. - (1.+1.e3*max(0._r8,(zwtbed(c) - h_sat_prev(k))) /sucsat(c,idx))**(-1./bsw(c,idx)))
          f_drain(c)=max(f_drain(c) ,0.02_r8)
 
 
          if (isnan(f_drain(c))) then
              write(iulog,*) "nan_f_drain",idx,jwt(k),nlev2bed(c)
-             write(iulog,*)
-"nan_f_drain",zwtbed(c),h_sat_prev(k),sucsat(c,idx),bsw(c,idx)
+             write(iulog,*) "nan_f_drain",zwtbed(c),h_sat_prev(k),sucsat(c,idx),bsw(c,idx)
          end if
 
-         !if (isnan(f_drain(c))) f_drain(c) = 0.02_r8
-         !write(iulog,*) 'check f_drain',c,f_drain(c)
        end do
-
-       !k = 1
-       !c = c0+k-1 
-       !idx = min(jwt(k)+1,nlev2bed(c))
-       !w_kl_h(k) = hs_w_itf(l,k) * hksat(c,idx) * h_sat_prev(k)  / 1000._r8 *
-       !100.
 
        do k=1,nh3dc_per_lunit
          c = c0+k-1 
          idx = min(jwt(k)+1,nlev2bed(c))
          w_kl_h(k) = f_aniso*hs_w_nod(l,k)*hksat(c,idx)*h_sat_prev(k) / 1000._r8
-         !w_kl_h(k) = hs_w_itf(l,k) * 0.5_r8 *  &
-         !           (hksat(c,idx)*h_sat_prev(k) +
-         !           hksat(c-1,idx)*h_sat_prev(k-1)) / 1000._r8  * 100.
        end do
 
        k = 1
@@ -3700,59 +3508,33 @@ h_sat for iteration converge [m]
        amx(k) = 0._r8
        cmx(k) = -1._r8 * w_kl_h(k+1) * cos(hs_slope(c)/180._r8*rpi) * dt_h3d / (hs_dx_nod(l,k+1) * hs_dx(l,k) * hs_w_nod(l,k))
        bmx(k) = f_drain(c) - (amx(k) + cmx(k))
-       !rmx(k) = f_drain(c) * h_sat_old(k) + dt_h3d * sin(hs_slope(c)/180._r8*rpi) / &
-                (hs_w_nod(l,k)*hs_dx(l,k)) * (w_kl_h(k+1) - w_kl_h(k))
-       !rmx(k) = f_drain(c) * h_sat_old(k) + dt_h3d / (hs_w_nod(l,k)*hs_dx(l,k))
-       !* &
-       !         (sin(hs_slope(c)/180._r8*rpi) * w_kl_h(k+1) - rsub_top_default)
        idx1 = min(jwt(k)+1,nlev2bed(c))
-       rmx(k) = f_drain(c) * h_sat_old(k) + dt_h3d / (hs_w_nod(l,k)*hs_dx(l,k))
-* &
-                (sin(hs_slope(c)/180._r8*rpi) * w_kl_h(k+1) - cos(hs_slope(c)/180._r8*rpi) / hs_dx(l,k) * hs_w_nod(l,k) * f_aniso * hksat(c,idx1) / 1000._r8 * (h_sat_prev(k))**2)
+       rmx(k) = f_drain(c) * h_sat_old(k) + dt_h3d / (hs_w_nod(l,k)*hs_dx(l,k)) * &
+                (sin(hs_slope(c)/180._r8*rpi) * w_kl_h(k+1) - cos(hs_slope(c)/180._r8*rpi) / hs_dx(l,k) * hs_w_nod(l,k) * &
+                f_aniso * hksat(c,idx1) / 1000._r8 * (h_sat_prev(k))**2)
 
 
        do k=2,nh3dc_per_lunit - 1
          c = c0+k-1 
-         amx(k)  = -1._r8 * w_kl_h(k)   * cos(hs_slope(c)/180._r8*rpi) *dt_h3d /
-(hs_dx_nod(l,k)   * hs_dx(l,k) * hs_w_nod(l,k))
-         cmx(k)  = -1._r8 * w_kl_h(k+1) * cos(hs_slope(c)/180._r8*rpi) *dt_h3d /
-(hs_dx_nod(l,k+1) * hs_dx(l,k) * hs_w_nod(l,k))
+         amx(k)  = -1._r8 * w_kl_h(k)   * cos(hs_slope(c)/180._r8*rpi) *dt_h3d / (hs_dx_nod(l,k)   * hs_dx(l,k) * hs_w_nod(l,k))
+         cmx(k)  = -1._r8 * w_kl_h(k+1) * cos(hs_slope(c)/180._r8*rpi) *dt_h3d / (hs_dx_nod(l,k+1) * hs_dx(l,k) * hs_w_nod(l,k))
          bmx(k)  = f_drain(c) - (amx(k) + cmx(k))
-         rmx(k)  = f_drain(c) * h_sat_old(k) + dt_h3d *
-sin(hs_slope(c)/180._r8*rpi) / &
+         rmx(k)  = f_drain(c) * h_sat_old(k) + dt_h3d * sin(hs_slope(c)/180._r8*rpi) / &
                    (hs_w_nod(l,k)*hs_dx(l,k)) * (w_kl_h(k+1) - w_kl_h(k))
        end do
 
 
        k = nh3dc_per_lunit
        c = c0+k-1 
-       amx(k) = -1._r8 * w_kl_h(k)   * cos(hs_slope(c)/180._r8*rpi) * dt_h3d /
-(hs_dx_nod(l,k) * hs_dx(l,k)    * hs_w_nod(l,k))
+       amx(k) = -1._r8 * w_kl_h(k)   * cos(hs_slope(c)/180._r8*rpi) * dt_h3d / (hs_dx_nod(l,k) * hs_dx(l,k)    * hs_w_nod(l,k))
        cmx(k) = 0._r8
        bmx(k) = f_drain(c) - (amx(k) + cmx(k))
-       rmx(k) = f_drain(c) * h_sat_old(k) + dt_h3d *
-sin(hs_slope(c)/180._r8*rpi) / &
+       rmx(k) = f_drain(c) * h_sat_old(k) + dt_h3d * sin(hs_slope(c)/180._r8*rpi) / &
                 (hs_w_nod(l,k)*hs_dx(l,k)) * (- w_kl_h(k))
 
        call Tridiagonal_h3D(nh3dc_per_lunit, amx, bmx, cmx, rmx, h_sat, ierror )
 
-       !write(iulog,*) '********iteration***********',c0
-       !write(iulog,*) niter
-       !write(iulog,*) hs_dx(l,:)
-       !write(iulog,*) hs_w_nod(l,:)
-       !write(iulog,*) hs_w_itf(l,:)
-       !write(iulog,*) hs_slope(c0),hs_slope(c0+1)
-       !write(iulog,*) amx
-       !write(iulog,*) bmx
-       !write(iulog,*) cmx
-       !write(iulog,*) rmx
-       !write(iulog,*) h_sat
-       !write(iulog,*) h_sat_prev
-       !write(iulog,*) w_kl_h(1)
-
-
-       if ((maxval(abs(h_sat-h_sat_prev)) < h_sat_thres) .and. .not.(ierror))
-then
+       if ((maxval(abs(h_sat-h_sat_prev)) < h_sat_thres) .and. .not.(ierror)) then
          iter_conv = .true.
        end if
 
