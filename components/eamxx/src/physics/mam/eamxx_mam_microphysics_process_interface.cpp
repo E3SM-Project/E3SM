@@ -5,7 +5,7 @@
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "readfiles/find_season_index_utils.hpp"
 #include "readfiles/photo_table_utils.cpp"
-#include "helper_hash.cpp"
+// #include "helper_hash.cpp"
 namespace scream {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
