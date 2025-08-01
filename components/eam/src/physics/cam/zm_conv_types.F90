@@ -212,7 +212,7 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%micro_dcs       = 150.E-6
    ! MCSP parameters
    zm_param%mcsp_enabled    = .true.
-   zm_param%mcsp_t_coeff    = 0
+   zm_param%mcsp_t_coeff    = 0.3
    zm_param%mcsp_q_coeff    = 0
    zm_param%mcsp_u_coeff    = 0
    zm_param%mcsp_v_coeff    = 0

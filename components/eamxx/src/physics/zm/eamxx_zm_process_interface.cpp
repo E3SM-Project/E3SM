@@ -79,6 +79,8 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 
   add_field<Computed>("zm_T_mid_tend",        scalar3d_mid, K,     grid_name, pack_size);
   add_field<Computed>("zm_qv_tend",           scalar3d_mid, K,     grid_name, pack_size);
+  add_field<Computed>("zm_u_tend",            scalar3d_mid, K,     grid_name, pack_size);
+  add_field<Computed>("zm_v_tend",            scalar3d_mid, K,     grid_name, pack_size);
 
 }
 
@@ -103,47 +105,48 @@ void zm_deep_convection::run_impl (const double dt)
   auto ts_start = start_of_step_ts();
 
   // get fields
-  const auto& phis     = get_field_in("phis")          .get_view<const Real*>();
-  const auto& p_mid    = get_field_in("p_mid")         .get_view<const Spack**, Host>();
-  const auto& p_int    = get_field_in("p_int")         .get_view<const Spack**, Host>();
-  const auto& p_del    = get_field_in("pseudo_density").get_view<const Spack**, Host>();
-  
-  const auto& T_mid    = get_field_out("T_mid")         .get_view<Spack**, Host>();
-  const auto& qv       = get_field_out("qv")            .get_view<Spack**, Host>();
-  const auto& qc       = get_field_out("qc")            .get_view<Spack**, Host>();
-  const auto& omega    = get_field_in("omega")          .get_view<const Spack**, Host>();
-  const auto& cldfrac  = get_field_in("cldfrac_tot")    .get_view<const Spack**, Host>();
-  const auto& pblh     = get_field_in("pbl_height")     .get_view<const Real*>();
-  const auto& landfrac = get_field_in("landfrac")       .get_view<const Real*>();
+  const auto& phis     = get_field_in("phis")                         .get_view<const Real*>();
+  const auto& p_mid    = get_field_in("p_mid")                        .get_view<const Spack**, Host>();
+  const auto& p_int    = get_field_in("p_int")                        .get_view<const Spack**, Host>();
+  const auto& p_del    = get_field_in("pseudo_density")               .get_view<const Spack**, Host>();
+  const auto& T_mid    = get_field_out("T_mid")                       .get_view<Spack**, Host>();
+  const auto& qv       = get_field_out("qv")                          .get_view<Spack**, Host>();
+  const auto& qc       = get_field_out("qc")                          .get_view<Spack**, Host>();
+  const auto& u        = get_field_out("horiz_winds").get_component(0).get_view<Spack**, Host>();
+  const auto& v        = get_field_out("horiz_winds").get_component(1).get_view<Spack**, Host>();
+  const auto& omega    = get_field_in("omega")                        .get_view<const Spack**, Host>();
+  const auto& cldfrac  = get_field_in("cldfrac_tot")                  .get_view<const Spack**, Host>();
+  const auto& pblh     = get_field_in("pbl_height")                   .get_view<const Real*>();
+  const auto& landfrac = get_field_in("landfrac")                     .get_view<const Real*>();
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
-  // prepare inputs
-  zm_input.ncol           = m_ncol;
-  zm_input.pcol           = m_pcol;
+  // prepare input struct
+  // zm_input.ncol           = m_ncol;
+  // zm_input.pcol           = m_pcol;
   zm_input.dtime          = dt;
   zm_input.is_first_step  = (ts_start.get_num_steps()==0);
   zm_input.phis           = phis;
-  // zm_input.z_mid          = z_mid;
-  // zm_input.z_int          = z_int;
   zm_input.p_mid          = p_mid;
   zm_input.p_int          = p_int;
   zm_input.p_del          = p_del;
   zm_input.T_mid          = T_mid;
   zm_input.qv             = qv;
   zm_input.qc             = qc;
+  zm_input.u              = u;
+  zm_input.v              = v;
   zm_input.omega          = omega;
   zm_input.cldfrac        = cldfrac;
   zm_input.pblh           = pblh;
   zm_input.landfrac       = landfrac;
 
+  // prepare output struct
+  // zm_output.ncol          = m_ncol;
+  // zm_output.pcol          = m_pcol;
+
   // initialize buffer variables
-  zm_output.init(m_pcol,m_nlev);
-  
-  // prepare outputs
-  zm_output.ncol          = m_ncol;
-  zm_output.pcol          = m_pcol;
+  zm_output.init( m_ncol, m_nlev );
 
   //----------------------------------------------------------------------------
   // calculate interface and mid-point altitudes
@@ -159,9 +162,8 @@ void zm_deep_convection::run_impl (const double dt)
     const auto p_del_i = ekat::subview(zm_input.p_del, i);
     const auto T_mid_i = ekat::subview(zm_input.T_mid, i);
     const auto qv_i    = ekat::subview(zm_input.qv,    i);
-    auto z_surf = phis(i) / PC::gravit;
-    // const Real z_surf = 0.0; // For now, set z_int(i,m_nlev) = z_surf = 0
     // Calculate z_mid
+    auto z_surf = 0.0; // ZM expects Z_mid & z_int to be altitude above the surface
     PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
     team.team_barrier();
     PF::calculate_z_int(team, m_nlev, z_del_i, z_surf, z_int_i);
@@ -171,7 +173,7 @@ void zm_deep_convection::run_impl (const double dt)
   //----------------------------------------------------------------------------
 
   // Run ZM
-  zm_eamxx_bridge_run( m_nlev, zm_input, zm_output );
+  zm_eamxx_bridge_run( m_ncol, m_pcol, m_nlev, zm_input, zm_output );
 
   //----------------------------------------------------------------------------
   // // print max precip and cape
@@ -216,9 +218,12 @@ void zm_deep_convection::run_impl (const double dt)
   //   zm_cape(i) = zm_output.cape   (i);
   // });
 
-  const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend").get_view<Spack**, Host>();
-  const auto& zm_qv_tend    = get_field_out("zm_qv_tend").get_view<Spack**, Host>();
+  const auto& zm_T_mid_tend = get_field_out("zm_T_mid_tend")  .get_view<Spack**, Host>();
+  const auto& zm_qv_tend    = get_field_out("zm_qv_tend")     .get_view<Spack**, Host>();
+  const auto& zm_u_tend     = get_field_out("zm_u_tend")      .get_view<Spack**, Host>();
+  const auto& zm_v_tend     = get_field_out("zm_v_tend")      .get_view<Spack**, Host>();
 
+  // Why doesn't this work???
   // Kokkos::deep_copy(zm_T_mid_tend,  zm_output.tend_s/cpair);
   // Kokkos::deep_copy(zm_qv_tend,     zm_output.tend_q);
   
@@ -231,11 +236,17 @@ void zm_deep_convection::run_impl (const double dt)
     // 3D output (vertically resolved)
     const auto zm_T_mid_tend_i    = ekat::subview( zm_T_mid_tend,     i);
     const auto zm_qv_tend_i       = ekat::subview( zm_qv_tend,        i);
+    const auto zm_u_tend_i        = ekat::subview( zm_u_tend,         i);
+    const auto zm_v_tend_i        = ekat::subview( zm_v_tend,         i);
     const auto zm_output_tend_s_i = ekat::subview( zm_output.tend_s,  i);
     const auto zm_output_tend_q_i = ekat::subview( zm_output.tend_q,  i);
+    const auto zm_output_tend_u_i = ekat::subview( zm_output.tend_u,  i);
+    const auto zm_output_tend_v_i = ekat::subview( zm_output.tend_v,  i);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevm_packs), [&](const int& k) {
       zm_T_mid_tend_i(k) = zm_output_tend_s_i(k)/cpair;
       zm_qv_tend_i   (k) = zm_output_tend_q_i(k);
+      zm_u_tend_i    (k) = zm_output_tend_u_i(k);
+      zm_v_tend_i    (k) = zm_output_tend_v_i(k);
     });
   });
 
@@ -306,10 +317,14 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                 &zm_input.f_T_mid,
                                                                 &zm_input.f_qv,
                                                                 &zm_input.f_qc,
+                                                                &zm_input.f_u,
+                                                                &zm_input.f_v,
                                                                 &zm_input.f_omega,
                                                                 &zm_input.f_cldfrac,
                                                                 &zm_output.f_tend_s,
-                                                                &zm_output.f_tend_q
+                                                                &zm_output.f_tend_q,
+                                                                &zm_output.f_tend_u,
+                                                                &zm_output.f_tend_v
                                                               };
   for (int i=0; i<num_2d_midlv_f_views; ++i) {
     *midlv_f_ptrs[i] = ZMF::uview_2dl<Real>(mem, m_pcol, m_nlev);
@@ -333,7 +348,9 @@ void zm_deep_convection::init_buffers(const ATMBufferManager &buffer_manager)
   ZMF::uview_2d<Spack>* midlv_c_ptrs[num_2d_midlv_c_views]  = { &zm_input.z_mid,
                                                                 &zm_input.z_del,
                                                                 &zm_output.tend_s,
-                                                                &zm_output.tend_q
+                                                                &zm_output.tend_q,
+                                                                &zm_output.tend_u,
+                                                                &zm_output.tend_v
                                                               };
   for (int i=0; i<num_2d_midlv_c_views; ++i) {
     *midlv_c_ptrs[i] = ZMF::uview_2d<Spack>(s_mem, m_pcol, nlevm_packs);

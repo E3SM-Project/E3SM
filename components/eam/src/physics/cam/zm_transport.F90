@@ -4,17 +4,21 @@ module zm_transport
    ! Transport routines for the Zhang-McFarlane deep convection scheme
    !
    !----------------------------------------------------------------------------
-   use shr_kind_mod,    only: r8 => shr_kind_r8
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use zm_eamxx_bridge_params, only: r8, pcols, pver, pverp
+#else
+   use shr_kind_mod,     only: r8=>shr_kind_r8
    use ppgrid
-   use cam_abortutils,  only: endrun
-   use constituents,    only: cnst_get_type_byind
-   use zm_conv,         only: zm_param
-   use cam_logfile,     only: iulog
+   use cam_abortutils,   only: endrun
+   use cam_logfile,      only: iulog
+#endif
 
    implicit none
 
    ! public methods
+#ifndef SCREAM_CONFIG_IS_CMAKE
    public :: zm_transport_tracer    ! convective tracer transport
+#endif
    public :: zm_transport_momentum  ! convective momentum transport
 
    private
@@ -25,6 +29,9 @@ contains
 
 !===================================================================================================
 
+! We need to avoid building this for now when bridging from EAMxx
+#ifndef SCREAM_CONFIG_IS_CMAKE
+
 subroutine zm_transport_tracer( doconvtran, q, ncnst, &
                                 mu, md, du, eu, ed, dp, &
                                 jt, mx, ideep, il1g, il2g, &
@@ -32,7 +39,8 @@ subroutine zm_transport_tracer( doconvtran, q, ncnst, &
    !---------------------------------------------------------------------------- 
    ! Purpose: Convective transport of tracer species
    !----------------------------------------------------------------------------
-   implicit none
+   use zm_conv,         only: zm_param
+   use constituents,    only: cnst_get_type_byind
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in)  :: ncnst       ! number of tracers to transport
@@ -296,6 +304,8 @@ subroutine zm_transport_tracer( doconvtran, q, ncnst, &
 
 end subroutine zm_transport_tracer
 
+#endif /* SCREAM_CONFIG_IS_CMAKE */
+
 !===================================================================================================
 
 subroutine zm_transport_momentum( ncol, wind_in, nwind, &
@@ -305,7 +315,7 @@ subroutine zm_transport_momentum( ncol, wind_in, nwind, &
    !---------------------------------------------------------------------------- 
    ! Purpose: Convective transport of momentum
    !----------------------------------------------------------------------------
-   implicit none
+   use zm_conv,         only: zm_param
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                               intent(in)  :: ncol        ! number of atmospheric columns
