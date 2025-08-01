@@ -59,10 +59,20 @@ void PySession::add_curr_path ()
 
 pybind11::module PySession::safe_import (const std::string& module_name) const
 {
+  pybind11::module m;
+
   // Disable FPEs while loading the module, then immediately re-enable them
   auto fpes = ekat::get_enabled_fpes();
   ekat::disable_all_fpes();
-  pybind11::module m = pybind11::module::import(module_name.c_str());
+  try {
+    m = pybind11::module::import(module_name.c_str());
+  } catch (const pybind11::error_already_set& e) {
+    std::cout << "[PySession::safe_import] Error! Python module import failed.\n"
+                 " - module name: " + module_name + "\n"
+                 " - pybind11 error: " + std::string(e.what()) + "\n"
+                 "Did you forget to call PySession::add_path to add the module location to sys.path?\n";
+    throw e;
+  }
   ekat::enable_fpes(fpes);
 
   EKAT_REQUIRE_MSG (not m.is_none(),
