@@ -73,10 +73,10 @@ CreateDiagTest(aerocom_cld "aerocom_cld_test.cpp")
 CreateDiagTest(atm_backtend "atm_backtend_test.cpp")
 
 # Test horizontal averaging
-CreateDiagTest(horiz_avg "horiz_avg_test.cpp")
+CreateDiagTest(horiz_avg "horiz_avg_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
 # Test for vertical contraction
-CreateDiagTest(vert_contract "vert_contract_test.cpp")
+CreateDiagTest(vert_contract "vert_contract_test.cpp" MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
 # Test zonal averaging
 CreateDiagTest(zonal_avg zonal_avg_test.cpp MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
