@@ -344,21 +344,17 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    Real var_fill_value = constants::fill_value<Real>;
-    // Query the helper field for the fill value, if not present use default
-    if (f.get_header().has_extra_data("mask_value")) {
-      var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
-    }
+    constexpr Real fill_value = constants::fill_value<Real>;
 
     const int ncols = fl.dim(0);
     const int nlevs = fl.dim(1);
-    const auto thresh = std::abs(var_fill_value)*0.0001;
+    const auto thresh = std::abs(fill_value)*0.0001;
     auto lambda = KOKKOS_LAMBDA(const int icol) {
       int first_good = nlevs;
       int last_good = -1;
       for (int k=0; k<nlevs; ++k) {
-        if (std::abs(v(icol,k)-var_fill_value)>thresh) {
-          // This entry is substantially different from var_fill_value, so it's good
+        if (std::abs(v(icol,k)-fill_value)>thresh) {
+          // This entry is substantially different from fill_value, so it's good
           first_good = ekat::impl::min(first_good,k);
           last_good  = ekat::impl::max(last_good,k);
         }
