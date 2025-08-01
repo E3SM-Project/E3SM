@@ -3749,7 +3749,7 @@
 
 
 <h1 id="eamxx-field-aliasing-feature">EAMxx Field Aliasing Feature</h1>
-<p>This document demonstrates the new field aliasing feature for EAMxx I/O operations.</p>
+<p>This document demonstrates the field aliasing feature for EAMxx I/O operations.</p>
 <h2 id="overview">Overview</h2>
 <p>The field aliasing feature allows users to specify custom names for variables in netcdf output files while maintaining the original internal field names in the model. This is useful for:</p>
 <ul>
@@ -3759,7 +3759,7 @@
 </ul>
 <h2 id="syntax">Syntax</h2>
 <p>The alias syntax uses the delimiter <code>:=:</code> to separate the alias name from the internal field name:</p>
-<div class="highlight"><pre><span></span><code>alias_name:=:internal_field_name
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">alias_name:=:internal_field_name</span>
 </code></pre></div>
 <h2 id="yaml-configuration-examples">YAML Configuration Examples</h2>
 <h3 id="basic-usage">Basic Usage</h3>
@@ -3772,15 +3772,15 @@
 <span class="w">        </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Alias LWP for LiqWaterPath</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWP:=:SolidWaterPath&quot;</span><span class="w">    </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:Temperature&quot;</span><span class="w">         </span><span class="c1"># Alias T for Temperature</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:T_mid&quot;</span><span class="w">               </span><span class="c1"># Alias T for T_mid</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;qv&quot;</span><span class="w">                      </span><span class="c1"># Regular field name (no alias)</span>
 </code></pre></div>
 <h3 id="mixed-usage">Mixed Usage</h3>
 <p>You can mix aliased and non-aliased fields in the same configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;temperature&quot;</span><span class="w">                    </span><span class="c1"># Regular field name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T_mid&quot;</span><span class="w">                          </span><span class="c1"># Regular field name</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span><span class="w">            </span><span class="c1"># Aliased field</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;pressure&quot;</span><span class="w">                      </span><span class="c1"># Regular field name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;ps&quot;</span><span class="w">                            </span><span class="c1"># Regular field name  </span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;RH:=:RelativeHumidity&quot;</span><span class="w">         </span><span class="c1"># Aliased field</span>
 </code></pre></div>
 <h2 id="output-behavior">Output Behavior</h2>
@@ -3788,14 +3788,14 @@
 <ol>
 <li><strong>NetCDF Variables</strong>: The netcdf file will contain variables named according to the aliases</li>
 <li><code>LWP</code> instead of <code>LiqWaterPath</code></li>
-<li><code>T</code> instead of <code>Temperature</code></li>
+<li><code>T</code> instead of <code>T_mid</code></li>
 <li>
 <p><code>RH</code> instead of <code>RelativeHumidity</code></p>
 </li>
 <li>
 <p><strong>Internal Processing</strong>: All internal model operations use the original field names</p>
 </li>
-<li>Field validation uses <code>LiqWaterPath</code>, <code>Temperature</code>, etc.</li>
+<li>Field validation uses <code>LiqWaterPath</code>, <code>T_mid</code>, etc.</li>
 <li>Diagnostic calculations use original names</li>
 <li>
 <p>Memory management uses original field structures</p>
@@ -3811,7 +3811,7 @@
 <span class="w">    </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ic_file.nc</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span><span class="w">    </span><span class="c1"># Read variable LWP from file into field LiqWaterPath</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:Temperature&quot;</span><span class="w">       </span><span class="c1"># Read variable T from file into field Temperature</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:T_mid&quot;</span><span class="w">             </span><span class="c1"># Read variable T from file into field T_mid</span>
 </code></pre></div>
 <h2 id="error-handling">Error Handling</h2>
 <p>The system provides comprehensive error checking:</p>
@@ -3820,13 +3820,13 @@
 <li><strong>Malformed Syntax</strong>: Proper error messages for invalid alias specifications</li>
 <li><strong>Empty Names</strong>: Both alias and field names must be non-empty</li>
 </ul>
-<p>Example error cases:
+<p>Example error cases:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:&quot;</span><span class="w">                    </span><span class="c1"># Error: empty field name</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;:=:LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># Error: empty alias name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;:=:LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># Error: empty alias name  </span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:Field1&quot;</span><span class="w">             </span><span class="c1"># OK</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:Field2&quot;</span><span class="w">             </span><span class="c1"># Error: duplicate alias LWP</span>
-</code></pre></div></p>
+</code></pre></div>
 <h2 id="implementation-notes">Implementation Notes</h2>
 <ul>
 <li><strong>Backward Compatible</strong>: Existing configurations without aliases continue to work unchanged</li>
@@ -3837,21 +3837,21 @@
 <h2 id="example-use-cases">Example Use Cases</h2>
 <h3 id="1-climate-model-output">1. Climate Model Output</h3>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWCF:=:LongwaveCloudForcing&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWCF:=:ShortwaveCloudForcing&quot;</span><span class="w">  </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;PRECT:=:PrecipitationRate&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:T_mid&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;RH:=:RelativeHumidity&quot;</span><span class="w">  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;P:=:ps&quot;</span>
 </code></pre></div>
 <h3 id="2-atmospheric-chemistry">2. Atmospheric Chemistry</h3>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;O3:=:Ozone&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;CO2:=:CarbonDioxide&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;CH4:=:Methane&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;QC:=:qc&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;QI:=:qi&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;QV:=:qv&quot;</span>
 </code></pre></div>
 <h3 id="3-diagnostic-output">3. Diagnostic Output</h3>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;IWP:=:IceWaterPath&quot;</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;PWV:=:PrecipitableWater&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;CLDTOT:=:cldfrac_tot_for_analysis&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;CLDLIQ:=:cldfrac_liq&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;CLDICE:=:cldfrac_ice_for_analysis&quot;</span>
 </code></pre></div>
 
 
