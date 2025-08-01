@@ -20,17 +20,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectProjectWinds : public UnitWrap::UnitT
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
-
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
+    auto init_data = get_common_init_data(engine);
 
     // Set up convect init data
     GwConvectInitData front_init_data[] = {
@@ -47,6 +37,7 @@ struct UnitWrap::UnitTest<D>::TestGwConvectProjectWinds : public UnitWrap::UnitT
 
     // Set up inputs
     GwConvectProjectWindsData baseline_data[] = {
+      //                       ncol
       GwConvectProjectWindsData(10, front_init_data[0]),
       GwConvectProjectWindsData(11, front_init_data[1]),
       GwConvectProjectWindsData(12, front_init_data[2]),

@@ -20,24 +20,15 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
-
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
+    auto init_data = get_common_init_data(engine);
 
     // Set up inputs
     GwdComputeStressProfilesAndDiffusivitiesData baseline_data[] = {
-      GwdComputeStressProfilesAndDiffusivitiesData(2, 10, init_data[0]),
-      GwdComputeStressProfilesAndDiffusivitiesData(3, 11, init_data[1]),
-      GwdComputeStressProfilesAndDiffusivitiesData(4, 12, init_data[2]),
-      GwdComputeStressProfilesAndDiffusivitiesData(5, 13, init_data[3]),
+      //                                        ncol
+      GwdComputeStressProfilesAndDiffusivitiesData(2, init_data[0]),
+      GwdComputeStressProfilesAndDiffusivitiesData(3, init_data[1]),
+      GwdComputeStressProfilesAndDiffusivitiesData(4, init_data[2]),
+      GwdComputeStressProfilesAndDiffusivitiesData(5, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdComputeStressProfilesAndDiffusivitiesData);
@@ -45,7 +36,8 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
     for (auto& d : baseline_data) {
-      d.randomize(engine);
+      // ni must be very small or else we risk a FPE due to a huge exp
+      d.randomize(engine, { {d.ni, {1.E-08, 2.E-08}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that

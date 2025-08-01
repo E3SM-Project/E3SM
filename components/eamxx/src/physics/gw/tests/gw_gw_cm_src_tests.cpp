@@ -20,17 +20,7 @@ struct UnitWrap::UnitTest<D>::TestGwCmSrc : public UnitWrap::UnitTest<D>::Base {
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
-
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
+    auto init_data = get_common_init_data(engine);
 
     // Set up init data
     GwFrontInitData front_init_data[] = {
@@ -47,10 +37,11 @@ struct UnitWrap::UnitTest<D>::TestGwCmSrc : public UnitWrap::UnitTest<D>::Base {
 
     // Set up inputs
     GwCmSrcData baseline_data[] = {
-      GwCmSrcData(2, 10, 3, front_init_data[0]),
-      GwCmSrcData(3, 11, 4, front_init_data[1]),
-      GwCmSrcData(4, 12, 5, front_init_data[2]),
-      GwCmSrcData(5, 13, 6, front_init_data[3]),
+      //       ncol, kbot
+      GwCmSrcData(2,   53, front_init_data[0]),
+      GwCmSrcData(3,   54, front_init_data[1]),
+      GwCmSrcData(4,   55, front_init_data[2]),
+      GwCmSrcData(5,   56, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwCmSrcData);

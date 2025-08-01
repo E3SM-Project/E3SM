@@ -18,7 +18,6 @@ void Functions<S,D>::gw_beres_src(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const uview_1d<const Spack>& lat,
 const uview_1d<const Spack>& u,
 const uview_1d<const Spack>& v,
