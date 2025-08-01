@@ -595,4 +595,48 @@
     </values>
   </entry>
 
+  <!-- =========================================  -->
+  <!--- ice sheet runoff modifications            -->
+  <!-- =========================================  -->
+
+  <entry id="remove_ais_rofl">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <desc>If true, rofl around Antarctica is set to 0</desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="remove_ais_rofi">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <desc>If true, rofi around Antarctica is set to 0</desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="remove_gis_rofl">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <desc>If true, rofl around Greenland is set to 0</desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="remove_gis_rofi">
+    <type>logical</type>
+    <category>drof</category>
+    <group>drof_nml</group>
+    <desc>If true, rofi around Greenland is set to 0</desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
 </entry_id>

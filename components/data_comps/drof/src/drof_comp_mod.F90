@@ -24,6 +24,10 @@ module drof_comp_mod
   use drof_shr_mod   , only: decomp         ! namelist input
   use drof_shr_mod   , only: rest_file      ! namelist input
   use drof_shr_mod   , only: rest_file_strm ! namelist input
+  use drof_shr_mod   , only: remove_ais_rofl! namelist input
+  use drof_shr_mod   , only: remove_ais_rofi! namelist input
+  use drof_shr_mod   , only: remove_gis_rofl! namelist input
+  use drof_shr_mod   , only: remove_gis_rofi! namelist input
   use drof_shr_mod   , only: nullstr
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
@@ -431,6 +435,7 @@ CONTAINS
     character(len=18) :: date_str
     real(R8) latv, lonv
     integer ilat, ilon
+    integer :: index_r2x_rofl, index_r2x_rofi
 #ifdef HAVE_MOAB
     real(R8), allocatable, target :: datam(:)
     type(mct_list) :: temp_list
@@ -508,23 +513,53 @@ CONTAINS
     case('COPYALL')
        ! do nothing extra
 
-       ! TEST ZERO OUT SOME PARTS
-       ! zero out a geographic area
+       ! Apply modifications around ice sheets if required
        lsize = mct_avect_lsize(r2x)
        nflds_r2x = mct_avect_nRattr(r2x)
        ilat = mct_aVect_indexRA(ggrid%data,'lat')
        ilon = mct_aVect_indexRA(ggrid%data,'lon')
-       do nf=1,nflds_r2x
+       index_r2x_rofl = mct_avect_indexra(r2x,'Forr_rofl')
+       index_r2x_rofi = mct_avect_indexra(r2x,'Forr_rofi')
+       if (remove_ais_rofl) then
           do n=1,lsize
              lonv = ggrid%data%rAttr(ilon, n)
              latv = ggrid%data%rAttr(ilat, n)
-             if (lonv > 90.0_r8) then
-                r2x%rAttr(nf,n) = 0.0_r8
+             if (latv < -60.0_r8) then
+                r2x%rAttr(index_r2x_rofl,n) = 0.0_r8
              end if
           enddo
-       enddo
-
-
+       endif
+       if (remove_ais_rofi) then
+          do n=1,lsize
+             lonv = ggrid%data%rAttr(ilon, n)
+             latv = ggrid%data%rAttr(ilat, n)
+             if (latv < -57.0_r8) then
+                r2x%rAttr(index_r2x_rofi,n) = 0.0_r8
+             end if
+          enddo
+       endif
+       ! Note: Greenland box is approximate and includes portions of
+       ! Canadian archipelago and Iceland
+       if (remove_gis_rofl) then
+          do n=1,lsize
+             lonv = ggrid%data%rAttr(ilon, n)
+             latv = ggrid%data%rAttr(ilat, n)
+             if ((latv > 59.0_r8)  .and. (latv < 83.0_r8) .and. &
+                 (lonv > 286.0_r8) .and. (lonv < 349.0_r8)) then
+                r2x%rAttr(index_r2x_rofl,n) = 0.0_r8
+             end if
+          enddo
+       endif
+       if (remove_gis_rofi) then
+          do n=1,lsize
+             lonv = ggrid%data%rAttr(ilon, n)
+             latv = ggrid%data%rAttr(ilat, n)
+             if ((latv > 59.0_r8)  .and. (latv < 83.0_r8) .and. &
+                 (lonv > 286.0_r8) .and. (lonv < 349.0_r8)) then
+                r2x%rAttr(index_r2x_rofi,n) = 0.0_r8
+             end if
+          enddo
+       endif
 
     end select
     call t_stopf('drof_datamode')
