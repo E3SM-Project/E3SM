@@ -153,7 +153,6 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
-   use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
    use EDMainMod             , only : ed_ecosystem_dynamics
@@ -228,6 +227,14 @@ module ELMFatesInterfaceMod
       integer, allocatable :: hsites  (:)
 
    end type f2hmap_type
+   
+   type, public :: hlm_fates_api_var_type
+
+      ! This is the pointer to the host land model variable
+      ! data associated with the common API vocabulary string
+      real(r8), pointer :: hlm_var(:,:)
+
+   end type hlm_fates_api_var_type
 
 
    type, public :: hlm_fates_interface_type
@@ -255,6 +262,16 @@ module ELMFatesInterfaceMod
       ! Type structure that holds allocatable arrays for mpi-based seed dispersal
       type(dispersal_type) :: fates_seed
       
+      ! This is the array that contains the common API vocabulary
+      ! between FATES and the host land model.
+      character(len=:), allocatable :: api_str(:)
+      
+      ! This is the array of pointers to the host land model data
+      type(hlm_fates_api_var_type), allocatable :: hlm_var_2darray(:)
+      
+      ! This is the number of HLM variables that are being passed to FATES
+      integer :: num_hlmvar
+      
    contains
 
       procedure, public :: init
@@ -275,6 +292,7 @@ module ELMFatesInterfaceMod
       procedure, public :: Init2  ! Initialization after determining subgrid weights
       procedure, public :: InitAccBuffer ! Initialize any accumulation buffers
       procedure, public :: InitAccVars   ! Initialize any accumulation variables
+      procedure, public :: InitAndSetAPIAssociation
       procedure, public :: UpdateAccVars ! Update any accumulation variables
       procedure, public :: UpdateLitterFluxes
       procedure, private :: init_history_io
@@ -285,6 +303,7 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapUpdateFatesRmean
       procedure, public  :: WrapGlobalSeedDispersal
       procedure, public  :: WrapUpdateFatesSeedInOut
+      procedure, public  :: WrapTransferBC
 
    end type hlm_fates_interface_type
    
@@ -891,6 +910,7 @@ contains
          call DetermineGridCellNeighbors(lneighbors,this%fates_seed,numg)
       end if
 
+      ! Allocate fates interface and fates to HLM interfac vectors
       nclumps = get_proc_clumps()
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
@@ -898,6 +918,9 @@ contains
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
+      
+      ! Initialize the fates to host land model API variable mapping
+      call this%InitAndSetAPIAssociation()
 
       ! Retrieve the landuse x pft static data if the optional switch has been set
       if (use_fates_fixed_biogeog .and. use_fates_luh) then
@@ -965,7 +988,7 @@ contains
          this%fates(nc)%nsites = s
 
          ! Allocate the FATES sites
-         allocate (this%fates(nc)%sites(this%fates(nc)%nsites))
+         allocate(this%fates(nc)%sites(this%fates(nc)%nsites))
 
          ! Allocate the FATES boundary arrays (in)
          allocate(this%fates(nc)%bc_in(this%fates(nc)%nsites))
@@ -985,6 +1008,13 @@ contains
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
          do s = 1, this%fates(nc)%nsites
+
+            ! Allocate HLM-FATES mapping arrays
+            ! TODO: update this to be agnostic to fates column run mode
+            allocate(this%fates(nc)%sites(s)%column_map(1))
+            allocate(this%fates(nc)%sites(s)%patch_map(natpft_size))
+
+            ! TODO: Assign column_map and patch_map values
 
             c = this%f2hmap(nc)%fcolumn(s)
             this%fates(nc)%sites(s)%h_gid = c
@@ -1209,6 +1239,9 @@ contains
          endif
          gdp_lf_col = this%fates_fire_data_method%GetGDP()
       end if
+      
+      ! Transfer decomposition fluxes to the FATES patch data structure
+      call this%WrapTransferBC(nc)
 
       do s=1,this%fates(nc)%nsites
 
@@ -1234,11 +1267,7 @@ contains
          end if
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-
-         ! Decomposition fluxes
-         this%fates(nc)%bc_in(s)%w_scalar_sisl(1:nlevsoil) = col_cf%w_scalar(c,1:nlevsoil)
-         this%fates(nc)%bc_in(s)%t_scalar_sisl(1:nlevsoil) = col_cf%t_scalar(c,1:nlevsoil)
-
+         
          ! Soil water
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
                col_ws%h2osoi_vol(c,1:nlevsoil)
@@ -1554,8 +1583,7 @@ contains
 
        ! Canopy diagnostics for FATES
        call canopy_summarization(this%fates(nc)%nsites, &
-            this%fates(nc)%sites,  &
-            this%fates(nc)%bc_in)
+            this%fates(nc)%sites)
 
        ! Canopy diagnostic outputs for HLM, including LUC
        call update_hlm_dynamics(this%fates(nc)%nsites, &
@@ -2106,7 +2134,7 @@ contains
            call get_clump_bounds(nc, bounds_clump)
 
            do s = 1,this%fates(nc)%nsites
-              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s),this%fates(nc)%bc_out(s) )
+              call init_site_vars(this%fates(nc)%sites(s),this%fates(nc)%bc_in(s) )
               call zero_site(this%fates(nc)%sites(s))
            end do
 
@@ -2288,9 +2316,6 @@ contains
                                               ! this is the order increment of patch
                                               ! on the site
       integer  :: nc                          ! clump index
-
-      type(fates_patch_type), pointer :: cpatch  ! c"urrent" patch  INTERF-TODO: SHOULD
-                                              ! BE HIDDEN AS A FATES PRIVATE
 
       associate( forc_solad => top_af_inst%solad, &
                  forc_solai => top_af_inst%solai, &
@@ -2720,7 +2745,6 @@ contains
     call  AccumulateFluxes_ED(this%fates(nc)%nsites,  &
                                this%fates(nc)%sites, &
                                this%fates(nc)%bc_in,  &
-                               this%fates(nc)%bc_out, &
                                dtime)
     return
  end subroutine wrap_accumulatefluxes
@@ -3423,6 +3447,55 @@ end subroutine wrap_update_hifrq_hist
     return
  end subroutine init_soil_depths
 
+! ======================================================================================
+ 
+ subroutine InitAndSetAPIAssociation(this)
+
+   ! !DESCRIPTION:
+   ! ---------------------------------------------------------------------------------
+   ! This subroutine sets the association between the hlm variables and the common API
+   ! vocabulary strings.
+   ! ---------------------------------------------------------------------------------
+
+   ! !USES:
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+
+   ! !LOCAL:
+   integer :: ivar = 0                           ! array index
+   integer, parameter :: max_string_length = 24  ! maximum length of common vocab string
+   integer, parameter :: num_hlmvar = 2          ! number of HLM variables
+   
+   ! Allocate the arrays
+   allocate(character(len=max_string_length) :: this%api_str(num_hlmvar))
+   allocate(this%hlm_var_2darray(num_hlmvar))
+   
+   ! Increment through the arrays and assign HLM variables to common API vocab
+   ! 1D arrays
+   ! 2D arrays
+   ivar = ivar + 1
+   this%api_str(ivar) = 'decomp_frac_moisture'
+   this%hlm_var_2darray(ivar)%hlm_var => col_cf%w_scalar
+
+   ivar = ivar + 1
+   this%api_str(ivar) = 'decomp_frac_temperature'
+   this%hlm_var_2darray(ivar)%hlm_var => col_cf%t_scalar
+   
+   ! 3D arrays
+   
+   ! Check that the number of variables set matches
+   ! specifically in the case in which the number set
+   ! is lower than the allocated amount
+   if (ivar /= num_hlmvar) then
+      write(iulog,*) 'FATES API: Number of API variables does not match the expected array size'
+      call endrun(msg=errMsg(sourcefile, __LINE__))
+   else
+      this%num_hlmvar = num_hlmvar
+   end if
+
+ end subroutine InitAndSetAPIAssociation
+
  ! ======================================================================================
 
  subroutine ComputeRootSoilFlux(this, bounds_clump, num_filterc, filterc, &
@@ -3603,6 +3676,33 @@ end subroutine wrap_update_hifrq_hist
 
    return
  end subroutine wrap_hydraulics_drive
+
+! ======================================================================================
+
+ subroutine WrapTransferBC(this, nc)
+
+   ! !DESCRIPTION:
+   ! ---------------------------------------------------------------------------------
+   ! This call passes the HLM inputs to FATES patch-level boundary conditions
+   ! ---------------------------------------------------------------------------------
+
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer, intent(in) :: nc 
+   
+   ! !LOCAL:
+   integer :: s, ivar  ! indices and loop counters
+   
+   do s = 1, this%fates(nc)%nsites
+      do ivar = 1,this%num_hlmvar
+         call this%fates(nc)%sites(s)%TransferBCIn(this%api_str(ivar), &
+                                                   this%hlm_var_2darray(ivar)%hlm_var)
+      end do
+   end do
+
+ end subroutine WrapTransferBC
 
  ! ======================================================================================
 
