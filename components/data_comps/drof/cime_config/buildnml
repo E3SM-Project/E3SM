@@ -122,7 +122,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
 
     if (((ocn_glc_ismf_coupling == 'coupler') or
          (ocn_glc_ismf_coupling == 'internal_mpaso') or
-         (ocn_glc_ismf_coupling == 'data_mpaso'))
+         (ocn_glc_ismf_coupling == 'data_mpaso') or
+         (ocn_glc_ismf_coupling == 'tf'))
         and (ocn_forcing != 'active_atm')):
         print('Setting remove_ais_rofl to .true.')
         nmlgen.set_value("remove_ais_rofl", '.true.')
