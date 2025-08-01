@@ -1255,6 +1255,13 @@ void MAMMicrophysics::run_impl(const double dt) {
         dflx_col              // deposition flux [1/cm^2/s]
       );
       });
+      // Update constituent fluxes with gas drydep fluxes (dflx)
+        // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
+        // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
+        // behavior but we should look into it)
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
+          constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
+        });
     });
 
     // Store mixing ratios before gas chemistry changes the mixing ratios
@@ -1601,6 +1608,7 @@ void MAMMicrophysics::run_impl(const double dt) {
     });
 
 #endif
+#if 0
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1762,6 +1770,7 @@ void MAMMicrophysics::run_impl(const double dt) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
       });  // parallel_for for the column loop
+ #endif
   Kokkos::fence();
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
@@ -1787,7 +1796,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
       // Modify units to MKS units: [molec/cm3/s] to [kg/m3/s]
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
-      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
+      extfrc_fm(i,j,k) = extfrc_test(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
   });
 
 #if 0
