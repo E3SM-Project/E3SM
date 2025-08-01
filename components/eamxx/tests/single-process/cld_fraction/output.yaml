@@ -3,6 +3,8 @@
 filename_prefix: cldfrac_standalone_output_${POSTFIX}
 averaging_type: instant
 field_names:
+  - qi
+  - cldfrac_liq
   - cldfrac_ice
   - cldfrac_tot
 output_control:

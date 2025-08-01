@@ -14,7 +14,7 @@ eamxx:
     ice_cloud_threshold: 1e-12
     ice_cloud_for_analysis_threshold: 1e-5
     py_module_name: ${PY_MODULE_NAME}
-    py_module_path: ${SCREAM_SOURCE_DIR}/src/physics/cld_fraction
+    py_module_path: ${PY_MODULE_PATH}
 
 grids_manager:
   type: mesh_free
@@ -22,12 +22,11 @@ grids_manager:
   point_grid:
     aliases: [physics]
     type: point_grid
-    number_of_global_columns:   3
-    number_of_vertical_levels:  128
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
 
 initial_conditions:
-  cldfrac_liq: 0.0
-  qi: 0.0
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
 
 scorpio:
   output_yaml_files: [output_${POSTFIX}.yaml]
