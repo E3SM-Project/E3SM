@@ -33,7 +33,7 @@ jobs:
     # 3. the E3SM-Project fork of DoozyX/clang-format-lint-action@v0.20
     #    adds a Step summary to the workflow page, and, on failure, lists the
     #    files that fail the clang-format test
-    - uses: E3SM-Project/clang-format-lint-action@v1.0.0
+    - uses: E3SM-Project/clang-format-lint-action@v1.1.0
       with:
         source: ${{ steps.changed-files.outputs.all_changed_files }}
         exclude: ''
