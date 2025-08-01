@@ -16,6 +16,8 @@ set(ZM_F90_SRCS
   ${PATH_TO_LEGACY_ZM}/zm_conv_types.F90
   ${PATH_TO_LEGACY_ZM}/zm_aero_type.F90
   ${PATH_TO_LEGACY_ZM}/zm_microphysics_state.F90
+  ${PATH_TO_LEGACY_ZM}/zm_conv_mcsp.F90
+  ${PATH_TO_LEGACY_ZM}/zm_transport.F90
   # ----------------------------------------------------------------------------
   # shared fotran modules
   ${SCREAM_BASE_DIR}/../../share/util/shr_sys_mod.F90
