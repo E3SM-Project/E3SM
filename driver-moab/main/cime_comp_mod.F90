@@ -2047,8 +2047,10 @@ contains
     ! e.g. for atmosphere, init l2x_ax, o2x_ax, i2x_ax
     ! MAP Initialize map for each transformation. States and Fluxes, all sources.
     !      Includes reading weights from file
+    !
     ! MOAB: register coupler apps between components: e.g. OCN_ATM_COU
     ! MOAB: compute intersection intx for each pair of grids on coupler and weights
+    ! MOAB: or read maps and read the appropriate aream
     ! MOAB: augment seq_map_type object with MOAB attributes to enable seq_map_map to do MOAB-based projections
     !----------------------------------------------------------
 
@@ -2149,7 +2151,6 @@ contains
     !| Initialize area corrections based on aream (read in map_init) and area
     !| Area correct component initialization output fields
     !| SEND (Rearrange) initial component AVs from component to coupler pes
-    ! MOABTODO:  add calls to send initial data.
     !----------------------------------------------------------
 
     areafact_samegrid = .false.
@@ -4696,7 +4697,7 @@ contains
 
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
 #ifdef HAVE_MOAB
-       call prep_rof_accum_avg_moab()
+       call prep_rof_accum_avg_moab(ocn_c2_rof)
 #endif
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 

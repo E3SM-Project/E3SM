@@ -1150,7 +1150,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 
  !================================================================================================
 
-  subroutine prep_rof_accum_avg_moab()
+  subroutine prep_rof_accum_avg_moab(ocn_c2_rof)
 
     !---------------------------------------------------------------
     ! Description
@@ -1158,6 +1158,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     use iMOAB, only : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_comm_mct, only : num_moab_exports ! for debug
     ! Arguments
+    logical,intent(in) :: ocn_c2_rof
     !
     ! Local Variables
     character(CXX) ::tagname
@@ -1222,20 +1223,22 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
      endif
     endif
 #endif
-    if(o2racc_om_cnt > 1) then
-       ravg = 1.0_R8/real(o2racc_om_cnt, R8)
-       o2racc_om = o2racc_om * ravg
-    endif
-    o2racc_om_cnt = 0
-    ! set now the accumulated fields on ocn instance
-    tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
-    arrsize = nfields_sh_or * lsize_om
-    ent_type = 1 ! cell type
-    if (arrsize > 0 ) then
-      ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om)
-      if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
-      endif
+    if (ocn_c2_rof) then  ! Need to add this else mboxid.  TODO: need to make averaging tags
+       if(o2racc_om_cnt > 1) then
+          ravg = 1.0_R8/real(o2racc_om_cnt, R8)
+          o2racc_om = o2racc_om * ravg
+       endif
+       o2racc_om_cnt = 0
+       ! set now the accumulated fields on ocn instance
+       tagname = trim(sharedFieldsOcnRof)//C_NULL_CHAR
+       arrsize = nfields_sh_or * lsize_om
+       ent_type = 1 ! cell type
+       if (arrsize > 0 ) then
+         ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, o2racc_om)
+         if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in setting accumulated shared fields on rof on ocn instance ')
+         endif
+       endif
    endif
 #ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
