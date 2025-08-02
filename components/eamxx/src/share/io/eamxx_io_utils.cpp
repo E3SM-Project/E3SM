@@ -236,7 +236,7 @@ create_diagnostic (const std::string& diag_field_name,
 std::pair<std::string, std::string>
 parse_field_alias (const std::string& field_spec)
 {
-  const std::string delimiter = ":=:";
+  const std::string delimiter = ":=";
   auto pos = field_spec.find(delimiter);
   
   if (pos == std::string::npos) {
@@ -251,7 +251,7 @@ parse_field_alias (const std::string& field_spec)
   
   EKAT_REQUIRE_MSG(!alias.empty() && !field_name.empty(),
       "Error! Invalid field alias specification: '" + field_spec + "'\n"
-      "Expected format: 'alias:=:field_name' where both alias and field_name are non-empty.\n");
+      "Expected format: 'alias:=field_name' where both alias and field_name are non-empty.\n");
   
   return {alias, field_name};
 }

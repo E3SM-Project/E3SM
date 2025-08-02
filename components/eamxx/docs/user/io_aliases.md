@@ -14,11 +14,11 @@ internal field names in the model. This is useful for:
 
 ## Syntax
 
-The alias syntax uses the delimiter `:=:` to separate the alias name
+The alias syntax uses the delimiter `:=` to separate the alias name
 from the internal field name:
 
 ```yaml
-alias_name:=:internal_field_name
+alias_name:=internal_field_name
 ```
 
 ## YAML Configuration Examples
@@ -27,9 +27,9 @@ alias_name:=:internal_field_name
 
 ```yaml
         field_names:
-          - "LWP:=:LiqWaterPath"      # Alias LWP for LiqWaterPath
-          - "SWP:=:SolidWaterPath"    # Alias SWP for SolidWaterPath  
-          - "T:=:T_mid"               # Alias T for T_mid
+          - "LWP:=LiqWaterPath"      # Alias LWP for LiqWaterPath
+          - "SWP:=SolidWaterPath"    # Alias SWP for SolidWaterPath  
+          - "T:=T_mid"               # Alias T for T_mid
           - "qv"                      # Regular field name (no alias)
 ```
 
@@ -40,9 +40,9 @@ You can mix aliased and non-aliased fields in the same configuration:
 ```yaml
 field_names:
   - "T_mid"                          # Regular field name
-  - "LWP:=:LiqWaterPath"            # Aliased field
+  - "LWP:=LiqWaterPath"            # Aliased field
   - "ps"                            # Regular field name  
-  - "RH:=:RelativeHumidity"         # Aliased field
+  - "RH:=RelativeHumidity"         # Aliased field
 ```
 
 ## Output Behavior
@@ -75,8 +75,8 @@ input_streams:
   initial_conditions:
     filename: ic_file.nc
     field_names:
-      - "LWP:=:LiqWaterPath"    # Read variable LWP from file into field LiqWaterPath
-      - "T:=:T_mid"             # Read variable T from file into field T_mid
+      - "LWP:=LiqWaterPath"    # Read variable LWP from file into field LiqWaterPath
+      - "T:=T_mid"             # Read variable T from file into field T_mid
 ```
 
 ## Error Handling
@@ -91,10 +91,10 @@ Example error cases:
 
 ```yaml
 field_names:
-  - "LWP:=:"                   # Error: empty field name
-  - ":=:LiqWaterPath"          # Error: empty alias name  
-  - "LWP:=:Field1"             # OK
-  - "LWP:=:Field2"             # Error: duplicate alias LWP
-  - "LWP1:=:LiqWaterPath"      # OK
-  - "LWP2:=:LiqWaterPath"      # Error: duplicate field LiqWaterPath
+  - "LWP:="                   # Error: empty field name
+  - ":=LiqWaterPath"          # Error: empty alias name  
+  - "LWP:=Field1"             # OK
+  - "LWP:=Field2"             # Error: duplicate alias LWP
+  - "LWP1:=LiqWaterPath"      # OK
+  - "LWP2:=LiqWaterPath"      # Error: duplicate field LiqWaterPath
 ```
