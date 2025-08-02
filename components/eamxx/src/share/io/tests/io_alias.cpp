@@ -24,12 +24,12 @@ namespace scream {
 TEST_CASE("io_field_aliasing") {
   SECTION("parse_field_alias") {
     // Test normal case with alias
-    auto [alias1, field1] = parse_field_alias("LWP:=:LiqWaterPath");
+    auto [alias1, field1] = parse_field_alias("LWP:=LiqWaterPath");
     REQUIRE(alias1 == "LWP");
     REQUIRE(field1 == "LiqWaterPath");
     
     // Test with spaces
-    auto [alias2, field2] = parse_field_alias(" SWP :=: SolidWaterPath ");
+    auto [alias2, field2] = parse_field_alias(" SWP := SolidWaterPath ");
     REQUIRE(alias2 == "SWP");
     REQUIRE(field2 == "SolidWaterPath");
     
@@ -39,23 +39,23 @@ TEST_CASE("io_field_aliasing") {
     REQUIRE(field3 == "Temperature");
     
     // Test complex field names
-    auto [alias4, field4] = parse_field_alias("RH:=:RelativeHumidity");
+    auto [alias4, field4] = parse_field_alias("RH:=RelativeHumidity");
     REQUIRE(alias4 == "RH");
     REQUIRE(field4 == "RelativeHumidity");
     
     // Test error cases
-    REQUIRE_THROWS(parse_field_alias("LWP:=:"));
-    REQUIRE_THROWS(parse_field_alias(":=:LiqWaterPath"));
-    REQUIRE_THROWS(parse_field_alias("  :=:  "));
+    REQUIRE_THROWS(parse_field_alias("LWP:="));
+    REQUIRE_THROWS(parse_field_alias(":=LiqWaterPath"));
+    REQUIRE_THROWS(parse_field_alias("  :=  "));
   }
   
   SECTION("process_field_aliases") {
     std::vector<std::string> field_specs = {
       "T",                          // No alias
-      "LWP:=:LiqWaterPath",        // With alias
-      "SWP:=:SolidWaterPath",      // With alias
+      "LWP:=LiqWaterPath",        // With alias
+      "SWP:=SolidWaterPath",      // With alias
       "qv",                        // No alias
-      "RH:=:RelativeHumidity"      // With alias
+      "RH:=RelativeHumidity"      // With alias
     };
     
     auto [alias_map, alias_names] = process_field_aliases(field_specs);
@@ -80,8 +80,8 @@ TEST_CASE("io_field_aliasing") {
   
   SECTION("duplicate_alias_detection") {
     std::vector<std::string> duplicate_specs = {
-      "LWP:=:LiqWaterPath",
-      "LWP:=:SolidWaterPath"  // Duplicate alias
+      "LWP:=LiqWaterPath",
+      "LWP:=SolidWaterPath"  // Duplicate alias
     };
     REQUIRE_THROWS(process_field_aliases(duplicate_specs));
   }
@@ -89,9 +89,9 @@ TEST_CASE("io_field_aliasing") {
   SECTION("mixed_aliases_and_regular_fields") {
     std::vector<std::string> mixed_specs = {
       "temperature",
-      "LWP:=:LiqWaterPath",
+      "LWP:=LiqWaterPath",
       "pressure",
-      "RH:=:RelativeHumidity"
+      "RH:=RelativeHumidity"
     };
     
     auto [alias_map, alias_names] = process_field_aliases(mixed_specs);
@@ -171,9 +171,9 @@ TEST_CASE("output_aliases_integration", "[.][io][alias]") {
     
     // Test field specifications with aliases
     std::vector<std::string> field_specs = {
-      "QV:=:qv",        // Alias QV for qv
-      "TEMP:=:T_mid",   // Alias TEMP for T_mid  
-      "PSURF:=:ps"      // Alias PSURF for ps
+      "QV:=qv",        // Alias QV for qv
+      "TEMP:=T_mid",   // Alias TEMP for T_mid  
+      "PSURF:=ps"      // Alias PSURF for ps
     };
     params.set("field_names", field_specs);
     
@@ -197,7 +197,7 @@ TEST_CASE("output_aliases_integration", "[.][io][alias]") {
     
     std::vector<std::string> mixed_specs = {
       "qv",             // No alias - use original name
-      "TEMP:=:T_mid",   // With alias
+      "TEMP:=T_mid",   // With alias
       "ps"              // No alias - use original name
     };
     params.set("field_names", mixed_specs);
