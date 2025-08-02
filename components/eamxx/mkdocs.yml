@@ -19,6 +19,7 @@ nav:
       - 'Overview': 'user/diags/index.md'
       - 'Field contraction diagnostics': 'user/diags/field_contraction.md'
     - 'Presentations': 'user/presentations.md'
+    - 'IO Aliases': 'user/io_aliases.md'
   - 'Developer Guide':
     - 'Quick-start Guide': 'developer/dev_quickstart.md'
     - 'Code Structure and Organization': 'developer/code_structure.md'
