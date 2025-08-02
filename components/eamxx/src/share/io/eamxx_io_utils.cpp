@@ -5,6 +5,8 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/eamxx_config.hpp"
 
+#include "ekat/util/ekat_string_utils.hpp"
+
 #include <fstream>
 #include <regex>
 
@@ -231,19 +233,6 @@ create_diagnostic (const std::string& diag_field_name,
   return diag;
 }
 
-namespace {
-  // Helper function to trim whitespace from both ends of a string
-  std::string trim_whitespace(const std::string& str) {
-    if (str.empty()) return str;
-    
-    size_t start = str.find_first_not_of(" \t");
-    if (start == std::string::npos) return "";
-    
-    size_t end = str.find_last_not_of(" \t");
-    return str.substr(start, end - start + 1);
-  }
-}
-
 std::pair<std::string, std::string>
 parse_field_alias (const std::string& field_spec)
 {
@@ -252,13 +241,13 @@ parse_field_alias (const std::string& field_spec)
   
   if (pos == std::string::npos) {
     // No alias found, return the field_spec as both alias and field name
-    std::string trimmed = trim_whitespace(field_spec);
+    std::string trimmed = ekat::trim(field_spec);
     return {trimmed, trimmed};
   }
   
   // Extract and trim alias and field name
-  std::string alias = trim_whitespace(field_spec.substr(0, pos));
-  std::string field_name = trim_whitespace(field_spec.substr(pos + delimiter.length()));
+  std::string alias = ekat::trim(field_spec.substr(0, pos));
+  std::string field_name = ekat::trim(field_spec.substr(pos + delimiter.length()));
   
   EKAT_REQUIRE_MSG(!alias.empty() && !field_name.empty(),
       "Error! Invalid field alias specification: '" + field_spec + "'\n"
