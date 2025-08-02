@@ -70,6 +70,7 @@ module ocn_comp_mct
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
    use ocn_scaled_dismf
+   use ocn_scaled_sfwf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -120,6 +121,8 @@ module ocn_comp_mct
    type (domain_type), pointer:: domain
    integer :: itimestep, &  ! time step number for MPAS
               ocn_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
+
+   real (kind=RKIND) :: precFactor 
 
 !=======================================================================
 
@@ -234,6 +237,12 @@ contains
     real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
     real (kind=RKIND), pointer :: &
        runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
+
+    ! freshwater balance adjustment 
+    logical, pointer :: config_use_precip_scaling
+    character (len=StrKIND), pointer :: config_precip_scaling_mode
+    real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+    real(kind=RKIND), pointer :: scalingFactor
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
@@ -833,6 +842,25 @@ contains
 
        ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
+
+       ! Initialize the precipitation scaling scheme 
+       call ocn_scaled_sfwf_init(domain)
+       ! Ensure a valid first guess at the initial time 
+       call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+       if (config_use_precip_scaling) then
+          call mpas_pool_get_config(domain % configs, 'config_precip_scaling_mode', config_precip_scaling_mode)
+          ! independent of space so should be no need to loop over blocks
+          block_ptr => domain % blocklist
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+          if (trim(config_precip_scaling_mode) == 'time-dependent') then 
+            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_initial_factor', scalingFactor)
+          else if (trim(config_precip_scaling_mode) == 'constant') then
+            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_constant_factor', scalingFactor) 
+          end if
+          ! Broadcast the scalar to the field
+          SFWFScalingFactor = scalingFactor
+       end if
     end if
 
 !-----------------------------------------------------------------------
@@ -881,6 +909,10 @@ contains
 
       ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
+
+      ! initialize scaled data freshwater fluxes based on water balance relationship 
+       call ocn_scaled_sfwf_init(domain)
+
     end if
 
     call t_stopf ('mpaso_mct_init')
@@ -914,6 +946,16 @@ contains
     ! these are used for ocn-glc thermal forcing coupling
     call init_glc_z_levels(domain, ierr_local)
     ierr = ior(ierr, ierr_local)
+
+    !configuration for freshwater conservation
+    call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+    if (config_use_precip_scaling) then 
+      ! independent of space so should be no need to loop over blocks
+      block_ptr => domain % blocklist
+      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+      call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+      call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
+    end if 
 
 !-----------------------------------------------------------------------
 !
@@ -1037,6 +1079,10 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
       real (kind=RKIND), pointer :: &
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
+
+      ! freshwater balance adjustment 
+      logical, pointer :: config_use_precip_scaling
+      real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
 
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
@@ -1286,6 +1332,9 @@ contains
             call mpas_log_write('   Validating ocean state')
          endif
 
+        ! update scalling factors for freshwater fluxes 
+        call ocn_update_scaling_factor(domain, timeLevel=1)
+
          call ocn_validate_state(domain, timeLevel=1)
          if (debugOn) call mpas_log_write('   Completed validating ocean state')
 
@@ -1354,6 +1403,16 @@ contains
          call MPAS_pool_get_array(forcingPool, "runningMeanRemovedIceRunoff", &
                                   runningMeanRemovedIceRunoff)
          call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
+      end if
+
+      !configuration for freshwater conservation
+      call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+      if (config_use_precip_scaling) then
+         ! independent of space so should be no need to loop over blocks
+         block_ptr => domain % blocklist
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+         call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
       end if
 
       ! Reset I/O logs
@@ -1980,7 +2039,11 @@ contains
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling,      &
-                                     CFCAuxiliary
+                                     CFCAuxiliary, &
+                                     conservationCheckEnergyAMPool, &
+                                     conservationCheckMassAMPool, &
+                                     conservationCheckSaltAMPool, &
+                                     conservationCheckCarbonAMPool
 
    integer, pointer :: nCellsSolve
 
@@ -2092,6 +2155,9 @@ contains
 
    real (kind=RKIND) :: riverFactor
 
+   ! freshwater balance adjustment 
+   logical, pointer :: config_use_precip_scaling
+
 !-----------------------------------------------------------------------
 !
 !  zero out padded cells
@@ -2122,6 +2188,14 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
+
+   precFactor = 1.0_RKIND  ! Default to no scaling
+   !configuration for freshwater balance constrains
+   call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+   if (config_use_precip_scaling) then
+      !extract scaling factors 
+      call seq_infodata_GetData(infodata, precip_fact=precFactor)
+   end if
 
    n = 0
    removedRiverRunoffFluxThisProc = 0.0_RKIND
@@ -2379,7 +2453,7 @@ contains
         end if
 
         if ( rainFluxField % isActive ) then
-           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
+           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n) * precFactor
         end if
         if ( atmosphericPressureField % isActive ) then
            atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n)
@@ -3955,7 +4029,7 @@ contains
            icebergHeatFlux(i) = x2o_om(n, index_x2o_Fioi_bergh)
         end if
         if ( snowFluxField % isActive ) then
-           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow)
+           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow) * precFactor
         end if
         if ( seaIceFreshWaterFluxField % isActive ) then
            seaIceFreshWaterFlux(i) = x2o_om(n, index_x2o_Fioi_meltw)
