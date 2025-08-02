@@ -116,7 +116,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
     #----------------------------------------------------
     # Set runoff modifications for ice sheets if needed
     #----------------------------------------------------
-    if ocn_iceberg == 'true':
+    if (ocn_iceberg == 'true' or
+        ocn_glc_ismf_coupling == 'tf'):  # THIS IS HACKY!
         print('Setting remove_ais_rofi to .true.')
         nmlgen.set_value("remove_ais_rofi", '.true.')
 
