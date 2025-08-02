@@ -35,7 +35,6 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
   using namespace ShortFieldTagsNames;
   m_input_files_dimnames[COL] = "ncol";
   m_input_files_dimnames[LEV] = "lev";
-  e2str(LEV);
 }
 
 void DataInterpolation::run (const util::TimeStamp& ts)

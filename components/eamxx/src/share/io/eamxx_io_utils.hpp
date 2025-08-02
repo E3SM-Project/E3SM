@@ -90,7 +90,7 @@ create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
 
 // Parse field alias from field specification string.
-// Format: "alias:=:field_name" returns {alias, field_name}
+// Format: "alias:=field_name" returns {alias, field_name}
 // For non-aliased fields, returns {field_name, field_name}
 std::pair<std::string, std::string>
 parse_field_alias (const std::string& field_spec);
