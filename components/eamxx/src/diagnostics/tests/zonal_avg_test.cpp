@@ -63,7 +63,6 @@ TEST_CASE("zonal_avg") {
   lat_view_h(0) = sp(-90.0); // move column to be directly at southern pole
   lat_view_h(nlats-1) = sp(90.0); // move column to be directly at northern pole
   lat.sync_to_dev();
-  comm.all_reduce(zonal_areas.data(), zonal_areas.size(), MPI_SUM);
 
   // Input (randomized) qc
   FieldLayout scalar1d_layout{{COL}, {ncols}};
