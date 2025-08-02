@@ -51,6 +51,7 @@ AtmosphereOutput (const ekat::Comm& comm,
   for (auto f : fields) {
     fm->add_field(f);
     m_fields_names.push_back(f.name());
+    m_alias_names.push_back(f.name()); // Use field name as alias (no aliasing)
   }
 
   // No remaps: set all FM except the one for scorpio (created in init())
@@ -127,6 +128,9 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_fields_names.push_back(field_name);
   }
 
+  // TODO: allow users to request the same field more than once via different aliases
+  // TODO: currently, that would result in issues downstream, and so it must be done
+  // TODO: more carefully. The rationale is to enable users to debug their aliasing, etc.
   EKAT_REQUIRE_MSG (not has_duplicates(m_alias_names),
       "[AtmosphereOutput] Error! One of the output yaml files has duplicate field alias entries.\n"
       " - yaml file: " + params.name() + "\n"

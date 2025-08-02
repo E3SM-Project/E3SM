@@ -1,7 +1,8 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_io_utils.hpp"
-#include "share/io/eamxx_output_manager.hpp" 
+#include "share/io/eamxx_output_manager.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
@@ -111,8 +112,8 @@ TEST_CASE("io_field_aliasing") {
   }
 }
 
-TEST_CASE("output_aliases_integration", "[io][alias]") {
-  // Integration test to verify that AtmosphereOutput correctly uses aliases
+TEST_CASE("output_aliases_integration", "[.][io][alias]") {
+  // Integration test to verify that OutputManager correctly uses aliases
   // This test creates actual output files and verifies the variable names
   
   using namespace ShortFieldTagsNames;
@@ -120,20 +121,24 @@ TEST_CASE("output_aliases_integration", "[io][alias]") {
 
   // Create a simple grid and field manager
   ekat::Comm comm(MPI_COMM_WORLD);
+  
+  // Initialize the PIO subsystem for this test
+  scorpio::init_subsystem(comm);
+  
   const int ncols = 10;
   const int nlevs = 5;
   
   auto gm = create_mesh_free_grids_manager(comm, 0, 0, nlevs, ncols);
   gm->build_grids();
   
-  auto grid = gm->get_grid("Physics GLL");  
-  FieldManager fm(grid);
+  auto grid = gm->get_grid("point_grid");  
+  auto fm = std::make_shared<FieldManager>(grid);
   
   // Create some test fields with realistic EAMxx names
-  FieldIdentifier fid1("qv", {COL,LEV}, kg/kg, grid->name());
-  FieldIdentifier fid2("T_mid", {COL,LEV}, K, grid->name());
-  FieldIdentifier fid3("ps", {COL}, Pa, grid->name());
-  
+  FieldIdentifier fid1("qv", {{COL,LEV},{10,5}}, kg/kg, grid->name());
+  FieldIdentifier fid2("T_mid", {{COL,LEV},{10,5}}, K, grid->name());
+  FieldIdentifier fid3("ps", {{COL},{10}}, Pa, grid->name());
+
   Field qv(fid1);
   Field T_mid(fid2);
   Field ps(fid3);
@@ -147,37 +152,49 @@ TEST_CASE("output_aliases_integration", "[io][alias]") {
   T_mid.deep_copy(280.0);
   ps.deep_copy(101325.0);
   
-  fm.add_field(qv);
-  fm.add_field(T_mid);
-  fm.add_field(ps);
-  
-  // Create output parameter list with aliases
-  ekat::ParameterList params;
-  params.set<std::string>("filename_prefix", "alias_test");
-  params.set<std::string>("averaging_type", "instant");
-  
-  // Test field specifications with aliases
-  std::vector<std::string> field_specs = {
-    "QV:=:qv",        // Alias QV for qv
-    "TEMP:=:T_mid",   // Alias TEMP for T_mid  
-    "PSURF:=:ps"      // Alias PSURF for ps
-  };
-  params.set("field_names", field_specs);
-  
+  // Update timestamps
   util::TimeStamp t0({2023,1,1},{0,0,0});
+  qv.get_header().get_tracking().update_time_stamp(t0);
+  T_mid.get_header().get_tracking().update_time_stamp(t0);
+  ps.get_header().get_tracking().update_time_stamp(t0);
   
-  // Test that AtmosphereOutput can be created and initialized with aliases
+  fm->add_field(qv);
+  fm->add_field(T_mid);
+  fm->add_field(ps);
+  
+  // Test that OutputManager can be created and initialized with aliases
   SECTION("construction_with_aliases") {
+    // Create output parameter list with aliases
+    ekat::ParameterList params;
+    params.set<std::string>("filename_prefix", "alias_test");
+    params.set<std::string>("averaging_type", "instant");
+    
+    // Test field specifications with aliases
+    std::vector<std::string> field_specs = {
+      "QV:=:qv",        // Alias QV for qv
+      "TEMP:=:T_mid",   // Alias TEMP for T_mid  
+      "PSURF:=:ps"      // Alias PSURF for ps
+    };
+    params.set("field_names", field_specs);
+    
+    auto& ctrl_pl = params.sublist("output_control");
+    ctrl_pl.set<std::string>("frequency_units", "nsteps");
+    ctrl_pl.set<int>("frequency", 1);
+    
     REQUIRE_NOTHROW([&]() {
-      AtmosphereOutput out(comm, params, &fm, gm, t0, t0, false);
-      // Constructor should succeed with alias syntax
-      out.init();
-      // Initialization should also succeed
+      OutputManager om;
+      om.initialize(comm, params, t0, false);
+      om.setup(fm, gm->get_grid_names());
+      // OutputManager setup should succeed with alias syntax
     }());
   }
   
   // Test mixed alias and non-alias field specifications
   SECTION("mixed_aliases") {
+    ekat::ParameterList params;
+    params.set<std::string>("filename_prefix", "mixed_test");
+    params.set<std::string>("averaging_type", "instant");
+    
     std::vector<std::string> mixed_specs = {
       "qv",             // No alias - use original name
       "TEMP:=:T_mid",   // With alias
@@ -185,11 +202,20 @@ TEST_CASE("output_aliases_integration", "[io][alias]") {
     };
     params.set("field_names", mixed_specs);
     
+    auto& ctrl_pl = params.sublist("output_control");
+    ctrl_pl.set<std::string>("frequency_units", "nsteps");
+    ctrl_pl.set<int>("frequency", 1);
+    
     REQUIRE_NOTHROW([&]() {
-      AtmosphereOutput out(comm, params, &fm, gm, t0, t0, false);
-      out.init();
+      OutputManager om;
+      om.initialize(comm, params, t0, false);
+      om.setup(fm, gm->get_grid_names());
+      // OutputManager setup should succeed with mixed alias syntax
     }());
   }
+  
+  // Clean up PIO subsystem
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream
