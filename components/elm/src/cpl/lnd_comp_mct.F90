@@ -549,6 +549,9 @@ contains
 #ifdef HAVE_MOAB
     ! first call moab import 
 #ifdef MOABCOMP
+! calling MOAB's import last means this is what the model will use.
+    call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
+
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
@@ -558,14 +561,12 @@ contains
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      modelStr = 'lnd run'
+      modelStr = 'lnd run import'
       call seq_comm_compare_mb_mct(modelStr, mpicom_lnd_moab, x2l_l, mct_field,  mlnid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
 
 #endif
-! calling MOAB's import last means this is what the model will use.
-    call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 
     call t_stopf ('lc_lnd_import')
@@ -1149,7 +1150,7 @@ contains
     end do
     tagname=trim(seq_flds_l2x_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices only, from now on
-    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm )
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm(1,1) )
     if (ierr > 0 )  &
        call shr_sys_abort( sub//' Error: fail to set moab l2x '// trim(seq_flds_l2x_fields) )
 
@@ -1342,7 +1343,7 @@ contains
 #endif
     tagname=trim(seq_flds_x2l_fields)//C_NULL_CHAR
     ent_type = 0 ! vertices 
-    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm )
+    ierr = iMOAB_GetDoubleTagStorage ( mlnid, tagname, totalmblsimp , ent_type, x2l_lm(1,1) )
     if ( ierr > 0) then
       call endrun('Error: fail to get seq_flds_x2l_fields for land moab instance on component')
     endif

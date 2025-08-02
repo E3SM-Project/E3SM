@@ -138,6 +138,7 @@ module cime_comp_mod
   use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   use seq_flux_mct, only: seq_flux_atmocn_moab ! will set the ao fluxes on atm or ocn coupler mesh
+  use seq_flux_mct, only: seq_flux_atmocn_moab_sw_only
 
   ! domain fraction routines
   use seq_frac_mct, only : seq_frac_init, seq_frac_set
@@ -2046,8 +2047,10 @@ contains
     ! e.g. for atmosphere, init l2x_ax, o2x_ax, i2x_ax
     ! MAP Initialize map for each transformation. States and Fluxes, all sources.
     !      Includes reading weights from file
+    !
     ! MOAB: register coupler apps between components: e.g. OCN_ATM_COU
     ! MOAB: compute intersection intx for each pair of grids on coupler and weights
+    ! MOAB: or read maps and read the appropriate aream
     ! MOAB: augment seq_map_type object with MOAB attributes to enable seq_map_map to do MOAB-based projections
     !----------------------------------------------------------
 
@@ -2148,7 +2151,6 @@ contains
     !| Initialize area corrections based on aream (read in map_init) and area
     !| Area correct component initialization output fields
     !| SEND (Rearrange) initial component AVs from component to coupler pes
-    ! MOABTODO:  add calls to send initial data.
     !----------------------------------------------------------
 
     areafact_samegrid = .false.
@@ -2610,8 +2612,7 @@ contains
           call t_startf('CPL:seq_hist_write-init')
           call seq_hist_write(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-               fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
+               samegrid_al,samegrid_lr, trim(cpl_inst_tag))
           call t_stopf('CPL:seq_hist_write-init')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4032,6 +4033,7 @@ contains
        xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
        a2x_ox => prep_ocn_get_a2x_ox()
        call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+       call seq_flux_atmocn_moab_sw_only(ocn(eoi), xao_ox(exi))
     enddo
     call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
 
@@ -4695,7 +4697,7 @@ contains
 
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
 #ifdef HAVE_MOAB
-       call prep_rof_accum_avg_moab()
+       call prep_rof_accum_avg_moab(ocn_c2_rof)
 #endif
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
@@ -5141,8 +5143,7 @@ contains
           call t_startf('CPL:seq_hist_write')
           call seq_hist_write(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-               fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
+               samegrid_al,samegrid_lr, trim(cpl_inst_tag))
           call t_stopf('CPL:seq_hist_write')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
