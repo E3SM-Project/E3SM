@@ -315,7 +315,7 @@ module pftvarcon
   ! NGEE Arctic snow-vegetation interactions
   real(r8), allocatable :: bendresist(:)       ! vegetation resistance to bending under snow loading, 0 to 1 (e.g., Liston and Hiemstra 2011; Sturm et al. 2005)
   real(r8), allocatable :: vegshape(:)         ! shape parameter to modify shrub burial by snow (1 = parabolic, 2 = hemispheric)
-  real(r8), allocatable :: stocking(:)         ! stocking density for pft (stems / hectare)
+  real(r8), allocatable :: stocking(:)         ! stocking density for pft (stems / hectare assumed on param file)
   real(r8), allocatable :: taper(:)            ! ratio of height:radius_breast_height (woody vegetation allometry)
   logical               :: taper_defaults      ! set flag to use taper defaults if not on params file (necessary as import and set values are in different places)
 
@@ -1094,18 +1094,27 @@ contains
     if (.not. readv ) bendresist(:) = 1._r8
     call ncd_io('vegshape', vegshape, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) vegshape(:) = 1._r8
-   ! check validity
+    ! check validity
     do i = 0, npft-1
       if (bendresist(i) .gt. 1.0_r8 .or. bendresist(i) .le. 0._r8) then
          call endrun(msg="Non-physical selection of bendresist parameter, set between 0 and 1"//errMsg(__FILE__, __LINE__))
       end if
-      if (vegshape(i) .gt. 2.0_r8 .or. vegshape(i) .le. 0._r8) then
-         call endrun(msg="Non-physical selection of vegshape parameter, set between 0 and 2"//errMsg(__FILE__, __LINE__))
+      if (vegshape(i) .gt. 2.0_r8 .or. vegshape(i) .lt. 1._r8) then
+         call endrun(msg="Non-physical selection of vegshape parameter, set as 1 or 2"//errMsg(__FILE__, __LINE__))
       end if
-   end do
+    end do
+
     call ncd_io('stocking', stocking, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if (.not. readv ) stocking(:) = 0.1_r8 ! convert previous default of 1000 stems/ha to stems/m2 as had been done in VegStructUpdateMod.F90
-   taper_defaults = .false.
+    if (.not. readv ) then
+      stocking(:) = 0.1_r8 ! convert previous default of 1000 stems/ha to stems/m2 as had been done in VegStructUpdateMod.F90
+    else
+      stocking(:) = stocking(:)/10000._r8 ! conversion from stems/ha to stems/m2 done here now
+    endif
+    if (any(stocking(:) .ge. 1000._r8 )) then
+      call endrun(msg="Non-physical selection of stocking density parameter, implies >1000 plants/m2"//errMsg(__FILE__, __LINE__))
+    endif
+
+    taper_defaults = .false.
     call ncd_io('taper', taper, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv ) then
       taper(:) = 200._r8 ! pftnames not set to integers yet, so reassign further down.
