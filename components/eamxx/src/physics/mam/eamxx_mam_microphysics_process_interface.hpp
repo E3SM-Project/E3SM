@@ -166,6 +166,8 @@ class MAMMicrophysics final : public MAMGenericInterface {
   view_3d state_q_, qqcw_pcnst_, qq_, qqcw_, vmr_,vmr0_, vmrcw_;
   view_3d het_rates_, vmr_pregas_, vmr_precld_;
 
+  view_3d test_hash_;
+
   void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
     using str_atts_t = std::map<std::string,std::string>;
     for (const auto &pair : flds) {

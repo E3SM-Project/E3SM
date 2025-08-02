@@ -8,6 +8,8 @@
 
 #include <ekat_team_policy_utils.hpp>
 
+// #include "helper_hash.cpp"
+#define MICRO_SMALL_KERNELS
 namespace scream {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm,
@@ -679,7 +681,9 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
   acos_cosine_zenith_host_ = view_1d_host("host_acos(cosine_zenith)", ncol_);
   acos_cosine_zenith_      = view_1d("device_acos(cosine_zenith)", ncol_);
-
+  // test_hash_ = view_3d("my_test",ncol_, nlev_, mam4::pcnst);
+  // constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  // test_hash_ = view_3d("my_test",ncol_, nlev_, gas_pcnst);
 }  // initialize_impl
 
 // ================================================================
@@ -881,7 +885,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const Config &config                        = config_;
   const auto &work_photo_table                = work_photo_table_;
   const auto &photo_rates                     = photo_rates_;
-  const auto &photo_rates_test                     = photo_rates_test_;
+
 
   const auto &invariants   = invariants_;
   const auto &cnst_offline = cnst_offline_;
@@ -970,9 +974,12 @@ void MAMMicrophysics::run_impl(const double dt) {
   const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
   //NOTE: we need to initialize photo_rates_
   Kokkos::deep_copy(photo_rates_,0.0);
-  Kokkos::deep_copy(photo_rates_test_,0.0);
+
   // loop over atmosphere columns and compute aerosol microphysics
+#if defined(MICRO_SMALL_KERNELS)
   const auto& extfrc_test = extfrc_test_;
+  const auto &photo_rates_test                     = photo_rates_test_;
+  Kokkos::deep_copy(photo_rates_test_,0.0);
   Kokkos::deep_copy(extfrc_test,0.0);
   for (int mm = 0; mm < extcnt; ++mm) {
     // Fortran to C++ indexing
@@ -1120,7 +1127,7 @@ void MAMMicrophysics::run_impl(const double dt) {
                           nevapr_icol, dt, invariants_icol, vmr_col,
                           work_sethet_call);
   });
-#if 1
+  Kokkos::deep_copy(state_q_,0.0);
   const auto& state_q = state_q_;
   const auto& qqcw_pcnst = qqcw_pcnst_;
   const auto& qq = qq_;
@@ -1170,6 +1177,9 @@ void MAMMicrophysics::run_impl(const double dt) {
         mam4::microphysics::mmr2vmr(qqcw_kk.data(), adv_mass_kg_per_moles, vmrcw_kk.data());
     });
   });
+
+
+
   Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::drydep_xactive", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1266,7 +1276,7 @@ void MAMMicrophysics::run_impl(const double dt) {
 
     // Store mixing ratios before gas chemistry changes the mixing ratios
     const auto& vmr0 = vmr0_;
-    Kokkos::deep_copy(vmr,vmr0);
+    Kokkos::deep_copy(vmr0,vmr);
 
     Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::gas_phase_chemistry", policy,
@@ -1323,8 +1333,8 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   const auto& vmr_pregas =vmr_pregas_;
   const auto& vmr_precld=vmr_precld_;
-  Kokkos::deep_copy(vmr, vmr_pregas);
-  Kokkos::deep_copy(vmrcw, vmr_precld);
+  Kokkos::deep_copy(vmr_pregas, vmr);
+  Kokkos::deep_copy(vmr_precld, vmrcw );
 
   const auto& vmr_bef_aq_chem= vmr_pregas;
   const auto& config_setsox = config.setsox;
@@ -1366,7 +1376,7 @@ void MAMMicrophysics::run_impl(const double dt) {
        constexpr Real mbar = haero::Constants::molec_weight_dry_air;
        constexpr int indexm = mam4::gas_chemistry::indexm;
        const auto &dqdt_aqso4_k = ekat::subview(dqdt_aqso4, kk);
-       const auto &dqdt_aqh2so4_k = ekat::subview(dqdt_aqso4, kk);
+       const auto &dqdt_aqh2so4_k = ekat::subview(dqdt_aqh2so4, kk);
        const auto & vmrcw_k = ekat::subview(vmrcw_icol,kk);
        const auto & vmr_k = ekat::subview(vmr_icol,kk);
 
@@ -1415,6 +1425,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       const auto wetdens_icol = ekat::subview(wetdens, icol);
 
       mam4::MicrophysDiagnosticArrays diag_arrays;
+
 
       if (extra_mam4_aero_microphys_diags) {
           diag_arrays.gas_aero_exchange_condensation = ekat::subview(gas_aero_exchange_condensation, icol);
@@ -1607,8 +1618,9 @@ void MAMMicrophysics::run_impl(const double dt) {
     });
     });
 
-#endif
-#if 0
+#else
+  // const auto test_hash= test_hash_;
+  // Kokkos::deep_copy(test_hash,-1000);
   Kokkos::parallel_for(
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -1681,7 +1693,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto work_set_het_icol = ekat::subview(work_set_het, icol);
 
         mam4::MicrophysDiagnosticArrays diag_arrays;
-
+        // diag_arrays.test_hash  = ekat::subview(test_hash, icol);
         if (extra_mam4_aero_microphys_diags) {
           diag_arrays.dqdt_so4_aqueous_chemistry = ekat::subview(dqdt_so4_aqueous_chemistry, icol);
           diag_arrays.dqdt_h2so4_uptake          = ekat::subview(dqdt_h2so4_uptake, icol);
@@ -1770,8 +1782,9 @@ void MAMMicrophysics::run_impl(const double dt) {
           constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
         });
       });  // parallel_for for the column loop
+      Kokkos::fence();
  #endif
-  Kokkos::fence();
+
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 
@@ -1796,7 +1809,7 @@ void MAMMicrophysics::run_impl(const double dt) {
       const Real molar_mass_g_per_mol = molar_mass_g_per_mol_tmp[pcnst_idx]; // g/mol
       // Modify units to MKS units: [molec/cm3/s] to [kg/m3/s]
       // Convert g → kg (× 1e-3), cm³ → m³ (× 1e6) → total factor: 1e-3 × 1e6 = 1e3 = 1000.0
-      extfrc_fm(i,j,k) = extfrc_test(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
+      extfrc_fm(i,j,k) = extfrc(i,k,j) * (molar_mass_g_per_mol / Avogadro) * 1000.0;
   });
 
 #if 0
@@ -1830,6 +1843,21 @@ void MAMMicrophysics::run_impl(const double dt) {
 
   }
   //
+
+  // Kokkos::deep_copy(test_hash_,state_q);
+  // for (int mm = 0; mm < mam4::pcnst; ++mm) {
+  // const auto field_n = Kokkos::subview(state_q,Kokkos::ALL,Kokkos::ALL,mm);
+  // // for (int mm = 0; mm < mam_coupling::gas_pcnst(); ++mm) {
+  //   // const auto field_n = Kokkos::subview(vmr,Kokkos::ALL,Kokkos::ALL,mm);
+  //   const auto field_o = Kokkos::subview(test_hash_,Kokkos::ALL,Kokkos::ALL,mm);
+
+
+  //   const auto diff = scream::impl::compute_and_print_diff(field_n,field_o,"DIFF_",mm,0);
+  //   if (diff > 0){
+  //     scream::impl::compute_and_print_hash(field_n, "state_q_new_",mm,0);
+  //     scream::impl::compute_and_print_hash(field_o, "state_q_old_",mm,0);
+  //   }
+  // }
 #endif
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
