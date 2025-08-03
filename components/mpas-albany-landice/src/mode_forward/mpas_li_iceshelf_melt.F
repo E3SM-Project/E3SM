@@ -277,6 +277,8 @@ module li_iceshelf_melt
            lowerSurface,             & ! lower surface elevation (m)
            bedTopography               ! bed topography (m; negative below sea level)
 
+      integer, dimension(:), pointer :: connectedOceanMask
+
       real(kind=RKIND), pointer :: daysSinceStart
 
       integer :: iCell, jCell, iEdge, iNeighbor, err_tmp
@@ -356,6 +358,38 @@ module li_iceshelf_melt
             call mpas_log_write('GLdepth=$r, CFdepth=$r', realArgs=(/GLdepth, CFdepth/))
          endif
       endif
+
+      ! Allocate scratch fields for flood-fill
+      ! Note: This only supports one block per processor
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      seedMask(:) = 0
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+      growMask(:) = 0
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'connectedOceanMask', connectedOceanMask)
+      do iCell = 1, nCells
+         if ( (.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) then
+              seedMask(iCell) = 1
+         else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+              growMask(iCell) = 1
+         end if
+      end do
+      call li_flood_fill(seedMask, growMask, domain)
+      connectedOceanMask = seedMask
+      ! deallocate scratch fields used for flood fill
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
       if (trim(config_basal_mass_bal_float) == 'ismip6') then
          call iceshelf_melt_ismip6(domain, err_tmp)
@@ -506,39 +540,8 @@ module li_iceshelf_melt
 
       endif
 
-      ! Allocate scratch fields for flood-fill
-      ! Note: This only supports one block per processor
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
-      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
-      seedMask => seedMaskField % array
-      seedMask(:) = 0
-      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
-      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
-      growMask => growMaskField % array
-      growMask(:) = 0
-
       ! Prevent sub-shelf melt in subglacial lakes
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
-      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
-      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      do iCell = 1, nCells
-         if ( (.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) then
-              seedMask(iCell) = 1
-         else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
-              growMask(iCell) = 1
-         end if
-      end do
-      call li_flood_fill(seedMask, growMask, domain)
-
-      floatingBasalMassBal(:) = floatingBasalMassBal(:) * seedMask(:)
-
-      ! deallocate scratch fields used for flood fill
-      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
-      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
+      floatingBasalMassBal(:) = floatingBasalMassBal(:) * connectedOceanMask(:)
 
       if (trim(config_front_mass_bal_grounded) .ne. 'none') then
          block => domain % blocklist
@@ -1204,6 +1207,7 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: bedTopography
+      integer, dimension(:), pointer :: connectedOceanMask
       real (kind=RKIND) :: coef
       integer :: i
 
@@ -1249,6 +1253,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(geometryPool, 'connectedOceanMask', connectedOceanMask)
 
          ! Get TFdraft field that we will calculate
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
@@ -1270,7 +1275,7 @@ module li_iceshelf_melt
 
          do iCell = 1, nCellsSolve
 
-            if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (connectedOceanMask(iCell) == 1)) then
                ! 1 -  Linear interpolation of the thermal forcing on the ice draft depth :
                ksup=0
                do kk=1,nOceanLayers
@@ -1363,7 +1368,7 @@ module li_iceshelf_melt
          floatingBasalMassBal(:) = 0.0_RKIND
          coef = gamma0 * cste / scyr * rhoi
          do iCell = 1, nCellsSolve
-            if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+            if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (connectedOceanMask(iCell) == 1)) then
                floatingBasalMassBal(iCell) = -1.0_RKIND * coef * (TFdraft(iCell) + deltaT(iCell)) * &
                   abs(mean_TF(basinNumber(iCell)+1) + deltaT(iCell)) + ismip6shelfMelt_offset(iCell)
             endif
