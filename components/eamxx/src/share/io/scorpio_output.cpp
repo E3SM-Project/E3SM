@@ -753,8 +753,7 @@ register_variables(const std::string& filename,
       
       // Add alias information if variable name differs from field name
       if (alias_name != field_name) {
-        scorpio::set_attribute(filename, alias_name, "eamxx_alias", alias_name);
-        scorpio::set_attribute(filename, alias_name, "eamxx_field_name", field_name);
+        scorpio::set_attribute(filename, alias_name, "eamxx_name", field_name);
       }
     }
   }

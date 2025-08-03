@@ -26,11 +26,11 @@ alias_name:=internal_field_name
 ### Basic Usage
 
 ```yaml
-        field_names:
-          - "LWP:=LiqWaterPath"      # Alias LWP for LiqWaterPath
-          - "SWP:=SolidWaterPath"    # Alias SWP for SolidWaterPath  
-          - "T:=T_mid"               # Alias T for T_mid
-          - "qv"                      # Regular field name (no alias)
+field_names:
+  - "LWP:=LiqWaterPath"      # Alias LWP for LiqWaterPath
+  - "SWP:=SolidWaterPath"    # Alias SWP for SolidWaterPath  
+  - "T:=T_mid"               # Alias T for T_mid
+  - "qv"                     # Regular field name (no alias)
 ```
 
 ### Mixed Usage
@@ -39,9 +39,9 @@ You can mix aliased and non-aliased fields in the same configuration:
 
 ```yaml
 field_names:
-  - "T_mid"                          # Regular field name
+  - "T_mid"                        # Regular field name
   - "LWP:=LiqWaterPath"            # Aliased field
-  - "ps"                            # Regular field name  
+  - "p_mid"                        # Regular field name  
   - "RH:=RelativeHumidity"         # Aliased field
 ```
 
@@ -64,30 +64,13 @@ original field names
    - Memory management uses original field structures
 
 3. **Metadata**: Variable attributes (units, long_name, etc.)
-are preserved from the original fields
+are preserved from the original fields, and `eamxx_name`
+is added to the netcdf files to document aliasing
 
-## Input Reading
+## Caveats
 
-The same alias syntax works for reading input files:
-
-```yaml
-input_streams:
-  initial_conditions:
-    filename: ic_file.nc
-    field_names:
-      - "LWP:=LiqWaterPath"    # Read variable LWP from file into field LiqWaterPath
-      - "T:=T_mid"             # Read variable T from file into field T_mid
-```
-
-## Error Handling
-
-The system provides comprehensive error checking:
-
-- **Duplicate Aliases**: Each alias must be unique within a field list
-- **Malformed Syntax**: Proper error messages for invalid alias specifications
-- **Empty Names**: Both alias and field names must be non-empty
-
-Example error cases:
+Currently, a field can be requested only once in a single stream,
+and either the original name or the alias name counts.
 
 ```yaml
 field_names:

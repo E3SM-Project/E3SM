@@ -82,20 +82,7 @@ init (const ekat::ParameterList& params,
       "Error! Input class was already inited.\n");
 
   m_params = params;
-  
-  // Get field specifications and process aliases
-  std::vector<std::string> field_specs = m_params.get<decltype(field_specs)>("field_names");
-  auto [alias_to_field_map, alias_names] = process_field_aliases(field_specs);
-  m_alias_to_field_map = alias_to_field_map;
-  m_alias_names = alias_names;
-  
-  // Extract internal field names for field manager operations
-  m_fields_names.clear();
-  for (const auto& spec : field_specs) {
-    auto [alias, field_name] = parse_field_alias(spec);
-    m_fields_names.push_back(field_name);
-  }
-  
+  m_fields_names = m_params.get<decltype(m_fields_names)>("field_names");
   m_filename = m_params.get<std::string>("filename");
 
   // Sets the internal field mgr, and possibly sets up the remapper
@@ -212,7 +199,7 @@ void AtmosphereInput::read_variables (const int time_index)
   if (m_atm_logger) {
     m_atm_logger->info("[EAMxx::scorpio_input] Reading variables from file");
     m_atm_logger->info("  file name: " + m_filename);
-    m_atm_logger->info("  var names: " + ekat::join(m_alias_names,", "));
+    m_atm_logger->info("  var names: " + ekat::join(m_fields_names,", "));
     if (time_index!=-1) {
       m_atm_logger->info("  time idx : " + std::to_string(time_index));
     }
@@ -220,30 +207,27 @@ void AtmosphereInput::read_variables (const int time_index)
   EKAT_REQUIRE_MSG (m_fields_inited and m_scorpio_inited,
       "Error! Internal structures not fully inited yet. Did you forget to call 'init(..)'?\n");
 
-  for (size_t i = 0; i < m_fields_names.size(); ++i) {
-    const auto& field_name = m_fields_names[i];
-    const auto& alias_name = m_alias_names[i];
+  for (auto const& name : m_fields_names) {
 
-    auto f_scorpio = m_fm_for_scorpio->get_field(field_name);
-    auto f_user    = m_fm_from_user->get_field(field_name);
+    auto f_scorpio = m_fm_for_scorpio->get_field(name);
+    auto f_user    = m_fm_from_user->get_field(name);
 
-    // Read the data using alias name for netcdf variable
+    // Read the data
     switch (f_scorpio.data_type()) {
       case DataType::DoubleType:
-        scorpio::read_var(m_filename,alias_name,f_scorpio.get_internal_view_data<double,Host>(),time_index);
+        scorpio::read_var(m_filename,name,f_scorpio.get_internal_view_data<double,Host>(),time_index);
         break;
       case DataType::FloatType:
-        scorpio::read_var(m_filename,alias_name,f_scorpio.get_internal_view_data<float,Host>(),time_index);
+        scorpio::read_var(m_filename,name,f_scorpio.get_internal_view_data<float,Host>(),time_index);
         break;
       case DataType::IntType:
-        scorpio::read_var(m_filename,alias_name,f_scorpio.get_internal_view_data<int,Host>(),time_index);
+        scorpio::read_var(m_filename,name,f_scorpio.get_internal_view_data<int,Host>(),time_index);
         break;
       default:
         EKAT_ERROR_MSG (
             "Error! Unsupported/unrecognized data type while reading field from file.\n"
             " - file name : " + m_filename + "\n"
-            " - field name: " + field_name + "\n"
-            " - alias name: " + alias_name + "\n");
+            " - field name: " + name + "\n");
     }
 
     f_scorpio.sync_to_dev();
