@@ -3864,25 +3864,25 @@ internal field names in the model. This is useful for:</p>
 <li>Providing user-friendly names for complex internal field names</li>
 </ul>
 <h2 id="syntax">Syntax</h2>
-<p>The alias syntax uses the delimiter <code>:=:</code> to separate the alias name
+<p>The alias syntax uses the delimiter <code>:=</code> to separate the alias name
 from the internal field name:</p>
-<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">alias_name:=:internal_field_name</span>
+<div class="highlight"><pre><span></span><code><span class="l l-Scalar l-Scalar-Plain">alias_name:=internal_field_name</span>
 </code></pre></div>
 <h2 id="yaml-configuration-examples">YAML Configuration Examples</h2>
 <h3 id="basic-usage">Basic Usage</h3>
 <div class="highlight"><pre><span></span><code><span class="w">        </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Alias LWP for LiqWaterPath</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWP:=:SolidWaterPath&quot;</span><span class="w">    </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:T_mid&quot;</span><span class="w">               </span><span class="c1"># Alias T for T_mid</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Alias LWP for LiqWaterPath</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWP:=SolidWaterPath&quot;</span><span class="w">    </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=T_mid&quot;</span><span class="w">               </span><span class="c1"># Alias T for T_mid</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;qv&quot;</span><span class="w">                      </span><span class="c1"># Regular field name (no alias)</span>
 </code></pre></div>
 <h3 id="mixed-usage">Mixed Usage</h3>
 <p>You can mix aliased and non-aliased fields in the same configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T_mid&quot;</span><span class="w">                          </span><span class="c1"># Regular field name</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span><span class="w">            </span><span class="c1"># Aliased field</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">            </span><span class="c1"># Aliased field</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;ps&quot;</span><span class="w">                            </span><span class="c1"># Regular field name  </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;RH:=:RelativeHumidity&quot;</span><span class="w">         </span><span class="c1"># Aliased field</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;RH:=RelativeHumidity&quot;</span><span class="w">         </span><span class="c1"># Aliased field</span>
 </code></pre></div>
 <h2 id="output-behavior">Output Behavior</h2>
 <p>When using aliases:</p>
@@ -3920,8 +3920,8 @@ are preserved from the original fields</p>
 <span class="w">  </span><span class="nt">initial_conditions</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ic_file.nc</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:LiqWaterPath&quot;</span><span class="w">    </span><span class="c1"># Read variable LWP from file into field LiqWaterPath</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=:T_mid&quot;</span><span class="w">             </span><span class="c1"># Read variable T from file into field T_mid</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">    </span><span class="c1"># Read variable LWP from file into field LiqWaterPath</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=T_mid&quot;</span><span class="w">             </span><span class="c1"># Read variable T from file into field T_mid</span>
 </code></pre></div>
 <h2 id="error-handling">Error Handling</h2>
 <p>The system provides comprehensive error checking:</p>
@@ -3932,12 +3932,12 @@ are preserved from the original fields</p>
 </ul>
 <p>Example error cases:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:&quot;</span><span class="w">                   </span><span class="c1"># Error: empty field name</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;:=:LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># Error: empty alias name  </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:Field1&quot;</span><span class="w">             </span><span class="c1"># OK</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=:Field2&quot;</span><span class="w">             </span><span class="c1"># Error: duplicate alias LWP</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP1:=:LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># OK</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP2:=:LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Error: duplicate field LiqWaterPath</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=&quot;</span><span class="w">                   </span><span class="c1"># Error: empty field name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;:=LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># Error: empty alias name  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=Field1&quot;</span><span class="w">             </span><span class="c1"># OK</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=Field2&quot;</span><span class="w">             </span><span class="c1"># Error: duplicate alias LWP</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP1:=LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># OK</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP2:=LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Error: duplicate field LiqWaterPath</span>
 </code></pre></div>
 
 
