@@ -36,7 +36,7 @@ module seq_hist_mod
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_ox
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_om_cnt
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_om
-  use prep_atm_mod,      only: prep_atm_get_o2x_ax
+  use prep_atm_mod,      only: prep_atm_get_o2x_am
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ax
 
@@ -176,6 +176,7 @@ contains
     logical       :: bfbflag      !to write out bfbflag value
     integer       ::  ierr, dummy,nx_lnd, numpts
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
+    real(r8), dimension(:,:), pointer  :: p_o2x_am
     real(r8), dimension(:), allocatable  :: mask
 
     !-------------------------------------------------------------------------------
@@ -313,8 +314,10 @@ contains
              call seq_io_write(hist_file, mbofxid, 'xaoo',  &
                    trim(seq_flds_xao_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
 
-             call seq_io_write(hist_file, mbaxid, 'o2xa',  &
-                  trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid)
+             p_o2x_am => prep_atm_get_o2x_am()
+                call seq_io_write(hist_file, mbaxid, 'o2xa',  &
+                    trim(seq_flds_o2x_fields), &
+                    whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid, matrix=p_o2x_am)
 
              call seq_io_write(hist_file, mbaxid,  'xaoa',  &
                   trim(seq_flds_xao_fields), whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid)

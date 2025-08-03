@@ -59,6 +59,7 @@ module prep_atm_mod
   public :: prep_atm_get_i2x_ax
   public :: prep_atm_get_o2x_ax
   public :: prep_atm_get_z2x_ax
+  public :: prep_atm_get_o2x_am
 
   public :: prep_atm_calc_l2x_ax
   public :: prep_atm_calc_i2x_ax
@@ -105,19 +106,17 @@ module prep_atm_mod
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
 
-#ifdef HAVE_MOAB
   real (kind=r8) , allocatable, private :: fractions_am (:,:) ! will retrieve the fractions from atm, and use them
   !  they were init with
   ! character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:ifrad:ofrad' in moab, on the fractions
   real (kind=r8) , allocatable, private :: x2a_am (:,:)
   real (kind=r8) , allocatable, private :: l2x_am (:,:)
   real (kind=r8) , allocatable, private :: i2x_am (:,:)
-  real (kind=r8) , allocatable, private :: o2x_am (:,:)
+  real (kind=r8) , allocatable, private,target :: o2x_am (:,:)
   !real (kind=r8) , allocatable, private :: z2x_am (:,:)
   real (kind=r8) , allocatable, private :: xao_am (:,:)  ! ?
   logical :: compute_maps_online_o2a, compute_maps_online_i2a, compute_maps_online_l2a
   logical :: samegrid_al
-#endif
   !================================================================================================
 
 contains
@@ -992,7 +991,7 @@ contains
 
     ! Arguments
     type(mct_aVect), pointer    :: l2x_a !   needed just for indexing
-    type(mct_aVect), pointer    :: o2x_a
+    type(mct_aVect), pointer,save    :: o2x_a
     type(mct_aVect), pointer    :: i2x_a
     type(mct_aVect), pointer    :: xao_a
     type(mct_aVect), pointer    :: x2a_a
@@ -1024,10 +1023,10 @@ contains
     logical :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
     logical, save :: first_time = .true.
-    type(mct_aVect_sharedindices),save :: l2x_sharedindices
-    type(mct_aVect_sharedindices),save :: o2x_sharedindices
-    type(mct_aVect_sharedindices),save :: i2x_sharedindices
-    type(mct_aVect_sharedindices),save :: xao_sharedindices
+    type(mct_aVect_sharedindices),save :: l2x_SharedIndices
+    type(mct_aVect_sharedindices),save :: o2x_SharedIndices
+    type(mct_aVect_sharedindices),save :: i2x_SharedIndices
+    type(mct_aVect_sharedindices),save :: xao_SharedIndices
     logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:),lstate(:)
     ! special for moab
     logical, pointer, save :: sharedIndex(:)
@@ -1268,7 +1267,7 @@ contains
           endif
 
        end do
-    endif
+    endif  ! end first-time
 
     !  Get data from MOAB
     ent_type = 1 ! cells
@@ -1394,7 +1393,7 @@ contains
           mrgstr(o1) = trim(mrgstr(o1))//trim(lnum)
 #endif
        enddo
-    endif
+    endif  ! first time
 
     ! we need to do something equivalent, to copy in a2x_am the tags from those shared indices
     ! call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
@@ -1447,7 +1446,7 @@ contains
                 mrgstr(ka) = trim(mrgstr(ka))//' + (ifrac+ofrac)*o2x%'//trim(field_ocn(oindx(ka)))
              endif
           endif
-       endif
+       endif  ! first-time
 
        do n = 1,lsize
           fracl = fractions_am(n, klf) ! fractions_a%Rattr(klf,n)
@@ -1507,6 +1506,7 @@ contains
 #ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2a_a => component_get_x2c_cx(atm(1))
+
     ! loop over all fields in seq_flds_x2a_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
@@ -1517,6 +1517,19 @@ contains
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
       call compare_mct_av_moab_tag(atm(1), x2a_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
+    enddo
+    call mct_list_clean(temp_list)
+
+    ! loop over all fields in seq_flds_o2x_fields
+    call mct_list_init(temp_list ,seq_flds_o2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! cell for atm, atm_pg_active
+    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_o2x_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_mct_av_moab_tag(atm(1), o2x_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
     enddo
     call mct_list_clean(temp_list)
 #endif
@@ -2139,6 +2152,11 @@ contains
     type(seq_map), pointer :: prep_atm_get_mapper_Fi2a
     prep_atm_get_mapper_Fi2a => mapper_Fi2a
   end function prep_atm_get_mapper_Fi2a
+
+  function prep_atm_get_o2x_am()
+    real(R8), DIMENSION(:, :), pointer :: prep_atm_get_o2x_am
+    prep_atm_get_o2x_am => o2x_am
+  end function prep_atm_get_o2x_am
 
   !================================================================================================
 
