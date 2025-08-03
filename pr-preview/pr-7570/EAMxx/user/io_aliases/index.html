@@ -1970,18 +1970,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#input-reading" class="md-nav__link">
+  <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
-      Input Reading
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Error Handling
+      Caveats
     </span>
   </a>
   
@@ -3808,18 +3799,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#input-reading" class="md-nav__link">
+  <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
-      Input Reading
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Error Handling
+      Caveats
     </span>
   </a>
   
@@ -3870,18 +3852,18 @@ from the internal field name:</p>
 </code></pre></div>
 <h2 id="yaml-configuration-examples">YAML Configuration Examples</h2>
 <h3 id="basic-usage">Basic Usage</h3>
-<div class="highlight"><pre><span></span><code><span class="w">        </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Alias LWP for LiqWaterPath</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWP:=SolidWaterPath&quot;</span><span class="w">    </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=T_mid&quot;</span><span class="w">               </span><span class="c1"># Alias T for T_mid</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;qv&quot;</span><span class="w">                      </span><span class="c1"># Regular field name (no alias)</span>
+<div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">      </span><span class="c1"># Alias LWP for LiqWaterPath</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWP:=SolidWaterPath&quot;</span><span class="w">    </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=T_mid&quot;</span><span class="w">               </span><span class="c1"># Alias T for T_mid</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;qv&quot;</span><span class="w">                     </span><span class="c1"># Regular field name (no alias)</span>
 </code></pre></div>
 <h3 id="mixed-usage">Mixed Usage</h3>
 <p>You can mix aliased and non-aliased fields in the same configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T_mid&quot;</span><span class="w">                          </span><span class="c1"># Regular field name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T_mid&quot;</span><span class="w">                        </span><span class="c1"># Regular field name</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">            </span><span class="c1"># Aliased field</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;ps&quot;</span><span class="w">                            </span><span class="c1"># Regular field name  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;p_mid&quot;</span><span class="w">                        </span><span class="c1"># Regular field name  </span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;RH:=RelativeHumidity&quot;</span><span class="w">         </span><span class="c1"># Aliased field</span>
 </code></pre></div>
 <h2 id="output-behavior">Output Behavior</h2>
@@ -3911,26 +3893,13 @@ original field names</p>
 </li>
 <li>
 <p><strong>Metadata</strong>: Variable attributes (units, long_name, etc.)
-are preserved from the original fields</p>
+are preserved from the original fields, and <code>eamxx_name</code>
+is added to the netcdf files to document aliasing</p>
 </li>
 </ol>
-<h2 id="input-reading">Input Reading</h2>
-<p>The same alias syntax works for reading input files:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">input_streams</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">initial_conditions</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ic_file.nc</span>
-<span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">    </span><span class="c1"># Read variable LWP from file into field LiqWaterPath</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=T_mid&quot;</span><span class="w">             </span><span class="c1"># Read variable T from file into field T_mid</span>
-</code></pre></div>
-<h2 id="error-handling">Error Handling</h2>
-<p>The system provides comprehensive error checking:</p>
-<ul>
-<li><strong>Duplicate Aliases</strong>: Each alias must be unique within a field list</li>
-<li><strong>Malformed Syntax</strong>: Proper error messages for invalid alias specifications</li>
-<li><strong>Empty Names</strong>: Both alias and field names must be non-empty</li>
-</ul>
-<p>Example error cases:</p>
+<h2 id="caveats">Caveats</h2>
+<p>Currently, a field can be requested only once in a single stream,
+and either the original name or the alias name counts.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=&quot;</span><span class="w">                   </span><span class="c1"># Error: empty field name</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;:=LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># Error: empty alias name  </span>
