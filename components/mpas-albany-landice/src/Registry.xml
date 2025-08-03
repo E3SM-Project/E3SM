@@ -1310,6 +1310,9 @@ is the value of that variable from the *previous* time level!
                 <var name="floatingBasalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="Applied basal mass balance on floating regions"
                 />
+                <var name="connectedOceanMask" type="integer" dimensions="nCells Time" units=""
+                        description="grid cells below sea level and without grounded ice connected to open ocean (i.e., open ocean plus ice shelves ignoring floating ice over subglacial lakes).  0=no, 1=yes"
+                />
                 <var name="calvingMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
                 />
