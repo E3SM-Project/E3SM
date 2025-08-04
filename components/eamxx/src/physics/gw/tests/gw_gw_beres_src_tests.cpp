@@ -20,17 +20,7 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
-
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
+    auto init_data = get_common_init_data(engine);
 
     // Set up convect init data
     GwConvectInitData front_init_data[] = {
@@ -47,11 +37,11 @@ struct UnitWrap::UnitTest<D>::TestGwBeresSrc : public UnitWrap::UnitTest<D>::Bas
 
     // Set up inputs
     GwBeresSrcData baseline_data[] = {
-      // ncol, ngwv, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old
-      GwBeresSrcData(10, 20, 0.1, 0.2, 2000., 1., false, front_init_data[0]),
-      GwBeresSrcData(11, 21, 0.2, 0.3, 3000., 2., false, front_init_data[1]),
-      GwBeresSrcData(12, 22, 0.3, 0.4, 4000., 3., true,  front_init_data[2]),
-      GwBeresSrcData(13, 23, 0.4, 0.5, 5000., 4., true,  front_init_data[3]),
+      //           ncol, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old
+      GwBeresSrcData(10,                     0.1,                   0.2,      2000.,              1., false,  front_init_data[0]),
+      GwBeresSrcData(11,                     0.2,                   0.3,      3000.,              2., false,  front_init_data[1]),
+      GwBeresSrcData(12,                     0.3,                   0.4,      4000.,              3., true,   front_init_data[2]),
+      GwBeresSrcData(13,                     0.4,                   0.5,      5000.,              4., true,   front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwBeresSrcData);

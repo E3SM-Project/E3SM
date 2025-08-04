@@ -20,24 +20,15 @@ struct UnitWrap::UnitTest<D>::TestGwdPrecalcRhoi : public UnitWrap::UnitTest<D>:
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
-
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
+    auto init_data = get_common_init_data(engine);
 
     // Set up inputs
     GwdPrecalcRhoiData baseline_data[] = {
-      GwdPrecalcRhoiData(5, 2, 10, .4, init_data[0]),
-      GwdPrecalcRhoiData(6, 3, 11, .8, init_data[1]),
-      GwdPrecalcRhoiData(7, 4, 12, 1.4, init_data[2]),
-      GwdPrecalcRhoiData(8, 5, 13, 2.4, init_data[3]),
+      //             pcnst, ncol,  dt
+      GwdPrecalcRhoiData(5,    2,  .4, init_data[0]),
+      GwdPrecalcRhoiData(6,    3,  .8, init_data[1]),
+      GwdPrecalcRhoiData(7,    4, 1.4, init_data[2]),
+      GwdPrecalcRhoiData(8,    5, 2.4, init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwdPrecalcRhoiData);

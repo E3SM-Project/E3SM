@@ -22,12 +22,6 @@ template <typename ScalarT, typename DeviceT>
 struct Functions
 {
   //
-  // ---------- GW constants ---------
-  //
-  struct GWC {
-  };
-
-  //
   // ------- Types --------
   //
 
@@ -54,16 +48,125 @@ struct Functions
   using view_1d = typename KT::template view_1d<S>;
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
+  template <typename S>
+  using view_3d = typename KT::template view_3d<S>;
 
   template <typename S>
   using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
   template <typename S>
   using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
+  template <typename S>
+  using uview_3d = typename ekat::template Unmanaged<view_3d<S> >;
 
   using MemberType = typename KT::MemberType;
 
-  using WorkspaceManager = typename ekat::WorkspaceManager<Spack, Device>;
+  using WorkspaceManager = typename ekat::WorkspaceManager<Scalar, Device>;
   using Workspace        = typename WorkspaceManager::Workspace;
+
+  //
+  // ---------- GW constants ---------
+  //
+  struct GWC {
+    // Index the cardinal directions.
+    static inline constexpr int west = 0;
+    static inline constexpr int east = 1;
+    static inline constexpr int south = 2;
+    static inline constexpr int north = 3;
+
+    // rair/gravit
+    static inline constexpr Real rog = C::Rair / C::gravit;
+
+    // Background diffusivity.
+    static inline constexpr Real dback = 0.05;
+
+    // Minimum non-zero stress.
+    static inline constexpr Real taumin = 1.e-10;
+
+    // Maximum allowed change in u-c (before efficiency applied).
+    static inline constexpr Real umcfac = 0.5;
+
+    // Minimum value of (u-c)**2.
+    static inline constexpr Real ubmc2mn = 0.01;
+  };
+
+  //
+  // --------- Structs for organizing data ---------
+  //
+
+  struct GwCommonInit {
+    GwCommonInit() : initialized(false) {}
+
+    // Tell us if initialize has been called
+    bool initialized;
+
+    // This flag preserves answers for vanilla CAM by making a few changes (e.g.
+    // order of operations) when only orographic waves are on.
+    bool orographic_only; // = .false.
+
+    // Number of levels in the atmosphere.
+    int pver;
+
+    // Maximum number of waves allowed (i.e. wavenumbers are -pgwv:pgwv).
+    int pgwv;
+
+    // Bin width for spectrum.
+    Real dc; // = huge(1._r8)
+
+    // Reference speeds for the spectrum.
+    view_1d<Real> cref;
+
+    // Whether or not molecular diffusion is being done, and bottom level where
+    // it is done.
+    bool do_molec_diff; // = .false.
+    int nbot_molec; // = huge(1)
+
+    // Whether or not to enforce an upper boundary condition of tau = 0.
+    bool tau_0_ubc; // = .false.
+
+    // Critical Froude number.
+    Real fcrit2; // = huge(1._r8)
+
+    // Effective horizontal wave number.
+    Real kwv; // = huge(1._r8)
+
+    // Interface levels for gravity wave sources.
+    int ktop; // = huge(1)
+    int kbotbg; // = huge(1)
+
+    // Effective wavenumber.
+    Real effkwv; // = huge(1._r8)
+
+    // Newtonian cooling coefficients.
+    view_1d<Real> alpha;
+
+    // Maximum wind tendency from stress divergence (before efficiency applied).
+    Real tndmax; // = huge(1._r8)
+  };
+
+  //
+  // --------- Init/Finalize Functions ---------
+  //
+  static void gw_common_init(
+    // Inputs
+    const Int& pver_in,
+    const Int& pgwv_in,
+    const Real& dc_in,
+    const uview_1d<const Real>& cref_in,
+    const bool& orographic_only_in,
+    const bool& do_molec_diff_in,
+    const bool& tau_0_ubc_in,
+    const Int& nbot_molec_in,
+    const Int& ktop_in,
+    const Int& kbotbg_in,
+    const Real& fcrit2_in,
+    const Real& kwv_in,
+    const uview_1d<const Real>& alpha_in);
+
+  static void gw_common_finalize()
+  {
+    s_common_init.cref  = decltype(s_common_init.cref)();
+    s_common_init.alpha = decltype(s_common_init.alpha)();
+  }
 
   //
   // --------- Functions ---------
@@ -72,29 +175,32 @@ struct Functions
   KOKKOS_FUNCTION
   static void gwd_compute_tendencies_from_stress_divergence(
     // Inputs
-    const Int& ncol,
+    const MemberType& team,
+    const Workspace& workspace,
+    const GwCommonInit& init,
     const Int& pver,
     const Int& pgwv,
-    const Int& ngwv,
     const bool& do_taper,
-    const Spack& dt,
-    const Spack& effgw,
-    const uview_1d<const Int>& tend_level,
-    const uview_1d<const Spack>& lat,
-    const uview_1d<const Spack>& dpm,
-    const uview_1d<const Spack>& rdpm,
-    const uview_1d<const Spack>& c,
-    const uview_1d<const Spack>& ubm,
-    const uview_1d<const Spack>& t,
-    const uview_1d<const Spack>& nm,
-    const uview_1d<const Spack>& xv,
-    const uview_1d<const Spack>& yv,
+    const Real& dt,
+    const Real& effgw,
+    const Int& tend_level,
+    const Int& max_level,
+    const Real& lat,
+    const uview_1d<const Real>& dpm,
+    const uview_1d<const Real>& rdpm,
+    const uview_1d<const Real>& c,
+    const uview_1d<const Real>& ubm,
+    const uview_1d<const Real>& t,
+    const uview_1d<const Real>& nm,
+    const Real& xv,
+    const Real& yv,
     // Inputs/Outputs
-    const uview_1d<Spack>& tau,
+    const uview_2d<Real>& tau,
+    const uview_2d<Real>& work,
     // Outputs
-    const uview_1d<Spack>& gwut,
-    const uview_1d<Spack>& utgw,
-    const uview_1d<Spack>& vtgw);
+    const uview_2d<Real>& gwut,
+    const uview_1d<Real>& utgw,
+    const uview_1d<Real>& vtgw);
 
   KOKKOS_FUNCTION
   static void gw_prof(
@@ -137,7 +243,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const uview_1d<const Int>& src_level,
     const uview_1d<const Spack>& ubi,
     const uview_1d<const Spack>& c,
@@ -156,7 +261,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const uview_1d<const Int>& tend_level,
     const uview_1d<const Spack>& tau,
     const uview_1d<const Spack>& ubi,
@@ -172,7 +276,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const Spack& dt,
     const uview_1d<const Int>& tend_level,
     const uview_1d<const Spack>& pmid,
@@ -198,7 +301,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const uview_1d<const Int>& src_level,
     const uview_1d<const Int>& tend_level,
     const bool& do_taper,
@@ -256,7 +358,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const Int& kbot,
     const uview_1d<const Spack>& frontgf,
     // Outputs
@@ -268,7 +369,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const Int& kbot,
     const uview_1d<const Spack>& u,
     const uview_1d<const Spack>& v,
@@ -334,7 +434,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const uview_1d<const Spack>& lat,
     const Spack& hdepth_min,
     const uview_1d<const Spack>& hdepth,
@@ -355,7 +454,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& ncol,
-    const Int& ngwv,
     const uview_1d<const Spack>& lat,
     const uview_1d<const Spack>& u,
     const uview_1d<const Spack>& v,
@@ -384,7 +482,6 @@ struct Functions
     // Inputs
     const Int& ncol,
     const Int& pver,
-    const Int& ngwv,
     const Int& kbot,
     const Int& ktop,
     const uview_1d<const Int>& tend_level,
@@ -436,6 +533,12 @@ struct Functions
     const uview_1d<Spack>& xv,
     const uview_1d<Spack>& yv,
     const uview_1d<Spack>& c);
+
+  //
+  // --------- Members ---------
+  //
+  inline static GwCommonInit s_common_init;
+
 }; // struct Functions
 
 } // namespace gw
@@ -463,5 +566,6 @@ struct Functions
 # include "impl/gw_gw_ediff_impl.hpp"
 # include "impl/gw_gw_diff_tend_impl.hpp"
 # include "impl/gw_gw_oro_src_impl.hpp"
+# include "impl/gw_gw_common_init_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
