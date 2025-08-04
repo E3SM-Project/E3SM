@@ -48,6 +48,11 @@ struct Functions {
 
   struct zm_runtime_opt {
     zm_runtime_opt() = default;
+    bool apply_tendencies = false;
+
+    void load_runtime_options(ekat::ParameterList& params) {
+      apply_tendencies = params.get<bool>("apply_tendencies", apply_tendencies);
+    }
   };
 
   struct zm_input_state {
@@ -71,8 +76,8 @@ struct Functions {
     view_2d<      Spack>  T_mid;    // temperature [K]
     view_2d<      Spack>  qv;       // water vapor mixing ratio     [kg kg-1]
     view_2d<      Spack>  qc;       // cloud mass mixing ratio      [kg kg-1]
-    view_2d<      Spack>  u;        // zonal wind                   [m/s]
-    view_2d<      Spack>  v;        // meridional wind              [m/s]
+    view_2d<      Spack>  uwind;    // zonal wind                   [m/s]
+    view_2d<      Spack>  vwind;    // meridional wind              [m/s]
     view_2d<const Spack>  omega;    // vertical pressure velocity   [Pa/s]
     view_2d<const Spack>  cldfrac;  // total cloud fraction
     view_1d<const Scalar> pblh;     // PBL height                   [m]
@@ -88,8 +93,8 @@ struct Functions {
     uview_2dl<Real>  f_T_mid;
     uview_2dl<Real>  f_qv;
     uview_2dl<Real>  f_qc;
-    uview_2dl<Real>  f_u;
-    uview_2dl<Real>  f_v;
+    uview_2dl<Real>  f_uwind;
+    uview_2dl<Real>  f_vwind;
     uview_2dl<Real>  f_omega;
     uview_2dl<Real>  f_cldfrac;
 
@@ -128,8 +133,8 @@ struct Functions {
             f_T_mid   (i,j) = T_mid   (i, j / Spack::n)[j % Spack::n];
             f_qv      (i,j) = qv      (i, j / Spack::n)[j % Spack::n];
             f_qc      (i,j) = qc      (i, j / Spack::n)[j % Spack::n];
-            f_u       (i,j) = u       (i, j / Spack::n)[j % Spack::n];
-            f_v       (i,j) = v       (i, j / Spack::n)[j % Spack::n];
+            f_uwind   (i,j) = uwind   (i, j / Spack::n)[j % Spack::n];
+            f_vwind   (i,j) = vwind   (i, j / Spack::n)[j % Spack::n];
             f_omega   (i,j) = omega   (i, j / Spack::n)[j % Spack::n];
             f_cldfrac (i,j) = cldfrac (i, j / Spack::n)[j % Spack::n];
           }
@@ -146,27 +151,37 @@ struct Functions {
   struct zm_output_tend {
     zm_output_tend() = default;
 
-    static constexpr int num_1d_scalr_views   = 2; // number of 1D variables
-    static constexpr int num_2d_midlv_c_views = 4; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_midlv_f_views = 4; // number of 2D variables on mid-point levels
-    static constexpr int num_2d_intfc_c_views = 2; // number of 2D variables on interface levels
-    static constexpr int num_2d_intfc_f_views = 2; // number of 2D variables on interface levels
+    static constexpr int num_1d_scalr_views   = 3; // number of 1D variables
+    static constexpr int num_2d_midlv_c_views = 6; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_midlv_f_views = 6; // number of 2D variables on mid-point levels
+    static constexpr int num_2d_intfc_c_views = 3; // number of 2D variables on interface levels
+    static constexpr int num_2d_intfc_f_views = 3; // number of 2D variables on interface levels
 
-    uview_1d<Scalar> precip;         // surface precipitation [m/s]
-    uview_1d<Scalar> cape;           // convective available potential energy [J]
-    uview_2d<Spack>  tend_s;         // output tendency of dry static energy
-    uview_2d<Spack>  tend_q;         // output tendency of water vapor
-    uview_2d<Spack>  tend_u;         // output tendency of zonal wind
-    uview_2d<Spack>  tend_v;         // output tendency of meridional wind
-    uview_2d<Spack>  prec_flux;      // output convective precipitation flux
-    uview_2d<Spack>  mass_flux;      // output convective mass flux
+    uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
+    uview_1d<Scalar> snow;           // surface snow                            [m/s]
+
+    uview_1d<Scalar> cape;           // convective available potential energy   [J]
+    uview_2d<Spack>  tend_s;         // output tendency of dry static energy    []
+    uview_2d<Spack>  tend_qv;         // output tendency of water vapor          []
+    uview_2d<Spack>  tend_u;         // output tendency of zonal wind           []
+    uview_2d<Spack>  tend_v;         // output tendency of meridional wind      []
+    uview_2d<Spack>  rain_prod;      // rain production rate
+    uview_2d<Spack>  snow_prod;      // snow production rate
+
+    uview_2d<Spack>  prec_flux;      // output convective precipitation flux    []
+    uview_2d<Spack>  snow_flux;      // output convective precipitation flux    []
+    uview_2d<Spack>  mass_flux;      // output convective mass flux             []
 
     // LayoutLeft views for fortran bridging
     uview_2dl<Real>  f_tend_s;
-    uview_2dl<Real>  f_tend_q;
+    uview_2dl<Real>  f_tend_qv;
     uview_2dl<Real>  f_tend_u;
     uview_2dl<Real>  f_tend_v;
+    uview_2dl<Real>  f_rain_prod;
+    uview_2dl<Real>  f_snow_prod;
+
     uview_2dl<Real>  f_prec_flux;
+    uview_2dl<Real>  f_snow_flux;
     uview_2dl<Real>  f_mass_flux;
 
     // -------------------------------------------------------------------------
@@ -179,13 +194,16 @@ struct Functions {
           // mid-point level variables
           for (int j=0; j<pver_in; ++j) {
             f_tend_s   (i,j) = tend_s   (i,j/Spack::n)[j%Spack::n];
-            f_tend_q   (i,j) = tend_q   (i,j/Spack::n)[j%Spack::n];
+            f_tend_qv  (i,j) = tend_qv  (i,j/Spack::n)[j%Spack::n];
             f_tend_u   (i,j) = tend_u   (i,j/Spack::n)[j%Spack::n];
             f_tend_v   (i,j) = tend_v   (i,j/Spack::n)[j%Spack::n];
+            f_rain_prod(i,j) = rain_prod(i,j/Spack::n)[j%Spack::n];
+            f_snow_prod(i,j) = snow_prod(i,j/Spack::n)[j%Spack::n];
           }
           // interface level variables
           for (int j=0; j<pverp; ++j) {
             f_prec_flux(i,j) = prec_flux(i,j/Spack::n)[j%Spack::n];
+            f_snow_flux(i,j) = snow_flux(i,j/Spack::n)[j%Spack::n];
             f_mass_flux(i,j) = mass_flux(i,j/Spack::n)[j%Spack::n];
           }
         }
@@ -197,13 +215,16 @@ struct Functions {
           // mid-point level variables
           for (int j=0; j<pver_in; ++j) {
             tend_s   (i,j/Spack::n)[j%Spack::n] = f_tend_s   (i,j);
-            tend_q   (i,j/Spack::n)[j%Spack::n] = f_tend_q   (i,j);
+            tend_qv  (i,j/Spack::n)[j%Spack::n] = f_tend_qv  (i,j);
             tend_u   (i,j/Spack::n)[j%Spack::n] = f_tend_u   (i,j);
             tend_v   (i,j/Spack::n)[j%Spack::n] = f_tend_v   (i,j);
+            rain_prod(i,j/Spack::n)[j%Spack::n] = f_rain_prod(i,j);
+            snow_prod(i,j/Spack::n)[j%Spack::n] = f_snow_prod(i,j);
           }
           // interface level variables
           for (int j=0; j<pverp; ++j) {
             prec_flux(i,j/Spack::n)[j%Spack::n] = f_prec_flux(i,j);
+            snow_flux(i,j/Spack::n)[j%Spack::n] = f_snow_flux(i,j);
             mass_flux(i,j/Spack::n)[j%Spack::n] = f_mass_flux(i,j);
           }
         }
@@ -214,20 +235,25 @@ struct Functions {
       Real init_fill_value = -999;
       // 1D scalar variables
       for (int i=0; i<ncol_in; ++i) {
-        precip(i) = init_fill_value;
-        cape(i)   = init_fill_value;
+        prec(i) = init_fill_value;
+        snow(i) = init_fill_value;
+        cape(i) = init_fill_value;
       }
       // mid-point level variables
       for (int i=0; i<ncol_in; ++i) {
         for (int j=0; j<pver_in; ++j) {
-          tend_s(i,j/Spack::n)[j%Spack::n] = init_fill_value;
-          tend_q(i,j/Spack::n)[j%Spack::n] = init_fill_value;
-          tend_u(i,j/Spack::n)[j%Spack::n] = init_fill_value;
-          tend_v(i,j/Spack::n)[j%Spack::n] = init_fill_value;
-          f_tend_s(i,j) = init_fill_value;
-          f_tend_q(i,j) = init_fill_value;
-          f_tend_u(i,j) = init_fill_value;
-          f_tend_v(i,j) = init_fill_value;
+          tend_s   (i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          tend_qv  (i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          tend_u   (i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          tend_v   (i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          rain_prod(i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          snow_prod(i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          f_tend_s   (i,j) = init_fill_value;
+          f_tend_qv  (i,j) = init_fill_value;
+          f_tend_u   (i,j) = init_fill_value;
+          f_tend_v   (i,j) = init_fill_value;
+          f_rain_prod(i,j) = init_fill_value;
+          f_snow_prod(i,j) = init_fill_value;
         }
       }
       auto pverp = pver_in+1;
@@ -235,8 +261,10 @@ struct Functions {
       for (int i=0; i<ncol_in; ++i) {
         for (int j=0; j<pverp; ++j) {
           prec_flux(i,j/Spack::n)[j%Spack::n] = init_fill_value;
+          snow_flux(i,j/Spack::n)[j%Spack::n] = init_fill_value;
           mass_flux(i,j/Spack::n)[j%Spack::n] = init_fill_value;
           f_prec_flux(i,j) = init_fill_value;
+          f_snow_flux(i,j) = init_fill_value;
           f_mass_flux(i,j) = init_fill_value;
         }
       }
