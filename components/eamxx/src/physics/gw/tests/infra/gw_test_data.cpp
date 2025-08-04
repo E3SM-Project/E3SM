@@ -173,7 +173,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
     }
   }, Kokkos::Max<int>(max_level));
 
-  auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
 
   WSM wsm(d.init.pver, 1, policy);
   GWF::GwCommonInit init_cp = GWF::s_common_init;
