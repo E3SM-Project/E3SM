@@ -207,11 +207,9 @@ contains
     ! Determine clm gridcell decomposition and processor bounds for gridcells
     ! ------------------------------------------------------------------------
 
-    domain_decomp_type = "moab" ! hard-code it for testing
     select case (trim(domain_decomp_type))
 #ifdef HAVE_MOAB
     case ("moab")
-      !call decompInit_lnd_moab(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
       call decompInit_moab(ni, nj, amask)
       deallocate(amask)
 #endif
