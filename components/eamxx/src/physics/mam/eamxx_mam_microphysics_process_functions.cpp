@@ -294,6 +294,16 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     KOKKOS_LAMBDA(const ThreadTeam &team) {
     const int icol     = team.league_rank();   // column index
     const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+
+    const auto work_set_het_icol = ekat::subview(work_set_het, icol);
+    auto work_set_het_ptr = (Real *)work_set_het_icol.data();
+    // deposition velocity [1/cm/s]
+    const auto& dflx_col = view_1d(work_set_het_ptr, num_gas_aerosol_constituents);
+    work_set_het_ptr += num_gas_aerosol_constituents;
+    // deposition flux [1/cm^2/s]
+    const auto& dvel_col = view_1d(work_set_het_ptr, num_gas_aerosol_constituents);
+    work_set_het_ptr += num_gas_aerosol_constituents;
+
     // Snow depth on land [m]
     const Real snow_height = snow_depth_land(icol);
 
@@ -348,9 +358,8 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       const Real solar_flux = sw_flux_dn(icol, surface_lev + 1);
       const auto qq_icol = ekat::subview(qq,icol);
       const auto qq_sfc = ekat::subview(qq_icol,surface_lev);
-      // These output values need to be put somewhere:
-      Real dflx_col[num_gas_aerosol_constituents] = {};  // deposition velocity [1/cm/s]
-      Real dvel_col[num_gas_aerosol_constituents] = {};  // deposition flux [1/cm^2/s]
+
+
 
       Kokkos::parallel_for(
        Kokkos::TeamVectorRange(team, nlev),
@@ -370,8 +379,8 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         rain,             // rain content [??]
         solar_flux,       // direct shortwave surface radiation [W/m^2]
         qq_sfc.data(),               // constituent MMRs [kg/kg]
-        dvel_col,             // deposition velocity [1/cm/s]
-        dflx_col              // deposition flux [1/cm^2/s]
+        dvel_col.data(),             // deposition velocity [1/cm/s]
+        dflx_col.data()              // deposition flux [1/cm^2/s]
       );
       });
       // Update constituent fluxes with gas drydep fluxes (dflx)
@@ -379,7 +388,7 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
-          constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
+          constituent_fluxes(icol, ispc) -= dflx_col(ispc - offset_aerosol);
         });
     });
 
@@ -544,11 +553,30 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     //setsox_single_level ends
 
     // modal_aero_amicphys_intr
-    const auto wet_geometric_mean_diameter_i =
+    const auto wet_diameter =
       get_field_in("dgnumwet").get_view<const Real ***>();
-    const auto dry_geometric_mean_diameter_i =
+    const auto dry_diameter =
       get_field_in("dgnum").get_view<const Real ***>();
     const auto wetdens = get_field_in("wetdens").get_view<const Real ***>();
+
+    auto& dgncur_awet_loc = dgncur_awet_;
+    auto& dgncur_a_loc = dgncur_a_;
+    auto& wetdens_loc = wetdens_;
+    constexpr int nmodes = mam4::AeroConfig::num_modes();
+     Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::modal_aero_amicphys_intr_precompute", policy,
+    KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol     = team.league_rank();   // column index
+    Kokkos::parallel_for(
+       Kokkos::TeamVectorRange(team, nlev),
+       [&](const int kk) {
+        for (int imode = 0; imode < nmodes; imode++) {
+         dgncur_awet_loc(icol, kk, imode) = wet_diameter(icol, imode, kk);
+         dgncur_a_loc(icol, kk, imode) = dry_diameter(icol, imode, kk);
+         wetdens_loc(icol, kk, imode) = wetdens(icol, imode, kk);
+        }
+      });
+    });
 
     view_3d gas_aero_exchange_condensation, gas_aero_exchange_renaming,
           gas_aero_exchange_nucleation, gas_aero_exchange_coagulation,
@@ -565,18 +593,12 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     const bool extra_mam4_aero_microphys_diags  = extra_mam4_aero_microphys_diags_;
 
     const auto& config_amicphys = config.amicphys;
-    constexpr int nmodes = mam4::AeroConfig::num_modes();
      Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::modal_aero_amicphys_intr", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
 
       const int icol     = team.league_rank();   // column index
       const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-      const auto wet_diameter_icol =
-            ekat::subview(wet_geometric_mean_diameter_i, icol);
-      const auto dry_diameter_icol =
-            ekat::subview(dry_geometric_mean_diameter_i, icol);
-      const auto wetdens_icol = ekat::subview(wetdens, icol);
 
       mam4::MicrophysDiagnosticArrays diag_arrays;
       if (extra_mam4_aero_microphys_diags) {
@@ -592,6 +614,10 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
       const auto & vmr_pregas_icol = ekat::subview(vmr_pregas,icol);
       const auto & vmr_precld_icol = ekat::subview(vmr_precld,icol);
 
+      const auto& dgncur_awet_icol = ekat::subview(dgncur_awet_loc,icol);
+      const auto& dgncur_a_icol = ekat::subview(dgncur_a_loc,icol);
+      const auto& wetdens_icol = ekat::subview(wetdens_loc,icol);
+
       Kokkos::parallel_for(
        Kokkos::TeamVectorRange(team, nlev),
        [&](const int kk) {
@@ -606,16 +632,10 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
         const Real pblh = atm.planetary_boundary_layer_height;
         const Real qv = atm.vapor_mixing_ratio(kk);
         const Real cldfrac = atm.cloud_fraction(kk);
+        const auto& dgncur_awet_kk = ekat::subview(dgncur_awet_icol,kk);
+        const auto& dgncur_a_kk = ekat::subview(dgncur_a_icol,kk);
+        const auto& wetdens_kk = ekat::subview(wetdens_icol,kk);
 
-        Real dgncur_a_kk[nmodes] = {};
-        Real dgncur_awet_kk[nmodes] = {};
-        Real wetdens_kk[nmodes] = {};
-
-        for (int imode = 0; imode < nmodes; imode++) {
-         dgncur_awet_kk[imode] = wet_diameter_icol(imode, kk);
-         dgncur_a_kk[imode] = dry_diameter_icol(imode, kk);
-         wetdens_kk[imode] = wetdens_icol(imode, kk);
-        }
         auto vmr_kk = ekat::subview(vmr_icol,kk);
         auto vmrcw_kk = ekat::subview(vmrcw_icol,kk);
         const auto & vmr0_kk = ekat::subview(vmr0_icol,kk);

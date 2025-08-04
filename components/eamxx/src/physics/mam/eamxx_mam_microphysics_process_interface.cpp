@@ -438,6 +438,8 @@ int MAMMicrophysics::get_len_temporary_views() {
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   constexpr int pcnst              = mam4::pcnst;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
+
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -459,6 +461,8 @@ int MAMMicrophysics::get_len_temporary_views() {
   work_len += 2* ncol_ * nlev_*gas_pcnst;
   // dqdt_aqso4_, dqdt_aqh2so4_
   work_len += 2*ncol_ *nlev_*gas_pcnst;
+  // dgncur_awet_, dgncur_a_, wetdens_;
+  work_len += 3*ncol_ *nlev_*nmodes;
   return work_len;
 }
 void MAMMicrophysics::init_temporary_views() {
@@ -467,6 +471,7 @@ void MAMMicrophysics::init_temporary_views() {
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   constexpr int pcnst              = mam4::pcnst;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);
@@ -506,6 +511,13 @@ void MAMMicrophysics::init_temporary_views() {
   work_ptr += ncol_ *nlev_*gas_pcnst;
   dqdt_aqh2so4_=view_3d(work_ptr, ncol_, nlev_,gas_pcnst );
   work_ptr += ncol_ *nlev_*gas_pcnst;
+
+  dgncur_awet_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+  dgncur_a_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
+  wetdens_ = view_3d(work_ptr, ncol_, nlev_,nmodes );
+  work_ptr += ncol_ *nlev_*nmodes;
 
 
   // Error check

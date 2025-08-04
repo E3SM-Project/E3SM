@@ -167,7 +167,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   view_3d dqdt_aqso4_,dqdt_aqh2so4_;
 
-  view_3d test_hash_;
+  view_3d dgncur_awet_, dgncur_a_, wetdens_;
 
   void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
     using str_atts_t = std::map<std::string,std::string>;
