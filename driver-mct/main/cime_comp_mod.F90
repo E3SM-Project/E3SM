@@ -4048,8 +4048,8 @@ contains
        ! needs to be done here to have proper restarts
        if (iac_present .and. iacrun_avg_alarm) then
 
-          write(logunit,*) '(cime_run_iac_setup_send) accum_avg',&
-                           ymd, tod
+          !write(logunit,*) '(cime_run_iac_setup_send) accum_avg',&
+          !                 ymd, tod
 
           call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
        endif
