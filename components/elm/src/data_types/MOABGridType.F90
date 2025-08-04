@@ -69,6 +69,9 @@ module MOABGridType
      real(r8), pointer :: latv(:,:)        ! [num_ghosted, nv] latitude of cell vertices
      real(r8), pointer :: lonv(:,:)        ! [num_ghosted, nv] longitude of cell vertices
 
+     integer, pointer  :: elm2moab(:)      ! [num_ghosted] for ELM's grid cell given by g (where begg <= g <= endg),
+                                           !               return the correponding MOAB grid cell 'i' (where 1 <= i <= num_ghosted)
+     integer, pointer  :: moab2elm(:)      ! [num_ghosted] vice-versa of elm2moab
   end type grid_cell
   
   type, public :: grid_vertex
@@ -163,6 +166,7 @@ contains
     integer                 :: ghosted_id_left, ghosted_id_right
     integer                 :: nat_id_left, nat_id_right
     integer  , pointer      :: neighbor_id(:), vertex_id(:)
+    integer                 :: begg, endg, count
     integer                 :: ierr
 
     if(masterproc) &
@@ -328,6 +332,37 @@ contains
        if (moab_gcell%owner_rank(g) == iam) moab_gcell%is_owned(g) = .true.
 
     enddo
+
+    ! Set up ELM-to-MOAB and MOAB-to-ELM mapping
+    begg = proc_offset - moab_gcell%num_owned + 1
+    endg = proc_offset + moab_gcell%num_ghost
+
+    allocate(moab_gcell%elm2moab(begg:endg))
+    allocate(moab_gcell%moab2elm(1:moab_gcell%num_ghosted))
+
+    count = 0
+    begg = begg - 1
+
+    ! first, put the owned cells
+    do g = 1, moab_gcell%num_ghosted
+       if (moab_gcell%is_owned(g)) then
+
+          count = count + 1
+
+          moab_gcell%elm2moab(begg + count) = g
+          moab_gcell%moab2elm(g)            = begg + count
+       end if
+    end do
+
+    ! next, put the ghost cells
+    do g = 1, moab_gcell%num_ghosted
+       if (.not.moab_gcell%is_owned(g)) then
+          count = count + 1
+
+          moab_gcell%elm2moab(begg + count) = g
+          moab_gcell%moab2elm(g)            = begg + count
+       end if
+    end do
 
     ! populate data structure for internal edges
     moab_edge_internal%num = num_internal_edges
