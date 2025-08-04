@@ -33,7 +33,7 @@ module decompInitMod
 #endif
   public decompInit_lnd          ! initializes lnd grid decomposition into clumps and processors
   public decompInit_clumps       ! initializes atm grid decomposition into clumps
-  public decompInit_gtlcp         ! initializes g,l,c,p decomp info
+  public decompInit_gtlcp        ! initializes g,l,c,p decomp info
   public decompInit_lnd_using_gp ! initialize lnd grid decomposition into clumps and processors using graph partitioning approach
   public decompInit_ghosts       ! initialize ghost/halo for land grid
   public decompInit_lnd_simple   ! initializes lnd grid decomposition into clumps and processors using simple approach of ngrids/nclumps
@@ -54,51 +54,47 @@ contains
     ! set by clump_pproc
     !
     ! !USES:
-    use elm_varctl, only : nsegspc
-    !use mpi
-
+    use elm_varctl , only : nsegspc
     use MOABGridType
-
-    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
-    iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+    use iMOAB      , only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
+         iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
     !
     ! !ARGUMENTS:
     implicit none
 
 #include "mpif.h"
-    !integer , intent(in) :: mlndghostid
     integer , intent(in) :: amask(:)
     integer , intent(in) :: lni,lnj   ! domain global size
     !
     ! !LOCAL VARIABLES:
-    integer :: lns                    ! global domain size
-    integer :: ln,lj                  ! indices
-    integer :: ag,an,ai,aj            ! indices
-    integer :: numg                   ! number of land gridcells
-    logical :: seglen1                ! is segment length one
-    real(r8):: seglen                 ! average segment length
-    real(r8):: rcid                   ! real value of cid
-    integer :: cid,pid                ! indices
-    integer :: n,m,ng                 ! indices
-    integer :: ier                    ! error code
-    integer :: beg,end,lsize,gsize    ! used for gsmap init
-    integer :: oind, gind             ! temporary for owned/ghosted index
-    integer, allocatable :: gindex(:)     ! global index for gsmap init
-    integer, allocatable :: clumpcnt(:)   ! clump index counter
-    integer, allocatable :: proc_ncell(:) ! number of cells assigned to a process
-    integer, allocatable :: proc_begg(:)  ! beginning cell index assigned to a process
-    ! MOAB data
-    integer            :: count                         ! temporary
-    integer            :: ncells_per_clump              ! number of grid cells per clump
-    integer            :: remainder                     ! temporary
-    integer, allocatable   :: clump_ncells(:)               ! temporary
-    integer, allocatable   :: clump_begg(:)                 ! temporary
-    integer, allocatable   :: clump_endg(:)                 ! temporary
-    integer, allocatable   :: local_clump_info(:)           ! temporary
-    integer, allocatable   :: global_clump_info(:)          ! temporary
-    integer, allocatable   :: thread_count(:)               ! temporary
-    integer            :: offset                        ! temporary
-    integer            :: cowner                        ! clump owner
+    integer              :: lns                  ! global domain size
+    integer              :: ln,lj                ! indices
+    integer              :: ag,an,ai,aj          ! indices
+    integer              :: numg                 ! number of land gridcells
+    logical              :: seglen1              ! is segment length one
+    real(r8)             :: seglen               ! average segment length
+    real(r8)             :: rcid                 ! real value of cid
+    integer              :: cid,pid              ! indices
+    integer              :: n,m,ng               ! indices
+    integer              :: ier                  ! error code
+    integer              :: beg,end,lsize,gsize  ! used for gsmap init
+    integer              :: oind, gind           ! temporary for owned/ghosted index
+    integer, allocatable :: gindex(:)            ! global index for gsmap init
+    integer, allocatable :: clumpcnt(:)          ! clump index counter
+    integer, allocatable :: proc_ncell(:)        ! number of cells assigned to a process
+    integer, allocatable :: proc_begg(:)         ! beginning cell index assigned to a process
+                                                 ! MOAB data
+    integer              :: count                ! temporary
+    integer              :: ncells_per_clump     ! number of grid cells per clump
+    integer              :: remainder            ! temporary
+    integer, allocatable :: clump_ncells(:)      ! temporary
+    integer, allocatable :: clump_begg(:)        ! temporary
+    integer, allocatable :: clump_endg(:)        ! temporary
+    integer, allocatable :: local_clump_info(:)  ! temporary
+    integer, allocatable :: global_clump_info(:) ! temporary
+    integer, allocatable :: thread_count(:)      ! temporary
+    integer              :: offset               ! temporary
+    integer              :: cowner               ! clump owner
     !------------------------------------------------------------------------------
 
     lns = lni * lnj
@@ -123,51 +119,51 @@ contains
        write(iulog,*) 'decompInit_moab(): allocation error for procinfo%cid'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
-    procinfo%nclumps = clump_pproc
-    procinfo%cid(:)  = -1
-    procinfo%ncells  = moab_gcell%num_owned ! owned elements in the current task
-    procinfo%ntunits  = 0
-    procinfo%nlunits = 0
-    procinfo%ncols   = 0
-    procinfo%npfts   = 0
-    procinfo%nCohorts = 0
-    procinfo%begg    = 1
-    procinfo%begt    = 1
-    procinfo%begl    = 1
-    procinfo%begc    = 1
-    procinfo%begp    = 1
-    procinfo%begCohort    = 1
-    procinfo%endg    = 0
-    procinfo%endt    = 0
-    procinfo%endl    = 0
-    procinfo%endc    = 0
-    procinfo%endp    = 0
-    procinfo%endCohort    = 0
+    procinfo%nclumps   = clump_pproc
+    procinfo%cid(:)    = -1
+    procinfo%ncells    = moab_gcell%num_owned ! owned elements in the current task
+    procinfo%ntunits   = 0
+    procinfo%nlunits   = 0
+    procinfo%ncols     = 0
+    procinfo%npfts     = 0
+    procinfo%nCohorts  = 0
+    procinfo%begg      = 1
+    procinfo%begt      = 1
+    procinfo%begl      = 1
+    procinfo%begc      = 1
+    procinfo%begp      = 1
+    procinfo%begCohort = 1
+    procinfo%endg      = 0
+    procinfo%endt      = 0
+    procinfo%endl      = 0
+    procinfo%endc      = 0
+    procinfo%endp      = 0
+    procinfo%endCohort = 0
 
     allocate(clumps(nclumps), stat=ier)
     if (ier /= 0) then
        write(iulog,*) 'decompInit_moab(): allocation error for clumps'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
-    clumps(:)%owner   = -1
-    clumps(:)%ncells  = 0
-    clumps(:)%ntunits = 0
-    clumps(:)%nlunits = 0
-    clumps(:)%ncols   = 0
-    clumps(:)%npfts   = 0
-    clumps(:)%nCohorts = 0
-    clumps(:)%begg    = 1
-    clumps(:)%begt    = 1
-    clumps(:)%begl    = 1
-    clumps(:)%begc    = 1
-    clumps(:)%begp    = 1
-    clumps(:)%begCohort    = 1
-    clumps(:)%endg    = 0
-    clumps(:)%endt    = 0
-    clumps(:)%endl    = 0
-    clumps(:)%endc    = 0
-    clumps(:)%endp    = 0
-    clumps(:)%endCohort    = 0
+    clumps(:)%owner     = -1
+    clumps(:)%ncells    = 0
+    clumps(:)%ntunits   = 0
+    clumps(:)%nlunits   = 0
+    clumps(:)%ncols     = 0
+    clumps(:)%npfts     = 0
+    clumps(:)%nCohorts  = 0
+    clumps(:)%begg      = 1
+    clumps(:)%begt      = 1
+    clumps(:)%begl      = 1
+    clumps(:)%begc      = 1
+    clumps(:)%begp      = 1
+    clumps(:)%begCohort = 1
+    clumps(:)%endg      = 0
+    clumps(:)%endt      = 0
+    clumps(:)%endl      = 0
+    clumps(:)%endc      = 0
+    clumps(:)%endp      = 0
+    clumps(:)%endCohort = 0
 
     ! assign clumps to proc round robin
     cid = 0
@@ -208,15 +204,6 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! assign clumps to proc round robin
-   !  cid = (iam+1)*clump_pproc
-   !  do n = cid,cid+clump_pproc
-   !    ! clumps(n)%owner = moab_gcell%owner_rank(n) ! store the process that owns the cell
-   !    ! procinfo%cid(cid) = moab_gcell%natural_id(n)   ! store the global ID of the cell
-   !    clumps(n)%owner = iam     ! store the process that owns the clump
-   !    procinfo%cid(n-cid+1) = n   ! store the global clump ID
-   !  enddo
-
     ! set the begginning and end range for the local array space
     procinfo%begg = proc_offset - moab_gcell%num_owned + 1
     procinfo%endg = proc_offset ! beginning + local-owned + local-ghosted
@@ -231,9 +218,6 @@ contains
     allocate (clump_ncells      (clump_pproc          ))
     allocate (clump_begg        (clump_pproc          ))
     allocate (clump_endg        (clump_pproc          ))
-
-    ! print *, 'clump_pproc = ', clump_pproc, '; npes = ', npes, '; procinfo%begg = ', procinfo%begg, '; procinfo%endg = ', procinfo%endg
-
     allocate (local_clump_info  (1:3*clump_pproc      ))
     allocate (global_clump_info (1:3*clump_pproc*npes ))
     allocate (thread_count      (1:npes               ))
@@ -251,7 +235,6 @@ contains
        local_clump_info((m-1)*3 + 1) = clump_ncells(m)
        local_clump_info((m-1)*3 + 2) = clump_begg  (m)
        local_clump_info((m-1)*3 + 3) = clump_endg  (m)
-      !  local_clump_info((m-1)*3 + 3) = m * (iam+1) ! [1 : nclumps]
     end do
 
     call MPI_Allgather(local_clump_info, 3*clump_pproc, MPI_INTEGER, &
@@ -267,10 +250,6 @@ contains
        clumps(m)%endg   = global_clump_info((cowner-1)*3 + thread_count(cowner)*3 + 3)
        thread_count(cowner) = thread_count(cowner) + 1
 
-      !  if (iam .eq. 0) then
-      !     print *, 'cowner: ', cowner, '; clumps(m)%ncells = ', clumps(m)%ncells, ' clumps(m)%begg = ', clumps(m)%begg, ' clumps(m)%endg = ', clumps(m)%endg, ' thread_count(cowner) = ', thread_count(cowner)
-      !  end if
-
     enddo
 
     ! Set ldecomp
@@ -281,34 +260,16 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! set the global ids
-    !  ldecomp%gdc2glo(beg:end) = moab_gcell%natural_id(:)
-
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
     allocate(gindex(beg:end))
     allocate(lcid(lns))
     lcid(:) = 0
+
     ! now let us arrange owned elements first and ghosted elements in the end
     oind = beg
-    !gind = beg + neoproc ! offset by owned elements on the process
     cid = 1 ! starting clump id
     offset = clump_ncells(1)
     do n = 1, moab_gcell%num_ghosted
-      ! if (moab_gcell%owner_rank(n) /= iam) then
-      !    ! found a ghosted element
-      !    ldecomp%gdc2glo(gind) = moab_gcell%natural_id(n)
-      !    lcid(moab_gcell%natural_id(n)) = moab_gcell%owner_rank(n) + 1 !gind
-      !    gind = gind + 1
-      ! else
-      !    ! found an owned element
-      !    ldecomp%gdc2glo(oind) = moab_gcell%natural_id(n)
-      !    lcid(moab_gcell%natural_id(n)) = moab_gcell%owner_rank(n) + 1 !oind
-      !    oind = oind + 1
-      ! end if
-
-      ! if (iam == 0) then
-      !    print *, "Root: oind: ", oind, ", GID: ", moab_gcell%natural_id(n), ", owner: ", moab_gcell%owner_rank(n)
-      ! end if
       if (moab_gcell%owner_rank(n) /= iam) then
          cycle
       end if
