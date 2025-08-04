@@ -80,10 +80,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_p_mid, state_p_int, state_p_del, &
                                   state_t, state_qv, state_qc, state_u, state_v, &
                                   state_omega, state_cldfrac, state_pblh, landfrac, &
-                                  output_prec, output_cape, &
-                                  output_tend_s, output_tend_q, &
-                                  output_tend_u, output_tend_v, &
-                                  output_prec_flux, output_mass_flux ) bind(C)
+                                  output_prec, output_snow, output_cape, &
+                                  output_tend_s, output_tend_q, output_tend_u, output_tend_v, &
+                                  output_rain_prod, output_snow_prod, &
+                                  output_prec_flux, output_snow_flux, output_mass_flux ) bind(C)
   use zm_conv,                  only: zm_const, zm_param
   use zm_aero_type,             only: zm_aero_t
   use zm_microphysics_state,    only: zm_microp_st
@@ -113,12 +113,16 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real), dimension(pcols),      intent(in   ) :: state_pblh         ! input planetary boundary layer height   (pblh)
   real(kind=c_real), dimension(pcols),      intent(in   ) :: landfrac           ! land fraction
   real(kind=c_real), dimension(pcols),      intent(  out) :: output_prec        ! output total precipitation              (prec)
+  real(kind=c_real), dimension(pcols),      intent(  out) :: output_snow        ! output frozen precipitation             (snow)
   real(kind=c_real), dimension(pcols),      intent(  out) :: output_cape        ! output convective avail. pot. energy    (cape)
   real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_s      ! output tendency of dry static energy    (ptend_loc_s)
   real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_q      ! output tendency of water vapor          (ptend_loc_q)
   real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_u      ! output tendency of zonal wind           (ptend_loc_u)
   real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_tend_v      ! output tendency of meridional wind      (ptend_loc_v)
-  real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_prec_flux   ! output precip flux at each mid-levels   (pflx)
+  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_rain_prod   ! rain production rate                    (rprd)
+  real(kind=c_real), dimension(pcols,pver), intent(  out) :: output_snow_prod   ! snow production rate                    (sprd)
+  real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_prec_flux   ! output precip flux at each mid-levels   (flxprec/pflx)
+  real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_snow_flux   ! output precip flux at each mid-levels   (flxsnow)
   real(kind=c_real), dimension(pcols,pverp),intent(  out) :: output_mass_flux   ! output convective mass flux--m sub c    (mcon)
   !-----------------------------------------------------------------------------
   ! Local variables
@@ -139,9 +143,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! real(r8), dimension(pcols)      :: cape           ! convective available potential energy
   real(r8), dimension(pcols)      :: tpert          ! thermal temperature excess
   real(r8), dimension(pcols,pver) :: dlf            ! detrained convective cloud water mixing ratio
-  real(r8), dimension(pcols,pverp):: pflx           ! precip flux at each level
+  ! real(r8), dimension(pcols,pverp):: pflx           ! precip flux at each level
   real(r8), dimension(pcols,pver) :: zdu            ! detraining mass flux
-  real(r8), dimension(pcols,pver) :: rprd           ! rain production rate
+  ! real(r8), dimension(pcols,pver) :: rprd           ! rain production rate
+  ! real(r8), dimension(pcols,pver) :: sprd           ! snow production rate
   real(r8), dimension(pcols,pver) :: mu             ! upward cloud mass flux
   real(r8), dimension(pcols,pver) :: md             ! entrainment in updraft
   real(r8), dimension(pcols,pver) :: du             ! detrainment in updraft
@@ -163,7 +168,6 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(pcols,pver) :: dnif           ! detrained convective cloud ice num concen
   real(r8), dimension(pcols,pver) :: dsf            ! detrained convective snow mixing ratio
   real(r8), dimension(pcols,pver) :: dnsf           ! detrained convective snow num concen
-  real(r8), dimension(pcols,pver) :: sprd           ! snow production rate
   real(r8), dimension(pcols)      :: rice           ! reserved ice (not yet in cldice) for energy integrals
   real(r8), dimension(pcols,pver) :: frz            ! freezing rate
   real(r8), dimension(pcols,pver) :: mudpcu         ! width parameter of droplet size distr
@@ -188,11 +192,11 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   real(r8), dimension(pcols,pver) :: tend_s_snwprd
   real(r8), dimension(pcols,pver) :: tend_s_snwevmlt
-  real(r8), dimension(pcols,pver) :: snow
-  real(r8), dimension(pcols,pver) :: ntprprd
-  real(r8), dimension(pcols,pver) :: ntsnprd
+  ! real(r8), dimension(pcols,pver) :: snow
+  real(r8), dimension(pcols,pver) :: ntprprd             ! net precip production in layer
+  real(r8), dimension(pcols,pver) :: ntsnprd             ! net snow production in layer
   ! real(r8), dimension(pcols,pverp):: flxprec
-  real(r8), dimension(pcols,pverp):: flxsnow
+  ! real(r8), dimension(pcols,pverp):: flxsnow
 
   ! used in momentum transport calculations
    real(r8), dimension(pcols,pver,2) :: tx_winds
@@ -267,9 +271,9 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  output_cape, &
                  tpert, &
                  dlf, &
-                 pflx, &
+                 output_prec_flux, &
                  zdu, &
-                 rprd, &
+                 output_rain_prod, &
                  mu, md, du, eu, ed, dp, &
                  dsubcld, &
                  jt, &
@@ -279,7 +283,9 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                  landfrac, &
                  t_star, q_star, dcape, &
                  aero, &
-                 qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, &
+                 qi, dif, dnlf, dnif, dsf, dnsf, &
+                 output_snow_prod, &
+                 rice, frz, &
                  mudpcu, lambdadpcu, &
                  microp_st, &
                  wuc )
@@ -347,15 +353,13 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     tend_s_snwprd, &
                     tend_s_snwevmlt, &
                     local_tend_q, &
-                    rprd, state_cldfrac, &
+                    output_rain_prod, state_cldfrac, &
                     dtime, &
-                    output_prec, &
-                    snow, &
+                    output_prec, output_snow, &
                     ntprprd, &
                     ntsnprd, &
-                    output_prec_flux, &
-                    flxsnow, &
-                    sprd, old_snow)
+                    output_prec_flux, output_snow_flux, &
+                    output_snow_prod, old_snow)
 
   ! add tendencies from zm_conv_evap() to output tendencies
   do i = 1,ncol

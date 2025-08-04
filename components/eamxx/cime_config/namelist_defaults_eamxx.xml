@@ -270,6 +270,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
+      <apply_tendencies type="logical" doc="flag to apply ZM tendencies or not">false</apply_tendencies>
     </zm>
 
     <!-- Basic options for each mam4 atm process -->
