@@ -68,17 +68,16 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   // set invariants ends
 
   // set o3_col_dens
-  //FIXME: I am getting DIFFs(baselines) if I use policy from get_default_team_policy
-#ifdef EKAT_ENABLE_GPU
-       const int team_size=nlev_;
-#else
-       const int team_size=1;
-#endif
-  const auto policy2 =
-       ekat::ExeSpaceUtils<KT::ExeSpace>::get_team_policy_force_team_size(ncol_, team_size);
-
-  auto o3_col_dens = buffer_.scratch[8];
+  // set extract_stateq
+  const int offset_aerosol = mam4::utils::gasses_start_ind();
   const auto& dry_aero = dry_aero_;
+  const int pcnst              = mam4::pcnst;
+  const auto& state_q = state_q_;
+  const auto& qqcw_pcnst = qqcw_pcnst_;
+  const auto& qq = qq_;
+  const auto& qqcw = qqcw_;
+  const auto& vmr = vmr_;
+  const auto& vmrcw = vmrcw_;
   constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
   Real adv_mass_kg_per_moles[num_gas_aerosol_constituents];
   for(int i = 0; i < num_gas_aerosol_constituents; ++i) {
@@ -87,23 +86,81 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     // molec_weight_dry_air with kg/mole units
     adv_mass_kg_per_moles[i] = mam4::gas_chemistry::adv_mass[i] / 1e3;
   }
+
   Kokkos::parallel_for(
-    "MAMMicrophysics::run_impl::compute_o3_column_density", policy2,
+      "MAMMicrophysics::run_impl::extract_stateq", policy,
+      KOKKOS_LAMBDA(const ThreadTeam &team) {
+  // extract aerosol state variables into "working arrays" (mass
+    // mixing ratios) (in EAM, this is done in the gas_phase_chemdr
+    // subroutine defined within
+    //  mozart/mo_gas_phase_chemdr.F90)
+    const int icol     = team.league_rank();   // column index
+    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    mam4::Prognostics progs =
+            mam_coupling::aerosols_for_column(dry_aero, icol);
+
+    const auto state_q_icol = ekat::subview(state_q,icol);
+    const auto qqcw_pcnst_icol = ekat::subview(qqcw_pcnst,icol);
+    const auto qq_icol = ekat::subview(qq,icol);
+    const auto qqcw_icol = ekat::subview(qqcw,icol);
+    const auto vmr_icol = ekat::subview(vmr,icol);
+    const auto vmrcw_icol = ekat::subview(vmrcw,icol);
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, nlev),
+      [&](const int kk) {
+        const auto state_q_kk = ekat::subview(state_q_icol,kk);
+        const auto qqcw_pcnst_kk = ekat::subview(qqcw_pcnst_icol,kk);
+        const auto qq_kk = ekat::subview(qq_icol,kk);
+        const auto qqcw_kk = ekat::subview(qqcw_icol,kk);
+        const auto vmr_kk = ekat::subview(vmr_icol,kk);
+        const auto vmrcw_kk = ekat::subview(vmrcw_icol,kk);
+        // output (state_q)
+        mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q_kk, kk);
+        // output (qqcw_pcnst)
+        mam4::utils::extract_qqcw_from_prognostics(progs, qqcw_pcnst_kk, kk);
+        for (int i = offset_aerosol; i < pcnst; ++i) {
+          qq_kk[i - offset_aerosol] = state_q_kk[i];
+          qqcw_kk[i - offset_aerosol] = qqcw_pcnst_kk[i];
+        }
+        // convert mass mixing ratios to volume mixing ratios (VMR),
+        // equivalent to tracer mixing ratios (TMR)
+        // output (vmr)
+        mam4::microphysics::mmr2vmr(qq_kk.data(), adv_mass_kg_per_moles, vmr_kk.data());
+        // output (vmrcw)
+        mam4::microphysics::mmr2vmr(qqcw_kk.data(), adv_mass_kg_per_moles, vmrcw_kk.data());
+    });
+  });
+
+
+  const auto& o3_col_dens = buffer_.scratch[8];
+  const auto& work_set_het  = work_set_het_;
+  Kokkos::parallel_for(
+    "MAMMicrophysics::run_impl::compute_o3_column_density", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
     const int icol     = team.league_rank();   // column index
     // calculate o3 column densities (first component of col_dens in Fortran
     // code)
     auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
-    const auto invariants_icol = ekat::subview(invariants, icol);
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-    // fetch column-specific subviews into aerosol prognostics
-    mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(dry_aero, icol);
-
-    mam4::microphysics::compute_o3_column_density(team, atm, progs,      // in
-                                                invariants_icol,       // in
-                                                adv_mass_kg_per_moles, // in
-                                                o3_col_dens_i);        // out
+    const auto& invariants_icol = ekat::subview(invariants, icol);
+    const auto& atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
+    const auto& vmr_icol = ekat::subview(vmr,icol);
+    const auto work_set_het_icol = ekat::subview(work_set_het, icol);
+    auto work_set_het_ptr = (Real *)work_set_het_icol.data();
+    const auto& o3_col_deltas  = view_1d(work_set_het_ptr, mam4::nlev + 1);
+    // NOTE: if we need o2 column densities, set_ub_col and setcol must be changed
+    const int nlev = mam4::nlev;
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int kk) {
+      const Real pdel = atm.hydrostatic_dp(kk);
+      const auto vmr_kk = ekat::subview(vmr_icol,kk);
+      const auto invariants_k = ekat::subview(invariants_icol,kk);
+      // compute the change in o3 density for this column above its neighbor
+      mam4::mo_photo::set_ub_col(o3_col_deltas(kk + 1),     // out
+                               vmr_kk.data(), invariants_k.data(), pdel); // out
+    });
+    team.team_barrier();
+    // sum the o3 column deltas to densities
+    mam4::mo_photo::setcol(team, o3_col_deltas.data(), // in
+                         o3_col_dens_i);        // out
   });
   // set o3_col_dens ends
 
@@ -144,8 +201,6 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     });
 
     // set photo table ends
-    const int offset_aerosol = mam4::utils::gasses_start_ind();
-    const auto& work_set_het  = work_set_het_;
     const auto& col_latitudes = col_latitudes_;
     const auto& het_rates =het_rates_;
     const auto &cmfdqr       = cmfdqr_;
@@ -197,59 +252,6 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
   });
 
   // set_het end
-
-  // set extract_stateq
-  const int pcnst              = mam4::pcnst;
-  const auto& state_q = state_q_;
-  const auto& qqcw_pcnst = qqcw_pcnst_;
-  const auto& qq = qq_;
-  const auto& qqcw = qqcw_;
-  const auto& vmr = vmr_;
-  const auto& vmrcw = vmrcw_;
-
-  Kokkos::parallel_for(
-      "MAMMicrophysics::run_impl::extract_stateq", policy,
-      KOKKOS_LAMBDA(const ThreadTeam &team) {
-  // extract aerosol state variables into "working arrays" (mass
-    // mixing ratios) (in EAM, this is done in the gas_phase_chemdr
-    // subroutine defined within
-    //  mozart/mo_gas_phase_chemdr.F90)
-    const int icol     = team.league_rank();   // column index
-    const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
-    mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(dry_aero, icol);
-
-    const auto state_q_icol = ekat::subview(state_q,icol);
-    const auto qqcw_pcnst_icol = ekat::subview(qqcw_pcnst,icol);
-    const auto qq_icol = ekat::subview(qq,icol);
-    const auto qqcw_icol = ekat::subview(qqcw,icol);
-    const auto vmr_icol = ekat::subview(vmr,icol);
-    const auto vmrcw_icol = ekat::subview(vmrcw,icol);
-    Kokkos::parallel_for(
-      Kokkos::TeamVectorRange(team, nlev),
-      [&](const int kk) {
-        const auto state_q_kk = ekat::subview(state_q_icol,kk);
-        const auto qqcw_pcnst_kk = ekat::subview(qqcw_pcnst_icol,kk);
-        const auto qq_kk = ekat::subview(qq_icol,kk);
-        const auto qqcw_kk = ekat::subview(qqcw_icol,kk);
-        const auto vmr_kk = ekat::subview(vmr_icol,kk);
-        const auto vmrcw_kk = ekat::subview(vmrcw_icol,kk);
-        // output (state_q)
-        mam4::utils::extract_stateq_from_prognostics(progs, atm, state_q_kk, kk);
-        // output (qqcw_pcnst)
-        mam4::utils::extract_qqcw_from_prognostics(progs, qqcw_pcnst_kk, kk);
-        for (int i = offset_aerosol; i < pcnst; ++i) {
-          qq_kk[i - offset_aerosol] = state_q_kk[i];
-          qqcw_kk[i - offset_aerosol] = qqcw_pcnst_kk[i];
-        }
-        // convert mass mixing ratios to volume mixing ratios (VMR),
-        // equivalent to tracer mixing ratios (TMR)
-        // output (vmr)
-        mam4::microphysics::mmr2vmr(qq_kk.data(), adv_mass_kg_per_moles, vmr_kk.data());
-        // output (vmrcw)
-        mam4::microphysics::mmr2vmr(qqcw_kk.data(), adv_mass_kg_per_moles, vmrcw_kk.data());
-    });
-  });
 
   // set drydep_xactive
 
