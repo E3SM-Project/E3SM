@@ -225,29 +225,15 @@ void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const doub
     const auto nevapr_icol       = ekat::subview(nevapr, icol);
     const auto invariants_icol = ekat::subview(invariants, icol);
     const auto het_rates_icol  = ekat::subview(het_rates, icol);
+    const auto vmr_icol = ekat::subview(vmr, icol);
 
     const auto work_set_het_icol = ekat::subview(work_set_het, icol);
     auto work_set_het_ptr = (Real *)work_set_het_icol.data();
-    // vmr0 stores mixing ratios before chemistry changes the mixing
-    mam4::ColumnView vmr_col[num_gas_aerosol_constituents];
-    for (int i = 0; i < num_gas_aerosol_constituents; ++i) {
-     vmr_col[i] = mam4::ColumnView(work_set_het_ptr, nlev);
-     work_set_het_ptr += nlev;
-    }
     const int sethet_work_len = mam4::mo_sethet::get_work_len_sethet();
     const auto work_sethet_call = view_1d(work_set_het_ptr, sethet_work_len);
     work_set_het_ptr += sethet_work_len;
-
-    // fetch column-specific subviews into aerosol prognostics
-    mam4::Prognostics progs =
-            mam_coupling::aerosols_for_column(dry_aero, icol);
-    // het_rates_icol work array.
-    mam4::microphysics::mmr2vmr_col(team, atm, progs, adv_mass_kg_per_moles,
-       offset_aerosol, vmr_col);
-    team.team_barrier();
-
     mam4::mo_sethet::sethet(team, atm, het_rates_icol, rlats, phis, cmfdqr, prain_icol,
-                          nevapr_icol, dt, invariants_icol, vmr_col,
+                          nevapr_icol, dt, invariants_icol, vmr_icol,
                           work_sethet_call);
   });
 
