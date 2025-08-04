@@ -3173,9 +3173,8 @@ contains
             this%totprodc(c) + &
             this%ctrunc(c)
 
+      ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
-          ! TRS we are seeing NaNs in cropseed deficit without the crop
-          ! model, so we need to break these out
           this%totcolc(c) = this%totcolc(c) + this%cropseedc_deficit(c)
        endif
 
@@ -4436,9 +4435,8 @@ contains
             this%plant_n_buffer(c) + &
             this%fan_totn(c)
 
+       ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
-          ! TRS we are seeing NaNs in cropseed deficit without the crop
-          ! model, so we need to break these out
           this%totcoln(c) = this%totcoln(c) + this%cropseedn_deficit(c)
        endif
 
@@ -5487,9 +5485,8 @@ contains
            this%secondp(c) + &
            this%ptrunc(c)
 
+       ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
-          ! TRS we are seeing NaNs in cropseed deficit without the crop
-          ! model, so we need to break these out
           this%totcolp(c) = this%totcolp(c) + this%cropseedp_deficit(c)
        endif 
    end do

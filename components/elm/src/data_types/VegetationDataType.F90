@@ -9819,16 +9819,17 @@ module VegetationDataType
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
 
-      ! TRS - NaN trap for debugging
-      if (.not. isnan(this%sen_nloss_litter(p)) .and.  &
-           .not. isnan(this%livestemn_to_litter(p)) .and. &
-           .not. isnan(this%leafn_to_litter(p)) .and. &
-           .not. isnan(this%frootn_to_litter(p))) then
+          !Exit if any of the litter N loss terms are NaN
+          if (isnan(this%sen_nloss_litter(p)) .or.  &
+               isnan(this%livestemn_to_litter(p)) .or. &
+               isnan(this%leafn_to_litter(p)) .or. &
+               isnan(this%frootn_to_litter(p))) then
+               call endrun(msg = 'veg_nf_summary: NaN in litter N loss terms: '//errMsg(__FILE__, __LINE__))
+          endif
          this%sen_nloss_litter(p) = &
               this%livestemn_to_litter(p)            + &
               this%leafn_to_litter(p)                + &
               this%frootn_to_litter(p)
-      endif
 
       if (crop_prog) then
          this%sen_nloss_litter(p) = &
@@ -10887,16 +10888,19 @@ module VegetationDataType
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
 
-      ! TRS - NaN trap
-      if (.not. isnan(this%sen_ploss_litter(p)) .and. &
-          .not. isnan(this%livestemp_to_litter(p)) .and. &
-          .not. isnan(this%leafp_to_litter(p)) .and. &
-          .not. isnan( this%frootp_to_litter(p))) then
+          ! Exit if any of the following are NaN
+          if (isnan(this%sen_ploss_litter(p)) .or. &
+              isnan(this%livestemp_to_litter(p)) .or. &
+              isnan(this%leafp_to_litter(p)) .or. &
+              isnan( this%frootp_to_litter(p))) then
+               call endrun(msg = 'veg_pf_summary: sen_ploss_litter, livestemp_to_litter, leafp_to_litter, or frootp_to_litter is NaN '//&
+               errMsg(__FILE__, __LINE__))
+          endif
+
          this%sen_ploss_litter(p) = &
               this%livestemp_to_litter(p)            + &
               this%leafp_to_litter(p)                + &
               this%frootp_to_litter(p)
-      endif
 
       if (crop_prog) then
          this%sen_ploss_litter(p) = &

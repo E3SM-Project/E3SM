@@ -817,6 +817,8 @@ contains
     use dynPriorWeightsMod       , only : prior_weights_type
     use landunit_varcon          , only : istsoil, istcrop
     use dynColumnStateUpdaterMod , only : column_state_updater_type
+    use shr_log_mod        , only : errMsg => shr_log_errMsg
+    use abortutils      , only : endrun
         !
     ! !ARGUMENTS:
     type(bounds_type)               , intent(in)    :: bounds
@@ -850,16 +852,17 @@ contains
                clump_index = clump_index,                                    &
                var         = decomp_npools_vr(begc:endc, j, l),     &
                adjustment  = adjustment_one_level(begc:endc))
-          ! TRS Check the first element to see if it is NaN - this is
-          ! causing problems for us while debugging.  I am not sure if
-          ! col_ns%dyn_nbal_adjustments being NaN is an actual problem
-          ! or not, but it bombs out while debugging so we have to trap
-          ! for it
-          if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then
-             col_ns%dyn_nbal_adjustments(begc:endc) = &
-                  col_ns%dyn_nbal_adjustments(begc:endc) + &
-                  adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+
+          ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
+          if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
+               call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN '//&
+               errMsg(__FILE__, __LINE__))
           endif
+
+          col_ns%dyn_nbal_adjustments(begc:endc) = &
+               col_ns%dyn_nbal_adjustments(begc:endc) + &
+               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+     
 
        end do
     end do
@@ -871,12 +874,15 @@ contains
             var         = ntrunc_vr(begc:endc,j),     &
             adjustment  = adjustment_one_level(begc:endc))
 
-       ! TRS NaN trap, for debugging
-       if (.not. isnan(col_ns%dyn_nbal_adjustments(begc))) then
-          col_ns%dyn_nbal_adjustments(begc:endc) = &
-               col_ns%dyn_nbal_adjustments(begc:endc) + &
-               adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+       ! Exit if the first element of col_ns%dyn_nbal_adjustments is NaN
+       if (isnan(col_ns%dyn_nbal_adjustments(begc))) then
+          call endrun(msg='dyn_col_ns_Adjustments: col_ns%dyn_nbal_adjustments is NaN '//&
+               errMsg(__FILE__, __LINE__))
        endif
+       col_ns%dyn_nbal_adjustments(begc:endc) = &
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc) * dzsoi_decomp(j)
+     
 
 
        call update_column_state_no_special_handling(column_state_updater, &

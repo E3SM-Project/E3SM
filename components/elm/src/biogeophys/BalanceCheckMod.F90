@@ -172,7 +172,6 @@ contains
      use elm_initializeMod , only : surfalb_vars  
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
-     use elm_time_manager  , only : get_curr_date, get_step_size, get_nstep
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)    :: bounds
