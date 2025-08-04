@@ -326,6 +326,7 @@ contains
                   trim(seq_flds_o2x_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
 
              ! instead of writing x2o, write x2oacc
+             ! x2oacc_om is allocated in prep_ocn_init which is always called
              p_x2oacc_om => prep_ocn_get_x2oacc_om()
              call seq_io_write(hist_file, mboxid, 'x2oacc', &
                   trim(seq_flds_x2o_fields), &
@@ -338,10 +339,27 @@ contains
              call seq_io_write(hist_file, mbofxid, 'xaoo',  &
                    trim(seq_flds_xao_fields), whead=whead, wdata=wdata, nx=ocn_nx, ny=ocn_ny, nt=1, dims2din=latlonid)
 
-             p_o2x_am => prep_atm_get_o2x_am()
+             ! the atm mrg, where prep_atm_get_o2x_am is defined, is only called if atm_prognostic is true.
+             ! MCT will still output zero because o2xa is initialized to zero.  MOAB needs to
+             ! handle and match that.
+             if(atm_prognostic) then
+                p_o2x_am => prep_atm_get_o2x_am()
                 call seq_io_write(hist_file, mbaxid, 'o2xa',  &
                     trim(seq_flds_o2x_fields), &
                     whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid, matrix=p_o2x_am)
+             else
+                numpts = mbGetnCells(mbaxid)
+                call mct_list_init(temp_list ,seq_flds_o2x_fields)
+                size_list=mct_list_nitem (temp_list)
+                allocate(zeros(numpts,size_list))
+                zeros(:,:)=0.0_r8
+                p_o2x_am => zeros
+                call seq_io_write(hist_file, mbaxid, 'o2xa',  &
+                    trim(seq_flds_o2x_fields), &
+                    whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid, matrix=p_o2x_am)
+                call mct_list_clean(temp_list)
+                deallocate(zeros)
+             endif
 
              call seq_io_write(hist_file, mbaxid,  'xaoa',  &
                   trim(seq_flds_xao_fields), whead=whead, wdata=wdata, nx=atm_nx, ny=atm_ny, nt=1, dims2din=alatlonid)
