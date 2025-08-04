@@ -18,7 +18,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const uview_1d<const Int>& src_level,
 const uview_1d<const Spack>& ubi,
 const uview_1d<const Spack>& c,
