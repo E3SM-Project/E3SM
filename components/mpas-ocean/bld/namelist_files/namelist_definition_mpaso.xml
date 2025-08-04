@@ -1321,6 +1321,14 @@ Valid values: Non-negative number between 0 and 1.0. Default value of 1.0 means 
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_adjust_factor_history_days" type="real"
+	category="precip_scaling" group="precip_scaling">
+The number of days over which scaling factor on precipitation fluxes is estimated and used for the very first year in FOSI runs. Default value is 10 days.
+
+Valid values: Non-negative number. Zero value will deactivate the adjusting scheme. 
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_precip_scaling_history_years" type="integer"
 	category="precip_scaling" group="precip_scaling">
 The number of years over which scaling factor on precipitation fluxes is computed in FOSI runs. Default value is 1 year.

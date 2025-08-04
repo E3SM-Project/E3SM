@@ -382,6 +382,7 @@
 <config_precip_scaling_mode>'off'</config_precip_scaling_mode>
 <config_precip_scaling_constant_factor>1.0</config_precip_scaling_constant_factor>
 <config_precip_scaling_initial_factor>1.0</config_precip_scaling_initial_factor>
+<config_adjust_factor_history_days>0.0</config_adjust_factor_history_days>
 <config_precip_scaling_history_years>1</config_precip_scaling_history_years>
 <config_precip_scaling_write_to_logfile>.false.</config_precip_scaling_write_to_logfile>
 

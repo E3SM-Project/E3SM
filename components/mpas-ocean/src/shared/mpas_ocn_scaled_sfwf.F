@@ -31,16 +31,14 @@ module ocn_scaled_sfwf
     use ocn_config
     use ocn_mesh
 
-    use shr_kind_mod, only: & 
-        SHR_KIND_R8
-
     use shr_const_mod
 
     use ocn_constants, only: & 
         pi, &      
         rho_fw, & 
         rho_sw, &
-        ocn_ref_salinity
+        ocn_ref_salinity, &
+        days_per_second
 
     implicit none
     private
@@ -68,6 +66,7 @@ module ocn_scaled_sfwf
     !--------------------------------------------------------------------
 
     logical :: scaledSFWFOn
+    logical :: adjustFactorOn
     character (len=*), parameter :: alarmID = 'scaledSFWFUpdateAlarm'
 
     real (kind=RKIND) :: earthArea ! surface area of earth (m2)
@@ -91,17 +90,21 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_scaled_sfwf_init(domain)!{{{
+    subroutine ocn_scaled_sfwf_init(domain,runtype)!{{{
 
         type (domain_type), intent(inout) :: domain
+ 
+        character(len=*), intent(in), optional :: runtype
 
         ! Alarm variables
         type (mpas_Time_Type) :: alarmTime
         type (mpas_TimeInterval_type) :: alarmTimeStep
-
+ 
         integer :: err_tmp
 
         character(len=19) :: timeString
+  
+        integer :: timeLevelLocal
 
         if (config_use_precip_scaling) then
             scaledSFWFOn = .true.
@@ -109,6 +112,12 @@ contains
             scaledSFWFOn = .false.
             return
         endif
+
+        if (present(runtype) .and. trim(runtype) == "initial") then
+            adjustFactorOn = .true.
+        else
+            adjustFactorOn = .false.
+        end if
 
         if (trim(config_precip_scaling_mode) /= 'time-dependent' .and.  &
             trim(config_precip_scaling_mode) /= 'constant') then
@@ -120,7 +129,7 @@ contains
             call mpas_log_write('scaledSFWFOn = .true. requires config_precip_scaling_history_years >= 1', &
                                 mpas_LOG_CRIT)
         endif
-        
+
         ! Setup time interval string based on config_precip_scaling_history_years (treated as "years")
         write(timeString, '( I4.4,"-00-00_00:00:00" )') config_precip_scaling_history_years
 
@@ -141,9 +150,143 @@ contains
         ! Compute Earth's surface area (used for normalizing fluxes)
         earthArea = 4.0_RKIND * pi * sphereRadius * sphereRadius
 
-
     end subroutine ocn_scaled_sfwf_init!}}}
 
+!***********************************************************************
+!
+!  routine adjust_scaling_factor
+!
+!> \brief  First guess scaling factors for data freshwater fluxes 
+!> \author Shixuan Zhang 
+!> \date   May 2025
+!> \details
+!>  Using the water balance relationship to estimate the scaling factor 
+!>  at the first year simulation to avoid the significant drift in the 
+!>  beginig of the forced ocean-sea-ice simulations 
+!
+!-----------------------------------------------------------------------
+    subroutine adjust_scaling_factor(domain,itimestep,timeLevel)!{{{
+
+       type (domain_type), intent(inout) :: domain
+
+       integer, intent(in) :: itimestep
+
+       integer, intent(in) :: timeLevel
+
+       type (block_type), pointer :: block_ptr
+
+       type (mpas_pool_type), pointer :: forcingPool
+
+       type (mpas_timeInterval_type) :: timeStepESMF
+
+       real (kind=RKIND), pointer :: &
+               precFluxMean, &
+               SSHinitial, &
+               SSHfinal, &
+               SFWFScalingFactor
+
+       integer, pointer :: nAccumulated
+
+       real (kind=RKIND) :: fwFluxMean
+      
+       real (kind=RKIND) :: model_time_days
+
+       real (kind=RKIND) :: trigger_day_diff, tol 
+
+       real (kind=RKIND) :: dt, dtAvg, v, A, c
+
+       character(len=160) :: m
+      
+       integer :: err_tmp
+
+       call mpas_set_timeInterval(timeStepESMF, timeString=config_dt, ierr=err_tmp)
+       call mpas_get_timeInterval(timeStepESMF, dt=dt)
+
+       ! Compute model time in days
+       model_time_days = itimestep * dt * days_per_second
+
+       ! Only adjust in the first year
+       if ( model_time_days > 365.0_RKIND ) then
+          return
+       end if
+
+       ! Trigger adjustment only near the configured history day interval
+       trigger_day_diff = mod(model_time_days, config_adjust_factor_history_days)
+       tol = 0.5_RKIND * dt * days_per_second
+
+       if ( abs(trigger_day_diff) > tol ) then
+          return
+       end if
+
+       ! independent of blocks
+       block_ptr => domain % blocklist
+       call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+       call mpas_pool_get_array(forcingPool, 'SFWFScalingFactor', SFWFScalingFactor)
+
+       if (trim(config_precip_scaling_mode) == 'constant') then
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         ! constant factors setup by user via namelist!
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+         SFWFScalingFactor = config_precip_scaling_constant_factor
+
+       else if (trim(config_precip_scaling_mode) == 'time-dependent') then
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         ! computed based on first few steps of SSH-change    !
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         
+         ! obtain average precipitation fluxes 
+         call mpas_pool_get_array(forcingPool, 'avgprecFlux', precFluxMean)
+         call mpas_pool_get_array(forcingPool, 'nAccumulatedfwFlux', nAccumulated)
+         
+         ! obtain the initial SSH 
+         call mpas_pool_get_array(forcingPool, "SSHinitial", SSHinitial)
+         
+         ! obtain the current SSH
+         call mpas_pool_get_array(forcingPool, "SSHfinal", SSHfinal)
+         call compute_mass_from_ssh(domain,timeLevel,SSHfinal)
+         
+         dtAvg = dt * nAccumulated
+         fwFluxMean = (SSHfinal - SSHinitial) / dtAvg ! unit: kg / s
+
+         if (abs(precFluxMean) > 1.0e-12_RKIND) then
+            SFWFScalingFactor = config_precip_scaling_initial_factor - fwFluxMean / precFluxMean
+         else
+            write(m,*) 'Warning: avgprecFlux is too small; skipping precipitation scaling adjustment.'
+            call mpas_log_write(m,MPAS_LOG_WARN)
+         end if
+
+         !-------------------------------------------------------------
+         ! Output to log file
+         !-------------------------------------------------------------
+         if (config_precip_scaling_write_to_logfile) then
+
+            call mpas_log_write('----------------------------------------------------------')
+            call mpas_log_write('WATER CONSERVATION CHECK')
+            A = earthArea
+            c = 1.0_RKIND / A
+            call mpas_log_write('WATER FLUXES')
+            call mpas_log_write('MPAS-Ocean name          kg/s (F)                coupler name     short name     kg/m^2/s (F/A)')
+            write(m,"('precFluxMean            ',es16.8,'       x2o_Faxa_(rain/snow)     prect     ',f16.8)") &
+                    precFluxMean,precFluxMean*c; call mpas_log_write(m)
+            write(m,"('fwFluxMean              ',es16.8,'       ssh                      ssh       ',f16.8)") &
+                    fwFluxMean,fwFluxMean*c; call mpas_log_write(m)
+  
+            call mpas_log_write('SCALING FACTOR ON PRECIPITATION FLUXES')
+  
+            call mpas_log_write(' ')
+            write(m, '(A)') 'SFWFScalingMethod       '//trim(config_precip_scaling_mode); call mpas_log_write(m)
+  
+            call mpas_log_write(' ')
+            write(m,"('SFWFScalingFactor       ',es16.8,'       precip_fact              fact      ',f16.8)") &
+                    SFWFScalingFactor,1.0_RKIND - fwFluxMean / precFluxMean; call mpas_log_write(m)
+            call mpas_log_write(' ')
+            call mpas_log_write('----------------------------------------------------------')
+         end if
+
+       end if
+
+    end subroutine adjust_scaling_factor!}}}
 
 !***********************************************************************
 !
@@ -159,10 +302,12 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_update_scaling_factor(domain,timeLevel)!{{{
+    subroutine ocn_update_scaling_factor(domain,itimestep,timeLevel)!{{{
 
        type (domain_type), intent(inout) :: domain
        
+       integer, intent(in) :: itimestep
+
        integer, intent(in), optional :: timeLevel
 
        integer :: timeLevelLocal
@@ -172,10 +317,6 @@ contains
        if (.not. scaledSFWFOn) then
            return
        end if
-
-       if (trim(config_precip_scaling_mode) == 'constant') then
-           return
-       end if 
 
        if ( present(timeLevel) ) then
           timeLevelLocal = timeLevel
@@ -187,6 +328,14 @@ contains
        ! intereval, first, accumulate the yearly mean
        call accumulate_mean_fw_fluxes(domain,timeLevelLocal)
 
+       if (adjustFactorOn) then 
+         ! adjust precipitation factor when run_type = "initial"
+         ! to avoid the drift at the first year simulation when 
+         ! dynamical scaling is not active yet 
+         call adjust_scaling_factor(domain,itimestep,timeLevelLocal) 
+       end if
+
+       ! 
        ! then, compute update the history and running mean if we are at the
        ! end of a year
        if(mpas_is_alarm_ringing(domain % clock, alarmID, ierr=err_tmp)) then

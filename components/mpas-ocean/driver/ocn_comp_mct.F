@@ -844,7 +844,7 @@ contains
        call ocn_init_scaled_dismf(domain)
 
        ! Initialize the precipitation scaling scheme 
-       call ocn_scaled_sfwf_init(domain)
+       call ocn_scaled_sfwf_init(domain,runtype)
        ! Ensure a valid first guess at the initial time 
        call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
        if (config_use_precip_scaling) then
@@ -1332,8 +1332,8 @@ contains
             call mpas_log_write('   Validating ocean state')
          endif
 
-        ! update scalling factors for freshwater fluxes 
-        call ocn_update_scaling_factor(domain, timeLevel=1)
+         ! update scalling factors for freshwater fluxes 
+         call ocn_update_scaling_factor(domain, itimestep, timeLevel=1)
 
          call ocn_validate_state(domain, timeLevel=1)
          if (debugOn) call mpas_log_write('   Completed validating ocean state')
