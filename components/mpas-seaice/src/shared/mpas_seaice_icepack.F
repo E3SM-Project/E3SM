@@ -14081,7 +14081,7 @@ contains
                               = tracerObject % index_brineFraction
                tracerObject % ancestorIndices(tracerObject % index_mobileFraction+ iBioLayer - 1,2) = 0
                retentionTime(iBioLayer) = 1.0_RKIND
-               releaseTime(iBioLayer) = 1.0_RKIND
+               releaseTime(iBioLayer) = config_rapid_mobile_to_stationary_time
 
                if (BGCTracerType(iBioLayer) >=  0.0_RKIND .and. BGCTracerType(iBioLayer) < 0.5_RKIND) then
                   retentionTime(iBioLayer) = config_rapid_mobile_to_stationary_time
