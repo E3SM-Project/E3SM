@@ -10,8 +10,8 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
@@ -43,7 +43,7 @@ void run(std::mt19937_64& engine)
 {
   using PC         = scream::physics::Constants<Real>;
   using KT         = ekat::KokkosTypes<DeviceT>;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<Real>;
 
@@ -59,7 +59,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  auto policy = ESU::get_default_team_policy(ncols, num_levs);
+  auto policy = TPF::get_default_team_policy(ncols, num_levs);
 
   // Input (randomized) views
   view_1d

@@ -5,8 +5,8 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/ekat_pack_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_pack_utils.hpp>
 
 #include <numeric>
 
@@ -254,7 +254,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
@@ -301,7 +301,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
         mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = PackInfo::num_packs(layout.dim(1));
-      auto policy = ESU::get_default_team_policy(ncols,dim1);
+      auto policy = TPF::get_default_team_policy(ncols,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
@@ -343,7 +343,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       }
       const int dim1 = layout.dim(1);
       const int dim2 = PackInfo::num_packs(layout.dim(2));
-      auto policy = ESU::get_default_team_policy(ncols,dim1*dim2);
+      auto policy = TPF::get_default_team_policy(ncols,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
@@ -392,7 +392,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       const int dim1 = layout.dim(1);
       const int dim2 = layout.dim(2);
       const int dim3 = PackInfo::num_packs(layout.dim(3));
-      auto policy = ESU::get_default_team_policy(ncols,dim1*dim2*dim3);
+      auto policy = TPF::get_default_team_policy(ncols,dim1*dim2*dim3);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
@@ -436,7 +436,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
@@ -484,7 +484,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
         mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
-      auto policy = ESU::get_default_team_policy(nrows,dim1);
+      auto policy = TPF::get_default_team_policy(nrows,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -520,7 +520,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       }
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
-      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);
+      auto policy = TPF::get_default_team_policy(nrows,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -559,7 +559,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       const int dim1 = src_layout.dim(1);
       const int dim2 = src_layout.dim(2);
       const int dim3 = PackInfo::num_packs(src_layout.dim(3));
-      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2*dim3);
+      auto policy = TPF::get_default_team_policy(nrows,dim1*dim2*dim3);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -592,7 +592,7 @@ void CoarseningRemapper::pack_and_send ()
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   const int num_send_gids = m_ov_coarse_grid->get_num_local_dofs();
   const auto pid_lid_start = m_send_pid_lids_start;
@@ -628,7 +628,7 @@ void CoarseningRemapper::pack_and_send ()
       {
         auto v = f.get_view<const Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_send_gids,dim1);
+        auto policy = TPF::get_default_team_policy(num_send_gids,dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -648,7 +648,7 @@ void CoarseningRemapper::pack_and_send ()
         auto v = f.get_view<const Real***>();
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
-        auto policy = ESU::get_default_team_policy(num_send_gids,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_send_gids,dim1*dim2);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -671,7 +671,7 @@ void CoarseningRemapper::pack_and_send ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
-        auto policy = ESU::get_default_team_policy(num_send_gids,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_send_gids,dim1*dim2*dim3);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -729,7 +729,7 @@ void CoarseningRemapper::recv_and_unpack ()
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   const int num_tgt_dofs = m_tgt_grid->get_num_local_dofs();
 
@@ -769,7 +769,7 @@ void CoarseningRemapper::recv_and_unpack ()
       {
         auto v = f.get_view<Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim1);
+        auto policy = TPF::get_default_team_policy(num_tgt_dofs,dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -791,7 +791,7 @@ void CoarseningRemapper::recv_and_unpack ()
         auto v = f.get_view<Real***>();
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim2*dim1);
+        auto policy = TPF::get_default_team_policy(num_tgt_dofs,dim2*dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -818,7 +818,7 @@ void CoarseningRemapper::recv_and_unpack ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_tgt_dofs,dim1*dim2*dim3);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();

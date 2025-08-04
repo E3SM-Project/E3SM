@@ -5,7 +5,7 @@
 #include "share/grid/remap/horiz_interp_remapper_base.hpp"
 #include "eamxx_config.h"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 #include <mpi.h>
 

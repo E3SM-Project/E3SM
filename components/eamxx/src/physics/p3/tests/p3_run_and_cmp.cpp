@@ -1,13 +1,10 @@
-#include "share/eamxx_types.hpp"
-#include "share/eamxx_session.hpp"
-#include "share/util/eamxx_utils.hpp"
-
 #include "p3_main_wrap.hpp"
 #include "p3_test_data.hpp"
 #include "p3_ic_cases.hpp"
 
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/eamxx_session.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 #include <chrono>
 #include <vector>

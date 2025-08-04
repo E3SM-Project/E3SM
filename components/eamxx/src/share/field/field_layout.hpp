@@ -4,9 +4,9 @@
 #include "share/field/field_tag.hpp"
 #include "share/eamxx_types.hpp"
 
-#include <ekat/std_meta/ekat_std_utils.hpp>
-#include <ekat/util/ekat_string_utils.hpp>
-#include <ekat/ekat_assert.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <string>
 #include <vector>

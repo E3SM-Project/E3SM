@@ -3,10 +3,10 @@
 
 #include "share/eamxx_types.hpp"
 
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/ekat_scalar_traits.hpp"
-#include "ekat/logging/ekat_logger.hpp"
+#include <ekat_string_utils.hpp>
+#include <ekat_math_utils.hpp>
 
+#include <Kokkos_NumericTraits.hpp>
 #include <vector>
 
 namespace scream {
@@ -149,7 +149,7 @@ Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
   } else if (gas_name == "cfc12" ) {
     return 120.;
   }
-  return ekat::ScalarTraits<Scalar>::invalid();
+  return ekat::invalid<Scalar>();
 }
 
 template <typename Scalar>

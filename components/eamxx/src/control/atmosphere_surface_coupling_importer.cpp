@@ -3,8 +3,8 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "physics/share/physics_constants.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 

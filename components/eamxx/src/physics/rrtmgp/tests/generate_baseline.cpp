@@ -7,7 +7,7 @@
 #include <cpp/rrtmgp/mo_gas_concentrations.h>
 #include <mo_garand_atmos_io.h>
 
-#include <ekat/logging/ekat_logger.hpp>
+#include <ekat_logger.hpp>
 
 #include <iostream>
 #include <cmath>

@@ -6,6 +6,8 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
+#include <ekat_team_policy_utils.hpp>
+
 namespace scream {
 namespace marine_organics {
 
@@ -187,7 +189,7 @@ void marineOrganicsFunctions<S, D>::perform_time_interpolation(
     const marineOrganicsInput &data_beg, const marineOrganicsInput &data_end,
     const marineOrganicsOutput &data_out) {
   using ExeSpace = typename KT::ExeSpace;
-  using ESU      = ekat::ExeSpaceUtils<ExeSpace>;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   // Gather time stamp info
   auto &t_now   = time_state.t_now;
@@ -210,9 +212,7 @@ void marineOrganicsFunctions<S, D>::perform_time_interpolation(
 
   const int nsectors = data_beg.data.nsectors;
   const int ncols    = data_beg.data.ncols;
-  using ExeSpace     = typename KT::ExeSpace;
-  using ESU          = ekat::ExeSpaceUtils<ExeSpace>;
-  const auto policy  = ESU::get_default_team_policy(ncols, nsectors);
+  const auto policy  = TPF::get_default_team_policy(ncols, nsectors);
 
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MemberType &team) {

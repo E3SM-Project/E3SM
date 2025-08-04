@@ -3,7 +3,7 @@
 
 #include "share/grid/abstract_grid.hpp"
 
-#include <ekat/logging/ekat_logger.hpp>
+#include <ekat_logger.hpp>
 
 namespace scream
 {

@@ -4,7 +4,7 @@
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 #include <iomanip>
 

@@ -1,9 +1,9 @@
 #include "diagnostics/field_at_pressure_level.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_upper_bound.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_upper_bound.hpp>
+#include <ekat_units.hpp>
 
 namespace scream
 {

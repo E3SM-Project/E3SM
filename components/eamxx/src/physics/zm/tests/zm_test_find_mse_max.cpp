@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp"
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/zm/zm_functions.hpp"
 #include "physics/zm/tests/infra/zm_test_data.hpp"
 #include "physics/zm/tests/infra/zm_test_data_functions.hpp"
 
 #include "zm_unit_tests_common.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 namespace zm {
