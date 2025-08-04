@@ -37,6 +37,7 @@ module seq_hist_mod
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_om_cnt
   use prep_ocn_mod,      only: prep_ocn_get_x2oacc_om
   use prep_atm_mod,      only: prep_atm_get_o2x_am
+  use prep_lnd_mod,      only: prep_lnd_get_x2l_lm
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ax
 
@@ -177,7 +178,11 @@ contains
     integer       ::  ierr, dummy,nx_lnd, numpts
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2x_am
+    real(r8), dimension(:,:), pointer  :: p_x2l_lm
     real(r8), dimension(:), allocatable  :: mask
+    real(r8), dimension(:,:), allocatable,target  :: zeros
+    type(mct_list) :: temp_list
+    integer :: size_list
 
     !-------------------------------------------------------------------------------
     !
@@ -278,8 +283,27 @@ contains
                     'afrac:lfrac:lfrin', whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, nt=1,dims2din=latlonid)
                 call seq_io_write(hist_file, mblxid, 'l2x', &
                   trim(seq_flds_l2x_fields),whead=whead, wdata=wdata,nx=lnd_nx, ny=lnd_ny, nt=1, dims2din=latlonid)
-                call seq_io_write(hist_file, mblxid, 'x2l',&
-                  trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, nt=1,dims2din=latlonid)
+                ! the land mrg, where prep_lnd_get_x2l_lm is defined, is only called if lnd_prognostic is true.
+                ! MCT will still output zero because x2l is initialized to zero.  MOAB needs to
+                ! handle and match that.
+                if(lnd_prognostic) then
+                   p_x2l_lm =>  prep_lnd_get_x2l_lm()
+                   call seq_io_write(hist_file, mblxid, 'x2l',&
+                     trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, &
+                     nt=1,matrix=p_x2l_lm,dims2din=latlonid)
+                else
+                   numpts = mbGetnCells(mblxid)
+                   call mct_list_init(temp_list ,seq_flds_x2l_fields)
+                   size_list=mct_list_nitem (temp_list)
+                   allocate(zeros(numpts,size_list))
+                   zeros(:,:)=0.0_r8
+                   p_x2l_lm => zeros
+                   call seq_io_write(hist_file, mblxid, 'x2l',&
+                     trim(seq_flds_x2l_fields), whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny, &
+                     nt=1,matrix=p_x2l_lm,dims2din=latlonid)
+                   call mct_list_clean(temp_list)
+                   deallocate(zeros)
+                endif
           endif
 
           if (rof_present) then
