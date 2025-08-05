@@ -222,7 +222,7 @@ TEST_CASE("utils") {
     mask(dim0 - 1) = sp(0.0);
     mask_of_field00.sync_to_dev();
     field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
-    field00_masked.get_header().set_extra_data("mask_value", Real(constants::DefaultFillValue<float>::value));
+    field00_masked.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
     field00_masked.sync_to_dev();
     horiz_contraction<Real>(result, field00_masked, field00);
     result.sync_to_host();
@@ -407,7 +407,7 @@ TEST_CASE("utils") {
       mask(dim0 - 1) = sp(0.0);
       mask_of_field00.sync_to_dev();
       field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
-      field00_masked.get_header().set_extra_data("mask_value", Real(constants::DefaultFillValue<float>::value));
+      field00_masked.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
       field00_masked.sync_to_dev();
       vert_contraction<Real,1>(result, field00_masked, field00);
       result.sync_to_host();

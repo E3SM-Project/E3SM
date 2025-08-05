@@ -35,7 +35,7 @@ int get_operator_code(const std::string& op) {
 void apply_conditional_sampling_1d(
     const Field &output_field, const Field &input_field, const Field &condition_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
+    const Real &fill_value = constants::fill_value<Real>) {
 
   const auto output_v    = output_field.get_view<Real *>();
   const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
@@ -74,7 +74,7 @@ void apply_conditional_sampling_1d(
 void apply_conditional_sampling_2d(
     const Field &output_field, const Field &input_field, const Field &condition_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
+    const Real &fill_value = constants::fill_value<Real>) {
 
   const auto output_v    = output_field.get_view<Real **>();
   const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
@@ -117,7 +117,7 @@ void apply_conditional_sampling_2d(
 void apply_conditional_sampling_1d_lev(
     const Field &output_field, const Field &input_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
+    const Real &fill_value = constants::fill_value<Real>) {
 
   const auto output_v = output_field.get_view<Real *>();
   const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real *>();
@@ -155,7 +155,7 @@ void apply_conditional_sampling_1d_lev(
 void apply_conditional_sampling_2d_lev(
     const Field &output_field, const Field &input_field,
     const std::string &condition_op, const Real &condition_val,
-    const Real &fill_value = Real(constants::DefaultFillValue<float>::value)) {
+    const Real &fill_value = constants::fill_value<Real>) {
 
   const auto output_v = output_field.get_view<Real **>();
   const auto mask_v = output_field.get_header().get_extra_data<Field>("mask_data").get_view<Real **>();
@@ -236,7 +236,7 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
 
-  const auto var_fill_value = Real(constants::DefaultFillValue<float>::value);
+  const auto var_fill_value = constants::fill_value<Real>;
   m_mask_val = m_params.get<double>("mask_value", var_fill_value);
 
   m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
