@@ -266,7 +266,7 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
 }
 
 void ConditionalSampling::compute_diagnostic_impl() {
-  Field &f;
+  Field f;
   if (m_input_f == "count") {
     // Special case: if the input field is "count", we use the diagnostic output as the input
     f = m_diagnostic_output;
