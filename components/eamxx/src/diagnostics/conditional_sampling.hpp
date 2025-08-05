@@ -30,14 +30,22 @@ public:
 
 protected:
   void initialize_impl(const RunType /*run_type*/);
-
-  Real m_mask_val;
-
+  // General syntax is X_where_Y_comp_VAL
   std::string m_diag_name;    // X_where_Y_comp_VAL
   std::string m_input_f;      // X
   std::string m_condition_f;  // Y
   Real m_condition_v;         // VAL
   std::string m_condition_op; // comp
+
+  // For masking 
+  Real m_mask_val;
+
+  // For count we need to save a field of ones
+  Field ones;
+
+  // For count and lev, we need to access grid info
+  int m_nlevs;
+  std::string m_gn;
 };
 
 } // namespace scream

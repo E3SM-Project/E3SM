@@ -220,18 +220,39 @@ void ConditionalSampling::set_grids(const std::shared_ptr<const GridsManager> gr
   // since it's geometric information from the grid, not an actual field
   if (m_condition_f != "lev") {
     add_field<Required>(m_condition_f, gn);
+  } else {
+    // Store grid info for potential use in count operations
+    m_nlevs = g->get_num_vertical_levels();
+    m_gn = gn;
   }
 }
 
 void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
 
-  const auto ifid = get_field_in(m_input_f).get_header().get_identifier();
+  if (m_input_f != "count") {
+    auto ifid = get_field_in(m_input_f).get_header().get_identifier();
+    FieldIdentifier d_fid(m_diag_name, ifid.get_layout().clone(), ifid.get_units(),
+                          ifid.get_grid_name());
+    m_diagnostic_output = Field(d_fid);
+    m_diagnostic_output.allocate_view();
+  } else {
+    if (m_condition_f != "lev") {
+      auto ifid = get_field_in(m_condition_f).get_header().get_identifier();
+      FieldIdentifier d_fid(m_diag_name, ifid.get_layout().clone(), ifid.get_units(),
+                          ifid.get_grid_name());
+      m_diagnostic_output = Field(d_fid);
+      m_diagnostic_output.allocate_view();
+    } else {
+      using namespace ShortFieldTagsNames;
+      using namespace ekat::units;
+      const auto nondim = Units::nondimensional();
+      FieldIdentifier d_fid(m_diag_name, {{LEV},{m_nlevs}}, nondim, m_gn);
+      m_diagnostic_output = Field(d_fid);
+      m_diagnostic_output.allocate_view();
+    }
+  }
 
-  FieldIdentifier d_fid(m_diag_name, ifid.get_layout().clone(), ifid.get_units(),
-                        ifid.get_grid_name());
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
-
+  auto ifid = m_diagnostic_output.get_header().get_identifier();
   FieldIdentifier mask_fid(m_diag_name + "_mask", ifid.get_layout().clone(), ifid.get_units(), ifid.get_grid_name());
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
@@ -242,10 +263,12 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
   m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
 
-  // Special case: if the input field is "count", let's create a field of 1 inside m_diagnostic_output
+  // Special case: if the input field is "count", let's create a field of 1s
   if (m_input_f == "count") {
-    m_diagnostic_output.deep_copy(1.0);
+    ones = m_diagnostic_output.clone("count_ones");
+    ones.deep_copy(1.0);
   }
+  
   // Special case: if condition field is "lev", we don't need to check layout compatibility
   // since "lev" is geometric information, not an actual field
   if (m_condition_f == "lev") {
@@ -269,7 +292,7 @@ void ConditionalSampling::compute_diagnostic_impl() {
   Field f;
   if (m_input_f == "count") {
     // Special case: if the input field is "count", we use the diagnostic output as the input
-    f = m_diagnostic_output;
+    f = ones;
   } else {
     f = get_field_in(m_input_f);
   }

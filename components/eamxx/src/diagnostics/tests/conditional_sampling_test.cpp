@@ -246,11 +246,9 @@ TEST_CASE("conditional_sampling") {
     }
   }
   SECTION("count_conditional") {
-    const auto comp_val = 0.001;
+    const auto comp_val = 50.0;
     
     // Test count conditional sampling - count grid points where condition is met
-    params.clear();
-    params.set("grid_name", grid->name());
     params.set<std::string>("input_field", "count");
     params.set<std::string>("condition_field", "qc");
     params.set<std::string>("condition_operator", "gt");
