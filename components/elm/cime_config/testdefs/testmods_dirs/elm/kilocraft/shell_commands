@@ -1,7 +1,5 @@
 ./xmlchange DATM_MODE=uELM_NA
 ./xmlchange DATM_CLMNCEP_YR_END=1948
-#./xmlchange PIO_TYPENAME="pnetcdf"
-#./xmlchange PIO_NETCDF_FORMAT="64bit_data"
 ./xmlchange DATM_CLMNCEP_YR_START=2014
 ./xmlchange DATM_CLMNCEP_YR_END=2014
 ./xmlchange ATM_NCPL=24

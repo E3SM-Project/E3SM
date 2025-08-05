@@ -10,14 +10,14 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%kmELM][%uELMTES][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%DaymetGSWP3][%DaymetERA5][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
     <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
     <desc option="GSWP3v1"> GSWP3v1 data set </desc>
-    <desc option="kmELM"> Daymet NA data set, sub-daily downscaled with GSWP3 </desc>
-    <desc option="uELMTES"> Daymet NA data set, sub-daily downscaled with ERA5 for TESSFA project </desc>
+    <desc option="DaymetGSWP3"> Daymet NA data set, sub-daily downscaled with GSWP3 </desc>
+    <desc option="DaymetERA5"> Daymet NA data set, sub-daily downscaled with ERA5 for TESSFA project </desc>
     <desc option="ERA5"> Fifth generation ECMWF reanalysis </desc>
     <desc option="ERA56HR"> Fifth generation ECMWF reanalysis,6 hourly data </desc>
     <desc option="GSWP3w5e5"> GSWP3w5e5 data set </desc>
@@ -79,8 +79,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%CRU">CLMCRUNCEP</value>
       <value compset="%CRUv7">CLMCRUNCEPv7</value>
       <value compset="%GSWP3v1">CLMGSWP3v1</value>
-      <value compset="%kmELM">uELM_NA</value>
-      <value compset="%uELMTES">uELM_TES</value>
+      <value compset="%DaymetGSWP3">uELM_NA</value>
+      <value compset="%DaymetERA5">uELM_TES</value>
       <value compset="%ERA5">ELMERA5</value>
       <value compset="%ERA56HR">ERA56HR</value>
       <value compset="%GSWP3w5e5">ELMGSWP3w5e5</value>
@@ -384,8 +384,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="1850.*_DATM%QIA">1</value>
       <value compset="1850.*_DATM%CRU">1</value>
       <value compset="1850.*_DATM%GSW">1</value>
-      <value compset="1850.*_DATM%kmELM">1</value>
-      <value compset="1850.*_DATM%uELMTES">1</value> 
+      <value compset="1850.*_DATM%DaymetGSWP3">1</value>
+      <value compset="1850.*_DATM%DaymetERA5">1</value> 
       <value compset="HIST.*_DATM%QIA">1895</value>
       <value compset="HIST.*_DATM%CRU">1901</value>
       <value compset="HIST.*_DATM%GSW">1901</value>
@@ -393,8 +393,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="20TR.*_DATM%QIA">1895</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
-      <value compset="20TR.*_DATM%kmELM">1980</value>      
-      <value compset="20TR.*_DATM%uELMTES">1980</value>
+      <value compset="20TR.*_DATM%DaymetGSWP3">1980</value>      
+      <value compset="20TR.*_DATM%DaymetERA5">1980</value>
       <value compset="SSP.*_DATM%QIA">$DATM_CLMNCEP_YR_START</value>
       <value compset="SSP.*_DATM%CRU">$DATM_CLMNCEP_YR_START</value>
       <value compset="SSP.*_DATM%GSW">$DATM_CLMNCEP_YR_START</value>
@@ -424,8 +424,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="1850.*_DATM%QIA">1948</value>
       <value compset="1850.*_DATM%CRU">1901</value>
       <value compset="1850.*_DATM%GSW">1901</value>
-      <value compset="1850.*_DATM%kmELM">1980</value>
-      <value compset="1850.*_DATM%uELMTES">1980</value>  
+      <value compset="1850.*_DATM%DaymetGSWP3">1980</value>
+      <value compset="1850.*_DATM%DaymetERA5">1980</value>  
       <value compset="1850.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="2000.*_DATM%WISOQIA">2000</value>
       <value compset="2000.*_DATM%QIA">1972</value>
@@ -436,8 +436,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="20TR.*_DATM%QIA">1948</value>
       <value compset="20TR.*_DATM%CRU">1901</value>
       <value compset="20TR.*_DATM%GSW">1901</value>
-      <value compset="20TR.*_DATM%kmELM">1980</value> 
-      <value compset="20TR.*_DATM%uELMTES">1980</value>
+      <value compset="20TR.*_DATM%DaymetGSWP3">1980</value> 
+      <value compset="20TR.*_DATM%DaymetERA5">1980</value>
       <value compset="20TR.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
       <value compset="4804.*_DATM%QIA">1948</value>
       <value compset="SSP.*_DATM%QIA" >1995</value>
@@ -474,8 +474,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
       <value   compset="1850.*_DATM%GSWP3w5e5">1920</value>
-      <value   compset="1850.*_DATM%kmELM">2014</value>
-      <value   compset="1850.*_DATM%uELMTES">2023</value>
+      <value   compset="1850.*_DATM%DaymetGSWP3">2014</value>
+      <value   compset="1850.*_DATM%DaymetERA5">2023</value>
       <value   compset="1850.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="2000.*_DATM%WISOQIA">2004</value>
       <value   compset="2000.*_DATM%QIA">2004</value>
@@ -488,8 +488,8 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="20TR.*_DATM%CRU">1920</value>
       <value   compset="20TR.*_DATM%GSW">1920</value>
       <value   compset="20TR.*_DATM%GSWP3w5e5">1920</value>
-      <value   compset="20TR.*_DATM%kmELM">2014</value>
-      <value   compset="20TR.*_DATM%uELMTES">2023</value> 
+      <value   compset="20TR.*_DATM%DaymetGSWP3">2014</value>
+      <value   compset="20TR.*_DATM%DaymetERA5">2023</value> 
       <value   compset="20TR.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="SSP.*_DATM%QIA">2004</value>
