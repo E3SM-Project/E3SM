@@ -577,7 +577,6 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...     <selectors/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -585,6 +584,9 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...             <atm_procs_list>NONE</atm_procs_list>
     ...             <prop2>one</prop2>
     ...         </atm_proc_group>
+    ...         <eamxx inherit="atm_proc_group">
+    ...             <atm_procs_list>P1,P2</atm_procs_list>
+    ...         </eamxx>
     ...         <P1 inherit="atm_proc_base">
     ...             <prop1>two</prop1>
     ...         </P1>
@@ -596,7 +598,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> d = convert_to_dict(get_child(generated,'eamxx'))
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
@@ -610,11 +612,10 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> xml = '''
     ... <namelist_defaults>
     ...     <selectors>
-    ...       <selector name="grid" case_env="ATM_GRID"/>
+    ...         <selector name="grid" case_env="ATM_GRID"/>
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...         <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...         <atm_proc_base>
     ...             <prop1>zero</prop1>
     ...         </atm_proc_base>
@@ -622,6 +623,9 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...             <atm_procs_list>NONE</atm_procs_list>
     ...             <prop2>one</prop2>
     ...         </atm_proc_group>
+    ...         <eamxx inherit="atm_proc_group">
+    ...             <atm_procs_list>P1,P2</atm_procs_list>
+    ...         </eamxx>
     ...         <P1 inherit="atm_proc_base">
     ...             <prop1>two</prop1>
     ...             <prop1 grid='ne4ne4'>two_selected</prop1>
@@ -634,7 +638,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> d = convert_to_dict(get_child(generated,'eamxx'))
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
@@ -652,12 +656,14 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...     </selectors>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
-    ...       <atm_procs_list type="array(string)">P1,P2</atm_procs_list>
     ...       <atm_proc_base>
     ...         <number_of_subcycles constraints='gt 0'>1</number_of_subcycles>
     ...         <enable_precondition_checks type='logical'>true</enable_precondition_checks>
     ...         <enable_postcondition_checks type='logical'>true</enable_postcondition_checks>
     ...       </atm_proc_base>
+    ...       <eamxx inherit="atm_proc_group">
+    ...         <atm_procs_list>P1,P2</atm_procs_list>
+    ...       </eamxx>
     ...       <physics_proc_base inherit='atm_proc_base'>
     ...         <Grid>physics_gll</Grid>
     ...         <Grid grid='ne4ne4'>physics_pg2</Grid>
@@ -678,7 +684,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> d = convert_to_dict(get_child(generated,'eamxx'))
     >>> import pprint
     >>> pp = pprint.PrettyPrinter(indent=4)
     >>> pp.pprint(d)
@@ -721,15 +727,16 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
         # 4. Expand any CIME var that appears inside XML nodes text
         expand_cime_vars(xml,case)
 
-        # 5. Grab the atmosphere_processes macro list, with all the defaults
+        # 5. Grab the atmosphere_processes_defaults node, with all the procs defaults
         atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
 
-        # 6. Get atm procs list
-        atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
+        # 6. Get eamxx atm procs list
+        eamxx_group = get_child(atm_procs_defaults,"eamxx",remove=True)
+        atm_procs_list = get_child(eamxx_group,"atm_procs_list",remove=True)
 
         # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
         atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-        atm_procs.tag = "atmosphere_processes"
+        atm_procs.tag = "eamxx"
         xml.append(atm_procs)
 
         # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
