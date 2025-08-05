@@ -1,6 +1,6 @@
 #include "diagnostics/conditional_sampling.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 #include <string>
 
 namespace scream {

@@ -51,6 +51,21 @@ Use the special condition field name `lev`.
 - `p_mid_where_lev_eq_0`
 - `qv_where_lev_le_10`
 
+## Count-based conditional sampling
+
+Count the number of grid points where a condition is met.
+Use the special input field name `count`. The output will be `1.0`
+where the condition is satisfied and the fill value elsewhere.
+This is particularly useful when combined with horizontal or vertical
+reductions to count occurrences of specific conditions.
+
+**Examples**:
+
+- `count_where_qv_gt_0.01`
+- `count_where_T_mid_le_273.15`
+- `count_where_p_mid_lt_50000`
+- `count_where_lev_gt_5`
+
 ## Caveats
 
 - For now, we only support 1D or 2D fields.
@@ -76,12 +91,18 @@ averaging_type: instant
 fields:
   physics_pg2:
     field_names:
+      # Field-based conditional sampling
       - T_mid_where_qv_gt_0.01
       - p_mid_where_T_mid_le_273.15
       - qv_where_p_mid_lt_50000
+      # Level-based conditional sampling  
       - T_mid_where_lev_gt_5
       - p_mid_where_lev_eq_0
       - qv_where_lev_le_10
+      # Count-based conditional sampling
+      - count_where_qv_gt_0.01
+      - count_where_T_mid_le_273.15
+      - count_where_lev_gt_5
 output_control:
   frequency: 6
   frequency_units: nhours

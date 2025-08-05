@@ -245,6 +245,93 @@ TEST_CASE("conditional_sampling") {
       }
     }
   }
+  SECTION("count_conditional") {
+    const auto comp_val = 0.001;
+    
+    // Test count conditional sampling - count grid points where condition is met
+    params.clear();
+    params.set("grid_name", grid->name());
+    params.set<std::string>("input_field", "count");
+    params.set<std::string>("condition_field", "qc");
+    params.set<std::string>("condition_operator", "gt");
+    params.set<std::string>("condition_value", std::to_string(comp_val));
+
+    // Set time for qc and randomize its values
+    qc11.get_header().get_tracking().update_time_stamp(t0);
+    qc12.get_header().get_tracking().update_time_stamp(t0);
+    qc21.get_header().get_tracking().update_time_stamp(t0);
+    randomize(qc11, engine, pdf);
+    randomize(qc12, engine, pdf);
+    randomize(qc21, engine, pdf);
+
+    // Create and set up the diagnostic for count
+    auto count_diag11 = diag_factory.create("ConditionalSampling", comm, params);
+    auto count_diag12 = diag_factory.create("ConditionalSampling", comm, params);
+    auto count_diag21 = diag_factory.create("ConditionalSampling", comm, params);
+    count_diag11->set_grids(gm);
+    count_diag12->set_grids(gm);
+    count_diag21->set_grids(gm);
+
+    // Set the fields for each diagnostic
+    count_diag11->set_required_field(qc11);
+    count_diag11->initialize(t0, RunType::Initial);
+    count_diag11->compute_diagnostic();
+    auto count_diag11_f = count_diag11->get_diagnostic();
+    count_diag11_f.sync_to_host();
+    auto count_diag11_v = count_diag11_f.get_view<const Real *, Host>();
+
+    count_diag12->set_required_field(qc12);
+    count_diag12->initialize(t0, RunType::Initial);
+    count_diag12->compute_diagnostic();
+    auto count_diag12_f = count_diag12->get_diagnostic();
+    count_diag12_f.sync_to_host();
+    auto count_diag12_v = count_diag12_f.get_view<const Real *, Host>();
+
+    count_diag21->set_required_field(qc21);
+    count_diag21->initialize(t0, RunType::Initial);
+    count_diag21->compute_diagnostic();
+    auto count_diag21_f = count_diag21->get_diagnostic();
+    count_diag21_f.sync_to_host();
+    auto count_diag21_v = count_diag21_f.get_view<const Real **, Host>();
+
+    auto qc11_v = qc11.get_view<const Real *, Host>();
+    auto qc12_v = qc12.get_view<const Real *, Host>();
+    auto qc21_v = qc21.get_view<const Real **, Host>();
+
+    // Check the results - count should be 1.0 where condition is met, fill_value otherwise
+    for (int ilev = 0; ilev < nlevs; ++ilev) {
+      // check count for qc12
+      if (qc12_v(ilev) > comp_val) {
+        REQUIRE(count_diag12_v(ilev) == 1.0);
+      } else {
+        REQUIRE(count_diag12_v(ilev) == fill_value);
+      }
+    }
+    
+    for (int icol = 0; icol < ngcols; ++icol) {
+      // Check count for qc11
+      if (qc11_v(icol) > comp_val) {
+        REQUIRE(count_diag11_v(icol) == 1.0);
+      } else {
+        REQUIRE(count_diag11_v(icol) == fill_value);
+      }
+      
+      for (int ilev = 0; ilev < nlevs; ++ilev) {
+        // check count for qc21
+        if (qc21_v(icol, ilev) > comp_val) {
+          REQUIRE(count_diag21_v(icol, ilev) == 1.0);
+        } else {
+          REQUIRE(count_diag21_v(icol, ilev) == fill_value);
+        }
+        // check count again, but the negative
+        if (qc21_v(icol, ilev) <= comp_val) {
+          REQUIRE_FALSE(count_diag21_v(icol, ilev) == 1.0);
+        } else {
+          REQUIRE_FALSE(count_diag21_v(icol, ilev) == fill_value);
+        }
+      }
+    }
+  }
 }
 
 } // namespace scream

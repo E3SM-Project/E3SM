@@ -472,7 +472,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
           auto v_tmp = f_tmp.get_view<const ST **>();
           const int d0 = l_out.dim(0);
           const int d1 = l_out.dim(1);
-          auto p       = ESU::get_default_team_policy(d0*d1, 1);
+          auto p       = TPF::get_default_team_policy(d0*d1, 1);
           Kokkos::parallel_for(
               f_out.name(), p, KOKKOS_LAMBDA(const TeamMember &tm) {
                 const int i = tm.league_rank() / d1;
