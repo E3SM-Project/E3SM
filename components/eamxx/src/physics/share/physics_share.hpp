@@ -16,6 +16,7 @@ Real scream_log10(Real input);
 Real scream_exp(Real input);
 Real scream_expm1(Real input);
 Real scream_tanh(Real input);
+Real scream_cos(Real input);
 Real scream_erf(Real input);
 
 }

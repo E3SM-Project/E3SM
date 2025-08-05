@@ -1,3 +1,6 @@
+! Include bit-for-bit math macros.
+#include "bfb_math.inc"
+
 module gw_common
 
 !
@@ -5,6 +8,10 @@ module gw_common
 ! parameterizations.
 !
 use gw_utils, only: r8, btype
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+use physics_share_f2c, only: scream_cos
+#endif
 
 implicit none
 private
@@ -596,7 +603,9 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
   real(r8) :: ptaper(ncol)
 
   if (do_taper) then    ! taper CM only
-     ptaper = cos(lat)
+     do l=1, ncol
+        ptaper(l) = bfb_cos(lat(l))
+     end do
   else                  ! do not taper other cases
      ptaper = 1._r8
   endif

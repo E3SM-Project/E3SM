@@ -112,6 +112,16 @@ interface
     real(kind=c_real)            :: scream_tanh
   end function scream_tanh
 
+  function scream_cos(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: scream_cos
+  end function scream_cos
+
   function scream_erf(input) bind(C)
     use iso_c_binding
 
