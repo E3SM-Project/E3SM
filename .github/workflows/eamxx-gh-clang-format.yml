@@ -41,5 +41,5 @@ jobs:
         source: ${{ steps.changed-files.outputs.all_changed_files }}
         exclude: ''
         extensions: 'hpp,cpp'
-        clangFormatVersion: 14
+        clangFormatVersion: 18
         style: 'file:components/eamxx/.clang-format'
