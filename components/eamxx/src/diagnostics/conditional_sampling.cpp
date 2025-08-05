@@ -211,7 +211,10 @@ void ConditionalSampling::set_grids(const std::shared_ptr<const GridsManager> gr
   const auto &gn = m_params.get<std::string>("grid_name");
   const auto g   = grids_manager->get_grid("physics");
 
-  add_field<Required>(m_input_f, gn);
+  // Special case: if the input field is "count", we don't need to add it
+  if (m_input_f != "count") {
+    add_field<Required>(m_input_f, gn);
+  }
 
   // Special case: if condition field is "lev", we don't add it as a required field
   // since it's geometric information from the grid, not an actual field
@@ -239,6 +242,10 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   m_diagnostic_output.get_header().set_extra_data("mask_data", diag_mask);
   m_diagnostic_output.get_header().set_extra_data("mask_value", m_mask_val);
 
+  // Special case: if the input field is "count", let's create a field of 1 inside m_diagnostic_output
+  if (m_input_f == "count") {
+    m_diagnostic_output.deep_copy(1.0);
+  }
   // Special case: if condition field is "lev", we don't need to check layout compatibility
   // since "lev" is geometric information, not an actual field
   if (m_condition_f == "lev") {
@@ -259,7 +266,13 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
 }
 
 void ConditionalSampling::compute_diagnostic_impl() {
-  const auto &f = get_field_in(m_input_f);
+  Field &f;
+  if (m_input_f == "count") {
+    // Special case: if the input field is "count", we use the diagnostic output as the input
+    f = m_diagnostic_output;
+  } else {
+    f = get_field_in(m_input_f);
+  }
   const auto &d = m_diagnostic_output;
 
   // Validate operator
