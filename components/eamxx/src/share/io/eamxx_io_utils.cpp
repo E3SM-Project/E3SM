@@ -5,7 +5,7 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/eamxx_config.hpp"
 
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_string_utils.hpp>
 
 #include <fstream>
 #include <regex>
@@ -252,7 +252,11 @@ parse_field_alias (const std::string& field_spec)
   EKAT_REQUIRE_MSG(!alias.empty() && !field_name.empty(),
       "Error! Invalid field alias specification: '" + field_spec + "'\n"
       "Expected format: 'alias:=field_name' where both alias and field_name are non-empty.\n");
-  
+
+  auto another_pos = field_name.find(delimiter);
+  EKAT_REQUIRE_MSG(another_pos == std::string::npos,
+      "Error! Invalid field alias specification: '" + field_spec + "'\n"
+      "Multiple ':=' tokens found.\n");
   return {alias, field_name};
 }
 
