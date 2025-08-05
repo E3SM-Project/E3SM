@@ -1038,51 +1038,57 @@ contains
 
   end subroutine init_moab_land
 
+  !---------------------------------------------------------------------------
   subroutine init_moab_land_internal(bounds, LNDID)
-    use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
-    use shr_kind_mod     , only : CXX => SHR_KIND_CXX
-    use spmdMod     , only: iam  ! rank on the land communicator
-    use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
-    use elm_varcon  , only: re
-    use shr_const_mod, only: SHR_CONST_PI
-    use elm_varctl  ,  only : iulog, fatmlndfrc  ! for messages and domain file name
-    use spmdmod  , only: masterproc
+    !
+    ! !DESCRIPTION:
+    !
+    !
+    use seq_flds_mod  , only : seq_flds_l2x_fields, seq_flds_x2l_fields
+    use shr_kind_mod  , only : CXX => SHR_KIND_CXX
+    use spmdMod       , only : iam                 ! rank on the land communicator
+    use domainMod     , only : ldomain             ! ldomain is coming from module, not even passed
+    use elm_varcon    , only : re
+    use shr_const_mod , only : SHR_CONST_PI
+    use elm_varctl    , only : iulog, fatmlndfrc   ! for messages and domain file name
+    use spmdmod       , only : masterproc
     use controlMod
-    use iMOAB  , only: iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
-    iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
-    iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
-    iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+    use iMOAB         , only : iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
+         iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
+         iMOAB_UpdateMeshInfo, iMOAB_GetMeshInfo, &
+         iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
 
-    type(bounds_type) , intent(in)  :: bounds
-    integer , intent(in) :: LNDID ! id of the land app
-    integer :: LNDGHOSTID ! id of the ghosted land app
-    integer :: mpigrp_lndcmp ! coupler pes
-
-    integer lsz !  keep local size
-    integer n, nghostlayers ! number of ghost layer regions
+    type(bounds_type) , intent(in) :: bounds
+    integer           , intent(in) :: LNDID ! id of the land app
+    !
+    integer                 :: LNDGHOSTID      ! id of the ghosted land app
+    integer                 :: mpigrp_lndcmp   ! coupler pes
+    integer                 :: lsz             !  keep local size
+    integer                 :: n, nghostlayers ! number of ghost layer regions
+    !
     ! local variables to fill in data
     ! retrieve everything we need from land domain mct_ldom
     ! number of vertices is the size of land domain
-    real(r8), pointer :: data(:)  ! temporary
-    integer   dims, i, ierr
-    integer tagtype, numco !, mbtype, block_ID
-    character*100 outfile, wopts
-    character(CXX) ::  tagname ! hold all fields
-    character*32  appname
+    real(r8), pointer       :: data(:)  ! temporary
+    integer                 :: dims, i, ierr
+    integer                 :: tagtype, numco
+    character(len=100)      :: outfile, wopts
+    character(CXX)          ::  tagname ! hold all fields
+    character(len=32)       ::  appname
     ! TODO: should size it to the number of actual fields we want to exchange
     ! between ghost layers on the component side
     integer, dimension(100) :: tag_indices
-    integer, dimension(100) ::  entity_types
-    integer topodim, bridgedim
-    integer nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
+    integer, dimension(100) :: entity_types
+    integer                 :: topodim, bridgedim
+    integer                 :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
 
     INCLUDE 'mpif.h'
 
     if (ldomain%nv < 3)  &
         call endrun('Error: cannot create ELM-MOAB mesh when ldomain%nv < 3.')
 
-    topodim = 2 ! topological dimension = 2: manifold mesh on the sphere
-    bridgedim = 0 ! use vertices = 0 as the bridge (other options: edges = 1)
+    topodim      = 2 ! topological dimension = 2: manifold mesh on the sphere
+    bridgedim    = 0 ! use vertices = 0 as the bridge (other options: edges = 1)
     nghostlayers = 0 ! initialize to zero (default)
 
     ! next define MOAB app for the ghosted one
@@ -1092,7 +1098,7 @@ contains
     ierr = iMOAB_RegisterApplication(appname, mpicom_lnd_moab, LNDGHOSTID, mlndghostid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register ELM-MOAB halo app')
-    if(masterproc) then
+    if (masterproc) then
        write(iulog,*) " "
        write(iulog,*) "register MOAB app:", trim(appname), "  mlndghostid=", mlndghostid
        write(iulog,*) " "
@@ -1149,7 +1155,6 @@ contains
     endif
 
     ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
-    !tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
     tagtype = 0 ! dense, integer
     numco = 1
     tagname='GLOBAL_ID:partition:mask'//C_NULL_CHAR
@@ -1164,42 +1169,7 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to create frac:area:aream tags')
 
-    ! use data array as a data holder
-    ! Note that loop bounds are typical for locally owned points
-    ! allocate(data(lsz*3))
-    ! do i = 1, lsz
-    !   n = i-1 + bounds%begg
-    !   data(i) = ldomain%frac(n)               ! frac = area fractions
-    !   data(i+lsz) = ldomain%area(n)/(re*re)   ! area = element area
-    !   data(i+2*lsz) = data(i+lsz)             ! aream = model area
-    ! enddo
-
     entity_types(:) = 1 ! default: Element-based tags
-
-    ! set the values on the internal mesh, halo values aren't set
-    ! ierr = iMOAB_SetDoubleTagStorage( mlndghostid, tagname, lsz*3, entity_types(1), data )
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to set frac:area:aream tag ')
-
-    ! ierr = iMOAB_UpdateMeshInfo( mlndghostid )
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to update mesh info ')
-
-    ! synchronize: GLOBAL_ID on vertices in the mesh with ghost layers
-    ! entity_types(:) = 1 ! default: Element-based tags
-    ! entity_types(1) = 0 ! Vertex-based tags
-    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 1, tag_indices, entity_types)
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to synchronize vertex tags for ELM ')
-
-    ! ! synchronize: GLOBAL_ID, frac, area, aream tags defined on elements
-    ! ! in the ghost layers
-    ! entity_types(1) = 1 ! Element-based tags
-    ! ierr = iMOAB_SynchronizeTags(mlndghostid, 8, tag_indices, entity_types)
-    ! if (ierr > 0 )  &
-    !   call endrun('Error: fail to synchronize element tags for ELM ')
-
-    ! deallocate(data)
 
 #ifdef MOABDEBUG
       ! write out the local mesh file to disk (np tasks produce np files)
@@ -1211,6 +1181,7 @@ contains
 
   end subroutine init_moab_land_internal
 
+  !---------------------------------------------------------------------------
   subroutine lnd_export_moab(EClock, bounds, lnd2atm_vars, lnd2glc_vars)
 
     !---------------------------------------------------------------------------
