@@ -30,7 +30,7 @@ TEST_CASE("conditional_sampling") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  auto fill_value = constants::DefaultFillValue<Real>::value;
+  auto fill_value = constants::fill_value<Real>;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
