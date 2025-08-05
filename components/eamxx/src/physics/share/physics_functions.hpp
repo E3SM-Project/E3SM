@@ -5,8 +5,8 @@
 
 #include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack_kokkos.hpp"
-#include "ekat/ekat_workspace.hpp"
+#include <ekat_pack_kokkos.hpp>
+#include <ekat_workspace.hpp>
 
 namespace scream {
 namespace physics {

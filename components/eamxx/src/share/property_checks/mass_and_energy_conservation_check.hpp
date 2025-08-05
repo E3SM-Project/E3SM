@@ -4,17 +4,18 @@
 #include "share/property_checks/property_check.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include "ekat_comm.hpp"
 
 namespace scream {
 
 // This property check ensures that energy has been conserved.
 // It is a column-local check meant only for column independant processes.
-class MassAndEnergyColumnConservationCheck: public PropertyCheck {
+class MassAndEnergyConservationCheck: public PropertyCheck {
 
   using KT = KokkosTypes<DefaultDevice>;
-  using ExeSpaceUtils = ekat::ExeSpaceUtils<KT::ExeSpace>;
 
   template<typename ScalarT>
   using view_1d = typename KT::template view_1d<ScalarT>;
@@ -26,10 +27,13 @@ class MassAndEnergyColumnConservationCheck: public PropertyCheck {
   template <typename S>
   using uview_2d = typename ekat::template Unmanaged<view_2d<S> >;
 
+  Field field_version_s1;
+
 public:
 
   // Constructor
-  MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
+  MassAndEnergyConservationCheck (const ekat::Comm& comm,
+                                        const std::shared_ptr<const AbstractGrid>& grid,
                                         const Real    mass_error_tolerance,
                                         const Real    energy_error_tolerance,
                                         const Field&  pseudo_density_ptr,
@@ -73,6 +77,12 @@ public:
   // in m_fields.
   void compute_current_energy ();
 
+  void global_fixer(const bool &);
+
+  Real get_echeck() const;
+  Real get_total_energy_before() const;
+  Real get_pb_fixer() const;
+
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
   protected:
@@ -86,6 +96,11 @@ public:
                                             const uview_1d<const Real>& qc,
                                             const uview_1d<const Real>& qi,
                                             const uview_1d<const Real>& qr);
+
+  KOKKOS_INLINE_FUNCTION
+  static Real compute_gas_mass_on_column (const KT::MemberType&       team,
+                                          const int                   nlevs,
+                                          const uview_1d<const Real>& pseudo_density);
 
   KOKKOS_INLINE_FUNCTION
   static Real compute_mass_boundary_flux_on_column (const Real vapor_flux,
@@ -109,9 +124,11 @@ public:
                                                       const Real ice_flux,
                                                       const Real heat_flux);
 
+
 protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
+  ekat::Comm m_comm;
   std::map<std::string, Field>  m_fields;
 
   int m_num_cols;
@@ -120,10 +137,15 @@ protected:
   Real m_mass_tol;
   Real m_energy_tol;
 
+  Real pb_fixer, echeck;
+  Real total_gas_mass_after, total_energy_before;
+
   // Current value for total energy. These values
   // should be updated before a process is run.
   view_1d<Real> m_current_energy;
   view_1d<Real> m_current_mass;
+
+  view_1d<Real> m_energy_change;
 }; // class EnergyConservationCheck
 
 } // namespace scream

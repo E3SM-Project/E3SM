@@ -2,7 +2,8 @@
 #define SCREAM_SC_DATA_MANAGER_HPP
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_assert.hpp"
+
+#include <ekat_assert.hpp>
 
 namespace scream {
 

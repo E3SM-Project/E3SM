@@ -6,9 +6,9 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
@@ -180,10 +180,10 @@ void run(std::mt19937_64& engine)
 
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
-  using TeamPolicy = typename KT::TeamPolicy;
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<ScalarT>;
   using rview_1d   = typename KT::template view_1d<RealType>;
+  using TPF        = ekat::TeamPolicyFactory<ExecSpace>;
 
   static constexpr auto Rd       = PC::RD;
   static constexpr auto cp       = PC::CP;
@@ -419,7 +419,7 @@ void run(std::mt19937_64& engine)
   REQUIRE( !Check::approx_equal(PF::calculate_vmr_from_mmr(o2_mol,qv0,tmp),vmr0,test_tol) );
 
   // --------- Run tests on full columns of data ----------- //
-  TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
+  auto policy = TPF::get_default_team_policy(1, 1);
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
 
     // Compute density(dp,dz)

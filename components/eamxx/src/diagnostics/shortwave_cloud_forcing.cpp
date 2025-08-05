@@ -1,6 +1,6 @@
 #include "diagnostics/shortwave_cloud_forcing.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -41,10 +41,10 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
 void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
   using KT         = KokkosTypes<DefaultDevice>;
-  using ESU        = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using TPF        = ekat::TeamPolicyFactory<KT::ExeSpace>;
   using MemberType = typename KT::MemberType;
 
-  const auto default_policy = ESU::get_default_team_policy(m_num_cols,1);
+  const auto default_policy = TPF::get_default_team_policy(m_num_cols,1);
 
   const auto& SWCF              = m_diagnostic_output.get_view<Real*>();
   const auto& SW_flux_dn        = get_field_in("SW_flux_dn").get_view<const Real**>();

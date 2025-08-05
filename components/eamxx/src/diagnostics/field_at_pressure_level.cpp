@@ -1,9 +1,9 @@
 #include "diagnostics/field_at_pressure_level.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_upper_bound.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_upper_bound.hpp>
+#include <ekat_units.hpp>
 
 namespace scream
 {
@@ -85,7 +85,7 @@ initialize_impl (const RunType /*run_type*/)
   // Add a field representing the mask as extra data to the diagnostic field.
   auto nondim = ekat::units::Units::nondimensional();
   const auto& gname = fid.get_grid_name();
-  m_mask_val = m_params.get<double>("mask_value",Real(constants::DefaultFillValue<float>::value));
+  m_mask_val = m_params.get<double>("mask_value",Real(constants::fill_value<double>));
 
 
   std::string mask_name = m_diag_name + " mask";

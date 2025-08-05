@@ -3,8 +3,8 @@
 #include "p3_functions.hpp"
 #include "eamxx_p3_process_interface.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
 
@@ -165,6 +165,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 // =========================================================================================
 size_t P3Microphysics::requested_buffer_size_in_bytes() const
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
@@ -179,8 +181,8 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const
       m_num_cols*3*sizeof(Real);
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const size_t wsm_request   = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy);
+  const auto policy        = TPF::get_default_team_policy(m_num_cols, nk_pack);
+  const size_t wsm_request = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy);
 
   return interface_request + wsm_request;
 }
@@ -188,6 +190,8 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const
 // =========================================================================================
 void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
@@ -250,7 +254,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const auto policy  = TPF::get_default_team_policy(m_num_cols, nk_pack);
   const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Spack);
   s_mem += wsm_size;
 
@@ -261,6 +265,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
@@ -512,7 +517,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   }
 
   // Setup WSM for internal local variables
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
+  const auto policy = TPF::get_default_team_policy(m_num_cols, nk_pack);
   workspace_mgr.setup(m_buffer.wsm_data, nk_pack_p1, 52, policy);
 }
 

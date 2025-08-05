@@ -6,8 +6,6 @@
 #include "share/eamxx_session.hpp"
 #include "share/util/eamxx_utils.hpp"
 
-#include "ekat/util/ekat_test_utils.hpp"
-#include "ekat/ekat_assert.hpp"
 
 #include <vector>
 

@@ -9,9 +9,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_test_utils.hpp>
 
 namespace {
 

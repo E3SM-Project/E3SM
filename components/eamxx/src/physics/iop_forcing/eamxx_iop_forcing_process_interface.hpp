@@ -1,14 +1,14 @@
 #ifndef SCREAM_IOP_FORCING_HPP
 #define SCREAM_IOP_FORCING_HPP
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_workspace.hpp"
-
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
 #include "physics/share/physics_constants.hpp"
+
+#include <ekat_parameter_list.hpp>
+#include <ekat_workspace.hpp>
 
 #include <string>
 
@@ -29,7 +29,6 @@ class IOPForcing : public scream::AtmosphereProcess
 {
   // Typedefs for process
   using KT           = ekat::KokkosTypes<DefaultDevice>;
-  using ESU          = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using Pack         = ekat::Pack<Real, SCREAM_PACK_SIZE>;
   using IntPack      = ekat::Pack<int, Pack::n>;
   using Mask         = ekat::Mask<Pack::n>;

@@ -3,9 +3,9 @@
 
 #include "share/eamxx_types.hpp"
 
-#include <ekat/ekat_assert.hpp>
-#include <ekat/kokkos/ekat_kokkos_types.hpp>
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_kokkos_types.hpp>
+#include <ekat_comm.hpp>
 
 #include <iterator>
 #include <list>
@@ -442,6 +442,10 @@ struct DefaultMetadata {
     file.close();
   }
 };
+
+extern "C"
+void eamxx_repro_sum(const Real* send, Real* recv,
+                       Int nlocal, Int nfld, Int fcomm);
 
 } // namespace scream
 

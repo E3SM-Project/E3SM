@@ -10,8 +10,9 @@
 #include "share/util/eamxx_utils.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
+
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see eamxx_output_manager.hpp
  *
@@ -219,7 +220,7 @@ protected:
   //   NetCDF: Numeric conversion not representable
   // Also, by default, don't pick max float, to avoid any overflow if the value
   // is used inside other calculation and/or remap.
-  float m_fill_value = constants::DefaultFillValue<float>().value;
+  float m_fill_value = constants::fill_value<float>;
 
   bool m_add_time_dim;
   bool m_track_avg_cnt = false;

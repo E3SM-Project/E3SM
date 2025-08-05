@@ -4,7 +4,7 @@
 #include "share/field/field.hpp"
 #include "share/eamxx_pysession.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>

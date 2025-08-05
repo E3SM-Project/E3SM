@@ -10,7 +10,7 @@
 #include "pyparamlist.hpp"
 #include "pyeamxx_ext.hpp"
 
-#include <ekat/io/ekat_yaml.hpp>
+#include <ekat_yaml.hpp>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/list.h>

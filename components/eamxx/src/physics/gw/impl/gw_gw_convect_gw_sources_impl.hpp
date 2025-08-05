@@ -18,7 +18,6 @@ void Functions<S,D>::gw_convect_gw_sources(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const uview_1d<const Spack>& lat,
 const Spack& hdepth_min,
 const uview_1d<const Spack>& hdepth,

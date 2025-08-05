@@ -346,7 +346,7 @@ _TESTS = {
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
-            "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1",
+            "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
             )
         },
@@ -856,7 +856,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
-            "PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
+            #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
             "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
             "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
             "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",

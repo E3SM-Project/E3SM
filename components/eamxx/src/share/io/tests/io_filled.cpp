@@ -15,11 +15,10 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <iomanip>
 #include <memory>
@@ -27,7 +26,7 @@
 namespace scream {
 
 constexpr int num_output_steps = 5;
-constexpr Real FillValue = constants::DefaultFillValue<float>().value;
+constexpr Real FillValue = constants::fill_value<Real>;
 constexpr Real fill_threshold = 0.5;
 
 void set (const Field& f, const double v) {
@@ -255,7 +254,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (const auto& fn: fnames) {
     // NOTE: use float, since default fp_precision for I/O is 'single'
     auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
-    REQUIRE(att_fill==constants::DefaultFillValue<float>().value);
+    REQUIRE(att_fill==constants::fill_value<Real>);
   }
 }
 

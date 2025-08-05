@@ -408,7 +408,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="oi%SOwISC12to60E2r4">
+  <grid name="oi%SOwISC.">
     <mach name="chrysalis">
       <pes compset="DATM.+MPASO.+SWAV" pesize="any">
         <comment>mpas-ocean+chrysalis: SO RRM, compset=DATM+MPASO, 32 nodes, ~9 SYPD</comment>

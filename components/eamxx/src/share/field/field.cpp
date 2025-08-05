@@ -6,9 +6,8 @@ namespace scream
 
 Field::
 Field (const identifier_type& id)
- : m_header (create_header(id))
 {
-  // Nothing to do here
+  m_header = std::make_shared<FieldHeader>(id);
 }
 
 Field

@@ -94,9 +94,7 @@ using AtmosphereDiagnosticFactory =
 template <typename AtmDiagType>
 inline std::shared_ptr<AtmosphereDiagnostic>
 create_atmosphere_diagnostic (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  auto ptr = std::make_shared<AtmDiagType>(comm,p);
-  ptr->setSelfPointer(ptr);
-  return ptr;
+  return std::make_shared<AtmDiagType>(comm,p);
 }
 } //namespace scream
 

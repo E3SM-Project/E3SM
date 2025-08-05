@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "share/eamxx_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "physics/gw/gw_functions.hpp"
 #include "physics/gw/tests/infra/gw_test_data.hpp"
 
 #include "gw_unit_tests_common.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 namespace gw {
@@ -20,19 +20,8 @@ struct UnitWrap::UnitTest<D>::TestGwFrontProjectWinds : public UnitWrap::UnitTes
     auto engine = Base::get_engine();
 
     // Set up init data
-    GwInit init_data[] = {
-          // pver, pgwv,   dc, orog_only, molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv
-      GwInit(  72,   20, 0.75,     false,      false,     false,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      false,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     false,      true ,     true ,         16,   60,     16,    .67, 6.28e-5),
-      GwInit(  72,   20, 0.75,     true ,      true ,     false,         16,   60,     16,    .67, 6.28e-5),
-    };
+    auto init_data = get_common_init_data(engine);
 
-    for (auto& d : init_data) {
-      d.randomize(engine);
-    }
-
-    // Set up init data
     GwFrontInitData front_init_data[] = {
                 // taubgnd,  frontgfc_in, kfront_in, init
       GwFrontInitData(  .1,           .4,        10, init_data[0]),
@@ -47,10 +36,11 @@ struct UnitWrap::UnitTest<D>::TestGwFrontProjectWinds : public UnitWrap::UnitTes
 
     // Set up inputs
     GwFrontProjectWindsData baseline_data[] = {
-      GwFrontProjectWindsData(10, 60, front_init_data[0]),
-      GwFrontProjectWindsData(11, 61, front_init_data[1]),
-      GwFrontProjectWindsData(12, 62, front_init_data[2]),
-      GwFrontProjectWindsData(13, 63, front_init_data[3]),
+      //                   ncol, kbot
+      GwFrontProjectWindsData(2,   50, front_init_data[0]),
+      GwFrontProjectWindsData(3,   51, front_init_data[1]),
+      GwFrontProjectWindsData(4,   52, front_init_data[2]),
+      GwFrontProjectWindsData(5,   53, front_init_data[3]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwFrontProjectWindsData);

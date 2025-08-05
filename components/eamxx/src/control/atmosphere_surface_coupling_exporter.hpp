@@ -9,7 +9,8 @@
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/atm_process/SCDataManager.hpp"
 
-#include <ekat/ekat_parameter_list.hpp>
+#include <ekat_parameter_list.hpp>
+
 #include <string>
 
 namespace scream
