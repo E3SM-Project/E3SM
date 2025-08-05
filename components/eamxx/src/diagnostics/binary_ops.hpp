@@ -7,7 +7,7 @@ namespace scream {
 
 /*
  * This diagnostic will perform binary ops
- * like +, -, *, / on two input fields.
+ * like +, -, *, ÷ on two input fields.
  */
 
 class BinaryOpsDiag : public AtmosphereDiagnostic {

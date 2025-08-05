@@ -45,7 +45,7 @@ BinaryOpsDiag(const ekat::Comm &comm,
   // Validate operator
   EKAT_REQUIRE_MSG(get_binary_operator_code(m_binary_op) >= 0,
                    "Error! Invalid binary operator: '" + m_binary_op + "'\n"
-                   "Valid operators are: +, -, *, /\n");
+                   "Valid operators are: +, -, *, ÷\n");
 }
 
 void BinaryOpsDiag::
