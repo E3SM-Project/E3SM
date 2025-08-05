@@ -2335,9 +2335,10 @@ contains
 
 #ifdef HAVE_MOAB
     use MOABGridType
-
+    use iso_c_binding
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
-   iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh
+         iMOAB_GetMeshInfo, iMOAB_DetermineGhostEntities, iMOAB_WriteLocalMesh, &
+         iMOAB_GetIntTagStorage, iMOAB_SetIntTagStorage, iMOAB_SynchronizeTags
 #endif
 
 #ifdef USE_PETSC_LIB
@@ -2367,6 +2368,11 @@ contains
     real(r8), pointer            :: data_recv(:)
     integer                      :: ndata_send
     integer                      :: ndata_recv
+    integer, allocatable         :: data_int(:,:)
+    integer                      :: tagtype, numcomp, entity_type(1), numtags, tag_indices(1)
+    integer                      :: g, moab_idx
+    integer                      :: ierr
+    character(len=1024)          :: tagname
 #ifdef HAVE_MOAB
     !integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
 #endif
@@ -2422,77 +2428,86 @@ contains
 
       call get_proc_bounds(begg, endg)
 
+      tagname     = 'nsubgrid'//C_NULL_CHAR
+      tagtype     = 0    ! dense, integer
+      numtags     = 1    ! creating a single tag to exchange information about ELM subgrid
+      numcomp     = 5    ! number of following subgrid structures: topounits, landunits, columns, pfts, and cohorts
+      entity_type(1) = 1 ! element (or cell) based data
 
-      ! Approach:
-      ! 1) For a global PETSc vector, save the number of subgrid
-      !    quantities for each grid cell.
-      ! 2) Scatter the global PETSc vector to a local PETSc vector
-      ! 3) Finally count the number of subgrid quantities for all
-      !    ghost grid cells in the local PETSc vector
+      ! define the tag
+      ierr = iMOAB_DefineTagStorage(mlndghostid, tagname, tagtype, numcomp, tag_indices(1))
 
-      !nblocks = 5 ! topo + lun + col + pft + cohort
+      ! allocate memory for the data
+      allocate(data_int(numcomp, moab_gcell%num_ghosted))
 
-      ! ndata_send = nblocks*ldomain_lateral%ugrid%ngrid_local
-      ! ndata_recv = nblocks*ldomain_lateral%ugrid%ngrid_ghosted
+      ! initializat the data
+      data_int(:,:) = -1
 
-      ! allocate(data_send(ndata_send))
-      ! allocate(data_recv(ndata_recv))
+      ! now loop over grid cells and fill value in data_int
+      do anumg = begg, endg
+          ln  = anumg
+          if (max_topounits > 1) then
+             if (present(glcmask)) then
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+             else
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
+             endif
+          else
+             if (present(glcmask)) then
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts, glcmask=glcmask(ln))
+             else
+                call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
+                     ncohorts=icohorts )
+             endif
+          endif
 
-      ! data_send(:) = 0.d0
+          ! use ELM-to-MOAB index
+          moab_idx = moab_gcell%elm2moab(ln)
 
-      ! ! Save information about number of subgrid categories for
-      ! ! local grid cells
+          ! fill the values
+          data_int(1, moab_idx) = itunits
+          data_int(2, moab_idx) = ilunits
+          data_int(3, moab_idx) = icols
+          data_int(4, moab_idx) = ipfts
+          data_int(5, moab_idx) = icohorts
+      end do
 
-      ! do anumg = begg,endg
-      !    ln  = anumg
-      !    if(max_topounits > 1) then
-      !       if (present(glcmask)) then
-      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-      !               ncohorts=icohorts, glcmask=glcmask(ln), num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
-      !       else
-      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-      !               ncohorts=icohorts, num_tunits_per_grd= ldomain%num_tunits_per_grd(ln) )
-      !       endif
-      !    else
-      !       if (present(glcmask)) then
-      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-      !               ncohorts=icohorts, glcmask=glcmask(ln))
-      !       else
-      !          call subgrid_get_gcellinfo (ln, ntunits=itunits, nlunits=ilunits, ncols=icols, npfts=ipfts, &
-      !               ncohorts=icohorts )
-      !       endif
-      !    endif
+      ! Set the data in MOAB tag
+      ierr = iMOAB_SetIntTagStorage(mlndghostid, tagname, moab_gcell%num_ghosted * numcomp, entity_type(1), data_int)
+      if (ierr > 0) call endrun('Error: setting values failed')
 
-      !    data_send((anumg-begg)*nblocks + 1) = itunits
-      !    data_send((anumg-begg)*nblocks + 2) = ilunits
-      !    data_send((anumg-begg)*nblocks + 3) = icols
-      !    data_send((anumg-begg)*nblocks + 4) = ipfts
-      !    data_send((anumg-begg)*nblocks + 5) = icohorts
+      ! Do halo exchange
+      ierr = iMOAB_SynchronizeTags(mlndghostid, numtags, tag_indices(1), entity_type(1))
+      if (ierr > 0) call endrun('Error: synchronization failed')
 
-      ! enddo
-
-      ! ! Scatter: Global-to-Local
-      ! call ScatterDataG2L(ldomain_lateral%ugrid, &
-      !      nblocks, ndata_send, data_send, ndata_recv, data_recv)
+      ! Get the data from MAOB tag
+      ierr = iMOAB_GetIntTagStorage(mlndghostid, tagname, moab_gcell%num_ghosted * numcomp, entity_type(1), data_int)
+      if (ierr > 0) call endrun('Error: getting values failed')
 
       ! Get number of ghost quantites at all subgrid categories
-      procinfo%ncells_ghost    = moab_gcell%num_ghost !ldomain_lateral%ugrid%ngrid_ghost
+      procinfo%ncells_ghost    = moab_gcell%num_ghost
       procinfo%ntunits_ghost   = 0
       procinfo%nlunits_ghost   = 0
       procinfo%ncols_ghost     = 0
       procinfo%npfts_ghost     = 0
       procinfo%nCohorts_ghost  = 0
 
-      ! ighost_beg = ldomain_lateral%ugrid%ngrid_local   + 1
-      ! ighost_end = ldomain_lateral%ugrid%ngrid_ghosted
+      ! loop over all cells and save values for ghost cells
+      do g = 1, moab_gcell%num_ghosted
+         if (.not.moab_gcell%is_owned(g)) then
+            procinfo%ntunits_ghost   = procinfo%ntunits_ghost  + data_int(1, g)
+            procinfo%nlunits_ghost   = procinfo%nlunits_ghost  + data_int(2, g)
+            procinfo%ncols_ghost     = procinfo%ncols_ghost    + data_int(3, g)
+            procinfo%npfts_ghost     = procinfo%npfts_ghost    + data_int(4, g)
+            procinfo%nCohorts_ghost  = procinfo%nCohorts_ghost + data_int(5, g)
+         end if
+      end do
 
-      ! do ighost = ighost_beg, ighost_end
-      !    procinfo%ntunits_ghost  = procinfo%ntunits_ghost  + data_recv((ighost-1)*nblocks + 1)
-      !    procinfo%nlunits_ghost  = procinfo%nlunits_ghost  + data_recv((ighost-1)*nblocks + 2)
-      !    procinfo%ncols_ghost    = procinfo%ncols_ghost    + data_recv((ighost-1)*nblocks + 3)
-      !    procinfo%npfts_ghost    = procinfo%npfts_ghost    + data_recv((ighost-1)*nblocks + 4)
-      !    procinfo%ncohorts_ghost = procinfo%ncohorts_ghost + data_recv((ighost-1)*nblocks + 5)
-      ! enddo
+      ! free up memory
+      deallocate(data_int)
 
       procinfo%begg_ghost      = procinfo%endg + 1
       procinfo%endg_ghost      = procinfo%endg + procinfo%ncells_ghost
