@@ -5,8 +5,9 @@ namespace scream {
 
 void MAMMicrophysics::run_small_kernels_microphysics(const double dt, const double eccf)
 {
+   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
+      TPF::get_default_team_policy(ncol_, nlev_);
   const int nlev = nlev_;
   //
   // set external forcing
