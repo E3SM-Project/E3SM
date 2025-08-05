@@ -137,8 +137,8 @@ protected:
   Real m_mass_tol;
   Real m_energy_tol;
 
-  Real pb_fixer, echeck;
-  Real total_gas_mass_after, total_energy_before;
+  Real m_pb_fixer, m_echeck;
+  Real m_total_gas_mass_after, m_total_energy_before;
 
   // Current value for total energy. These values
   // should be updated before a process is run.
