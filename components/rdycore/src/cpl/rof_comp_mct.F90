@@ -625,13 +625,13 @@ CONTAINS
     !---------------------------------------------------------------------------
 
       do n = 1, lsize
-        r2x_r%rattr(index_r2x_Forr_rofl,n)    = float(iam)
-        r2x_r%rattr(index_r2x_Forr_rofi,n)    = float(iam)
-        r2x_r%rattr(index_r2x_Flrr_flood,n)   = float(iam)
-        r2x_r%rattr(index_r2x_Flrr_volr,n)    = float(iam)
-        r2x_r%rattr(index_r2x_Flrr_volrmch,n) = float(iam)
-        r2x_r%rattr(index_r2x_Flrr_supply,n)  = float(iam)
-        r2x_r%rattr(index_r2x_Flrr_deficit,n) = float(iam)
+        r2x_r%rattr(index_r2x_Forr_rofl,n)    = 0._r8
+        r2x_r%rattr(index_r2x_Forr_rofi,n)    = 0._r8
+        r2x_r%rattr(index_r2x_Flrr_flood,n)   = 0._r8
+        r2x_r%rattr(index_r2x_Flrr_volr,n)    = 0._r8
+        r2x_r%rattr(index_r2x_Flrr_volrmch,n) = 0._r8
+        r2x_r%rattr(index_r2x_Flrr_supply,n)  = 0._r8
+        r2x_r%rattr(index_r2x_Flrr_deficit,n) = 0._r8
       enddo
 
   end subroutine rof_export_mct
