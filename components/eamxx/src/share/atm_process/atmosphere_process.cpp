@@ -1250,8 +1250,8 @@ void AtmosphereProcess::fix_energy (const double dt, const bool &print_debug_inf
 
   if(print_debug_info){
     //print everything about the fixer only in debug mode
-    m_atm_logger->info("EAMxx:: energy fixer: T tend added to each physics midlevel " + std::to_string( conservation_check->get_pb_fixer() ) );
-    m_atm_logger->info("EAMxx:: energy fixer: total energy before fix " + std::to_string( conservation_check->get_total_energy_before() ) );
+    m_atm_logger->info("EAMxx:: energy fixer: T tend added to each physics midlevel " + std::to_string( conservation_check->get_pb_fixer() ) + " K" );
+    m_atm_logger->info("EAMxx:: energy fixer: total energy before fix " + std::to_string( conservation_check->get_total_energy_before() ) + " J");
     std::stringstream ss;
     ss << "EAMxx:: energy fixer: rel energy error after fix " << std::setprecision(15) << conservation_check->get_echeck() << "\n";
     m_atm_logger->info(ss.str());

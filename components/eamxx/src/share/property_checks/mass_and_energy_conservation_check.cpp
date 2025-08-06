@@ -361,7 +361,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   field_version_s1.sync_to_dev();
 
-  total_gas_mass_after = recv;
+  m_total_gas_mass_after = recv;
 
 //this ||4 needs to be 2 for-loops, with one summing each 4 cols first, serially
 //for pg2 grids (if on np4 grids, it would require much more work?)  
@@ -391,7 +391,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   field_version_s1.sync_to_host(); 
   eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   field_version_s1.sync_to_dev();
-  pb_fixer = recv;
+  m_pb_fixer = recv;
 
   if(print_debug_info) {
     //total energy needed for relative error
@@ -407,14 +407,15 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
     eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
     field_version_s1.sync_to_dev();
 
-    total_energy_before = recv;
+    m_total_energy_before = recv;
   }
 
   using PC = scream::physics::Constants<Real>;
   const Real cpdry = PC::Cpair;
-  pb_fixer /= (cpdry*total_gas_mass_after); // T change due to fixer
+  m_pb_fixer /= (cpdry*m_total_gas_mass_after); // T change due to fixer
 
   //add the fixer to temperature
+  const auto pb_fixer=m_pb_fixer;
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto T_mid_i = ekat::subview(T_mid, i);
@@ -450,7 +451,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
     eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
     field_version_s1.sync_to_dev();
 
-    echeck = recv/total_energy_before;
+    m_echeck = recv/m_total_energy_before;
   }
 
 };//global_fixer
@@ -560,15 +561,15 @@ compute_energy_boundary_flux_on_column (const Real vapor_flux,
 }
 
 Real MassAndEnergyConservationCheck::get_echeck() const{
-  return echeck;
+  return m_echeck;
 }
 
 Real MassAndEnergyConservationCheck::get_total_energy_before() const{
-  return total_energy_before;
+  return m_total_energy_before;
 }
 
 Real MassAndEnergyConservationCheck::get_pb_fixer() const{
-  return pb_fixer;
+  return m_pb_fixer;
 }
 
 
