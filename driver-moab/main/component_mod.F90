@@ -730,7 +730,10 @@ contains
           else
              mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
           end if
-          call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
+          ! skip this call for atm only
+          if (comp(eci)%oneletterid /= 'a') then
+             call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
+          endif
 #ifdef MOABDEBUG
           if(comp(eci)%oneletterid == 'a') then
             if(mblxid >=0 ) then
