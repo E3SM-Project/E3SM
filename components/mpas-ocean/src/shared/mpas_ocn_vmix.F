@@ -883,13 +883,15 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         if (thickEdgeDragChoice == thickEdgeDragHarMean) then
-           columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
-                                             (ssh(cell2) + bottomDepth(cell2)) / &
-                                 (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
-         else
-           columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
-         endif
+         !if (thickEdgeDragChoice == thickEdgeDragHarMean) then
+         !  columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+         !                                    (ssh(cell2) + bottomDepth(cell2)) / &
+         !                        (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         !else
+         !  columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         !endif
+
+         columnThicknessDrag = layerThickEdgeMean(N,iEdge)
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (config_use_vegetation_drag) then
