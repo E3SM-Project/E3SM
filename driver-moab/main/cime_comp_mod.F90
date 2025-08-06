@@ -1445,6 +1445,9 @@ contains
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
+#ifdef MOABDEBUG
+    use iMOAB, only : iMOAB_WriteMesh
+#endif
 #ifdef MOABDEBUGMCT
     integer :: dummy_iMOAB
 #endif
@@ -2123,7 +2126,16 @@ contains
        call t_adj_detailf(-2)
        call t_stopf ('CPL:init_aream')
     endif ! iamin_CPLID
-
+#ifdef MOABDEBUG
+    if(mblxid >=0 ) then
+       ierr = iMOAB_WriteMesh(mblxid, trim('1_cplLnd.h5m'//C_NULL_CHAR), &
+                               trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing lnd mesh coupler '
+          call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+       endif
+    endif
+#endif
     !----------------------------------------------------------
     !| Check domains
     !  This must be done after the mappers are initialized since
@@ -2152,7 +2164,16 @@ contains
        call t_adj_detailf(-2)
        call t_stopf ('CPL:init_domain_check')
     endif ! iamin_CPLID
-
+#ifdef MOABDEBUG
+    if(mblxid >=0 ) then
+       ierr = iMOAB_WriteMesh(mblxid, trim('2_cplLnd.h5m'//C_NULL_CHAR), &
+                               trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing lnd mesh coupler '
+          call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+       endif
+    endif
+#endif
     !----------------------------------------------------------
     !| Initialize area corrections based on aream (read in map_init) and area
     !| Area correct component initialization output fields
@@ -2183,10 +2204,29 @@ contains
 
     ! mostly for debug mode
     num_moab_exports = 0
-
+#ifdef MOABDEBUG
+   if(mblxid >=0 ) then
+       ierr = iMOAB_WriteMesh(mblxid, trim('3_cplLnd.h5m'//C_NULL_CHAR), &
+                               trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing lnd mesh coupler '
+          call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+       endif
+    endif
+#endif
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
     ! send initial data to coupler
+#ifdef MOABDEBUG
+    if(mblxid >=0 ) then
+        ierr = iMOAB_WriteMesh(mblxid, trim('4_cplLnd.h5m'//C_NULL_CHAR), &
+                                trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in writing lnd mesh coupler '
+           call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+        endif
+     endif
+#endif
     if (atm_present) call component_init_areacor_moab(atm, mphaid, mbaxid, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
     ! component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
