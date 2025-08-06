@@ -568,13 +568,16 @@ contains
          call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
             'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
             'mapper_Si2a initialization',esmf_map_flag, no_match)
-            ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
-#ifdef HAVE_MOAB
-         ! Call moab intx only if ATM and ICE are init in moab coupler
+       endif
+
+      if (ice_present) then
+
+         ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
+         ! Call moab intx only if ATM and ICE are present in moab coupler
          if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Si2a'
+              write(logunit,F00) 'Initializing ice atm coupler'
             endif
             appname = "ICE_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ice and atm mesh
@@ -585,7 +588,15 @@ contains
               call shr_sys_abort(subname//' ERROR in registering ICE-ATM intersection')
             endif
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
+
+            !!!!!!!!!!!!!!!!!!!!!!!
+            !  compute Si2a map
+            !!!!!!!!!!!!!!!!!!!!!!!
             if (compute_maps_online_i2a) then
+               if (iamroot_CPLID) then
+                  write(logunit,*) ' '
+                  write(logunit,F00) 'Initializing mapper_Si2a'
+               endif
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mbixid, mbaxid, mbintxia )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing ICE-ATM intersection'
@@ -618,6 +629,7 @@ contains
                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
                endif
             endif
+
             ! now take care of the mapper
             mapper_Si2a%src_mbid = mbixid
             mapper_Si2a%tgt_mbid = mbaxid
@@ -626,6 +638,8 @@ contains
             mapper_Si2a%intx_context = idintx
             mapper_Si2a%weight_identifier = wgtIdSi2a
             mapper_Si2a%mbname = 'mapper_Si2a'
+
+
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
                if (atm_pg_active) then
@@ -662,21 +676,27 @@ contains
                   write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ice atm '
                   call shr_sys_abort(subname//' error in iMOAB_ComputeScalarProjectionWeights ice atm ')
                endif
-
+            !!!!!!!!!!!!!!!!!!!!!!!
+            !  read  Si2a map
+            !!!!!!!!!!!!!!!!!!!!!!!
             else
+              if(ice_c2_atm) then
+               if (iamroot_CPLID) then
+                  write(logunit,*) ' '
+                  write(logunit,F00) 'Initializing mapper_Si2a'
+               endif
                type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                arearead = 0 ! do not read area, we do not need it
                call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
                      'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
                      arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+              endif
             endif
 
 
          endif ! if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
-! endif for HAVE_MOAB
-#endif
 
-      endif ! if (ice_c2_atm) then
+      endif ! if (ice_present) for mapper_Si2a
 
       ! needed for domain checking
       if (ice_present) then
@@ -688,14 +708,15 @@ contains
             'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
             'mapper_Fi2a initialization',esmf_map_flag, no_match)
 
-#ifdef HAVE_MOAB
-         ! now take care of the mapper for MOAB, only if ice is coupled to atm !
-         if (ice_c2_atm) then
-            if (iamroot_CPLID) then
+         ! now take care of the mapper for MOAB.  Need to always do if ice_present
+         if (iamroot_CPLID) then
               write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fi2a with copy of mapper_Si2a'
+              write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
             endif
 
+            !!!!!!!!!!!!!!!!!!!!!!!
+            !  read  Fi2a map
+            !!!!!!!!!!!!!!!!!!!!!!!
             if (.not. compute_maps_online_i2a) then
                type1 = 3 ! this is type of grid
                arearead = 0 ! no need for areas
@@ -711,6 +732,9 @@ contains
                   write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
                   call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
                endif
+            !!!!!!!!!!!!!!!!!!!!!!!
+            !  compute  Fi2a map
+            !!!!!!!!!!!!!!!!!!!!!!!
             else
                wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
             end if
@@ -722,8 +746,6 @@ contains
             mapper_Fi2a%intx_context = idintx
             mapper_Fi2a%weight_identifier = wgtIdFi2a
             mapper_Fi2a%mbname = 'mapper_Fi2a'
-         endif
-#endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
 
