@@ -961,6 +961,9 @@ push_to_logger()
       m_atm_logger->info("             File Capacity: " + (ms>0 ? std::to_string(ms) + "snapshots" : "UNLIMITED"));
       break;
     }
+    case Daily:
+      m_atm_logger->info("             File Capacity: one day per file");
+      break;
     case Monthly:
       m_atm_logger->info("             File Capacity: one month per file");
       break;
