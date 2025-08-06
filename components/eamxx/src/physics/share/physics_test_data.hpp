@@ -383,6 +383,17 @@ class PhysicsTestData
     }
   }
 
+  template <ekat::TransposeDirection::Enum D>
+  void shift_int_scalar(int& scalar)
+  {
+    const int shift = (D == ekat::TransposeDirection::c2f ? 1 : -1);
+    scalar += shift;
+
+    // Since f90 allows for negative index ranges (-foo:foo), we may
+    // have to remove this check.
+    EKAT_ASSERT_MSG(scalar >= 0, "Bad index: " << scalar);
+  }
+
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
   // format of all data from one language to another
   template <ekat::TransposeDirection::Enum D>
@@ -392,10 +403,10 @@ class PhysicsTestData
     m_ints.transpose<D>();
     m_bools.transpose<D>();
 
-    // Shift the indices. We might not be able to make the assumption that int data represented indices
+    // Shift the indices. We might not be able to make the assumption that int data represented indices.
+    // NOTE! This will not shift scalar integers. It is up the children structs to do that
     for (size_t i = 0; i < m_ints.m_data.size(); ++i) {
-      m_ints.m_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
-      EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
+      shift_int_scalar<D>(m_ints.m_data[i]);
     }
   }
 

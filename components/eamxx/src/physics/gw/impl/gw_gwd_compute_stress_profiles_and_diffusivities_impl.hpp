@@ -6,6 +6,9 @@
 namespace scream {
 namespace gw {
 
+#define bfb_square(val) ((val)*(val))
+#define bfb_cube(val)   ((val)*(val)*(val))
+
 /*
  * Implementation of gw gwd_compute_stress_profiles_and_diffusivities. Clients should NOT
  * #include this file, but include gw_functions.hpp instead.
@@ -40,20 +43,22 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     {"ubmc", "tausat"},
     {&ubmc, &tausat});
 
+  const int col = team.league_rank();
+
   Real ubmc2(0.), d(0.), dsat(0.), mi(0.), wrk(0.), taudmp(0.), dscal(0.);
 
   // Loop from bottom to top to get stress profiles.
-  for (Int k = max_level - 1; k >= init.ktop; --k) {
+  for (Int k = max_level; k >= init.ktop; --k) {
     // Determine the absolute value of the saturation stress.
     // Define critical levels where the sign of (u-c) changes between interfaces.
     for (Int l = -pgwv; l <= pgwv; ++l) {
       int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-      if (src_level > k) {
+      if (src_level >= k) {
         ubmc(pl_idx) = ubi(k) - c(pl_idx);
 
         // Test to see if u-c has the same sign here as the level below.
         if (ubmc(pl_idx) * (ubi(k + 1) - c(pl_idx)) > 0.0) {
-          tausat(pl_idx) = std::abs(init.effkwv * rhoi(k) * std::pow(ubmc(pl_idx), 3) /
+          tausat(pl_idx) = std::abs(init.effkwv * rhoi(k) * bfb_cube(ubmc(pl_idx)) /
                                     (2.0 * ni(k)));
           if (tausat(pl_idx) <= GWC::taumin) tausat(pl_idx) = 0.0;
         }
@@ -71,9 +76,9 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     else {
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        if (src_level > k) {
-          dsat = std::pow(ubmc(pl_idx) / ni(k), 2) *
-            (init.effkwv * std::pow(ubmc(pl_idx), 2) /
+        if (src_level >= k) {
+          dsat = bfb_square(ubmc(pl_idx) / ni(k)) *
+            (init.effkwv * bfb_square(ubmc(pl_idx)) /
              (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
           dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(pl_idx) + GWC::taumin));
           d = std::max(d, dscal * dsat);
@@ -90,10 +95,10 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     if (k <= init.nbot_molec || !init.do_molec_diff) {
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        if (src_level > k) {
-          ubmc2 = std::max(std::pow(ubmc(pl_idx), 2), GWC::ubmc2mn);
-          mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + std::pow(ni(k), 2) / ubmc2 * d);
-          wrk = -2.0 * mi * GWC::rog * t(k + 1) * (piln(k + 1) - piln(k));
+        if (src_level >= k) {
+          ubmc2 = std::max(bfb_square(ubmc(pl_idx)), GWC::ubmc2mn);
+          mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
+          wrk = -2.0 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
 
           if (wrk >= -150.0 || !init.do_molec_diff) {
             taudmp = tau(pl_idx, k+1) * std::exp(wrk);
@@ -107,7 +112,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     } else {
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        if (src_level > k) {
+        if (src_level >= k) {
           tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(pl_idx));
         }
       }

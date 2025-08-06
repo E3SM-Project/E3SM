@@ -112,9 +112,9 @@ void gw_finalize_cxx(GwInit& init)
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d)
 {
   gw_init(d.init);
-  d.transpose<ekat::TransposeDirection::c2f>();
+  d.transpose<ekat::TransposeDirection::c2f>(); // This will shift array data + 1
   gwd_compute_tendencies_from_stress_divergence_c(d.ncol, d.do_taper, d.dt, d.effgw, d.tend_level, d.lat, d.dpm, d.rdpm, d.c, d.ubm, d.t, d.nm, d.xv, d.yv, d.tau, d.gwut, d.utgw, d.vtgw);
-  d.transpose<ekat::TransposeDirection::f2c>();
+  d.transpose<ekat::TransposeDirection::f2c>(); // This will shift array data - 1
 }
 
 void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStressDivergenceData& d)
