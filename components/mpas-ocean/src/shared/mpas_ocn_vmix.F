@@ -813,6 +813,7 @@ contains
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
       integer :: iCell
+      real (kind=RKIND) :: wetFraction, sshMean
 
       err = 0
       von_karman = 0.4_RKIND
@@ -901,6 +902,17 @@ contains
 
          ! one active layer
          if (N .eq. Nsurf) then
+           if (config_use_subgrid_wetting_drying) then 
+              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+    
+              call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                   subgridWetFractionEdgeTable(:,iEdge), &
+                                                   subgridSshEdgeTableRange(:,iEdge), &
+                                                   wetFraction)
+
+                implicitCd = wetFraction*implicitCd
+           endif
+           
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*implicitCd &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
@@ -1794,7 +1806,10 @@ contains
         case ('mannings')
           dragType = dragTypeMannings
           call mpas_log_write(' Implicit bottom drag type is: Mannings')
-
+          if (.not. config_use_variable_drag) &
+            call mpas_log_write('bottomDrag may not be available for Mannings '// &
+              'implicit bottom drag because config_use_variable_drag is False', &
+              MPAS_LOG_WARN)
         case default
           call mpas_log_write( &
              ' Incorrect choice of config_implicit_bottom_drag_type.', &
