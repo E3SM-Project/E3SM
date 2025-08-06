@@ -142,7 +142,8 @@ module RtmMod
 
   ! Variables for TNR redirection
   integer, parameter :: num_top_outlets_for_qgwl = 500   ! Number of top outlets to use
-  real(r8), save   :: global_net_negative_qgwl = 0.0_r8               ! Global Total negative qgwl
+  real(r8), save   :: global_positive_qgwl_sum = 0.0_r8    ! Sum of all positive qgwl 
+  real(r8), save   :: global_negative_qgwl_sum = 0.0_r8    ! Sum of all negative qgwl 
 
   real(r8), save :: delt_save             ! previous delt 
 
@@ -2238,7 +2239,10 @@ contains
 !scs
 
     ! Variables for negative runoff redirection
-    real(r8) :: local_qgwl_sum
+   
+    real(r8) :: local_positive_qgwl_sum, local_negative_qgwl_sum
+    real(r8) :: net_global_qgwl, original_cell_qgwl, reduction
+
     integer, allocatable :: outlet_gindices_local(:) ! Local array of global indices of outlets on this task
     real(r8), allocatable :: outlet_discharges_local(:) ! Local array of discharges for these outlets
     integer :: local_outlet_count
@@ -2387,42 +2391,68 @@ contains
     ! data for euler solver, in m3/s here
 
     ! Aggregate global Qgwl (TNR) if flag is true ---
-    global_net_negative_qgwl = 0.0_r8 ! Reset global sum each step
-    if (redirect_negative_qgwl_flag) then
-        local_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
-         do nr = rtmCTL%begr, rtmCTL%endr
-            if (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then
-                  local_qgwl_sum = local_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
-                  TRunoff%qgwl(nr, nt_nliq) = 0.0_r8 ! Negative part is removed for global redistribution
-            else
-                  TRunoff%qgwl(nr, nt_nliq) = rtmCTL%qgwl(nr, nt_nliq) ! Positive part goes to local routing
+    global_negative_qgwl_sum = 0.0_r8 ! Reset global sum each step
+
+     if (redirect_negative_qgwl_flag) then
+        local_negative_qgwl_sum = 0.0_r8 ! This will sum local NEGATIVE qgwl
+        local_positive_qgwl_sum = 0.0_r8 ! This will sum local POSITIVE qgwl
+
+        do nr = rtmCTL%begr, rtmCTL%endr
+            if (rtmCTL%qgwl(nr, nt_nliq) > 0.0_r8) then
+                local_positive_qgwl_sum = local_positive_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
+            elseif (rtmCTL%qgwl(nr, nt_nliq) < 0.0_r8) then
+                local_negative_qgwl_sum = local_negative_qgwl_sum + rtmCTL%qgwl(nr, nt_nliq)
             endif
-            ! Handle other tracers for qgwl if necessary - assuming qgwl for other tracers
-            ! should follow the original rtmCTL input if not the liquid one being modified.
-            do nt = 1, nt_rtm
-                  if (nt /= nt_nliq) then
-                     TRunoff%qgwl(nr, nt) = rtmCTL%qgwl(nr, nt) ! Other tracers pass through
-                  endif
-            enddo
-            ! If qgwl for nt_nliq was positive, it's already set above.
-            ! If qgwl for nt_nliq was negative, it was zeroed out for nt_nliq.
-         enddo
-       
-        call MPI_Allreduce(local_qgwl_sum, global_net_negative_qgwl, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
-        if (ier /= MPI_SUCCESS) then
-            if (masterproc) write(iulog,*) trim(subname),' ERROR in MPI_Allreduce for global_net_negative_qgwl, ier=',ier
-            call shr_sys_abort(trim(subname)//' MPI_Allreduce error for global_net_negative_qgwl')
-        endif
-        
+        enddo
+
+        ! Use direct MPI_Allreduce to get the global sums A and B on all processes
+        call MPI_Allreduce(local_positive_qgwl_sum, global_positive_qgwl_sum, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+        call MPI_Allreduce(local_negative_qgwl_sum, global_negative_qgwl_sum, 1, MPI_REAL8, MPI_SUM, mpicom_rof, ier)
+
+        net_global_qgwl = global_positive_qgwl_sum + global_negative_qgwl_sum
+
         if (masterproc) then
-            write(iulog,'(A,ES15.6)') trim(subname)//' Global negative sum of Qgwl this step: ', global_net_negative_qgwl 
+            write(iulog, *) trim(subname), 'Debug QGWL Balancing: Global Positive Sum =', global_positive_qgwl_sum
+            write(iulog, *) trim(subname), 'Debug QGWL Balancing: Global Negative Sum =', global_negative_qgwl_sum
+            write(iulog, *) trim(subname), 'Debug QGWL Balancing: Global Net Sum =', net_global_qgwl
         endif
-    else
+
+        ! Decide how to set TRunoff%qgwl for local routing
+        if (net_global_qgwl >= 0.0_r8) then
+            ! --- SCENARIO A: Net global QGWL is non-negative. Balance the negative by proportionally reducing positive. ---
+            do nr = rtmCTL%begr, rtmCTL%endr
+                original_cell_qgwl = rtmCTL%qgwl(nr, nt_nliq)
+                if (original_cell_qgwl > 0.0_r8) then ! This cell has positive qgwl
+                    if (global_positive_qgwl_sum > 1.0e-9_r8) then ! Avoid division by zero
+                        ! Calculate how much this cell should contribute to offsetting the negative sum 
+                        reduction = (original_cell_qgwl / global_positive_qgwl_sum) * abs(global_negative_qgwl_sum)
+                        TRunoff%qgwl(nr, nt_nliq) = max(0.0_r8, original_cell_qgwl - reduction)
+                    else ! No positive qgwl anywhere, so this branch shouldn't be hit if original_cell_qgwl > 0
+                        TRunoff%qgwl(nr, nt_nliq) = original_cell_qgwl
+                    endif
+                else ! This cell has negative or zero qgwl
+                    TRunoff%qgwl(nr, nt_nliq) = 0.0_r8 ! Its negativity is balanced by the global positives
+                endif
+                ! Pass through other tracers unmodified
+                do nt = 1, nt_rtm
+                    if (nt /= nt_nliq) then 
+                     TRunoff%qgwl(nr, nt) = rtmCTL%qgwl(nr, nt)
+                    endif
+                enddo
+            enddo
+        else
+            ! --- SCENARIO B: Net global QGWL is negative. No local qgwl input. ---
+            ! The deficit (net_global_qgwl) will be redistributed to top N outlets later.
+            do nr = rtmCTL%begr, rtmCTL%endr
+                TRunoff%qgwl(nr, :) = 0.0_r8
+            enddo
+        endif
+     else
         ! If flag is false, ensure TRunoff gets the qgwl from rtmCTL for routing
         do nr = rtmCTL%begr, rtmCTL%endr
            TRunoff%qgwl(nr, :) = rtmCTL%qgwl(nr, :)
         enddo
-    endif
+     endif
 
     do nr = rtmCTL%begr,rtmCTL%endr
     do nt = 1,nt_rtm
@@ -2912,12 +2942,12 @@ contains
     enddo
     enddo
 
-   ! Collect outlet discharge, Rank, Redistribute global_net_negative_qgwl, Update discharge map ---
+   ! Collect outlet discharge, Rank, Redistribute net_global_qgwl, Update discharge map ---
    allocate(qgwl_correction_local(rtmCTL%begr:rtmCTL%endr)) ! Moved allocation here
    qgwl_correction_local = 0.0_r8                          ! Initialize
 
    if (redirect_negative_qgwl_flag) then ! Check the main flag first
-      if (global_net_negative_qgwl < 0.0_r8) then ! Only proceed if there's some net qgwl to redistribute (can be pos or neg)
+      if (net_global_qgwl < 0.0_r8) then ! Only proceed if there's negative net qgwl to redistribute
          call t_startf('mosartr_qgwl_redir_dist')
 
          ! Identify local outlets and their current discharges
@@ -3004,7 +3034,7 @@ contains
                      block
                            real(r8) :: qgwl_to_discharge_ratio_percent
                            
-                           qgwl_to_discharge_ratio_percent = (global_net_negative_qgwl / sum_discharge_top_n) * 100.0_r8
+                           qgwl_to_discharge_ratio_percent = (net_global_qgwl / sum_discharge_top_n) * 100.0_r8
                            
                            ! Print the ratio
                            write(iulog, *) trim(subname), &
@@ -3040,7 +3070,7 @@ contains
                      qgwl_correction_values = 0.0_r8
                      do i = 1, current_top_n_count
                         qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
-                        qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_negative_qgwl
+                        qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * net_global_qgwl
                      enddo
                   else
                   write(iulog, '(A)') trim(subname), &
@@ -3051,12 +3081,12 @@ contains
                      if (sum_discharge_top_n > 1.0e-9_r8) then ! Avoid division by zero
                         do i = 1, current_top_n_count
                               qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
-                              qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * global_net_negative_qgwl
+                              qgwl_correction_values(i) = (sorted_outlets(i)%discharge / sum_discharge_top_n) * net_global_qgwl
                         enddo
                      else ! If sum of top N discharge is zero (or tiny), distribute equally (or handle as error/no distribution)
                         do i = 1, current_top_n_count
                               qgwl_correction_gindices(i) = sorted_outlets(i)%gidx
-                              qgwl_correction_values(i) = global_net_negative_qgwl / real(current_top_n_count, kind=r8)
+                              qgwl_correction_values(i) = net_global_qgwl / real(current_top_n_count, kind=r8)
                         enddo
                      endif
                   endif
@@ -3096,7 +3126,10 @@ contains
          if (allocated(displs)) deallocate(displs)
 
          call t_stopf('mosartr_qgwl_redir_dist')
-      endif ! global_net_negative_qgwl /= 0.0_r8 (or just global_net_negative_qgwl condition removed as per your last request)
+      else
+         write(iulog, *) trim(subname), &
+         'Global net QGWL is positive, offsetting the negative values.'
+      endif ! net_global_qgwl < 0.0_r8
    endif ! redirect_negative_qgwl_flag
 
 
