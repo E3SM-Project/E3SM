@@ -687,6 +687,12 @@ contains
     !
     ! Uses
     use seq_domain_mct, only : seq_domain_areafactinit
+#ifdef MOABDEBUG
+    use seq_comm_mct, only : mblxid
+    use iMOAB, only : iMOAB_WriteMesh
+    use ISO_C_BINDING
+    integer :: ierr
+#endif 
     !
     ! Arguments
     type(component_type) , intent(inout) :: comp(:)
@@ -705,6 +711,18 @@ contains
        ! For joint cpl-component pes
        if (comp(eci)%iamin_cplcompid) then
 
+#ifdef MOABDEBUG
+          if(comp(eci)%oneletterid == 'a') then
+            if(mblxid >=0 ) then
+               ierr = iMOAB_WriteMesh(mblxid, trim('a1_cplLnd.h5m'//C_NULL_CHAR), &
+                                       trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing lnd mesh coupler '
+                  call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+               endif
+            endif
+          endif 
+#endif
           ! Map component domain from coupler to component processes
           ! to send aream to components.
           if ( num_inst > 1) then
@@ -713,7 +731,18 @@ contains
              mpi_tag = comp(eci)%cplcompid*10000+eci*10+5
           end if
           call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%dom_cx%data, comp(eci)%dom_cc%data, msgtag=mpi_tag)
-
+#ifdef MOABDEBUG
+          if(comp(eci)%oneletterid == 'a') then
+            if(mblxid >=0 ) then
+               ierr = iMOAB_WriteMesh(mblxid, trim('a2_cplLnd.h5m'//C_NULL_CHAR), &
+                                       trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing lnd mesh coupler '
+                  call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+               endif
+            endif
+          endif 
+#endif
           ! For only component pes
           if (comp(eci)%iamin_compid) then
 
@@ -723,10 +752,32 @@ contains
                   comp(eci)%mdl2drv, comp(eci)%drv2mdl, samegrid, &
                   comp(eci)%mpicom_compid, comp(eci)%iamroot_compid,  &
                   'areafact_'//comp(eci)%oneletterid//'_'//trim(comp(eci)%name))
-
+#ifdef MOABDEBUG
+                  if(comp(eci)%oneletterid == 'a') then
+                    if(mblxid >=0 ) then
+                       ierr = iMOAB_WriteMesh(mblxid, trim('a3_cplLnd.h5m'//C_NULL_CHAR), &
+                                               trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+                       if (ierr .ne. 0) then
+                          write(logunit,*) subname,' error in writing lnd mesh coupler '
+                          call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+                       endif
+                    endif
+                  endif 
+#endif
              ! Area correct component initialization output fields
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-
+#ifdef MOABDEBUG
+             if(comp(eci)%oneletterid == 'a') then
+               if(mblxid >=0 ) then
+                  ierr = iMOAB_WriteMesh(mblxid, trim('a4_cplLnd.h5m'//C_NULL_CHAR), &
+                                          trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing lnd mesh coupler '
+                     call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+                  endif
+               endif
+             endif 
+#endif
           endif
 
           ! Map corrected initial component AVs from component to coupler pes
@@ -736,7 +787,18 @@ contains
               mpi_tag = comp(eci)%cplcompid*10000+eci*10+7
           end if
           call seq_map_map(comp(eci)%mapper_cc2x, comp(eci)%c2x_cc, comp(eci)%c2x_cx, msgtag=mpi_tag)
-
+#ifdef MOABDEBUG
+          if(comp(eci)%oneletterid == 'a') then
+            if(mblxid >=0 ) then
+               ierr = iMOAB_WriteMesh(mblxid, trim('a5_cplLnd.h5m'//C_NULL_CHAR), &
+                                       trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing lnd mesh coupler '
+                  call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+               endif
+            endif
+          endif 
+#endif
        endif
     enddo
 
@@ -752,7 +814,8 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
    use ISO_C_BINDING, only : C_NULL_CHAR
    use shr_kind_mod      , only :  CXX => shr_kind_CXX
    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_GetDoubleTagStorage, &
-      iMOAB_SetDoubleTagStorage
+      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+   use seq_comm_mct, only: mblxid
    !
    ! Arguments
    type(component_type) , intent(inout) :: comp(:)
@@ -782,7 +845,16 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
       ! bring on the comp side the aream from maps
       ! (it is either computed by mapping routine or read from mapping files)
       call component_exch_moab(comp(1), mbcxid, mbccid, 1, tagname, context_exch='aream')
-
+#ifdef MOABDEBUG
+      if(mblxid >=0 ) then
+         ierr = iMOAB_WriteMesh(mblxid, trim(comp(1)%oneletterid//'_'//'cplLnd.h5m'//C_NULL_CHAR), &
+                                 trim(';PARALLEL=WRITE_PART'//C_NULL_CHAR))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing lnd mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing lnd mesh coupler ')
+         endif
+      endif
+#endif
       ! For only component pes
       if (comp(1)%iamin_compid) then
          ! Allocate and initialize area correction factors on component processes
@@ -796,7 +868,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          ! get areas
          tagname='area:aream:mask'//C_NULL_CHAR
          arrsize = 3 * lsize
-         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas )
+         ierr = iMOAB_GetDoubleTagStorage ( mbccid, tagname, arrsize , comp(1)%mbGridType, areas(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get areas  ')
          endif
@@ -828,7 +900,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
            call shr_sys_abort(subname//' cannot define correction tags')
          endif
          arrsize = 2 * lsize
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors)
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize , comp(1)%mbGridType, factors(1,1))
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot set correction area factors  ')
          endif
@@ -862,7 +934,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
          allocate(vals(lsize, nfields))
          tagname = trim(seq_flds_c2x_fluxes)//C_NULL_CHAR
          arrsize = lsize * nfields
-         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals )
+         ierr = iMOAB_GetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1) )
          if (ierr .ne. 0) then
            call shr_sys_abort(subname//' cannot get flux values:  '//tagname)
          endif
@@ -876,7 +948,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
                enddo
             endif
          enddo
-         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals)
+         ierr = iMOAB_SetDoubleTagStorage( mbccid, tagname, arrsize, comp(1)%mbGridType, vals(1,1))
          if (ierr .ne. 0) then
             call shr_sys_abort(subname//' cannot set new flux values  ')
          endif
