@@ -1,5 +1,6 @@
 ####################################################################
 #       Basic setup: version, cime debug, cmake paths,...          #
+#
 ####################################################################
 if (NOT DEFINED PROJECT_NAME)
   cmake_minimum_required(VERSION 3.14)
