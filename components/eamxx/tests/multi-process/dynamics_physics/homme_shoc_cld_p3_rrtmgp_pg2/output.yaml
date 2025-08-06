@@ -2,7 +2,6 @@
 ---
 filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_output
 averaging_type: instant
-max_snapshots_per_file: 1
 fields:
   physics_pg2:
     field_names:

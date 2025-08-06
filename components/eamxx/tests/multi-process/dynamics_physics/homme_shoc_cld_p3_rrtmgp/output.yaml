@@ -3,7 +3,6 @@
 filename_prefix: homme_shoc_cld_p3_rrtmgp_output
 iotype: default
 averaging_type: instant
-max_snapshots_per_file: 1
 fields:
   physics_gll:
     field_names:
