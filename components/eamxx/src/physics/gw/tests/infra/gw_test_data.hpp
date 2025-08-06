@@ -675,6 +675,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
 void momentum_energy_conservation(MomentumEnergyConservationData& d);
+void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_project_tau(GwdProjectTauData& d);
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d);

@@ -180,6 +180,13 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
 
   view3dr_d work("work", d.ncol, d.init.pver, 2*d.init.pgwv + 1);
 
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const int pgwv = d.init.pgwv;
+  const bool do_taper = d.do_taper;
+  const Real dt = d.dt;
+  const Real effgw = d.effgw;
+
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int col = team.league_rank();
 
@@ -201,7 +208,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
       team,
       wsm.get_workspace(team),
       init_cp,
-      d.init.pver, d.init.pgwv, d.do_taper, d.dt, d.effgw,
+      pver, pgwv, do_taper, dt, effgw,
       tend_level(col),
       max_level,
       lat(col),
@@ -250,12 +257,106 @@ void momentum_energy_conservation(MomentumEnergyConservationData& d)
   d.transpose<ekat::TransposeDirection::f2c>();
 }
 
-void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d)
+void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d)
 {
   gw_init(d.init);
   d.transpose<ekat::TransposeDirection::c2f>();
   gwd_compute_stress_profiles_and_diffusivities_c(d.ncol, d.src_level, d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln, d.tau);
   d.transpose<ekat::TransposeDirection::f2c>();
+}
+
+void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d)
+{
+  gw_init_cxx(d.init);
+
+  // create device views and copy
+  std::vector<view1di_d> one_d_ints_in(1);
+  std::vector<view2dr_d> two_d_reals_in(8);
+  std::vector<view3dr_d> three_d_reals_in(1);
+
+  ekat::host_to_device({d.src_level}, d.ncol, one_d_ints_in);
+  ekat::host_to_device({d.ubi, d.c, d.rhoi, d.ni, d.kvtt, d.t, d.ti, d.piln},
+                       std::vector<int>(8, d.ncol),
+                       std::vector<int>{    // dim2 sizes
+                         d.init.pver + 1,   // ubi
+                         2*d.init.pgwv + 1, // c
+                         d.init.pver + 1,   // rhoi
+                         d.init.pver + 1,   // ni
+                         d.init.pver + 1,   // kvtt
+                         d.init.pver,       // t
+                         d.init.pver + 1,   // ti
+                         d.init.pver + 1},  // piln
+                       two_d_reals_in);
+  ekat::host_to_device({d.tau}, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1, three_d_reals_in);
+
+  const auto src_level = one_d_ints_in[0];
+
+  const auto ubi  = two_d_reals_in[0];
+  const auto c    = two_d_reals_in[1];
+  const auto rhoi = two_d_reals_in[2];
+  const auto ni   = two_d_reals_in[3];
+  const auto kvtt = two_d_reals_in[4];
+  const auto t    = two_d_reals_in[5];
+  const auto ti   = two_d_reals_in[6];
+  const auto piln = two_d_reals_in[7];
+
+  const auto tau        = three_d_reals_in[0];
+
+  // Find max src_level
+  int max_level = 0;
+  Kokkos::parallel_reduce("find max level", d.ncol, KOKKOS_LAMBDA(const int i, int& lmax) {
+    if (src_level(i) > lmax) {
+      lmax = src_level(i);
+    }
+  }, Kokkos::Max<int>(max_level));
+
+  auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
+
+  WSM wsm(2*d.init.pgwv + 1, 2, policy);
+  GWF::GwCommonInit init_cp = GWF::s_common_init;
+
+  // unpack init because we do not want the lambda to capture it
+  const int pver = d.init.pver;
+  const int pgwv = d.init.pgwv;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int col = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto ubi_c  = ekat::subview(ubi, col);
+    const auto c_c    = ekat::subview(c, col);
+    const auto rhoi_c = ekat::subview(rhoi, col);
+    const auto ni_c   = ekat::subview(ni, col);
+    const auto kvtt_c = ekat::subview(kvtt, col);
+    const auto t_c    = ekat::subview(t, col);
+    const auto ti_c   = ekat::subview(ti, col);
+    const auto piln_c = ekat::subview(piln, col);
+    const auto tau_c  = ekat::subview(tau, col);
+
+    GWF::gwd_compute_stress_profiles_and_diffusivities(
+      team,
+      wsm.get_workspace(team),
+      init_cp,
+      pver, pgwv,
+      src_level(col),
+      max_level,
+      ubi_c,
+      c_c,
+      rhoi_c,
+      ni_c,
+      kvtt_c,
+      t_c,
+      ti_c,
+      piln_c,
+      tau_c);
+  });
+
+  // Get outputs back
+  std::vector<view3dr_d> three_d_reals_out = {tau};
+  ekat::device_to_host({d.tau}, d.ncol, 2*d.init.pgwv + 1, d.init.pver + 1, three_d_reals_out);
+
+  gw_finalize_cxx(d.init);
 }
 
 void gwd_project_tau(GwdProjectTauData& d)

@@ -14,24 +14,108 @@ namespace gw {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
-// Inputs
-const Int& pver,
-const Int& pgwv,
-const Int& ncol,
-const uview_1d<const Int>& src_level,
-const uview_1d<const Spack>& ubi,
-const uview_1d<const Spack>& c,
-const uview_1d<const Spack>& rhoi,
-const uview_1d<const Spack>& ni,
-const uview_1d<const Spack>& kvtt,
-const uview_1d<const Spack>& t,
-const uview_1d<const Spack>& ti,
-const uview_1d<const Spack>& piln,
-// Inputs/Outputs
-const uview_1d<Spack>& tau)
+  // Inputs
+  const MemberType& team,
+  const Workspace& workspace,
+  const GwCommonInit& init,
+  const Int& pver,
+  const Int& pgwv,
+  const Int& src_level,
+  const Int& max_level,
+  const uview_1d<const Real>& ubi,
+  const uview_1d<const Real>& c,
+  const uview_1d<const Real>& rhoi,
+  const uview_1d<const Real>& ni,
+  const uview_1d<const Real>& kvtt,
+  const uview_1d<const Real>& t,
+  const uview_1d<const Real>& ti,
+  const uview_1d<const Real>& piln,
+  // Inputs/Outputs
+  const uview_2d<Real>& tau)
 {
-  // TODO
-  // Note, argument types may need tweaking. Generator is not always able to tell what needs to be packed
+  // Local storage
+  // (ub-c)
+  uview_1d<Real> ubmc, tausat;
+  workspace.template take_many_contiguous_unsafe<2>(
+    {"ubmc", "tausat"},
+    {&ubmc, &tausat});
+
+  Real ubmc2(0.), d(0.), dsat(0.), mi(0.), wrk(0.), taudmp(0.), dscal(0.);
+
+  // Loop from bottom to top to get stress profiles.
+  for (Int k = max_level - 1; k >= init.ktop; --k) {
+    // Determine the absolute value of the saturation stress.
+    // Define critical levels where the sign of (u-c) changes between interfaces.
+    for (Int l = -pgwv; l <= pgwv; ++l) {
+      int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+      if (src_level > k) {
+        ubmc(pl_idx) = ubi(k) - c(pl_idx);
+
+        // Test to see if u-c has the same sign here as the level below.
+        if (ubmc(pl_idx) * (ubi(k + 1) - c(pl_idx)) > 0.0) {
+          tausat(pl_idx) = std::abs(init.effkwv * rhoi(k) * std::pow(ubmc(pl_idx), 3) /
+                                    (2.0 * ni(k)));
+          if (tausat(pl_idx) <= GWC::taumin) tausat(pl_idx) = 0.0;
+        }
+        else {
+          tausat(pl_idx) = 0.0;
+        }
+      }
+    }
+
+    // Determine the diffusivity for each column.
+    d = GWC::dback;
+    if (init.do_molec_diff) {
+      d += kvtt(k);
+    }
+    else {
+      for (Int l = -pgwv; l <= pgwv; ++l) {
+        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        if (src_level > k) {
+          dsat = std::pow(ubmc(pl_idx) / ni(k), 2) *
+            (init.effkwv * std::pow(ubmc(pl_idx), 2) /
+             (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
+          dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(pl_idx) + GWC::taumin));
+          d = std::max(d, dscal * dsat);
+        }
+      }
+    }
+
+    // Compute stress for each wave. The stress at this level is the min of
+    // the saturation stress and the stress at the level below reduced by
+    // damping. The sign of the stress must be the same as at the level below.
+    //
+    // If molecular diffusion is on, only do this in levels with molecular
+    // diffusion. Otherwise, do it everywhere.
+    if (k <= init.nbot_molec || !init.do_molec_diff) {
+      for (Int l = -pgwv; l <= pgwv; ++l) {
+        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        if (src_level > k) {
+          ubmc2 = std::max(std::pow(ubmc(pl_idx), 2), GWC::ubmc2mn);
+          mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + std::pow(ni(k), 2) / ubmc2 * d);
+          wrk = -2.0 * mi * GWC::rog * t(k + 1) * (piln(k + 1) - piln(k));
+
+          if (wrk >= -150.0 || !init.do_molec_diff) {
+            taudmp = tau(pl_idx, k+1) * std::exp(wrk);
+          } else {
+            taudmp = 0.0;
+          }
+          if (taudmp <= GWC::taumin) taudmp = 0.0;
+          tau(pl_idx, k) = std::min(taudmp, tausat(pl_idx));
+        }
+      }
+    } else {
+      for (Int l = -pgwv; l <= pgwv; ++l) {
+        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        if (src_level > k) {
+          tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(pl_idx));
+        }
+      }
+    }
+  }
+
+  workspace.template release_many_contiguous<2>(
+    {&ubmc, &tausat});
 }
 
 } // namespace gw
