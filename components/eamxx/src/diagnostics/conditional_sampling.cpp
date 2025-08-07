@@ -267,6 +267,9 @@ void ConditionalSampling::initialize_impl(const RunType /*run_type*/) {
   if (m_input_f == "count") {
     ones = m_diagnostic_output.clone("count_ones");
     ones.deep_copy(1.0);
+    auto ones_mask = ones.clone("count_ones_mask");
+    ones.get_header().set_extra_data("mask_data", ones_mask);
+    ones.get_header().set_extra_data("mask_value", m_mask_val);
   }
   
   // Special case: if condition field is "lev", we don't need to check layout compatibility

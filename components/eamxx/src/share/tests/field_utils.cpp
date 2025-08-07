@@ -224,6 +224,9 @@ TEST_CASE("utils") {
     field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
     field00_masked.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
     field00_masked.sync_to_dev();
+    auto result_mask = result.clone();
+    result.get_header().set_extra_data("mask_data", result_mask);
+    result.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
     horiz_contraction<Real>(result, field00_masked, field00);
     result.sync_to_host();
     v = result.get_view<Real, Host>();
@@ -252,6 +255,9 @@ TEST_CASE("utils") {
     Real mask_v = constants::fill_value<Real>;
     field00_masked.get_header().set_extra_data("mask_value", mask_v);
     field00_masked.sync_to_dev();
+    result_mask = result.clone();
+    result.get_header().set_extra_data("mask_data", result_mask);
+    result.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
     horiz_contraction<Real>(result, field00_masked, field00);
     result.sync_to_host();
     v = result.get_view<Real, Host>();
@@ -409,6 +415,9 @@ TEST_CASE("utils") {
       field00_masked.get_header().set_extra_data("mask_data", mask_of_field00);
       field00_masked.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
       field00_masked.sync_to_dev();
+      auto result_mask = result.clone();
+      result.get_header().set_extra_data("mask_data", result_mask);
+      result.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
       vert_contraction<Real,1>(result, field00_masked, field00);
       result.sync_to_host();
       v = result.get_view<Real, Host>();
@@ -437,6 +446,9 @@ TEST_CASE("utils") {
       Real mask_v = constants::fill_value<Real>;
       field00_masked.get_header().set_extra_data("mask_value", mask_v);
       field00_masked.sync_to_dev();
+      result_mask = result.clone();
+      result.get_header().set_extra_data("mask_data", result_mask);
+      result.get_header().set_extra_data("mask_value", constants::fill_value<Real>);
       vert_contraction<Real,1>(result, field00_masked, field00);
       result.sync_to_host();
       v = result.get_view<Real, Host>();

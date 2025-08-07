@@ -321,7 +321,7 @@ void horiz_contraction(const Field &f_out, const Field &f_in,
   const int ncols = l_in.dim(0);
 
   bool is_masked = f_in.get_header().has_extra_data("mask_data");
-  bool is_avg_masked = AVG && is_masked;
+  bool is_avg_masked = AVG && is_masked && f_out.get_header().has_extra_data("mask_data");
   bool is_comm_avg_masked = comm && is_avg_masked;
 
   const auto fill_value = is_masked ? f_in.get_header().get_extra_data<Real>("mask_value") : 0;
@@ -500,7 +500,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
   auto l_w   = weight.get_header().get_identifier().get_layout();
 
   bool is_masked = f_in.get_header().has_extra_data("mask_data");
-  bool is_avg_masked = AVG && is_masked;
+  bool is_avg_masked = AVG && is_masked && f_out.get_header().has_extra_data("mask_data");
 
   const auto fill_value = is_masked ? f_in.get_header().get_extra_data<Real>("mask_value") : 0;
 
