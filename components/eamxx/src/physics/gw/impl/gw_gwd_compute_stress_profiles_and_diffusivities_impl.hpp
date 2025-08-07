@@ -43,10 +43,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     {"ubmc", "tausat"},
     {&ubmc, &tausat});
 
-  const int col = team.league_rank();
-
-  Real ubmc2(0.), d(0.), dsat(0.), mi(0.), wrk(0.), taudmp(0.), dscal(0.);
-
   // Loop from bottom to top to get stress profiles.
   for (Int k = max_level; k >= init.ktop; --k) {
     // Determine the absolute value of the saturation stress.
@@ -69,7 +65,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     }
 
     // Determine the diffusivity for each column.
-    d = GWC::dback;
+    Real d = GWC::dback;
     if (init.do_molec_diff) {
       d += kvtt(k);
     }
@@ -77,10 +73,10 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
         if (src_level >= k) {
-          dsat = bfb_square(ubmc(pl_idx) / ni(k)) *
+          const Real dsat = bfb_square(ubmc(pl_idx) / ni(k)) *
             (init.effkwv * bfb_square(ubmc(pl_idx)) /
              (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
-          dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(pl_idx) + GWC::taumin));
+          const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(pl_idx) + GWC::taumin));
           d = std::max(d, dscal * dsat);
         }
       }
@@ -96,10 +92,10 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
         if (src_level >= k) {
-          ubmc2 = std::max(bfb_square(ubmc(pl_idx)), GWC::ubmc2mn);
-          mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
-          wrk = -2.0 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
-
+          const Real ubmc2 = std::max(bfb_square(ubmc(pl_idx)), GWC::ubmc2mn);
+          const Real mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
+          const Real wrk = -2.0 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
+          Real taudmp;
           if (wrk >= -150.0 || !init.do_molec_diff) {
             taudmp = tau(pl_idx, k+1) * std::exp(wrk);
           } else {
