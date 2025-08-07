@@ -302,14 +302,6 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
 
   const auto tau        = three_d_reals_in[0];
 
-  // Find max src_level
-  int max_level = 0;
-  Kokkos::parallel_reduce("find max level", d.ncol, KOKKOS_LAMBDA(const int i, int& lmax) {
-    if (src_level(i) > lmax) {
-      lmax = src_level(i);
-    }
-  }, Kokkos::Max<int>(max_level));
-
   auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.ncol, d.init.pver);
 
   WSM wsm(2*d.init.pgwv + 1, 2, policy);
@@ -340,7 +332,6 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
       init_cp,
       pver, pgwv,
       src_level(col),
-      max_level,
       ubi_c,
       c_c,
       rhoi_c,

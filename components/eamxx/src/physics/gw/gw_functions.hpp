@@ -246,7 +246,6 @@ struct Functions
     const Int& pver,
     const Int& pgwv,
     const Int& src_level,
-    const Int& max_level,
     const uview_1d<const Real>& ubi,
     const uview_1d<const Real>& c,
     const uview_1d<const Real>& rhoi,
