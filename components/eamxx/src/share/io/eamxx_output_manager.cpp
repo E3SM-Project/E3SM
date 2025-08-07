@@ -122,7 +122,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     }
   }
 
-
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
   if (m_save_grid_data) {
@@ -250,9 +249,22 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           "  - new fp precision: " << fp_precision << "\n");
 
       // Check if the prev run wrote any output file (it may have not, if the restart was written
-      // before the 1st output step). If there is a file, check if there's still room in it.
+      // before the 1st output step). If there is a file, we will check if there's still room in it.
       const auto& last_output_filename = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
-      m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",true);
+      const bool force_new_file = restart_pl.get("force_new_file",true);
+      if (last_output_filename!="" and force_new_file) {
+        auto st = m_output_file_specs.storage.type;
+        // Forcing a new file is dangeour for storage type != NumSnaps, as the filename is likely to clash.
+        // It is however ok if the user changed storage type, as the new filename will NOT clash with the old
+        EKAT_REQUIRE_MSG (st==NumSnaps or e2str(st)!=old_storage_type,
+            "Error! Forcing a new file upon restart is dangerous for file max storage != num_snapshots.\n"
+            "That's because the new file may have the same name as the old one, ending up replacing it.\n"
+            "To circumvent this error, set 'force_new_file: false' in the output yaml file.\n"
+            " - last output file: " + last_output_filename + "\n"
+            " - storage type    : " + e2str(m_output_file_specs.storage.type) + "\n");
+      }
+
+      m_resume_output_file = last_output_filename!="" and not force_new_file;
       if (m_resume_output_file) {
         m_output_file_specs.storage.num_snapshots_in_file = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
 
