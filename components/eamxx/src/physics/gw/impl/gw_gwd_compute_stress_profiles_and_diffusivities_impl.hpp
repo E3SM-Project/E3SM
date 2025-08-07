@@ -33,14 +33,17 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   const uview_1d<const Real>& ti,
   const uview_1d<const Real>& piln,
   // Inputs/Outputs
+  const uview_2d<Real>& ubmc,
+  const uview_2d<Real>& tausat,
+  const uview_2d<Real>& dsat,
   const uview_2d<Real>& tau)
 {
   // Local storage
   // (ub-c)
-  uview_1d<Real> ubmc, tausat;
-  workspace.template take_many_contiguous_unsafe<2>(
-    {"ubmc", "tausat"},
-    {&ubmc, &tausat});
+  // uview_1d<Real> ubmc, tausat;
+  // workspace.template take_many_contiguous_unsafe<2>(
+  //   {"ubmc", "tausat"},
+  //   {&ubmc, &tausat});
 
   // Loop from bottom to top to get stress profiles.
   for (Int k = src_level; k >= init.ktop; --k) {
@@ -49,19 +52,25 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     // Define critical levels where the sign of (u-c) changes between interfaces.
     for (Int l = -pgwv; l <= pgwv; ++l) {
       int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-      ubmc(pl_idx) = ubi(k) - c(pl_idx);
+      ubmc(k, pl_idx) = ubi(k) - c(pl_idx);
 
       // Test to see if u-c has the same sign here as the level below.
-      if (ubmc(pl_idx) * (ubi(k + 1) - c(pl_idx)) > 0.0) {
-        tausat(pl_idx) = std::abs(init.effkwv * rhoi(k) * bfb_cube(ubmc(pl_idx)) /
+      if (ubmc(k, pl_idx) * (ubi(k + 1) - c(pl_idx)) > 0.0) {
+        tausat(k, pl_idx) = std::abs(init.effkwv * rhoi(k) * bfb_cube(ubmc(k, pl_idx)) /
                                   (2.0 * ni(k)));
-        if (tausat(pl_idx) <= GWC::taumin) tausat(pl_idx) = 0.0;
+        if (tausat(k, pl_idx) <= GWC::taumin) tausat(k, pl_idx) = 0.0;
       }
       else {
-        tausat(pl_idx) = 0.0;
+        tausat(k, pl_idx) = 0.0;
       }
-    }
 
+      dsat(k, pl_idx) = bfb_square(ubmc(k, pl_idx) / ni(k)) *
+        (init.effkwv * bfb_square(ubmc(k, pl_idx)) /
+         (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
+    }
+  }
+
+  for (Int k = src_level; k >= init.ktop; --k) {
     // Determine the diffusivity for each column.
     Real d = GWC::dback;
     if (init.do_molec_diff) {
@@ -70,11 +79,8 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     else {
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        const Real dsat = bfb_square(ubmc(pl_idx) / ni(k)) *
-          (init.effkwv * bfb_square(ubmc(pl_idx)) /
-           (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
-        const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(pl_idx) + GWC::taumin));
-        d = std::max(d, dscal * dsat);
+        const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
+        d = std::max(d, dscal * dsat(k, pl_idx));
       }
     }
 
@@ -87,7 +93,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     if (k <= init.nbot_molec || !init.do_molec_diff) {
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        const Real ubmc2 = std::max(bfb_square(ubmc(pl_idx)), GWC::ubmc2mn);
+        const Real ubmc2 = std::max(bfb_square(ubmc(k, pl_idx)), GWC::ubmc2mn);
         const Real mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
         const Real wrk = -2.0 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
         Real taudmp;
@@ -97,19 +103,19 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
           taudmp = 0.0;
         }
         if (taudmp <= GWC::taumin) taudmp = 0.0;
-        tau(pl_idx, k) = std::min(taudmp, tausat(pl_idx));
+        tau(pl_idx, k) = std::min(taudmp, tausat(k, pl_idx));
       }
     }
     else {
       for (Int l = -pgwv; l <= pgwv; ++l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(pl_idx));
+        tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(k, pl_idx));
       }
     }
   }
 
-  workspace.template release_many_contiguous<2>(
-    {&ubmc, &tausat});
+  // workspace.template release_many_contiguous<2>(
+  //   {&ubmc, &tausat});
 }
 
 } // namespace gw

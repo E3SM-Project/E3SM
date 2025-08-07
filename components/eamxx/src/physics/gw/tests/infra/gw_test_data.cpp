@@ -307,6 +307,11 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
   WSM wsm(2*d.init.pgwv + 1, 2, policy);
   GWF::GwCommonInit init_cp = GWF::s_common_init;
 
+  view3dr_d ubmc("ubmc",   d.ncol, d.init.pver + 1, 2*d.init.pgwv + 1);
+  view3dr_d tausat("tausat", d.ncol, d.init.pver + 1, 2*d.init.pgwv + 1);
+  view3dr_d dsat("dsat", d.ncol, d.init.pver + 1, 2*d.init.pgwv + 1);
+  view3dr_d wrk("wrk", d.ncol, d.init.pver + 1, 2*d.init.pgwv + 1);
+
   // unpack init because we do not want the lambda to capture it
   const int pver = d.init.pver;
   const int pgwv = d.init.pgwv;
@@ -324,6 +329,10 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
     const auto t_c    = ekat::subview(t, col);
     const auto ti_c   = ekat::subview(ti, col);
     const auto piln_c = ekat::subview(piln, col);
+    const auto ubmc_c = ekat::subview(ubmc, col);
+    const auto tausat_c = ekat::subview(tausat, col);
+    const auto dsat_c = ekat::subview(dsat, col);
+    const auto wrk_c = ekat::subview(wrk, col);
     const auto tau_c  = ekat::subview(tau, col);
 
     GWF::gwd_compute_stress_profiles_and_diffusivities(
@@ -340,6 +349,10 @@ void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDi
       t_c,
       ti_c,
       piln_c,
+      ubmc_c,
+      tausat_c,
+      dsat_c,
+//      wrk_c,
       tau_c);
   });
 
