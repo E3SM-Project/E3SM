@@ -36,7 +36,8 @@ OPTIONS
                          (dlat and dlon are the grid cell size in degrees for latitude
                          and longitude respectively);
                          Use 'r0125' and 'r05' for these fv grids
-
+     -usr_src <dir1>[,<dir2>[,<dir3>[...]]]
+                        Directories containing user source code.
 EOF
 }
 
@@ -68,6 +69,7 @@ my %opts = (
 	    );
 GetOptions(
     "hgrid=s"                   => \$opts{'hgrid'},
+    "usr_src=s"                 => \$opts{'usr_src'},
     "h|help"                    => \$opts{'help'},
 ) or usage();
 
@@ -189,6 +191,24 @@ my $hgrid = $cfg_ref->get('hgrid');
 
 if ($print>=2) { print "ehc : grid         is $hgrid     $eol";}
 
+#-----------------------------------------------------------------------------------------------
+# User source directories.
+my $usr_src = '';
+if (defined $opts{'usr_src'}) {
+    my @dirs = split ',', $opts{'usr_src'};
+    my @adirs;
+    while ( my $dir = shift @dirs ) {
+	if (-d "$dir") {
+	    push @adirs, absolute_path($dir);
+	} else {
+	    die "** User source directory does not exist: $dir\n";
+	}
+    }
+    $usr_src = join ',', @adirs;
+    $cfg_ref->set('usr_src', $usr_src);
+}
+
+if ($print>=2) { print "User source directories: $usr_src$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 ## Write configuration files ####################################################################

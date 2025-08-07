@@ -24,6 +24,46 @@
     <desc compset="_GCAM">GCAM active</desc>
   </description>
 
+  <entry id="GCAM_NML_USE_CASE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <values>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP245_ehc</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP370_ehc</value>
+    </values>
+
+    <group>run_component_ehc</group>
+    <file>env_run.xml</file>
+    <desc>EHC namelist use_case.  Provides the use_case option for the
+      EHC build-namelist utility (which is called from
+      $CASEROOT/Buildconf/gcamconf).  The EHC build-namelist
+      leverages groups of namelist options (use cases) that are often
+      paired with the EHC configure options.  These use cases are xml
+      files located in
+      $CIMEROOT/../components/gcam/bld/namelist_files/use_cases.
+      In general, this variable should not be modified for supported
+      component sets (compsets).  Recommendation: If you want to
+      modify this value for your experiment, use your own user-defined
+      component sets.</desc>
+  </entry>
+
+  <entry id="GCAM_NAMELIST_OPTS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values>
+      <value compset="_GCAM"> crop_addtreeonly=0 crop_setherbfracrem=1.0 crop_setavailtreefracrem=0.0 pasture_addtreeonly=0 pasture_setherbfracrem=1.0 pasture_setavailtreefracrem=0.0 </value> 
+    </values>
+    <group>run_component_ehc</group>
+    <file>env_run.xml</file>
+    <desc>EHC specific namelist settings for -namelist option Provides
+      options to the -namelist argument for the EHC build-namelist
+      utility.  This should be reserved for component set
+      specification. Users should modify EHC namelists only via the
+      $CASEROOT/user_nl_gcam file.</desc>
+  </entry>
+
   <help>
     =========================================
     IAC naming conventions

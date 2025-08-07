@@ -31,6 +31,7 @@ def buildnml(case, caseroot, compname):
     get_refcase          = case.get_value("GET_REFCASE")
     iac_grid             = case.get_value("IAC_GRID")
     gcam_bldnml_opts   = case.get_value("GCAM_BLDNML_OPTS")
+    gcam_nml_use_case = case.get_value("GCAM_NML_USE_CASE")
     gcam_namelist_opts = case.get_value("GCAM_NAMELIST_OPTS")
     rundir               = case.get_value("RUNDIR")
     run_type             = case.get_value("RUN_TYPE")
@@ -64,6 +65,7 @@ def buildnml(case, caseroot, compname):
     
     sysmod = os.path.join(srcroot, "components/gcam/bld/configure")
     sysmod += " -hgrid {}".format(iac_grid)
+    sysmod += " -usr_src {}".format(caseroot)
     run_cmd_no_fail(sysmod, from_dir=iacconf_dir)    
 
     #--------------------------------------------------------------------
@@ -125,13 +127,15 @@ def buildnml(case, caseroot, compname):
         # call build-namelist
         # -----------------------------------------------------
 
+        usecase = (gcam_nml_use_case) if gcam_nml_use_case not in [None, "UNSET"] else " "
         sysmod  = os.path.join(srcroot, "components/gcam/bld/build-namelist")
         sysmod += " -infile {}/namelist".format(iacconf_dir)
         sysmod += " -caseroot {}".format(caseroot)
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += ' -namelist " &gcamexp {} /" '.format(gcam_namelist_opts)
+        sysmod += " -use_case {}".format(usecase)
         sysmod += ' -inst_string "{}" {}'.format(inst_string, gcam_bldnml_opts)
-
+        
         run_cmd_no_fail(sysmod, from_dir=iacconf_dir)
 
         # -----------------------------------------------------

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+
+<namelist_defaults>
+
+<case_name>E3SM_GCAM_SSP245</case_name>
+
+<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ssp245_in_E3SM.xml</gcam_config>
+
+</namelist_defaults>

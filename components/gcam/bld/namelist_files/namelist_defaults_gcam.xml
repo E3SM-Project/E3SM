@@ -18,8 +18,6 @@ for the iac data in the e3sm distribution
 
 <!-- gcam_inparm  -->
 
-<case_name>e3sm_gcam</case_name>
-
 <!-- Grid and region size parameters -->
 <num_pft>17</num_pft>
 <num_harvest>5</num_harvest>
@@ -41,7 +39,6 @@ for the iac data in the e3sm distribution
 <num_periods>20</num_periods>
 
 <!-- gcam config and init files, relative to inputdata -->
-<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ref.xml</gcam_config>
 <base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_regional.csv</base_gcam_co2_file>
 <base_gcam_lu_wh_file>iac/giac/gcam/gcam_6_0/data/lu_wh_2015_gcam_out.csv</base_gcam_lu_wh_file>
 <base_co2_surface_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/CO2-em-SFC-anthro_0.125x0.125_input4MIPs_2014.csv</base_co2_surface_file>

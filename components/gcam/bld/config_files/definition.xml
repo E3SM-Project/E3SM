@@ -12,4 +12,9 @@ CICE build directory; contains .o and .mod files.
 Horizontal grid specifier.  
 </entry>
 
+<entry id="usr_src" value="" list="1">
+User source directories to prepend to the filepath.  Multiple directories
+are specified as a comma separated list with no embedded white space.
+</entry>
+
 </config_definition>
