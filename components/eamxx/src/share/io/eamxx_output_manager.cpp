@@ -560,7 +560,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       }
 
       // We're adding one snapshot to the file
-      filespecs.storage.update_storage(timestamp);
+      ++filespecs.storage.num_snapshots_in_file;
 
       // NOTE: for checkpoint files, unless we write restart data, we did not update time,
       //       which means we cannot write any variable (the check var.num_records==time.length
@@ -882,6 +882,9 @@ setup_file (      IOFileSpecs& filespecs,
   }
 
   filespecs.is_open = true;
+  if (filespecs.storage.type!=NumSnaps) {
+    filespecs.storage.set_time_idx(control.next_write_ts);
+  }
 
   m_resume_output_file = false;
 }
