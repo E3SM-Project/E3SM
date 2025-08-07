@@ -1958,6 +1958,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfc_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levlanduse', n_landuse_cats, dimid)
        call ncd_defdim(lnfid, 'fates_levlulu', n_landuse_cats * n_landuse_cats, dimid)
+       call ncd_defdim(lnfid, 'fates_levlupft', n_landuse_cats * numpft_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -4856,6 +4857,8 @@ contains
        num2d = n_landuse_cats
     case ('fates_levlulu')
        num2d = n_landuse_cats * n_landuse_cats
+    case ('fates_levlupft')
+       num2d = n_landuse_cats * numpft_fates
     case ('fates_levage')
        num2d = nlevage_fates
     case ('fates_levfuel')
