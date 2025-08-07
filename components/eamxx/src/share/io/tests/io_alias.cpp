@@ -1,8 +1,19 @@
 #include <catch2/catch.hpp>
 
+// Test file for EAMxx field aliasing functionality
+// This file tests the field aliasing feature that allows users to specify
+// alternative names for fields in output files using the syntax "ALIAS:=FIELDNAME"
+//
+// Tests include:
+// 1. Parsing of alias specifications with various formats
+// 2. Processing of mixed alias and non-alias field lists
+// 3. Integration with OutputManager to create files with aliased names
+// 4. Verification that aliased names appear correctly in NetCDF output files
+
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
@@ -18,8 +29,51 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <iostream>
+#include <fstream>
 
 namespace scream {
+
+// Helper function to create test fields and field manager
+std::shared_ptr<FieldManager> create_test_field_manager(
+    const std::shared_ptr<const AbstractGrid>& grid,
+    const util::TimeStamp& t0,
+    int ncols, int nlevs) {
+  
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+  
+  auto fm = std::make_shared<FieldManager>(grid);
+  
+  // Create some test fields with realistic EAMxx names
+  FieldIdentifier fid1("qv", {{COL,LEV},{ncols,nlevs}}, kg/kg, grid->name());
+  FieldIdentifier fid2("T_mid", {{COL,LEV},{ncols,nlevs}}, K, grid->name());
+  FieldIdentifier fid3("ps", {{COL},{ncols}}, Pa, grid->name());
+
+  Field qv(fid1);
+  Field T_mid(fid2);
+  Field ps(fid3);
+  
+  qv.allocate_view();
+  T_mid.allocate_view();
+  ps.allocate_view();
+  
+  // Initialize with dummy data
+  qv.deep_copy(0.01);
+  T_mid.deep_copy(280.0);
+  ps.deep_copy(101325.0);
+  
+  // Update timestamps
+  qv.get_header().get_tracking().update_time_stamp(t0);
+  T_mid.get_header().get_tracking().update_time_stamp(t0);
+  ps.get_header().get_tracking().update_time_stamp(t0);
+  
+  fm->add_field(qv);
+  fm->add_field(T_mid);
+  fm->add_field(ps);
+  
+  return fm;
+}
 
 TEST_CASE("io_field_aliasing") {
   SECTION("parse_field_alias") {
@@ -112,7 +166,7 @@ TEST_CASE("io_field_aliasing") {
   }
 }
 
-TEST_CASE("output_aliases_integration", "[.][io][alias]") {
+TEST_CASE("output_aliases_integration", "[io][alias]") {
   // Integration test to verify that OutputManager correctly uses aliases
   // This test creates actual output files and verifies the variable names
   
@@ -132,42 +186,15 @@ TEST_CASE("output_aliases_integration", "[.][io][alias]") {
   gm->build_grids();
   
   auto grid = gm->get_grid("point_grid");  
-  auto fm = std::make_shared<FieldManager>(grid);
-  
-  // Create some test fields with realistic EAMxx names
-  FieldIdentifier fid1("qv", {{COL,LEV},{10,5}}, kg/kg, grid->name());
-  FieldIdentifier fid2("T_mid", {{COL,LEV},{10,5}}, K, grid->name());
-  FieldIdentifier fid3("ps", {{COL},{10}}, Pa, grid->name());
-
-  Field qv(fid1);
-  Field T_mid(fid2);
-  Field ps(fid3);
-  
-  qv.allocate_view();
-  T_mid.allocate_view();
-  ps.allocate_view();
-  
-  // Initialize with dummy data
-  qv.deep_copy(0.01);
-  T_mid.deep_copy(280.0);
-  ps.deep_copy(101325.0);
-  
-  // Update timestamps
   util::TimeStamp t0({2023,1,1},{0,0,0});
-  qv.get_header().get_tracking().update_time_stamp(t0);
-  T_mid.get_header().get_tracking().update_time_stamp(t0);
-  ps.get_header().get_tracking().update_time_stamp(t0);
-  
-  fm->add_field(qv);
-  fm->add_field(T_mid);
-  fm->add_field(ps);
+  auto fm = create_test_field_manager(grid, t0, ncols, nlevs);
   
   // Test that OutputManager can be created and initialized with aliases
   SECTION("construction_with_aliases") {
     // Create output parameter list with aliases
     ekat::ParameterList params;
-    params.set<std::string>("filename_prefix", "alias_test");
-    params.set<std::string>("averaging_type", "instant");
+    params.set<std::string>("filename_prefix", "io_alias_construction");
+    params.set<std::string>("averaging_type", "INSTANT");
     
     // Test field specifications with aliases
     std::vector<std::string> field_specs = {
@@ -180,42 +207,192 @@ TEST_CASE("output_aliases_integration", "[.][io][alias]") {
     auto& ctrl_pl = params.sublist("output_control");
     ctrl_pl.set<std::string>("frequency_units", "nsteps");
     ctrl_pl.set<int>("frequency", 1);
+    ctrl_pl.set<bool>("save_grid_data", false);
+    
+    // Add required settings for proper file creation
+    params.set<int>("max_snapshots_per_file", 2);
+    params.set<std::string>("floating_point_precision", "single");
     
     REQUIRE_NOTHROW([&]() {
       OutputManager om;
       om.initialize(comm, params, t0, false);
       om.setup(fm, gm->get_grid_names());
       // OutputManager setup should succeed with alias syntax
+      
+      // Verify that setup completed without errors
+      auto dt = 1;
+      om.init_timestep(t0, dt);
+      om.run(t0 + dt);
+      om.finalize();
     }());
   }
   
-  // Test mixed alias and non-alias field specifications
-  SECTION("mixed_aliases") {
+  // Clean up PIO subsystem
+  scorpio::finalize_subsystem();
+}
+
+// Separate test case with PIO initialization to avoid re-initialization issues
+TEST_CASE("output_aliases_file_verification", "[io][alias]") {
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  // Create a simple grid and field manager
+  ekat::Comm comm(MPI_COMM_WORLD);
+  
+  // Initialize the PIO subsystem for this test
+  scorpio::init_subsystem(comm);
+  
+  const int ncols = 10;
+  const int nlevs = 5;
+  
+  auto gm = create_mesh_free_grids_manager(comm, 0, 0, nlevs, ncols);
+  gm->build_grids();
+  
+  auto grid = gm->get_grid("point_grid");  
+  util::TimeStamp t0({2023,1,1},{0,0,0});
+  auto fm = create_test_field_manager(grid, t0, ncols, nlevs);
+
+  // Test mixed alias and non-alias field specifications with actual file writing
+  SECTION("mixed_aliases_file_output") {
+    std::cout << "Starting mixed_aliases_file_output test section..." << std::endl;
+    
     ekat::ParameterList params;
-    params.set<std::string>("filename_prefix", "mixed_test");
-    params.set<std::string>("averaging_type", "instant");
+    params.set<std::string>("filename_prefix", "io_alias_mixed");
+    params.set<std::string>("averaging_type", "INSTANT");
     
     std::vector<std::string> mixed_specs = {
       "qv",             // No alias - use original name
-      "TEMP:=T_mid",   // With alias
-      "ps"              // No alias - use original name
+      "TEMP:=T_mid",    // With alias
+      "PSURF:=ps"       // With alias
     };
     params.set("field_names", mixed_specs);
     
     auto& ctrl_pl = params.sublist("output_control");
     ctrl_pl.set<std::string>("frequency_units", "nsteps");
     ctrl_pl.set<int>("frequency", 1);
+    ctrl_pl.set<bool>("save_grid_data", false);
     
+    // Set max snapshots to ensure file gets written and closed
+    params.set<int>("max_snapshots_per_file", 2);
+    params.set<std::string>("floating_point_precision", "single");
+
+    OutputManager om;
+    om.initialize(comm, params, t0, false);
+    om.setup(fm, gm->get_grid_names());
+    
+    // Run enough timesteps to fill the file and force it to be written
+    auto dt = 1; // 1 second timestep for nsteps frequency
+    auto t = t0;
+    const int nsteps = 3; // Run 3 steps with frequency=1 to get 3 outputs, exceeding max_snapshots=2
+    
+    for (int n = 0; n < nsteps; ++n) {
+      om.init_timestep(t, dt);
+      t += dt;
+      
+      // Update field values to make them different each timestep
+      // Get the fields from the field manager to ensure we're updating the right ones
+      auto qv_field = fm->get_field("qv");
+      auto T_mid_field = fm->get_field("T_mid");
+      auto ps_field = fm->get_field("ps");
+      
+      qv_field.deep_copy(0.01 + n * 0.001);
+      T_mid_field.deep_copy(280.0 + n * 1.0);
+      ps_field.deep_copy(101325.0 + n * 100.0);
+      
+      // Update field timestamps
+      qv_field.get_header().get_tracking().update_time_stamp(t);
+      T_mid_field.get_header().get_tracking().update_time_stamp(t);
+      ps_field.get_header().get_tracking().update_time_stamp(t);
+      
+      om.run(t);
+    }
+    
+    std::cout << "Finished time loop, checking file status..." << std::endl;
+    
+    // Check that the file was closed since we exceeded max_snapshots
+    const auto& file_specs = om.output_file_specs();
+    REQUIRE(not file_specs.is_open);
+    
+    om.finalize();
+    
+    // Verify the NetCDF file was created with the expected filename
+    std::string expected_filename = "io_alias_mixed.INSTANT.nsteps_x1.np" 
+      + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+    
+    // Print the expected filename for debugging
+    std::cout << "Expected NetCDF file: " << expected_filename << std::endl;
+    
+    // First check if the file actually exists
+    std::ifstream file_check(expected_filename);
+    if (file_check.good()) {
+      std::cout << "NetCDF file exists!" << std::endl;
+      file_check.close();
+    } else {
+      std::cout << "ERROR: NetCDF file does not exist!" << std::endl;
+      REQUIRE(false); // Fail the test if file doesn't exist
+    }
+    
+    // Now verify the file was created and contains the correct aliased field names
+    // Create a new field manager with fields using aliased names for reading
+    auto read_fm = std::make_shared<FieldManager>(grid);
+    
+    // Create fields with aliased names for reading back
+    FieldIdentifier qv_read_id("qv", {{COL,LEV},{ncols,nlevs}}, kg/kg, grid->name());
+    FieldIdentifier temp_read_id("TEMP", {{COL,LEV},{ncols,nlevs}}, K, grid->name());
+    FieldIdentifier psurf_read_id("PSURF", {{COL},{ncols}}, Pa, grid->name());
+    
+    Field qv_read(qv_read_id);
+    Field temp_read(temp_read_id);
+    Field psurf_read(psurf_read_id);
+    
+    qv_read.allocate_view();
+    temp_read.allocate_view();
+    psurf_read.allocate_view();
+    
+    qv_read.get_header().get_tracking().update_time_stamp(t0);
+    temp_read.get_header().get_tracking().update_time_stamp(t0);
+    psurf_read.get_header().get_tracking().update_time_stamp(t0);
+    
+    read_fm->add_field(qv_read);
+    read_fm->add_field(temp_read);
+    read_fm->add_field(psurf_read);
+    
+    // Set up reader parameter list
+    ekat::ParameterList reader_pl;
+    reader_pl.set("filename", expected_filename);
+    
+    // Use the aliased names in the field list for reading
+    std::vector<std::string> aliased_names = {"qv", "TEMP", "PSURF"};
+    reader_pl.set("field_names", aliased_names);
+    
+    // Try to read the file - this will fail if the aliases weren't written correctly
+    std::cout << "Attempting to read NetCDF file with aliased field names..." << std::endl;
     REQUIRE_NOTHROW([&]() {
-      OutputManager om;
-      om.initialize(comm, params, t0, false);
-      om.setup(fm, gm->get_grid_names());
-      // OutputManager setup should succeed with mixed alias syntax
+      AtmosphereInput reader(reader_pl, read_fm);
+      reader.read_variables(0); // Read first timestep
+      std::cout << "Successfully read file with aliased field names!" << std::endl;
+      
+      // Verify that we can access the fields we just read
+      auto qv_field_read = read_fm->get_field("qv");
+      auto temp_field_read = read_fm->get_field("TEMP");
+      auto psurf_field_read = read_fm->get_field("PSURF");
+      
+      // Check that fields have reasonable data
+      REQUIRE(qv_field_read.get_header().get_alloc_properties().get_num_scalars() > 0);
+      REQUIRE(temp_field_read.get_header().get_alloc_properties().get_num_scalars() > 0);
+      REQUIRE(psurf_field_read.get_header().get_alloc_properties().get_num_scalars() > 0);
+      
+      // The fact that we reached here means:
+      // 1. The NetCDF file was created successfully
+      // 2. The file contains variables with the aliased names (qv, TEMP, PSURF)  
+      // 3. The aliases were properly applied during output
+      // 4. We can successfully read back the data using the aliased names
+      std::cout << "Field aliasing verification passed!" << std::endl;
     }());
-  }
   
   // Clean up PIO subsystem
   scorpio::finalize_subsystem();
+  }
 }
 
 } // namespace scream
