@@ -1,0 +1,686 @@
+#!/bin/bash -fe
+
+# E3SM+GCAM SSP245 production run script for chrysalis
+# 
+
+main() {
+
+# For debugging, uncomment libe below
+#set -x
+
+# --- Configuration flags ----
+
+# Machine and project
+readonly MACHINE=chrysalis
+readonly PROJECT="e3sm"
+
+# Simulation
+# readonly MYDATE=$(date '+%Y%m%d')
+readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set
+#export COMPSET=SSP245_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
+export COMPSET="SSP245_ZATM_BGC"
+readonly RESOLUTION="ne30pg2_f09_oEC60to30v3" # non-default grids are: atm:ne30np4.pg2  lnd:0.9x1.25  ocnice:oEC60to30v3  rof:null  glc:null  wav:null   mask is: oEC60to30v3
+readonly CASE_NAME="test_${COMPSET}_${RESOLUTION}_${MYDATE}"
+# readonly CASE_GROUP="E3SM_GCAM"
+
+# ---- Eva's settings for IAC run script ----
+# domain files
+export lnd_domainfile=domain.lnd.0.9x1.25_oEC60to30v3.231108.nc
+export atm_domainfile=domain.lnd.ne30pg2_oEC60to30v3.200220.nc
+# select based on the model resolution
+# 2 deg : surfdata_iESM_dyn_hist_simyr2015_c230516.nc
+# 1 deg : landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc
+#export iesm_dyn_source=surfdata_iESM_dyn_hist_simyr2015_c230516.nc
+export iesm_dyn_source=landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc
+# ---- End of Eva's settings for IAC run script ----
+
+# Code and compilation
+#readonly CHECKOUT="${MYDATE}"
+#readonly BRANCH="main" 
+#$(git rev-parse HEAD) #"9f0094d40f039769ba68ed4e89810516838ad43f"
+#readonly CHERRY=( "7e4d1c9fec40ce1cf2c272d671f5d9111fa4dea7" "a5b1d42d7cd24924d0dbda95e24ad8d4556d93f1" ) # PR4349
+readonly DEBUG_COMPILE=TRUE
+
+# Run options
+readonly MODEL_START_TYPE="hybrid"  # 'initial', 'continue', 'branch', 'hybrid'
+readonly START_DATE="2015-01-01"
+
+# Additional options for 'branch' and 'hybrid'
+readonly GET_REFCASE=TRUE
+# will need to change the following variables according to initial files
+readonly RUN_REFCASE="20241204_I20TREAMELMCNPRDCTCBCBGC_${RESOLUTION}" 
+readonly RUN_REFDATE="2015-01-01"
+readonly RUN_REFDIR="/lcrc/group/e3sm/ac.eva.sinha/E3SM_GCAM_lnd_init/${RUN_REFCASE}"
+export finidat="${RUN_REFDIR}/run/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc"
+
+# Set paths
+readonly CODE_ROOT="${HOME}/code/E3SM_GCAM/E3SM"
+readonly CASE_ROOT="/lcrc/group/e3sm/ac.sfeng1/scratch/${CASE_NAME}"
+
+# Sub-directories
+readonly CASE_BUILD_DIR=${CASE_ROOT}/build
+readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
+
+# Define type of run
+#  short tests: 'XS_2x5_ndays', 'XS_1x10_ndays', 'S_1x10_ndays', 
+#               'M_1x10_ndays', 'M2_1x10_ndays', 'M80_1x10_ndays', 'L_1x10_ndays'
+#  or 'production' for full simulation
+readonly run='XS_2x5_ndays'
+#readonly run='XL_12x2_nmonths' 
+#readonly run='L_12x2_nmonths'
+#readonly run='M_12x5_nmonths'
+
+if [ "${run}" != "production" ]; then
+
+  # Short test simulations
+  tmp=($(echo $run | tr "_" " "))
+  layout=${tmp[0]}
+  units=${tmp[2]}
+  resubmit=$(( ${tmp[1]%%x*} -1 ))
+  length=${tmp[1]##*x}
+  echo layout=$layout
+  echo resubmit=$resubmit
+  echo length=$length$units
+   
+  # readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/tests/${run}/case_scripts
+  # readonly CASE_RUN_DIR=${CASE_ROOT}/tests/${run}/run
+  readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
+  readonly CASE_RUN_DIR=${CASE_ROOT}/run
+  readonly PELAYOUT=${layout}
+  readonly STOP_OPTION=${units}
+  readonly STOP_N=${length}
+  readonly REST_OPTION=${STOP_OPTION}
+  readonly REST_N=${STOP_N}
+  readonly RESUBMIT=${resubmit}
+  readonly DO_SHORT_TERM_ARCHIVING=false
+  
+  readonly WALLTIME="4:00:00"
+  readonly IFDEBUG="debug"
+else
+
+  # Production simulation
+  readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
+  readonly CASE_RUN_DIR=${CASE_ROOT}/run
+  readonly PELAYOUT="XL"
+  readonly WALLTIME="30:00:00"
+  readonly STOP_OPTION="nyears"
+  readonly STOP_N="40"
+  readonly REST_OPTION="nyears"
+  readonly REST_N="5"
+  readonly RESUBMIT="2"
+  readonly DO_SHORT_TERM_ARCHIVING=false
+  readonly IFDEBUG="compute"
+fi
+
+# Coupler history 
+# readonly HIST_OPTION="nyears"
+# readonly HIST_N="5"
+readonly HIST_OPTION=${STOP_OPTION}
+readonly HIST_N=${STOP_N}
+
+# Leave empty (unless you understand what it does)
+readonly OLD_EXECUTABLE=""
+
+# --- Toggle flags for what to do ----
+do_fetch_code=false
+do_create_newcase=true
+do_modify_pe_layout=true
+do_case_setup=true
+do_case_build=true
+do_case_submit=true
+
+# --- Now, do the work ---
+
+# Make directories created by this script world-readable
+umask 022
+
+# Fetch code from Github
+fetch_code
+
+# Create case
+create_newcase
+
+#change PE layout
+modify_pe_layout
+
+# Setup
+case_setup
+
+# Build
+case_build
+
+# Configure runtime options
+runtime_options
+
+# Copy script into case_script directory for provenance
+copy_script
+
+# Submit
+case_submit
+
+# All done
+echo $'\n----- All done -----\n'
+
+}
+
+# =======================
+# Custom user_nl settings
+# =======================
+
+user_nl() {
+
+cat << EOF >> user_nl_eam
+
+ hist_mfilt = 1
+ hist_nhtfrq = -24
+ 
+ co2_flag = .true.
+ co2_readFlux_fuel = .false.
+ co2_readFlux_aircraft = .false.
+ co2_readFlux_ocn = .true.
+ co2flux_ocn_file = '${input_data_dir}/ocn/CMIP6_SSP245_ne30/fgco2_CESM2_SSP245_ne30pg2_2015-2100.nc'
+ 
+ co2vmr = 0.000001e-6
+ scenario_ghg = 'RAMPED'
+ bndtvghg = '${input_data_dir}/atm/cam/ggas/GHG_GCAM_SSP245_Annual_Global_2015-2102_c20240712.nc'
+ co2_conserv_error_tol_per_year = 1.e-5
+
+EOF
+
+# suplphos = 'ALL' sets supplemental phosphorus as active for all vegetation types
+
+# Setting do_harvest == .false. because the iac takes care of this
+# transient pft flag automatically set to false when flanduse.timeseries is not set 
+# note that the elm namelis basis here is 2000_control
+
+cat << EOF >> user_nl_elm
+ hist_mfilt = 1
+ hist_nhtfrq = -24
+ hist_dov2xy = .true.
+ model_year_align_pdep = 2000
+ stream_year_first_pdep = 2000
+ stream_year_last_pdep = 2000
+ stream_fldfilename_ndep = '${input_data_dir}/lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp245_c240903.nc'
+ model_year_align_ndep = 2015
+ stream_year_first_ndep = 2015
+ stream_year_last_ndep = 2100
+ stream_fldfilename_popdens = '${input_data_dir}/lnd/clm2/firedata/elmforc.ssp2_hdm_0.5x0.5_simyr1850-2101_c20200623.nc'
+ model_year_align_popdens = 2015
+ stream_year_first_popdens = 2015
+ stream_year_last_popdens = 2100
+ check_finidat_fsurdat_consistency = .false.
+ check_finidat_year_consistency = .false.
+ check_dynpft_consistency = .false.
+ do_budgets = .true.
+ do_harvest = .false.
+EOF
+
+cat << EOF >> user_nl_gcam
+
+EOF
+
+}
+
+patch_mpas_streams() {
+
+echo
+
+}
+
+######################################################
+### Most users won't need to change anything below ###
+######################################################
+
+#-----------------------------------------------------
+fetch_code() {
+
+    if [ "${do_fetch_code,,}" != "true" ]; then
+        echo $'\n----- Skipping fetch_code -----\n'
+        return
+    fi
+
+    echo $'\n----- Starting fetch_code -----\n'
+    local path=${CODE_ROOT}
+    local repo=e3sm
+
+    echo "Cloning $repo repository branch $BRANCH under $path"
+    if [ -d "${path}" ]; then
+        echo "ERROR: Directory already exists. Not overwriting"
+        exit 20
+    fi
+    mkdir -p ${path}
+    pushd ${path}
+
+    # This will put repository, with all code
+    git clone git@github.com:E3SM-Project/${repo}.git .
+    
+    # Setup git hooks
+    rm -rf .git/hooks
+    git clone git@github.com:E3SM-Project/E3SM-Hooks.git .git/hooks
+    git config commit.template .git/hooks/commit.template
+
+    # Check out desired branch
+    git checkout ${BRANCH}
+
+    # Custom addition
+    if [ "${CHERRY}" != "" ]; then
+        echo ----- WARNING: adding git cherry-pick -----
+        for commit in "${CHERRY[@]}"
+        do
+            echo ${commit}
+            git cherry-pick ${commit}
+        done
+        echo -------------------------------------------
+    fi
+
+    # Bring in all submodule components
+    git submodule update --init --recursive
+
+    popd
+}
+
+#-----------------------------------------------------
+create_newcase() {
+
+    if [ "${do_create_newcase,,}" != "true" ]; then
+        echo $'\n----- Skipping create_newcase -----\n'
+        return
+    fi
+
+    echo $'\n----- Starting create_newcase -----\n'
+
+    ${CODE_ROOT}/cime/scripts/create_newcase \
+        --case ${CASE_NAME} \
+        --output-root ${CASE_ROOT} \
+        --script-root ${CASE_SCRIPTS_DIR} \
+        --handle-preexisting-dirs u \
+        --compset ${COMPSET} \
+        --res ${RESOLUTION} \
+        --machine ${MACHINE} \
+        --project ${PROJECT} \
+        --walltime ${WALLTIME} \
+	    --queue ${IFDEBUG} \
+        --pecount ${PELAYOUT}
+
+    if [ $? != 0 ]; then
+      echo $'\nNote: if create_newcase failed because sub-directory already exists:'
+      echo $'  * delete old case_script sub-directory'
+      echo $'  * or set do_newcase=false\n'
+      exit 35
+    fi
+
+}
+
+modify_pe_layout() {
+
+    if [ "${do_modify_pe_layout,,}" != "true" ]; then
+        echo $'\n----- Skipping changing PE-layout -----\n'
+        return
+    fi
+
+    pushd ${CASE_SCRIPTS_DIR}
+
+    ./xmlchange MAX_MPITASKS_PER_NODE=64
+    ./xmlchange MAX_TASKS_PER_NODE=64
+
+    ./xmlchange NTASKS_WAV=1
+    ./xmlchange NTASKS_GLC=1
+
+    ./xmlchange NTHRDS_ATM=1
+    ./xmlchange NTHRDS_CPL=1
+    ./xmlchange NTHRDS_OCN=1
+    ./xmlchange NTHRDS_WAV=1
+    ./xmlchange NTHRDS_GLC=1
+    ./xmlchange NTHRDS_ICE=1
+    ./xmlchange NTHRDS_ROF=1
+    ./xmlchange NTHRDS_LND=1
+
+    ./xmlchange ROOTPE_ATM=0
+    ./xmlchange ROOTPE_CPL=0
+    ./xmlchange ROOTPE_OCN=0
+    ./xmlchange ROOTPE_WAV=0
+    ./xmlchange ROOTPE_GLC=0
+    ./xmlchange ROOTPE_ICE=0
+    ./xmlchange ROOTPE_ROF=0
+    ./xmlchange ROOTPE_LND=0
+
+    if [[ ${PELAYOUT} == "XS" ]]; then
+        echo $'\n----- changing PE layout to XS -----\n'
+	     ./xmlchange NTASKS_ATM=320
+        ./xmlchange NTASKS_CPL=320
+        ./xmlchange NTASKS_OCN=320
+        ./xmlchange NTASKS_ICE=256
+        ./xmlchange NTASKS_WAV=256
+        ./xmlchange NTASKS_ROF=256
+        ./xmlchange NTASKS_LND=320    
+    elif [[ ${PELAYOUT} == "S" ]]; then
+        echo $'\n----- changing PE layout to S -----\n'
+        ./xmlchange NTASKS_ATM=1080
+	      ./xmlchange NTASKS_CPL=1280
+        ./xmlchange NTASKS_OCN=1280
+        ./xmlchange NTASKS_ICE=1280
+        ./xmlchange NTASKS_ROF=1280
+        ./xmlchange NTASKS_LND=1280
+    elif [[ ${PELAYOUT} == "M" ]]; then
+        echo $'\n----- changing PE layout to M -----\n'
+	      ./xmlchange NTASKS_ATM=1350
+        ./xmlchange NTASKS_CPL=1408
+        ./xmlchange NTASKS_OCN=1408
+        ./xmlchange NTASKS_ICE=1408
+        ./xmlchange NTASKS_ROF=1408
+        ./xmlchange NTASKS_LND=1408
+    elif [[ ${PELAYOUT} == "L" ]]; then
+        echo $'\n----- changing PE layout to L -----\n'
+        ./xmlchange NTASKS_ATM=2700
+	      ./xmlchange NTASKS_CPL=2752
+        ./xmlchange NTASKS_OCN=2752
+        ./xmlchange NTASKS_ICE=2752
+        ./xmlchange NTASKS_ROF=2752
+        ./xmlchange NTASKS_LND=2752
+     elif [[ ${PELAYOUT} == "XL" ]]; then
+         echo $'\n----- changing PE layout to XL -----\n'
+         ./xmlchange NTASKS_ATM=5400
+         ./xmlchange NTASKS_CPL=5440
+         ./xmlchange NTASKS_OCN=5440
+         ./xmlchange NTASKS_ICE=5440
+         ./xmlchange NTASKS_ROF=5440
+         ./xmlchange NTASKS_LND=5440
+    else
+        echo 'ERROR: $PELAYOUT = '${PELAYOUT}' but no layout exists for this setting.'
+        exit 297
+    fi
+
+    popd
+}
+
+#-----------------------------------------------------
+case_setup() {
+
+    if [ "${do_case_setup,,}" != "true" ]; then
+        echo $'\n----- Skipping case_setup -----\n'
+        return
+    fi
+
+    echo $'\n----- Starting case_setup -----\n'
+    pushd ${CASE_SCRIPTS_DIR}
+
+    # Setup some CIME directories
+    ./xmlchange EXEROOT=${CASE_BUILD_DIR}
+    ./xmlchange RUNDIR=${CASE_RUN_DIR}
+
+    # Short term archiving
+    ./xmlchange DOUT_S=${DO_SHORT_TERM_ARCHIVING^^}
+    ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR}
+    
+    # using custom layout for cori-kn
+    ./xmlchange --file env_mach_pes.xml --id MAX_TASKS_PER_NODE --val 64
+    ./xmlchange --file env_mach_pes.xml --id MAX_MPITASKS_PER_NODE --val 64
+
+    declare -a comps=("ATM" "CPL" "LND" "ICE" "OCN" "GLC" "ROF" "WAV" "ESP" )
+    for thiscomp in "${comps[@]}"; do
+      ./xmlchange --file env_mach_pes.xml --id NTHRDS_$thiscomp --val 1
+    done
+
+    # Build with COSP, except for a data atmosphere (datm)
+    if [ `./xmlquery --value COMP_ATM` == "datm"  ]; then 
+      echo $'\nThe specified configuration uses a data atmosphere, so cannot activate COSP simulator\n'
+    else
+      echo $'\nConfiguring E3SM to use the COSP simulator\n'
+      ./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'
+    fi
+
+    # Turn on co2-cycle for temeporay solution. - sf 1/14/2022
+    ./xmlchange --append CAM_CONFIG_OPTS='-co2_cycle'
+    
+    # Extracts input_data_dir in case it is needed for user edits to the namelist later
+    local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
+    export domainpath=${input_data_dir}/share/domains
+    # echo $input_data_dir
+
+    # Custom user_nl
+    user_nl
+
+    # other setups inherit from Eva's run script 
+    ./xmlchange SAVE_TIMING=TRUE
+    ./xmlchange ATM_DOMAIN_PATH=${domainpath}
+    ./xmlchange LND_DOMAIN_PATH=${domainpath}
+    ./xmlchange ATM_DOMAIN_FILE=${atm_domainfile}
+    ./xmlchange LND_DOMAIN_FILE=${lnd_domainfile}
+    ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR}
+    ./xmlchange NCPL_BASE_PERIOD=year
+    ./xmlchange ATM_NCPL=17520
+    ./xmlchange IAC_NCPL=1
+
+    # docn setup
+    ./xmlchange --id PIO_TYPENAME  --val "pnetcdf"
+    ./xmlchange SSTICE_DATA_FILENAME=${input_data_dir}/ocn/docn7/SSTDATA/sst_ice_GFDL-ESM4_ssp245_r2i1p1f1_gr_201501-210012_land_interpolated.nc
+    ./xmlchange SSTICE_YEAR_START=2015
+    ./xmlchange SSTICE_YEAR_END=2100
+    ./xmlchange SSTICE_YEAR_ALIGN=2015
+
+    # Finally, run CIME case.setup
+    ./case.setup --reset
+
+    # gcam setups iherit from Eva's run script
+    gcam_rdir=${input_data_dir}/iac/giac/gcam/gcam_6_0/restart/ssp2rcp45/${MACHINE}
+    ldir=${input_data_dir}/lnd/clm2/rawdata/LUT_input_files_current
+    gcam_idir=${input_data_dir}/iac/giac/gcam/gcam_6_0
+    glm_idir=${input_data_dir}/iac/giac/glm
+    glm2iacdir=${input_data_dir}/iac/giac/glm2iac
+
+    # GCAM and GLM currently read some configuration and input files from
+    # the current directory, as we haven't yet put them in a standard
+    # place or modified code to look for them there.  Thus, we manually
+    # copy them over for now.
+    ln -sf ${gcam_idir}/input ${CASE_ROOT}
+    ln -sf ${gcam_idir}/configuration/log_conf.xml ${CASE_RUN_DIR}
+    ln -sf ${glm_idir}/glm.fut.conf.${MACHINE}  ${CASE_RUN_DIR}/glm.fut.conf
+
+    # separate restarts for carbon scaling on or off; maybe not
+    ln -sf ${gcam_rdir}/restart.0 ${CASE_RUN_DIR}
+    ln -sf ${gcam_rdir}/restart.1 ${CASE_RUN_DIR}
+    ln -sf ${gcam_rdir}/restart.2 ${CASE_RUN_DIR}
+    ln -sf ${gcam_rdir}/restart.3 ${CASE_RUN_DIR}
+    ln -sf ${gcam_rdir}/restart.4 ${CASE_RUN_DIR}
+
+
+    ln -sf ${ldir}/iESM_Ref_CropPast2015_c10142019.nc ${CASE_RUN_DIR}/iESM_Init_CropPast.nc
+    ln -sf ${ldir}/surfdata_360x720_mcrop2015_c07082020.nc ${CASE_RUN_DIR}/surfdata_360x720_mcrop_init.nc
+    ln -sf ${glm2iacdir}/$iesm_dyn_source ${CASE_RUN_DIR}
+    ln -sf ${glm2iacdir}/surfdata_360x720_potveg.nc ${CASE_RUN_DIR}
+    ln -sf ${glm2iacdir}/mksurf_landuse_iESM_720x360.nc ${CASE_RUN_DIR}
+    ln -sf ${glm2iacdir}/iac_in_${MACHINE} ${CASE_RUN_DIR}/iac_in
+
+    #### remember to re-do these three copies before each run
+    cp ${CASE_RUN_DIR}/iESM_Init_CropPast.nc ${CASE_RUN_DIR}/iESM_Dyn_CropPast.nc
+    cp ${CASE_RUN_DIR}/surfdata_360x720_mcrop_init.nc  ${CASE_RUN_DIR}/surfdata_360x720_mcrop_dyn.nc
+    cp ${CASE_RUN_DIR}/${iesm_dyn_source}  ${CASE_RUN_DIR}/surfdata_iESM_dyn.nc
+
+    # this stages the restart file
+    #cp ${finidat} $rundir
+
+    popd
+}
+
+#-----------------------------------------------------
+case_build() {
+
+    pushd ${CASE_SCRIPTS_DIR}
+
+    # do_case_build = false
+    if [ "${do_case_build,,}" != "true" ]; then
+
+        echo $'\n----- case_build -----\n'
+
+        if [ "${OLD_EXECUTABLE}" == "" ]; then
+            # Ues previously built executable, make sure it exists
+            if [ -x ${CASE_BUILD_DIR}/e3sm.exe ]; then
+                echo 'Skipping build because $do_case_build = '${do_case_build}
+            else
+                echo 'ERROR: $do_case_build = '${do_case_build}' but no executable exists for this case.'
+                exit 297
+            fi
+        else
+            # If absolute pathname exists and is executable, reuse pre-exiting executable
+            if [ -x ${OLD_EXECUTABLE} ]; then
+                echo 'Using $OLD_EXECUTABLE = '${OLD_EXECUTABLE}
+                cp -fp ${OLD_EXECUTABLE} ${CASE_BUILD_DIR}/
+            else
+                echo 'ERROR: $OLD_EXECUTABLE = '$OLD_EXECUTABLE' does not exist or is not an executable file.'
+                exit 297
+            fi
+        fi
+        echo 'WARNING: Setting BUILD_COMPLETE = TRUE.  This is a little risky, but trusting the user.'
+        ./xmlchange BUILD_COMPLETE=TRUE
+
+    else
+
+        echo $'\n----- Starting case_build -----\n'
+        echo "Start time: $(date '+%Y-%m-%d %H:%M:%S')"
+
+        # Turn on debug compilation option if requested
+        if [ "${DEBUG_COMPILE^^}" == "TRUE" ]; then
+            ./xmlchange DEBUG=${DEBUG_COMPILE^^}
+        fi
+
+        # Run CIME case.build
+        ./case.build
+
+        # Some user_nl settings won't be updated to *_in files under the run directory
+        # Call preview_namelists to make sure *_in and user_nl files are consistent.
+        ./preview_namelists
+
+    fi
+
+    popd
+}
+
+#-----------------------------------------------------
+runtime_options() {
+    
+    # source /lcrc/soft/climate/e3sm-unified/load_latest_e3sm_unified_chrysalis.sh
+
+    echo $'\n----- Starting runtime_options -----\n'
+    pushd ${CASE_SCRIPTS_DIR}
+
+    # Set simulation start date
+    ./xmlchange RUN_STARTDATE=${START_DATE}
+
+    # Segment length
+    ./xmlchange STOP_OPTION=${STOP_OPTION,,},STOP_N=${STOP_N}
+
+    # Restart frequency
+    ./xmlchange REST_OPTION=${REST_OPTION,,},REST_N=${REST_N}
+
+    # Coupler history
+    ./xmlchange HIST_OPTION=${HIST_OPTION,,},HIST_N=${HIST_N}
+
+    # Coupler budgets (always on)
+    ./xmlchange BUDGETS=TRUE
+
+    # Set resubmissions
+    if (( RESUBMIT > 0 )); then
+        ./xmlchange RESUBMIT=${RESUBMIT}
+    fi
+
+    # Run type
+    # Start from default of user-specified initial conditions
+    if [ "${MODEL_START_TYPE,,}" == "initial" ]; then
+        ./xmlchange RUN_TYPE="startup"
+        ./xmlchange CONTINUE_RUN="FALSE"
+
+    # Continue existing run
+    elif [ "${MODEL_START_TYPE,,}" == "continue" ]; then
+        ./xmlchange CONTINUE_RUN="TRUE"
+
+    elif [ "${MODEL_START_TYPE,,}" == "branch" ] || [ "${MODEL_START_TYPE,,}" == "hybrid" ]; then
+        ./xmlchange RUN_TYPE=${MODEL_START_TYPE}
+        ./xmlchange GET_REFCASE=${GET_REFCASE}
+	    ./xmlchange RUN_REFDIR=${RUN_REFDIR}
+        ./xmlchange RUN_REFCASE=${RUN_REFCASE}
+        ./xmlchange RUN_REFDATE=${RUN_REFDATE}
+        echo 'Warning: $MODEL_START_TYPE = '${MODEL_START_TYPE} 
+        echo '$RUN_REFDIR = '${RUN_REFDIR}
+        echo '$RUN_REFCASE = '${RUN_REFCASE}
+        echo '$RUN_REFDATE = '${START_DATE}
+
+        ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.i.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.rs.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.elm.rh0.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.cpl.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.docn.rs1.${RUN_REFDATE}-00000.bin ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.mosart.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.mosart.rh0.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.mosart.rh1.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
+        # cp  ${RUN_REFDIR}/${RUN_REFCASE}.mpassi.rst.${RUN_REFDATE}_00000.nc ${CASE_RUN_DIR}/.
+        # ncrename -v xtime,xtime.orig ${CASE_RUN_DIR}/${RUN_REFCASE}.mpassi.rst.${RUN_REFDATE}_00000.nc
+
+        # cp ${RUN_REFDIR}/rpointer.atm ${CASE_RUN_DIR}/
+        # cp ${RUN_REFDIR}/rpointer.lnd ${CASE_RUN_DIR}/
+        # cp ${RUN_REFDIR}/rpointer.ocn ${CASE_RUN_DIR}/
+        # cp ${RUN_REFDIR}/rpointer.ice ${CASE_RUN_DIR}/
+        # cp ${RUN_REFDIR}/rpointer.drv ${CASE_RUN_DIR}/
+        # cp ${RUN_REFDIR}/rpointer.rof ${CASE_RUN_DIR}/
+
+        else
+        echo 'ERROR: $MODEL_START_TYPE = '${MODEL_START_TYPE}' is unrecognized. Exiting.'
+        exit 380
+    fi
+
+    # Patch mpas streams files
+    patch_mpas_streams
+
+    # modify to use priority queue 
+    if [ "${run}" = "production" ]; then
+        ./xmlchange --file env_workflow.xml --id CHARGE_ACCOUNT --val "priority"
+        ./xmlchange --file env_workflow.xml --id PROJECT --val "priority"
+        ./xmlchange --file env_workflow.xml --id JOB_QUEUE --force --val "priority"
+    fi
+
+    popd
+}
+
+#-----------------------------------------------------
+case_submit() {
+
+    if [ "${do_case_submit,,}" != "true" ]; then
+        echo $'\n----- Skipping case_submit -----\n'
+        return
+    fi
+
+    echo $'\n----- Starting case_submit -----\n'
+    pushd ${CASE_SCRIPTS_DIR}
+    
+    # Run CIME case.submit
+    ./case.submit
+
+    popd
+}
+
+#-----------------------------------------------------
+copy_script() {
+
+    echo $'\n----- Saving run script for provenance -----\n'
+
+    local script_provenance_dir=${CASE_SCRIPTS_DIR}/run_script_provenance
+    mkdir -p ${script_provenance_dir}
+    local this_script_name=`basename $0`
+    local script_provenance_name=${this_script_name}.`date +%Y%m%d-%H%M%S`
+    cp -vp ${this_script_name} ${script_provenance_dir}/${script_provenance_name}
+
+}
+
+#-----------------------------------------------------
+# Silent versions of popd and pushd
+pushd() {
+    command pushd "$@" > /dev/null
+}
+popd() {
+    command popd "$@" > /dev/null
+}
+
+# Now, actually run the script
+#-----------------------------------------------------
+main
