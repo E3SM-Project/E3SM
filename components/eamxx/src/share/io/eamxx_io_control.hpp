@@ -63,7 +63,7 @@ struct IOControl {
   }
 
   void set_dt (const double dt_in) {
-    EKAT_REQUIRE_MSG (dt==0 or dt==dt_in,
+    EKAT_REQUIRE_MSG (dt==0,
         "[IOControl::set_dt] Error! Cannot reset dt once it is set.\n");
 
     dt = dt_in;

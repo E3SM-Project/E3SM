@@ -312,24 +312,24 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
-  const bool is_first_step = m_output_control.dt==0 and dt>0;
+  // Make sure dt is in the control structure
+  if (m_output_control.dt==0 and dt>0) {
+    m_output_control.set_dt(dt);
 
-  // Make sure dt is in the control
-  m_output_control.set_dt(dt);
-
-  if (m_run_type==RunType::Initial and is_first_step and m_avg_type==OutputAvgType::Instant and
-      m_output_file_specs.storage.type!=NumSnaps and m_output_control.frequency_units=="nsteps") {
-    // This is the 1st step of the whole run, and a very sneaky corner case. Bear with me.
-    // When we call run, we also compute next_write_ts. Then, we use next_write_ts to see if the
-    // next output step will fit in the currently open file, and, if not, close it right away.
-    // For a storage type!=NumSnaps, we need to have a valid timestamp for next_write_ts, which
-    // for freq=nsteps requires to know dt. But at t=case_t0, we did NOT have dt, which means we
-    // computed next_write_ts=last_write_ts (in terms of date:time, the num_steps is correct).
-    // This means that at that time we deemed that the next_write_ts definitely fit in the same
-    // file as last_write_ts (date/time are the same!), which may or may not be true for non NumSnaps
-    // storage. To fix this, we recompute next_write_ts here, and close the file if it doesn't.
+    // In case of unit tests, there is a very peculiar corner case that forces us to check if we
+    // need to close the file, and it is storage.type!=NumSteps, Instant output (with t0 output ON),
+    // freq_units=nsteps, and a "large" timestep. E.g., consider storage.type=Daily, Instant output
+    // (with t0 output ON), dt=2 days, freq_units=nsteps, and run_t0=Jan 1st. At t=t0, we open a
+    // new file (jan01), and write the t=t0 snapshot. At the end of the run method, we also check
+    // if we can go ahead and close the file, by a) computing next_write_ts, and b) checking if
+    // the next snapshot fits in the file. However, since freq_units=nsteps, we need dt>0 to be able
+    // to compute the correct next_write_ts, and we don't have dt until the 1st step of the time
+    // loop. Hence, if control.dt==0 (meaning it's the first time we execute init_timestep),
+    // we need to recompute next_write_ts, and also check if the next snap will fit in the file.
+    // Again, this is ONLY a corner case that happens in unit tests, as dt<<1day in any meaningful run.
     m_output_control.compute_next_write_ts();
-    close_or_flush_if_needed (m_output_file_specs,m_output_control);
+    if (m_output_file_specs.is_open)
+      close_or_flush_if_needed (m_output_file_specs,m_output_control);
   }
 
   // Note: we need to "init" the timestep if we are going to do something this step, which means we either
@@ -407,24 +407,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   // Create and setup output/checkpoint file(s), if necessary
   start_timer(timer_root+"::get_new_file");
   auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs) {
-    // Check if the new snapshot fits, if not, close the file
-    // NOTE: if output is average/max/min AND we save one file per month/year,
-    //       we don't want to check if *this* timestamp fits in the file, since
-    //       it may be in the next month/year even though most of the time averaging
-    //       window is in the right year. E.g., if the avg is over the whole month,
-    //       you would end up saving Jan average in the Feb file, since the end
-    //       of the window is Feb 1st 00:00:00. So instead, we use the *start*
-    //       of the avg window. If the avg is such that it spans 2 months (e.g.,
-    //       a 7-day avg), then where we put the avg is arbitrary, so our choice
-    //       is still fine.
-    util::TimeStamp snapshot_start;
-    if (m_avg_type==OutputAvgType::Instant or filespecs.storage.type==NumSnaps) {
-      snapshot_start = timestamp;
-    } else {
-      snapshot_start = m_case_t0;
-      snapshot_start += m_time_bnds[0];
-    }
-
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (filespecs,timestamp);
@@ -920,11 +902,35 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
   set_str_att("Conventions","CF-1.8");
   set_str_att("product",e2str(file_specs.ftype));
 }
+
 void OutputManager::
 close_or_flush_if_needed (      IOFileSpecs& file_specs,
                           const IOControl&   control) const
 {
-  if (not file_specs.storage.snapshot_fits(control.next_write_ts)) {
+  // We check if the file is full (meaning that the next write will not fit),
+  // or if the file needs to be flushed (based on file_specs flush freq)
+
+  // NOTES:
+  //  - If output is average/max/min AND we save one file per month/year,
+  //    we don't want to check if the next write timestamp fits in the file, since
+  //    it may be in the next day/month/year even though most of the time averaging
+  //    window is in the right day/month/year. E.g., if the avg is over a month,
+  //    you would end up saving Jan average in the Feb file, since the next write
+  //    timestamp (the end of the window) is Feb 1st 00:00:00. So instead, we use
+  //    the *start* of the avg window. If the avg is such that it spans 2 months (e.g.,
+  //    a 7-day avg), then where we put the avg is arbitrary, so our choice
+  //    is still fine.
+  //  - If you consdier INST output as "average" over [next_write_ts, next_write_ts],
+  //    we can think of next_write_ts as the start of INST averaging window.
+  //  - For storage_type=NumSnaps, which timestamp we pick doesn't matter
+  const util::TimeStamp* window_start_ts;
+  if (m_avg_type==OutputAvgType::Instant) {
+    window_start_ts = &control.next_write_ts;
+  } else {
+    window_start_ts = &control.last_write_ts;
+  }
+
+  if (not file_specs.storage.snapshot_fits(*window_start_ts)) {
     scorpio::release_file(file_specs.filename);
     file_specs.close();
   } else if (file_specs.file_needs_flush()) {
