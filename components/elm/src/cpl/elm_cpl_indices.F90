@@ -120,6 +120,8 @@ module elm_cpl_indices
   integer, public ::index_x2l_Flrr_deficit    ! rtm->lnd supply deficit
   integer, public ::index_x2l_Sr_h2orof       ! rtm->lnd floodplain inundation volume
   integer, public ::index_x2l_Sr_frac_h2orof  ! rtm->lnd floodplain inundation fraction
+  integer, public ::index_x2l_So_ssh          ! ocn->lnd sea surface height
+  integer, public ::index_x2l_So_frac_h2oocn  ! ocn->lnd coastal inundation fraction
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
@@ -144,7 +146,7 @@ contains
     !
     ! !USES:
     use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields,       &
-                               lnd_rof_two_way, rof_sed
+                               lnd_rof_two_way, ocn_lnd_one_way, rof_sed
     use mct_mod        , only: mct_aVect, mct_aVect_init, mct_avect_indexra
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
@@ -300,6 +302,10 @@ contains
     if (lnd_rof_two_way) then
        index_x2l_Sr_h2orof     = mct_avect_indexra(x2l,'Sr_h2orof')
        index_x2l_Sr_frac_h2orof= mct_avect_indexra(x2l,'Sr_frac_h2orof')
+    endif
+    if (ocn_lnd_one_way) then
+       index_x2l_So_ssh        = mct_avect_indexra(x2l,'So_ssh')
+       index_x2l_So_frac_h2oocn= mct_avect_indexra(x2l,'So_frac_h2oocn')
     endif
 
     !-------------------------------------------------------------

@@ -67,7 +67,9 @@ Module SoilHydrologyType
      real(r8), pointer :: ice_col           (:,:)   => null()! col VIC soil ice (kg/m2) for VIC soil layers
      real(r8), pointer :: fover             (:)     => null()! decay factor for surface runoff
      real(r8), pointer :: pc                (:)     => null()! surface water threshold probability
-     
+
+     real(r8), pointer :: ar_col            (:,:)   => null()! col anisotropic ratio
+
    contains
 
      procedure, public  :: Init
@@ -159,6 +161,8 @@ contains
     
     allocate(this%fover             (begg:endg))                 ; this%fover             (:)     = spval
     allocate(this%pc                (begg:endg))                 ; this%pc                (:)     = spval
+
+    allocate(this%ar_col            (begc:endc,nlevgrnd))        ; this%ar_col            (:,:)   = 25.0_r8
 
   end subroutine InitAllocate
 
@@ -466,7 +470,7 @@ contains
                 ! do nothing
              else if (lun_pp%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
                 ! do nothing
-             else			    
+             else  
                   do lev = 1,nlevgrnd
                     if ( more_vertlayers )then
                       ! duplicate clay and sand values from last soil layer
@@ -504,6 +508,8 @@ contains
                    claycol(c,lev)    = clay
                    sandcol(c,lev)    = sand
                    om_fraccol(c,lev) = om_frac
+
+                   this%ar_col(c,lev)= clay
                 end do
              end if
           end if ! end of if not lake

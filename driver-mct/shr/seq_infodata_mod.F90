@@ -199,6 +199,7 @@ MODULE seq_infodata_mod
      logical                 :: rofice_present  ! does rof have iceberg coupling on
      logical                 :: rof_prognostic  ! does rof component need input data
      logical                 :: rofocn_prognostic ! does component need ocn data
+     logical                 :: lndocn_prognostic ! does component need ocn data
      logical                 :: flood_present   ! does rof have flooding on
      logical                 :: ocn_present     ! does component model exist
      logical                 :: ocn_prognostic  ! does component model need input data from driver
@@ -769,6 +770,7 @@ CONTAINS
        infodata%lnd_prognostic = .false.
        infodata%rof_prognostic = .false.
        infodata%rofocn_prognostic = .false.
+       infodata%lndocn_prognostic = .false.
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
        infodata%ocn_c2_glcshelf = .false.
@@ -1014,7 +1016,7 @@ CONTAINS
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,&
        scm_multcols, scm_nx, scm_ny,                                      &
        atm_present, atm_prognostic,                                       &
-       lnd_present, lnd_prognostic,                                       &
+       lnd_present, lnd_prognostic, lndocn_prognostic,                    &
        rof_present, rof_prognostic, rofocn_prognostic,                    &
        ocn_present, ocn_prognostic, ocnrof_prognostic,                    &
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
@@ -1185,6 +1187,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: atm_prognostic          ! need data
     logical,                optional, intent(OUT) :: lnd_present
     logical,                optional, intent(OUT) :: lnd_prognostic
+    logical,                optional, intent(OUT) :: lndocn_prognostic
     logical,                optional, intent(OUT) :: rof_present
     logical,                optional, intent(OUT) :: rofice_present
     logical,                optional, intent(OUT) :: rof_prognostic
@@ -1375,6 +1378,7 @@ CONTAINS
     if ( present(atm_prognostic) ) atm_prognostic = infodata%atm_prognostic
     if ( present(lnd_present)    ) lnd_present    = infodata%lnd_present
     if ( present(lnd_prognostic) ) lnd_prognostic = infodata%lnd_prognostic
+    if ( present(lndocn_prognostic) ) lndocn_prognostic = infodata%lndocn_prognostic
     if ( present(rof_present)    ) rof_present    = infodata%rof_present
     if ( present(rofice_present) ) rofice_present = infodata%rofice_present
     if ( present(rof_prognostic) ) rof_prognostic = infodata%rof_prognostic
@@ -1577,7 +1581,7 @@ CONTAINS
        single_column, scmlat,scmlon,logFilePostFix, outPathRoot,          &
        scm_multcols, scm_nx, scm_ny,                                      &
        atm_present, atm_prognostic,                                       &
-       lnd_present, lnd_prognostic,                                       &
+       lnd_present, lnd_prognostic, lndocn_prognostic,                    &
        rof_present, rof_prognostic, rofocn_prognostic,                    &
        ocn_present, ocn_prognostic, ocnrof_prognostic,                    &
        ocn_c2_glcshelf, ocn_c2_glctf,                                     &
@@ -1748,6 +1752,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: atm_prognostic     ! need data
     logical,                optional, intent(IN)    :: lnd_present
     logical,                optional, intent(IN)    :: lnd_prognostic
+    logical,                optional, intent(IN)    :: lndocn_prognostic
     logical,                optional, intent(IN)    :: rof_present
     logical,                optional, intent(IN)    :: rofice_present
     logical,                optional, intent(IN)    :: rof_prognostic
@@ -1937,6 +1942,7 @@ CONTAINS
     if ( present(atm_prognostic) ) infodata%atm_prognostic = atm_prognostic
     if ( present(lnd_present)    ) infodata%lnd_present    = lnd_present
     if ( present(lnd_prognostic) ) infodata%lnd_prognostic = lnd_prognostic
+    if ( present(lndocn_prognostic) ) infodata%lndocn_prognostic = lndocn_prognostic
     if ( present(rof_present)    ) infodata%rof_present    = rof_present
     if ( present(rofice_present) ) infodata%rofice_present = rofice_present
     if ( present(rof_prognostic) ) infodata%rof_prognostic = rof_prognostic
@@ -2253,6 +2259,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%atm_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%lnd_present,             mpicom)
     call shr_mpi_bcast(infodata%lnd_prognostic,          mpicom)
+    call shr_mpi_bcast(infodata%lndocn_prognostic,       mpicom)
     call shr_mpi_bcast(infodata%rof_present,             mpicom)
     call shr_mpi_bcast(infodata%rofice_present,          mpicom)
     call shr_mpi_bcast(infodata%rof_prognostic,          mpicom)
@@ -2524,6 +2531,7 @@ CONTAINS
     if (lnd2cpli) then
        call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lndocn_prognostic,  mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2620,6 +2628,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%atm_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%lnd_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%lndocn_prognostic,  mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rof_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rofice_present,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%rof_prognostic,     mpicom, pebcast=cplpe)
@@ -2982,6 +2991,7 @@ CONTAINS
     write(logunit,F0L) subname,'atm_prognostic           = ', infodata%atm_prognostic
     write(logunit,F0L) subname,'lnd_present              = ', infodata%lnd_present
     write(logunit,F0L) subname,'lnd_prognostic           = ', infodata%lnd_prognostic
+    write(logunit,F0L) subname,'lndocn_prognostic        = ', infodata%lndocn_prognostic
     write(logunit,F0L) subname,'rof_present              = ', infodata%rof_present
     write(logunit,F0L) subname,'rofice_present           = ', infodata%rofice_present
     write(logunit,F0L) subname,'rof_prognostic           = ', infodata%rof_prognostic
