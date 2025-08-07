@@ -45,11 +45,12 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
   // Loop from bottom to top to get stress profiles.
   for (Int k = max_level; k >= init.ktop; --k) {
-    // Determine the absolute value of the saturation stress.
-    // Define critical levels where the sign of (u-c) changes between interfaces.
-    for (Int l = -pgwv; l <= pgwv; ++l) {
-      int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-      if (src_level >= k) {
+    if (src_level >= k) {
+
+      // Determine the absolute value of the saturation stress.
+      // Define critical levels where the sign of (u-c) changes between interfaces.
+      for (Int l = -pgwv; l <= pgwv; ++l) {
+        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
         ubmc(pl_idx) = ubi(k) - c(pl_idx);
 
         // Test to see if u-c has the same sign here as the level below.
@@ -62,17 +63,15 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
           tausat(pl_idx) = 0.0;
         }
       }
-    }
 
-    // Determine the diffusivity for each column.
-    Real d = GWC::dback;
-    if (init.do_molec_diff) {
-      d += kvtt(k);
-    }
-    else {
-      for (Int l = -pgwv; l <= pgwv; ++l) {
-        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        if (src_level >= k) {
+      // Determine the diffusivity for each column.
+      Real d = GWC::dback;
+      if (init.do_molec_diff) {
+        d += kvtt(k);
+      }
+      else {
+        for (Int l = -pgwv; l <= pgwv; ++l) {
+          int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
           const Real dsat = bfb_square(ubmc(pl_idx) / ni(k)) *
             (init.effkwv * bfb_square(ubmc(pl_idx)) /
              (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
@@ -80,18 +79,16 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
           d = std::max(d, dscal * dsat);
         }
       }
-    }
 
-    // Compute stress for each wave. The stress at this level is the min of
-    // the saturation stress and the stress at the level below reduced by
-    // damping. The sign of the stress must be the same as at the level below.
-    //
-    // If molecular diffusion is on, only do this in levels with molecular
-    // diffusion. Otherwise, do it everywhere.
-    if (k <= init.nbot_molec || !init.do_molec_diff) {
-      for (Int l = -pgwv; l <= pgwv; ++l) {
-        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        if (src_level >= k) {
+      // Compute stress for each wave. The stress at this level is the min of
+      // the saturation stress and the stress at the level below reduced by
+      // damping. The sign of the stress must be the same as at the level below.
+      //
+      // If molecular diffusion is on, only do this in levels with molecular
+      // diffusion. Otherwise, do it everywhere.
+      if (k <= init.nbot_molec || !init.do_molec_diff) {
+        for (Int l = -pgwv; l <= pgwv; ++l) {
+          int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
           const Real ubmc2 = std::max(bfb_square(ubmc(pl_idx)), GWC::ubmc2mn);
           const Real mi = ni(k) / (2.0 * init.kwv * ubmc2) * (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
           const Real wrk = -2.0 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
@@ -105,10 +102,9 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
           tau(pl_idx, k) = std::min(taudmp, tausat(pl_idx));
         }
       }
-    } else {
-      for (Int l = -pgwv; l <= pgwv; ++l) {
-        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        if (src_level >= k) {
+      else {
+        for (Int l = -pgwv; l <= pgwv; ++l) {
+          int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
           tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(pl_idx));
         }
       }
