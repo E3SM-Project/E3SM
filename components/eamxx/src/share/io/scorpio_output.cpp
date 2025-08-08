@@ -908,6 +908,11 @@ init_diagnostics ()
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag->name();
     }
+    else if (diag_field.get_header().has_extra_data("mask_data")) {
+      params.set<double>("mask_value", m_fill_value);
+      m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
+      diag_avg_cnt_name = "_" + diag_field.name();
+    }
 
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
