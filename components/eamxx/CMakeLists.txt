@@ -589,11 +589,9 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
                  ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
                  F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 
-  # Generate eamxx_config.h and eamxx_config.f
-  include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
+  # Generate eamxx_version.h
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_version.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_version.h)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder
