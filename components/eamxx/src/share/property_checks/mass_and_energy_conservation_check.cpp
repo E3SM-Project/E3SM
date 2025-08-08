@@ -391,7 +391,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
   field_version_s1.sync_to_host(); 
   eamxx_repro_sum(send, &recv, nlocal, ncount, MPI_Comm_c2f(m_comm.mpi_comm()));
   field_version_s1.sync_to_dev();
-  m_pb_fixer = recv;
+  m_glob_average_fixer = recv;
 
   if(print_debug_info) {
     //total energy needed for relative error
@@ -412,15 +412,15 @@ void MassAndEnergyConservationCheck::global_fixer(const bool & print_debug_info)
 
   using PC = scream::physics::Constants<Real>;
   const Real cpdry = PC::Cpair;
-  m_pb_fixer /= (cpdry*m_total_gas_mass_after); // T change due to fixer
+  m_glob_average_fixer /= (cpdry*m_total_gas_mass_after); // T change due to fixer
 
   //add the fixer to temperature
-  const auto pb_fixer=m_pb_fixer;
+  const auto glob_average_fixer=m_glob_average_fixer;
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto T_mid_i = ekat::subview(T_mid, i);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&] (const int k){ 
-       T_mid_i(k) += pb_fixer;
+       T_mid_i(k) += glob_average_fixer;
     });
   });//adding fix to T
 
@@ -568,8 +568,8 @@ Real MassAndEnergyConservationCheck::get_total_energy_before() const{
   return m_total_energy_before;
 }
 
-Real MassAndEnergyConservationCheck::get_pb_fixer() const{
-  return m_pb_fixer;
+Real MassAndEnergyConservationCheck::get_glob_average_fixer() const{
+  return m_glob_average_fixer;
 }
 
 
