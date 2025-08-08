@@ -1,6 +1,7 @@
 #include "eamxx_config.hpp"
 #include "eamxx_session.hpp"
 #include "eamxx_types.hpp"
+#include "eamxx_version.h"
 
 #include <ekat_kokkos_session.hpp>
 #include <ekat_arch.hpp>
@@ -9,12 +10,20 @@
 
 namespace scream {
 
+std::string eamxx_version () {
+  return EAMXX_VERSION;
+}
+
+std::string eamxx_git_version () {
+  return EAMXX_GIT_VERSION;
+}
+
 std::string eamxx_config_string() {
   std::string config = "\n-------- EKAT CONFIGS --------\n\n";
   config += "Active AVX settings: " + ekat::active_avx_string () + "\n";
   config += "Compiler Id: " + ekat::compiler_id_string () + "\n";
   config += ekat::kokkos_config_string();
-  config += "\n-------- SCREAM CONFIGS --------\n\n";
+  config += "\n-------- EAMXX CONFIGS --------\n\n";
   config += " sizeof(Real) = " + std::to_string(sizeof(Real)) + "\n";
   config += " default pack size = " + std::to_string(SCREAM_PACK_SIZE) + "\n";
   config += " default FPE mask: " +

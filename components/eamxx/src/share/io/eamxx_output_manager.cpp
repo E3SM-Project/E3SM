@@ -4,7 +4,6 @@
 #include "share/io/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/eamxx_config.hpp"
-#include "eamxx_version.h"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_comm.hpp>
@@ -905,8 +904,8 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
 
   set_str_att("case",p.get<std::string>("caseid","NONE"));
   set_str_att("source","E3SM Atmosphere Model (EAMxx)");
-  set_str_att("eamxx_version",EAMXX_VERSION);
-  set_str_att("git_version",p.get<std::string>("git_version",EAMXX_GIT_VERSION));
+  set_str_att("eamxx_version",eamxx_version());
+  set_str_att("git_version",p.get<std::string>("git_version",eamxx_git_version()));
   set_str_att("hostname",p.get<std::string>("hostname","UNKNOWN"));
   set_str_att("username",p.get<std::string>("username","UNKNOWN"));
   set_str_att("atm_initial_conditions_file",p.get<std::string>("initial_conditions_file","NONE"));
