@@ -127,20 +127,21 @@ create_diagnostic (const std::string& diag_field_name,
   //       of each group in the matches output var!
   // Note: use raw string syntax R"(<string>)" to avoid having to escape the \ character
   // Note: the number for field_at_p/h can match positive integer/floating-point numbers
-  std::regex field_at_l (R"(([A-Za-z0-9_.]+)_at_(lev_(\d+)|model_(top|bot))$)");
-  std::regex field_at_p (R"(([A-Za-z0-9_.]+)_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
-  std::regex field_at_h (R"(([A-Za-z0-9_.]+)_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
+  std::regex field_at_l (R"(([A-Za-z0-9_.+-]+)_at_(lev_(\d+)|model_(top|bot))$)");
+  std::regex field_at_p (R"(([A-Za-z0-9_.+-]+)_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
+  std::regex field_at_h (R"(([A-Za-z0-9_.+-]+)_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
   std::regex surf_mass_flux ("precip_(liq|ice|total)_surf_mass_flux$");
   std::regex water_path ("(Ice|Liq|Rain|Rime|Vap)WaterPath$");
   std::regex number_path ("(Ice|Liq|Rain)NumberPath$");
   std::regex aerocom_cld ("AeroComCld(Top|Bot)$");
   std::regex vap_flux ("(Meridional|Zonal)VapFlux$");
-  std::regex backtend ("([A-Za-z0-9_.]+)_atm_backtend$");
+  std::regex backtend ("([A-Za-z0-9_.+-]+)_atm_backtend$");
   std::regex pot_temp ("(Liq)?PotentialTemperature$");
   std::regex vert_layer ("(z|geopotential|height)_(mid|int)$");
-  std::regex horiz_avg ("([A-Za-z0-9_.]+)_horiz_avg$");
-  std::regex vert_contract ("([A-Za-z0-9_.]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
-  std::regex zonal_avg (R"(([A-Za-z0-9_.]+)_zonal_avg_(\d+)_bins$)");
+  std::regex horiz_avg ("([A-Za-z0-9_.+-]+)_horiz_avg$");
+  std::regex vert_contract ("([A-Za-z0-9_.+-]+)_vert_(avg|sum)(_((dp|dz)_weighted))?$");
+  std::regex zonal_avg (R"(([A-Za-z0-9_.+-]+)_zonal_avg_(\d+)_bins$)");
+  std::regex conditional_sampling (R"(([A-Za-z0-9_.+-]+)_where_([A-Za-z0-9_.+-]+)_(gt|ge|eq|ne|le|lt)_([+-]?\d+(?:\.\d+)?)$)");
 
   std::string diag_name;
   std::smatch matches;
@@ -216,6 +217,22 @@ create_diagnostic (const std::string& diag_field_name,
     params.set("grid_name", grid->name());
     params.set<std::string>("field_name", matches[1].str());
     params.set<std::string>("number_of_zonal_bins", matches[2].str());
+  }
+  else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
+    diag_name = "ConditionalSampling";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("input_field", matches[1].str());
+    params.set<std::string>("condition_field", matches[2].str());
+    params.set<std::string>("condition_operator", matches[3].str());
+    params.set<std::string>("condition_value", matches[4].str());
+  }
+  else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
+    diag_name = "ConditionalSampling";
+    params.set("grid_name", grid->name());
+    params.set<std::string>("input_field", matches[1].str());
+    params.set<std::string>("condition_field", matches[2].str());
+    params.set<std::string>("condition_operator", matches[3].str());
+    params.set<std::string>("condition_value", matches[4].str());
   }
   else
   {

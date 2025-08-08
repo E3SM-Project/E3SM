@@ -24,6 +24,7 @@ set(DIAGNOSTIC_SRCS
   wind_speed.cpp
   vert_contract.cpp
   zonal_avg.cpp
+  conditional_sampling.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
