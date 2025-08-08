@@ -7,7 +7,3 @@ if (NOT DEBUG)
     e3sm_deoptimize_file("${ITEM}")
   endforeach()
 endif()
-
-
-
-
