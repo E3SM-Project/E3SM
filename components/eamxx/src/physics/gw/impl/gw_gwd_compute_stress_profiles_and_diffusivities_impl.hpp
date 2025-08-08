@@ -83,54 +83,56 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
   // This loop is serial, so it may as well only be performed by one thread.
   // tau(k) depends on tau(k+1), which eliminates parallelism in the vertical
-  // levels and "d" depends on all the waves, which eliminates parallelism
-  // across waves.
-  Kokkos::single(Kokkos::PerTeam(team), [&] {
-    for (Int k = src_level; k >= init.ktop; --k) {
-      // Determine the diffusivity for each column.
-      Real d = GWC::dback;
-      if (init.do_molec_diff) {
-        d += kvtt(k);
-      }
-      else {
-        for (Int l = -pgwv; l <= pgwv; ++l) {
-          const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-          const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
-          d = std::max(d, dscal * dsat(k, pl_idx));
-        }
-      }
-
-      // Compute stress for each wave. The stress at this level is the min of
-      // the saturation stress and the stress at the level below reduced by
-      // damping. The sign of the stress must be the same as at the level below.
-      //
-      // If molecular diffusion is on, only do this in levels with molecular
-      // diffusion. Otherwise, do it everywhere.
-      if (k <= init.nbot_molec || !init.do_molec_diff) {
-        for (Int l = -pgwv; l <= pgwv; ++l) {
-          const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-
-          // New code
-          const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
-
-          Real taudmp;
-          if (wrk >= -150.0 || !init.do_molec_diff) {
-            taudmp = tau(pl_idx, k+1) * std::exp(wrk);
-          } else {
-            taudmp = 0.0;
-          }
-          if (taudmp <= GWC::taumin) taudmp = 0.0;
-          tau(pl_idx, k) = std::min(taudmp, tausat(k, pl_idx));
-        }
-      }
-      else {
-        for (Int l = -pgwv; l <= pgwv; ++l) {
-          int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-          tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(k, pl_idx));
-        }
-      }
+  // levels.
+  for (Int k = src_level; k >= init.ktop; --k) {
+    // Determine the diffusivity for each column.
+    Real d = GWC::dback;
+    if (init.do_molec_diff) {
+      d += kvtt(k);
     }
-  });
+    else {
+      Kokkos::parallel_reduce(
+        Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l, Real& lmax) {
+        const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
+        lmax = std::max(lmax, dscal * dsat(k, pl_idx));
+        }, Kokkos::Max<Real>(d));
+    }
+
+    team.team_barrier();
+
+    // Compute stress for each wave. The stress at this level is the min of
+    // the saturation stress and the stress at the level below reduced by
+    // damping. The sign of the stress must be the same as at the level below.
+    //
+    // If molecular diffusion is on, only do this in levels with molecular
+    // diffusion. Otherwise, do it everywhere.
+    if (k <= init.nbot_molec || !init.do_molec_diff) {
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
+        const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+
+        const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
+
+        Real taudmp;
+        if (wrk >= -150.0 || !init.do_molec_diff) {
+          taudmp = tau(pl_idx, k+1) * std::exp(wrk);
+        } else {
+          taudmp = 0.0;
+        }
+        if (taudmp <= GWC::taumin) taudmp = 0.0;
+        tau(pl_idx, k) = std::min(taudmp, tausat(k, pl_idx));
+      });
+    }
+    else {
+      Kokkos::parallel_for(
+        Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
+        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+        tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(k, pl_idx));
+      });
+    }
+    team.team_barrier();
+  }
 
   team.team_barrier();
 }
