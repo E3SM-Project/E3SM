@@ -17,6 +17,11 @@ CreateUnitTest(io_utils "io_utils.cpp"
   PROPERTIES RESOURCE_LOCK rpointer_file
 )
 
+## Test field aliasing functionality
+CreateUnitTest(io_alias "io_alias.cpp"
+  LIBS scream_io LABELS io
+)
+
 # Test creation of diagnostic from diag_field_name
 CreateUnitTest(create_diag "create_diag.cpp"
   LIBS diagnostics scream_io
