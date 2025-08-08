@@ -20,6 +20,7 @@ on:
       # second, no to these
       - '!components/eamxx/docs/**'
       - '!components/eamxx/mkdocs.yml'
+      - '!components/eamxx/cime_config/**'
 
   # Manual run is used to bless
   workflow_dispatch:
