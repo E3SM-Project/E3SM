@@ -79,7 +79,8 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
           // We must add a tolerance here since we are doing the operations
           // in a different order in order to improve the amount of parallel
-          // computation
+          // computation. This tol can be removed once we are no longer using
+          // fortran to generate baselines.
           REQUIRE(d_baseline.tau[k] == Approx(d_test.tau[k]).margin(margin));
         }
 

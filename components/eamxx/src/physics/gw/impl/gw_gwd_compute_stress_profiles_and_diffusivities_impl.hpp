@@ -40,18 +40,21 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   const uview_2d<Real>& tau)
 {
   // Loop from bottom to top to get stress profiles.
-  for (Int k = src_level; k >= init.ktop; --k) {
+  Kokkos::parallel_for(
+    Kokkos::TeamThreadRange(team, init.ktop, src_level+1), [&] (const int k) {
 
     // Determine the absolute value of the saturation stress.
     // Define critical levels where the sign of (u-c) changes between interfaces.
-    for (Int l = -pgwv; l <= pgwv; ++l) {
+    Kokkos::parallel_for(
+      Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
+
       const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
       const Real ubmc = ubi(k) - c(pl_idx);
 
       // Test to see if u-c has the same sign here as the level below.
       if (ubmc * (ubi(k + 1) - c(pl_idx)) > 0.0) {
         tausat(k, pl_idx) = std::abs(init.effkwv * rhoi(k) * bfb_cube(ubmc) /
-                                  (2.0 * ni(k)));
+                                     (2.0 * ni(k)));
         if (tausat(k, pl_idx) <= GWC::taumin) tausat(k, pl_idx) = 0.0;
       }
       else {
@@ -73,53 +76,63 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
         wrk1(k, pl_idx) = at*bt*et;
         wrk2(k, pl_idx) = at*ct*et;
       }
-    }
-  }
+    });
+  });
 
-  for (Int k = src_level; k >= init.ktop; --k) {
-    // Determine the diffusivity for each column.
-    Real d = GWC::dback;
-    if (init.do_molec_diff) {
-      d += kvtt(k);
-    }
-    else {
-      for (Int l = -pgwv; l <= pgwv; ++l) {
-        const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
-        d = std::max(d, dscal * dsat(k, pl_idx));
+  team.team_barrier();
+
+  // This loop is serial, so it may as well only be performed by one thread.
+  // tau(k) depends on tau(k+1), which eliminates parallelism in the vertical
+  // levels and "d" depends on all the waves, which eliminates parallelism
+  // across waves.
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    for (Int k = src_level; k >= init.ktop; --k) {
+      // Determine the diffusivity for each column.
+      Real d = GWC::dback;
+      if (init.do_molec_diff) {
+        d += kvtt(k);
       }
-    }
-
-    // Compute stress for each wave. The stress at this level is the min of
-    // the saturation stress and the stress at the level below reduced by
-    // damping. The sign of the stress must be the same as at the level below.
-    //
-    // If molecular diffusion is on, only do this in levels with molecular
-    // diffusion. Otherwise, do it everywhere.
-    if (k <= init.nbot_molec || !init.do_molec_diff) {
-      for (Int l = -pgwv; l <= pgwv; ++l) {
-        const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-
-        // New code
-        const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
-
-        Real taudmp;
-        if (wrk >= -150.0 || !init.do_molec_diff) {
-          taudmp = tau(pl_idx, k+1) * std::exp(wrk);
-        } else {
-          taudmp = 0.0;
+      else {
+        for (Int l = -pgwv; l <= pgwv; ++l) {
+          const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+          const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
+          d = std::max(d, dscal * dsat(k, pl_idx));
         }
-        if (taudmp <= GWC::taumin) taudmp = 0.0;
-        tau(pl_idx, k) = std::min(taudmp, tausat(k, pl_idx));
+      }
+
+      // Compute stress for each wave. The stress at this level is the min of
+      // the saturation stress and the stress at the level below reduced by
+      // damping. The sign of the stress must be the same as at the level below.
+      //
+      // If molecular diffusion is on, only do this in levels with molecular
+      // diffusion. Otherwise, do it everywhere.
+      if (k <= init.nbot_molec || !init.do_molec_diff) {
+        for (Int l = -pgwv; l <= pgwv; ++l) {
+          const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+
+          // New code
+          const Real wrk = wrk1(k, pl_idx) + wrk2(k, pl_idx) * d;
+
+          Real taudmp;
+          if (wrk >= -150.0 || !init.do_molec_diff) {
+            taudmp = tau(pl_idx, k+1) * std::exp(wrk);
+          } else {
+            taudmp = 0.0;
+          }
+          if (taudmp <= GWC::taumin) taudmp = 0.0;
+          tau(pl_idx, k) = std::min(taudmp, tausat(k, pl_idx));
+        }
+      }
+      else {
+        for (Int l = -pgwv; l <= pgwv; ++l) {
+          int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+          tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(k, pl_idx));
+        }
       }
     }
-    else {
-      for (Int l = -pgwv; l <= pgwv; ++l) {
-        int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(k, pl_idx));
-      }
-    }
-  }
+  });
+
+  team.team_barrier();
 }
 
 } // namespace gw
