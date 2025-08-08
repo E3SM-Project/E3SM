@@ -98,15 +98,15 @@ module shr_reprosum_mod
    ! Declare the C function interface
    interface
       subroutine shr_reprosumx86_fix_start(arg) bind(c)
-        use iso_c_binding
-        integer, intent(out) :: arg
+        use iso_c_binding, only: c_int
+        integer(kind=c_int), intent(out) :: arg
       end subroutine shr_reprosumx86_fix_start
    end interface
 
    interface
       subroutine shr_reprosumx86_fix_end(arg) bind(c)
-        use iso_c_binding
-        integer, intent(in) :: arg
+        use iso_c_binding, only: c_int
+        integer(kind=c_int), intent(in) :: arg
       end subroutine shr_reprosumx86_fix_end
    end interface
 #endif
