@@ -67,6 +67,9 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -74,7 +77,10 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
         GwdComputeStressProfilesAndDiffusivitiesData& d_test = test_data[i];
         REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
+          // We must add a tolerance here since we are doing the operations
+          // in a different order in order to improve the amount of parallel
+          // computation
+          REQUIRE(d_baseline.tau[k] == Approx(d_test.tau[k]).margin(margin));
         }
 
       }

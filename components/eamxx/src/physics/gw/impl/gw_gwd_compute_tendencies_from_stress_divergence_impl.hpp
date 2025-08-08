@@ -50,7 +50,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   Kokkos::parallel_for(
     Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
     //  Accumulate the mean wind tendency over wavenumber.
-    int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
+    const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
 
     // Force tau at the top of the model to zero, if requested.
     if (init.tau_0_ubc) {
