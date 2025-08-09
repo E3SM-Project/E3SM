@@ -103,6 +103,11 @@ module ocn_comp_mct
   integer :: mpicom_moab
 #endif
 
+  ! Module variable to save accumulatedFrazilIceMass values before they are reset
+  real (kind=RKIND), allocatable, private :: saved_accumulatedFrazilIceMass(:)
+  integer, private :: saved_frazil_allocated_size = 0
+  logical, private :: saved_frazil_initialized = .false.
+
 
   integer, private ::   &
       my_task
@@ -988,6 +993,10 @@ contains
 ! !INTERFACE:
   subroutine ocn_run_mct( EClock, cdata_o, x2o_o, o2x_o)!{{{
 
+#ifdef HAVE_MOAB
+   use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+#endif
+
 !
 ! !DESCRIPTION:
 ! Run MPASO for one coupling interval
@@ -1046,8 +1055,13 @@ contains
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr, tagname
 #endif
+
+#ifdef MOABDEBUG
+    integer :: cur_ocn_stepno
+    character*100 outfile, wopts, lnum
 #endif
 
+#endif
       iam = domain % dminfo % my_proc_id
 
       debugOn = .false.
@@ -1336,7 +1350,13 @@ contains
          if (debugOn) call mpas_log_write('Finished writing restart streams')
       end if
 
+      ! Export state to coupler
+      if (debugOn) call mpas_log_write('Exporting ocean state')
+      call ocn_export_mct(o2x_o, ierr)
+      if (debugOn) call mpas_log_write('Finished exporting ocean state')
 #ifdef HAVE_MOAB
+      call ocn_export_moab(EClock)
+
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_o2x_fields
     call mct_list_init(temp_list ,seq_flds_o2x_fields)
@@ -1351,14 +1371,15 @@ contains
     enddo
     call mct_list_clean(temp_list)
 #endif
+
+#ifdef MOABDEBUG
+      call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
+      write(lnum,"(I0.2)")cur_ocn_stepno
+      outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
 #endif
 
-      ! Export state to coupler
-      if (debugOn) call mpas_log_write('Exporting ocean state')
-      call ocn_export_mct(o2x_o, ierr)
-      if (debugOn) call mpas_log_write('Finished exporting ocean state')
-#ifdef HAVE_MOAB
-      call ocn_export_moab(EClock)
 #endif
       call check_clocks_sync(domain % clock, Eclock, ierr)
 
@@ -1457,6 +1478,12 @@ contains
     ! deallocate moab fields array
      deallocate (o2x_om)
 #endif
+    ! deallocate saved frazil ice mass array
+    if (allocated(saved_accumulatedFrazilIceMass)) then
+       deallocate(saved_accumulatedFrazilIceMass)
+       saved_frazil_initialized = .false.
+       saved_frazil_allocated_size = 0
+    end if
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
@@ -2965,6 +2992,7 @@ contains
 
    logical :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
 
+   integer :: total_cells_needed
 
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
@@ -2985,6 +3013,28 @@ contains
 
    ! Determine if ocn to glc thermal forcing coupling is on
    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
+
+   ! This code needed to support MOAB coupler and its export call.
+   ! will be removed when couplers are separated.
+   ! First pass: calculate total cells needed for saved_accumulatedFrazilIceMass allocation
+   total_cells_needed = 0
+   block_ptr => domain % blocklist
+   do while(associated(block_ptr))
+     call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+     call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+     total_cells_needed = total_cells_needed + nCellsSolve
+     block_ptr => block_ptr % next
+   end do
+
+   ! Allocate saved_accumulatedFrazilIceMass if needed
+   if (frazilIceActive .and. total_cells_needed > 0) then
+      if (.not. allocated(saved_accumulatedFrazilIceMass) .or. saved_frazil_allocated_size < total_cells_needed) then
+         if (allocated(saved_accumulatedFrazilIceMass)) deallocate(saved_accumulatedFrazilIceMass)
+         allocate(saved_accumulatedFrazilIceMass(total_cells_needed))
+         saved_frazil_allocated_size = total_cells_needed
+         saved_frazil_initialized = .true.
+      end if
+   end if
 
    n = 0
    block_ptr => domain % blocklist
@@ -3102,6 +3152,11 @@ contains
        endif
 
        if ( frazilIceActive ) then
+          ! Save accumulatedFrazilIceMass value before it is used and reset
+          if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
+             saved_accumulatedFrazilIceMass(n) = accumulatedFrazilIceMass(i)
+          end if
+
           ! negative when frazil ice can be melted
           keepFrazil = .true.
           if ( associated(landIceMask) ) then
@@ -4673,7 +4728,7 @@ contains
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
 
-! replace 'o2x_o % rAttr(' with 'o2x_om(n, ' and ', n)' with ')' 
+! replace 'o2x_o % rAttr(' with 'o2x_om(n, ' and ', n)' with ')'
      do i = 1, nCellsSolve
        n = n + 1
 
@@ -4702,6 +4757,7 @@ contains
        endif
 
        if ( frazilIceActive ) then
+          ! Use saved accumulatedFrazilIceMass values instead of current (already reset) values
           ! negative when frazil ice can be melted
           keepFrazil = .true.
           if ( associated(landIceMask) ) then
@@ -4713,9 +4769,10 @@ contains
           if ( keepFrazil ) then
 
              ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
-             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
+             if ( saved_frazil_initialized .and. n <= saved_frazil_allocated_size .and. &
+                  saved_accumulatedFrazilIceMass(n) > 0.0_RKIND ) then
 
-              seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion
+              seaIceEnergy(i) = saved_accumulatedFrazilIceMass(n) * config_frazil_heat_of_fusion
 
              ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
              ! top layer of the ocean
@@ -4730,23 +4787,33 @@ contains
              end if
 
              o2x_om(n, index_o2x_Fioo_q)  = seaIceEnergy(i) / ocn_cpl_dt
-             o2x_om(n, index_o2x_Fioo_frazil) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+             if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
+                o2x_om(n, index_o2x_Fioo_frazil) = saved_accumulatedFrazilIceMass(n) / ocn_cpl_dt
+             else
+                o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
+             end if
 
           else
 
              o2x_om(n, index_o2x_Fioo_q)  = 0.0_RKIND
              o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
-                o2x_om(n, index_o2x_Foxo_q_li) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
-                o2x_om(n, index_o2x_Foxo_frazil_li) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+                if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
+                   o2x_om(n, index_o2x_Foxo_q_li) = saved_accumulatedFrazilIceMass(n) * config_frazil_heat_of_fusion / ocn_cpl_dt
+                   o2x_om(n, index_o2x_Foxo_frazil_li) = saved_accumulatedFrazilIceMass(n) / ocn_cpl_dt
+                else
+                   o2x_om(n, index_o2x_Foxo_q_li) = 0.0_RKIND
+                   o2x_om(n, index_o2x_Foxo_frazil_li) = 0.0_RKIND
+                end if
              endif
 
           end if
 
           ! Reset SeaIce Energy and Accumulated Frazil Ice
-          seaIceEnergy(i) = 0.0_RKIND
-          accumulatedFrazilIceMass(i) = 0.0_RKIND
-          frazilSurfacePressure(i) = 0.0_RKIND
+          ! already done in export_mct
+          !seaIceEnergy(i) = 0.0_RKIND
+          !accumulatedFrazilIceMass(i) = 0.0_RKIND
+          !frazilSurfacePressure(i) = 0.0_RKIND
        end if
 
        ! BGC fields
@@ -4825,12 +4892,6 @@ contains
    !-----------------------------------------------------------------------
    !EOC
       call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
-#ifdef MOABDEBUG
-      write(lnum,"(I0.2)")cur_ocn_stepno
-      outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
-#endif
 
 !-----------------------------------------------------------------------
 !EOC
