@@ -530,12 +530,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.19/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.19/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.19/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
@@ -569,8 +569,8 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/12.3</command>
-        <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">gcc-native/13.2</command>
+        <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
       <modules compiler="intel">
@@ -580,24 +580,27 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/24.5</command>
-        <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">nvidia/25.5</command>
+        <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
       <modules compiler="amdclang">
         <command name="load">PrgEnv-aocc</command>
         <command name="load">aocc/4.1.0</command>
-        <command name="load">cray-libsci/23.12.5</command>
+        <command name="load">cray-libsci/24.07.0</command>
       </modules>
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.30</command>
-        <command name="load">cray-mpich/8.1.28</command>
+        <command name="load">craype/2.7.32</command>
+        <command name="load">cray-mpich/8.1.30</command>
+        <!-- like alvarez-cpu, we still cant use the latest hdf as something not right with env -->
+        <!-- <command name="load">cray-hdf5-parallel/1.14.3.1</command> -->
+        <!-- <command name="load">cray-netcdf-hdf5parallel/4.9.0.13</command> -->
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
-        <command name="load">cmake/3.24.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+        <command name="load">cmake/3.30.2</command>
       </modules>
     </module_system>
 
@@ -620,6 +623,8 @@
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -670,7 +675,6 @@
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
@@ -716,12 +720,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.19/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.19/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.19/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
@@ -755,23 +759,23 @@
 
       <modules compiler="gnu.*">
         <command name="load">PrgEnv-gnu/8.5.0</command>
-        <command name="load">gcc-native/12.3</command>
+        <command name="load">gcc-native/13.2</command>
       </modules>
 
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/24.5</command>
+        <command name="load">nvidia/25.5</command>
       </modules>
 
       <modules compiler="gnugpu">
-        <command name="load">cudatoolkit/12.2</command>
+        <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-        <command name="load">cudatoolkit/12.2</command>
+        <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
-        <command name="load">gcc-native-mixed/12.3</command>
+        <command name="load">gcc-native-mixed/13.2</command>
       </modules>
 
       <modules compiler="gnu">
@@ -783,13 +787,14 @@
       </modules>
 
       <modules>
-        <command name="load">cray-libsci/23.12.5</command>
-        <command name="load">craype/2.7.30</command>
-        <command name="load">cray-mpich/8.1.28</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.9</command>
+        <command name="load">cray-libsci/24.07.0</command>
+        <command name="load">craype/2.7.32</command>
+        <command name="load">cray-mpich/8.1.30</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.13</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
         <command name="load">cmake/3.24.3</command>
+        <!--command name="load">cmake/3.30.2</command-->
       </modules>
     </module_system>
 
@@ -924,7 +929,6 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.5.0</command>
         <command name="load">intel/2024.1.0</command>
-        <!--command name="load">intel/2023.2.0</command-->
       </modules>
 
       <modules compiler="nvidia">
@@ -972,7 +976,7 @@
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
-      <env name="MPICH_SMP_SINGLE_COPY_MODE">XPMEM</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1023,7 +1027,6 @@
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
@@ -1069,12 +1072,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.19/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.19/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.19/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.19/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 

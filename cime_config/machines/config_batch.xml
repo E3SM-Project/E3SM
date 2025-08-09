@@ -478,6 +478,8 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="150" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">overrun</queue>
       <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -490,6 +492,8 @@
       <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
       <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
       <queue walltimemax="00:30:00" nodemax="256" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">overrun</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -519,6 +523,8 @@
     <queues>
       <queue walltimemax="00:45:00" nodemax="150" default="true">regular</queue>
       <queue walltimemax="00:45:00" nodemax="150" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="150" strict="true">overrun</queue>
       <queue walltimemax="00:15:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -529,6 +535,9 @@
     </directives>
     <queues>
       <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">shared</queue>
+      <queue walltimemax="00:30:00" nodemax="256" strict="true">overrun</queue>
       <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
