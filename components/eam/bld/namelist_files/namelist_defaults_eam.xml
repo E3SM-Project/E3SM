@@ -117,7 +117,7 @@
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30"                 >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"         nlev="30" ocn="aquaplanet">atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="80"                 >atm/cam/inic/homme/v3.LR_mapped_northamericax4v1np4-topoadj.eam.i.2010-01-01.nc</ncdata>
-<ncdata dyn="se" hgrid="ne0np4_amazonx4v1"                nlev="80"                 >atm/cam/inic/homme/placeholder.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_amazonx4v1"                nlev="80"                 >atm/cam/inic/homme/HICCUP.atm_era5.2014-10-01.highorder_amazonx4v1.L80.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1"          nlev="72"                 >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_antarcticax4v1"            nlev="72"                 >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-antarcticax4v1_L72_topoadj_c20200507.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_arcticx4v1"                nlev="72"                 >atm/cam/inic/homme/eam_i_mam4_Linoz_0011-01-arcticx4v1np4_L72_c20220127.nc</ncdata>
@@ -734,7 +734,7 @@
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" npg="2" >atm/cam/chem/trop_mam/atmsrf_conusx4v1pg2_20020609.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_northamericax4v1">atm/cam/chem/trop_mam/atmsrf_northamericax4v1np4_20191023.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_northamericax4v1" npg="2">atm/cam/chem/trop_mam/atmsrf_northamericax4v1pg2_20020209.nc</drydep_srf_file>
-<drydep_srf_file hgrid="ne0np4_amazonx4v1" npg="2">atm/cam/chem/trop_mam/placeholder.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_amazonx4v1" npg="2">atm/cam/chem/trop_mam/atmsrf_amazonx4v1pg2_20250429.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_antarcticax4v1">atm/cam/chem/trop_mam/atmsrf_antarcticax4v1np4_20191127.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_antarcticax4v1" npg="2">atm/cam/chem/trop_mam/atmsrf_antarcticax4v1pg2_20020925.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arcticx4v1"     npg="2">atm/cam/chem/trop_mam/atmsrf_arcticx4v1pg2_20210512.nc</drydep_srf_file>
