@@ -2087,7 +2087,7 @@
       <!--env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.9.3c-4.3.1cxx-4.5.3f-parallel-nczarr/mpich-4.1.2/gcc-12.1.0</env-->
       <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-4.1.2/gcc-12.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/pnetcdf/1.12.3/mpich-4.1.2/gcc-12.1.0</env>
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /nfs/gce/projects/climate/software/moab/devel/mpich-4.1.2/gcc-12.1.0; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /nfs/gce/projects/climate/software/moab/devel/mpich-4.1.2/O2_gcc-12.1.0; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables mpilib="openmpi">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
@@ -2117,6 +2117,64 @@
       <env name="SPIO_ENABLE_ADIOSBP2NC_CONVERSION">1</env>
       <env name="SPIO_ADIOSBP2NC_CONVERSION_TOOL_EXTRA_ARGS">\-\-rm-bp-file-after-conv="(.*)(.eam.)(.*)"</env>
     </environment_variables-->
+  </machine>
+
+  <machine MACH="anlgce-ub22gcc11">
+    <DESC>ANL CELS General Computing Environment (Linux) workstation (Ubuntu 22.04)</DESC>
+    <NODENAME_REGEX>compute-386-(01|02|03|04|05|06|07|08)|compute-240-(10|11|12|13|14|15)</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <SAVE_TIMING_DIR>/scratch/$ENV{USER}/e3sm/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/scratch/$ENV{USER}/e3sm/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/nfs/gce/projects/climate/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/nfs/gce/projects/climate/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/nfs/gce/projects/climate/e3sm/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>iulian at mcs dot anl dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="mpich">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/8.5.6/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/init/perl</init_path>
+      <init_path lang="bash">/nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/init/bash</init_path>
+      <init_path lang="sh">/nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="python">/nfs/gce/software/custom/linux-ubuntu22.04-x86_64/spack/opt/spack/linux-ubuntu22.04-x86_64/gcc-11.2.0/lmod-8.5.6-hkjjxhp/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="perl">module</cmd_path>
+      <cmd_path lang="bash">module</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables mpilib="mpich">
+      <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
+	    <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/mpich-4.2.2-3vkswjv/lib:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/hdf5-1.14.3-hr5dg7h/lib:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/netcdf-c-4.9.2-ws3utfq/lib:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/parallel-netcdf-1.12.3-ktgvozl/lib:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/zoltan-3.901-6x6jxk3/lib:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/netcdf-fortran-4.6.1-wpw54rr/lib</env>
+      <env name="PATH">/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/mpich-4.2.2-3vkswjv/bin:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/hdf5-1.14.3-hr5dg7h/bin:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/netcdf-c-4.9.2-ws3utfq/bin:/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/parallel-netcdf-1.12.3-ktgvozl/bin:$ENV{PATH}</env>
+      <env name="HDF5_ROOT">/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/hdf5-1.14.3-hr5dg7h</env>
+      <!--env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.9.3c-4.3.1cxx-4.5.3f-parallel-nczarr/mpich-4.1.2/gcc-12.1.0</env-->
+      <env name="NETCDF_C_PATH">/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/netcdf-c-4.9.2-ws3utfq</env>
+      <env name="NETCDF_FORTRAN_PATH">/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/netcdf-fortran-4.6.1-wpw54rr</env>
+      <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/ub22/gcc-11.4.0/parallel-netcdf-1.12.3-ktgvozl</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /nfs/gce/projects/climate/software/moab/devel/mpich-4.2.2/gcc-11.4.0; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">64M</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="PERL5LIB">/nfs/gce/projects/climate/software/perl5/lib/perl5</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="sandiatoss3">
