@@ -683,6 +683,8 @@ contains
             mapper_Va2o%weight_identifier = wgtIdVa2o
             mapper_Va2o%mbname = 'mapper_Va2o'
 
+            call seq_map_initvect_moab(mapper_Va2o, vect_map, mbaxid, mboxid, string='mapper_Va2o initvect moab')
+
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0))
        endif ! if (atm_c2_ocn .or. atm_c2_ice)
        call shr_sys_flush(logunit)
