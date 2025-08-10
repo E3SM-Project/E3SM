@@ -35,9 +35,12 @@ contains
     real (kind=real_kind), intent(out) :: pnh(np,np,nlev)        ! nh nonhyrdo pressure
     real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
     real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
+    !local
+    real (kind=real_kind) :: phis(np,np)             ! phi surf
 
+    phis(:,:) = 0.0
     call pnh_and_exner_from_eos2(hvcoord, vtheta_dp, dp3d, dphi, pnh, exner, dpnh_dp_i, &
-         'dirk_interface')
+         phis, 'dirk_interface')
   end subroutine pnh_and_exner_from_eos_f90
 
   subroutine phi_from_eos_f90(phis,vtheta_dp,dp,phi_i) bind(c)
@@ -74,8 +77,12 @@ contains
     real (kind=real_kind), intent(inout) :: pnh(np,np,nlev)
     real (kind=real_kind), intent(out)   :: JacD(nlev,np,np)
     real (kind=real_kind), intent(out)   :: JacL(nlev-1,np,np),JacU(nlev-1,np,np)
+    !local
+    real (kind=real_kind)    :: phis(np,np)
 
-    call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1)
+    phis(:,:) = 0.0
+    !note phis goes before pnh
+    call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,phis,pnh,1)
   end subroutine get_dirk_jacobian_f90
 
   subroutine c2f_f90(n, cnlev, cnlevp, dp3d, w_i, v, vtheta_dp, phinh_i, gradphis, phis) bind(c)
