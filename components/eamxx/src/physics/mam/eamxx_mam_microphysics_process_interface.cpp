@@ -639,6 +639,8 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMMicrophysics::run_impl(const double dt) {
+  auto t1s = start_of_step_ts(); // old version auto ts = timestamp();
+  auto timestep = t1s.get_num_steps();
   const int ncol = ncol_;
   const int nlev = nlev_;
   //NOTE: get_default_team_policy produces a team size of 96 (nlev=72).
@@ -655,6 +657,24 @@ void MAMMicrophysics::run_impl(const double dt) {
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
+
+  //constexpr int icol = 10; //gid=379
+  //constexpr int kb = 54; //gid=379
+
+  constexpr int icol = 11; //gid=28
+  constexpr int ib = 4; //gid=28
+  constexpr int kb = 63; //gid=28
+  
+
+  auto gid=grid_->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>()(icol);
+  //std::cout<<"BALLI - GID:"<<gid<<std::endl;
+
+  //if (gid == 379)std::cout  << std::setprecision(20)<<"TSMC:"<<t1s.get_year()<<":"<<t1s.get_month()<<":"<<t1s.get_day()<<":"<<t1s.get_hours()<<":"<<t1s.get_minutes()<<":"<<t1s.get_seconds()<<": "<<timestep<<std::endl;
+  //if( timestep == 769 && gid ==379)
+  if( timestep >= 769 && timestep <= 771 && gid ==28)
+        std::cout  << std::setprecision(20)<<"MCtop_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<< wet_aero_.cld_aero_nmr[0](ib,kb) << " : "<<wet_aero_.int_aero_mmr[0][0](ib,kb+1)<<std::endl;
+
 
   //----------- Variables from microphysics scheme -------------
 
@@ -926,6 +946,17 @@ void MAMMicrophysics::run_impl(const double dt) {
       "MAMMicrophysics::run_impl", policy,
       KOKKOS_LAMBDA(const ThreadTeam &team) {
         const int icol     = team.league_rank();   // column index
+        //if((timestep==912 || timestep==911) && icol ==10 && dry_aero.cld_aero_mmr[2][2](icol,54)!=0)std::cout  << std::setprecision(20)<<"strt_run_impl:timestep:"<<timestep<<" icol:"<<icol
+        //<<" dry_aero:"<< dry_aero.cld_aero_mmr[2][2](icol,54)
+        /*<<" : "<< dry_aero.cld_aero_mmr[2][0](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][1](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][2](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][3](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][4](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][5](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][6](icol,54)
+        <<" : "<< dry_aero.cld_aero_mmr[2][7](icol,54)*/
+        //<<std::endl;
         const Real col_lat = col_latitudes(icol);  // column latitude (degrees?)
 
         // convert column latitude to radians
@@ -1059,6 +1090,7 @@ void MAMMicrophysics::run_impl(const double dt) {
         // Output: values are dvel, dflx
         // Input/Output: progs::stateq, progs::qqcw
         team.team_barrier();
+
         mam4::microphysics::perform_atmospheric_chemistry_and_microphysics(
             team, dt, rlats, sfc_temperature(icol), sfc_pressure(icol),
             wind_speed, rain, solar_flux, cnst_offline_icol, forcings_in, atm,
@@ -1072,16 +1104,23 @@ void MAMMicrophysics::run_impl(const double dt) {
             offset_aerosol,
             dry_diameter_icol, wet_diameter_icol,
             wetdens_icol, dry_atm.phis(icol), cmfdqr, prain_icol, nevapr_icol,
-            work_set_het_icol, drydep_data, diag_arrays, dvel_col, dflx_col, progs);
+            work_set_het_icol, drydep_data, diag_arrays, dvel_col, dflx_col, progs);//, timestep, icol);
 
         team.team_barrier();
         // Update constituent fluxes with gas drydep fluxes (dflx)
         // FIXME: Possible units mismatch (dflx is in kg/cm2/s but
         // constituent_fluxes is kg/m2/s) (Following mimics Fortran code
         // behavior but we should look into it)
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
-          constituent_fluxes(icol, ispc) -= dflx_col[ispc - offset_aerosol];
-        });
+//#if 0
+        /*Kokkos::parallel_for(Kokkos::TeamVectorRange(team, offset_aerosol, pcnst), [&](int ispc) {
+          constituent_fluxes(icol, ispc) -= 1e-5;//dflx_col[ispc - offset_aerosol];
+        });*/
+        team.team_barrier();
+        for ( int ib=offset_aerosol; ib<pcnst; ++ib){
+          constituent_fluxes(icol, ib) = haero::max(dflx_col[ib - offset_aerosol],0);
+        }
+//#endif
+
       });  // parallel_for for the column loop
   Kokkos::fence();
 
@@ -1114,6 +1153,10 @@ void MAMMicrophysics::run_impl(const double dt) {
   // postprocess output
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();
+  //if( timestep == 769 && gid ==379)
+  if( timestep >= 769 && timestep <= 771 && gid ==28)std::cout  << std::setprecision(20)<<"MCend_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<< wet_aero_.cld_aero_nmr[0](ib,kb) << " : "<<wet_aero_.int_aero_mmr[0][0](ib,kb+1)<<std::endl;
+
 
 }  // MAMMicrophysics::run_impl
 

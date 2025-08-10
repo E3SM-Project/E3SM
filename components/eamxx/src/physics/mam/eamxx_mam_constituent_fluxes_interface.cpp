@@ -138,6 +138,20 @@ void MAMConstituentFluxes::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMConstituentFluxes::run_impl(const double dt) {
+
+  auto t1s = start_of_step_ts(); // old version auto ts = timestamp();
+  auto timestep = t1s.get_num_steps();
+  //constexpr int icol = 10;
+  //constexpr int kb = 54;
+
+  constexpr int icol = 11;
+  constexpr int ib = 4;
+  constexpr int kb = 63;
+  auto gid=grid_->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>()(icol);
+  //if( timestep == 769 && gid ==379)
+  if( timestep >= 769 && timestep <= 771 && gid ==28)std::cout  << std::setprecision(20)<<"CF-TOP_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<< wet_aero_.cld_aero_nmr[0](ib,kb) << " : "<<wet_aero_.int_aero_mmr[0][0](ib,kb+1)<<std::endl;
+
   // -------------------------------------------------------------------
   // (LONG) NOTE: The following code is an adaptation of cflx.F90 code in
   // E3SM. In EAMxx, all constituents are considered "wet" (or have wet
@@ -188,6 +202,9 @@ void MAMConstituentFluxes::run_impl(const double dt) {
                                          // output
                                          wet_aero_);
   Kokkos::fence();
+  if( timestep >= 769 && timestep <= 771 && gid ==28)std::cout  << std::setprecision(20)<<"CF-END_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<< wet_aero_.cld_aero_nmr[0](ib,kb)<< " : "<<wet_aero_.int_aero_mmr[0][0](ib,kb+1) <<std::endl;
+
 
 }  // run_impl ends
 

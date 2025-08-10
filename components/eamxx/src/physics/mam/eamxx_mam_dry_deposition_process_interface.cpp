@@ -334,6 +334,7 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {
+#if 0
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -404,5 +405,6 @@ void MAMDryDep::run_impl(const double dt) {
   // and update the state
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
+#endif
 }  // run_impl
 }  // namespace scream

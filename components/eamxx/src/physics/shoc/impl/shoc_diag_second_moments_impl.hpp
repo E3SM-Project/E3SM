@@ -42,7 +42,7 @@ void Functions<S,D>::diag_second_moments(
   //  If 1.5 TKE closure is activated then set to zero.
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
-    w_sec(k) = shoc_1p5tke ? 0 : w2tune*(sp(2.)/sp(3.))*tke(k);
+    w_sec(k) = shoc_1p5tke ? 0 : 0;//w2tune*(sp(2.)/sp(3.))*tke(k);
   });
 
   // For the following variances and covariance, if no SGS variability is desired then

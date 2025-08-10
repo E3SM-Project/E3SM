@@ -5,6 +5,7 @@
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
+#include <iomanip>
 
 #include <array>
 
@@ -62,6 +63,10 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("sst",              scalar2d, K,       grid_name);
   //dust fluxes [kg/m^2/s]: Four flux values for eacch column
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
+
+  const FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  //add_tracers_interstitial_aerosol();
+  add_field<Required>("so4_a1",           scalar3d_mid, kg/kg, grid_name);
 
 }
 // =========================================================================================
@@ -151,7 +156,26 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void SurfaceCouplingImporter::run_impl (const double /* dt */)
 {
+  auto t1s = start_of_step_ts(); // old version auto ts = timestamp();
+  auto timestep = t1s.get_num_steps();
+  
+  constexpr int icol = 11; //gid=28
+  constexpr int ib = 4; //gid=28
+  constexpr int kb = 63; //gid=28
+  
+
+  auto aa = get_field_in("so4_a1").get_view<const Real **>();
+  auto gid=m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>()(icol);
+  if( timestep >= 769 && timestep <= 771 && gid ==28)
+        std::cout  << std::setprecision(20)<<"SItop_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<<aa(ib,kb+1)<<std::endl;
+
   do_import();
+
+  if( timestep >= 769 && timestep <= 771 && gid ==28)
+        std::cout  << std::setprecision(20)<<"SIEnd_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<<aa(ib,kb+1)<<std::endl;
+
 }
 // =========================================================================================
 void SurfaceCouplingImporter::do_import(const bool called_during_initialization)

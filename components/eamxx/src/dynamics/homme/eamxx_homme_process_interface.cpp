@@ -489,7 +489,6 @@ void HommeDynamics::run_impl (const double dt)
 
     if (m_bfb_hash_nstep > 0 && start_of_step_ts().get_num_steps() % m_bfb_hash_nstep == 0)
       print_fast_global_state_hash("Hommexx",start_of_step_ts());
-
     const int dt_int = static_cast<int>(std::round(dt));
 
     const int nsplit = get_homme_nsplit_f90(dt_int);
@@ -499,12 +498,17 @@ void HommeDynamics::run_impl (const double dt)
 
     Kokkos::fence();
     homme_pre_process (dt);
-
+//#if 0
+    constexpr int icol = 11;
+    auto gid=m_cgll_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>()(icol);
+    auto t1s = start_of_step_ts(); // old version auto ts = timestamp();
+    auto timestep = t1s.get_num_steps();
+    if(gid == 28)std::cout<< "HommeDynamics::run_impl: timestep = " << timestep<< " nsplit:"<< nsplit<< std::endl;
     for (int subiter=0; subiter<nsplit; ++subiter) {
       Kokkos::fence();
       prim_run_f90(/* nsplit_iteration = */ subiter+1);
     }
-
+//#endif
     // Update nstep in the restart extra data, so it can be written to restart if needed.
     const auto& tl = c.get<Homme::TimeLevel>();
     auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"]);

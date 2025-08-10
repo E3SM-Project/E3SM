@@ -55,6 +55,9 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      W/m2,   grid_name);
   add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
   add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
+  const FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
+  //add_tracers_interstitial_aerosol();
+  add_field<Required>("so4_a1",           scalar3d_mid, kg/kg, grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_u",       scalar2d_layout, grid_name);
@@ -312,7 +315,25 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 // =========================================================================================
 void SurfaceCouplingExporter::run_impl (const double dt)
 {
+  auto t1s = start_of_step_ts(); // old version auto ts = timestamp();
+  auto timestep = t1s.get_num_steps();
+  
+  constexpr int icol = 11; //gid=28
+  constexpr int ib = 4; //gid=28
+  constexpr int kb = 63; //gid=28
+  
+
+  auto aa = get_field_in("so4_a1").get_view<const Real **>();
+  auto gid=m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>()(icol);
+  if( timestep >= 769 && timestep <= 771 && gid ==28)
+        std::cout  << std::setprecision(20)<<"SEtop_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<<aa(ib,kb+1)<<std::endl;
+
   do_export(dt);
+  if( timestep >= 769 && timestep <= 771 && gid ==28)
+        std::cout  << std::setprecision(20)<<"SEEnd_run_impl:timestep:"<<timestep
+        <<" wet_aero:"<<aa(ib,kb+1)<<std::endl;
+
 }
 // =========================================================================================
 void SurfaceCouplingExporter::do_export(const double dt, const bool called_during_initialization)

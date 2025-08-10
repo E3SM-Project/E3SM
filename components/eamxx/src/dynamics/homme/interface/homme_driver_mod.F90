@@ -249,6 +249,7 @@ contains
       call abortmp ("Error! No time step was set in Homme yet.\n")
     endif
 
+    !write(*,*) "BALLI-Running Homme with nsplit_iteration = ", nsplit_iteration
     call prim_run_subcycle(elem,hybrid,1,nelemd,tstep,.false.,tl,hvcoord,nsplit_iteration)
   end subroutine prim_run_f90
 

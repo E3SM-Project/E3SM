@@ -646,6 +646,8 @@ void compute_updraft_velocities(const Team &team, const WetAtmosphere &wet_atm,
     dry_atm.dz(i, k) =
         PF::calculate_dz(dry_atm.p_del(i, k), dry_atm.p_mid(i, k),
                          dry_atm.T_mid(i, k), wet_atm.qv(i, k));
+    //std::cout<< "BALLI:dz: " << dry_atm.dz(i, k) << std::endl;
+    dry_atm.dz(i, k) = 113;
     const auto rho =
         PF::calculate_density(dry_atm.p_del(i, k), dry_atm.dz(i, k));
     dry_atm.w_updraft(i, k) =
@@ -667,7 +669,13 @@ void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
-    const auto qv_ik = wet_atm.qv(i, k);
+    dry_atm.qv(i, k) = wet_atm.qv(i, k);
+    dry_atm.qc(i, k) = wet_atm.qc(i, k);
+    dry_atm.nc(i, k) = wet_atm.nc(i, k);
+    dry_atm.qi(i, k) = wet_atm.qi(i, k);
+    dry_atm.ni(i, k) = wet_atm.ni(i, k);
+
+    /*const auto qv_ik = wet_atm.qv(i, k);
     dry_atm.qv(i, k) =
         PF::calculate_drymmr_from_wetmmr(wet_atm.qv(i, k), qv_ik);
     dry_atm.qc(i, k) =
@@ -677,7 +685,7 @@ void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
     dry_atm.qi(i, k) =
         PF::calculate_drymmr_from_wetmmr(wet_atm.qi(i, k), qv_ik);
     dry_atm.ni(i, k) =
-        PF::calculate_drymmr_from_wetmmr(wet_atm.ni(i, k), qv_ik);
+        PF::calculate_drymmr_from_wetmmr(wet_atm.ni(i, k), qv_ik);*/
   });
 }
 
@@ -698,26 +706,38 @@ void compute_dry_mixing_ratios(const Team &team, const WetAtmosphere &wet_atm,
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
     const auto qv_ik = wet_atm.qv(i, k);
     for(int m = 0; m < num_aero_modes(); ++m) {
-      dry_aero.int_aero_nmr[m](i, k) = PF::calculate_drymmr_from_wetmmr(
+      dry_aero.int_aero_nmr[m](i, k) = wet_aero.int_aero_nmr[m](i, k);
+      if(dry_aero.cld_aero_nmr[m].data()) {
+        dry_aero.cld_aero_nmr[m](i, k) = wet_aero.cld_aero_nmr[m](i, k);
+      }
+
+      /*dry_aero.int_aero_nmr[m](i, k) = PF::calculate_drymmr_from_wetmmr(
           wet_aero.int_aero_nmr[m](i, k), qv_ik);
       if(dry_aero.cld_aero_nmr[m].data()) {
         dry_aero.cld_aero_nmr[m](i, k) = PF::calculate_drymmr_from_wetmmr(
             wet_aero.cld_aero_nmr[m](i, k), qv_ik);
-      }
+      }*/
       for(int a = 0; a < num_aero_species(); ++a) {
         if(dry_aero.int_aero_mmr[m][a].data()) {
+          dry_aero.int_aero_mmr[m][a](i, k) = wet_aero.int_aero_mmr[m][a](i, k);
+        }
+        if(dry_aero.cld_aero_mmr[m][a].data()) {
+          dry_aero.cld_aero_mmr[m][a](i, k) = wet_aero.cld_aero_mmr[m][a](i, k);
+        }
+        /*if(dry_aero.int_aero_mmr[m][a].data()) {
           dry_aero.int_aero_mmr[m][a](i, k) = PF::calculate_drymmr_from_wetmmr(
               wet_aero.int_aero_mmr[m][a](i, k), qv_ik);
         }
         if(dry_aero.cld_aero_mmr[m][a].data()) {
           dry_aero.cld_aero_mmr[m][a](i, k) = PF::calculate_drymmr_from_wetmmr(
               wet_aero.cld_aero_mmr[m][a](i, k), qv_ik);
-        }
+        }*/
       }
     }
     for(int g = 0; g < num_aero_gases(); ++g) {
-      dry_aero.gas_mmr[g](i, k) =
-          PF::calculate_drymmr_from_wetmmr(wet_aero.gas_mmr[g](i, k), qv_ik);
+           dry_aero.gas_mmr[g](i, k) = wet_aero.gas_mmr[g](i, k);
+      /*dry_aero.gas_mmr[g](i, k) =
+          PF::calculate_drymmr_from_wetmmr(wet_aero.gas_mmr[g](i, k), qv_ik);*/
     }
   });
 }
@@ -737,28 +757,37 @@ void compute_wet_mixing_ratios(const Team &team, const DryAtmosphere &dry_atm,
   constexpr int nlev = mam4::nlev;
   int i              = column_index;
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](const int k) {
-    const auto qv_ik = dry_atm.qv(i, k);
+    //const auto qv_ik = dry_atm.qv(i, k);
     for(int m = 0; m < num_aero_modes(); ++m) {
-      wet_aero.int_aero_nmr[m](i, k) = PF::calculate_wetmmr_from_drymmr(
+      wet_aero.int_aero_nmr[m](i, k) = dry_aero.int_aero_nmr[m](i, k);
+      if(wet_aero.cld_aero_nmr[m].data()) {
+        wet_aero.cld_aero_nmr[m](i, k) = dry_aero.cld_aero_nmr[m](i, k);
+      }
+      /*wet_aero.int_aero_nmr[m](i, k) = PF::calculate_wetmmr_from_drymmr(
           dry_aero.int_aero_nmr[m](i, k), qv_ik);
       if(wet_aero.cld_aero_nmr[m].data()) {
         wet_aero.cld_aero_nmr[m](i, k) = PF::calculate_wetmmr_from_drymmr(
             dry_aero.cld_aero_nmr[m](i, k), qv_ik);
-      }
+      }*/
       for(int a = 0; a < num_aero_species(); ++a) {
         if(wet_aero.int_aero_mmr[m][a].data()) {
+          wet_aero.int_aero_mmr[m][a](i, k) = dry_aero.int_aero_mmr[m][a](i, k);
+        }
+        if(wet_aero.cld_aero_mmr[m][a].data()) {
+          wet_aero.cld_aero_mmr[m][a](i, k) = dry_aero.cld_aero_mmr[m][a](i, k);
+        }
+       /*if(wet_aero.int_aero_mmr[m][a].data()) {
           wet_aero.int_aero_mmr[m][a](i, k) = PF::calculate_wetmmr_from_drymmr(
               dry_aero.int_aero_mmr[m][a](i, k), qv_ik);
         }
         if(wet_aero.cld_aero_mmr[m][a].data()) {
           wet_aero.cld_aero_mmr[m][a](i, k) = PF::calculate_wetmmr_from_drymmr(
               dry_aero.cld_aero_mmr[m][a](i, k), qv_ik);
-        }
+        }*/
       }
     }
     for(int g = 0; g < num_aero_gases(); ++g) {
-      wet_aero.gas_mmr[g](i, k) =
-          PF::calculate_wetmmr_from_drymmr(dry_aero.gas_mmr[g](i, k), qv_ik);
+      wet_aero.gas_mmr[g](i, k) = dry_aero.gas_mmr[g](i, k);
     }
   });
 }

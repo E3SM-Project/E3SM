@@ -506,6 +506,26 @@ void MAMAci::run_impl(const double dt) {
   Kokkos::fence();
 
   haero::ThreadTeamPolicy team_policy(ncol_, Kokkos::AUTO);
+  auto t1s = start_of_step_ts(); // old version auto ts = timestamp();
+  auto timestep = t1s.get_num_steps();
+  //constexpr int icol = 10;
+  //constexpr int kb = 54;
+
+  constexpr int icol = 11;
+  constexpr int ib = 4;
+  constexpr int kb = 63;
+  auto gid=grid_->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>()(icol);
+  //if (gid == 379)std::cout  << std::setprecision(20)<<"TS:"<<t1s.get_year()<<":"<<t1s.get_month()<<":"<<t1s.get_day()<<":"<<t1s.get_hours()<<":"<<t1s.get_minutes()<<":"<<t1s.get_seconds()<<": "<<timestep<<std::endl;
+  //if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==379)
+  if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==28)std::cout  << std::setprecision(20)<<"AC-TOP_run_impl:"
+        <<" wet_aero:"<< wet_aero_.cld_aero_nmr[0](ib,kb)<<":"<<wet_aero_.int_aero_nmr[0](ib,kb) <<std::endl;
+
+  if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==28){
+    for (int ll=0; ll<7; ++ll){
+    std::cout  << std::setprecision(20)<<"AC-wet_aero:ll:"<<ll<<" : "<<wet_aero_.int_aero_mmr[0][ll](ib,kb+1)<<std::endl;
+    }
+  }
+
 
   // FIXME: Temporary assignment of nc
   mam_coupling::copy_view_lev_slice(team_policy, wet_atm_.nc, nlev_,  // inputs
@@ -524,6 +544,17 @@ void MAMAci::run_impl(const double dt) {
   compute_subgrid_scale_velocities(team_policy, tke_, wsubmin_, top_lev_, nlev_,
                                    // output
                                    wsub_, wsubice_, wsig_);
+
+/*if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==28){
+  std::cout  << std::setprecision(20)<<"AC-WSUB:"
+        <<" w_sec_mid_:"<< w_sec_mid_(ib,kb-1)<<" : "<< w_sec_mid_(ib,kb)<<" : "<< w_sec_mid_(ib,kb+1)
+        <<" wsub_:"<< wsub_(ib,kb-1)<<" : "<< wsub_(ib,kb)<<" : "<< wsub_(ib,kb+1)
+        <<" tke_:"<< tke_(ib,kb-1)<<" : "<< tke_(ib,kb)<<" : "<< tke_(ib,kb+1)<<std::endl;
+
+        for (int i = 0; i < nlev_; ++i) {
+          //std::cout  << std::setprecision(20)<<"AC-WSEC:"<< i<<":"<<w_sec_mid_(ib, i) << std::endl;
+        }
+}*/
 
   // We need dry diameter for only aitken mode
   Kokkos::deep_copy(
@@ -548,6 +579,13 @@ void MAMAci::run_impl(const double dt) {
                               top_lev_, nlev_,
                               // output
                               cloud_frac_, cloud_frac_prev_);
+  //if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==379)
+  /*if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==28)
+  std::cout  << std::setprecision(20)<<"AC-CLD-frac:"
+        <<" cloud_frac_:"<< cloud_frac_(ib,kb)<<" : "<< liqcldf_(ib,kb)
+        <<" cloud_frac_prev_:"<< cloud_frac_prev_(ib,kb)<<" : "<< liqcldf_prev_(ib,kb)
+        <<" liqcldf_:"<<liqcldf_(ib,kb)
+        <<" liqcldf_prev_:"<<liqcldf_prev_(ib,kb)<<std::endl;*/
 
   mam_coupling::compute_recipical_pseudo_density(team_policy, dry_atm_.p_del,
                                                  nlev_,
@@ -559,6 +597,11 @@ void MAMAci::run_impl(const double dt) {
   //  Compute activated CCN number tendency (tendnd_) and updated
   //  cloud borne aerosols (stored in a work array) and interstitial
   //  aerosols tendencies
+  /*if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==28){
+    for (int ll=0; ll<7; ++ll){
+    std::cout  << std::setprecision(20)<<"AC-dry_aero:ll:"<<ll<<" : "<<dry_aero_.int_aero_mmr[0][ll](ib,kb+1)<<std::endl;
+    }
+  }*/
   call_function_dropmixnuc(
       team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
@@ -568,9 +611,9 @@ void MAMAci::run_impl(const double dt) {
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
       // work arrays
       raercol_cw_, raercol_, state_q_work_, nact_, mact_,
-      dropmixnuc_scratch_mem_);
+      dropmixnuc_scratch_mem_, t1s.get_month(), gid);
   Kokkos::fence();  // wait for ptend_q_ to be computed.
-
+//#if 0
   Kokkos::deep_copy(ccn_0p02_,
                     Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 0));
   Kokkos::deep_copy(ccn_0p05_,
@@ -598,6 +641,7 @@ void MAMAci::run_impl(const double dt) {
       hetfrz_deposition_nucleation_tend_,
       // work arrays
       diagnostic_scratch_);
+//#endif
 
   //---------------------------------------------------------------
   // Now update interstitial and cloud borne aerosols
@@ -617,6 +661,17 @@ void MAMAci::run_impl(const double dt) {
 
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
+
+  //if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==379)
+  if( t1s.get_month() == 2 && t1s.get_day() >= 2 && t1s.get_hours() >= 1 && gid ==28)
+  std::cout  << std::setprecision(20)<<"AC-END_run_impl:"
+        //<<" wet_aero:"<< wet_aero_.cld_aero_mmr[2][2](ib,kb) <<" : "<< wet_aero_.cld_aero_nmr[0](ib,kb)<<" : "<< wet_aero_.cld_aero_nmr[1](ib,kb)
+        <<" wet_aero:"<< wet_aero_.cld_aero_nmr[0](ib,kb)<<":"<<wet_aero_.int_aero_nmr[0](ib,kb)<<" qqcw_fld_work_:"<<qqcw_fld_work_[0](ib,kb)<< " : "<<dry_aero_.int_aero_mmr[0][0](ib,kb+1)<<std::endl;
+        
+        //<<" : "<< wet_aero_.cld_aero_nmr[3](ib,kb)<<" : "
+        //<<" qqcw_fld_work_:"<<qqcw_fld_work_[16](ib,kb)<<std::endl;
+
+
 }
 
 }  // namespace scream

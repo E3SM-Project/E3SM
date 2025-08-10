@@ -59,6 +59,11 @@ void compute_tke_at_interfaces(haero::ThreadTeamPolicy team_policy,
 
         CO::compute_interface_values_linear(team, nlev_, var_mid_col, dz_col,
                                             bc_top, bc_bot, w_sec_int_col);
+        /*for (int kk = 0; kk < nlev_; ++kk) {
+            w_sec_int_col(kk) =var_mid_col(kk);
+          }
+        w_sec_int_col(nlev_) = var_mid_col(nlev_ - 1);*/
+
         team.team_barrier();
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, nlev_ + 1),
@@ -186,8 +191,8 @@ void store_liquid_cloud_fraction(
         Kokkos::parallel_for(
             Kokkos::TeamVectorRange(team, top_lev, nlev), [&](int kk) {
               if((qc(icol, kk) + qi(icol, kk)) > qsmall) {
-                cloud_frac(icol, kk)      = liqcldf(icol, kk);
-                cloud_frac_prev(icol, kk) = liqcldf_prev(icol, kk);
+                cloud_frac(icol, kk)      = liqcldf(icol, kk); //0.1 //BALLI
+                cloud_frac_prev(icol, kk) = liqcldf_prev(icol, kk); //0.2 //BALLI
               } else {
                 cloud_frac(icol, kk)      = 0;
                 cloud_frac_prev(icol, kk) = 0;
@@ -228,7 +233,7 @@ void call_function_dropmixnuc(
     MAMAci::view_2d raercol_cw[mam4::ndrop::pver][2],
     MAMAci::view_2d raercol[mam4::ndrop::pver][2], MAMAci::view_3d state_q_work,
     MAMAci::view_3d nact, MAMAci::view_3d mact,
-    MAMAci::view_2d dropmixnuc_scratch_mem[MAMAci::dropmix_scratch_]) {
+    MAMAci::view_2d dropmixnuc_scratch_mem[MAMAci::dropmix_scratch_], const int timestep, const int gid) {
   using CO = scream::ColumnOps<DefaultDevice, Real>;
   // Extract atmosphere variables
   MAMAci::const_view_2d T_mid  = dry_atmosphere.T_mid;
@@ -384,6 +389,15 @@ void call_function_dropmixnuc(
               for(int icnst = istart; icnst < mam4::aero_model::pcnst;
                   ++icnst) {
                 state_q_work_loc(icol, klev, icnst) = state_q_at_lev_col[icnst];
+                
+                /*if( timestep == 2 && gid ==28 && icol==4 && klev == 63+1 && icnst ==15) {
+                  std::cout<<"state_q_work_loc:"<<state_q_work_loc(icol, klev, icnst)<<" at icol="<<icol
+                           <<" klev="<<klev<<" icnst="<<icnst<<std::endl;
+                  
+                }*/
+   
+
+
               }
 
               // get qqcw at a grid cell (col,lev)
@@ -433,7 +447,7 @@ void call_function_dropmixnuc(
             ekat::subview(eddy_diff_km, icol), ekat::subview(qncld, icol),
             ekat::subview(srcn, icol), ekat::subview(source, icol),
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
-            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
+            ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));//, timestep, icol, gid);
       });
 }
 
@@ -448,6 +462,8 @@ void update_cloud_borne_aerosols(
     ++ind_qqcw;
     for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
       if(dry_aero.cld_aero_mmr[m][a].data()) {
+        //if (m==2 && a ==2)std::cout  << std::setprecision(15)<<"qqcw_fld_work["<<ind_qqcw<<"] = "
+        //  <<qqcw_fld_work[ind_qqcw](0,0)<<" at m="<<m<<" a="<<a<<std::endl;
         Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], qqcw_fld_work[ind_qqcw]);
         ++ind_qqcw;
       }

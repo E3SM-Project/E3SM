@@ -554,6 +554,7 @@ void RRTMGPRadiation::initialize_impl(const RunType run_type) {
 // =========================================================================================
 
 void RRTMGPRadiation::run_impl (const double dt) {
+#if 0
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;
@@ -1232,6 +1233,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   }
 
   m_force_run_on_next_step = false;
+#endif
 }
 // =========================================================================================
 

@@ -299,6 +299,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   calsize_data_.initialize();
 }
 void MAMOptics::run_impl(const double dt) {
+#if 0
   constexpr Real zero = 0.0;
   constexpr Real one  = 1.0;
 
@@ -448,6 +449,7 @@ void MAMOptics::run_impl(const double dt) {
                           kk) = tau_sw(icol, iswband, kk + 1);
       });
   Kokkos::fence();
+#endif
 }
 
 void MAMOptics::finalize_impl() {}

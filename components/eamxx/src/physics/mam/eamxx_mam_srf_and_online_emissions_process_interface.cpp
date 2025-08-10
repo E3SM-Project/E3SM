@@ -358,6 +358,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 //  RUN_IMPL
 // ================================================================
 void MAMSrfOnlineEmiss::run_impl(const double dt) {
+#if 0
   const auto scan_policy = ekat::ExeSpaceUtils<
       KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -468,6 +469,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
         });
   }  // for loop for species
   Kokkos::fence();
+#endif
 }  // run_impl ends
 // =============================================================================
 }  // namespace scream
