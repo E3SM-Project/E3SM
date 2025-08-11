@@ -67,7 +67,7 @@ VapWaterPath,atmosphere_mass_content_of_water_vapor,total water vapor path
 AerosolOpticalDepth550nm,atmosphere_optical_thickness_due_to_ambient_aerosol_particles,
 Exner,dimensionless_exner_function,Exner's function
 z_mid,geopotential_height,height at layer midpoint
-geopotential_mid,geopotential_height,geopotential height at layer midpoint
+geopotential_mid,geopotential,geopotential at layer midpoint
 RelativeHumidity,relative_humidity,relative humidity
 surface_upward_latent_heat_flux,surface_upward_latent_heat_flux,upward latent heat flux at the surface
 LongwaveCloudForcing,toa_longwave_cloud_radiative_effect,longwave cloud forcing
