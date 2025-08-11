@@ -4260,6 +4260,13 @@
         <command name="load">ats/tpls-0.98.9+master/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</command>
       </modules>
 
+      <modules compiler="gnu" mpilib="mpi-serial">
+        <command name="load">DefApps</command>
+        <command name="load">gcc/12.2.0</command>
+        <command name="unload">openmpi</command>
+        <command name="load">netlib-lapack/3.11.0</command>
+      </modules>
+
       <!--
       <modules compiler="gnu" mpilib="mpi-serial">
         <command name="load">nco</comand>
@@ -4292,6 +4299,14 @@
       <env name="HDF5_ROOT">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</env>
       <env name="NETCDF_C_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</env>
       <env name="NETCDF_FORTRAN_PATH">/ccsopen/proj/cli185/ats-dev/amanzi-tpls/install/tpls-0.98.9/cades-baseline/openblas-0.3.23-openmpi-4.0.4-gcc-12.2.0/opt</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpi-serial">
+      <env name="PATH">/ccsopen/proj/cli185/netcdf-hdf5_mpi-serial/bin:/ccsopen/home/zdr/opt/perl/bin:$ENV{PATH}/</env>
+      <env name="HDF5_ROOT">/ccsopen/proj/cli185/netcdf-hdf5_mpi-serial/</env>
+      <env name="NETCDF_C_PATH">/ccsopen/proj/cli185/netcdf-hdf5_mpi-serial/</env>
+      <env name="NETCDF_FORTRAN_PATH">/ccsopen/proj/cli185/netcdf-hdf5_mpi-serial/</env>
+      <env name="PNETCDF_PATH"/>
+      <env name="BLASLAPACK_LIBDIR">$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib64</env>
     </environment_variables>
 
   </machine>
