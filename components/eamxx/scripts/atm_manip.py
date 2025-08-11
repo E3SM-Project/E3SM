@@ -2,7 +2,7 @@
 Retrieve nodes from EAMxx XML config file.
 """
 
-import sys, os, re
+import sys, os, re, pathlib
 
 # Used for doctests
 import xml.etree.ElementTree as ET # pylint: disable=unused-import
@@ -20,12 +20,15 @@ ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
 def apply_atm_procs_list_changes_from_buffer(case, xml):
 ###############################################################################
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
+    any_change = False
     if atmchg_buffer:
         atmchgs = unbuffer_changes(case)
 
         for chg in atmchgs:
             if "atm_procs_list" in chg:
                 atm_config_chg_impl(xml, chg)
+                any_change = True
+    return any_change
 
 ###############################################################################
 def apply_non_atm_procs_list_changes_from_buffer(case, xml):
@@ -219,34 +222,23 @@ def modify_ap_list(xml_root, group, ap_list_str, append_this):
     expect (len(ap_list)==len(set(ap_list)),
             "Input list of atm procs contains repetitions")
 
-    # If we're here b/c of a manual call of atmchange from command line, this will be None,
-    # since we don't have this node in the genereated XML file. But in that case, we don't
-    # have to actually add the new nodes, we can simply just modify the atm_procs_list entry
-    # If, however, we're calling this from buildnml, then what we are passed in is the XML
-    # tree from namelists_defaults_scream.xml, so this section *will* be present. And we
-    # need to add the new atm procs group as children, so that buildnml knows how to build
-    # them
-    ap_defaults = find_node(xml_root,"atmosphere_processes_defaults")
-    if ap_defaults is not None:
-
-        # Figure out which aps in the list are new groups and which ones already
-        # exist in the defaults
-        add_aps = [n for n in ap_list if n not in curr_apl.text.split(',')]
-        new_aps = [n for n in add_aps if find_node(ap_defaults,n) is None]
-
-        for ap in new_aps:
-            expect (ap[0]=="_" and ap[-1]=="_" and len(ap)>2,
-                    f"Unrecognized atm proc name '{ap}'. To declare a new group, prepend and append '_' to the name.")
-            group = gen_atm_proc_group("", ap_defaults)
-            group.tag = ap
-
-            ap_defaults.append(group)
+    # To avoid buffering a change that has an invalid atm proc name,
+    # we load the defaults here, and check that the added procs exist
+    defaults_xml = pathlib.Path(__file__).parent.parent.resolve() / "cime_config/namelist_defaults_eamxx.xml"
+    with open(defaults_xml, "r") as fd:
+        defaults = ET.parse(fd).getroot()
+        procs_defaults = get_child(defaults,"atmosphere_processes_defaults")
+        for ap in ap_list:
+            expect (find_node(procs_defaults,ap) is not None,
+                    f"Cannot modify ap list for group '{group.tag}'.\n"
+                    f"Process '{ap}' not found in {defaults_xml}")
 
     # Update the 'atm_procs_list' in this node
     if append_this:
         curr_apl.text = ','.join(curr_apl.text.split(",")+ap_list)
     else:
         curr_apl.text = ','.join(ap_list)
+
     return True
 
 ###############################################################################

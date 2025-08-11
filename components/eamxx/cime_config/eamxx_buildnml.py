@@ -14,7 +14,7 @@ import xml.dom.minidom as md
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 # SCREAM imports
-from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
+from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
@@ -713,35 +713,43 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
-    # 1. Evaluate all selectors
     try:
-        evaluate_selectors(xml, case, selectors)
-
-        # 2. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that may alter
-        #    which atm processes are used
-        apply_atm_procs_list_changes_from_buffer (case,xml)
-
-        # 3. Resolve all inheritances
+        # In the WHOLE xml, resolve inheritance, evaluate selectors, and expand CIME vars
         resolve_all_inheritances(xml)
-
-        # 4. Expand any CIME var that appears inside XML nodes text
+        evaluate_selectors(xml, case, selectors)
         expand_cime_vars(xml,case)
 
-        # 5. Grab the atmosphere_processes_defaults node, with all the procs defaults
+        # Generate default atm process list for this COMPSET (i.e., NO atmchanges considered yet)
         atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
+        eamxx_procs_list = get_child(get_child(atm_procs_defaults,"eamxx"),"atm_procs_list")
+        eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+        eamxx_group.tag = "eamxx"
 
-        # 6. Get eamxx atm procs list
-        eamxx_group = get_child(atm_procs_defaults,"eamxx",remove=True)
-        atm_procs_list = get_child(eamxx_group,"atm_procs_list",remove=True)
+        # Apply atm changes that modify the list of processes
+        any_change = apply_atm_procs_list_changes_from_buffer (case,eamxx_group)
 
-        # 7. Form the nested list of atm procs needed, append to atmosphere_driver section
-        atm_procs = gen_atm_proc_group(atm_procs_list.text, atm_procs_defaults)
-        atm_procs.tag = "eamxx"
-        xml.append(atm_procs)
+        if any_change:
+            # Re-generate the process group. To avoid regenerating the same atm proc group,
+            # we MUST replace matching nodes in atm_procs_defaults with what is in the
+            # current atm_procs tree (as some atm procs lists have changed)
+            for default in atm_procs_defaults:
+                actual = find_node(eamxx_group,default.tag)
+                if actual is not None and has_child(actual,'atm_procs_list'):
+                    # Update the atm_procs_list of the default with the one from actual
+                    default_apl = get_child(default,'atm_procs_list')
+                    actual_apl = get_child(actual,'atm_procs_list')
+                    default_apl.text = actual_apl.text
 
-        # 8. Apply all changes in the SCREAM_ATMCHANGE_BUFFER that do not alter
-        #    which atm processes are used
+            eamxx_procs_list = get_child(eamxx_group,"atm_procs_list")
+            eamxx_group = gen_atm_proc_group(eamxx_procs_list.text, atm_procs_defaults)
+            eamxx_group.tag = "eamxx"
+
+        # Add atm procs node to xml
+        xml.append(eamxx_group)
+
+        # Apply remaining atm changes
         apply_non_atm_procs_list_changes_from_buffer (case,xml)
+
     except BaseException as e:
         if filepath is not None:
             dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
