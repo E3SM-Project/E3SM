@@ -476,7 +476,7 @@ TEST_CASE("surface-coupling", "") {
   // This requires us to add a sublist to the parsed AD params yaml list.
   std::uniform_real_distribution<Real> pdf_real_constant_data(0.0,1.0);
 
-  auto& ap_params     = ad_params.sublist("atmosphere_processes");
+  auto& ap_params     = ad_params.sublist("eamxx");
   auto& sc_exp_params = ap_params.sublist("surface_coupling_exporter");
   // Set up forcing to a constant value
   const Real Faxa_swndf_const = pdf_real_constant_data(engine);

@@ -3,7 +3,7 @@
 driver_options:
   atmosphere_dag_verbosity_level: 5
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [rrtmgp]
   rrtmgp:
     column_chunk_size: 123
