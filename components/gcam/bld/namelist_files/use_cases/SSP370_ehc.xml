@@ -1,9 +1,8 @@
 <?xml version="1.0"?>
 
-
 <namelist_defaults>
 
-<case_name>E3SM_GCAM_SSP245</case_name>
+<case_name>E3SM_GCAM_SSP370</case_name>
 
 <crop_addtreeonly>0</crop_addtreeonly>
 <crop_setherbfracrem>0.2</crop_setherbfracrem>
@@ -12,6 +11,6 @@
 <pasture_setherbfracrem>1.0</pasture_setherbfracrem>
 <pasture_setavailtreefracrem>0.0</pasture_setavailtreefracrem>
 
-<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ssp245_in_E3SM.xml</gcam_config>
+<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_ssp3_in_E3SM.xml</gcam_config>
 
 </namelist_defaults>

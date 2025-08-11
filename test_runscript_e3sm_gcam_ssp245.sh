@@ -15,7 +15,6 @@ readonly MACHINE=chrysalis
 readonly PROJECT="e3sm"
 
 # Simulation
-# readonly MYDATE=$(date '+%Y%m%d')
 readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set
 #export COMPSET=SSP245_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 export COMPSET="SSP245_ZATM_BGC"
@@ -55,7 +54,7 @@ export finidat="${RUN_REFDIR}/run/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc"
 
 # Set paths
 readonly CODE_ROOT="${HOME}/code/E3SM_GCAM/E3SM"
-readonly CASE_ROOT="/lcrc/group/e3sm/ac.sfeng1/scratch/${CASE_NAME}"
+readonly CASE_ROOT="/lcrc/globalscratch/ac.sfeng1/${CASE_NAME}"
 
 # Sub-directories
 readonly CASE_BUILD_DIR=${CASE_ROOT}/build
@@ -127,8 +126,8 @@ do_create_newcase=true
 do_modify_pe_layout=true
 do_case_setup=true
 do_case_build=true
-do_case_submit=true
-
+# do_case_submit=true
+do_case_submit=false
 # --- Now, do the work ---
 
 # Make directories created by this script world-readable
@@ -489,15 +488,11 @@ case_setup() {
     ln -sf ${glm2iacdir}/$iesm_dyn_source ${CASE_RUN_DIR}
     ln -sf ${glm2iacdir}/surfdata_360x720_potveg.nc ${CASE_RUN_DIR}
     ln -sf ${glm2iacdir}/mksurf_landuse_iESM_720x360.nc ${CASE_RUN_DIR}
-    ln -sf ${glm2iacdir}/iac_in_${MACHINE} ${CASE_RUN_DIR}/iac_in
 
     #### remember to re-do these three copies before each run
     cp ${CASE_RUN_DIR}/iESM_Init_CropPast.nc ${CASE_RUN_DIR}/iESM_Dyn_CropPast.nc
     cp ${CASE_RUN_DIR}/surfdata_360x720_mcrop_init.nc  ${CASE_RUN_DIR}/surfdata_360x720_mcrop_dyn.nc
     cp ${CASE_RUN_DIR}/${iesm_dyn_source}  ${CASE_RUN_DIR}/surfdata_iESM_dyn.nc
-
-    # this stages the restart file
-    #cp ${finidat} $rundir
 
     popd
 }
@@ -605,24 +600,7 @@ runtime_options() {
         echo '$RUN_REFDATE = '${START_DATE}
 
         ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.i.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.eam.rs.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
         ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.elm.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.elm.rh0.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.cpl.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.docn.rs1.${RUN_REFDATE}-00000.bin ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.mosart.r.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.mosart.rh0.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # ln -sf  ${RUN_REFDIR}/${RUN_REFCASE}.mosart.rh1.${RUN_REFDATE}-00000.nc ${CASE_RUN_DIR}/.
-        # cp  ${RUN_REFDIR}/${RUN_REFCASE}.mpassi.rst.${RUN_REFDATE}_00000.nc ${CASE_RUN_DIR}/.
-        # ncrename -v xtime,xtime.orig ${CASE_RUN_DIR}/${RUN_REFCASE}.mpassi.rst.${RUN_REFDATE}_00000.nc
-
-        # cp ${RUN_REFDIR}/rpointer.atm ${CASE_RUN_DIR}/
-        # cp ${RUN_REFDIR}/rpointer.lnd ${CASE_RUN_DIR}/
-        # cp ${RUN_REFDIR}/rpointer.ocn ${CASE_RUN_DIR}/
-        # cp ${RUN_REFDIR}/rpointer.ice ${CASE_RUN_DIR}/
-        # cp ${RUN_REFDIR}/rpointer.drv ${CASE_RUN_DIR}/
-        # cp ${RUN_REFDIR}/rpointer.rof ${CASE_RUN_DIR}/
 
         else
         echo 'ERROR: $MODEL_START_TYPE = '${MODEL_START_TYPE}' is unrecognized. Exiting.'

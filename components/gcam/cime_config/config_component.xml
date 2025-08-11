@@ -52,9 +52,6 @@
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>
-    <values>
-      <value compset="_GCAM"> crop_addtreeonly=0 crop_setherbfracrem=1.0 crop_setavailtreefracrem=0.0 pasture_addtreeonly=0 pasture_setherbfracrem=1.0 pasture_setavailtreefracrem=0.0 </value> 
-    </values>
     <group>run_component_ehc</group>
     <file>env_run.xml</file>
     <desc>EHC specific namelist settings for -namelist option Provides
