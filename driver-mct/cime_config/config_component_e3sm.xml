@@ -749,6 +749,7 @@
       <value compset="^2000.+AV1C-H01C"				>368.865</value>
       <value compset="^1850.+CMIP6"                             >284.317</value>
       <value compset="^1850.+CMIP6.+4xCO2"			>1137.268</value>
+      <value compset="^1850.+CMIP6.+p25xCO2"		>71.07925</value>
       <value compset="^1950"                                    >312.821</value>
       <value compset="^1950.+CMIP6"                             >312.821</value>
       <value compset="^2010"                                    >388.717</value>
