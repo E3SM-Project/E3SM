@@ -37,7 +37,7 @@ initial_conditions:
   eddy_diff_mom: 0.02
   sgs_buoy_flux: -0.001
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [sc_import,homme,physics]
   schedule_type: sequential
   homme:

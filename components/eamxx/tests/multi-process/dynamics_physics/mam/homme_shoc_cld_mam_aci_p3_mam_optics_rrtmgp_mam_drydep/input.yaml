@@ -41,7 +41,7 @@ initial_conditions:
   dgnumwet: 0.41417721820867320E-007
   wetdens: 0.15100083211582764E+004
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:

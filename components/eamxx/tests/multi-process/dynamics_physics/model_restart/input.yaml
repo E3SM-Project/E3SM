@@ -25,7 +25,7 @@ initial_conditions:
   aero_tau_sw: 0.0
   aero_tau_lw: 0.0
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:
