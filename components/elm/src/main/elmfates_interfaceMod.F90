@@ -981,7 +981,8 @@ contains
          ! Allocate map from FATES patchno index to HLM patch index by site
          allocate(this%f2hmap(nc)%hlm_patch_index(fates_maxPatchesperSite,s))
 
-         call this%f2hmap(nc)%SetPatchIndex()
+         ! Populate the fates to hlm patch map
+         call this%f2hmap(nc)%SetPatchIndex(bounds_clump)
 
          ! Set the number of FATES sites
          this%fates(nc)%nsites = s
@@ -4083,6 +4084,8 @@ end subroutine wrap_update_hifrq_hist
    integer :: l    ! HLM landunit index
    integer :: ifp  ! FATES patch index (patchno)
 
+   ! Note while each HLM clump can have multiple sites, the site indices are not global, 
+   ! i.e. the first site on each clump will have an index of 1
    s = 0
    do l = bounds_clump%begl,bounds_clump%endl
       if (lun_pp%itype(l) == istsoil) then
