@@ -39,6 +39,8 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
   const uview_2d<Real>& wrk2,
   const uview_2d<Real>& tau)
 {
+  static const auto ubmc2mn = GWC::ubmc2mn;
+
   // Loop from bottom to top to get stress profiles.
   Kokkos::parallel_for(
     Kokkos::TeamThreadRange(team, init.ktop, src_level+1), [&] (const int k) {
@@ -46,7 +48,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
     // Determine the absolute value of the saturation stress.
     // Define critical levels where the sign of (u-c) changes between interfaces.
     Kokkos::parallel_for(
-      Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
+      Kokkos::ThreadVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
 
       const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
       const Real ubmc = ubi(k) - c(pl_idx);
@@ -68,7 +70,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
       }
 
       if (k <= init.nbot_molec || !init.do_molec_diff) {
-        const Real ubmc2 = std::max(bfb_square(ubmc), GWC::ubmc2mn);
+        const Real ubmc2 = ekat::impl::max(bfb_square(ubmc), ubmc2mn);
         const Real at = ni(k) / (2.0 * init.kwv * ubmc2);
         const Real bt = init.alpha(k);
         const Real ct = bfb_square(ni(k)) / ubmc2;
@@ -94,9 +96,9 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
       Kokkos::parallel_reduce(
         Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l, Real& lmax) {
         const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        const Real dscal = std::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
-        lmax = std::max(lmax, dscal * dsat(k, pl_idx));
-        }, Kokkos::Max<Real>(d));
+        const Real dscal = ekat::impl::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
+        lmax = ekat::impl::max(lmax, dscal * dsat(k, pl_idx));
+      }, Kokkos::Max<Real>(d));
     }
 
     team.team_barrier();
@@ -121,20 +123,18 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
           taudmp = 0.0;
         }
         if (taudmp <= GWC::taumin) taudmp = 0.0;
-        tau(pl_idx, k) = std::min(taudmp, tausat(k, pl_idx));
+        tau(pl_idx, k) = ekat::impl::min(taudmp, tausat(k, pl_idx));
       });
     }
     else {
       Kokkos::parallel_for(
         Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l) {
         int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        tau(pl_idx, k) = std::min(tau(pl_idx, k+1), tausat(k, pl_idx));
+        tau(pl_idx, k) = ekat::impl::min(tau(pl_idx, k+1), tausat(k, pl_idx));
       });
     }
     team.team_barrier();
   }
-
-  team.team_barrier();
 }
 
 } // namespace gw
