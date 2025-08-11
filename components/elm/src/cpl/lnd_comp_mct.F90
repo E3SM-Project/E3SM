@@ -547,11 +547,10 @@ contains
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
     
 #ifdef HAVE_MOAB
-    ! first call moab import 
-#ifdef MOABCOMP
 ! calling MOAB's import last means this is what the model will use.
     call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 
+#ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
