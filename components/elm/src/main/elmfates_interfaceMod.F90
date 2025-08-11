@@ -308,7 +308,7 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapUpdateFatesRmean
       procedure, public  :: WrapGlobalSeedDispersal
       procedure, public  :: WrapUpdateFatesSeedInOut
-      procedure, public  :: WrapTransferBC
+      procedure, public  :: WrapTransferBCIn
 
    end type hlm_fates_interface_type
    
@@ -1226,7 +1226,7 @@ contains
       end if
       
       ! Transfer decomposition fluxes to the FATES patch data structure
-      call this%WrapTransferBC(nc)
+      call this%WrapTransferBCIn(nc)
 
       do s=1,this%fates(nc)%nsites
 
@@ -3757,7 +3757,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
 
- subroutine WrapTransferBC(this, nc)
+ subroutine WrapTransferBCIn(this, nc)
 
    ! !DESCRIPTION:
    ! ---------------------------------------------------------------------------------
@@ -3780,7 +3780,7 @@ end subroutine wrap_update_hifrq_hist
       end do
    end do
 
- end subroutine WrapTransferBC
+ end subroutine WrapTransferBCIn
 
  ! ======================================================================================
 
