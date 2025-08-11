@@ -83,9 +83,8 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
   team.team_barrier();
 
-  // This loop is serial, so it may as well only be performed by one thread.
-  // tau(k) depends on tau(k+1), which eliminates parallelism in the vertical
-  // levels.
+  // The outer loop is serial because tau(k) depends on tau(k+1), which eliminates
+  // parallelism in the vertical levels. We can still parallelize over pgwvs though.
   for (Int k = src_level; k >= init.ktop; --k) {
     // Determine the diffusivity for each column.
     Real d = GWC::dback;
