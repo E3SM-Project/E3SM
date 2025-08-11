@@ -4079,7 +4079,7 @@ end subroutine wrap_update_hifrq_hist
    type(f2hmap_type), intent(inout) :: this
    type(bounds_type), intent(in)    :: bounds_clump
 
-   integer :: s    ! FATES side index
+   integer :: s    ! FATES site index
    integer :: l    ! HLM landunit index
    integer :: ifp  ! FATES patch index (patchno)
 
