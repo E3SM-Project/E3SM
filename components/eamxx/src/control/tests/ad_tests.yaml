@@ -9,7 +9,7 @@ initial_conditions:
   V: [2.0, 3.0]
   Z: "A"
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [dummy1, dummy2, dummy3]
   schedule_type: sequential
 

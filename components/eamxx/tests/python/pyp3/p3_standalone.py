@@ -40,7 +40,7 @@ def main ():
     nlevs = 72
     pyeamxx.create_grids_manager(ncols,nlevs,str(ic_file))
 
-    p3 = pyeamxx.AtmProc(yaml_input['atmosphere_processes']['p3'],'p3')
+    p3 = pyeamxx.AtmProc(yaml_input['eamxx']['p3'],'p3')
     params = p3.get_params()
     old = params.get_dbl('max_total_ni')
     print (f"max_total_ni: {params.get_dbl('max_total_ni')}")

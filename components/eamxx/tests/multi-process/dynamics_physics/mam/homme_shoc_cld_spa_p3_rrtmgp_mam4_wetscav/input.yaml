@@ -32,7 +32,7 @@ initial_conditions:
   wetdep_dust_bin3: 1e-5 # wet deposition of dust (bin3) [kg/m2/s]
   wetdep_dust_bin4: 1e-5 # wet deposition of dust (bin4) [kg/m2/s]
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:

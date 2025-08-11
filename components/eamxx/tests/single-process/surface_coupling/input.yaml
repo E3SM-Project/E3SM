@@ -6,7 +6,7 @@ driver_options:
 time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [surface_coupling_importer,surface_coupling_exporter]
   schedule_type: sequential
 

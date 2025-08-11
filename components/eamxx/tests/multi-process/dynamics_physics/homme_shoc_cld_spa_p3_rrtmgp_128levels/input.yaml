@@ -19,7 +19,7 @@ initial_conditions:
   hetfrz_contact_nucleation_tend: 0.1
   hetfrz_deposition_nucleation_tend: 0.1
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   compute_tendencies: [T_mid, qv]

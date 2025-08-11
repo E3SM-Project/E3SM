@@ -27,7 +27,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
   const auto  nsteps = ts.get<int>("number_of_steps");
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
-  const auto  ml     = ad_params.sublist("atmosphere_processes").sublist("MLCorrection");
+  const auto  ml     = ad_params.sublist("eamxx").sublist("MLCorrection");
   const auto  ML_model_tq_path = ml.get<std::string>("ml_model_path_tq");
   const auto  ML_model_uv_path = ml.get<std::string>("ml_model_path_uv");
 
