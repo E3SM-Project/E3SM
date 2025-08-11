@@ -310,6 +310,7 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapGlobalSeedDispersal
       procedure, public  :: WrapUpdateFatesSeedInOut
       procedure, public  :: WrapTransferBCIn
+      procedure, public  :: WrapTransferBCOut
 
    end type hlm_fates_interface_type
    
@@ -3778,6 +3779,33 @@ end subroutine wrap_update_hifrq_hist
    end do
 
  end subroutine WrapTransferBCIn
+
+! ======================================================================================
+
+ subroutine WrapTransferBCOut(this, nc)
+
+   ! !DESCRIPTION:
+   ! ---------------------------------------------------------------------------------
+   ! This call passes the HLM inputs to FATES patch-level boundary conditions
+   ! ---------------------------------------------------------------------------------
+
+   ! !USES:
+   !
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer, intent(in) :: nc 
+   
+   ! !LOCAL:
+   integer :: s, ivar  ! indices and loop counters
+   
+   do s = 1, this%fates(nc)%nsites
+      do ivar = 1,this%num_hlmvar
+         call this%fates(nc)%sites(s)%TransferBCOut(this%api_str(ivar), &
+                                                   this%hlm_var_2darray(ivar)%hlm_var)
+      end do
+   end do
+
+ end subroutine WrapTransferBCOut
 
  ! ======================================================================================
 
