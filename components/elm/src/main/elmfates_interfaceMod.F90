@@ -4096,6 +4096,6 @@ end subroutine wrap_update_hifrq_hist
       end if
     end do
 
- end function SetColumnIndex
+ end subroutine SetPatchIndex
 
 end module ELMFatesInterfaceMod
