@@ -226,9 +226,9 @@ module ELMFatesInterfaceMod
       contains
 
         procedure, public :: SetPatchIndex
-        procedure, public :: GetPatchIndex
+      !   procedure, public :: GetPatchIndex
         procedure, public :: GetColumnIndex
-        procedure, public :: GetLandunitIndex
+      !   procedure, public :: GetLandunitIndex
 
    end type f2hmap_type
    
@@ -240,7 +240,7 @@ module ELMFatesInterfaceMod
 
       ! This is the array that contains the common API vocabulary
       ! between FATES and the host land model.
-      character(len=:) :: api_str
+      character(len=24) :: api_str
       
       ! This is the number of HLM variables that are being passed to FATES
       integer :: num_hlmvar
@@ -3554,7 +3554,6 @@ end subroutine wrap_update_hifrq_hist
 
    ! !LOCAL:
    integer :: ivar                               ! array index
-   integer, parameter :: max_string_length = 24  ! maximum length of common vocab string
    integer, parameter :: num_bc_in = 2           ! number of HLM variables
    integer, parameter :: num_bc_out = 3          ! number of HLM variables
    
