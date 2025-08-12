@@ -4708,7 +4708,7 @@ module li_calving
 
          ! update count of cells added to mask globally
          call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
-         call mpas_log_write("  Added $i new cells to global mask", intArgs=(/newMaskCountGlobal/))
+         !call mpas_log_write("  Added $i new cells to global mask", intArgs=(/newMaskCountGlobal/))
 
          if (globalLoopCount>200) then
             call mpas_log_write("Too many global loops!", MPAS_LOG_ERR)
@@ -4716,7 +4716,7 @@ module li_calving
       end do ! global loop
       deallocate(seedMaskOld)
 
-      call mpas_log_write("Flood fill complete.")
+      call mpas_log_write("Flood fill complete in $i iterations", intArgs=(/newMaskCountGlobal/))
 
    end subroutine li_flood_fill
 
