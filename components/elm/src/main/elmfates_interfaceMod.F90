@@ -238,6 +238,13 @@ module ELMFatesInterfaceMod
       ! data associated with the common API vocabulary string
       real(r8), pointer :: hlm_var(:,:)
 
+      ! This is the array that contains the common API vocabulary
+      ! between FATES and the host land model.
+      character(len=:) :: api_str
+      
+      ! This is the number of HLM variables that are being passed to FATES
+      integer :: num_hlmvar
+
    end type hlm_fates_api_var_type
 
 
@@ -266,15 +273,10 @@ module ELMFatesInterfaceMod
       ! Type structure that holds allocatable arrays for mpi-based seed dispersal
       type(dispersal_type) :: fates_seed
       
-      ! This is the array that contains the common API vocabulary
-      ! between FATES and the host land model.
-      character(len=:), allocatable :: api_str(:)
-      
-      ! This is the array of pointers to the host land model data
-      type(hlm_fates_api_var_type), allocatable :: hlm_var_2darray(:)
-      
-      ! This is the number of HLM variables that are being passed to FATES
-      integer :: num_hlmvar
+      ! This is the array of pointer to the host land model data and its associated
+      ! common variable name
+      type(hlm_fates_api_var_type), allocatable :: bc_in(:)
+      type(hlm_fates_api_var_type), allocatable :: bc_out(:)
       
    contains
 
@@ -3539,35 +3541,57 @@ end subroutine wrap_update_hifrq_hist
    class(hlm_fates_interface_type), intent(inout) :: this
 
    ! !LOCAL:
-   integer :: ivar = 0                           ! array index
+   integer :: ivar                               ! array index
    integer, parameter :: max_string_length = 24  ! maximum length of common vocab string
-   integer, parameter :: num_hlmvar = 2          ! number of HLM variables
+   integer, parameter :: num_bc_in = 2           ! number of HLM variables
+   integer, parameter :: num_bc_out = 3          ! number of HLM variables
    
    ! Allocate the arrays
-   allocate(character(len=max_string_length) :: this%api_str(num_hlmvar))
-   allocate(this%hlm_var_2darray(num_hlmvar))
+   allocate(this%bc_in(num_bc_in))
+   allocate(this%bc_out(num_bc_out))
    
    ! Increment through the arrays and assign HLM variables to common API vocab
-   ! 1D arrays
+   ivar = 0
+
+   ! ! HLM -> FATES (bc_in)
    ! 2D arrays
    ivar = ivar + 1
-   this%api_str(ivar) = 'decomp_frac_moisture'
-   this%hlm_var_2darray(ivar)%hlm_var => col_cf%w_scalar
+   this%bc_in(ivar)%api_str = 'decomp_frac_moisture'
+   this%bc_in(ivar)%hlm_var => col_cf%w_scalar(:,:)
 
    ivar = ivar + 1
-   this%api_str(ivar) = 'decomp_frac_temperature'
-   this%hlm_var_2darray(ivar)%hlm_var => col_cf%t_scalar
+   this%bc_in(ivar)%api_str = 'decomp_frac_temperature'
+   this%bc_in(ivar)%hlm_var => col_cf%t_scalar(:,:)
+   
+   this%bc_in%num_hlmvar = ivar
+
+   ! ! FATES -> HLM (bc_out)
+   ivar = 0
+
+   ! 2D arrays
+   ivar = ivar + 1
+   this%bc_out(ivar)%api_str = 'decomp_cpools_met'
+   this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_met_lit)
+
+   ivar = ivar + 1
+   this%bc_out(ivar)%api_str = 'decomp_cpools_cel'
+   this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_cel_lit)
+
+   ivar = ivar + 1
+   this%bc_out(ivar)%api_str = 'decomp_cpools_lig'
+   this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_lig_lit)
+   
+   this%bc_out%num_hlmvar = ivar
    
    ! 3D arrays
    
+   ! TODO: is this really helpful since we'd hit out of bounds issues prior to this?
    ! Check that the number of variables set matches
    ! specifically in the case in which the number set
    ! is lower than the allocated amount
-   if (ivar /= num_hlmvar) then
+   if (this%bc_out%num_hlmvar /= num_bc_out .or. this%bc_in%num_hlmvar /= num_bc_in) then
       write(iulog,*) 'FATES API: Number of API variables does not match the expected array size'
       call endrun(msg=errMsg(sourcefile, __LINE__))
-   else
-      this%num_hlmvar = num_hlmvar
    end if
 
  end subroutine InitAndSetAPIAssociation
@@ -3772,9 +3796,9 @@ end subroutine wrap_update_hifrq_hist
    integer :: s, ivar  ! indices and loop counters
    
    do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%num_hlmvar
-         call this%fates(nc)%sites(s)%TransferBCIn(this%api_str(ivar), &
-                                                   this%hlm_var_2darray(ivar)%hlm_var)
+      do ivar = 1,this%bc_in%num_hlmvar
+         call this%fates(nc)%sites(s)%TransferBCIn(this%bc_in(ivar)%api_str, &
+                                                   this%bc_in(ivar)%hlm_var)
       end do
    end do
 
@@ -3799,9 +3823,9 @@ end subroutine wrap_update_hifrq_hist
    integer :: s, ivar  ! indices and loop counters
    
    do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%num_hlmvar
-         call this%fates(nc)%sites(s)%TransferBCOut(this%api_str(ivar), &
-                                                   this%hlm_var_2darray(ivar)%hlm_var)
+      do ivar = 1,this%bc_out%num_hlmvar
+         call this%fates(nc)%sites(s)%TransferBCIn(this%bc_out(ivar)%api_str, &
+                                                   this%bc_out(ivar)%hlm_var)
       end do
    end do
 
