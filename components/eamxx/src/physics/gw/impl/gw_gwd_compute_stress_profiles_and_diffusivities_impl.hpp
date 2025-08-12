@@ -103,7 +103,7 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
       Kokkos::parallel_reduce(
         Kokkos::TeamVectorRange(team, -pgwv, pgwv+1), [&] (const int l, Real& lmax) {
         const int pl_idx = l + pgwv; // 0-based idx for -pgwv:pgwv arrays
-        const Real dscal = ekat::impl::min(1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
+        const Real dscal = ekat::impl::min((Real)1.0, tau(pl_idx, k+1) / (tausat(k, pl_idx) + GWC::taumin));
         lmax = ekat::impl::max(lmax, dscal * dsat(k, pl_idx));
       }, Kokkos::Max<Real>(d));
     }
