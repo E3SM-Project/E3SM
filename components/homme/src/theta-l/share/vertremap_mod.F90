@@ -45,7 +45,7 @@ contains
   type (hvcoord_t)                :: hvcoord
   real (kind=real_kind)           :: dt
 
-  integer :: ie,i,j,k
+  integer :: ie,i,j,k,np1,nets,nete,np1_qdp
   integer :: q
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star

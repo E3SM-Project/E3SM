@@ -195,6 +195,7 @@ contains
     real (kind=real_kind)            :: test(np,np,1)
 
     integer                          :: i, j, ie, k, kmax,kmax2, kk
+    logical                          :: Debug=.FALSE.,keep
 
     gll_pts = gausslobatto(np)
     ! gll points
@@ -1031,7 +1032,7 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
     ! ne=240 1e-4:  add 5688/ 345600 pentagons, area ratio: 1.0004
     ! ne=240 1e-5:  add 5736/ 345600 pentagons, area ratio: 1.000000078
     real (kind=real_kind)            :: tol_use_pentagons=1e-5
-    logical                          :: keep
+    logical                          :: Debug=.FALSE.,keep
 
     integer :: face1,face2,found,ie_max,movex,movey,moved,ii,kmax
     integer :: nskip,npent
