@@ -681,6 +681,8 @@ contains
             mapper_Va2o%weight_identifier = wgtIdVa2o
             mapper_Va2o%mbname = 'mapper_Va2o'
 
+            call seq_map_initvect_moab(mapper_Va2o, vect_map, mbaxid, mboxid, string='mapper_Va2o initvect moab')
+
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0))
        endif ! if (atm_c2_ocn .or. atm_c2_ice)
        call shr_sys_flush(logunit)
@@ -1077,6 +1079,7 @@ subroutine prep_ocn_accum_avg_moab()
     ! Local Variables
     integer   :: ent_type, ierr
     integer noflds, lsize ! used for restart case only?
+    real(r8) :: ravg
     character(CXX)  :: tagname
     character(*), parameter  :: subname = '(prep_ocn_accum_avg_moab)'
 #ifdef MOABDEBUG
@@ -1087,7 +1090,8 @@ subroutine prep_ocn_accum_avg_moab()
        ! temporary formation of average
        if (x2oacc_om_cnt > 1) then
           !call mct_avect_avg(x2oacc_ox(eoi), x2oacc_ox_cnt)
-          x2oacc_om = 1./x2oacc_om_cnt * x2oacc_om
+          ravg = 1.0_r8/real(x2oacc_om_cnt, r8)
+          x2oacc_om = x2oacc_om * ravg
        end if
 
        if (.not. allocated(x2o_om)) then

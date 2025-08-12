@@ -16,10 +16,12 @@ module seq_map_mod
   use shr_sys_mod
   use shr_const_mod
   use shr_mct_mod, only: shr_mct_sMatPInitnc, shr_mct_queryConfigFile
+  use shr_mpi_mod
   use mct_mod
   use seq_comm_mct
   use component_type_mod
   use seq_map_type_mod
+  use shr_moab_mod
 
   implicit none
   save
@@ -33,9 +35,14 @@ module seq_map_mod
   public :: moab_map_init_rcfile    ! cpl pes
   public :: seq_map_init_rearrolap  ! cpl pes
   public :: seq_map_initvect        ! cpl pes
+  public :: seq_map_initvect_moab   ! cpl pes
   public :: seq_map_map             ! cpl pes
   public :: seq_map_mapvect         ! cpl pes
+  public :: seq_map_clean_moab      ! cpl pes
   public :: seq_map_readdata        ! cpl pes
+
+
+
 
   interface seq_map_avNorm
      module procedure seq_map_avNormArr
@@ -796,6 +803,197 @@ contains
 
   !=======================================================================
 
+  subroutine seq_map_initvect_moab(mapper, type, src_mbid, tgt_mbid, string)
+    use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_DefineTagStorage
+    use iso_c_binding, only: c_char, C_NULL_CHAR
+
+    !-----------------------------------------------------
+    !
+    ! Purpose: Initialize vector mapping for MOAB data types
+    ! This version uses iMOAB_GetDoubleTagStorage to retrieve
+    ! lat/lon coordinates from MOAB mesh handles and computes
+    ! trigonometric functions needed for spherical vector transformations.
+    !
+    ! The computed values are stored in MOAB-specific arrays:
+    ! - slon_s_moab, clon_s_moab, slat_s_moab, clat_s_moab for source
+    ! - slon_d_moab, clon_d_moab, slat_d_moab, clat_d_moab for target
+    !
+    ! These arrays are used by cart3d for vector field mapping
+    ! between spherical coordinate systems.
+    !
+    ! Usage:
+    !   call seq_map_initvect_moab(mapper, 'cart3d', src_app_id, tgt_app_id, 'my_mapper')
+    !
+    ! Arguments
+    !
+    type(seq_map)        ,intent(inout)       :: mapper
+    character(len=*)     ,intent(in)          :: type     ! mapping type ('cart3d' for vector mapping)
+    integer              ,intent(in)          :: src_mbid  ! source MOAB app ID
+    integer              ,intent(in)          :: tgt_mbid  ! target MOAB app ID
+    character(len=*)     ,intent(in),optional :: string   ! optional description string
+    !
+    ! Local Variables
+    !
+    integer(IN)                :: lsize_s, lsize_d, n, ierr,tagindex
+    integer(IN)                :: num_verts, num_elems, num_edges, dimension
+    character(len=CL)          :: lstring
+    character(len=*),parameter :: subname = "(seq_map_initvect_moab) "
+    character(64)              :: tagname
+    integer                    :: ent_type
+    real(R8), allocatable      :: lon_data(:), lat_data(:)
+    !-----------------------------------------------------
+
+    lstring = ' '
+    if (present(string)) then
+       if (seq_comm_iamroot(CPLID)) write(logunit,'(A)') subname//' called for '//trim(string)
+       lstring = trim(string)
+    endif
+
+    if (trim(type(1:6)) == 'cart3d') then
+       if (mapper%cart3d_init_moab == trim(seq_map_stron)) return
+
+       lsize_s = mbGetnCells(src_mbid)
+
+       if (associated(mapper%slon_s_moab)) deallocate(mapper%slon_s_moab)
+       if (associated(mapper%clon_s_moab)) deallocate(mapper%clon_s_moab)
+       if (associated(mapper%slat_s_moab)) deallocate(mapper%slat_s_moab)
+       if (associated(mapper%clat_s_moab)) deallocate(mapper%clat_s_moab)
+
+       allocate(mapper%slon_s_moab(lsize_s), mapper%clon_s_moab(lsize_s), &
+                mapper%slat_s_moab(lsize_s), mapper%clat_s_moab(lsize_s))
+       allocate(lon_data(lsize_s), lat_data(lsize_s))
+
+       ! Get longitude data from MOAB
+       tagname = 'lon'//C_NULL_CHAR
+       call mbGetCellTagVals(src_mbid, tagname,lon_data,lsize_s)
+
+       ! Get latitude data from MOAB
+       tagname = 'lat'//C_NULL_CHAR
+       call mbGetCellTagVals(src_mbid, tagname,lat_data,lsize_s)
+
+       ! Compute trigonometric functions for source
+       do n = 1, lsize_s
+          mapper%slon_s_moab(n) = sin(lon_data(n) * deg2rad)
+          mapper%clon_s_moab(n) = cos(lon_data(n) * deg2rad)
+          mapper%slat_s_moab(n) = sin(lat_data(n) * deg2rad)
+          mapper%clat_s_moab(n) = cos(lat_data(n) * deg2rad)
+       enddo
+
+       deallocate(lon_data, lat_data)
+
+       ! Get target mesh info and coordinates
+       lsize_d = mbGetnCells(tgt_mbid)
+
+       if (associated(mapper%slon_d_moab)) deallocate(mapper%slon_d_moab)
+       if (associated(mapper%clon_d_moab)) deallocate(mapper%clon_d_moab)
+       if (associated(mapper%slat_d_moab)) deallocate(mapper%slat_d_moab)
+       if (associated(mapper%clat_d_moab)) deallocate(mapper%clat_d_moab)
+
+       allocate(mapper%slon_d_moab(lsize_d), mapper%clon_d_moab(lsize_d), &
+                mapper%slat_d_moab(lsize_d), mapper%clat_d_moab(lsize_d))
+       allocate(lon_data(lsize_d), lat_data(lsize_d))
+
+       ! Get longitude data from MOAB
+       tagname = 'lon'//C_NULL_CHAR
+       call mbGetCellTagVals(tgt_mbid, tagname,lon_data,lsize_d)
+
+       ! Get latitude data from MOAB
+       tagname = 'lat'//C_NULL_CHAR
+       call mbGetCellTagVals(tgt_mbid, tagname,lat_data,lsize_d)
+
+       ! Compute trigonometric functions for target
+       do n = 1, lsize_d
+          mapper%slon_d_moab(n) = sin(lon_data(n) * deg2rad)
+          mapper%clon_d_moab(n) = cos(lon_data(n) * deg2rad)
+          mapper%slat_d_moab(n) = sin(lat_data(n) * deg2rad)
+          mapper%clat_d_moab(n) = cos(lat_data(n) * deg2rad)
+       enddo
+
+       deallocate(lon_data, lat_data)
+       mapper%cart3d_init_moab = trim(seq_map_stron)
+
+       ! Define ux, uy, uz tags in source and destination MOAB apps
+       tagname = 'ux:uy:uz'//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(src_mbid, tagname, 1, 1, tagindex)
+       if (ierr /= 0) then
+          write(logunit,*) subname,' ERROR: Failed to define ux:uy:uz tags in source'
+          call shr_sys_abort(trim(subname)//' ERROR defining source tags')
+       endif
+
+       ierr = iMOAB_DefineTagStorage(tgt_mbid, tagname, 1, 1, tagindex)
+       if (ierr /= 0) then
+          write(logunit,*) subname,' ERROR: Failed to define ux:uy:uz tags in target'
+          call shr_sys_abort(trim(subname)//' ERROR defining target tags')
+       endif
+    endif
+
+  end subroutine seq_map_initvect_moab
+
+
+  subroutine seq_map_clean_moab(mapper)
+
+    !-----------------------------------------------------
+    !
+    ! Purpose: Clean up MOAB-specific coordinate arrays
+    !
+    ! Deallocates and nullifies all MOAB coordinate arrays (slon_*_moab, etc.)
+    ! and resets the cart3d_init_moab flag. Should be called when the mapper
+    ! is no longer needed to prevent memory leaks.
+    !
+    ! Usage:
+    !   call seq_map_clean_moab(mapper)
+    !
+    ! Arguments
+    !
+    type(seq_map), intent(inout) :: mapper  ! mapper to clean up
+    !
+    ! Local Variables
+    !
+    character(len=*),parameter :: subname = "(seq_map_clean_moab) "
+    !-----------------------------------------------------
+
+#ifdef HAVE_MOAB
+    ! Deallocate MOAB coordinate arrays if allocated
+    if (associated(mapper%slon_s_moab)) then
+       deallocate(mapper%slon_s_moab)
+       nullify(mapper%slon_s_moab)
+    endif
+    if (associated(mapper%clon_s_moab)) then
+       deallocate(mapper%clon_s_moab)
+       nullify(mapper%clon_s_moab)
+    endif
+    if (associated(mapper%slat_s_moab)) then
+       deallocate(mapper%slat_s_moab)
+       nullify(mapper%slat_s_moab)
+    endif
+    if (associated(mapper%clat_s_moab)) then
+       deallocate(mapper%clat_s_moab)
+       nullify(mapper%clat_s_moab)
+    endif
+    if (associated(mapper%slon_d_moab)) then
+       deallocate(mapper%slon_d_moab)
+       nullify(mapper%slon_d_moab)
+    endif
+    if (associated(mapper%clon_d_moab)) then
+       deallocate(mapper%clon_d_moab)
+       nullify(mapper%clon_d_moab)
+    endif
+    if (associated(mapper%slat_d_moab)) then
+       deallocate(mapper%slat_d_moab)
+       nullify(mapper%slat_d_moab)
+    endif
+    if (associated(mapper%clat_d_moab)) then
+       deallocate(mapper%clat_d_moab)
+       nullify(mapper%clat_d_moab)
+    endif
+
+    mapper%cart3d_init_moab = trim(seq_map_stroff)
+#endif
+
+  end subroutine seq_map_clean_moab
+
+  !=======================================================================
+
   subroutine seq_map_mapvect( mapper, type, av_s, av_d, fldu, fldv, norm, string )
 
     implicit none
@@ -852,6 +1050,9 @@ contains
 
   subroutine seq_map_cart3d( mapper, type, av_s, av_d, fldu, fldv, norm, string)
 
+    use shr_moab_mod, only: mbGetCellTagVals, mbSetCellTagVals, mbGetnCells
+    use iMOAB, only: iMOAB_DefineTagStorage
+    use iso_c_binding
     implicit none
     !-----------------------------------------------------
     !
@@ -868,14 +1069,20 @@ contains
     !
     ! Local Variables
     !
-    integer           :: lsize
+    integer           :: lsize,tagindex
     logical           :: lnorm
     integer           :: ku,kv,kux,kuy,kuz,n
     real(r8)          :: ue,un,ur,ux,uy,uz,speed
     real(r8)          :: urmaxl,urmax,uravgl,uravg,spavgl,spavg
     type(mct_aVect)   :: av3_s, av3_d
     integer(in)       :: mpicom,my_task,ierr,urcnt,urcntl
+    ! MOAB-specific variables
+    integer           :: lsize_s_moab, lsize_d_moab
+    real(r8), allocatable :: u_vals_moab(:), v_vals_moab(:)
+    real(r8), allocatable :: cart_vals_moab(:,:)  ! 2D array: (ux,uy,uz) x npoints
+    logical           :: use_moab_data
     character(len=*),parameter :: subname = "(seq_map_cart3d) "
+    character(64)              :: tagname
 
     lnorm = .true.
     if (present(norm)) then
@@ -883,6 +1090,9 @@ contains
     endif
 
     mpicom = mapper%mpicom
+
+    ! Check if we should use MOAB data (when src_mbid and tgt_mbid are set)
+    use_moab_data = (mapper%src_mbid >= 0 .and. mapper%tgt_mbid >= 0)
 
     ku = mct_aVect_indexRA(av_s, trim(fldu), perrwith='quiet')
     kv = mct_aVect_indexRA(av_s, trim(fldv), perrwith='quiet')
@@ -914,9 +1124,42 @@ contains
           av3_s%rAttr(kuy,n) = uy
           av3_s%rAttr(kuz,n) = uz
        enddo
+    endif
 
-       call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
+    if (use_moab_data) then
+       ! MOAB data path: get source values from MOAB
+       lsize_s_moab = mbGetnCells(mapper%src_mbid)
+       allocate(u_vals_moab(lsize_s_moab), v_vals_moab(lsize_s_moab))
+       allocate(cart_vals_moab(lsize_s_moab,3))
 
+       ! Get source u and v values from MOAB
+       call mbGetCellTagVals(mapper%src_mbid, trim(fldu), u_vals_moab, lsize_s_moab)
+       call mbGetCellTagVals(mapper%src_mbid, trim(fldv), v_vals_moab, lsize_s_moab)
+
+       ! Convert source spherical to cartesian using MOAB coordinate arrays
+       do n = 1, lsize_s_moab
+          ur = 0.0_r8
+          ue = u_vals_moab(n)
+          un = v_vals_moab(n)
+          ux = mapper%clon_s_moab(n)*mapper%clat_s_moab(n)*ur - &
+            mapper%clon_s_moab(n)*mapper%slat_s_moab(n)*un - &
+               mapper%slon_s_moab(n)*ue
+          uy = mapper%slon_s_moab(n)*mapper%clat_s_moab(n)*ur - &
+               mapper%slon_s_moab(n)*mapper%slat_s_moab(n)*un + &
+               mapper%clon_s_moab(n)*ue
+          uz = mapper%slat_s_moab(n)*ur + &
+               mapper%clat_s_moab(n)*un
+          cart_vals_moab(n,1) = ux
+          cart_vals_moab(n,2) = uy
+          cart_vals_moab(n,3) = uz
+       enddo
+       call mbSetCellTagVals(mapper%src_mbid, "ux:uy:uz"//C_NULL_CHAR, cart_vals_moab, lsize_s_moab*3)
+
+    endif
+
+    call seq_map_map(mapper, av3_s, av3_d, norm=lnorm)
+
+    if (ku /= 0 .and. kv /= 0) then
        kux = mct_aVect_indexRA(av3_d,'ux')
        kuy = mct_aVect_indexRA(av3_d,'uy')
        kuz = mct_aVect_indexRA(av3_d,'uz')
@@ -925,6 +1168,7 @@ contains
        uravgl = 0.0_r8
        urcntl = 0
        spavgl = 0.0_r8
+
        do n = 1,lsize
           ux = av3_d%rAttr(kux,n)
           uy = av3_d%rAttr(kuy,n)
@@ -965,6 +1209,72 @@ contains
              av_d%rAttr(kv,n) = un
           endif
        enddo
+       call mct_avect_clean(av3_s)
+       call mct_avect_clean(av3_d)
+    endif
+
+    if (use_moab_data) then
+       ! MOAB data path: convert cartesian back to spherical and set in MOAB
+       lsize_d_moab = mbGetnCells(mapper%tgt_mbid)
+       deallocate(u_vals_moab, v_vals_moab, cart_vals_moab)
+       allocate(u_vals_moab(lsize_d_moab), v_vals_moab(lsize_d_moab))
+       allocate(cart_vals_moab(lsize_d_moab,3))
+
+       ! Get mapped values
+       call mbGetCellTagVals(mapper%tgt_mbid, "ux:uy:uz"//C_NULL_CHAR, cart_vals_moab, lsize_d_moab*3)
+
+
+       ! Convert back from cartesian to spherical on target grid using MOAB coordinates
+       do n = 1, lsize_d_moab
+          ux = cart_vals_moab(n,1)
+          uy = cart_vals_moab(n,2)
+          uz = cart_vals_moab(n,3)
+          ue = -mapper%slon_d_moab(n)          *ux + &
+               mapper%clon_d_moab(n)          *uy
+          un = -mapper%clon_d_moab(n)*mapper%slat_d_moab(n)*ux - &
+               mapper%slon_d_moab(n)*mapper%slat_d_moab(n)*uy + &
+               mapper%clat_d_moab(n)*uz
+          ur =  mapper%clon_d_moab(n)*mapper%clat_d_moab(n)*ux + &
+               mapper%slon_d_moab(n)*mapper%clat_d_moab(n)*uy - &
+               mapper%slat_d_moab(n)*uz
+          speed = sqrt(ur*ur + ue*ue + un*un)
+          if (trim(type) == 'cart3d_diag' .or. trim(type) == 'cart3d_uvw_diag') then
+             if (speed /= 0.0_r8) then
+                urmaxl = max(urmaxl,abs(ur))
+                uravgl = uravgl + abs(ur)
+                spavgl = spavgl + speed
+                urcntl = urcntl + 1
+             endif
+          endif
+          if (type(1:10) == 'cart3d_uvw') then
+             !--- this adds ur to ue and un, while preserving u/v angle and total speed ---
+             if (un == 0.0_R8) then
+                !--- if ue is also 0.0 then just give speed to ue, this is arbitrary ---
+                u_vals_moab(n) = sign(speed,ue)
+                v_vals_moab(n) = 0.0_r8
+             else if (ue == 0.0_R8) then
+                u_vals_moab(n) = 0.0_r8
+                v_vals_moab(n) = sign(speed,un)
+             else
+                u_vals_moab(n) = sign(speed/sqrt(1.0_r8 + ((un*un)/(ue*ue))),ue)
+                v_vals_moab(n) = sign(speed/sqrt(1.0_r8 + ((ue*ue)/(un*un))),un)
+             endif
+          else
+             !--- this ignores ur ---
+             u_vals_moab(n) = ue
+             v_vals_moab(n) = un
+          endif
+       enddo
+
+       ! Set final u,v values in destination MOAB app
+       call mbSetCellTagVals(mapper%tgt_mbid, trim(fldu), u_vals_moab, lsize_d_moab)
+       call mbSetCellTagVals(mapper%tgt_mbid, trim(fldv), v_vals_moab, lsize_d_moab)
+
+       ! Clean up MOAB arrays
+       deallocate(u_vals_moab, v_vals_moab, cart_vals_moab)
+    endif
+
+
        if (trim(type) == 'cart3d_diag' .or. trim(type) == 'cart3d_uvw_diag') then
           call mpi_comm_rank(mpicom,my_task,ierr)
           call shr_mpi_max(urmaxl,urmax,mpicom,'urmax')
@@ -977,11 +1287,6 @@ contains
              write(logunit,*) trim(subname),' cart3d uravg,urmax,spavg = ',uravg,urmax,spavg
           endif
        endif
-
-       call mct_avect_clean(av3_s)
-       call mct_avect_clean(av3_d)
-
-    endif  ! ku,kv
 
   end subroutine seq_map_cart3d
 

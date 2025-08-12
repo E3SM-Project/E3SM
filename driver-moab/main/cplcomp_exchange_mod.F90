@@ -1058,7 +1058,7 @@ subroutine  copy_aream_from_area(mbappid)
       character(CXX)           :: tagname
       character(CXX)           :: newlist
       integer                  nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      logical                  :: rof_present
+      logical                  :: rof_present, lnd_prognostic
       real(r8),    allocatable    :: tagValues(:) ! used for setting aream tags for atm domain read case
       integer                     :: arrsize ! for the size of tagValues
       type(mct_list)             :: temp_list
@@ -1401,7 +1401,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             ! also, frac, area,  masks has to come from ocean mpoid, not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:frac:mask'//C_NULL_CHAR
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, mpoid, mboxid, 0, tagname, context_exch='afm')
          endif 
 
@@ -1499,7 +1499,7 @@ subroutine  copy_aream_from_area(mbappid)
       if (comp%oneletterid == 'l'  .and. maxMLID /= -1) then
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-         call seq_infodata_GetData(infodata,rof_present=rof_present)
+         call seq_infodata_GetData(infodata,rof_present=rof_present, lnd_prognostic=lnd_prognostic)
 
          ! use land full mesh 
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
@@ -1512,8 +1512,13 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
             ! similar to rof mosart mesh  
-            
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+            ! do not cull in case of data land, like all other data models
+            ! for regular land model, cull, because the lnd component culls too
+            if (lnd_prognostic) then
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+            else
+               ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+            endif
             call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
             outfile = trim(lnd_domain)//C_NULL_CHAR
             nghlay = 0 ! no ghost layers 
@@ -1750,7 +1755,7 @@ subroutine  copy_aream_from_area(mbappid)
             endif
             ! also, frac, area,  masks has to come from ice MPSIID , not from domain file reader
             ! this is hard to digest :(
-            tagname = 'area:frac:mask'//C_NULL_CHAR
+            tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
             call component_exch_moab(comp, MPSIID, mbixid, 0, tagname)
          endif 
 #ifdef MOABDEBUG

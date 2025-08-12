@@ -67,6 +67,7 @@ module prep_lnd_mod
   public :: prep_lnd_get_r2x_lx
   public :: prep_lnd_get_g2x_lx
   public :: prep_lnd_get_z2x_lx
+  public :: prep_lnd_get_x2l_lm
 
   public :: prep_lnd_get_mapper_Sa2l
   public :: prep_lnd_get_mapper_Fa2l
@@ -110,6 +111,8 @@ module prep_lnd_mod
   ! other fields (besides frac_field and topo_field) that are mapped from glc to lnd,
   ! separated by elevation class
   character(CXX) :: glc2lnd_ec_extra_fields
+
+  real (kind=r8) , allocatable, private,target :: x2l_lm (:,:)
 
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
@@ -744,6 +747,10 @@ contains
 
 ! this does almost nothing now, except documenting
   subroutine prep_lnd_mrg_moab (infodata)
+
+    use shr_moab_mod, only : mbGetnCells
+    use shr_moab_mod, only : mbGetCellTagVals
+
     type(seq_infodata_type) , intent(in) :: infodata
 
 
@@ -762,7 +769,7 @@ contains
     ! Create input land state directly from atm, runoff and glc outputs
     !
     !-----------------------------------------------------------------------
-    integer       :: nflds,i,i1,o1
+    integer       :: i,i1,o1
     logical       :: iamroot
     logical, save :: first_time = .true.
     character(CL),allocatable :: mrgstr(:)   ! temporary string
@@ -770,6 +777,7 @@ contains
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: r2x_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
+    integer,save :: mbsize, nflds
 #ifdef MOABDEBUG
     integer :: ierr
 #endif
@@ -785,11 +793,14 @@ contains
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
     if (first_time) then
-      a2x_l => a2x_lx(1)
-      r2x_l => r2x_lx(1)
-      g2x_l => g2x_lx(1)
-      x2l_l => component_get_x2c_cx(lnd(1))
+       a2x_l => a2x_lx(1)
+       r2x_l => r2x_lx(1)
+       g2x_l => g2x_lx(1)
+       x2l_l => component_get_x2c_cx(lnd(1))
        nflds = mct_aVect_nRattr(x2l_l)
+       mbsize = mbGetnCells(mblxid)
+
+       allocate (x2l_lm(mbsize,nflds))
 
        allocate(mrgstr(nflds))
        do i = 1,nflds
@@ -820,11 +831,14 @@ contains
           field = mct_aVect_getRList2c(i1, g2x_l)
           mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
        enddo
-    endif
+
+    endif  ! if first time
 
     ! call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     ! call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     ! call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
+
+    call mbGetCellTagVals(mblxid, trim(seq_flds_x2l_fields)//C_NULL_CHAR,x2l_lm,mbsize*nflds)
 
     if (first_time) then
        if (iamroot) then
@@ -1099,6 +1113,11 @@ contains
     type(mct_aVect), pointer :: prep_lnd_get_g2x_lx(:)
     prep_lnd_get_g2x_lx => g2x_lx(:)
   end function prep_lnd_get_g2x_lx
+
+  function prep_lnd_get_x2l_lm()
+    real(R8), DIMENSION(:, :), pointer :: prep_lnd_get_x2l_lm
+    prep_lnd_get_x2l_lm => x2l_lm
+  end function prep_lnd_get_x2l_lm
 
   function prep_lnd_get_z2x_lx()
     type(mct_aVect), pointer :: prep_lnd_get_z2x_lx(:)
