@@ -249,9 +249,6 @@ module ELMFatesInterfaceMod
       ! between FATES and the host land model.
       character(len=24) :: api_str
       
-      ! This is the number of HLM variables that are being passed to FATES
-      integer :: num_hlmvar
-
    end type hlm_fates_api_var_type
 
 
@@ -284,6 +281,10 @@ module ELMFatesInterfaceMod
       ! common variable name
       type(hlm_fates_api_var_type), allocatable :: bc_in(:)
       type(hlm_fates_api_var_type), allocatable :: bc_out(:)
+
+      ! This is the number of HLM variables that are being passed in and out of FATES
+      integer, public :: num_hlmvar_in, num_hlmvar_out
+
       
    contains
 
@@ -3604,7 +3605,7 @@ end subroutine wrap_update_hifrq_hist
    this%bc_in(ivar)%api_str = 'decomp_frac_temperature'
    this%bc_in(ivar)%hlm_var => col_cf%t_scalar(:,:)
    
-   this%bc_in%num_hlmvar = ivar
+   this%num_hlmvar_in = ivar
 
    ! ! FATES -> HLM (bc_out)
    ivar = 0
@@ -3622,7 +3623,7 @@ end subroutine wrap_update_hifrq_hist
    this%bc_out(ivar)%api_str = 'decomp_cpools_lig'
    this%bc_out(ivar)%hlm_var => col_cf%decomp_cpools_sourcesink(:,:,i_lig_lit)
    
-   this%bc_out%num_hlmvar = ivar
+   this%num_hlmvar_out = ivar
    
    ! 3D arrays
    
@@ -3630,7 +3631,7 @@ end subroutine wrap_update_hifrq_hist
    ! Check that the number of variables set matches
    ! specifically in the case in which the number set
    ! is lower than the allocated amount
-   if ((this%bc_out%num_hlmvar /= num_bc_out) .or. (this%bc_in%num_hlmvar /= num_bc_in)) then
+   if ((this%num_hlmvar_out /= num_bc_out) .or. (this%num_hlmvar_in /= num_bc_in)) then
       write(iulog,*) 'FATES API: Number of API variables does not match the expected array size'
       call endrun(msg=errMsg(sourcefile, __LINE__))
    end if
@@ -3837,7 +3838,7 @@ end subroutine wrap_update_hifrq_hist
    integer :: s, ivar  ! indices and loop counters
    
    do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%bc_in%num_hlmvar
+      do ivar = 1,this%num_hlmvar_in
          call this%fates(nc)%sites(s)%TransferBCIn(this%bc_in(ivar)%api_str, &
                                                    this%bc_in(ivar)%hlm_var)
       end do
@@ -3864,7 +3865,7 @@ end subroutine wrap_update_hifrq_hist
    integer :: s, ivar  ! indices and loop counters
    
    do s = 1, this%fates(nc)%nsites
-      do ivar = 1,this%bc_out%num_hlmvar
+      do ivar = 1,this%num_hlmvar_out
          call this%fates(nc)%sites(s)%TransferBCIn(this%bc_out(ivar)%api_str, &
                                                    this%bc_out(ivar)%hlm_var)
       end do
@@ -4153,7 +4154,7 @@ end subroutine wrap_update_hifrq_hist
    ! This subroutine gets the mapping between the FATES patches and HLM columns
    ! ------------------------------------------------------------------------
 
-   type(f2hmap_type), intent(inout) :: this
+   class(f2hmap_type), intent(inout) :: this
 
    integer :: ifp  ! FATES bc_in/out patch dimension index
    integer :: s    ! FATES site index
@@ -4170,7 +4171,7 @@ end subroutine wrap_update_hifrq_hist
    ! This subroutine sets the mapping between the FATES and HLM patches
    ! ------------------------------------------------------------------------
 
-   type(f2hmap_type), intent(inout) :: this
+   class(f2hmap_type), intent(inout) :: this
    type(bounds_type), intent(in)    :: bounds_clump
 
    integer :: s    ! FATES site index
