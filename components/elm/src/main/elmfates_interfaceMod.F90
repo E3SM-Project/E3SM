@@ -902,6 +902,7 @@ contains
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
       integer                                        :: numg
+      integer                                        :: num_landunits_veg
 
       real(r8), allocatable :: landuse_pft_map(:,:,:)
       real(r8), allocatable :: landuse_bareground(:)
