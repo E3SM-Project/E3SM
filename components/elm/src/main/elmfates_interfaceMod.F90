@@ -222,6 +222,13 @@ module ELMFatesInterfaceMod
 
       ! HLM patch index to FATES patchno index mapping, by site
       integer, allocatable :: hlm_patch_index(:,:)
+      
+      ! This is the associated column index of each FATES site - to be deprecated
+      integer, allocatable :: fcolumn (:)
+
+      ! This is the associated site index of any HLM columns - to be deprecated
+      ! This vector may be sparse, and non-sites have index 0
+      integer, allocatable :: hsites  (:)
 
       contains
 
@@ -951,22 +958,31 @@ contains
       do nc = 1,nclumps
 
          call get_clump_bounds(nc, bounds_clump)
-         ! nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
+         nmaxcol = bounds_clump%endc - bounds_clump%begc + 1
 
-         ! allocate(collist(1:nmaxcol))
+         allocate(collist(1:nmaxcol))
 
          ! Allocate the mapping that points columns to FATES sites, 0 is NA
-         ! allocate(this%f2hmap(nc)%hsites(bounds_clump%begc:bounds_clump%endc))
+         allocate(this%f2hmap(nc)%hsites(bounds_clump%begc:bounds_clump%endc))
 
          ! Initialize all columns with a zero index, which indicates no FATES site
-         ! this%f2hmap(nc)%hsites(:) = 0
+         this%f2hmap(nc)%hsites(:) = 0
 
          ! Determine the number of FATES site based of the clumping
          ! This assumes one site per landunit currently.
+         s = 0
          num_landunits_veg = 0
          do l = bounds_clump%begl,bounds_clump%endl
             if (lun_pp%itype(l) == istsoil) then
+
                num_landunits_veg = num_landunits_veg + 1
+
+               ! To be deprecated/refactored
+               s = s + 1
+               collist(s) = c
+               this%f2hmap(nc)%hsites(c) = s
+               col_pp%is_fates(c) = .true. 
+
                if(debug)then
                   ! write(iulog,*) 'alm_fates%init(): thread',nc,': found column',c,'with lu',l
                   write(iulog,*) 'LU type:', lun_pp%itype(l)
@@ -975,7 +991,20 @@ contains
          enddo
 
          ! TODO Add adjustment to fates calculation here based on multi-column FATES options
-         s = num_landunits_veg
+         ! s = num_landunits_veg
+
+         ! Allocate vectors that match FATES sites with HLM columns
+         ! RGK: Sites and fcolumns are forced as args during clm_driv() as of 6/4/2016
+         ! We may have to give these a dummy allocation of 1, which should
+         ! not be a problem since we always iterate on nsites.
+
+         allocate(this%f2hmap(nc)%fcolumn(s))
+
+         ! Assign the h2hmap indexing
+         this%f2hmap(nc)%fcolumn(1:s)         =  collist(1:s)
+
+         ! Deallocate the temporary arrays
+         deallocate(collist)
 
          if(debug)then
            write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
