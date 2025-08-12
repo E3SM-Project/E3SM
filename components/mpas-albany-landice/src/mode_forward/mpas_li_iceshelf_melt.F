@@ -1462,6 +1462,8 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: invalid_value_TF
       logical :: validTF
       logical, pointer :: config_calculate_thermal_forcing
+      logical, pointer :: config_ocean_data_extrapolation
+      integer, pointer :: config_ocean_data_extrap_ncells_extra
       real (kind=RKIND) :: dzAccumulated, dz
       integer :: err_tmp, kk, iLayer
 
@@ -1515,6 +1517,18 @@ module li_iceshelf_melt
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', ismip6shelfMelt_deltaT)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zBndsOcean', zBndsOcean)
+
+            ! Check for option incompatibility - apply_ablation routine needs valid faceMeltSpeed 3 rows back
+            call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
+            call mpas_pool_get_config(liConfigs, 'config_ocean_data_extrap_ncells_extra', config_ocean_data_extrap_ncells_extra)
+            if (config_ocean_data_extrapolation .and. (config_ocean_data_extrap_ncells_extra < 3)) then
+               call mpas_log_write("If config_front_mass_bal_grounded='ismip6', config_use_3d_thermal_forcing_for_face_melt=.true., " // &
+                                   "and config_ocean_data_extrapolation=.true., " // &
+                                   "then config_ocean_data_extrap_ncells_extra must be >= 3", MPAS_LOG_ERR)
+               err = ior(err, 1)
+               return
+            endif
+
 
                !Consolidate 3d profile to 2d depending on parameterization type
                if (config_TF_vertical_calc == 'average' ) then
