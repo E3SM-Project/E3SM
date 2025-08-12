@@ -1992,6 +1992,12 @@ contains
                         this%fates(nc)%bc_out(s), &
                         is_restarting = .true.)
 
+                  ! This call sends internal fates variables into the
+                  ! output boundary condition structures. Note: this is called
+                  ! internally in fates dynamics as well.
+
+                  call FluxIntoLitterPools(this%fates(nc)%sites(s), &
+                       this%fates(nc)%bc_in(s))
                end do
 
                if(use_fates_sp)then
