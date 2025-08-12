@@ -38,7 +38,7 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
     for (Int i = 0; i < num_runs; ++i) {
       auto& d = baseline_data[i];
       // ni must be very small or else we risk a FPE due to a huge exp
-      d.randomize(engine, { {d.ni, {1.E-08, 2.E-08}}, {d.src_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}} });
+      d.randomize(engine, { {d.ni, {1.E-06, 2.E-06}}, {d.src_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}}, {d.ubi, {2.E-04, 3.E-04}}, {d.c, {1.E-04, 2.E-04}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
