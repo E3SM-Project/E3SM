@@ -3848,7 +3848,7 @@ end subroutine wrap_update_hifrq_hist
 
 ! ======================================================================================
 
- subroutine WrapTransferBCOut(this, nc)
+ subroutine WrapTransferBCOut(this, nc, dtime)
 
    ! !DESCRIPTION:
    ! ---------------------------------------------------------------------------------
@@ -3863,11 +3863,15 @@ end subroutine wrap_update_hifrq_hist
    
    ! !LOCAL:
    integer :: s, ivar  ! indices and loop counters
-   
+   real(r8) :: dtime   ! step size to pass to FATES to handle timestep conversions
+
+   ! Get the step size in seconds
+   dtime = real(get_step_size(),r8)
+
    do s = 1, this%fates(nc)%nsites
       do ivar = 1,this%num_hlmvar_out
          call this%fates(nc)%sites(s)%TransferBCIn(this%bc_out(ivar)%api_str, &
-                                                   this%bc_out(ivar)%hlm_var)
+                                                   this%bc_out(ivar)%hlm_var, dtime)
       end do
    end do
 
