@@ -395,9 +395,14 @@ class PhysicsTestData
   }
 
   // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
-  // format of all data from one language to another
+  // format of all data from one language to another.
+  //
+  // There is currently no way for this struct to know which integer scalars need
+  // to be shifted, so any subclass that has those will need to define their own
+  // transition method which will call this one and then adjust their int scalars
+  // that represent indices.
   template <ekat::TransposeDirection::Enum D>
-  void transpose()
+  void transition()
   {
     m_reals.transpose<D>();
     m_ints.transpose<D>();

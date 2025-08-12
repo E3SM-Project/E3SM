@@ -15,6 +15,12 @@
 #include <fstream>
 #include <sstream>
 
+// macros for common powers. Using these should result in
+// fast code and bfb results with fortran.
+#define bfb_square(val) ((val)*(val))
+#define bfb_cube(val)   ((val)*(val)*(val))
+#define bfb_quad(val)   (bfb_square(bfb_square(val)))
+
 namespace scream {
 
 enum MemoryUnits {

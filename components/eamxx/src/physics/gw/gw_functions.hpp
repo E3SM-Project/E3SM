@@ -196,7 +196,6 @@ struct Functions
     const Real& yv,
     // Inputs/Outputs
     const uview_2d<Real>& tau,
-    const uview_2d<Real>& work,
     // Outputs
     const uview_2d<Real>& gwut,
     const uview_1d<Real>& utgw,
@@ -255,10 +254,6 @@ struct Functions
     const uview_1d<const Real>& ti,
     const uview_1d<const Real>& piln,
     // Inputs/Outputs
-    const uview_2d<Real>& tausat,
-    const uview_2d<Real>& dsat,
-    const uview_2d<Real>& wrk1,
-    const uview_2d<Real>& wrk2,
     const uview_2d<Real>& tau);
 
   KOKKOS_FUNCTION

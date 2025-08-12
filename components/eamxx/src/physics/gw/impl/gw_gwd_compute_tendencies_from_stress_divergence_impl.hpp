@@ -38,13 +38,16 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
   const Real& yv,
   // Inputs/Outputs
   const uview_2d<Real>& tau,
-  const uview_2d<Real>& work,
   // Outputs
   const uview_2d<Real>& gwut,
   const uview_1d<Real>& utgw,
   const uview_1d<Real>& vtgw)
 {
   const Real ptaper = do_taper ? std::cos(lat) : 1.;
+
+  // Get temporary workspaces and change them to desired dimensions
+  auto work_1d = workspace.take("work_1d");
+  uview_2d<Real> work(work_1d.data(), pver, 2*pgwv + 1);
 
   // Loop waves
   Kokkos::parallel_for(
@@ -68,9 +71,7 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       if (init.orographic_only) {
         // Require that the tendency be no larger than the analytic
         // solution for a saturated region [proportional to (u-c)^3].
-        Real temp = c(pl_idx)-ubm(k);
-        temp = temp * temp * temp; // BFB with fortran **3
-        Real ubtlsat = init.effkwv * std::abs(temp) / (2*GWC::rog*t(k)*nm(k));
+        Real ubtlsat = init.effkwv * std::abs(bfb_cube(c(pl_idx)-ubm(k))) / (2*GWC::rog*t(k)*nm(k));
         ubtl = ekat::impl::min(ubtl, ubtlsat);
       }
 
@@ -128,6 +129,9 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
       vtgw(k) = ubt * yv * effgw * ptaper;
     }
   });
+
+  // Release temporary variables from the workspace
+  workspace.release(work_1d);
 }
 
 } // namespace gw
