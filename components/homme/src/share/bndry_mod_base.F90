@@ -836,7 +836,7 @@ contains
   real (kind=real_kind) :: cin(2,2,1,nets:nete)  !CE: fvm tracer
   real (kind=real_kind) :: cout(-1:4,-1:4,1,nets:nete)  !CE: fvm tracer
   integer :: i,j,ie,kptr,np1,np2,nc,nc1,nc2,k,nlev
-  logical :: fail,fail1,fail2
+  logical :: fail1,fail2
   real (kind=real_kind) :: tol=.1
   call syncmp(hybrid%par)
 !   if (hybrid%par%masterproc) print *,'computing ghost cell corner orientations'
