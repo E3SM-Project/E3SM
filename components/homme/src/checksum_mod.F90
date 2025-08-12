@@ -392,7 +392,7 @@ contains
   real (kind=real_kind) :: cin(2,2,nlev,nets:nete)  !CE: fvm tracer
   real (kind=real_kind) :: cout(-1:4,-1:4,nlev,nets:nete)  !CE: fvm tracer
   integer :: i,j,k,m,n,ie,kptr,np1,np2,nc,nc1,nc2
-  logical :: fail,fail1,fail2
+  logical :: fail
   real (kind=real_kind) :: tol=.1
   call syncmp(hybrid%par)
   if (hybrid%par%masterproc) print *,'testing ghost exchange'

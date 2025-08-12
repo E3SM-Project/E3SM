@@ -979,10 +979,7 @@ contains
 
   real (kind=real_kind) :: cin(2,2,4)                      ! 1x1 element input data
   real (kind=real_kind) :: cout(2,2,4,max_neigh_edges+1)   ! 1x1 element output data
-  real (kind=real_kind) :: u   (2,2,4)   
-  integer :: i,j,ie,kptr,np1,np2,nc,k,nlev,patch_size,l,l2,sum1,sum2,m
-  logical :: fail,fail1,fail2
-  real (kind=real_kind) :: tol=.1
+  integer :: i,j,ie,kptr,nc,k,nlev,patch_size,l,sum1,sum2
     
   if (par%masterproc) write(iulog,*) 'creating sorted ghost cell neigbor map...' 
   if (par%masterproc) write(iulog,*) 'checking ghost cell neighbor buffer sorting...' 
