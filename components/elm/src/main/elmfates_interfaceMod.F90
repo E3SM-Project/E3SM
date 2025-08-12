@@ -3601,7 +3601,7 @@ end subroutine wrap_update_hifrq_hist
    ! Check that the number of variables set matches
    ! specifically in the case in which the number set
    ! is lower than the allocated amount
-   if (this%bc_out%num_hlmvar /= num_bc_out .or. this%bc_in%num_hlmvar /= num_bc_in) then
+   if ((this%bc_out%num_hlmvar /= num_bc_out) .or. (this%bc_in%num_hlmvar /= num_bc_in)) then
       write(iulog,*) 'FATES API: Number of API variables does not match the expected array size'
       call endrun(msg=errMsg(sourcefile, __LINE__))
    end if
