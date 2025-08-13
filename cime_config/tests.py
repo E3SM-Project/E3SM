@@ -880,6 +880,7 @@ _TESTS = {
             "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
             "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
@@ -893,6 +894,7 @@ _TESTS = {
             "PEM_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS",
             "PEM_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS",
             "PEM_Vmoab_Ld3.ne4pg2_oQU480.F1850",
+            "PEM_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
             "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
             "PEM_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF",
             "PEM_Vmoab_Ld3.T62_oQU120.CMPASO-NYF",
@@ -900,6 +902,27 @@ _TESTS = {
         )
     },
 
+    "e3sm_diff_dev" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Vmoab_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Vmoab_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Vmoab_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Vmoab_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Vmoab_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Ld1.r05_r05.RMOSGPCC",
+        )
+    },
 
 
     "e3sm_gpuacc" : {
