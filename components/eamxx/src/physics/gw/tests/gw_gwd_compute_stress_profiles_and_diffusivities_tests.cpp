@@ -35,9 +35,10 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
 
     // Generate random input data
     // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
-    for (auto& d : baseline_data) {
+    for (Int i = 0; i < num_runs; ++i) {
+      auto& d = baseline_data[i];
       // ni must be very small or else we risk a FPE due to a huge exp
-      d.randomize(engine, { {d.ni, {1.E-08, 2.E-08}} });
+      d.randomize(engine, { {d.ni, {1.E-06, 2.E-06}}, {d.src_level, {init_data[i].ktop+1, init_data[i].kbotbg-1}}, {d.ubi, {2.E-04, 3.E-04}}, {d.c, {1.E-04, 2.E-04}} });
     }
 
     // Create copies of data for use by test. Needs to happen before read calls so that
@@ -58,17 +59,29 @@ struct UnitWrap::UnitTest<D>::TestGwdComputeStressProfilesAndDiffusivities : pub
 
     // Get data from test
     for (auto& d : test_data) {
-      gwd_compute_stress_profiles_and_diffusivities(d);
+      if (this->m_baseline_action == GENERATE) {
+        gwd_compute_stress_profiles_and_diffusivities_f(d);
+      }
+      else {
+        gwd_compute_stress_profiles_and_diffusivities(d);
+      }
     }
+
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
 
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
         GwdComputeStressProfilesAndDiffusivitiesData& d_baseline = baseline_data[i];
         GwdComputeStressProfilesAndDiffusivitiesData& d_test = test_data[i];
+        REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
         for (Int k = 0; k < d_baseline.total(d_baseline.tau); ++k) {
-          REQUIRE(d_baseline.total(d_baseline.tau) == d_test.total(d_test.tau));
-          REQUIRE(d_baseline.tau[k] == d_test.tau[k]);
+          // We must add a tolerance here since we are doing the operations
+          // in a different order in order to improve the amount of parallel
+          // computation. This tol can be removed once we are no longer using
+          // fortran to generate baselines.
+          REQUIRE(d_baseline.tau[k] == Approx(d_test.tau[k]).margin(margin));
         }
 
       }

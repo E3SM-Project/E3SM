@@ -196,7 +196,6 @@ struct Functions
     const Real& yv,
     // Inputs/Outputs
     const uview_2d<Real>& tau,
-    const uview_2d<Real>& work,
     // Outputs
     const uview_2d<Real>& gwut,
     const uview_1d<Real>& utgw,
@@ -240,20 +239,22 @@ struct Functions
   KOKKOS_FUNCTION
   static void gwd_compute_stress_profiles_and_diffusivities(
     // Inputs
+    const MemberType& team,
+    const Workspace& workspace,
+    const GwCommonInit& init,
     const Int& pver,
     const Int& pgwv,
-    const Int& ncol,
-    const uview_1d<const Int>& src_level,
-    const uview_1d<const Spack>& ubi,
-    const uview_1d<const Spack>& c,
-    const uview_1d<const Spack>& rhoi,
-    const uview_1d<const Spack>& ni,
-    const uview_1d<const Spack>& kvtt,
-    const uview_1d<const Spack>& t,
-    const uview_1d<const Spack>& ti,
-    const uview_1d<const Spack>& piln,
+    const Int& src_level,
+    const uview_1d<const Real>& ubi,
+    const uview_1d<const Real>& c,
+    const uview_1d<const Real>& rhoi,
+    const uview_1d<const Real>& ni,
+    const uview_1d<const Real>& kvtt,
+    const uview_1d<const Real>& t,
+    const uview_1d<const Real>& ti,
+    const uview_1d<const Real>& piln,
     // Inputs/Outputs
-    const uview_1d<Spack>& tau);
+    const uview_2d<Real>& tau);
 
   KOKKOS_FUNCTION
   static void gwd_project_tau(
