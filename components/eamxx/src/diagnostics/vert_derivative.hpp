@@ -33,8 +33,6 @@ public:
   std::string m_diag_name;
   // Name of derivative method (differential dp or dz)
   std::string m_derivative_method;
-  // Need to hold the ncol,nlev denominator
-  Field m_denominator;
 };
 
 } // namespace scream

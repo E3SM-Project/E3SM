@@ -28,13 +28,9 @@ void VertDerivativeDiag::set_grids(const std::shared_ptr<const GridsManager> gri
   m_diag_name = fn + "_" + m_derivative_method + "vert_derivative";
 
   auto scalar3d = g->get_3d_scalar_layout(true);
-  if (m_derivative_method == "p") {
-    add_field<Required>("pseudo_density", scalar3d, Pa, gn);
-  } else if (m_derivative_method == "z") {
-    add_field<Required>("pseudo_density", scalar3d, Pa, gn);
-    add_field<Required>("qv", scalar3d, kg / kg, gn);
-    add_field<Required>("p_mid", scalar3d, Pa, gn);
-    add_field<Required>("T_mid", scalar3d, K, gn);
+  add_field<Required>("pseudo_density", scalar3d, Pa, gn);
+  if (m_derivative_method == "z") {
+    add_field<Required>("dz", scalar3d, m, gn);
   }
 }
 
@@ -49,23 +45,15 @@ void VertDerivativeDiag::initialize_impl(const RunType /*run_type*/) {
   // TODO: support higher-dimensioned input fields
   EKAT_REQUIRE_MSG(layout.rank() >= 2 && layout.rank() <= 2,
                    "Error! Field rank not supported by VertDerivativeDiag.\n"
-                   " - field name: " +
-                       fid.name() +
-                       "\n"
-                       " - field layout: " +
-                       layout.to_string() + "\n");
+                   " - field name: " + fid.name() + "\n"
+                   " - field layout: " + layout.to_string() + "\n");
   EKAT_REQUIRE_MSG(layout.tags().back() == LEV,
                    "Error! VertDerivativeDiag diagnostic expects a layout ending "
                    "with the 'LEV' tag.\n"
-                   " - field name  : " +
-                       fid.name() +
-                       "\n"
-                       " - field layout: " +
-                       layout.to_string() + "\n");
+                   " - field name  : " + fid.name() + "\n"
+                   " - field layout: " + layout.to_string() + "\n");
 
   ekat::units::Units diag_units = fid.get_units();
-
-  m_denominator = get_field_in("pseudo_density").clone("denominator");
 
   if (m_derivative_method == "p") {
     diag_units = fid.get_units() / Pa;
@@ -94,46 +82,20 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
   using KT          = KokkosTypes<DefaultDevice>;
   using MT          = typename KT::MemberType;
   using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
-  const int ncols   = m_denominator.get_header().get_identifier().get_layout().dim(0);
-  const int nlevs   = m_denominator.get_header().get_identifier().get_layout().dim(1);
+  const int ncols   = f.get_header().get_identifier().get_layout().dim(0);
+  const int nlevs   = f.get_header().get_identifier().get_layout().dim(1);
   const auto policy = TPF::get_default_team_policy(ncols, nlevs);
 
-  // get the denominator first
-  if (m_derivative_method == "p") {
-    m_denominator.update(dp, sp(1.0), sp(0.0));
-  } else if (m_derivative_method == "dz") {
-    // TODO: for some reason the z_mid field keeps getting set to 0
-    // TODO: as a workaround, just calculate z_mid here (sigh...)
-    // m_denominator.update(get_field_in("z_mid"), 1.0, 0.0);
-    using PF  = scream::PhysicsFunctions<DefaultDevice>;
-    auto zm_v = m_denominator.get_view<Real **>();
-    auto pm_v = get_field_in("p_mid").get_view<const Real **>();
-    auto tm_v = get_field_in("T_mid").get_view<const Real **>();
-    auto qv_v = get_field_in("qv").get_view<const Real **>();
+  auto d_v = (m_derivative_method == "z") ? get_field_in("dz").get_view<Real **>() : dp2d;
 
-    Kokkos::parallel_for(
-        "Compute dz for " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
-          const int icol = team.league_rank();
-          auto zm_icol   = ekat::subview(zm_v, icol);
-          auto dp_icol   = ekat::subview(dp2d, icol);
-          auto pm_icol   = ekat::subview(pm_v, icol);
-          auto tm_icol   = ekat::subview(tm_v, icol);
-          auto qv_icol   = ekat::subview(qv_v, icol);
-          PF::calculate_dz(team, dp_icol, pm_icol, tm_icol, qv_icol, zm_icol);
-        });
-  }
-
-  auto d_v = m_denominator.get_view<Real **>();
   Kokkos::parallel_for(
       "Compute df / denominator for " + m_diagnostic_output.name(), policy,
       KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         auto f_icol    = ekat::subview(f2d, icol); // field at midpoint
         auto o_icol    = ekat::subview(o2d, icol); // output at midnpoint
-        auto d_icol =
-            ekat::subview(d_v, icol); // recall denominator is already a difference of interfaces
-        auto dpicol =
-            ekat::subview(dp2d, icol); // in case of z deriv, d_icol and dpicol are not the same
+        auto d_icol    = ekat::subview(d_v, icol); // recall denominator is already a difference of interfaces
+        auto dpicol    = ekat::subview(dp2d, icol); // in case of z deriv, d_icol and dpicol are not the same
 
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&](const int ilev) {
           // boundary points
