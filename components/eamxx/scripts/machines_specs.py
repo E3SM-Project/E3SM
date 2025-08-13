@@ -171,7 +171,7 @@ class Polaris(CrayMachine):
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base("polaris")
+        super().setup_cray("polaris")
 
         compiler = "gnugpu"
 
