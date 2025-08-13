@@ -66,8 +66,10 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt,
   const auto& f_src_l = f_src.get_header().get_identifier().get_layout();
   const int levsiz = f_src_l.dims().back();
 
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const auto policy =
-      ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncols, nlevs_tgt);
+      TPF::get_default_team_policy(ncols, nlevs_tgt);
   using Team = Kokkos::TeamPolicy<KT::ExeSpace>::member_type;
   if (m_vremap_type== MAM4_PSRef) {
 
