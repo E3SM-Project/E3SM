@@ -48,6 +48,15 @@ struct GwInit : public PhysicsTestData {
   }
 
   PTD_STD_DEF(GwInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    shift_int_scalar<D>(ktop);
+    shift_int_scalar<D>(kbotbg);
+  }
 };
 
 struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
@@ -88,6 +97,15 @@ struct GwdComputeTendenciesFromStressDivergenceData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwdComputeTendenciesFromStressDivergenceData, 4, ncol, do_taper, dt, effgw);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
+
 };
 
 struct GwProfData : public PhysicsTestData {
@@ -113,6 +131,15 @@ struct GwProfData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwProfData, 2, ncol, cpair);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
+
 };
 
 struct MomentumEnergyConservationData : public PhysicsTestData {
@@ -145,6 +172,14 @@ struct MomentumEnergyConservationData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(MomentumEnergyConservationData, 2, ncol, dt);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwdComputeStressProfilesAndDiffusivitiesData : public PhysicsTestData {
@@ -178,6 +213,14 @@ struct GwdComputeStressProfilesAndDiffusivitiesData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwdComputeStressProfilesAndDiffusivitiesData, 1, ncol);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwdProjectTauData : public PhysicsTestData {
@@ -213,6 +256,14 @@ struct GwdProjectTauData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwdProjectTauData, 1, ncol);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwdPrecalcRhoiData : public PhysicsTestData {
@@ -249,6 +300,14 @@ struct GwdPrecalcRhoiData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwdPrecalcRhoiData, 3, pcnst, ncol, dt);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwDragProfData : public PhysicsTestData {
@@ -295,6 +354,14 @@ struct GwDragProfData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwDragProfData, 5, pcnst, ncol, do_taper, dt, effgw);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwFrontInitData : public PhysicsTestData{
@@ -312,6 +379,16 @@ struct GwFrontInitData : public PhysicsTestData{
   {}
 
   PTD_STD_DEF_INIT(GwFrontInitData, 3, taubgnd, frontgfc_in, kfront_in);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+
+    shift_int_scalar<D>(kfront_in);
+  }
 };
 
 struct GwFrontProjectWindsData : public PhysicsTestData {
@@ -338,6 +415,14 @@ struct GwFrontProjectWindsData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwFrontProjectWindsData, 2, ncol, kbot);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwFrontGwSourcesData : public PhysicsTestData {
@@ -362,6 +447,14 @@ struct GwFrontGwSourcesData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwFrontGwSourcesData, 2, ncol, kbot);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwCmSrcData : public PhysicsTestData {
@@ -397,6 +490,16 @@ struct GwCmSrcData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwCmSrcData, 2, ncol, kbot);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+
+    shift_int_scalar<D>(kbot);
+  }
 };
 
 struct GwConvectInitData : public PhysicsTestData{
@@ -417,6 +520,14 @@ struct GwConvectInitData : public PhysicsTestData{
   {}
 
   PTD_STD_DEF_INIT(GwConvectInitData, 3, maxh, maxuh, plev_src_wind);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwConvectProjectWindsData : public PhysicsTestData {
@@ -443,6 +554,14 @@ struct GwConvectProjectWindsData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwConvectProjectWindsData, 1, ncol);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwHeatingDepthData : public PhysicsTestData {
@@ -474,6 +593,14 @@ struct GwHeatingDepthData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwHeatingDepthData, 4, ncol, maxq0_conversion_factor, hdepth_scaling_factor, use_gw_convect_old);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwStormSpeedData : public PhysicsTestData {
@@ -505,6 +632,14 @@ struct GwStormSpeedData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwStormSpeedData, 2, ncol, storm_speed_min);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwConvectGwSourcesData : public PhysicsTestData {
@@ -537,6 +672,14 @@ struct GwConvectGwSourcesData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwConvectGwSourcesData, 2, ncol, hdepth_min);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwBeresSrcData : public PhysicsTestData {
@@ -574,6 +717,14 @@ struct GwBeresSrcData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwBeresSrcData, 6, ncol, maxq0_conversion_factor, hdepth_scaling_factor, hdepth_min, storm_speed_min, use_gw_convect_old);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 struct GwEdiffData : public PhysicsTestData {
@@ -609,6 +760,17 @@ struct GwEdiffData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwEdiffData, 4, ncol, kbot, ktop, dt);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+
+    shift_int_scalar<D>(kbot);
+    shift_int_scalar<D>(ktop);
+  }
 };
 
 struct GwDiffTendData : public PhysicsTestData {
@@ -633,6 +795,17 @@ struct GwDiffTendData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwDiffTendData, 4, ncol, kbot, ktop, dt);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+
+    shift_int_scalar<D>(kbot);
+    shift_int_scalar<D>(ktop);
+  }
 };
 
 struct GwOroSrcData : public PhysicsTestData {
@@ -668,6 +841,14 @@ struct GwOroSrcData : public PhysicsTestData {
   {}
 
   PTD_STD_DEF_INIT(GwOroSrcData, 1, ncol);
+
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
+  {
+    PhysicsTestData::transition<D>();
+
+    init.transition<D>();
+  }
 };
 
 // Glue functions to call fortran from from C++ with the Data struct
@@ -675,6 +856,7 @@ void gwd_compute_tendencies_from_stress_divergence(GwdComputeTendenciesFromStres
 void gwd_compute_tendencies_from_stress_divergence_f(GwdComputeTendenciesFromStressDivergenceData& d);
 void gw_prof(GwProfData& d);
 void momentum_energy_conservation(MomentumEnergyConservationData& d);
+void gwd_compute_stress_profiles_and_diffusivities_f(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_compute_stress_profiles_and_diffusivities(GwdComputeStressProfilesAndDiffusivitiesData& d);
 void gwd_project_tau(GwdProjectTauData& d);
 void gwd_precalc_rhoi(GwdPrecalcRhoiData& d);
