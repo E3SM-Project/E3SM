@@ -525,8 +525,8 @@ void MAMMicrophysics::set_oxid_reader()
       oxid_fields.push_back(get_field_out(field_name));
   }
 
-  const int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
-  util::TimeStamp ref_ts_oxid= mam_coupling::convert_date(oxid_ymd);
+  // Beg of any year, since we use yearly periodic timeline
+  util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
   data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, ref_ts_oxid);
   data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
@@ -553,9 +553,8 @@ void MAMMicrophysics::set_oxid_reader()
 // set DataInterpolation object for linoz reader.
 void MAMMicrophysics::set_linoz_reader(){
   auto pmid = get_field_in("p_mid");
-  const int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
-  // in format YYYYMMDD
-  util::TimeStamp ref_ts_linoz = mam_coupling::convert_date(linoz_cyclical_ymd);
+  // Beg of any year, since we use yearly periodic timeline
+  util::TimeStamp ref_ts_linoz (1,1,1,0,0,0);
   const auto m_linoz_file_name = m_params.get<std::string>("mam4_linoz_file_name");
   const std::string linoz_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -601,7 +600,8 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     const auto& var_name=pair.first;
     std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
     const auto file_name  = m_params.get<std::string>(item_name);
-    util::TimeStamp ref_ts_vertical = mam_coupling::convert_date(elevated_emiss_cyclical_ymd);
+    //util::TimeStamp ref_ts_vertical = mam_coupling::convert_date(elevated_emiss_cyclical_ymd);
+    util::TimeStamp ref_ts_vertical (1,1,1,0,0,0);
     std::vector<Field> vertical_fields;
     for(const auto &field_name :pair.second) {
       vertical_fields.push_back(get_field_out(field_name+"_"+var_name).alias(field_name));
