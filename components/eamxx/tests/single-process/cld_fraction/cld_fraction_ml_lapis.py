@@ -61,6 +61,8 @@ def main ():
     qi = TensorPlaceholder([-1, -1], dtype)
     liq = TensorPlaceholder([-1, -1], dtype)
     mlir_module = torchscript.compile(model, (qi, liq), output_type='linalg-on-tensors')
+    with open("cldfrac.mlir",'w') as fd:
+        fd.write(str(mlir_module))
 
     backend = KokkosBackend.KokkosBackend(dump_mlir=False)
     backend.package_name = "cld_fraction_cppml"

@@ -1,10 +1,12 @@
 #include "eamxx_cld_fraction_process_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
 
 #include <array>
+
+#include "cldfrac_ml_lapis.hpp"
 
 #ifdef EAMXX_HAS_PYTHON
 #include <pybind11/pybind11.h>
@@ -77,20 +79,10 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_analysis"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_analysis"),m_grid,0.0,1.0,false);
-#ifdef EAMXX_HAS_PYTHON
-  if (m_py_module.has_value()) {
-    const auto& py_module = std::any_cast<const py::module&>(m_py_module);
-    try {
-      py_module.attr("init")();
-    } catch (const pybind11::error_already_set& e) {
-      std::cout << "[CldFraction::initialize_impl] Error! Something went wrong while calling the python module's function 'init'.\n"
-                   " - module name: " + m_params.get<std::string>("py_module_name") + "\n"
-                   " - pybind11 error: " + std::string(e.what()) + "\n";
-      throw e;
-    }
 
+  if (m_params.get<bool>("use_lapis_emulator")) {
+    lapis_initialize();
   }
-#endif
 }
 
 // =========================================================================================
@@ -122,15 +114,7 @@ void CldFraction::run_impl (const double /* dt */)
     const auto& py_module = std::any_cast<const py::module&>(m_py_module);
     double ice_threshold      = m_params.get<double>("ice_cloud_threshold");
     double ice_4out_threshold = m_params.get<double>("ice_cloud_for_analysis_threshold");
-
-    try {
-      py_module.attr("main")(ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
-    } catch (const pybind11::error_already_set& e) {
-      std::cout << "[CldFraction::run_impl] Error! Something went wrong while calling the python module's function 'main'.\n"
-                   " - module name: " + m_params.get<std::string>("py_module_name") + "\n"
-                   " - pybind11 error: " + std::string(e.what()) + "\n";
-      throw e;
-    }
+    py_module.attr("main")(ice_threshold,ice_4out_threshold,py_qi,py_liq_cld_frac,py_ice_cld_frac,py_tot_cld_frac,py_ice_cld_frac_4out,py_tot_cld_frac_4out);
 
     // Sync outputs to dev
     qi.sync_to_dev();
@@ -142,22 +126,58 @@ void CldFraction::run_impl (const double /* dt */)
   } else
 #endif
   {
-    auto qi_v                = qi.get_view<const Pack**>();
-    auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
-    auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
-    auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
-    auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
-    auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+    if (m_params.get<bool>("use_lapis_emulator")) {
+      using KT = KokkosTypes<DefaultDevice>;
+      using ExeSpace = typename KT::ExeSpace;
+      using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+      using MemberType = typename KT::MemberType;
 
-    CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
-      qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+      const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
+
+      auto qi_v                = qi.get_view<const Real**>();
+      auto liq_cld_frac_v      = liq_cld_frac.get_view<const Real**>();
+      auto ice_cld_frac_v      = ice_cld_frac.get_view<Real**>();
+      auto tot_cld_frac_v      = tot_cld_frac.get_view<Real**>();
+      auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+      auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+
+      constexpr int max_shared = 4096;
+      // This is a number that fits within all modern
+      // Determine L0 and L1 per-team scratch size
+      constexpr int scratch0_required = forward_L0_scratch_required(max_shared);
+      constexpr int scratch1_required = forward_L1_scratch_required(max_shared);
+      GlobalViews_forward globalViews;
+      policy.set_scratch_size(0, Kokkos::PerTeam(scratch0_required));
+      policy.set_scratch_size(1, Kokkos::PerTeam(scratch1_required));
+
+      // Execute the appropriate specialization based on shared amount
+      auto lambda = KOKKOS_LAMBDA (const MemberType& team) {
+        char* scratch0 = (char*)(team.team_scratch(0).get_shmem(scratch0_required));
+        char* scratch1 = (char*)(team.team_scratch(1).get_shmem(scratch1_required));
+        forward<ExeSpace, max_shared>(team, globalViews, pred, desc, scratch0, scratch1);
+      };
+
+      Kokkos::parallel_for(policy,lambda);
+    } else {
+      auto qi_v                = qi.get_view<const Pack**>();
+      auto liq_cld_frac_v      = liq_cld_frac.get_view<const Pack**>();
+      auto ice_cld_frac_v      = ice_cld_frac.get_view<Pack**>();
+      auto tot_cld_frac_v      = tot_cld_frac.get_view<Pack**>();
+      auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
+      auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
+
+      CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
+        qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+    }
   }
 }
 
 // =========================================================================================
 void CldFraction::finalize_impl()
 {
-  // Do nothing
+  if (m_params.get<bool>("use_lapis_emulator")) {
+    lapis_finalize();
+  }
 }
 // =========================================================================================
 
