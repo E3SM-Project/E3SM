@@ -600,15 +600,16 @@ inline void update_monthly_timestate(
 
   if (month != time_state.current_month) {
 
-    // Set data[TracerDataIndex::END] to be the data from 
+    // Set data[TracerDataIndex::END] to be the data from
     // the end of the month. In most cases the data is already
-    // there but on restart the data_tracer array will not 
-    // be set up correctly and this call will fix the 
-    // non-BFB restart bug in that case.
+    // there but on restart the data_tracer array will not
+    // be set up correctly and we know it is a restart
+    // because time_state.current_month == -1;
     const int this_month =
       data_tracer.offset_time_index_ + month;
-    update_tracer_data_from_file(scorpio_reader, this_month,
-                                 tracer_horiz_interp, data_tracer);
+    if (-1 == time_state.current_month)
+      update_tracer_data_from_file(scorpio_reader, this_month,
+                                   tracer_horiz_interp, data_tracer);
 
     const int nvars = data_tracer.nvars_;
     const auto& ps = data_tracer.ps;
