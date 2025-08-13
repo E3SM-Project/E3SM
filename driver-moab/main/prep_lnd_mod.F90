@@ -435,14 +435,14 @@ contains
           end if
           call seq_map_init_rcfile(mapper_Sa2l, atm(1), lnd(1), &
                'seq_maps.rc','atm2lnd_smapname:','atm2lnd_smaptype:',samegrid_al, &
-               'mapper_Sa2l initialization',esmf_map_flag, no_match=.true.)
+               'mapper_Sa2l initialization',esmf_map_flag)
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2l'
           end if
           call seq_map_init_rcfile(mapper_Fa2l, atm(1), lnd(1), &
                'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
-               'mapper_Fa2l initialization',esmf_map_flag, no_match=.true.)
+               'mapper_Fa2l initialization',esmf_map_flag)
 ! similar to prep_atm_init, lnd and atm reversed
 #ifdef HAVE_MOAB
           ! important change: do not compute intx at all between atm and land when we have samegrid_al
