@@ -104,6 +104,7 @@ list(APPEND RAW_SOURCES
 # model_forward (DISABLE qsmp for these)
 set(SEAICE_MODEL_FORWARD
   core_seaice/model_forward/mpas_seaice_core.F
+  core_seaice/model_forward/mpas_seaice_core_interface_structs.F
   core_seaice/model_forward/mpas_seaice_core_interface.F
 )
 list(APPEND RAW_SOURCES ${SEAICE_MODEL_FORWARD})
