@@ -156,7 +156,7 @@
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon" npg="2">atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_northamericax4v1"  >atm/cam/topo/USGS_northamericax4v1_12xdel2_consistentSGH_191023.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_northamericax4v1" npg="2">atm/cam/topo/USGS-gtopo30_northamericax4v1np4pg2_oroshp_x6t.c20250813.nc</bnd_topo>
-<bnd_topo hgrid="ne0np4_eastasiax4v1" npg="2">atm/cam/topo/GTOPO30_eastasiax4v1np4pg2_oroshp_x6t.c20250805.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_eastasiax4v1" npg="2">atm/cam/topo/USGS-gtopo30_eastasiax4v1np4pg2_oroshp_x6t.c20250805.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_antarcticax4v1"  >atm/cam/topo/USGS-gtopo30_antarcticax4v1_12xdel2_consistentSGH_191120.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_antarcticax4v1"  npg="2">atm/cam/topo/USGS_gtopo30_antarcticax4v1pg2_12xdel2_consistentSGH_20200925.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_arcticx4v1"      npg="2">atm/cam/topo/USGS-gtopo30_arcticx4v1pg2_12xdel2_20210527.nc</bnd_topo>
