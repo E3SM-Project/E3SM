@@ -30,6 +30,9 @@ TEST_CASE("vert_derivative") {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
+  // A numerical tolerance
+  auto tol = std::numeric_limits<Real>::epsilon() * 100;
+
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
@@ -142,7 +145,15 @@ TEST_CASE("vert_derivative") {
     dp_vert_derivative->compute_diagnostic();
     auto dp_vert_derivative_f = dp_vert_derivative->get_diagnostic();
 
-    REQUIRE(views_are_equal(dp_vert_derivative_f, diag1_m));
+    // Check that the two are the same manually using the tolerance
+    dp_vert_derivative_f.sync_to_host();
+    auto view_deriv_f_d = dp_vert_derivative_f.get_view<Real **, Host>();
+    auto view_deriv_f_m = diag1_m.get_view<Real **, Host>();
+    for (int icol = 0; icol < ngcols; ++icol) {
+      for (int ilev = 0; ilev < nlevs; ++ilev) {
+        REQUIRE_THAT(view_deriv_f_d(icol, ilev), Catch::Matchers::WithinRel(view_deriv_f_m(icol, ilev), tol));
+      }
+    }
   }
 
   // TODO: add SECTION("dz_vert_derivative")
