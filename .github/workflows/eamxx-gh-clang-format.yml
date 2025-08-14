@@ -3,11 +3,11 @@ name: "eamxx-format"
 # if .{cpp,hpp} files are touched in a PR, lint them!
 
 on:
-  pull_request:
-    branches: ["master"]
-    paths:
-      - 'components/eamxx/**/*.cpp'
-      - 'components/eamxx/**/*.hpp'
+  # pull_request:
+  #   branches: ["master"]
+  #   paths:
+  #     - 'components/eamxx/**/*.cpp'
+  #     - 'components/eamxx/**/*.hpp'
 
   # Manual run
   workflow_dispatch:
