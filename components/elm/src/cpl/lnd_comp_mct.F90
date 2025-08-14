@@ -149,10 +149,8 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    character*100 outfile, wopts, localmeshfile
+    character*100 outfile, wopts
     integer :: ierr, nsend,n
-    character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
-    character(len=SHR_KIND_CL) :: lnd_gnam          ! lnd grid
 #endif
     !-----------------------------------------------------------------------
 
@@ -867,11 +865,9 @@ contains
     real(r8)   :: latv, lonv
     integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
     integer tagtype, numco, ent_type, mbtype, block_ID
-    character*100 outfile, wopts, localmeshfile
+    character*100 outfile, wopts
     character(CXX) ::  tagname ! hold all fields
     character*32  appname
-
-    integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
     ! define a MOAB app for ELM
     appname="LNDMB"//C_NULL_CHAR

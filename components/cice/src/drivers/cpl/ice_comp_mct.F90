@@ -66,6 +66,18 @@ module ice_comp_mct
   use ice_broadcast
   use CICE_RunMod
 
+#ifdef HAVE_MOAB
+  use iso_c_binding
+  use seq_comm_mct,       only: MPSIID! id of moab sea ice app
+  use seq_comm_mct,       only: num_moab_exports
+#ifdef MOABCOMP 
+  use seq_comm_mct , only: seq_comm_compare_mb_mct
+#endif
+#ifdef MOABDEBUG
+  use iMOAB        , only: iMOAB_WriteMesh
+#endif
+#endif
+
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
   public :: ice_init_mct
@@ -87,6 +99,21 @@ module ice_comp_mct
   private :: ice_coffset_mct
   private :: ice_setcoupling_mct
 
+
+#ifdef HAVE_MOAB
+  private :: init_moab_cice   ! create moab mesh (cloud of points)
+  private :: ice_export_moab ! it could be part of ice_import_export, but we will keep it here
+  private :: ice_import_moab ! it could be part of ice_import_export, but we will keep it here
+  integer , private :: mblsize, totalmbls
+  real (r8) , allocatable, private :: i2x_im(:,:) ! for tags to be set in MOAB
+
+  integer :: nrecv, totalmblsimp
+  real (r8) , allocatable, private :: x2i_im(:,:) ! for tags from MOAB
+
+  integer  :: mpicom_ice_moab ! used also for mpi-reducing the difference between moab tags and mct avs
+  integer :: rank2
+
+#endif
 !
 ! !PRIVATE VARIABLES
 
@@ -190,7 +217,9 @@ contains
          orb_lambm0=lambm0, orb_obliqr=obliqr)
 
     !   call shr_init_memusage()
-
+#ifdef HAVE_MOAB
+    mpicom_ice_moab = mpicom_loc ! save it to use in moab init
+#endif
     !---------------------------------------------------------------------------
     ! use infodata to determine type of run
     !---------------------------------------------------------------------------
@@ -360,7 +389,9 @@ contains
        nxg = nxcpl
        nyg = nycpl
     endif
-
+#ifdef HAVE_MOAB
+    call init_moab_cice (infodata)
+#endif
     ! Inialize mct attribute vectors
 
     call mct_aVect_init(x2i_i, rList=seq_flds_x2i_fields, lsize=lsize)
@@ -514,7 +545,7 @@ contains
     call seq_timemgr_EClockGetData(EClock,               &
          curr_ymd=curr_ymd, curr_tod=curr_tod)
 
-    if (calendar_type .eq. "GREGORIAN") then 	
+    if (calendar_type .eq. "GREGORIAN") then
        nyrp = nyr
        nyr = (curr_ymd/10000)+1           ! integer year of basedate
        if (nyr /= nyrp) then
@@ -1083,7 +1114,7 @@ contains
        do j = jlo, jhi
        do i = ilo, ihi
           n = n+1
-	  if (trim(grid_type) == 'latlon') then
+       if (trim(grid_type) == 'latlon') then
              data(n) = ocn_gridcell_frac(i,j,iblk)
           else
              data(n) = real(nint(hm(i,j,iblk)),kind=dbl_kind)
@@ -1414,6 +1445,269 @@ contains
   restart_filename = trim(restart_file) // "." // trim(rdate) 
 
 end function restart_filename
+
+#ifdef HAVE_MOAB
+  subroutine init_moab_cice(infodata)   ! create moab mesh (cloud of points)
+   ! create moab point cloud
+    use shr_kind_mod     , only : CXX => SHR_KIND_CXX
+    use iMOAB        , only: iMOAB_CreateVertices, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
+    iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+    iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
+    use ice_grid,        only : grid_file ! domain file used ?
+
+    type(seq_infodata_type)     , pointer :: infodata   ! Input init object
+
+    integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
+    integer :: lsz !  keep local size
+    integer :: gsize ! global size, that we do not need, actually
+    integer :: n, iam, i, j, dims, gi
+
+    integer     :: iblk, ilo, ihi, jlo, jhi ! beginning and end of physical domain
+    type(block) :: this_block         ! block information for current block
+
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(r8), dimension(:), allocatable  :: latv, lonv, area, frac, mask
+    integer   :: iv, ilat, ilon, igdx, ierr, tagindex, nxg, nyg
+    integer   :: tagtype, numco, ent_type, mbtype, block_ID
+    character*100 outfile, wopts
+    character(CXX) ::  tagname ! hold all fields
+    character*32  appname
+
+    call mpi_comm_rank(mpicom_ice_moab,iam,ierr)
+    ! define a MOAB app for ELM
+    appname="CICEMB"//C_NULL_CHAR
+    ! first cice instance, should be 13 ICEID is a private local variable
+    ierr = iMOAB_RegisterApplication(appname, mpicom_ice_moab, ICEID, MPSIID)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: cannot register moab app'
+       call shr_sys_abort()
+    endif
+    if(iam == 0) then
+       write(nu_diag,*) "register MOAB app:", trim(appname), "  MPSIID=", MPSIID
+    endif
+
+    ! start describing the mesh to MOAB
+
+    dims  =3 ! store as 3d mesh
+    ! number the local grid
+    n=0
+    do iblk = 1, nblocks ! ice_domain variable
+       this_block = get_block(blocks_ice(iblk),iblk)         
+       ilo = this_block%ilo
+       ihi = this_block%ihi
+       jlo = this_block%jlo
+       jhi = this_block%jhi
+       
+       do j = jlo, jhi
+          do i = ilo, ihi
+             n = n+1
+          enddo !i
+       enddo    !j
+    enddo        !iblk
+    lsz = n
+
+    allocate(gindex(lsz))
+    n=0
+    nxg = nx_global
+    nyg = ny_global
+    gsize = nxg * nyg
+    do iblk = 1, nblocks
+       this_block = get_block(blocks_ice(iblk),iblk)         
+       ilo = this_block%ilo
+       ihi = this_block%ihi
+       jlo = this_block%jlo
+       jhi = this_block%jhi
+       
+       do j = jlo, jhi
+          do i = ilo, ihi
+             n = n+1
+             ilon = this_block%i_glob(i)  
+             ilat = this_block%j_glob(j) 
+             gi = (ilat-1)*nxg + ilon
+             gindex(n) = gi
+          enddo !i
+       enddo    !j
+    enddo        !iblk
+
+    ! copy from ice_domain_mct
+    allocate(lonv(lsz), latv(lsz), mask(lsz), area(lsz), frac(lsz))
+    n=0
+    do iblk = 1, nblocks
+       this_block = get_block(blocks_ice(iblk),iblk)         
+       ilo = this_block%ilo
+       ihi = this_block%ihi
+       jlo = this_block%jlo
+       jhi = this_block%jhi
+       
+       do j = jlo, jhi
+       do i = ilo, ihi
+          n = n+1
+          lonv(n) = TLON(i,j,iblk)! *rad_to_deg 
+          latv(n) = TLAT(i,j,iblk)! *rad_to_deg 
+          area(n) = tarea(i,j,iblk)/(radius*radius)
+          mask(n) = real(nint(hm(i,j,iblk)),kind=dbl_kind)
+          if (trim(grid_type) == 'latlon') then
+             frac(n) = ocn_gridcell_frac(i,j,iblk)
+          else
+             frac(n) = real(nint(hm(i,j,iblk)),kind=dbl_kind)
+          end if
+       enddo    !i
+       enddo    !j
+    enddo       !iblk
+    
+
+    allocate(moab_vert_coords(lsz*dims))
+    do n = 1, lsz
+      moab_vert_coords(3*n-2)=COS(latv(n))*COS(lonv(n))
+      moab_vert_coords(3*n-1)=COS(latv(n))*SIN(lonv(n))
+      moab_vert_coords(3*n  )=SIN(latv(n))
+    enddo
+    ierr = iMOAB_CreateVertices(MPSIID, lsz*3, dims, moab_vert_coords)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to create MOAB vertices in cice model'
+       call shr_sys_abort()
+    endif
+
+    tagtype = 0  ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to retrieve GLOBAL_ID tag'
+       call shr_sys_abort()
+    endif
+
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( MPSIID, tagname, lsz , ent_type, gindex)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set GLOBAL_ID tag'
+       call shr_sys_abort()
+    endif
+    ierr = iMOAB_ResolveSharedEntities( MPSIID, lsz, gindex );
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to resolve shared entities'
+       call shr_sys_abort()
+    endif
+
+    !there are no shared entities, but we will set a special partition tag, in order to see the
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+    tagname='partition'//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to create new partition tag '
+       call shr_sys_abort()
+    endif
+
+    gindex = iam
+    ierr = iMOAB_SetIntTagStorage ( MPSIID, tagname, lsz , ent_type, gindex)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set partition tag '
+       call shr_sys_abort()
+    endif
+
+    tagname='lat:lon:area:mask:frac:aream'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to create lat:lon:area:mask:frac:aream tags '
+       call shr_sys_abort()
+    endif
+
+    tagname='frac'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, frac)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set frac tag  '
+       call shr_sys_abort()
+    endif
+
+    tagname='area'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, area)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set area tag  '
+       call shr_sys_abort()
+    endif
+    tagname='mask'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, mask)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set mask tag  '
+       call shr_sys_abort()
+    endif
+    latv = latv*rad_to_deg  ! bring them back as degrees?
+    lonv = lonv*rad_to_deg
+
+    tagname='lat'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, latv)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set lat tag  '
+       call shr_sys_abort()
+    endif
+    
+    tagname='lon'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, lsz , ent_type, lonv)
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to set lon tag  '
+       call shr_sys_abort()
+    endif
+
+    ierr = iMOAB_UpdateMeshInfo( MPSIID )
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to update mesh info  '
+       call shr_sys_abort()
+    endif
+
+    deallocate(moab_vert_coords)
+    deallocate(gindex)
+    deallocate(latv)
+    deallocate(lonv)
+    deallocate(area)
+    deallocate(mask)
+    deallocate(frac)
+
+  ! define all tags from seq_flds_i2x_fields
+  ! define tags according to the seq_flds_i2x_fields 
+    tagtype = 1  ! dense, double
+    numco = 1 !  one value per cell / entity
+
+    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to define seq_flds_i2x_fields for cice moab mesh '
+       call shr_sys_abort()
+    endif
+
+
+    tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to define seq_flds_x2i_fields for cice moab mesh '
+       call shr_sys_abort()
+    endif
+
+    ! send to coupler the ice_domain file
+    if (iam == 0) then
+       write(nu_diag, *) ' ice domain file used for moab coupler: ', grid_file
+    endif
+    call seq_infodata_PutData( infodata, ice_domain=grid_file)
+#ifdef MOABDEBUG
+    outfile = 'CIceMesh.h5m'//C_NULL_CHAR
+    wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+    ierr = iMOAB_WriteMesh(MPSIID, trim(outfile), trim(wopts))
+    if (ierr > 0 )  then
+       write(nu_diag, *) 'Error: fail to write cice mesh  '
+       call shr_sys_abort()
+    endif
+#endif
+
+  end subroutine init_moab_cice
+
+  subroutine  ice_export_moab() ! it could be part of ice_import_export, but we will keep it here
+  
+  end subroutine ice_export_moab
+  
+  subroutine ice_import_moab() ! 
+
+  end subroutine ice_import_moab
+#endif
 
 end module ice_comp_mct
 
