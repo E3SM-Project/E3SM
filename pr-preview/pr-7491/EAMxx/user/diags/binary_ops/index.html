@@ -9,21 +9,25 @@
       
       
       
+        <link rel="prev" href="../conditional_sampling/">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+        <link rel="next" href="../vert_derivative/">
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
     
     
       
-        <title>SSP585 Forcing data - E3SM</title>
+        <title>Binary arithmetics - E3SM</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
   
@@ -50,7 +54,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
   
@@ -86,7 +90,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ssp585-forcing-data" class="md-skip">
+        <a href="#binary-operations-diagnostics" class="md-skip">
           Skip to content
         </a>
       
@@ -102,7 +106,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-header__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -122,7 +126,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SSP585 Forcing data
+              Binary arithmetics
             
           </span>
         </div>
@@ -245,7 +249,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
+    <a href="../../../.." title="E3SM" class="md-nav__button md-logo" aria-label="E3SM" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -275,7 +279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -326,7 +330,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../.." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   
@@ -361,7 +365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/" class="md-nav__link">
+      <a href="../../../../installation/" class="md-nav__link">
         
   
   
@@ -384,7 +388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../../../user-guide/" class="md-nav__link">
         
   
   
@@ -429,7 +433,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../dev-guide/" class="md-nav__link ">
+            <a href="../../../../dev-guide/" class="md-nav__link ">
               
   
   
@@ -464,7 +468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../dev-guide/adding-grid-support/" class="md-nav__link">
+      <a href="../../../../dev-guide/adding-grid-support/" class="md-nav__link">
         
   
   
@@ -499,8 +503,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -527,11 +533,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -547,7 +553,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Components
@@ -587,7 +593,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../Data-Models/" class="md-nav__link ">
+            <a href="../../../../Data-Models/" class="md-nav__link ">
               
   
   
@@ -622,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-atmos/" class="md-nav__link">
         
   
   
@@ -645,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Data-Models/user-guide/data-land/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-land/" class="md-nav__link">
         
   
   
@@ -668,7 +674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
+      <a href="../../../../Data-Models/user-guide/data-ocean/" class="md-nav__link">
         
   
   
@@ -725,7 +731,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAM/" class="md-nav__link ">
+            <a href="../../../../EAM/" class="md-nav__link ">
               
   
   
@@ -786,7 +792,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAM/user-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/user-guide/" class="md-nav__link ">
               
   
   
@@ -821,7 +827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/namelist_parameters/" class="md-nav__link">
         
   
   
@@ -844,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/aerosol_phys_prop/" class="md-nav__link">
         
   
   
@@ -867,7 +873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
+      <a href="../../../../EAM/user-guide/emission_oxidant_files/" class="md-nav__link">
         
   
   
@@ -898,7 +904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/dev-guide/" class="md-nav__link">
+      <a href="../../../../EAM/dev-guide/" class="md-nav__link">
         
   
   
@@ -969,7 +975,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAM/tech-guide/" class="md-nav__link ">
+            <a href="../../../../EAM/tech-guide/" class="md-nav__link ">
               
   
   
@@ -1004,7 +1010,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/homme/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/homme/" class="md-nav__link">
         
   
   
@@ -1027,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/atmosphere-grid-overview/" class="md-nav__link">
         
   
   
@@ -1050,7 +1056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/p3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/p3/" class="md-nav__link">
         
   
   
@@ -1073,7 +1079,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/clubb/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/clubb/" class="md-nav__link">
         
   
   
@@ -1096,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/zm/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/zm/" class="md-nav__link">
         
   
   
@@ -1119,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/rrtmg/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/rrtmg/" class="md-nav__link">
         
   
   
@@ -1142,7 +1148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/orodrag/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/orodrag/" class="md-nav__link">
         
   
   
@@ -1165,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/mam/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/mam/" class="md-nav__link">
         
   
   
@@ -1188,7 +1194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/vbs/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/vbs/" class="md-nav__link">
         
   
   
@@ -1211,7 +1217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/dust/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/dust/" class="md-nav__link">
         
   
   
@@ -1234,7 +1240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/oceanfilms/" class="md-nav__link">
         
   
   
@@ -1257,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/chemUCIlinozv3/" class="md-nav__link">
         
   
   
@@ -1280,7 +1286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/cosp/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/cosp/" class="md-nav__link">
         
   
   
@@ -1303,7 +1309,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAM/tech-guide/armdiags/" class="md-nav__link">
+      <a href="../../../../EAM/tech-guide/armdiags/" class="md-nav__link">
         
   
   
@@ -1339,6 +1345,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1360,15 +1368,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAMxx/" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -1387,7 +1395,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3">
             <span class="md-nav__icon md-icon"></span>
             EAMxx
@@ -1400,6 +1408,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1443,15 +1453,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAMxx/user/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -1470,7 +1480,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_3_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_2">
             <span class="md-nav__icon md-icon"></span>
             User Guide
@@ -1486,7 +1496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/eamxx_cases/" class="md-nav__link">
+      <a href="../../eamxx_cases/" class="md-nav__link">
         
   
   
@@ -1509,7 +1519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/model_configuration/" class="md-nav__link">
+      <a href="../../model_configuration/" class="md-nav__link">
         
   
   
@@ -1532,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/nudging/" class="md-nav__link">
+      <a href="../../nudging/" class="md-nav__link">
         
   
   
@@ -1555,7 +1565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/clean_clear_sky/" class="md-nav__link">
+      <a href="../../clean_clear_sky/" class="md-nav__link">
         
   
   
@@ -1578,7 +1588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/cosp/" class="md-nav__link">
+      <a href="../../cosp/" class="md-nav__link">
         
   
   
@@ -1601,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/rrm_eamxx/" class="md-nav__link">
+      <a href="../../rrm_eamxx/" class="md-nav__link">
         
   
   
@@ -1624,7 +1634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/dp_eamxx/" class="md-nav__link">
+      <a href="../../dp_eamxx/" class="md-nav__link">
         
   
   
@@ -1647,7 +1657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/python/" class="md-nav__link">
+      <a href="../../python/" class="md-nav__link">
         
   
   
@@ -1670,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/io_metadata/" class="md-nav__link">
+      <a href="../../io_metadata/" class="md-nav__link">
         
   
   
@@ -1693,7 +1703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/multi-instance-mvk/" class="md-nav__link">
+      <a href="../../multi-instance-mvk/" class="md-nav__link">
         
   
   
@@ -1716,7 +1726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/eamxx_params/" class="md-nav__link">
+      <a href="../../eamxx_params/" class="md-nav__link">
         
   
   
@@ -1736,6 +1746,8 @@
                 
   
   
+    
+  
   
   
     
@@ -1759,15 +1771,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAMxx/user/diags/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1786,7 +1798,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_3_2_13">
             <span class="md-nav__icon md-icon"></span>
             Diagnostics
@@ -1802,7 +1814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/diags/field_contraction/" class="md-nav__link">
+      <a href="../field_contraction/" class="md-nav__link">
         
   
   
@@ -1825,7 +1837,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/diags/conditional_sampling/" class="md-nav__link">
+      <a href="../conditional_sampling/" class="md-nav__link">
         
   
   
@@ -1845,10 +1857,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../EAMxx/user/diags/binary_ops/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Binary arithmetics
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1859,6 +1893,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported operations
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unit-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Caveats
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1871,7 +1979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/diags/vert_derivative/" class="md-nav__link">
+      <a href="../vert_derivative/" class="md-nav__link">
         
   
   
@@ -1902,7 +2010,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/presentations/" class="md-nav__link">
+      <a href="../../presentations/" class="md-nav__link">
         
   
   
@@ -1925,7 +2033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/user/io_aliases/" class="md-nav__link">
+      <a href="../../io_aliases/" class="md-nav__link">
         
   
   
@@ -2008,7 +2116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/dev_quickstart/" class="md-nav__link">
+      <a href="../../../developer/dev_quickstart/" class="md-nav__link">
         
   
   
@@ -2031,7 +2139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/code_structure/" class="md-nav__link">
+      <a href="../../../developer/code_structure/" class="md-nav__link">
         
   
   
@@ -2104,7 +2212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/style_guide_overview/" class="md-nav__link">
+      <a href="../../../developer/style/style_guide_overview/" class="md-nav__link">
         
   
   
@@ -2127,7 +2235,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/format/" class="md-nav__link">
+      <a href="../../../developer/style/format/" class="md-nav__link">
         
   
   
@@ -2202,7 +2310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/style/" class="md-nav__link">
+      <a href="../../../developer/style/style/" class="md-nav__link">
         
   
   
@@ -2225,7 +2333,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/types/" class="md-nav__link">
+      <a href="../../../developer/style/types/" class="md-nav__link">
         
   
   
@@ -2248,7 +2356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/functions/" class="md-nav__link">
+      <a href="../../../developer/style/functions/" class="md-nav__link">
         
   
   
@@ -2271,7 +2379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/variables/" class="md-nav__link">
+      <a href="../../../developer/style/variables/" class="md-nav__link">
         
   
   
@@ -2294,7 +2402,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/templates/" class="md-nav__link">
+      <a href="../../../developer/style/templates/" class="md-nav__link">
         
   
   
@@ -2369,7 +2477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/style/resources/clang-format_HOWTO/" class="md-nav__link">
+      <a href="../../../developer/style/resources/clang-format_HOWTO/" class="md-nav__link">
         
   
   
@@ -2436,7 +2544,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAMxx/developer/dev_testing/" class="md-nav__link ">
+            <a href="../../../developer/dev_testing/" class="md-nav__link ">
               
   
   
@@ -2471,7 +2579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/dev_testing/testing_for_development/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/testing_for_development/" class="md-nav__link">
         
   
   
@@ -2494,7 +2602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/dev_testing/test_all_eamxx/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/test_all_eamxx/" class="md-nav__link">
         
   
   
@@ -2517,7 +2625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/dev_testing/full_model_testing/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/full_model_testing/" class="md-nav__link">
         
   
   
@@ -2540,7 +2648,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/dev_testing/ci_nightly/" class="md-nav__link">
+      <a href="../../../developer/dev_testing/ci_nightly/" class="md-nav__link">
         
   
   
@@ -2625,7 +2733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/kokkos_ekat/" class="md-nav__link">
+      <a href="../../../developer/kokkos_ekat/" class="md-nav__link">
         
   
   
@@ -2648,7 +2756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/field/" class="md-nav__link">
+      <a href="../../../developer/field/" class="md-nav__link">
         
   
   
@@ -2671,7 +2779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/grid/" class="md-nav__link">
+      <a href="../../../developer/grid/" class="md-nav__link">
         
   
   
@@ -2694,7 +2802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/processes/" class="md-nav__link">
+      <a href="../../../developer/processes/" class="md-nav__link">
         
   
   
@@ -2717,7 +2825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/io/" class="md-nav__link">
+      <a href="../../../developer/io/" class="md-nav__link">
         
   
   
@@ -2740,7 +2848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/developer/TPLs/" class="md-nav__link">
+      <a href="../../../developer/TPLs/" class="md-nav__link">
         
   
   
@@ -2801,7 +2909,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../EAMxx/technical/" class="md-nav__link ">
+            <a href="../../../technical/" class="md-nav__link ">
               
   
   
@@ -2836,7 +2944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../EAMxx/technical/aerocom_cldtop/" class="md-nav__link">
+      <a href="../../../technical/aerocom_cldtop/" class="md-nav__link">
         
   
   
@@ -2901,7 +3009,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../ELM/" class="md-nav__link ">
+            <a href="../../../../ELM/" class="md-nav__link ">
               
   
   
@@ -2936,7 +3044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ELM/user-guide/" class="md-nav__link">
+      <a href="../../../../ELM/user-guide/" class="md-nav__link">
         
   
   
@@ -2959,7 +3067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ELM/dev-guide/" class="md-nav__link">
+      <a href="../../../../ELM/dev-guide/" class="md-nav__link">
         
   
   
@@ -2982,7 +3090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ELM/tech-guide/" class="md-nav__link">
+      <a href="../../../../ELM/tech-guide/" class="md-nav__link">
         
   
   
@@ -3039,7 +3147,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../MOSART/" class="md-nav__link ">
+            <a href="../../../../MOSART/" class="md-nav__link ">
               
   
   
@@ -3074,7 +3182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MOSART/user-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/user-guide/" class="md-nav__link">
         
   
   
@@ -3097,7 +3205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MOSART/dev-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/dev-guide/" class="md-nav__link">
         
   
   
@@ -3120,7 +3228,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MOSART/tech-guide/" class="md-nav__link">
+      <a href="../../../../MOSART/tech-guide/" class="md-nav__link">
         
   
   
@@ -3177,7 +3285,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../MPAS-Ocean/" class="md-nav__link ">
+            <a href="../../../../MPAS-Ocean/" class="md-nav__link ">
               
   
   
@@ -3212,7 +3320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-Ocean/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/user-guide/" class="md-nav__link">
         
   
   
@@ -3235,7 +3343,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-Ocean/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/dev-guide/" class="md-nav__link">
         
   
   
@@ -3258,7 +3366,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-Ocean/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-Ocean/tech-guide/" class="md-nav__link">
         
   
   
@@ -3317,7 +3425,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../MPAS-seaice/" class="md-nav__link ">
+            <a href="../../../../MPAS-seaice/" class="md-nav__link ">
               
   
   
@@ -3352,7 +3460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-seaice/user-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/user-guide/" class="md-nav__link">
         
   
   
@@ -3375,7 +3483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-seaice/tech-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/tech-guide/" class="md-nav__link">
         
   
   
@@ -3398,7 +3506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-seaice/dev-guide/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/dev-guide/" class="md-nav__link">
         
   
   
@@ -3421,7 +3529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../MPAS-seaice/references/" class="md-nav__link">
+      <a href="../../../../MPAS-seaice/references/" class="md-nav__link">
         
   
   
@@ -3526,7 +3634,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../generate_domain_files/" class="md-nav__link ">
+            <a href="../../../../generate_domain_files/" class="md-nav__link ">
               
   
   
@@ -3693,63 +3801,54 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#solar-constant" class="md-nav__link">
+  <a href="#supported-operations" class="md-nav__link">
     <span class="md-ellipsis">
-      Solar constant
+      Supported operations
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#greenhouse-gas-concentrations" class="md-nav__link">
+  <a href="#requirements" class="md-nav__link">
     <span class="md-ellipsis">
-      Greenhouse gas concentrations
+      Requirements
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#elevated-external-forcings" class="md-nav__link">
+  <a href="#unit-handling" class="md-nav__link">
     <span class="md-ellipsis">
-      Elevated external forcings
+      Unit handling
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#surface-emissions" class="md-nav__link">
+  <a href="#configuration" class="md-nav__link">
     <span class="md-ellipsis">
-      Surface emissions
+      Configuration
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#prescribed-oxidant-for-aerosol-chemistry" class="md-nav__link">
+  <a href="#example" class="md-nav__link">
     <span class="md-ellipsis">
-      Prescribed oxidant for aerosol chemistry
+      Example
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#stratospheric-ozone-linoz-and-chlorine-loading-data" class="md-nav__link">
+  <a href="#caveats" class="md-nav__link">
     <span class="md-ellipsis">
-      Stratospheric ozone (linoz) and chlorine loading data
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#land-use-and-land-cover" class="md-nav__link">
-    <span class="md-ellipsis">
-      Land use and land cover
+      Caveats
     </span>
   </a>
   
@@ -3775,63 +3874,93 @@
     
       
     
-    <a href="https://github.com/E3SM-Project/E3SM/raw/master/docs/user-guide/ssp585-forcings.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/E3SM-Project/screamuser/diags/binary_ops.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="ssp585-forcing-data">SSP585 Forcing data</h1>
-<p>These are the prescribed inputdata specifically for the SSP585 scenario, in place of the files for the historical period.</p>
-<h2 id="solar-constant">Solar constant</h2>
-<p><code>\$DIN_LOC_ROOT/atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc</code></p>
-<h2 id="greenhouse-gas-concentrations">Greenhouse gas concentrations</h2>
-<p><code>\$DIN_LOC_ROOT/atm/cam/ggas/GHG_CMIP_SSP585-1-2-1_Annual_Global_2015-2500_c20190310.nc</code></p>
-<h2 id="elevated-external-forcings">Elevated external forcings</h2>
-<div class="highlight"><pre><span></span><code><span class="n">NO2</span><span class="w">         </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_NO2_aircraft_vertical_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">SO2</span><span class="w">         </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_so2_volc_elev_2015</span><span class="o">-</span><span class="mi">2100_c240331</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">SOAG0</span><span class="w">       </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_SOAG0_elev_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">bc_a4</span><span class="w">       </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_bc_a4_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">num_a1</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_num_a1_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">num_a2</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_num_a2_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">num_a4</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_num_a4_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">pom_a4</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_pom_a4_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">so4_a1</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_so4_a1_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">so4_a2</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_so4_a2_elev_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
+<h1 id="binary-operations-diagnostics">Binary operations diagnostics</h1>
+<p>In EAMxx, we can perform binary arithmetic operations on pairs of fields
+to create new diagnostic outputs. The binary operations diagnostic allows
+you to compute element-wise arithmetic operations between two fields.</p>
+<h2 id="supported-operations">Supported operations</h2>
+<p>The binary operations diagnostic supports four basic arithmetic operations:</p>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Symbol</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Addition</td>
+<td><code>plus</code></td>
+<td>Element-wise addition of two fields</td>
+</tr>
+<tr>
+<td>Subtraction</td>
+<td><code>minus</code></td>
+<td>Element-wise subtraction of two fields</td>
+</tr>
+<tr>
+<td>Multiplication</td>
+<td><code>times</code></td>
+<td>Element-wise multiplication of two fields</td>
+</tr>
+<tr>
+<td>Division</td>
+<td><code>over</code></td>
+<td>Element-wise division of two fields</td>
+</tr>
+</tbody>
+</table>
+<h2 id="requirements">Requirements</h2>
+<p>For two fields to be compatible for binary operations, they must satisfy:</p>
+<ol>
+<li><strong>Same layout</strong></li>
+<li><strong>Same data type</strong></li>
+<li><strong>Same grid</strong></li>
+<li><strong>Compatible units</strong> for addition and subtraction</li>
+</ol>
+<h2 id="unit-handling">Unit handling</h2>
+<p>The resulting diagnostic field will have units determined by the operation.</p>
+<h2 id="configuration">Configuration</h2>
+<p>To use the binary operations diagnostic, one can request an output
+using the general syntax of <code>&lt;field_1&gt;_&lt;binary_op&gt;_&lt;field_2&gt;</code>:</p>
+<ul>
+<li><code>field_1</code> is the name of the first input field</li>
+<li><code>binary_op</code> is the operator: <code>plus</code>, <code>minus</code>, <code>times</code>, or <code>over</code></li>
+<li><code>field_2</code> is the name of the second input field</li>
+</ul>
+<h2 id="example">Example</h2>
+<div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># T_mid has units K</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_times_p_mid</span><span class="w">  </span><span class="c1"># K*Pa</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_over_p_mid</span><span class="w">   </span><span class="c1"># K/Pa </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_plus_T_mid</span><span class="w">   </span><span class="c1"># K</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_minus_T_mid</span><span class="w">  </span><span class="c1"># K</span>
 </code></pre></div>
-<h2 id="surface-emissions">Surface emissions</h2>
-<div class="highlight"><pre><span></span><code><span class="n">C2H4</span><span class="w">        </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_C2H4_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">C2H6</span><span class="w">        </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_C2H6_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">C3H8</span><span class="w">        </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_C3H8_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">CH2O</span><span class="w">        </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_CH2O_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">CH3CHO</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_CH3CHO_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">CH3COCH3</span><span class="w">    </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_CH3COCH3_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">CO</span><span class="w">          </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_CO_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">ISOP</span><span class="w">        </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_ISOP_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">ISOP_VBS</span><span class="w">    </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_ISOP_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">C10H16</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_MTERP_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">NOX</span><span class="w">         </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_NO_surface_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">DMS</span><span class="w">         </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">DMSflux</span><span class="p">.</span><span class="mi">1850</span><span class="o">-</span><span class="mi">210</span><span class="mf">0.1</span><span class="n">deg_latlon_conserv</span><span class="p">.</span><span class="n">POPmonthlyClimFromACES4BGC_c20160727</span><span class="p">.</span><span class="n">nc</span>
-<span class="n">SO2</span><span class="w">         </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_so2_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">SOAG0</span><span class="w">       </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">emissions</span><span class="o">-</span><span class="n">cmip6_ssp585_e3sm_SOAG0_surf_2015</span><span class="o">-</span><span class="mi">2100_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20240304</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">bc_a4</span><span class="w">       </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_bc_a4_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">num_a1</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_num_a1_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">num_a2</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_num_a2_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">num_a3</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_num_a4_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">pom_a4</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_pom_a4_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">so4_a1</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_so4_a1_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">so4_a2</span><span class="w">      </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart_aero</span><span class="o">/</span><span class="n">emis</span><span class="o">/</span><span class="n">CMIP6_SSP585_ne30</span><span class="o">/</span><span class="n">cmip6_ssp585_mam4_so4_a2_surf_2015</span><span class="o">-</span><span class="mi">2100_c190828</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-<span class="n">E90</span><span class="w">         </span><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart</span><span class="o">/</span><span class="n">ub</span><span class="o">/</span><span class="n">emissions_E90_surface_1750</span><span class="o">-</span><span class="mi">2101_1</span><span class="p">.</span><span class="mi">9</span><span class="n">x2</span><span class="p">.</span><span class="mi">5_c20231222</span><span class="p">.</span><span class="n">nc</span><span class="w"> </span>
-</code></pre></div>
-<h2 id="prescribed-oxidant-for-aerosol-chemistry">Prescribed oxidant for aerosol chemistry</h2>
-<p><code>\$DIN_LOC_ROOT/atm/cam/chem/trop_mozart_aero/oxid/oxid_SSP585_1.9x2.5_L70_2014-2101_c20240228.nc</code></p>
-<h2 id="stratospheric-ozone-linoz-and-chlorine-loading-data">Stratospheric ozone (linoz) and chlorine loading data</h2>
-<div class="highlight"><pre><span></span><code><span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart</span><span class="o">/</span><span class="n">ub</span><span class="o">/</span><span class="n">Linoz_Chlorine_Loading_CMIP6_Hist_SSP585_0003</span><span class="o">-</span><span class="mi">2503_c20190414</span><span class="p">.</span><span class="n">nc</span>
-<span class="err">\$</span><span class="n">DIN_LOC_ROOT</span><span class="o">/</span><span class="n">atm</span><span class="o">/</span><span class="n">cam</span><span class="o">/</span><span class="n">chem</span><span class="o">/</span><span class="n">trop_mozart</span><span class="o">/</span><span class="n">ub</span><span class="o">/</span><span class="n">linv3_1849</span><span class="o">-</span><span class="mi">2101_CMIP6_Hist_SSP585_10deg_58km_c20230705</span><span class="p">.</span><span class="n">nc</span>
-</code></pre></div>
-<h2 id="land-use-and-land-cover">Land use and land cover</h2>
-<p><code>\$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_ssp5_rcp85_simyr2015-2100_c240408.nc</code></p>
+<h2 id="caveats">Caveats</h2>
+<ul>
+<li>As the name suggests, these diagnostics were written for a single
+  operation connecting two fields; doing multiple binary ops in
+  succession carries risks; read on.</li>
+<li>Strictly speaking, multiple operations will take place in order.
+  For example, <code>qc_plus_qv_times_p_mid</code> will first compute <code>qc + qv</code>,
+  then multiply the result by <code>p_mid</code>. (Beware, we do NOT support
+  mathematical operation precedence; it is simply about the parser
+  which processes the expression left-to-right.)</li>
+<li>In fact, <code>p_mid_times_qc_plus_qv</code> will fail because of units!</li>
+<li>We only support existing fields in the Field Manager, e.g.,
+  grid information like lat, lon, and area are not available.</li>
+<li>We do not support dimensionality broadcasting, so both fields
+  must have the same shape.</li>
+</ul>
+<p>Contact developers on github if you have additional questions.</p>
 
 
 
@@ -3888,12 +4017,12 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.instant", "navigation.instant.prefetch", "navigation.sections", "navigation.path", "navigation.tracking", "navigation.top", "search.suggest", "search.highlight", "search.share", "content.code.select", "content.code.copy", "content.action.view", "content.tooltips"], "search": "../../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.50899def.min.js"></script>
       
-        <script src="../../javascript/mathjax.js"></script>
+        <script src="../../../../javascript/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
