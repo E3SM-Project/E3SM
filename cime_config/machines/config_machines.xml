@@ -1406,28 +1406,28 @@
     </environment_variables>
 
     <environment_variables compiler="craygnu.*" mpilib="mpich">
-      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/gcc-native-13.2/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.30/craygnuamdgpu/cpe-24.07; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/gcc-native-13.2; else echo "$BLOSC2_ROOT"; fi}</env>
-      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/gcc-native-13.2; else echo "$MGARD_ROOT"; fi}</env>
-      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/gcc-native-13.2; else echo "$SZ_ROOT"; fi}</env>
-      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/gcc-native-13.2; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/ccs/proj/cli115/software/frontier/3rdparty/protobuf/21.6/craygnu/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/adios2/2.10.2/craygnu; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/c-blosc2/2.15.2/craygnu; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/mgard/1.5.2/craygnu; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/sz/2.1.12.5/craygnu; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/zfp/1.0.1/craygnu; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="craycray.*" mpilib="mpich">
-      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/crayclang-15.0.1/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.26/crayclang-scream/cpe-22.12; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/crayclang-15.0.1; else echo "$BLOSC2_ROOT"; fi}</env>
-      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/crayclang-15.0.1; else echo "$MGARD_ROOT"; fi}</env>
-      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/crayclang-15.0.1; else echo "$SZ_ROOT"; fi}</env>
-      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/crayclang-15.0.1; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/ccs/proj/cli115/software/frontier/3rdparty/protobuf/21.6/craycray/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/adios2/2.10.2/craycray; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/c-blosc2/2.15.2/craycray; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/mgard/1.5.2/craycray; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/sz/2.1.12.5/craycray; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/zfp/1.0.1/craycray; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="crayamd.*" mpilib="mpich">
-      <env name="PKG_CONFIG_PATH">/lustre/orion/cli115/world-shared/frontier/3rdparty/protobuf/21.6/amdclang-15.0.0/lib/pkgconfig:$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
-      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/amdclang-15.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
-      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/c-blosc2/2.15.2/amdclang-15.0.0; else echo "$BLOSC2_ROOT"; fi}</env>
-      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/mgard/1.5.2/amdclang-15.0.0; else echo "$MGARD_ROOT"; fi}</env>
-      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/sz/2.1.12.5/amdclang-15.0.0; else echo "$SZ_ROOT"; fi}</env>
-      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lustre/orion/cli115/world-shared/frontier/3rdparty/zfp/1.0.1/amdclang-15.0.0; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="PKG_CONFIG_PATH">/ccs/proj/cli115/software/frontier/3rdparty/protobuf/21.6/crayamd/lib/pkgconfig:$ENV{CRAY_LIBSCI_PREFIX_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/adios2/2.10.2/crayamd; else echo "$ADIOS2_ROOT"; fi}</env>
+      <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/c-blosc2/2.15.2/crayamd; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/mgard/1.5.2/crayamd; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/sz/2.1.12.5/crayamd; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/zfp/1.0.1/crayamd; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
