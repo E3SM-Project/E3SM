@@ -9,7 +9,8 @@
 #include "Pacer.h"
 #include <mpi.h>
 #include <gptl.h>
-#include <unordered_map>
+#include <vector>
+#include <algorithm>
 #include <iostream>
 
 #define PACER_CHECK_INIT() {\
@@ -44,8 +45,8 @@ static MPI_Comm InternalComm;
 /// MPI rank of process
 static int MyRank;
 
-/// hash table of open timers with count (for multiple parents)
-static std::unordered_map<std::string,int> OpenTimers;
+// Vector-based stack of open timers
+static std::vector<std::string> OpenTimers;
 
 /// Pacer Mode: standalone or within CIME
 static PacerModeType PacerMode;
@@ -124,11 +125,9 @@ bool start(const std::string &TimerName)
 
     PACER_CHECK_ERROR(GPTLstart(TimerName.c_str()));
 
-    auto it = OpenTimers.find(TimerName);
-    if (it != OpenTimers.end() )
-        OpenTimers[TimerName]++;
-    else
-        OpenTimers[TimerName] = 1;
+    // Push this timer onto the stack
+    OpenTimers.push_back(TimerName);
+
     return true;
 }
 
@@ -138,15 +137,13 @@ bool stop(const std::string &TimerName)
 {
     PACER_CHECK_INIT();
 
-    auto it = OpenTimers.find(TimerName);
+    auto it = std::find(OpenTimers.begin(), OpenTimers.end(), TimerName);
 
     if (it != OpenTimers.end() ) {
         PACER_CHECK_ERROR(GPTLstop(TimerName.c_str()));
 
-        if ( OpenTimers[TimerName] == 1 )
-            OpenTimers.erase(TimerName);
-        else
-            OpenTimers[TimerName]--;
+        // Pop this timer from the stack
+        OpenTimers.pop_back();
     }
     else {
         std::cerr << "[WARNING] Pacer: Trying to stop timer: \""
@@ -213,8 +210,8 @@ bool finalize()
 
     if ( (MyRank == 0) && ( OpenTimers.size() > 0) ){
         std::cerr << "[WARNING] Pacer: Following " << OpenTimers.size() << " timer(s) is/are still open." << std::endl;
-        for (auto i = OpenTimers.begin(); i != OpenTimers.end(); i++)
-            std::cerr << '\t' << i->first << std::endl;
+        for (const auto& Timer : OpenTimers)
+            std::cerr << '\t' << Timer << std::endl;
     }
     OpenTimers.clear();
 
