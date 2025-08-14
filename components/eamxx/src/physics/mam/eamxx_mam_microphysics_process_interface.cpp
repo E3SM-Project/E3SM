@@ -592,7 +592,7 @@ void MAMMicrophysics::set_linoz_reader(){
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_elevated_emissions_reader()
 {
-  const auto z_iface = get_field_out("z_iface");
+  const auto z_iface = get_field_out("z_int");
   const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
   int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");

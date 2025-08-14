@@ -70,7 +70,7 @@ initial_conditions:
   fraction_landuse: 0.0
   SW_flux_dn: 500.0
   constituent_fluxes: 0.0
-  z_iface : 0.0
+  z_int : 0.0
 # The parameters for I/O control
 scorpio:
   output_yaml_files: ["output.yaml"]
