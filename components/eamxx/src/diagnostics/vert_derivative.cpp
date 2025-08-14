@@ -108,13 +108,13 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
                   ? (f_icol(ilev + 1) * dpicol(ilev) + f_icol(ilev) * dpicol(ilev + 1)) /
                         (dpicol(ilev) + dpicol(ilev + 1))
                   : f_icol(nlevs - 1);
-          
+
           auto f_int_kp0 =
               (ilev > 0) 
                   ? (f_icol(ilev) * dpicol(ilev - 1) + f_icol(ilev - 1) * dpicol(ilev)) /
                          (dpicol(ilev - 1) + dpicol(ilev))
                   : f_icol(0);
-          
+
           o_icol(ilev) = (f_int_kp1 - f_int_kp0) / d_icol(ilev);
         });
       });

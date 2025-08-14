@@ -1,6 +1,6 @@
 
-#ifndef EAMXX_VERT_DIVERGENCE_HPP
-#define EAMXX_VERT_DIVERGENCE_HPP
+#ifndef EAMXX_VERT_DERIVATIVE_HPP
+#define EAMXX_VERT_DERIVATIVE_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
@@ -37,4 +37,4 @@ public:
 
 } // namespace scream
 
-#endif // EAMXX_VERT_DIVERGENCE_HPP
+#endif // EAMXX_VERT_DERIVATIVE_HPP

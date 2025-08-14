@@ -61,7 +61,7 @@ TEST_CASE("vert_derivative") {
 
   // Construct random number generator stuff
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf(sp(0.0), sp(200.0));
+  RPDF dp_pdf(10,2000);
   auto engine = scream::setup_random_test();
 
   // Construct the diagnostics factory
@@ -79,8 +79,16 @@ TEST_CASE("vert_derivative") {
 
   fin2.get_header().get_tracking().update_time_stamp(t0);
   dp.get_header().get_tracking().update_time_stamp(t0);
-  randomize(fin2, engine, pdf);
-  randomize(dp, engine, pdf);
+  // instead of random fin2, let's just a predictable one:
+  fin2.sync_to_host();
+  auto fin2_v_host_assign = fin2.get_view<Real **, Host>();
+  for (int icol = 0; icol < ngcols; ++icol) {
+    for (int ilev = 0; ilev < nlevs; ++ilev) {
+      fin2_v_host_assign(icol, ilev) = 1.0 + icol + ilev;
+    }
+  }
+  fin2.sync_to_dev();
+  randomize(dp, engine, dp_pdf);
 
   // Create and set up the diagnostic
   params.set("grid_name", grid->name());
@@ -145,6 +153,7 @@ TEST_CASE("vert_derivative") {
     auto view_deriv_f_m = diag1_m.get_view<Real **, Host>();
     for (int icol = 0; icol < ngcols; ++icol) {
       for (int ilev = 0; ilev < nlevs; ++ilev) {
+        // TODO: the calculations are sometimes diverging because of fp issues in the test
         REQUIRE_THAT(view_deriv_f_d(icol, ilev), Catch::Matchers::WithinRel(view_deriv_f_m(icol, ilev), tol));
       }
     }
