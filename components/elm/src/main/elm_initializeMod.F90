@@ -725,6 +725,8 @@ contains
 
     call veg_es%InitAccBuffer(bounds_proc)
 
+    call energyflux_vars%InitAccBuffer(bounds_proc)
+
     call canopystate_vars%initAccBuffer(bounds_proc)
 
     if (crop_prog) then
@@ -962,6 +964,7 @@ contains
     call top_as%InitAccVars(bounds_proc)
     call top_af%InitAccVars(bounds_proc)
     call veg_es%InitAccVars(bounds_proc)
+    call energyflux_vars%initAccVars(bounds_proc)
     call canopystate_vars%initAccVars(bounds_proc)
     if (crop_prog) then
        call crop_vars%initAccVars(bounds_proc)
