@@ -3873,22 +3873,22 @@ you to compute element-wise arithmetic operations between two fields.</p>
 <tbody>
 <tr>
 <td>Addition</td>
-<td><code>+</code></td>
+<td><code>plus</code></td>
 <td>Element-wise addition of two fields</td>
 </tr>
 <tr>
 <td>Subtraction</td>
-<td><code>-</code></td>
+<td><code>minus</code></td>
 <td>Element-wise subtraction of two fields</td>
 </tr>
 <tr>
 <td>Multiplication</td>
-<td><code>*</code></td>
+<td><code>times</code></td>
 <td>Element-wise multiplication of two fields</td>
 </tr>
 <tr>
 <td>Division</td>
-<td><code>÷</code></td>
+<td><code>over</code></td>
 <td>Element-wise division of two fields</td>
 </tr>
 </tbody>
@@ -3908,18 +3908,28 @@ you to compute element-wise arithmetic operations between two fields.</p>
 using the general syntax of <code>&lt;field_1&gt;_&lt;binary_op&gt;_&lt;field_2&gt;</code>:</p>
 <ul>
 <li><code>field_1</code> is the name of the first input field</li>
-<li><code>binary_op</code> is the operator: <code>+</code>, <code>-</code>, <code>*</code>, or <code>÷</code></li>
+<li><code>binary_op</code> is the operator: <code>plus</code>, <code>minus</code>, <code>times</code>, or <code>over</code></li>
 <li><code>field_2</code> is the name of the second input field</li>
 </ul>
 <h2 id="example">Example</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_*_p_mid</span>
+<span class="w">  </span><span class="c1"># T_mid has units K</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_times_p_mid</span><span class="w">  </span><span class="c1"># K*Pa</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_over_p_mid</span><span class="w">   </span><span class="c1"># K/Pa </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_plus_T_mid</span><span class="w">   </span><span class="c1"># K</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_mid_minus_T_mid</span><span class="w">  </span><span class="c1"># K</span>
 </code></pre></div>
 <h2 id="caveats">Caveats</h2>
 <ul>
+<li>As the name suggests, these diagnostics were written for a single
+  operation connecting two fields; doing multiple binary ops in
+  succession carries risks; read on.</li>
 <li>Strictly speaking, multiple operations will take place in order.
-  For example, <code>qc_+_qv_*_p_mid</code> will first compute <code>qc + qv</code>,
-  then multiply the result by <code>p_mid</code>.</li>
+  For example, <code>qc_plus_qv_times_p_mid</code> will first compute <code>qc + qv</code>,
+  then multiply the result by <code>p_mid</code>. (Beware, we do NOT support
+  mathematical operation precedence; it is simply about the parser
+  which processes the expression left-to-right.)</li>
+<li>In fact, <code>p_mid_times_qc_plus_qv</code> will fail because of units!</li>
 <li>We only support existing fields in the Field Manager, e.g.,
   grid information like lat, lon, and area are not available.</li>
 <li>We do not support dimensionality broadcasting, so both fields
