@@ -1,5 +1,6 @@
 #include "diagnostics/zonal_avg.hpp"
 #include <ekat_math_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 
