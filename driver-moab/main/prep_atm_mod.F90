@@ -475,6 +475,8 @@ contains
             mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             mapper_Fo2a%weight_identifier = wgtIdFo2a
             mapper_Fo2a%mbname = 'mapper_Fo2a'
+            ! we do not need to call compute comm graph for samegrid_ao, it was already called 
+            ! it was called earlier, around line 403, for mapper_So2a
          endif
 
          ! FLUX make the app and mapper for the a2o flux mappings
@@ -678,11 +680,13 @@ contains
                   write(logunit,*) ' '
                   write(logunit,F00) 'Initializing mapper_Si2a'
                endif
-               type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
-               arearead = 0 ! do not read area, we do not need it
-               call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
-                     'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
-                     arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+               if (.not. samegrid_ao) then
+                  type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0 ! do not read area, we do not need it
+                  call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
+                        'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
+                        arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
+               endif
               endif
             endif
 
@@ -707,10 +711,10 @@ contains
               write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
             endif
 
+            if (.not. compute_maps_online_i2a  .and.  .not. samegrid_ao ) then
             !!!!!!!!!!!!!!!!!!!!!!!
             !  read  Fi2a map
             !!!!!!!!!!!!!!!!!!!!!!!
-            if (.not. compute_maps_online_i2a) then
                type1 = 3 ! this is type of grid
                arearead = 0 ! no need for areas
                call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
@@ -724,6 +728,17 @@ contains
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
                   call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
+               endif
+
+               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+               ! seaice for the intx seaice-atm context (coverage)
+               type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          ice(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
                endif
             !!!!!!!!!!!!!!!!!!!!!!!
             !  compute  Fi2a map
@@ -739,6 +754,17 @@ contains
             mapper_Fi2a%intx_context = idintx
             mapper_Fi2a%weight_identifier = wgtIdFi2a
             mapper_Fi2a%mbname = 'mapper_Fi2a'
+            if ( samegrid_ao ) then ! this case can appear in cice case
+               type1 = 3; !  fv for ice and atm;
+               type2 = 3;
+               ierr = iMOAB_ComputeCommGraph( mbixid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          ice(1)%cplcompid, atm(1)%cplcompid )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for ice-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for ice-atm')
+               endif
+               mapper_Fi2a%intx_context = atm(1)%cplcompid
+            endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
 
