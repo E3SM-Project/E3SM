@@ -1445,6 +1445,8 @@
       
         
       
+        
+      
     
     
     
@@ -1765,6 +1767,8 @@
       
         
       
+        
+      
     
     
     
@@ -1830,6 +1834,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diags/conditional_sampling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Conditional sampling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1851,6 +1878,29 @@
   
   <span class="md-ellipsis">
     Presentations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io_aliases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    IO Aliases
     
   </span>
   
@@ -3633,6 +3683,58 @@
 
 <h1 id="eamxx-runtime-configurable-parameters">EAMxx runtime configurable parameters</h1>
 <h1 id="atmosphere-processes-parameters">Atmosphere Processes Parameters</h1>
+<h2 id="eamxx">eamxx</h2>
+<ul>
+<li>eamxx::atm_procs_list:<ul>
+<li>description: List of atm processes in this atm process group</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+<li>eamxx::type:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>eamxx::schedule_type:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: <strong>MISSING</strong></li>
+<li>valid values: sequential</li>
+</ul>
+</li>
+<li>eamxx::number_of_subcycles:<ul>
+<li>description: how many times to subcycle this atm process</li>
+<li>type: <strong>MISSING</strong></li>
+<li>constraints: gt 0</li>
+</ul>
+</li>
+<li>eamxx::enable_precondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>eamxx::enable_postcondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>eamxx::repair_log_level:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: string</li>
+<li>valid values: trace,debug,info,warn</li>
+</ul>
+</li>
+<li>eamxx::internal_diagnostics_level:<ul>
+<li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)</li>
+<li>type: integer</li>
+<li>valid values: 0,1,2</li>
+</ul>
+</li>
+<li>eamxx::compute_tendencies:<ul>
+<li>description: list of computed fields for which this process will back out tendencies</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+</ul>
 <h2 id="sc_import">sc_import</h2>
 <ul>
 <li>sc_import::number_of_subcycles:<ul>
@@ -3743,6 +3845,21 @@
 <li>homme::moisture:<ul>
 <li>description: <strong>MISSING</strong></li>
 <li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>homme::enable_column_conservation_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>homme::enable_energy_fixer:<ul>
+<li>description: Turn on energy fixer for dycore (fixes dycore, pressure adjustment, PD coupling)</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>homme::enable_energy_fixer_debug_info:<ul>
+<li>description: Prints debug info that energy fixer indeed fixed energy (cost of an MPI reduce)</li>
+<li>type: logical</li>
 </ul>
 </li>
 <li>homme::bfb_hash:<ul>
@@ -5182,11 +5299,6 @@
 <li>rrtmgp::pool_size_multiplier:<ul>
 <li>description: <strong>MISSING</strong></li>
 <li>type: real</li>
-</ul>
-</li>
-<li>rrtmgp::force_run_after_restart:<ul>
-<li>description: Force rad to run on first step after restart, regardless of rad frequency</li>
-<li>type: logical</li>
 </ul>
 </li>
 <li>rrtmgp::number_of_subcycles:<ul>
