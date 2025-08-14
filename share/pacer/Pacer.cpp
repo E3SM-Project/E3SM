@@ -9,6 +9,7 @@
 #include "Pacer.h"
 #include <mpi.h>
 #include <gptl.h>
+#include <unordered_map>
 #include <iostream>
 
 #define PACER_CHECK_INIT() {\
@@ -32,9 +33,26 @@ extern "C" {
     extern int GPTLis_initialized(void);
 }
 
+namespace Pacer {
+
+/// Flag to determine if the timing infrastructure is initialized
+static bool IsInitialized = false;
+
+/// MPI communicator used within Pacer
+static MPI_Comm InternalComm;
+
+/// MPI rank of process
+static int MyRank;
+
+/// hash table of open timers with count (for multiple parents)
+static std::unordered_map<std::string,int> OpenTimers;
+
+/// Pacer Mode: standalone or within CIME
+static PacerModeType PacerMode;
+
 /// Check if Pacer is initialized
 /// Returns true if initialized
-inline bool Pacer::isInitialized(void){
+inline bool isInitialized(void){
     if (!IsInitialized) {
         std::cerr << "[ERROR] Pacer: Not initialized." << std::endl;
         return false;
@@ -45,7 +63,7 @@ inline bool Pacer::isInitialized(void){
 /// Initialize Pacer timing
 /// InComm: overall MPI communicator used by application.
 /// InMode: Pacer standalone (default) or within CIME
-bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALONE */) {
+bool initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALONE */) {
 
     int errCode;
 
@@ -100,7 +118,7 @@ bool Pacer::initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALO
 }
 
 /// Start the time named TimerName
-bool Pacer::start(const std::string &TimerName)
+bool start(const std::string &TimerName)
 {
     PACER_CHECK_INIT();
 
@@ -116,7 +134,7 @@ bool Pacer::start(const std::string &TimerName)
 
 /// Stop the time named TimerName
 /// Issues warning if timer hasn't been started yet
-bool Pacer::stop(const std::string &TimerName)
+bool stop(const std::string &TimerName)
 {
     PACER_CHECK_INIT();
 
@@ -141,7 +159,7 @@ bool Pacer::stop(const std::string &TimerName)
 }
 
 /// Sets named prefix for all subsequent timers
-bool Pacer::setPrefix(const std::string &Prefix)
+bool setPrefix(const std::string &Prefix)
 {
     PACER_CHECK_INIT();
 
@@ -151,7 +169,7 @@ bool Pacer::setPrefix(const std::string &Prefix)
 }
 
 /// Unsets prefix for all subsequent timers
-bool Pacer::unsetPrefix()
+bool unsetPrefix()
 {
     PACER_CHECK_INIT();
 
@@ -164,7 +182,7 @@ bool Pacer::unsetPrefix()
 /// Output Files: TimerFilePrefix.timing.<MyRank>
 /// TimerFilePrefix.summary
 /// PrintAllRanks: flag to control if per rank timing files are printed
-bool Pacer::print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = false */)
+bool print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = false */)
 {
     PACER_CHECK_INIT();
 
@@ -186,7 +204,7 @@ bool Pacer::print(const std::string &TimerFilePrefix, bool PrintAllRanks /*= = f
 
 /// Cleans up Pacer
 /// Issues warning if any timers are still open
-bool Pacer::finalize()
+bool finalize()
 {
     PACER_CHECK_INIT();
 
@@ -205,6 +223,8 @@ bool Pacer::finalize()
     MPI_Comm_free(&InternalComm);
 
     return true;
+}
+
 }
 
 

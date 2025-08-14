@@ -12,28 +12,11 @@
 #define PACER_H
 
 #include <mpi.h>
-#include <gptl.h>
-#include <unordered_map>
 #include <string>
 
 namespace Pacer {
 
-    /// Flag to determine if the timing infrastructure is initialized
-    static bool IsInitialized = false;
-
-    /// MPI communicator used within Pacer
-    static MPI_Comm InternalComm;
-
-    /// MPI rank of process
-    static int MyRank;
-
-    /// hash table of open timers with count (for multiple parents)
-    static std::unordered_map<std::string,int> OpenTimers;
-
     enum PacerModeType { PACER_STANDALONE, PACER_INTEGRATED };
-
-    /// Pacer Mode: standalone or within CIME
-    static PacerModeType PacerMode;
 
     /// Initialize Pacer timing
     /// InComm: overall MPI communicator used by application.
@@ -70,6 +53,6 @@ namespace Pacer {
     /// Issues warning if any timers are still open
     bool finalize();
 
-};
+}
 
 #endif
