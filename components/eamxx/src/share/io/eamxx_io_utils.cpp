@@ -228,14 +228,6 @@ create_diagnostic (const std::string& diag_field_name,
     params.set<std::string>("condition_operator", matches[3].str());
     params.set<std::string>("condition_value", matches[4].str());
   }
-  else if (std::regex_search(diag_field_name,matches,conditional_sampling)) {
-    diag_name = "ConditionalSampling";
-    params.set("grid_name", grid->name());
-    params.set<std::string>("input_field", matches[1].str());
-    params.set<std::string>("condition_field", matches[2].str());
-    params.set<std::string>("condition_operator", matches[3].str());
-    params.set<std::string>("condition_value", matches[4].str());
-  }
   else
   {
     // No existing special regex matches, so we assume that the diag field name IS the diag name.
