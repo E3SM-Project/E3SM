@@ -7,7 +7,6 @@ sys.path.append(_CIMEROOT)
 from CIME.utils import expect
 from yaml_utils import make_array
 
-
 ###############################################################################
 class MockCase(object):
 ###############################################################################
