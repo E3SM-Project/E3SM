@@ -78,9 +78,9 @@ TEST_CASE("binary_ops") {
   params.set("grid_name", grid->name());
   params.set<std::string>("field_1", "qc");
   params.set<std::string>("field_2", "qv");
-  params.set<std::string>("binary_op", "+");
+  params.set<std::string>("binary_op", "plus");
   auto plus_diag = diag_factory.create("BinaryOpsDiag", comm, params);
-  params.set<std::string>("binary_op", "*");
+  params.set<std::string>("binary_op", "times");
   auto prod_diag = diag_factory.create("BinaryOpsDiag", comm, params);
   plus_diag->set_grids(gm);
   prod_diag->set_grids(gm);

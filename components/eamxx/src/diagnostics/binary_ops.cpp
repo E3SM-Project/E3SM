@@ -4,10 +4,10 @@ namespace scream {
 
 // parse string to get the operator code
 int get_binary_operator_code(const std::string& op) {
-  if (op == "+") return 0; // addition
-  if (op == "-") return 1; // subtraction
-  if (op == "*") return 2; // multiplication
-  if (op == "÷") return 3; // division
+  if (op == "plus") return 0; // addition
+  if (op == "minus") return 1; // subtraction
+  if (op == "times") return 2; // multiplication
+  if (op == "over") return 3; // division
   return -1; // invalid operator
 }
 // apply binary operation on two input units
@@ -45,7 +45,7 @@ BinaryOpsDiag(const ekat::Comm &comm,
   // Validate operator
   EKAT_REQUIRE_MSG(get_binary_operator_code(m_binary_op) >= 0,
                    "Error! Invalid binary operator: '" + m_binary_op + "'\n"
-                   "Valid operators are: +, -, *, ÷\n");
+                   "Valid operators are: plus, minus, times, over\n");
 }
 
 void BinaryOpsDiag::
