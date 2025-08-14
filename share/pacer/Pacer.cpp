@@ -193,6 +193,20 @@ void setTimingLevel(int Level)
     TimingLevel = Level;
 }
 
+bool disableTiming()
+{
+    PACER_CHECK_ERROR(GPTLdisable());
+    
+    return true;
+}
+
+bool enableTiming()
+{
+    PACER_CHECK_ERROR(GPTLenable());
+    
+    return true;
+}
+
 /// Prints timing statistics and global summary files
 /// Output Files: TimerFilePrefix.timing.<MyRank>
 /// TimerFilePrefix.summary

@@ -45,6 +45,12 @@ namespace Pacer {
     
     /// Sets timing level for all subsequent timers
     void setTimingLevel(int Level);
+    
+    /// Disables timing
+    bool disableTiming();
+
+    /// Enables timing
+    bool enableTiming();
 
     /// Prints timing statistics and global summary files
     /// Output Files: TimerFilePrefix.timing.<MyRank>

@@ -43,8 +43,17 @@ int main(int argc, char **argv){
 
     Pacer::stop("run_loop", 1);
     
-    Pacer::start("should_not_appear", 2);
-    Pacer::stop("should_not_appear", 2);
+    Pacer::start("should_not_appear_1", 2);
+    Pacer::stop("should_not_appear_1", 2);
+    
+    Pacer::disableTiming();
+      Pacer::start("should_not_appear_2", 0);
+
+      Pacer::start("should_not_appear_3", 0);
+      Pacer::stop("should_not_appear_3", 0);
+
+      Pacer::stop("should_not_appear_2", 0);
+    Pacer::enableTiming();
 
     Pacer::unsetPrefix();
 
