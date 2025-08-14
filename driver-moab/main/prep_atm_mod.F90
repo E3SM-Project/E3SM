@@ -254,7 +254,6 @@ contains
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
             'mapper_Sof2a initialization',esmf_map_flag, no_match)
 
-#ifdef HAVE_MOAB
          ! Call moab intx only if atm and ocn are init in moab
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -411,8 +410,6 @@ contains
             endif ! if (.not. samegrid_ao)
          endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
 
-! endif for HAVE_MOAB
-#endif
 
       endif  ! if (ocn_c2_atm) then
 
@@ -434,7 +431,6 @@ contains
             'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
             'mapper_Fof2a initialization',esmf_map_flag, no_match)
 
-#ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
@@ -537,9 +533,6 @@ contains
                endif
             endif
          endif
-
-! endif for HAVE_MOAB
-#endif
 
       endif ! endif (ocn_present) then
       call shr_sys_flush(logunit)
@@ -776,7 +769,6 @@ contains
             'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
             'mapper_Fl2a initialization', esmf_map_flag, no_match)
 
-#ifdef HAVE_MOAB
          ! important change: do not compute intx at all between atm and land when we have samegrid_al
          ! we will use just a comm graph to send data from phys grid to land on coupler
          ! this is just a rearrange in a way
@@ -926,7 +918,6 @@ contains
 
             endif ! if tri-grid
          endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
-#endif
       endif ! if lnd_present
       call shr_sys_flush(logunit)
 
@@ -938,7 +929,6 @@ contains
          call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
             'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
             'mapper_Sl2a initialization', esmf_map_flag, no_match )
-#ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             if (iamroot_CPLID) then
               write(logunit,*) ' '
@@ -953,7 +943,6 @@ contains
             mapper_Sl2a%weight_identifier = wgtIdSl2a
             mapper_Sl2a%mbname = 'mapper_Sl2a'
          endif
-#endif
       endif ! if (lnd_c2_atm) then
 
    endif ! if atm_present

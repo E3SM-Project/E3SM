@@ -33,13 +33,11 @@ module prep_lnd_mod
   use component_type_mod, only: lnd, atm, rof, glc
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
   use iso_c_binding
-#ifdef  HAVE_MOAB
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
     iMOAB_SetMapGhostLayers, iMOAB_MigrateMapMesh
   use seq_comm_mct,     only : num_moab_exports
-#endif
 
 #ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
@@ -152,7 +150,6 @@ contains
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
     type(mct_avect), pointer :: l2x_lx
-#ifdef HAVE_MOAB
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname
@@ -177,7 +174,6 @@ contains
     integer  nghlay ! used to set the number of ghost layers, needed for bilinear map
     integer  nghlay_tgt, arearead
 
-#endif
     character(*), parameter  :: subname = '(prep_lnd_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
@@ -197,14 +193,12 @@ contains
     allocate(mapper_Sg2l)
     allocate(mapper_Fg2l)
 
-#ifdef HAVE_MOAB
       wgtIdFr2l = 'flux_r2l'//C_NULL_CHAR
       wgtIdFa2l = 'flux_a2l'//C_NULL_CHAR
       wgtIdSa2l = 'scalar_a2l'//C_NULL_CHAR
       compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
-#endif
 
     if (lnd_present) then
 
@@ -246,7 +240,6 @@ contains
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
                string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
 ! symmetric of l2r, from prep_rof
-#ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -423,8 +416,6 @@ contains
             deallocate (tmparray)
 
          end if !((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
-! endif HAVE_MOAB
-#endif
        end if ! rof_c2_lnd
        call shr_sys_flush(logunit)
 
@@ -444,7 +435,6 @@ contains
                'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
                'mapper_Fa2l initialization',esmf_map_flag)
 ! similar to prep_atm_init, lnd and atm reversed
-#ifdef HAVE_MOAB
           ! important change: do not compute intx at all between atm and land when we have samegrid_al
           ! we will use just a comm graph to send data from atm to land on coupler
           ! this is just a rearrange in a way
@@ -641,7 +631,6 @@ contains
 
           endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
 
-#endif
        endif
        call shr_sys_flush(logunit)
 

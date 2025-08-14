@@ -5,7 +5,6 @@
 ! !INTERFACE: ------------------------------------------------------------------
 module shr_moab_mod
 
-#ifdef HAVE_MOAB
  use shr_sys_mod,      only: shr_sys_abort
  use seq_comm_mct,     only: logunit
  use shr_kind_mod,     only: CXX => shr_kind_CXX
@@ -133,5 +132,4 @@ contains
     endif
 
   end subroutine
-#endif
 end module shr_moab_mod

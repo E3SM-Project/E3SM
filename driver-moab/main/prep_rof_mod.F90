@@ -48,13 +48,11 @@ module prep_rof_mod
   public :: prep_rof_init
   public :: prep_rof_mrg
 
-#ifdef HAVE_MOAB
   public :: prep_rof_mrg_moab
   public :: prep_rof_accum_lnd_moab
   public :: prep_rof_accum_atm_moab
   public :: prep_rof_accum_ocn_moab
   public :: prep_rof_accum_avg_moab
-#endif
 
   public :: prep_rof_accum_lnd
   public :: prep_rof_accum_atm
@@ -279,7 +277,6 @@ contains
           call mct_aVect_zero(l2racc_lx(eli))
        end do
        l2racc_lx_cnt = 0
-#ifdef HAVE_MOAB
        ! this l2racc_lm will be over land size ?
        sharedFieldsLndRof=''
        nfields_sh_lr = mct_aVect_nRAttr(l2racc_lx(1))
@@ -304,7 +301,7 @@ contains
        allocate(l2x_lm2(lsize_lm, nfields_sh_lr)) ! this will be obtained from land instance
        l2racc_lm(:,:) = 0.
        l2racc_lm_cnt = 0
-#endif
+
        allocate(l2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
           call mct_avect_init(l2r_rx(eri), rList=seq_flds_l2x_fluxes_to_rof, lsize=lsize_r)
@@ -325,7 +322,6 @@ contains
                'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid_lr, &
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
 ! similar to a2r, from below
-#ifdef HAVE_MOAB
           ! Call moab intx only if land and river are init in moab
           if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -478,7 +474,7 @@ contains
 
             end if ! if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0))
          endif ! samegrid_lr
-#endif
+
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
           ! that are mapped "normally".
           !
@@ -508,7 +504,7 @@ contains
           call mct_aVect_zero(a2racc_ax(eai))
        end do
        a2racc_ax_cnt = 0
-#ifdef HAVE_MOAB
+
        ! this a2racc_am will be over atm size
        sharedFieldsAtmRof=''
        nfields_sh_ar = mct_aVect_nRAttr(a2racc_ax(1))
@@ -533,7 +529,6 @@ contains
        endif
        a2racc_am(:,:) = 0.
        a2racc_am_cnt = 0
-#endif
 
        allocate(a2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
@@ -553,7 +548,6 @@ contains
                'seq_maps.rc','atm2rof_fmapname:','atm2rof_fmaptype:',samegrid_ar, &
                string='mapper_Fa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
 ! similar to a2o, prep_ocn
-#ifdef HAVE_MOAB
           ! Call moab intx only if atm  and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0)) then
             if (iamroot_CPLID) then
@@ -681,8 +675,6 @@ contains
             end if
 
          end if ! if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0))
-! endif HAVE_MOAB
-#endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -691,7 +683,7 @@ contains
           call seq_map_init_rcfile(mapper_Sa2r, atm(1), rof(1), &
                'seq_maps.rc','atm2rof_smapname:','atm2rof_smaptype:',samegrid_ar, &
                string='mapper_Sa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
-#ifdef HAVE_MOAB
+
           if ((mbaxid .ge. 0) .and.  (mbrxid .ge. 0)) then
             ! now take care of the mapper, use the same one as before
             if (iamroot_CPLID) then
@@ -729,7 +721,6 @@ contains
             mapper_Sa2r%weight_identifier = wgtIdSa2r
             mapper_Sa2r%mbname = 'mapper_Sa2r'
           end if ! if ((mbaxid .ge. 0) .and.  (mbrxid .ge. 0))
-#endif
        endif
 
        call shr_sys_flush(logunit)
@@ -753,7 +744,6 @@ contains
        end do
        o2racc_ox_cnt = 0
 
-#ifdef HAVE_MOAB
        ! this o2racc_om will be over ocn size
        sharedFieldsOcnRof=''
        nfields_sh_or = mct_aVect_nRAttr(o2racc_ox(1))
@@ -779,7 +769,7 @@ contains
       endif
       o2racc_om(:,:) = 0.
       o2racc_om_cnt = 0
-#endif
+
        allocate(o2r_rx(num_inst_rof))
        do eri = 1,num_inst_rof
           call mct_avect_init(o2r_rx(eri), rList=seq_flds_o2x_fields_to_rof, lsize=lsize_r)
@@ -798,7 +788,6 @@ contains
                'seq_maps.rc','ocn2rof_smapname:','ocn2rof_smaptype:',samegrid_ro, &
                string='mapper_So2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
 
-#ifdef HAVE_MOAB
           if ((mboxid .ge. 0) .and.  (mbrxid .ge. 0)) then
             ! now take care of the mapper, use the same one as before
             if (iamroot_CPLID) then
@@ -858,7 +847,6 @@ contains
 
 
           end if ! if ((mboxid .ge. 0) .and.  (mbrxid .ge. 0))
-#endif
        endif
 
        call shr_sys_flush(logunit)
@@ -1588,7 +1576,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
     first_time = .false.
 
   end subroutine prep_rof_merge
-#ifdef HAVE_MOAB
+
   subroutine prep_rof_mrg_moab  (infodata, cime_model)
    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
@@ -1971,7 +1959,7 @@ use iMOAB , only :  iMOAB_GetDoubleTagStorage
 #endif
 
   end subroutine prep_rof_mrg_moab
-#endif
+
   !================================================================================================
 
   subroutine prep_rof_calc_l2r_rx(fractions_lx, timer)

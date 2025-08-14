@@ -4545,7 +4545,6 @@ contains
 
   end subroutine seq_flds_esmf_metadata_get
 
-#ifdef HAVE_MOAB
   !===============================================================================
 
   subroutine moab_set_tag_from_av(tagname, avx, index, mbapid, dataarr, lsize)
@@ -4572,5 +4571,4 @@ contains
 
   end subroutine moab_set_tag_from_av
 
-#endif
 end module seq_flds_mod

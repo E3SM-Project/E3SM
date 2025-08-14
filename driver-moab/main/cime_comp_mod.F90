@@ -177,9 +177,7 @@ module cime_comp_mod
   use component_mod,      only: component_init_cc, component_init_cx
   use component_mod,      only: component_run, component_final
   use component_mod,      only: component_init_areacor, component_init_aream
-#ifdef HAVE_MOAB
   use component_mod,      only: component_init_areacor_moab
-#endif
   use component_mod,      only: component_exch, component_diag
   use cplcomp_exchange_mod,      only: component_exch_moab
 
@@ -1853,9 +1851,9 @@ contains
     domain_check = .true.
     if (single_column         ) domain_check = .false.
     if (dead_comps            ) domain_check = .false.
-#ifdef HAVE_MOAB
+
+    ! for MOAB
     domain_check = .false.
-#endif
 
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
@@ -4198,9 +4196,7 @@ contains
 
        if (atm_c2_rof) then
           call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
-#ifdef HAVE_MOAB
           call prep_rof_accum_atm_moab()
-#endif
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4614,9 +4610,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
-#ifdef HAVE_MOAB
        if (lnd_c2_rof) call prep_rof_accum_lnd_moab()
-#endif
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
@@ -4763,9 +4757,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-#ifdef HAVE_MOAB
        call prep_rof_accum_avg_moab(ocn_c2_rof)
-#endif
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
