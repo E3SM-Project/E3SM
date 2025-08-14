@@ -3549,6 +3549,12 @@
         <env name="PNETCDF_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002</env>
         <env name="LD_LIBRARY_PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/lib:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/lib:$ENV{LD_LIBRARY_PATH}</env>
         <env name="PATH">/lus/flare/projects/E3SM_Dec/soft/pnetcdf/1.14.0/oneapi.eng.2024.07.30.002/bin:/lus/flare/projects/E3SM_Dec/soft/netcdf/4.9.2c-4.6.1f/oneapi.eng.2024.07.30.002/bin:$ENV{PATH}</env>
+        <env name="PKG_CONFIG_PATH">/lus/flare/projects/E3SM_Dec/soft/protobuf/21.6/oneapi.release.2025.0.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
+        <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/adios2/2.10.2/oneapi.release.2025.0.5; else echo "$ADIOS2_ROOT"; fi}</env>
+        <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/c-blosc2/2.15.2/oneapi.release.2025.0.5; else echo "$BLOSC2_ROOT"; fi}</env>
+        <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/mgard/1.5.2/oneapi.release.2025.0.5; else echo "$MGARD_ROOT"; fi}</env>
+        <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/sz/2.1.12.5/oneapi.release.2025.0.5; else echo "$SZ_ROOT"; fi}</env>
+        <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/zfp/1.0.1/oneapi.release.2025.0.5; else echo "$ZFP_ROOT"; fi}</env>
         <env name="FI_CXI_DEFAULT_CQ_SIZE">131072</env>
         <env name="FI_CXI_CQ_FILL_PERCENT">20</env>
         <env name="RLIMITS"> </env>
