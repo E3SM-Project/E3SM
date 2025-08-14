@@ -535,7 +535,10 @@ else()
     set (EKAT_TEST_DOUBLE_PRECISION OFF)
   endif()
 
-  add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
+  # We will use the sharedlib one if CIME
+  if (NOT SCREAM_CIME_BUILD)
+    add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
+  endif()
 endif()
 
 # Set compiler-specific flags
