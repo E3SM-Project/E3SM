@@ -98,23 +98,24 @@ void VertDerivativeDiag::compute_diagnostic_impl() {
         auto dpicol    = ekat::subview(dp2d, icol); // in case of z deriv, d_icol and dpicol are not the same
 
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlevs), [&](const int ilev) {
-          // boundary points
-          if (ilev == 0) {
-            o_icol(0) = (f_icol(1) - f_icol(0)) / d_icol(0);
-          } else if (ilev == nlevs - 1) {
-            o_icol(nlevs - 1) = (f_icol(nlevs - 1) - f_icol(nlevs - 2)) / d_icol(nlevs - 1);
-          }
-          // interior points
-          else {
-            // general formula for interface (assuming all fields are weighted by dp):
-            // f_int(k+1) = (f_m(k+1)dp(k) + f_m(k)dp(k+1)) / (dp(k) + dp(k+1))
-            // if dp(k) << dp(k+1), the interface is closer to fm(k) than fm(k+1)
-            auto f_int_kp1 = (f_icol(ilev + 1) * dpicol(ilev) + f_icol(ilev) * dpicol(ilev + 1)) /
-                             (dpicol(ilev) + dpicol(ilev + 1));
-            auto f_int_kp0 = (f_icol(ilev) * dpicol(ilev - 1) + f_icol(ilev - 1) * dpicol(ilev)) /
-                             (dpicol(ilev - 1) + dpicol(ilev));
-            o_icol(ilev) = (f_int_kp1 - f_int_kp0) / d_icol(ilev);
-          }
+          // general formula for interface (assuming all fields are weighted by dp):
+          // f_int(k+1) = (f_m(k+1)dp(k) + f_m(k)dp(k+1)) / (dp(k) + dp(k+1))
+          // if dp(k) << dp(k+1), the interface is closer to fm(k) than fm(k+1)
+          // boundary points: assume constant extrapolation (i.e., f_int(0)=f_mid(0))
+
+          auto f_int_kp1 =
+              (ilev < nlevs - 1)
+                  ? (f_icol(ilev + 1) * dpicol(ilev) + f_icol(ilev) * dpicol(ilev + 1)) /
+                        (dpicol(ilev) + dpicol(ilev + 1))
+                  : f_icol(nlevs - 1);
+          
+          auto f_int_kp0 =
+              (ilev > 0) 
+                  ? (f_icol(ilev) * dpicol(ilev - 1) + f_icol(ilev - 1) * dpicol(ilev)) /
+                         (dpicol(ilev - 1) + dpicol(ilev))
+                  : f_icol(0);
+          
+          o_icol(ilev) = (f_int_kp1 - f_int_kp0) / d_icol(ilev);
         });
       });
 }

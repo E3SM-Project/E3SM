@@ -120,21 +120,15 @@ TEST_CASE("vert_derivative") {
     auto diag1_m_v = diag1_m.get_view<Real **, Host>();
 
     for (int icol = 0; icol < ngcols; ++icol) {
-      // handle boundary point
-      diag1_m_v(icol, 0) = (fin2_v(icol, 1) - fin2_v(icol, 0)) / dp_v(icol, 0);
-      // interior points
-      for (int ilev = 1; ilev < nlevs - 1; ++ilev) {
-        auto fa1 = (fin2_v(icol, ilev + 1) * dp_v(icol, ilev) +
+      for (int ilev = 0; ilev < nlevs; ++ilev) {
+        auto fa1 = (ilev < nlevs - 1) ? (fin2_v(icol, ilev + 1) * dp_v(icol, ilev) +
                     fin2_v(icol, ilev) * dp_v(icol, ilev + 1)) /
-                   (dp_v(icol, ilev) + dp_v(icol, ilev + 1));
-        auto fa0 = (fin2_v(icol, ilev) * dp_v(icol, ilev - 1) +
+                   (dp_v(icol, ilev) + dp_v(icol, ilev + 1)) : fin2_v(icol, nlevs-1);
+        auto fa0 = (ilev > 0 ) ? (fin2_v(icol, ilev) * dp_v(icol, ilev - 1) +
                     fin2_v(icol, ilev - 1) * dp_v(icol, ilev)) /
-                   (dp_v(icol, ilev - 1) + dp_v(icol, ilev));
+                   (dp_v(icol, ilev - 1) + dp_v(icol, ilev)) : fin2_v(icol, 0);
         diag1_m_v(icol, ilev) = (fa1 - fa0) / dp_v(icol, ilev);
       }
-      // handle boundary point
-      diag1_m_v(icol, nlevs - 1) =
-          (fin2_v(icol, nlevs - 1) - fin2_v(icol, nlevs - 2)) / (dp_v(icol, nlevs - 1));
     }
     diag1_m.sync_to_dev();
 
