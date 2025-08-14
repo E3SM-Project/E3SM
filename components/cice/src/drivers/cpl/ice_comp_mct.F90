@@ -102,9 +102,7 @@ module ice_comp_mct
 
 #ifdef HAVE_MOAB
   private :: init_moab_cice   ! create moab mesh (cloud of points)
-  private :: ice_export_moab ! it could be part of ice_import_export, but we will keep it here
-  private :: ice_import_moab ! it could be part of ice_import_export, but we will keep it here
-  integer , private :: mblsize, totalmbls
+  integer , private :: mblsize, nsend, totalmbls
   real (r8) , allocatable, private :: i2x_im(:,:) ! for tags to be set in MOAB
 
   integer :: nrecv, totalmblsimp
@@ -400,6 +398,19 @@ contains
     call mct_aVect_init(i2x_i, rList=seq_flds_i2x_fields, lsize=lsize) 
     call mct_aVect_zero(i2x_i)
 
+#ifdef HAVE_MOAB
+    mblsize = lsize
+    nsend = mct_avect_nRattr(i2x_i)
+    totalmbls = mblsize * nsend ! size of the double array
+    allocate (i2x_im(lsize, nsend) )
+
+    nrecv = mct_avect_nRattr(x2i_i) ! number of fields retrived from MOAB tags, based on names from seq_flds_x2l_fields
+    totalmblsimp = mblsize * nrecv ! size of the double array to fill with data from MOAB
+    allocate (x2i_im(lsize, nrecv) )
+    if (my_task == master_task) then
+      write(nu_diag,*) SubName, ' mblsize= ',mblsize,' nsend, nrecv for moab:', nsend, nrecv
+    end if
+#endif
     !-----------------------------------------------------------------
     ! Prescribed ice initialization
     !-----------------------------------------------------------------
@@ -426,6 +437,9 @@ contains
        call mct_rearr_rearrange(i2x_iloc, i2x_i, rearr_iloc2ice)
     else
        call ice_export (i2x_i%rattr)  !Send initial state to driver
+#ifdef HAVE_MOAB
+       call ice_export_moab( i2x_im, ECLock, totalmbls)
+#endif
     endif
     call seq_infodata_PutData( infodata, ice_prognostic=.true., &
       iceberg_prognostic=.false., ice_nx = nxg, ice_ny = nyg )
@@ -567,6 +581,9 @@ contains
        call ice_import( x2i_iloc%rattr )
     else
        call ice_import( x2i_i%rattr )
+#ifdef HAVE_MOAB
+       call ice_import_moab( x2i_im, EClock, totalmblsimp )
+#endif
     endif
     call ice_timer_stop(timer_cplrecv)
     call t_stopf ('cice_run_import')
@@ -798,6 +815,9 @@ contains
        call mct_rearr_rearrange(i2x_iloc, i2x_i, rearr_iloc2ice)
     else
        call ice_export ( i2x_i%rattr )
+#ifdef HAVE_MOAB
+       call ice_export_moab( i2x_im, EClock, totalmbls)
+#endif
     endif
     call ice_timer_stop(timer_cplsend)
     call t_stopf ('cice_run_export')
@@ -1700,13 +1720,6 @@ end function restart_filename
 
   end subroutine init_moab_cice
 
-  subroutine  ice_export_moab() ! it could be part of ice_import_export, but we will keep it here
-  
-  end subroutine ice_export_moab
-  
-  subroutine ice_import_moab() ! 
-
-  end subroutine ice_import_moab
 #endif
 
 end module ice_comp_mct
