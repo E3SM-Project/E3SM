@@ -50,6 +50,20 @@ OR
 ###############################################################################
 def buildlib(bldroot, installpath, case):
 ###############################################################################
+
+    # Figure out where we are getting Kokkos from
+    kokkos_dir = None
+    if case.get_value("USE_ALBANY") or case.get_value("USE_TRILINOS"):
+        print ("case is using Trilinos and will use its Kokkos")
+
+        # Set Kokkos_ROOT so Ekat knows to find Kokkos from Albany/Trilinos
+        expect(os.environ.get("Trilinos_ROOT") is not None,
+               "USE_TRILINOS|USE_ALBANY is On, but Trilinos_ROOT is not set!")
+        os.environ["Kokkos_ROOT"] = os.environ.get("Trilinos_ROOT")
+
+    elif os.environ.get("Kokkos_ROOT") is not None:
+        kokkos_dir = os.environ.get("Kokkos_ROOT")
+
     installed_ekat_dir = os.environ.get("Ekat_ROOT")
     if installed_ekat_dir is not None:
         # We are trying to use a pre-installed ekat. Look for the relevant folders/libs,
@@ -61,10 +75,6 @@ def buildlib(bldroot, installpath, case):
         expect (os.path.isdir(include_dir),f"Missing include subfolder in ekat install dir '{ekat_root}'")
         expect (os.path.isdir(os.path.join(include_dir,"ekat")),f"Missing ekat headers in '{include_dir}'")
 
-        # TODO: should I check for libs too? The problem is that the lib subfolder is
-        # often arch dependent (e.g., $prefix/lib or $prefix/lib64)... The best thing
-        # would be to run a small cmake script, that calls find_package. But E3SM's
-        # cmake build system will do that soon enough, so any error will be caught there.
         print (f"Using pre-installed Ekat_ROOT: {ekat_root}")
         return
     else:
@@ -73,8 +83,10 @@ def buildlib(bldroot, installpath, case):
     srcroot = case.get_value("SRCROOT")
     ekat_dir = os.path.join(srcroot, "externals", "ekat")
     expect(os.path.isdir(ekat_dir), "Missing ekat submodule")
-    kokkos_dir = os.path.join(ekat_dir, "extern", "kokkos")
-    expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule in ekat")
+
+    if kokkos_dir is None:
+        kokkos_dir = os.path.join(ekat_dir, "extern", "kokkos")
+        expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule in ekat")
 
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from cmake_macros), but we want to otherwise
