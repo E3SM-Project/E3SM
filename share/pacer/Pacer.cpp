@@ -51,6 +51,9 @@ static std::vector<std::string> OpenTimers;
 /// Pacer Mode: standalone or within CIME
 static PacerModeType PacerMode;
 
+// Global timing level
+static int TimingLevel = 0;
+
 /// Check if Pacer is initialized
 /// Returns true if initialized
 inline bool isInitialized(void){
@@ -118,9 +121,14 @@ bool initialize(MPI_Comm InComm, PacerModeType InMode /* = PACER_STANDALONE */) 
     return true;
 }
 
-/// Start the time named TimerName
-bool start(const std::string &TimerName)
+/// Start the timer named TimerName active when TimingLevel >= Level 
+bool start(const std::string &TimerName, int Level)
 {
+    // Return immediately if this timer level is above the global timing level
+    if (Level > TimingLevel) {
+       return true;
+    }
+
     PACER_CHECK_INIT();
 
     PACER_CHECK_ERROR(GPTLstart(TimerName.c_str()));
@@ -131,10 +139,15 @@ bool start(const std::string &TimerName)
     return true;
 }
 
-/// Stop the time named TimerName
+/// Stop the timer named TimerName active when TimingLevel >= Level 
 /// Issues warning if timer hasn't been started yet
-bool stop(const std::string &TimerName)
+bool stop(const std::string &TimerName, int Level)
 {
+    // Return immediately if this timer level is above the global timing level
+    if (Level > TimingLevel) {
+       return true;
+    }
+
     PACER_CHECK_INIT();
 
     auto it = std::find(OpenTimers.begin(), OpenTimers.end(), TimerName);
@@ -173,6 +186,11 @@ bool unsetPrefix()
     PACER_CHECK_ERROR(GPTLprefix_unset());
 
     return true;
+}
+
+void setTimingLevel(int Level)
+{
+    TimingLevel = Level;
 }
 
 /// Prints timing statistics and global summary files

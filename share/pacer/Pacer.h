@@ -30,18 +30,21 @@ namespace Pacer {
     /// IntegratedMode: Pacer standalone (default:false) or within CIME (true)
     // bool initialize(MPI_Comm InComm, bool IntegratedMode = false);
 
-    /// Start the time named TimerName
-    bool start(const std::string &TimerName);
+    /// Start the timer named TimerName active when TimingLevel >= Level 
+    bool start(const std::string &TimerName, int Level);
 
-    /// Stop the time named TimerName
+    /// Stop the timer named TimerName active when TimingLevel >= Level 
     /// Issues warning if timer hasn't been started yet
-    bool stop(const std::string &TimerName);
+    bool stop(const std::string &TimerName, int Level);
 
     /// Sets named prefix for all subsequent timers
     bool setPrefix(const std::string &Prefix);
 
     /// Unsets prefix for all subsequent timers
     bool unsetPrefix();
+    
+    /// Sets timing level for all subsequent timers
+    void setTimingLevel(int Level);
 
     /// Prints timing statistics and global summary files
     /// Output Files: TimerFilePrefix.timing.<MyRank>

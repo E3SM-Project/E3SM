@@ -31,8 +31,9 @@ int main(int argc, char **argv){
     // Pacer::initialize(MPI_COMM_WORLD, Pacer::PACER_STANDALONE);
 
     Pacer::setPrefix("Omega:");
+    Pacer::setTimingLevel(1);
 
-    Pacer::start("run_loop");
+    Pacer::start("run_loop", 1);
 
     float tmp = 1;
 
@@ -40,23 +41,26 @@ int main(int argc, char **argv){
         tmp *= i;
     }
 
-    Pacer::stop("run_loop");
+    Pacer::stop("run_loop", 1);
+    
+    Pacer::start("should_not_appear", 2);
+    Pacer::stop("should_not_appear", 2);
 
     Pacer::unsetPrefix();
 
     // illustrating situation where attempt to stop timer before starting
     // will print a warning
-    Pacer::stop("final");
+    Pacer::stop("final", 0);
 
     // as well as dangling timer which is never stopped explicitly
     // will print a warning at the end during finalize
-    Pacer::start("final");
+    Pacer::start("final", 0);
 
 
     // print: First argument is the prefix used for timing output file names
     // Second argument (optional) controls if timing output should be from all ranks
     // default is false, only rank 0 writes timing output
-    Pacer::print("test");
+    Pacer::print("pacer_test");
     // Pacer::print("test", true);
 
     Pacer::finalize();
