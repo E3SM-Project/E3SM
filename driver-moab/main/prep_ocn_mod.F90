@@ -447,7 +447,16 @@ contains
             ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
             ! atm for the intx atm-ocn context (coverage)
             call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID)
-
+            ! To project fields from ATM to OCN grid, we need to define
+            ! ATM a2x fields to OCN grid on coupler side
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
+            endif
             ! next, let us compute the ATM and OCN data transfer
             if (.not. samegrid_ao) then ! not a data OCN model
 
@@ -499,17 +508,6 @@ contains
                   endif
 #endif
                end if
-
-               ! To project fields from ATM to OCN grid, we need to define
-               ! ATM a2x fields to OCN grid on coupler side
-               tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on OCN cpl'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on OCN cpl')
-               endif
 
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
