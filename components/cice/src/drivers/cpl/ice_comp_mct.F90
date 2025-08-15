@@ -217,6 +217,7 @@ contains
     !   call shr_init_memusage()
 #ifdef HAVE_MOAB
     mpicom_ice_moab = mpicom_loc ! save it to use in moab init
+    call shr_mpi_commrank( mpicom_ice_moab, rank2 ) ! this will be used for differences between mct and moab tags
 #endif
     !---------------------------------------------------------------------------
     ! use infodata to determine type of run
@@ -525,7 +526,13 @@ contains
 
     real(r8) :: mrss, mrss0,msize,msize0
     logical, save :: first_time = .true.
-
+#ifdef MOABCOMP
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(100) ::tagname, mct_field, modelStr
+#endif 
 !
 ! !REVISION HISTORY:
 ! Author: Jacob Sewall, Mariana Vertenstein
@@ -583,6 +590,23 @@ contains
        call ice_import( x2i_i%rattr )
 #ifdef HAVE_MOAB
        call ice_import_moab( x2i_im, EClock, totalmblsimp )
+
+#ifdef MOABCOMP
+       ! loop over all fields in seq_flds_x2l_fields
+       call mct_list_init(temp_list ,seq_flds_x2i_fields)
+       size_list=mct_list_nitem (temp_list)
+       ent_type = 0 ! entity type is vertex for cice, always
+       if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2i_fields), ' lnd import check'
+       do index_list = 1, size_list
+         call mct_list_get(mctOStr,index_list,temp_list)
+         mct_field = mct_string_toChar(mctOStr)
+         tagname= trim(mct_field)//C_NULL_CHAR
+         modelStr = 'cice run import'
+         call seq_comm_compare_mb_mct(modelStr, mpicom_ice_moab, x2i_i, mct_field,  MPSIID, tagname, ent_type, difference)
+       enddo
+       call mct_list_clean(temp_list)
+   
+#endif
 #endif
     endif
     call ice_timer_stop(timer_cplrecv)
