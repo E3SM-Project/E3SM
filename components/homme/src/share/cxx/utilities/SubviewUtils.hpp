@@ -352,6 +352,21 @@ subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
     &v_in.impl_map().reference(ie, remap_idx, idim1, idim2, 0, 0));
 }
 
+template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4,
+          typename MemSpace, typename... Properties>
+KOKKOS_INLINE_FUNCTION ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpace>
+subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
+                 Properties...> v_in,
+        int ie, int idim0) {
+  assert(v_in.data() != nullptr);
+  assert(ie < v_in.extent_int(0));
+  assert(ie >= 0);
+  assert(idim0 < v_in.extent_int(1));
+  assert(idim0 >= 0);
+  return ViewUnmanaged<ScalarType[DIM1][DIM2][DIM3][DIM4], MemSpace>(
+    &v_in.impl_map().reference(ie, idim0, 0, 0, 0, 0));
+}
+
 // Force a subview to be const
 template<typename View, typename... Ints>
 KOKKOS_INLINE_FUNCTION

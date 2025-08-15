@@ -4,10 +4,10 @@
 #include "share/grid/se_grid.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/grid_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 #include <algorithm>
 

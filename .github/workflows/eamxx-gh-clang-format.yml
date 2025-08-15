@@ -1,0 +1,42 @@
+name: "eamxx-format"
+
+# if .{cpp,hpp} files are touched in a PR, lint them!
+
+on:
+  pull_request:
+    branches: ["master"]
+    paths:
+      - 'components/eamxx/**/*.cpp'
+      - 'components/eamxx/**/*.hpp'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format-linter:
+    if: ${{ github.repository == 'E3SM-Project/E3SM' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: tj-actions/changed-files@v46
+      id: changed-files
+      with:
+        files: 'components/eamxx/**/*.{cpp,hpp}'
+        separator: " "
+    # 1. runs clang-format on the files changed by this PR, and returns pass/fail
+    #    error code.
+    # 2. prints the diff to screen (action log), comparing to the changes
+    #    that *would* be made
+    # 3. the E3SM-Project fork of DoozyX/clang-format-lint-action@v0.20
+    #    adds a Step summary to the workflow page, and, on failure, lists the
+    #    files that fail the clang-format test
+    - uses: E3SM-Project/clang-format-lint-action@v1.0.0
+      with:
+        source: ${{ steps.changed-files.outputs.all_changed_files }}
+        exclude: ''
+        extensions: 'hpp,cpp'
+        clangFormatVersion: 14
+        style: 'file:components/eamxx/.clang-format'

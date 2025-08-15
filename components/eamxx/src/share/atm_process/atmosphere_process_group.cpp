@@ -3,8 +3,9 @@
 
 #include "share/property_checks/field_nan_check.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>
 
@@ -20,13 +21,13 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (m_params.get<std::string>("schedule_type") == "Sequential") {
+    if (m_params.get<std::string>("schedule_type") == "sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (m_params.get<std::string>("schedule_type") == "Parallel") {
+    } else if (m_params.get<std::string>("schedule_type") == "parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
-      ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
+      EKAT_ERROR_MSG("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'Parallel' and 'Sequential'.\n");
+      EKAT_ERROR_MSG("Error! Invalid 'schedule_type'. Available choices are 'parallel' and 'sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -70,10 +71,10 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     auto& params_i = m_params.sublist(ap_name);
 
     // Get type (defaults to name)
-    const auto& ap_type = params_i.get<std::string>("Type",ap_name);
+    const auto& ap_type = params_i.get<std::string>("type",ap_name);
 
     // Set logger in this ap params
-    params_i.set("Logger",this->m_atm_logger);
+    params_i.set("logger",this->m_atm_logger);
 
     // Create the atm proc
     auto ap = apf.create(ap_type,proc_comm,params_i);
@@ -221,7 +222,7 @@ gather_internal_fields  () {
 }
 
 bool AtmosphereProcessGroup::
-are_column_conservation_checks_enabled () const
+are_conservation_checks_enabled () const
 {
   // Loop through processes and return true if an instance is found.
   for (auto atm_proc : m_atm_processes) {
@@ -230,7 +231,7 @@ are_column_conservation_checks_enabled () const
     // else continue to the next process.
     auto atm_proc_group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
     if (atm_proc_group) {
-      if (atm_proc_group->are_column_conservation_checks_enabled()) {
+      if (atm_proc_group->are_conservation_checks_enabled()) {
         return true;
       } else {
         continue;
@@ -239,7 +240,7 @@ are_column_conservation_checks_enabled () const
 
     // If this process is not a group, query enable_column_conservation_checks
     // and return true if true.
-    if (atm_proc->has_column_conservation_check()) {
+    if (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) {
       return true;
     }
   }
@@ -249,7 +250,7 @@ are_column_conservation_checks_enabled () const
 }
 
 void AtmosphereProcessGroup::
-setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check,
                                   const CheckFailHandling                                      fail_handling_type) const
 {
   // Loop over atm processes and add mass and energy checker where relevant
@@ -265,38 +266,28 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
       // fluxes over multiple processes implemented in the model.
       EKAT_REQUIRE_MSG(not atm_proc_group->has_column_conservation_check(),
                        "Error! The ATM process group \"" + atm_proc_group->name() + "\" attempted to enable "
-                       "conservation checks. Should have enable_column_conservation_checks=false for all "
-                       "process groups.\n");
-
+                       "conservation checks. A process group cannot have enable_column_conservation_checks=true. \n");
       atm_proc_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
       continue;
     }
 
     // For individual processes, first query if the checks are enabled.
     // If not, continue to the next process.
-    if (not atm_proc->has_column_conservation_check()) {
+    if (not (atm_proc->has_column_conservation_check() || atm_proc->has_energy_fixer()) ) {
       continue;
     }
-
-    // Since the checker is column local, require that an atm
-    // process that enables the check is a Physics process.
-    EKAT_REQUIRE_MSG(atm_proc->type() == AtmosphereProcessType::Physics,
-                     "Error! enable_column_conservation_checks=true "
-                     "for non-physics process \"" + atm_proc->name() + "\". "
-                     "This check is column local and therefore can only be run "
-                     "on physics processes.\n");
 
     // Query the computed fields for this atm process and see if either the mass or energy computation
     // might be changed after the process has run. If no field used in the mass or energy calculate
     // is updated by this process, there is no need to run the check.
     const std::string phys_grid_name  = conservation_check->get_grid()->name();
-    const bool updates_static_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
+    const bool updates_internal_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
     const bool updates_kinetic_energy = atm_proc->has_computed_field("horiz_winds", phys_grid_name);
     const bool updates_water_vapor    = atm_proc->has_computed_field("qv", phys_grid_name);
     const bool updates_water_liquid   = atm_proc->has_computed_field("qc", phys_grid_name) ||
                                         atm_proc->has_computed_field("qr", phys_grid_name);
     const bool updates_water_ice      = atm_proc->has_computed_field("qi", phys_grid_name);
-    const bool mass_or_energy_is_updated = updates_static_energy || updates_kinetic_energy ||
+    const bool mass_or_energy_is_updated = updates_internal_energy || updates_kinetic_energy ||
                                            updates_water_vapor   || updates_water_liquid ||
                                            updates_water_ice;
     EKAT_REQUIRE_MSG(mass_or_energy_is_updated, "Error! enable_column_conservation_checks=true for "
@@ -319,7 +310,8 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
-  }
+  }// for (auto atm_proc : m_atm_processes) 
+
 }
 
 void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
@@ -336,7 +328,7 @@ void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
 
       for (const auto& g : proc->get_groups_out()) {
         const auto& grid = m_grids_mgr->get_grid(g.grid_name());
-        for (const auto& f : g.m_fields) {
+        for (const auto& f : g.m_individual_fields) {
           auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
           proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
         }
@@ -358,15 +350,88 @@ void AtmosphereProcessGroup::add_additional_data_fields_to_property_checks (cons
         prop_check.second->set_additional_data_field(data_field);
       }
       if (proc->has_column_conservation_check()) {
-        proc->get_column_conservation_check().second->set_additional_data_field(data_field);
+        proc->get_conservation().second->set_additional_data_field(data_field);
       }
+    }
+  }
+}
+
+void AtmosphereProcessGroup::pre_process_tracer_requests () {
+  // Create map from tracer name to a vector which contains the field requests for that tracer.
+  std::map<std::string, std::list<FieldRequest>> tracer_requests;
+  auto gather_tracer_requests = [&] (FieldRequest& req) {
+    if (ekat::contains(req.groups, "tracers")) {
+      tracer_requests[req.fid.name()].push_back(req);
+    }
+  };
+  for (auto& req : m_required_field_requests){
+    gather_tracer_requests(req);
+  }
+  for (auto& req : m_computed_field_requests) {
+    gather_tracer_requests(req);
+  }
+
+  // Go through the map entry for each tracer and check that every one
+  // has the same request for turbulence advection, or listed no preference.
+  std::map<std::string, std::string> tracer_advection_type;
+  for (auto& fr : tracer_requests) {
+    auto& reqs = fr.second;
+
+    bool turb_advect_req = false;
+    bool non_turb_advect_req = false;
+    for (auto& req : reqs) {
+      if (ekat::contains(req.groups, "turbulence_advected_tracers")) turb_advect_req = true;
+      if (ekat::contains(req.groups, "non_turbulence_advected_tracers")) non_turb_advect_req = true;
+      if (turb_advect_req and non_turb_advect_req) {
+        // All the info we need to error out, just break request loop
+        break;
+      }
+    }
+
+    if (turb_advect_req and non_turb_advect_req) {
+      std::ostringstream ss;
+      ss << "Error! Incompatible tracer request. Turbulence advection requests not consistent among processes.\n"
+            "  - Tracer name: " + fr.first + "\n"
+            "  - Requests (process name, grid name, turbulence advected request type):\n";
+      for (auto& req : reqs) {
+        const auto turb_advect = ekat::contains(req.groups, "turbulence_advected_tracers");
+        const auto non_turb_advect = ekat::contains(req.groups, "non_turbulence_advected_tracers");
+        std::string turb_advect_info =
+          (turb_advect ?       "DynamicsAndTurbulence" :
+            (non_turb_advect ? "DynamicsOnly" :
+                                "NoPreference"));
+        const auto grid_name = req.fid.get_grid_name();
+        ss << "    - (" + req.calling_process + ", " + grid_name + ", " + turb_advect_info + ")\n";
+      }
+      EKAT_ERROR_MSG(ss.str());
+    } else if (non_turb_advect_req) {
+      tracer_advection_type[fr.first] = "non_turbulence_advected_tracers";
+    } else {
+      tracer_advection_type[fr.first] = "turbulence_advected_tracers";
+    }
+  }
+
+  // Set correct tracer advection type (if not set)
+  auto add_correct_tracer_group = [&] (FieldRequest& req, const std::string& advect_type) {
+    if (not ekat::contains(req.groups, advect_type)) {
+      req.groups.push_back(advect_type);
+    }
+  };
+  for (auto& req : m_required_field_requests){
+    if (ekat::contains(req.groups, "tracers")) {
+      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
+    }
+  }
+  for (auto& req : m_computed_field_requests) {
+    if (ekat::contains(req.groups, "tracers")) {
+      add_correct_tracer_group(req, tracer_advection_type.at(req.fid.name()));
     }
   }
 }
 
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->initialize(timestamp(),run_type);
+    atm_proc->initialize(start_of_step_ts(),run_type);
 #ifdef SCREAM_HAS_MEMORY_USAGE
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
@@ -385,10 +450,6 @@ void AtmosphereProcessGroup::run_impl (const double dt) {
 }
 
 void AtmosphereProcessGroup::run_sequential (const double dt) {
-  // Get the timestamp at the beginning of the step and advance it.
-  auto ts = timestamp();
-  ts += dt;
-
   // The stored atm procs should update the timestamp if both
   //  - this is the last subcycle iteration
   //  - nobody from outside told this APG to not update timestamps
@@ -523,7 +584,7 @@ set_required_group (const FieldGroup& group) {
   // NOTE: we still check also the groups computed by the previous procs,
   //       in case they contain some of the fields in this group.
   std::set<std::string> computed;
-  for (const auto& it : group.m_fields) {
+  for (const auto& it : group.m_individual_fields) {
     const auto& fn = it.first;
     const auto& fid = it.second->get_header().get_identifier();
     for (int iproc=0; iproc<first_proc_that_needs_group; ++iproc) {

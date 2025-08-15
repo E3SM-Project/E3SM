@@ -3,10 +3,10 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/ekat_pack_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_pack_utils.hpp>
 
 #include <numeric>
 
@@ -27,7 +27,7 @@ RefiningRemapperP2P::
   clean_up();
 }
 
-void RefiningRemapperP2P::do_remap_fwd ()
+void RefiningRemapperP2P::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
@@ -50,9 +50,15 @@ void RefiningRemapperP2P::do_remap_fwd ()
   // Loop over each field, perform mat-vec
   constexpr auto COL = ShortFieldTagsNames::COL;
   for (int i=0; i<m_num_fields; ++i) {
+    if (m_needs_remap[i]==0) {
+      // No need to do a mat-vec here. Just deep copy and move on
+      m_tgt_fields[i].deep_copy(m_src_fields[i]);
+      continue;
+    }
+
     auto& f_tgt = m_tgt_fields[i];
 
-    // Allow to register fields that do not have the COL tag
+    // It's ok to register fields that do not have the COL tag
     // These fields are simply copied from src to tgt.
     if (not f_tgt.get_header().get_identifier().get_layout().has_tag(COL)) {
       f_tgt.deep_copy(m_src_fields[i]);
@@ -87,9 +93,14 @@ void RefiningRemapperP2P::setup_mpi_data_structures ()
   // Get cumulative col size of each field (to be used to compute offsets)
   m_fields_col_sizes_scan_sum.resize(m_num_fields+1,0);
   for (int i=0; i<m_num_fields; ++i) {
+    if (m_needs_remap[i]==0)
+      continue;
+
     const auto& f = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
-    const auto& col_size = fl.clone().strip_dim(COL).size();
+
+    // Fields without COL tag are nor remapped, so consider their col size as 0
+    auto col_size = fl.has_tag(COL) ? fl.clone().strip_dim(COL).size() : 0;
     m_fields_col_sizes_scan_sum[i+1] = m_fields_col_sizes_scan_sum[i] + col_size;
   }
   auto total_col_size = m_fields_col_sizes_scan_sum.back();
@@ -162,7 +173,7 @@ void RefiningRemapperP2P::pack_and_send ()
 {
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   auto export_pids = m_imp_exp->export_pids();
   auto export_lids = m_imp_exp->export_lids();
@@ -172,6 +183,10 @@ void RefiningRemapperP2P::pack_and_send ()
   const int num_exports = export_pids.size();
   const int total_col_size = m_fields_col_sizes_scan_sum.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      // No need to process this field. We'll deep copy src->tgt later
+      continue;
+
     const auto& f = m_src_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_col_sizes_scan_sum = m_fields_col_sizes_scan_sum[ifield];
@@ -196,7 +211,7 @@ void RefiningRemapperP2P::pack_and_send ()
       {
         const auto v = f.get_view<const Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_exports,dim1);
+        auto policy = TPF::get_default_team_policy(num_exports,dim1);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
           const int iexp = team.league_rank();
           const int icol = export_lids(iexp);
@@ -221,7 +236,7 @@ void RefiningRemapperP2P::pack_and_send ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int f_col_size = dim1*dim2;
-        auto policy = ESU::get_default_team_policy(num_exports,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_exports,dim1*dim2);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
           const int iexp = team.league_rank();
           const int icol = export_lids(iexp);
@@ -249,7 +264,7 @@ void RefiningRemapperP2P::pack_and_send ()
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
         const int f_col_size = dim1*dim2*dim3;
-        auto policy = ESU::get_default_team_policy(num_exports,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_exports,dim1*dim2*dim3);
         auto pack = KOKKOS_LAMBDA(const TeamMember& team) {
           const int iexp = team.league_rank();
           const int icol = export_lids(iexp);
@@ -306,7 +321,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
 
   using RangePolicy = typename KT::RangePolicy;
   using TeamMember  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   auto import_pids = m_imp_exp->import_pids();
   auto import_lids = m_imp_exp->import_lids();
@@ -316,6 +331,10 @@ void RefiningRemapperP2P::recv_and_unpack ()
   const int num_imports = import_pids.size();
   const int total_col_size = m_fields_col_sizes_scan_sum.back();
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      // No need to process this field. We'll deep copy src->tgt later
+      continue;
+
           auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_col_sizes_scan_sum = m_fields_col_sizes_scan_sum[ifield];
@@ -340,7 +359,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
       {
         auto v = f.get_view<Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_imports,dim1);
+        auto policy = TPF::get_default_team_policy(num_imports,dim1);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
           const int idx  = team.league_rank();
           const int pid  = import_pids(idx);
@@ -365,7 +384,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int f_col_size = dim1*dim2;
-        auto policy = ESU::get_default_team_policy(num_imports,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_imports,dim1*dim2);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
           const int idx  = team.league_rank();
           const int pid  = import_pids(idx);
@@ -393,7 +412,7 @@ void RefiningRemapperP2P::recv_and_unpack ()
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
         const int f_col_size = dim1*dim2*dim3;
-        auto policy = ESU::get_default_team_policy(num_imports,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_imports,dim1*dim2*dim3);
         auto unpack = KOKKOS_LAMBDA (const TeamMember& team) {
           const int idx  = team.league_rank();
           const int pid  = import_pids(idx);

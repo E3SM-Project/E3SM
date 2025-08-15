@@ -1,13 +1,13 @@
 %YAML 1.1
 ---
 filename_prefix: cosp_standalone_output
-Averaging Type: Instant
-Fields:
-  Physics:
-    Field Names:
+averaging_type: instant
+fields:
+  physics:
+    field_names:
       - isccp_cldtot
 
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

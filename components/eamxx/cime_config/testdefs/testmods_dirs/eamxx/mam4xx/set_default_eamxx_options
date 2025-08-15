@@ -1,0 +1,17 @@
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+
+#------------------------------------------------------
+# Set options to default
+#------------------------------------------------------
+
+# Set mac_aero_mic to default
+ATMCHANGE mac_aero_mic::atm_procs_list="tms,shoc,cld_fraction,spa,p3" -b
+
+#Set precribed ccn to the default value
+ATMCHANGE p3::do_prescribed_ccn=true -b
+
+#Set predicted ccn to the default value (it is TRUE by default)
+ATMCHANGE p3::do_predict_nc=true -b
+
+#Switch to turn on heterogeneous freezing due to prognostic aerosols
+ATMCHANGE p3::use_hetfrz_classnuc=false -b

@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_cldfrac_mam4_aci_p3_output
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   # SHOC
   - cldfrac_liq
   - eddy_diff_mom
@@ -92,6 +92,6 @@ Field Names:
   - nc_nuceat_tend
   - ni_activated
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

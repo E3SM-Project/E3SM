@@ -2,7 +2,9 @@ name: gh
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: 
+      - master
+      - maint-3.0
     paths:
       # first, yes to these
       - '.github/workflows/e3sm-gh-ci-cime-tests.yml'
@@ -40,7 +42,7 @@ jobs:
           - SMS_D_Ln5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu
           - ERS_Ld5_P4.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.ghci-oci_gnu.eamxx-prod
     container: 
-      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.0
+      image: ghcr.io/e3sm-project/containers-ghci:ghci-0.2.1
 
     steps:
       - 

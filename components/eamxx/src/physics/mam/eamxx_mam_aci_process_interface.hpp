@@ -5,8 +5,7 @@
 #include <physics/mam/mam_coupling.hpp>
 
 // For declaring ACI class derived from atm process class
-#include <share/atm_process/atmosphere_process.hpp>
-
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 // For aerosol configuration
 #include "mam4xx/aero_config.hpp"
 
@@ -15,7 +14,7 @@
 
 namespace scream {
 
-class MAMAci final : public scream::AtmosphereProcess {
+class MAMAci final : public MAMGenericInterface {
  public:
   // declare some constant scratch space lengths
   static constexpr int hetro_scratch_   = 43;
@@ -41,8 +40,9 @@ class MAMAci final : public scream::AtmosphereProcess {
   // ACI runtime ( or namelist) options
   //------------------------------------------------------------------------
 
-  Real wsubmin_;  // Minimum subgrid vertical velocity
-  int top_lev_;   // Top level for MAM4xx
+  Real wsubmin_;                   // Minimum subgrid vertical velocity
+  bool enable_aero_vertical_mix_;  // To enable vertical mixing of aerosols
+  int top_lev_;                    // Top level for MAM4xx
 
   //------------------------------------------------------------------------
   // END: ACI runtime ( or namelist) options
@@ -59,12 +59,6 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // Dry diameter of the aitken mode (for ice nucleation)
   view_2d aitken_dry_dia_;
-
-  // wet mixing ratios (water species)
-  mam_coupling::WetAtmosphere wet_atm_;
-
-  // dry mixing ratios (water species)
-  mam_coupling::DryAtmosphere dry_atm_;
 
   // aerosol dry diameter
   const_view_3d dgnum_;
@@ -128,25 +122,13 @@ class MAMAci final : public scream::AtmosphereProcess {
   view_2d diagnostic_scratch_[hetro_scratch_];
 
   // Subgrid scale velocities
-  view_2d wsub_, wsubice_, wsig_, w2_;
+  view_2d wsub_, wsubice_, wsig_;  //, w2_;
 
   // local atmospheric state column variables
   const_view_2d pdel_;       // pressure thickess of layer [Pa]
   view_2d rpdel_;            // Inverse of pdel_
   const_view_2d w_sec_mid_;  // Vertical velocity variance at midpoints
   view_2d w_sec_int_;        // Vertical velocity variance at interfaces
-
-  // number of horizontal columns and vertical levels
-  int ncol_, nlev_;
-
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_, dry_aero_;
-
-  // workspace manager for internal local variables
-  mam_coupling::Buffer buffer_;
-
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
 
   // A view array to carry cloud borne aerosol mmrs/nmrs
   view_2d qqcw_fld_work_[mam4::ndrop::ncnst_tot];
@@ -158,9 +140,6 @@ class MAMAci final : public scream::AtmosphereProcess {
   // Constructor
   MAMAci(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  // Process metadata: Return type of the process
-  AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
-
   // Return name of the process
   std::string name() const override { return "mam4_aci"; }
 
@@ -170,19 +149,22 @@ class MAMAci final : public scream::AtmosphereProcess {
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override {
-    return mam_coupling::buffer_size(ncol_, nlev_);
+    return mam_coupling::buffer_size(ncol_, nlev_, num_2d_scratch_,
+                                     len_temporary_views_);
   }
 
   void init_buffers(const ATMBufferManager &buffer_manager) override;
-
+  int get_len_temporary_views();
+  void init_temporary_views();
   // process behavior
   void initialize_impl(const RunType run_type) override;
   void run_impl(const double dt) override;
-  void finalize_impl() override {/*DO NOTHING*/};
+  void finalize_impl() override{/*DO NOTHING*/};
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
+  // FIXME: Preprocess is different from MAMGenericInterface::Preprocess.
   struct Preprocess {
     Preprocess() = default;
     // on host: initializes preprocess functor with necessary state data
@@ -212,7 +194,10 @@ class MAMAci final : public scream::AtmosphereProcess {
       // for atmosphere
       compute_vertical_layer_heights(team, dry_atm_pre_, i);
       compute_updraft_velocities(team, wet_atm_pre_, dry_atm_pre_, i);
-    }  // operator()
+      // FIXME: we only set_min_background_mmr in aci.
+      set_min_background_mmr(team, dry_aero_pre_,
+                             i);  // dry_atm_pre_ is the output
+    }                             // operator()
 
     // local variables for preprocess struct
     // number of horizontal columns and vertical levels
@@ -224,48 +209,21 @@ class MAMAci final : public scream::AtmosphereProcess {
     mam_coupling::AerosolState wet_aero_pre_, dry_aero_pre_;
   };  // MAMAci::Preprocess
 
-  // Atmosphere processes often have a post-processing step prepares output
-  // from this process for the Field Manager. This functor implements this
-  // step, which is called during run_impl.
-  // Postprocessing functor
-  struct Postprocess {
-    Postprocess() = default;
-
-    // on host: initializes postprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
-                    const mam_coupling::WetAtmosphere &wet_atm,
-                    const mam_coupling::AerosolState &wet_aero,
-                    const mam_coupling::DryAtmosphere &dry_atm,
-                    const mam_coupling::AerosolState &dry_aero) {
-      ncol_post_     = ncol;
-      nlev_post_     = nlev;
-      wet_atm_post_  = wet_atm;
-      wet_aero_post_ = wet_aero;
-      dry_atm_post_  = dry_atm;
-      dry_aero_post_ = dry_aero;
-    }
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(
-        const Kokkos::TeamPolicy<KT::ExeSpace>::member_type &team) const {
-      const int i = team.league_rank();  // column index
-      compute_wet_mixing_ratios(team, dry_atm_post_, dry_aero_post_,
-                                wet_aero_post_, i);
-    }  // operator()
-
-    // number of horizontal columns and vertical levels
-    int ncol_post_, nlev_post_;
-
-    // local atmospheric and aerosol state data
-    mam_coupling::WetAtmosphere wet_atm_post_;
-    mam_coupling::DryAtmosphere dry_atm_post_;
-    mam_coupling::AerosolState wet_aero_post_, dry_aero_post_;
-  };  // Postprocess
-
  private:
   // pre- and postprocessing scratch pads
   Preprocess preprocess_;
-  Postprocess postprocess_;
+
+  // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
+
+  int num_2d_scratch_ = 94;
+  int len_temporary_views_{0};
 
 };  // MAMAci
 

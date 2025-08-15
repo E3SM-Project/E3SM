@@ -4764,10 +4764,10 @@ contains
 
       do n = 1, Tctl%npt_elevProf
 
-        if (Tctl%npt_elevProf-1<10) then 
-          write(str,'(I1)') Tctl%npt_elevProf-1
-        elseif (Tctl%npt_elevProf<100) then
-          write(str,'(I2)') Tctl%npt_elevProf-1
+        if (n-1<10) then 
+          write(str,'(I1)') n-1
+        elseif (n-1<100) then
+          write(str,'(I2)') n-1
         endif
 
         call check_var(ncid, 'ele'//str, vardesc, readvar)

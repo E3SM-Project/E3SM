@@ -1,0 +1,27 @@
+%YAML 1.1
+---
+filename_prefix: eamxx_output.decadal.4hourlyINST_native.h
+iotype: pnetcdf
+averaging_type: instant
+max_snapshots_per_file: 1 # only one snapshot per file
+fields:
+  physics_pg2:
+    field_names:
+    # For storm analysis
+    - SeaLevelPressure
+    - wind_speed_10m
+    - z_mid_at_500hPa
+    - z_mid_at_200hPa
+    # For wind turbine study
+    - wind_speed_at_100m_above_surface
+    # For atmospheric rivers
+    - ZonalVapFlux
+    - MeridionalVapFlux
+    # Others
+    - omega_at_500hPa
+    - omega_at_850hPa
+output_control:
+  frequency: 1
+  frequency_units: nhours
+restart:
+  force_new_file: true

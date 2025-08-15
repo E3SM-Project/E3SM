@@ -1,13 +1,7 @@
 set(PHYSICS_SHARE_SRCS
   physics_share_f2c.F90
   physics_share.cpp
-  physics_test_data.cpp
-  scream_trcmix.cpp
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/scream_abortutils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/wv_sat_scream.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/p3/scream/micro_p3_utils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/debug_info.F90
+  eamxx_trcmix.cpp
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -27,8 +21,15 @@ target_include_directories(physics_share PUBLIC
 target_link_libraries(physics_share scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
+
+  target_sources(scream_test_support PRIVATE
+    physics_test_data.cpp
+  )
+
   add_subdirectory(tests)
 endif()
 
-# Add this library to eamxx_physics
-target_link_libraries(eamxx_physics INTERFACE physics_share)
+if (TARGET eamxx_physics)
+  # Add this library to eamxx_physics
+  target_link_libraries(eamxx_physics INTERFACE physics_share)
+endif()

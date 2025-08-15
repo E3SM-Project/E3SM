@@ -35,10 +35,11 @@ module seq_map_type_mod
      integer(IN)             :: mpicom    ! mpicom
      !
      !---- optional nonlinear map; see seq_nlmap_mod.F90
-     logical :: nl_available, nl_conservative
-     type(mct_ggrid), pointer :: dom_cx_s, dom_cx_d
-     type(mct_sMatp) :: nl_sMatp
-     character(CX) :: nl_mapfile
+     logical                 :: nl_available, nl_conservative
+     type(mct_ggrid),pointer :: dom_cx_s, dom_cx_d
+     type(mct_sMatp)         :: nl_sMatp
+     character(CX)           :: nl_mapfile
+     real(R8), allocatable   :: frac_s(:), frac_d(:)
   end type seq_map
   public seq_map
 

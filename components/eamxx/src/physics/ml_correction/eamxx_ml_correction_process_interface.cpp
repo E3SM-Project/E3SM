@@ -1,21 +1,23 @@
 #include "eamxx_ml_correction_process_interface.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/util/ekat_units.hpp"
-#include "share/field/field_utils.hpp"
 #include "physics/share/physics_constants.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/field/field_utils.hpp"
+
+#include <ekat_assert.hpp>
+#include <ekat_units.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 // =========================================================================================
 MLCorrection::MLCorrection(const ekat::Comm &comm,
                            const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params) {
-  m_ML_model_path_tq = m_params.get<std::string>("ML_model_path_tq");
-  m_ML_model_path_uv = m_params.get<std::string>("ML_model_path_uv");
-  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ML_model_path_sfc_fluxes");
-  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ML_output_fields");
-  m_ML_correction_unit_test = m_params.get<bool>("ML_correction_unit_test");
+  m_ML_model_path_tq = m_params.get<std::string>("ml_model_path_tq");
+  m_ML_model_path_uv = m_params.get<std::string>("ml_model_path_uv");
+  m_ML_model_path_sfc_fluxes = m_params.get<std::string>("ml_model_path_sfc_fluxes");
+  m_fields_ml_output_variables = m_params.get<std::vector<std::string>>("ml_output_fields");
+  m_ML_correction_unit_test = m_params.get<bool>("ml_correction_unit_test");
 }
 
 // =========================================================================================
@@ -27,7 +29,7 @@ void MLCorrection::set_grids(
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   constexpr int ps = Pack::n;
-  m_grid                = grids_manager->get_grid("Physics");
+  m_grid                = grids_manager->get_grid("physics");
   const auto &grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();  // Number of columns on this rank
   m_num_levs =
@@ -50,7 +52,7 @@ void MLCorrection::set_grids(
     add_field<Updated>("sfc_flux_sw_net", scalar2d, W/m2, grid_name);
     add_field<Updated>("sfc_flux_lw_dn", scalar2d, W/m2, grid_name);
     m_lat  = m_grid->get_geometry_data("lat");
-    m_lon  = m_grid->get_geometry_data("lon");      
+    m_lon  = m_grid->get_geometry_data("lon");
   }
 
   /* ----------------------- WARNING --------------------------------*/
@@ -60,20 +62,20 @@ void MLCorrection::set_grids(
    * to be used here which we can then setup using the m_fields_ml_output_variables variable
    */
   add_field<Updated>("T_mid",       scalar3d_mid, K,     grid_name, ps);
-  add_field<Updated>("qv",          scalar3d_mid, kg/kg, grid_name, "tracers", ps);
   add_field<Updated>("horiz_winds", vector3d_mid, m/s,   grid_name, ps);
   /* Note: we also need to update the precipitation after ML commits any column drying */
   add_field<Required>("pseudo_density",      scalar3d_mid, Pa,     grid_name, ps);
   add_field<Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name);
   add_field<Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name);
   /* ----------------------- WARNING --------------------------------*/
-  add_group<Updated>("tracers", grid_name, 1, Bundling::Required);
+  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
+  add_group<Updated>("tracers", grid_name, 1, MonolithicAlloc::Required);
 }
 
 // =========================================================================================
 void MLCorrection::initialize_impl(const RunType /* run_type */) {
   fpe_mask = ekat::get_enabled_fpes();
-  ekat::disable_all_fpes();  // required for importing numpy  
+  ekat::disable_all_fpes();  // required for importing numpy
   if ( Py_IsInitialized() == 0 ) {
     pybind11::initialize_interpreter();
   }
@@ -99,11 +101,11 @@ void MLCorrection::initialize_impl(const RunType /* run_type */) {
 // =========================================================================================
 void MLCorrection::run_impl(const double dt) {
   // use model time to infer solar zenith angle for the ML prediction
-  auto current_ts = timestamp();
+  auto current_ts = start_of_step_ts();
   std::string datetime_str = current_ts.get_date_string() + " " + current_ts.get_time_string();
 
   const auto &phis            = get_field_in("phis").get_view<const Real *, Host>();
-  const auto &sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real *, Host>();  
+  const auto &sfc_alb_dif_vis = get_field_in("sfc_alb_dif_vis").get_view<const Real *, Host>();
 
   const auto &qv              = get_field_out("qv").get_view<Real **, Host>();
   const auto &T_mid           = get_field_out("T_mid").get_view<Real **, Host>();
@@ -135,43 +137,43 @@ void MLCorrection::run_impl(const double dt) {
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols * m_num_levs, T_mid.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),          
+          m_num_cols * m_num_levs * num_tracers, qv.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols * m_num_levs, u.data(), pybind11::str{}),        
+          m_num_cols * m_num_levs, u.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols * m_num_levs, v.data(), pybind11::str{}),       
+          m_num_cols * m_num_levs, v.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, h_lat.data(), pybind11::str{}),       
+          m_num_cols, h_lat.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols, h_lon.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, phis.data(), pybind11::str{}),   
+          m_num_cols, phis.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols * (m_num_levs+1), SW_flux_dn.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
           m_num_cols, sfc_alb_dif_vis.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),   
+          m_num_cols, sfc_flux_sw_net.data(), pybind11::str{}),
       pybind11::array_t<Real, pybind11::array::c_style | pybind11::array::forcecast>(
-          m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),                                                                                                   
-      m_num_cols, m_num_levs, num_tracers, dt, 
+          m_num_cols, sfc_flux_lw_dn.data(), pybind11::str{}),
+      m_num_cols, m_num_levs, num_tracers, dt,
       ML_model_tq, ML_model_uv, ML_model_sfc_fluxes, datetime_str);
-  pybind11::gil_scoped_release no_gil;  
-  ekat::enable_fpes(fpe_mask);   
+  pybind11::gil_scoped_release no_gil;
+  ekat::enable_fpes(fpe_mask);
 
   // Now back out the qv change abd apply it to precipitation, only if Tq ML is turned on
-  if (m_ML_model_path_tq != "None") {
+  if (m_ML_model_path_tq != "none") {
     using PC  = scream::physics::Constants<Real>;
     using KT  = KokkosTypes<DefaultDevice>;
     using MT  = typename KT::MemberType;
-    using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+    using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
     const auto &pseudo_density       = get_field_in("pseudo_density").get_view<const Real**>();
     const auto &precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real *>();
     const auto &precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real *>();
     constexpr Real g = PC::gravit;
     const auto num_levs = m_num_levs;
-    const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
-    
+    const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
+
     const auto &qv_told = qv_in.get_view<const Real **>();
     const auto &qv_tnew = get_field_in("qv").get_view<const Real **>();
     Kokkos::parallel_for("Compute WVP diff", policy,
@@ -233,4 +235,4 @@ void MLCorrection::finalize_impl() {
 }
 // =========================================================================================
 
-}  // namespace scream 
+}  // namespace scream

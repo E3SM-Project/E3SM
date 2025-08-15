@@ -2,7 +2,6 @@
 #define EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
 
 namespace scream
 {
@@ -14,15 +13,11 @@ namespace scream
 class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using PF            = scream::PhysicsFunctions<DefaultDevice>;
-  using C             = physics::Constants<Real>;
-
   // Constructors
   PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
-  std::string name () const;
+  // The name of the diagnostic CLASS (not the computed field)
+  std::string name () const override { return "PotentialTemperature"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);

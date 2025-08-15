@@ -1,8 +1,8 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 
@@ -11,14 +11,14 @@
 #include "share/field/field_manager.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/io/ekat_yaml.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 namespace {
 
@@ -60,17 +60,17 @@ TEST_CASE("se_grid_io")
   auto fm0 = get_test_fm(grid,t0,true);
   ekat::ParameterList params;
   params.set<std::string>("filename_prefix","io_se_grid");
-  params.set<std::string>("Averaging Type","Instant");
-  params.set<int>("Max Snapshots Per File",1);
-  params.set<strvec_t>("Field Names",{"field_1","field_2","field_3","field_packed"});
-  params.set<std::string>("Floating Point Precision","real");
-  params.set("MPI Ranks in Filename",true);
+  params.set<std::string>("averaging_type","instant");
+  params.set<int>("max_snapshots_per_file",1);
+  params.set<strvec_t>("field_names",{"field_1","field_2","field_3","field_packed"});
+  params.set<std::string>("floating_point_precision","real");
   auto& ctl_pl = params.sublist("output_control");
-  ctl_pl.set("Frequency",1);
+  ctl_pl.set("frequency",1);
   ctl_pl.set<std::string>("frequency_units","nsteps");
 
   OutputManager om;
-  om.setup(io_comm,params,fm0,gm,t0,t0,false);
+  om.initialize(io_comm,params,t0,false);
+  om.setup(fm0,gm->get_grid_names());
   om.init_timestep(t0,dt);
   om.run(t0+dt);
   om.finalize();
@@ -80,7 +80,7 @@ TEST_CASE("se_grid_io")
   const auto fnames = {"field_1", "field_2", "field_3", "field_packed"};
   for (const auto& fname : fnames) {
     auto f = fm1->get_field(fname);
-    f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    f.deep_copy(ekat::invalid<Real>());
   }
 
   // Check fields were written correctly
@@ -95,7 +95,7 @@ TEST_CASE("se_grid_io")
   }
   ins_input.finalize();
 
-  // All Done 
+  // All Done
   scorpio::finalize_subsystem();
 }
 
@@ -123,7 +123,6 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
   FieldIdentifier fid4("field_packed",grid->get_3d_scalar_layout(true),kg/m,gn);
 
   // Register fields with fm
-  fm->registration_begins();
   fm->register_field(FR{fid1});
   fm->register_field(FR{fid2});
   fm->register_field(FR{fid3});
@@ -152,8 +151,9 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
 
   // field_2 is not partitioned, so let's sync it across ranks
   auto f2 = fm->get_field("field_2");
-  auto v2 = f2.get_view<Real*>();
+  auto v2 = f2.get_view<Real*,Host>();
   comm.all_reduce(v2.data(),nlevs,MPI_MAX);
+  f2.sync_to_dev();
 
   return fm;
 }
@@ -177,9 +177,9 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 
-  in_params.set<std::string>("Filename",filename);
-  in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
-  in_params.set<std::string>("Floating Point Precision","real");
+  in_params.set<std::string>("filename",filename);
+  in_params.set<vos_type>("field_names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<std::string>("floating_point_precision","real");
   return in_params;
 }
 

@@ -1,0 +1,13 @@
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+
+# Add spa as RRTMG needs spa
+ATMCHANGE physics::atm_procs_list="mac_aero_mic,spa,rrtmgp" -b
+
+# Replace spa with mam4_aci to invoke mam4 aci scheme
+ATMCHANGE mac_aero_mic::atm_procs_list="tms,shoc,cld_fraction,mam4_aci,p3" -b
+
+#Set precribed ccn to false so that P3 uses input from ACI
+ATMCHANGE p3::do_prescribed_ccn=false -b
+
+#Set predicted ccn to true so that P3 uses input from ACI
+ATMCHANGE p3::do_predict_nc=true -b

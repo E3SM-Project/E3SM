@@ -647,11 +647,13 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    real(r8)               :: sst_constant_value 
    character(len=CL)      :: restfilm = 'unset'
    character(len=CL)      :: restfils = 'unset'
+   real(r8)               :: RSO_fixed_MLD
+   real(r8)               :: RSO_relax_tau
    integer(IN)   :: nfrac
    logical :: force_prognostic_true = .false.
    namelist /dom_inparm/ sstcyc, nrevsn, rest_pfile, bndtvs, focndomain
    namelist / docn_nml / decomp, sst_constant_value, force_prognostic_true, &
-        restfilm, restfils
+        restfilm, restfils, RSO_fixed_MLD, RSO_relax_tau
 
 !-------------------------------------------------------------------------------
 ! Notes:

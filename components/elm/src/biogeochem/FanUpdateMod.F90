@@ -727,6 +727,7 @@ contains
     real(r8), parameter :: kg_to_g = 1e3_r8
     ! FAN allows a fraction of manure N diverted before storage; this option is currently not used.
     real(r8), parameter :: fract_direct = 0.0_r8
+    real(r8), parameter :: abstol = 1.e-6_r8 ! weight tolerance to remove small column and landunits
 
     ! N fluxes, gN/m2/sec:
     !
@@ -792,7 +793,9 @@ contains
        if (l /= ispval) then
           ! flux_avail = manure excreted per m2 of crops (ndep_mixed_grc = per m2 / all land units)
           do c = lun_pp%coli(l), lun_pp%colf(l)
-             if (.not. col_pp%active(c)) cycle
+             if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < abstol) cycle
+
+             if (lun_pp%wtgcell(l) < abstol) cycle ! Ignore if landunit is very tiny
 
              flux_avail = ndep_mixed_grc(g) * kg_to_g / lun_pp%wtgcell(l)
 
@@ -850,7 +853,7 @@ contains
           end do ! column
        end if ! land unit not ispval
 
-       if (col_grass /= ispval .and. col_pp%wtgcell(col_grass) > 0.0_r8) then
+       if (col_grass /= ispval .and. col_pp%wtgcell(col_grass) > abstol) then
           n_manure_spread(col_grass) = n_manure_spread(col_grass) &
                + flux_grass_spread / col_pp%wtgcell(col_grass)
           tan_manure_spread(col_grass) = tan_manure_spread(col_grass) &
@@ -862,8 +865,10 @@ contains
                   flux_grass_spread_tan, col_grass, tan_manure_spread(col_grass)
           end if
        else if (flux_grass_spread > 0._r8) then
-          ! call endrun('Cannot spread manure')
-          write(iulog,*) 'warning: FAN cannot spread manure'
+          if (debug_fan) then
+             ! call endrun('Cannot spread manure')
+             write(iulog,*) 'warning: FAN cannot spread manure'
+          end if
        end if
 
     end do ! grid
@@ -885,12 +890,14 @@ contains
 
     do fc = 1, num_soilc
        c = filter_soilc(fc)
+       if (.not. col_pp%active(c) .or. col_pp%wtgcell(c) < 1.e-15_r8) cycle
        total = col_ns%tan_g1(c) + col_ns%tan_g2(c) + col_ns%tan_g3(c)
        total = total + col_ns%manure_u_grz(c) + col_ns%manure_a_grz(c) + col_ns%manure_r_grz(c)
        total = total + col_ns%tan_s0(c) + col_ns%tan_s1(c) + col_ns%tan_s2(c) + col_ns%tan_s3(c)
        total = total + col_ns%manure_u_app(c) + col_ns%manure_a_app(c) + col_ns%manure_r_app(c)
        total = total + col_ns%tan_f1(c) + col_ns%tan_f2(c) + col_ns%tan_f3(c) + col_ns%tan_f4(c)
        total = total + col_ns%fert_u1(c) + col_ns%fert_u2(c)
+       total = total + col_ns%manure_n_stored(c)
        col_ns%fan_totn(c) = total
 
        if (lun_pp%itype(col_pp%landunit(c)) == istcrop) then

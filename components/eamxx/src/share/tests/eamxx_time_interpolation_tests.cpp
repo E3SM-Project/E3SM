@@ -7,12 +7,12 @@
 #include "share/field/field_manager.hpp"
 
 #include "share/util/eamxx_time_interpolation.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_parameter_list.hpp>
 /*-----------------------------------------------------------------------------------------------
  * Test TimeInterpolation class
  *-----------------------------------------------------------------------------------------------*/
@@ -75,7 +75,7 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
   // Setup basic test params
   ekat::Comm comm(MPI_COMM_WORLD);
   auto seed = get_random_test_seed(&comm);
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   const auto t0 = init_timestamp();
 
   const int nlevs  = SCREAM_PACK_SIZE*2+1;
@@ -83,7 +83,7 @@ TEST_CASE ("eamxx_time_interpolation_simple") {
 
   // Get a grids manager for the test
   auto grids_man = get_gm(comm, ncols, nlevs);
-  const auto& grid = grids_man->get_grid("Point Grid");
+  const auto& grid = grids_man->get_grid("point_grid");
   // Now create a fields manager to store initial data for testing.
   auto fields_man_t0 = get_fm(grid, t0, seed);
   // Construct a time interpolation object and add all of the fields to it.
@@ -141,7 +141,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
   auto seed = get_random_test_seed(&comm);
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   const auto t0 = init_timestamp();
 
   const int nlevs  = SCREAM_PACK_SIZE*2+1;
@@ -151,7 +151,7 @@ TEST_CASE ("eamxx_time_interpolation_data_from_file") {
   // Get a grids manager for the test
   printf("   - Grids Manager...\n");
   auto grids_man = get_gm(comm, ncols, nlevs);
-  const auto& grid = grids_man->get_grid("Point Grid");
+  const auto& grid = grids_man->get_grid("point_grid");
   printf("   - Grids Manager...DONE\n");
   // Now create a fields manager to store initial data for testing.
   printf("   - Fields Manager...\n");
@@ -307,10 +307,10 @@ std::shared_ptr<const GridsManager> get_gm (const ekat::Comm& comm, const int nc
 {
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", ncols);
   pl.set<int>("number_of_vertical_levels", nlevs);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
@@ -332,7 +332,7 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
 
   const int nlcols = grid->get_num_local_dofs();
   const int nlevs  = grid->get_num_vertical_levels();
@@ -344,9 +344,7 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
     FL({COL,CMP,ILEV}, {nlcols,2,nlevs+1})
   };
 
-  auto fm = std::make_shared<FieldManager>(grid);
-  fm->registration_begins();
-  fm->registration_ends();
+  auto fm = std::make_shared<FieldManager>(grid,RepoState::Closed);
 
   const auto units = ekat::units::Units::nondimensional();
   for (const auto& fl : layouts) {
@@ -367,13 +365,13 @@ std::shared_ptr<FieldManager> get_fm (const std::shared_ptr<const AbstractGrid>&
  * the capability of TimeInterpolation to handle data read from multiple files.
  */
 std::vector<std::string> create_test_data_files(
-		const ekat::Comm& comm, 
+		const ekat::Comm& comm,
 		const std::shared_ptr<const GridsManager>& gm,
 		const util::TimeStamp& t0,
 	       	const int seed)
 {
   // We initialize a local field manager to use for output
-  auto fm = get_fm(gm->get_grid("Point Grid"), t0, seed);
+  auto fm = get_fm(gm->get_grid("point_grid"), t0, seed);
   // We will write data for 10 snaps for this test.  We set the max snaps per file to 3 to
   // ensure that a) there is more than 1 file and b) at least one file has fewer snap then
   // the others.
@@ -385,20 +383,19 @@ std::vector<std::string> create_test_data_files(
   }
   // Create the output parameters
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("source_data_for_time_interpolation"));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", std::string("INSTANT"));
-  om_pl.set("Max Snapshots Per File",snaps_per_file);
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", std::string("instant"));
+  om_pl.set("max_snapshots_per_file",snaps_per_file);
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",snap_freq);
-  ctrl_pl.set("MPI Ranks in Filename",true);
+  ctrl_pl.set("frequency",snap_freq);
   ctrl_pl.set("save_grid_data",false);
   // Create an output manager, note we use a subclass defined in this test so we can extract
   // the list of files created by the output manager.
   OutputManager4Test om;
-  om.setup(comm,om_pl,fm,gm,t0,false);
+  om.initialize(comm,om_pl,t0,false);
+  om.setup(fm,gm);
 
   // Time loop to create and write data
   auto tw = t0;

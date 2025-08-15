@@ -32,7 +32,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   const auto m2 = m*m;
 
-  auto grid  = grids_manager->get_grid("Physics");
+  auto grid  = grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
 
@@ -47,7 +47,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   }
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(name(), scalar2d_layout_mid, m/s, grid_name);
+  FieldIdentifier fid(m_name, scalar2d_layout_mid, m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.get_header().get_alloc_properties().request_allocation();
   m_diagnostic_output.allocate_view();
@@ -63,27 +63,29 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
   const auto use_liq = m_type & s_liq;
   const auto use_ice = m_type & s_ice;
 
-  std::int64_t dt;
+  double dt = 0;
   if (use_ice) {
     auto mass_ice = get_field_in("precip_ice_surf_mass");
     mass_ice_d = mass_ice.get_view<const Real*>();
 
     const auto& t_start = mass_ice.get_header().get_tracking().get_accum_start_time ();
     const auto& t_now   = mass_ice.get_header().get_tracking().get_time_stamp ();
-    dt = t_now-t_start;
-  }
-  if (use_liq) {
+    dt = t_now.seconds_from(t_start);
+    if (use_liq) {
+      // Ensure liq/ice have same accumulation times
+      auto mass_liq = get_field_in("precip_liq_surf_mass");
+      mass_liq_d = mass_liq.get_view<const Real*>();
+      EKAT_REQUIRE_MSG (t_now==mass_liq.get_header().get_tracking().get_time_stamp() and
+                        t_start==mass_liq.get_header().get_tracking().get_accum_start_time(),
+          "Error! Liquid and ice precip mass fields have different accumulation time stamps!\n");
+    }
+  } else if (use_liq) {
     auto mass_liq = get_field_in("precip_liq_surf_mass");
     mass_liq_d = mass_liq.get_view<const Real*>();
 
     const auto& t_start = mass_liq.get_header().get_tracking().get_accum_start_time ();
     const auto& t_now   = mass_liq.get_header().get_tracking().get_time_stamp ();
-    if (use_ice) {
-      EKAT_REQUIRE_MSG (dt==(t_now-t_start),
-          "Error! Liquid and ice precip mass fields have different accumulation time stamps!\n");
-    } else {
-      dt = t_now-t_start;
-    }
+    dt = t_now.seconds_from(t_start);
   }
 
   if (dt==0) {
@@ -98,7 +100,7 @@ void PrecipSurfMassFlux::compute_diagnostic_impl()
 
   auto rhodt = PC::RHO_H2O*dt;
   const auto& flux_view  = m_diagnostic_output.get_view<Real*>();
-  Kokkos::parallel_for("PrecipSurfMassFlux",
+  Kokkos::parallel_for(m_name,
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
     if (use_ice) {

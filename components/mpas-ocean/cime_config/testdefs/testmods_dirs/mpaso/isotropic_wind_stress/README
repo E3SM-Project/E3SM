@@ -1,0 +1,4 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #XXXX. It simplies changes one mpaso namelist variable,
+    config_bulk_wind_stress_interp_isotropic
+from its default value of false to true.

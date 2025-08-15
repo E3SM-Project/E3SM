@@ -1,68 +1,12 @@
 #include <catch2/catch.hpp>
 
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "share/util/scream_column_ops.hpp"
+#include "share/util/eamxx_column_ops.hpp"
+
+#include <ekat_kokkos_types.hpp>
+#include <ekat_subview_utils.hpp>
+#include <ekat_arch.hpp>
 
 namespace {
-
-TEST_CASE ("combine_ops") {
-  using namespace scream;
-  using pack_type = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-
-  constexpr auto Replace      = CombineMode::Replace;
-  constexpr auto Rescale      = CombineMode::Rescale;
-  constexpr auto ScaleReplace = CombineMode::ScaleReplace;
-  constexpr auto Update       = CombineMode::Update;
-  constexpr auto ScaleUpdate  = CombineMode::ScaleUpdate;
-  constexpr auto ScaleAdd     = CombineMode::ScaleAdd;
-  constexpr auto Add          = CombineMode::Add;
-  constexpr auto Multiply     = CombineMode::Multiply;
-  constexpr auto Divide       = CombineMode::Divide;
-
-  const pack_type two (2.0);
-  const pack_type four (4.0);
-  const pack_type six (6.0);
-  const pack_type ten (10.0);
-  pack_type x;
-
-  x = two;
-  combine<Replace>(two,x);
-  REQUIRE ( (x==two).all() );
-
-  x = two;
-  combine<Rescale>(two,x,0.0,5.0);
-  REQUIRE ( (x==ten).all() );
-
-  x = two;
-  combine<ScaleReplace>(two,x,3.0);
-  REQUIRE ( (x==six).all() );
-
-  x = two;
-  combine<Update>(two,x,1.0,2.0);
-  REQUIRE ( (x==six).all() );
-
-  x = two;
-  combine<ScaleUpdate>(two,x,2.0,1.0);
-  REQUIRE ( (x==six).all() );
-
-  x = two;
-  combine<ScaleAdd>(two,x,2.0);
-  REQUIRE ( (x==six).all() );
-
-  x = two;
-  combine<Add>(two,x);
-  REQUIRE ( (x==four).all() );
-
-  x = two;
-  combine<Multiply>(two,x);
-  REQUIRE ( (x==four).all() );
-
-  x = four;
-  combine<Divide>(two,x);
-  REQUIRE ( (x==two).all() );
-}
 
 TEST_CASE("column_ops_ps_1") {
   using namespace scream;
@@ -547,7 +491,6 @@ TEST_CASE("column_ops_ps_N") {
     // Test both the case where num_mid_packs==num_int_packs, and
     // the case where num_int_packs=num_mid_packs+1.
     for (int num_levs : {2*ps, 2*ps+1} ) {
-      std::cout << "num_levs: " << num_levs << "\n";
       const int num_mid_packs = ekat::PackInfo<ps>::num_packs(num_levs);
       const int num_int_packs = ekat::PackInfo<ps>::num_packs(num_levs+1);
 

@@ -1,7 +1,7 @@
 #include "diagnostics/vapor_flux.hpp"
 #include "physics/share/physics_constants.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -10,33 +10,28 @@ VaporFluxDiagnostic::
 VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
-  EKAT_REQUIRE_MSG (params.isParameter("Wind Component"),
-      "Error! VaporFluxDiagnostic requires 'Wind Component' in its input parameters.\n");
+  EKAT_REQUIRE_MSG (params.isParameter("wind_component"),
+      "Error! VaporFluxDiagnostic requires 'wind_component' in its input parameters.\n");
 
-  const auto& comp = m_params.get<std::string>("Wind Component");
+  const auto& comp = m_params.get<std::string>("wind_component");
   if (comp=="Zonal") {
     m_component = 0;
   } else if (comp=="Meridional") {
     m_component = 1;
   } else {
     EKAT_ERROR_MSG (
-        "Error! Invalid choice for 'Wind Component' in VaporFluxDiagnostic.\n"
+        "Error! Invalid choice for 'wind_component' in VaporFluxDiagnostic.\n"
         "  - input value: " + comp + "\n"
         "  - valid values: Zonal, Meridional\n");
   }
-}
-
-std::string VaporFluxDiagnostic::name() const
-{
-  return m_component==0 ? "ZonalVapFlux" : "MeridionalVapFlux";
+  m_name = comp + "VapFlux";
 }
 
 void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
-  using namespace ShortFieldTagsNames;
 
-  auto grid  = grids_manager->get_grid("Physics");
+  auto grid  = grids_manager->get_grid("physics");
   const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
@@ -51,7 +46,7 @@ void VaporFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> gr
   add_field<Required>("horiz_winds",    vector3d, m/s,   grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d, kg/m/s, grid_name);
+  FieldIdentifier fid (m_name, scalar2d, kg/m/s, grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -61,7 +56,7 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr Real g = PC::gravit;
 
@@ -71,8 +66,8 @@ void VaporFluxDiagnostic::compute_diagnostic_impl()
   const auto wind  = get_field_in("horiz_winds").get_component(m_component).get_view<const Real**>();
 
   const auto num_levs = m_num_levs;
-  const auto policy = ESU::get_default_team_policy(m_num_cols, m_num_levs);
-  Kokkos::parallel_for("Compute " + name(), policy,
+  const auto policy = TPF::get_default_team_policy(m_num_cols, m_num_levs);
+  Kokkos::parallel_for("Compute " + m_name, policy,
                        KOKKOS_LAMBDA(const MT& team) {
     const int icol = team.league_rank();
 

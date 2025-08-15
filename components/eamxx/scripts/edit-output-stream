@@ -23,7 +23,7 @@ OR
     \033[1;32m# Generate empty file (with invalid options), overwrite if existing'\033[0m
     > {0} -g -O -f my_output.yaml
 
-    \033[1;32m# Change avg type to Instant, output frequency to 1 day\033[0m
+    \033[1;32m# Change avg type to instant, output frequency to 1 day\033[0m
     > {0} -f my_output.yaml --avg-type instant --freq 1 --freq-units ndays
 
     \033[1;32m# Set horiz remaping\033[0m

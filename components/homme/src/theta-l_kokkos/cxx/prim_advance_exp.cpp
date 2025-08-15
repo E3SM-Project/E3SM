@@ -26,6 +26,9 @@ void ttype7_imex_timestep (const TimeLevel& tl, const Real dt, const Real eta_av
 void ttype9_imex_timestep (const TimeLevel& tl, const Real dt, const Real eta_ave_w);
 void ttype10_imex_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
 
+// Prescribed-wind F90-C++ bridge. Test inputs are all implemented in F90.
+extern "C" void set_prescribed_wind_f_bridge(int n0, int np1, int nstep, Real dt);
+
 // -------------- IMPLEMENTATIONS -------------- //
 
 void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics)
@@ -72,10 +75,12 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   }
 
 #if !defined(CAM) && !defined(SCREAM)
-  // If prescribed wind, the dynamics was set explicitly in
-  // prim_driver_mod::prim_run_subcycle; skip time-integration.
-  if (params.prescribed_wind)
+  // If prescribed wind, set the dynamics explicitly and skip time-integration.
+  if (params.prescribed_wind) {
+    set_prescribed_wind_f_bridge(tl.n0, tl.np1, tl.nstep, dt);
+    GPTLstop("tl-ae prim_advance_exp");
     return;
+  }
 #endif
 
   switch (params.time_step_type) {

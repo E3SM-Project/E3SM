@@ -1,15 +1,12 @@
 #include "catch2/catch.hpp"
 
 #include "shoc_unit_tests_common.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "shoc_functions.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <algorithm>
 #include <array>
@@ -22,9 +19,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
+struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Real mintke = scream::shoc::Constants<Real>::mintke;
     static constexpr Real maxtke = scream::shoc::Constants<Real>::maxtke;
@@ -56,14 +53,19 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     static constexpr Real wthv_sec_gr[shcol] = {0.5, -0.5};
     // Shear production term [s-2]
     static constexpr Real sterm_gr[shcol] = {0.5, 0.0};
+    // Brunt vaisalla frequency [s-1], only used for 1.5 closure
+    static constexpr Real brunt_gr[shcol] = {-0.04, 0.004};
     // TKE initial value
     Real tke_init_gr[shcol] = {mintke, 0.4};
 
     // Define upper bounds check for reasonable output
     Real adiss_upper_bound = 1;
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridgeing to F90
-    AdvSgsTkeData SDS(shcol, nlev, dtime);
+    AdvSgsTkeData SDS(shcol, nlev, dtime, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev && SDS.dtime == dtime) );
@@ -78,6 +80,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
         SDS.wthv_sec[offset] = wthv_sec_gr[s];
         SDS.sterm_zt[offset] = sterm_gr[s];
         SDS.tke[offset] = tke_init_gr[s];
+	// Set eddy viscosity below to a constant for all tests
+	SDS.tk[offset] = 1.0;
+        // for 1.5 scheme this value is irrelevant
+        SDS.brunt[offset] = 0.0;
       }
     }
 
@@ -95,9 +101,51 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    adv_sgs_tke_f(SDS.nlev, SDS.shcol, SDS.dtime, SDS.shoc_mix, SDS.wthv_sec, SDS.sterm_zt, SDS.tk, SDS.tke, SDS.a_diss);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    adv_sgs_tke(SDS);
+
+    // Check to make sure that there has been
+    //  TKE growth
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        // Require output to fall within reasonable bounds
+        REQUIRE(SDS.tke[offset] >= mintke);
+        REQUIRE(SDS.tke[offset] <= maxtke);
+        REQUIRE(SDS.a_diss[offset] <= adiss_upper_bound);
+        REQUIRE(SDS.a_diss[offset] >= 0);
+
+        if (s == 0){
+          // Growth check
+          REQUIRE(SDS.tke[offset] > tke_init_gr[s]);
+        }
+        else{
+          // Decay check
+          REQUIRE(SDS.tke[offset] < tke_init_gr[s]);
+        }
+      }
+    }
+
+    // We are now going to repeat this test but with 1.5 TKE closure option activated
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // We will use the same input data as above but with the SGS buoyancy
+    //  flux set to zero, as will be the case with the 1.5 TKE option.
+    //  Additionally, we will fill the value of the brunt vaisala frequency.
+    for(Int s = 0; s < shcol; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.wthv_sec[offset] = 0.0;
+        SDS.brunt[offset] = brunt_gr[s];
+        SDS.tke[offset] = tke_init_gr[s];
+      }
+    }
+
+    // Call the C++ implementation
+    adv_sgs_tke(SDS);
 
     // Check to make sure that there has been
     //  TKE growth
@@ -134,7 +182,10 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     // Shear production term [s-2]
     static constexpr Real sterm_diss = 0.01;
     // TKE initial value
-    Real tke_init_diss= 0.1;
+    static constexpr Real tke_init_diss =  0.1;
+
+    // Reset to default SHOC closures
+    SDS.shoc_1p5tke = false;
 
     // Fill in test data on zt_grid.
     for(Int s = 0; s < shcol; ++s) {
@@ -162,9 +213,7 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    adv_sgs_tke_f(SDS.nlev, SDS.shcol, SDS.dtime, SDS.shoc_mix, SDS.wthv_sec, SDS.sterm_zt, SDS.tk, SDS.tke, SDS.a_diss);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    adv_sgs_tke(SDS);
 
     // Check to make sure that the column with
     //  the smallest length scale has larger
@@ -192,59 +241,64 @@ struct UnitWrap::UnitTest<D>::TestShocAdvSgsTke {
         }
       }
     }
+
   }
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    AdvSgsTkeData f90_data[] = {
+    AdvSgsTkeData baseline_data[] = {
       //            shcol, nlev
-      AdvSgsTkeData(10, 71, 72),
-      AdvSgsTkeData(10, 12, 13),
-      AdvSgsTkeData(7,  16, 17),
-      AdvSgsTkeData(2,   7, 8)
+      AdvSgsTkeData(10, 71, 72, false),
+      AdvSgsTkeData(10, 12, 13, false),
+      AdvSgsTkeData(7,  16, 17, false),
+      AdvSgsTkeData(2,   7, 8,  false)
     };
 
     // Generate random input data
-    for (auto& d : f90_data) {
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     AdvSgsTkeData cxx_data[] = {
-      AdvSgsTkeData(f90_data[0]),
-      AdvSgsTkeData(f90_data[1]),
-      AdvSgsTkeData(f90_data[2]),
-      AdvSgsTkeData(f90_data[3]),
+      AdvSgsTkeData(baseline_data[0]),
+      AdvSgsTkeData(baseline_data[1]),
+      AdvSgsTkeData(baseline_data[2]),
+      AdvSgsTkeData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      adv_sgs_tke(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_ifile);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      adv_sgs_tke_f(d.nlev, d.shcol, d.dtime, d.shoc_mix, d.wthv_sec, d.sterm_zt, d.tk, d.tke, d.a_diss);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      adv_sgs_tke(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(AdvSgsTkeData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(AdvSgsTkeData);
       for (Int i = 0; i < num_runs; ++i) {
-        AdvSgsTkeData& d_f90 = f90_data[i];
+        AdvSgsTkeData& d_baseline = baseline_data[i];
         AdvSgsTkeData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.tke); ++k) {
-          REQUIRE(d_f90.tke[k]    == d_cxx.tke[k]);
-          REQUIRE(d_f90.a_diss[k] == d_cxx.a_diss[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.tke); ++k) {
+          REQUIRE(d_baseline.tke[k]    == d_cxx.tke[k]);
+          REQUIRE(d_baseline.a_diss[k] == d_cxx.a_diss[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_ofile);
       }
     }
   }//run_bfb
@@ -260,14 +314,14 @@ TEST_CASE("shoc_tke_adv_sgs_tke_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_adv_sgs_tke_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocAdvSgsTke;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

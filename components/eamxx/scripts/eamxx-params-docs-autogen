@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-This script parses the file `cime_config/namelist_defaults_scream.xml'
-and generates the markdown file `docs/common/eamxx_params.md`,
+This script parses the file `cime_config/namelist_defaults_eamxx.xml'
+and generates the markdown file `docs/user/eamxx_params.md`,
 containing all the runtime parameters that can be configured via calls
 to `atmchange` (in the case folder). For each parameter, we also report
 a doc string and its type, as well as, if present, constraints and valid values.
@@ -10,7 +10,7 @@ a doc string and its type, as well as, if present, constraints and valid values.
 
 import argparse, sys, os, pathlib
 
-from utils import _ensure_pylib_impl
+from utils import _ensure_pylib_impl, GoodFormatter
 
 _ensure_pylib_impl("mdutils")
 
@@ -29,7 +29,7 @@ def parse_command_line(args, description):
         usage="""{0}
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     return parser.parse_args(args[1:])
@@ -90,8 +90,8 @@ def generate_params_docs():
 ###########################################################################
 
     eamxx = pathlib.Path(__file__).parent.parent.resolve()
-    xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_scream.xml"
-    output_file = eamxx / "docs" / "common" / "eamxx_params.md"
+    xml_defaults_file = eamxx / "cime_config" / "namelist_defaults_eamxx.xml"
+    output_file = eamxx / "docs" / "user" / "eamxx_params.md"
 
     print("Generating eamxx params documentation...")
     print(f"  output file: {output_file}")
@@ -121,7 +121,7 @@ def generate_params_docs():
         docs.new_header(level=1,title='Atmosphere Driver Parameters')
         add_children(docs,ad)
 
-        scorpio = xml_defaults.find('Scorpio')
+        scorpio = xml_defaults.find('scorpio')
         docs.new_header(level=1,title='Scorpio Parameters')
         add_children(docs,scorpio)
 

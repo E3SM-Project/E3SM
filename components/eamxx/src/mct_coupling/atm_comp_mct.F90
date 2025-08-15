@@ -33,7 +33,7 @@ module atm_comp_mct
   ! Public interfaces
   !--------------------------------------------------------------------------
 
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
   public :: atm_init_hip_mct
 #endif
   public :: atm_init_mct
@@ -68,10 +68,10 @@ module atm_comp_mct
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#if defined(SCREAM_SYSTEM_WORKAROUND) && (SCREAM_SYSTEM_WORKAROUND == 1)
+#if defined(MPINIT_WORKAROUND) && (MPINIT_WORKAROUND == 1)
   !===============================================================================
   subroutine atm_init_hip_mct()
-    use scream_f2c_mod, only: scream_init_hip_atm
+    use eamxx_f2c_mod, only: scream_init_hip_atm
 
     call scream_init_hip_atm()
 
@@ -81,9 +81,9 @@ CONTAINS
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
     use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
-    use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
+    use eamxx_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
-    use scream_cpl_indices, only: scream_set_cpl_indices, &
+    use eamxx_cpl_indices, only: scream_set_cpl_indices, &
                                   num_cpl_imports,          num_scream_imports, &
                                   num_cpl_exports,          num_scream_exports, &
                                   import_field_size,        export_field_size, &
@@ -95,7 +95,8 @@ CONTAINS
     use ekat_string_utils,  only: string_f2c
     use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
     use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
-    use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont
+    use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont, &
+                                  seq_infodata_start_type_brnch
     use seq_comm_mct,       only: seq_comm_inst, seq_comm_name, seq_comm_suffix
     use shr_file_mod,       only: shr_file_getunit, shr_file_setIO
     use shr_sys_mod,        only: shr_sys_abort
@@ -136,9 +137,9 @@ CONTAINS
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
-    character(len=256) :: caseid, username, hostname
-    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c
-    logical (kind=c_bool) :: restarted_run
+    character(len=256) :: caseid, username, hostname, rest_caseid, versionid
+    character(kind=c_char,len=256), target :: caseid_c, username_c, hostname_c, calendar_c, rest_caseid_c, versionid_c
+    integer (kind=c_int) :: run_type_c
     !-------------------------------------------------------------------------------
 
     ! Grab some data from the cdata structure (coming from the coupler)
@@ -149,7 +150,9 @@ CONTAINS
          dom=dom_atm, &
          infodata=infodata)
     call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type, &
-                              username=username, case_name=caseid, hostname=hostname)
+                              username=username, case_name=caseid, &
+                              rest_case_name=rest_caseid, hostname=hostname, &
+                              model_version=versionid)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -189,18 +192,35 @@ CONTAINS
     ! Initialize atm
     !----------------------------------------------------------------------------
 
+    if (trim(run_type) == trim(seq_infodata_start_type_start)) then
+      run_type_c = 0
+    else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
+      run_type_c = 1
+    else if (trim(run_type) == trim(seq_infodata_start_type_brnch) ) then
+      run_type_c = 2
+    else
+      print *, "[eamxx] ERROR! Unsupported run type: "//trim(run_type)
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
     ! Init the AD
     call seq_timemgr_EClockGetData(EClock, calendar=calendar, &
                                    curr_ymd=cur_ymd, curr_tod=cur_tod, &
                                    start_ymd=case_start_ymd, start_tod=case_start_tod)
+    
+    yaml_fname = trim(yaml_fname)//trim(inst_suffix)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(calendar,calendar_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
-    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, &
+    call string_f2c(trim(caseid),caseid_c)
+    call string_f2c(trim(rest_caseid),rest_caseid_c)
+    call string_f2c(trim(hostname),hostname_c)
+    call string_f2c(trim(username),username_c)
+    call string_f2c(trim(versionid),versionid_c)
+    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, run_type_c, &
                           INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
                           INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT), &
-                          calendar_c)
-
+                          calendar_c, caseid_c, rest_caseid_c, hostname_c, username_c, versionid_c)
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
@@ -220,16 +240,6 @@ CONTAINS
     ! Init import/export mct attribute vectors
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
-
-    ! Complete AD initialization based on run type
-    if (trim(run_type) == trim(seq_infodata_start_type_start)) then
-      restarted_run = .false.
-    else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
-      restarted_run = .true.
-    else
-      print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
-      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
-    endif
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
@@ -269,10 +279,7 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
-    call string_f2c(trim(caseid),caseid_c)
-    call string_f2c(trim(username),username_c)
-    call string_f2c(trim(hostname),hostname_c)
-    call scream_init_atm (caseid_c,hostname_c,username_c)
+    call scream_init_atm ()
 #ifdef HAVE_MOAB
     ! data should be set now inside moab from import and export fields
     ! do we import and export or just export at init stage ?
@@ -297,7 +304,7 @@ CONTAINS
   !===============================================================================
   subroutine atm_run_mct(EClock, cdata, x2a, a2x)
     use iso_c_binding,  only: c_double
-    use scream_f2c_mod, only: scream_run
+    use eamxx_f2c_mod, only: scream_run
 #ifdef HAVE_MOAB
     use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use shr_kind_mod     ,  only: cxx=>shr_kind_cxx
@@ -308,7 +315,7 @@ CONTAINS
 #ifdef MOABCOMP
     use mct_mod
     use seq_comm_mct,     only : num_moab_exports
-#endif 
+#endif
 
     integer :: ent_type
 #ifdef MOABCOMP
@@ -324,7 +331,7 @@ CONTAINS
 
     type(ESMF_Clock) ,intent(inout) :: EClock     ! clock
     type(seq_cdata)  ,intent(inout) :: cdata
-    type(mct_aVect)  ,intent(inout) :: x2a        ! driver     -> atmosphere 
+    type(mct_aVect)  ,intent(inout) :: x2a        ! driver     -> atmosphere
     type(mct_aVect)  ,intent(inout) :: a2x        ! atmosphere -> driver
 
     !--- local ---
@@ -398,12 +405,12 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
-    use scream_f2c_mod, only: scream_finalize
+    use eamxx_f2c_mod, only: scream_finalize
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock  ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2a     ! driver     -> atmosphere 
+    type(mct_aVect)             ,intent(inout) :: x2a     ! driver     -> atmosphere
     type(mct_aVect)             ,intent(inout) :: a2x     ! atmosphere -> driver
 
     !----------------------------------------------------------------------------
@@ -417,7 +424,7 @@ CONTAINS
 
   subroutine atm_Set_gsMap_mct( mpicom_atm, ATMID, GSMap_atm )
     use iso_c_binding, only: c_int, c_loc
-    use scream_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
+    use eamxx_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
                               scream_get_local_cols_gids
     use mct_mod,        only: mct_gsMap_init
     !-------------------------------------------------------------------
@@ -437,7 +444,7 @@ CONTAINS
     ! Build the atmosphere grid numbering for MCT
     ! NOTE:  Numbering scheme is: West to East and South to North
     ! starting at south pole.  Should be the same as what's used in SCRIP
-    
+
     ! Determine global seg map
     num_local_cols  = scream_get_num_local_cols()
     num_global_cols = scream_get_num_global_cols()
@@ -459,14 +466,14 @@ CONTAINS
                               mct_gsMap_orderedPoints
     use seq_flds_mod,   only: seq_flds_dom_coord, seq_flds_dom_other
     use shr_const_mod,  only: SHR_CONST_PI
-    use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
+    use eamxx_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
     !-------------------------------------------------------------------
     !
     ! Arguments
     !
     integer        , intent(in)   :: lsize
     type(mct_gsMap), intent(in)   :: gsMap_atm
-    type(mct_ggrid), intent(inout):: dom_atm  
+    type(mct_ggrid), intent(inout):: dom_atm
     !
     ! Local Variables
     !
@@ -488,20 +495,20 @@ CONTAINS
 
     ! Fill in correct values for domain components
     call scream_get_cols_latlon(c_loc(data1),c_loc(data2))
-    call mct_gGrid_importRAttr(dom_atm,"lat",data1,lsize) 
-    call mct_gGrid_importRAttr(dom_atm,"lon",data2,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"lat",data1,lsize)
+    call mct_gGrid_importRAttr(dom_atm,"lon",data2,lsize)
 
     call scream_get_cols_area(c_loc(data1))
-    call mct_gGrid_importRAttr(dom_atm,"area",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"area",data1,lsize)
 
     ! Mask and frac are both exactly 1
     data1 = 1.0
-    call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize) 
-    call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"mask",data1,lsize)
+    call mct_gGrid_importRAttr(dom_atm,"frac",data1,lsize)
 
     ! Aream is computed by mct, so give invalid initial value
     data1 = -9999.0_R8
-    call mct_gGrid_importRAttr(dom_atm,"aream",data1,lsize) 
+    call mct_gGrid_importRAttr(dom_atm,"aream",data1,lsize)
   end subroutine atm_domain_mct
 
 #ifdef HAVE_MOAB
@@ -516,9 +523,9 @@ CONTAINS
       iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
       iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
     use iso_c_binding, only: c_int, c_loc
-    use scream_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
+    use eamxx_f2c_mod, only: scream_get_num_global_cols, scream_get_num_local_cols, &
                               scream_get_local_cols_gids
-    use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
+    use eamxx_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
     use seq_flds_mod, only: seq_flds_dom_fields
     use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl, cxx=>shr_kind_cxx
     use shr_const_mod, only: SHR_CONST_PI
@@ -610,6 +617,22 @@ CONTAINS
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  then
       print *, 'Error: fail to create  tags from seq_flds_dom_fields '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+
+    ! lat and lon are in data1 and data2
+    tagname = 'lat'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data1)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set lat '
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+
+    tagname = 'lon'//C_NULL_CHAR !
+    ierr = iMOAB_SetDoubleTagStorage(mphaid, tagname, num_local_cols , ent_type, data2)
+    if (ierr > 0 )  then
+      print *, 'Error: fail to set lon '
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
 

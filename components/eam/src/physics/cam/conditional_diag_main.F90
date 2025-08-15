@@ -380,7 +380,7 @@ end subroutine apply_masking
 !========================================================
 subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
 
-  use ppgrid,         only: pcols,pver
+  use ppgrid,         only: pcols,pver,pverp
   use physics_types,  only: physics_state
   use camsrfexch,     only: cam_in_t, cam_out_t
   use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
@@ -595,14 +595,14 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
                                    arrayout(:ncol,:)  )                      ! out
 
         case ('CAPE')
-          call compute_cape_diags( state, pbuf, pcols, pver, cape ) ! 4xin, 1xout
+          call compute_cape_diags( state, pbuf, pcols, pver, pverp, cape ) ! 5xin, 1xout
           arrayout(:,1) = cape(:)
 
         case ('dCAPE')
 
           arrayout(:,:) = 0._r8
 
-          call compute_cape_diags( state, pbuf, pcols, pver, cape, dcape ) ! 4xin, 2xout
+          call compute_cape_diags( state, pbuf, pcols, pver, pverp, cape, dcape ) ! 5xin, 2xout
 
           arrayout(:,1:3) = dcape(:,1:3)   ! 1=dCAPE, 2=dCAPEp, 3=dCAPEe
 

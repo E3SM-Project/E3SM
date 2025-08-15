@@ -3,7 +3,7 @@
 
 // For declaring contituent fluxes class derived from atm process
 // class
-#include <share/atm_process/atmosphere_process.hpp>
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
@@ -13,29 +13,21 @@ namespace scream {
 
 // The process responsible for applying MAM4 constituent fluxes. The
 // AD stores exactly ONE instance of this class in its list of subcomponents.
-class MAMConstituentFluxes final : public scream::AtmosphereProcess {
+class MAMConstituentFluxes final : public MAMGenericInterface {
  public:
   using KT            = ekat::KokkosTypes<DefaultDevice>;
   using const_view_2d = Field::view_dev_t<const Real **>;
 
  private:
-  // number of horizontal columns
-  int ncol_, nlev_;
-
-  // Wet and dry states of atmosphere
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-
-  // aerosol state variables
-  mam_coupling::AerosolState wet_aero_;
-
-  // buffer for sotring temporary variables
-  mam_coupling::Buffer buffer_;
-
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
-
   const_view_2d constituent_fluxes_;
+  // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
+  // workspace manager for internal local variables
+  mam_coupling::Buffer buffer_;
 
  public:
   // Constructor
@@ -45,9 +37,6 @@ class MAMConstituentFluxes final : public scream::AtmosphereProcess {
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
-
-  // The type of subcomponent
-  AtmosphereProcessType type() const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
   std::string name() const { return "mam_constituent_fluxes"; }

@@ -68,6 +68,7 @@ program prim_main
   character (len=20) :: numtrac_char
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
+  logical :: call_enablef
   
   ! =====================================================
   ! Begin executable code set distributed memory world...
@@ -228,7 +229,20 @@ program prim_main
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')
+  call_enablef = .false.
   do while(tl%nstep < nEndStep)
+#ifdef DISABLE_TIMERS_IN_FIRST_STEP
+     ! Certain compilers, e.g., for Intel GPU, do just-in-time compilation. Turn
+     ! off timers in the first step to avoid counting that cost.
+     if (tl%nstep == 0) then
+        call t_disablef()
+        call_enablef = .true.
+     elseif (call_enablef) then
+        call t_enablef()
+        call_enablef = .false.
+     end if
+#endif
+
 #if (defined HORIZ_OPENMP)
      !$OMP PARALLEL NUM_THREADS(hthreads), DEFAULT(SHARED), PRIVATE(ithr,nets,nete,hybrid)
      call omp_set_num_threads(vthreads)
@@ -240,11 +254,6 @@ program prim_main
      
      nstep = nextoutputstep(tl)
      do while(tl%nstep<nstep)
-
-     if(tl%nstep < 2) then
-        call t_disablef()
-     endif
-     if(tl%nstep >= 2) call t_enablef()
         call t_startf('prim_run')
         call prim_run_subcycle(elem, hybrid,nets,nete, tstep, .false., tl, hvcoord,1)
         call t_stopf('prim_run')

@@ -47,6 +47,8 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& w_field,
   const uview_1d<const Spack>& thl_sec,
   const uview_1d<const Spack>& qw_sec,
+  const Scalar&                dtime,
+  const bool&                  extra_diags,
   const uview_1d<const Spack>& wthl_sec,
   const uview_1d<const Spack>& w_sec,
   const uview_1d<const Spack>& wqw_sec,
@@ -56,6 +58,8 @@ void Functions<S,D>::shoc_assumed_pdf(
   const uview_1d<const Spack>& zt_grid,
   const uview_1d<const Spack>& zi_grid,
   const Workspace&             workspace,
+  const uview_1d<Spack>&       shoc_cond,
+  const uview_1d<Spack>&       shoc_evap,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   const uview_1d<Spack>&       wqls,
@@ -153,10 +157,10 @@ void Functions<S,D>::shoc_assumed_pdf(
       const Smask is_nan_Tl1_1 = isnan(Tl1_1) && active_entries;
       const Smask is_nan_Tl1_2 = isnan(Tl1_2) && active_entries;
       if (is_nan_Tl1_1.any() || is_nan_Tl1_2.any()) {
-        printf("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
+        Kokkos::printf("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
         for (int i=0; i<is_nan_Tl1_1.n; i++) {
           if (is_nan_Tl1_1[i] || is_nan_Tl1_2[i]) {
-            printf(
+            Kokkos::printf(
               "Tl1 NaN Detected: lev, Tl1_1, Tl1_2: %d, %16.9e, %16.9e\n"
               "  thetal, qw, pressure, thl_sec, qw_sec, w2sec:"
               " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
@@ -186,7 +190,7 @@ void Functions<S,D>::shoc_assumed_pdf(
             n_mask++;
           }
         }
-        printf("WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
+	Kokkos::printf("WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
       }
       if( is_small_Tl1_2.any() ) {
         Tl1_2.set(is_small_Tl1_2,Tl_min);
@@ -196,7 +200,7 @@ void Functions<S,D>::shoc_assumed_pdf(
             n_mask++;
           }
         }
-        printf("WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
+	Kokkos::printf("WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
       }
 
       // Compute qs and beta
@@ -233,6 +237,13 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       // Compute SGS cloud fraction
       shoc_cldfrac(k) = ekat::min(1, a*C1 + (1 - a)*C2);
+
+     // Compute cond and evap tendencies
+      if (extra_diags) {
+        auto dum     = ekat::max(0, a * ql1 + (1 - a) * ql2);
+        shoc_cond(k) = ekat::max(0, (dum - shoc_ql(k)) / dtime);
+        shoc_evap(k) = ekat::max(0, (shoc_ql(k) - dum) / dtime);
+      } 
 
       // Compute SGS liquid water mixing ratio
       shoc_assumed_pdf_compute_sgs_liquid(a, ql1, ql2, shoc_ql(k));

@@ -5,6 +5,10 @@ module vdiff_lu_solver
 ! This module was created solely to share vd_lu_decomp and vd_lu_solve
 ! between gw_drag and diffusion_solver.
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use gw_utils, only: r8
+#endif
+
 implicit none
 private
 save
@@ -16,7 +20,10 @@ public :: vd_lu_solve
 public :: lu_decomp
 
 ! 8-byte real.
+
+#ifndef SCREAM_CONFIG_IS_CMAKE
 integer, parameter :: r8 = selected_real_kind(12)
+#endif
 
 ! Type to hold the sparse matrix decomposition from vd_lu_decomp.
 type :: lu_decomp
@@ -219,6 +226,8 @@ subroutine vd_lu_solve(pcols, pver,   ncol, &
   ! Main Computation Begins !
   ! ----------------------- !
 
+  zf = 0.0_r8
+
   ! Calculate zf(k). Terms zf(k) and ze(k) are required in solution of
   ! tridiagonal matrix defined by implicit diffusion equation.
   ! Note that only levels ntop through nbot need be solved for.
@@ -269,6 +278,12 @@ pure function lu_decomp_alloc(ncol, pver) result(new_decomp)
   allocate(new_decomp%cc(ncol,pver))
   allocate(new_decomp%dnom(ncol,pver))
   allocate(new_decomp%ze(ncol,pver))
+
+  ! Initialize to zero
+  new_decomp%ca   = 0.0_r8
+  new_decomp%cc   = 0.0_r8
+  new_decomp%dnom = 0.0_r8
+  new_decomp%ze   = 0.0_r8
 
 end function lu_decomp_alloc
 

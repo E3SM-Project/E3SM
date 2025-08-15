@@ -10,8 +10,8 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 
 // EKAT headers
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_yaml.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <iomanip>
 
@@ -32,7 +32,7 @@ TEST_CASE("scream_ad_test") {
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
-  // User can prescribe input file name via --ekat-test-params ifile=<file>
+  // User can prescribe input file name via --args --ifile <file>
   auto& session = ekat::TestSession::get();
   session.params.emplace("ifile","input.yaml");
   std::string fname = session.params["ifile"];

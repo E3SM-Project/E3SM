@@ -1,0 +1,4 @@
+./xmlchange DATM_CLMNCEP_YR_START=1901
+./xmlchange DATM_CLMNCEP_YR_END=1901
+./xmlchange NTASKS=1
+./xmlchange NTHRDS=1

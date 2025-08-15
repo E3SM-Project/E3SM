@@ -224,28 +224,27 @@ module seq_comm_mct
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
-  integer, public :: mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
-  integer, public :: mbintxoa ! iMOAB id for intx mesh between atmosphere and ocean
+  integer, public :: mbintxao ! iMOAB id for intersection mesh between ocean and atmosphere
+  integer, public :: mbintxoa ! iMOAB id for intersection mesh between atmosphere and ocean
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
 !!#ifdef MOABDEBUG
   integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
   integer, public :: mbox2id   ! iMOAB id for ocn mesh instanced from MCT on coupler pes
 !!#endif
-  integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
-  integer, public :: mbintxal ! iMOAB id for intx mesh between atmosphere and land
+  integer, public :: mbintxla ! iMOAB id for intersection mesh between land and atmosphere
+  integer, public :: mbintxal ! iMOAB id for intersection mesh between atmosphere and land
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
-  integer, public :: mbintxia ! iMOAB id for intx mesh between ice and atmosphere
+  integer, public :: mbintxia ! iMOAB id for intersection mesh between ice and atmosphere
   integer, public :: mrofid   ! iMOAB id of moab rof app
   integer, public :: mbrxid   ! iMOAB id of moab rof read from file on coupler pes
-  integer, public :: mbrmapro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
-                              ! similar to intx id, oa, la; 
-  integer, public :: mbrxoid  ! iMOAB id for rof migrated to coupler for ocean context (r2o mapping)
-  logical, public :: mbrof_data = .false. ! made true if no rtm mesh, which means data rof ? 
-  integer, public :: mbintxar ! iMOAB id for intx mesh between atm and river
-  integer, public :: mbintxlr ! iMOAB id for intx mesh between land and river
-  integer, public :: mbintxrl ! iMOAB id for intx mesh between river and land
-  logical, public :: mb_land_mesh = .false.  ! whether the land uses full FV mesh or not ; made true if domain mesh is read on comp land
+  integer, public :: mbintxro ! iMOAB id for read map between river and ocean
+  integer, public :: mbintxor ! iMOAB id for read map between ocean and river
+  logical, public :: mbrof_data = .false. ! made true if no rtm mesh, which means data rof ?
+  integer, public :: mbintxar ! iMOAB id for intersection mesh between atm and river
+  integer, public :: mbintxlr ! iMOAB id for intersection mesh between land and river
+  integer, public :: mbintxrl ! iMOAB id for intersection mesh between river and land
+  integer, public :: mbintxri ! iMOAB id for intersection mesh between river and ice
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
@@ -678,8 +677,8 @@ contains
     mbintxia = -1 ! iMOAB id for ice intx with atm on coupler pes
     mrofid = -1   ! iMOAB id of moab rof app
     mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
-    mbrmapro = -1 ! iMOAB id of moab instance of map read from rof2ocn map file 
-    mbrxoid = -1  ! iMOAB id of moab instance rof to coupler in ocean context
+    mbintxro = -1 ! iMOAB id of moab instance of map read from rof2ocn map file
+    mbintxor = -1 ! iMOAB id of moab instance of map read from ocn2rof map file
     mbintxar = -1 ! iMOAB id for intx mesh between atm and river
     mbintxlr = -1 ! iMOAB id for intx mesh between land and river
     mbintxrl = -1 ! iMOAB id for intx mesh between river and land
@@ -1550,9 +1549,10 @@ contains
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
     use shr_kind_mod     , only : r8 => shr_kind_r8
     use mct_mod
-    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
-    
-    use iso_c_binding 
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo, &
+     iMOAB_SetDoubleTagStorage
+
+    use iso_c_binding
     character(*), intent (in) :: modelstr
     integer, intent(in) :: mpicom
     integer , intent(in) :: appId, ent_type
@@ -1567,8 +1567,8 @@ contains
 
      ! moab
      integer                  :: tagtype, numco,  tagindex, ierr
-     character(CXX)           :: tagname_mct
-     
+     character(CXX)           :: tagname_mct, tagname_diff
+
      real(r8) , allocatable :: values(:), mct_values(:)
      integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
      logical   :: iamroot
@@ -1580,7 +1580,7 @@ contains
      allocate(mct_values(nloc))
 
      index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
-     mct_values(:) = attrVect%rAttr(index_avfield,:) 
+     mct_values(:) = attrVect%rAttr(index_avfield,:)
 
      ! now get moab tag values; first get info
      ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
@@ -1596,8 +1596,15 @@ contains
      ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to get moab tag values')
-      
+
      values  = mct_values - values
+     ! set the difference tag
+     tagname_diff = trim(mct_field)//'_diff'//C_NULL_CHAR
+
+     tagtype = 1 ! dense, double
+     numco = 1
+     ierr = iMOAB_DefineTagStorage(appId, tagname_diff, tagtype, numco,  tagindex)
+     ierr = iMOAB_SetDoubleTagStorage ( appId, tagname_diff, mbSize , ent_type, values)
 
      difference = dot_product(values, values)
      differenceg = 0. ! initialize to 0 the total sum

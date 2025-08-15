@@ -1,8 +1,9 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -34,7 +35,9 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& nevapr, const uview_2d<Spack>& precip_liq_flux, const uview_2d<Spack>& precip_ice_flux)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
 
   Kokkos::parallel_for("p3_main_init",
          policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -110,8 +113,7 @@ Int Functions<Real,DefaultDevice>
   const P3Temporaries& temporaries,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk,
-  const physics::P3_Constants<Real> & p3constants)
+  Int nk)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -123,6 +125,8 @@ Int Functions<Real,DefaultDevice>
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
+
+  const bool do_ice_production = runtime_options.do_ice_production;
 
   // per-column bools
   view_1d<bool> nucleationPossible("nucleationPossible", nj);
@@ -160,11 +164,32 @@ Int Functions<Real,DefaultDevice>
   auto precip_ice_flux         = diagnostic_outputs.precip_ice_flux;
   auto precip_total_tend       = diagnostic_outputs.precip_total_tend;
   auto nevapr                  = diagnostic_outputs.nevapr;
+  auto diag_equiv_reflectivity = diagnostic_outputs.diag_equiv_reflectivity;
   auto qv_prev                 = diagnostic_inputs.qv_prev;
   auto t_prev                  = diagnostic_inputs.t_prev;
+  // Inputs for the heteogeneous freezing
+  auto hetfrz_immersion_nucleation_tend  = diagnostic_inputs.hetfrz_immersion_nucleation_tend;
+  auto hetfrz_contact_nucleation_tend    = diagnostic_inputs.hetfrz_contact_nucleation_tend;
+  auto hetfrz_deposition_nucleation_tend = diagnostic_inputs.hetfrz_deposition_nucleation_tend;
+
   auto liq_ice_exchange        = history_only.liq_ice_exchange;
   auto vap_liq_exchange        = history_only.vap_liq_exchange;
   auto vap_ice_exchange        = history_only.vap_ice_exchange;
+  auto qr2qv_evap              = history_only.qr2qv_evap;
+  auto qi2qv_sublim            = history_only.qi2qv_sublim;
+  auto qc2qr_accret            = history_only.qc2qr_accret;
+  auto qc2qr_autoconv          = history_only.qc2qr_autoconv;
+  auto qv2qi_vapdep            = history_only.qv2qi_vapdep;
+  auto qc2qi_berg              = history_only.qc2qi_berg;
+  auto qc2qr_ice_shed          = history_only.qc2qr_ice_shed;
+  auto qc2qi_collect           = history_only.qc2qi_collect;
+  auto qr2qi_collect           = history_only.qr2qi_collect;
+  auto qc2qi_hetero_freeze     = history_only.qc2qi_hetero_freeze;
+  auto qr2qi_immers_freeze     = history_only.qr2qi_immers_freeze;
+  auto qi2qr_melt              = history_only.qi2qr_melt;
+  auto qr_sed                  = history_only.qr_sed;
+  auto qc_sed                  = history_only.qc_sed;
+  auto qi_sed                  = history_only.qi_sed;
   auto mu_r                    = temporaries.mu_r;
   auto T_atm                   = temporaries.T_atm;
   auto lamr                    = temporaries.lamr;
@@ -199,7 +224,6 @@ Int Functions<Real,DefaultDevice>
   auto qv_supersat_i           = temporaries.qv_supersat_i;
   auto tmparr2                 = temporaries.tmparr2;
   auto exner                   = temporaries.exner;
-  auto diag_equiv_reflectivity = temporaries.diag_equiv_reflectivity;
   auto diag_vm_qi              = temporaries.diag_vm_qi;
   auto diag_diam_qi            = temporaries.diag_diam_qi;
   auto pratot                  = temporaries.pratot;
@@ -244,13 +268,14 @@ Int Functions<Real,DefaultDevice>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
       bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, p3constants);
+      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
 
   p3_main_part2_disp(
       nj, nk, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+      hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
@@ -259,7 +284,10 @@ Int Functions<Real,DefaultDevice>
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
-      pratot, prctot, nucleationPossible, hydrometeorsPresent, p3constants);
+      qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+      qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
+      qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
+      pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -276,7 +304,7 @@ Int Functions<Real,DefaultDevice>
   cloud_sedimentation_disp(
       qc_incld, rho, inv_rho, cld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, workspace_mgr,
       nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
-      qc, nc, nc_incld, mu_c, lamc, qtend_ignore, ntend_ignore,
+      qc, nc, nc_incld, mu_c, lamc, qc_sed, ntend_ignore,
       diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
 
 
@@ -284,20 +312,22 @@ Int Functions<Real,DefaultDevice>
   rain_sedimentation_disp(
       rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
       lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
-      nr, nr_incld, mu_r, lamr, precip_liq_flux, qtend_ignore, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, p3constants);
+      nr, nr_incld, mu_r, lamr, precip_liq_flux, qr_sed, ntend_ignore,
+      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // Ice sedimentation:  (adaptive substepping)
   ice_sedimentation_disp(
       rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
-      qm, qm_incld, bm, bm_incld, qtend_ignore, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, p3constants);
+      qm, qm_incld, bm, bm_incld, qi_sed, ntend_ignore,
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // homogeneous freezing f cloud and rain
-  homogeneous_freezing_disp(
-      T_atm, inv_exner, nj, nk, ktop, kbot, kdir, qc, nc, qr, nr, qi,
-      ni, qm, bm, th, nucleationPossible, hydrometeorsPresent);
+  if(do_ice_production) {
+    homogeneous_freezing_disp(T_atm, inv_exner, nj, nk, ktop, kbot, kdir, qc,
+                              nc, qr, nr, qi, ni, qm, bm, th,
+                              nucleationPossible, hydrometeorsPresent);
+  }
 
   //
   // final checks to ensure consistency of mass/number
@@ -309,7 +339,7 @@ Int Functions<Real,DefaultDevice>
       qm, bm, mu_c, nu, lamc, mu_r, lamr,
       vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
       rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent,
-      p3constants);
+      runtime_options);
 
   //
   // merge ice categories with similar properties
@@ -335,4 +365,3 @@ Int Functions<Real,DefaultDevice>
 
 } // namespace p3
 } // namespace scream
-

@@ -24,11 +24,13 @@ void step (
   const auto& q_min = cm.tracer_arrays->q_min;
   const auto& q_max = cm.tracer_arrays->q_max;
 #else
-  const DepPointsH<MT> dep_points(dep_points_r, cm.nelemd, cm.nlev, cm.np2);
+  const DepPointsH<MT> dep_points(dep_points_r, cm.nelemd, cm.nlev, cm.np2,
+                                  cm.dep_points_ndim);
   const QExtremaH<MT>
     q_min(q_min_r, cm.nelemd, cm.qsize, cm.nlev, cm.np2),
     q_max(q_max_r, cm.nelemd, cm.qsize, cm.nlev, cm.np2);
 #endif
+  slmm_assert(dep_points.extent_int(3) == cm.dep_points_ndim);
 
   // Partition my elements that communicate with remotes among threads, if I
   // haven't done that yet.

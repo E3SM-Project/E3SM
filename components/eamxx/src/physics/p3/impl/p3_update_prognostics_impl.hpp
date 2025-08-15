@@ -17,8 +17,9 @@ void Functions<S,D>
   const Spack& ni_nucleat_tend, const Spack& ni_selfcollect_tend, const Spack& ni_sublim_tend, const Spack& qc2qi_berg_tend,
   const Spack& inv_exner, const bool do_predict_nc,
   const Smask& log_wetgrowth, const Scalar dt,  const Scalar& nmltratio, const Spack& rho_qm_cloud,
+  Spack& ncheti_cnt, Spack& nicnt, Spack& ninuc_cnt, Spack& qcheti_cnt, Spack& qicnt, Spack& qinuc_cnt,
   Spack& th_atm, Spack& qv, Spack& qi, Spack& ni, Spack& qm, Spack& bm, Spack& qc,
-  Spack& nc, Spack& qr, Spack& nr,
+  Spack& nc, Spack& qr, Spack& nr, const bool& use_hetfrz_classnuc,
   const Smask& context)
 {
   constexpr Scalar QSMALL          = C::QSMALL;
@@ -26,9 +27,21 @@ void Functions<S,D>
   constexpr Scalar latvap          = C::LatVap;
   constexpr Scalar latice          = C::LatIce;
 
-  qc.set(context, qc + (-qc2qi_hetero_freeze_tend-qc2qi_collect_tend-qc2qr_ice_shed_tend-qc2qi_berg_tend)*dt);
+  if(use_hetfrz_classnuc){
+    qc.set(context, qc + (-qcheti_cnt-qicnt-qc2qi_collect_tend-qc2qr_ice_shed_tend-qc2qi_berg_tend)*dt);
+  }
+  else{
+    qc.set(context, qc + (-qc2qi_hetero_freeze_tend-qc2qi_collect_tend-qc2qr_ice_shed_tend-qc2qi_berg_tend)*dt);
+  }
+
+
   if ( do_predict_nc ){
-    nc.set(context, nc + (-nc_collect_tend-nc2ni_immers_freeze_tend)*dt);
+    if(use_hetfrz_classnuc){
+      nc.set(context, nc + (-nc_collect_tend-ncheti_cnt-nicnt)*dt);
+    }
+    else{
+      nc.set(context, nc + (-nc_collect_tend-nc2ni_immers_freeze_tend)*dt);
+    }
   }
 
   qr.set(context, qr + (-qr2qi_collect_tend+qi2qr_melt_tend-qr2qi_immers_freeze_tend+qc2qr_ice_shed_tend)*dt);
@@ -45,14 +58,22 @@ void Functions<S,D>
     qi.set(qi_not_small, qi - (qi2qv_sublim_tend + qi2qr_melt_tend) * dt);
   }
 
-  const auto dum = (qr2qi_collect_tend + qc2qi_collect_tend + qr2qi_immers_freeze_tend + qc2qi_hetero_freeze_tend) * dt;
-  qi.set(context, qi + (qv2qi_vapdep_tend + qv2qi_nucleat_tend + qc2qi_berg_tend) * dt + dum);
-  qm.set(context, qm + dum);
-
-  bm.set(context, bm + (qr2qi_collect_tend * INV_RHO_RIMEMAX + qc2qi_collect_tend / rho_qm_cloud + (qr2qi_immers_freeze_tend +
-                                                                             qc2qi_hetero_freeze_tend) * INV_RHO_RIMEMAX) * dt);
-
-  ni.set(context, ni + (ni_nucleat_tend - ni2nr_melt_tend - ni_sublim_tend - ni_selfcollect_tend + nr2ni_immers_freeze_tend + nc2ni_immers_freeze_tend) * dt);
+  if(use_hetfrz_classnuc){
+    const auto dum = (qr2qi_collect_tend + qc2qi_collect_tend + qr2qi_immers_freeze_tend + qcheti_cnt+qicnt) * dt;
+    qi.set(context, qi + (qv2qi_vapdep_tend + qv2qi_nucleat_tend + qc2qi_berg_tend+qinuc_cnt)*dt + dum);
+    qm.set(context, qm + dum);
+    bm.set(context, bm + (qr2qi_collect_tend * INV_RHO_RIMEMAX + qc2qi_collect_tend / rho_qm_cloud + (qr2qi_immers_freeze_tend +
+                                                                              qcheti_cnt+qicnt) * INV_RHO_RIMEMAX) * dt);
+    ni.set(context, ni + (ni_nucleat_tend - ni2nr_melt_tend - ni_sublim_tend - ni_selfcollect_tend + nr2ni_immers_freeze_tend +ncheti_cnt+nicnt+ninuc_cnt)*dt);
+  }
+  else{
+    const auto dum = (qr2qi_collect_tend + qc2qi_collect_tend + qr2qi_immers_freeze_tend + qc2qi_hetero_freeze_tend) * dt;
+    qi.set(context, qi + (qv2qi_vapdep_tend + qv2qi_nucleat_tend + qc2qi_berg_tend) * dt + dum);
+    qm.set(context, qm + dum);
+    bm.set(context, bm + (qr2qi_collect_tend * INV_RHO_RIMEMAX + qc2qi_collect_tend / rho_qm_cloud + (qr2qi_immers_freeze_tend +
+                                                                              qc2qi_hetero_freeze_tend) * INV_RHO_RIMEMAX) * dt);
+    ni.set(context, ni + (ni_nucleat_tend - ni2nr_melt_tend - ni_sublim_tend - ni_selfcollect_tend + nr2ni_immers_freeze_tend + nc2ni_immers_freeze_tend) * dt);
+  }
 
   //PMC nCat deleted interactions_loop
 
@@ -75,12 +96,20 @@ void Functions<S,D>
   //   Alternatively, it can be simplified by tending qm -- qi
   //   and bm such that rho_rim (qm/bm) --> rho_liq during melting.
   // ==
-  qv.set(context, qv + (-qv2qi_vapdep_tend+qi2qv_sublim_tend-qv2qi_nucleat_tend)*dt);
 
   constexpr Scalar INV_CP = C::INV_CP;
-  th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend) * (latvap+latice) * INV_CP +
+  if(use_hetfrz_classnuc){
+    qv.set(context, qv + (-qv2qi_vapdep_tend+qi2qv_sublim_tend-qv2qi_nucleat_tend-qinuc_cnt)*dt);
+    th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend+qinuc_cnt) * (latvap+latice) * INV_CP +
+                                (qr2qi_collect_tend + qc2qi_collect_tend + qcheti_cnt+qicnt + qr2qi_immers_freeze_tend -
+                                qi2qr_melt_tend + qc2qi_berg_tend) * latice * INV_CP) * dt);
+  }
+  else{
+    qv.set(context, qv + (-qv2qi_vapdep_tend+qi2qv_sublim_tend-qv2qi_nucleat_tend)*dt);
+    th_atm.set(context, th_atm + inv_exner * ((qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend) * (latvap+latice) * INV_CP +
                                 (qr2qi_collect_tend + qc2qi_collect_tend + qc2qi_hetero_freeze_tend + qr2qi_immers_freeze_tend -
                                 qi2qr_melt_tend + qc2qi_berg_tend) * latice * INV_CP) * dt);
+  }
 }
 
 template<typename S, typename D>

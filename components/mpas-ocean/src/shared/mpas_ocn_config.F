@@ -47,6 +47,36 @@ contains
 
    end subroutine ocn_config_init!}}}
 
+   function ocn_build_log_filename(prefix, identifier) result(filename)!{{{
+      character (len=*), intent(in) :: prefix
+      integer, intent(in) :: identifier
+
+      character (len=StrKIND) :: filename
+
+      character (len=StrKIND) :: identifierString
+
+      if ( identifier .lt. 10 ) then
+         write(identifierString, '(I1)') identifier
+      else if ( identifier .lt. 100 ) then
+         write(identifierString, '(I2)') identifier
+      else if ( identifier .lt. 1000 ) then
+         write(identifierString, '(I3)') identifier
+      else if ( identifier .lt. 10000 ) then
+         write(identifierString, '(I4)') identifier
+      else if ( identifier .lt. 100000 ) then
+         write(identifierString, '(I5)') identifier
+      else if ( identifier .lt. 1000000 ) then
+         write(identifierString, '(I6)') identifier
+      else if ( identifier .lt. 10000000 ) then
+         write(identifierString, '(I7)') identifier
+      else
+         write(identifierString, '(I99)') identifier
+      end if
+
+      filename = trim(prefix) // trim(identifierString)
+
+   end function ocn_build_log_filename!}}}
+
 !***********************************************************************
 
 end module ocn_config

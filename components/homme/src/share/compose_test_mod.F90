@@ -117,7 +117,7 @@ contains
 
     ! 1. Unit tests.
     call compose_unittest()
-    call sl_unittest(par)
+    call sl_unittest(par, hvcoord)
     nerr = 0
     call cedr_unittest(par%comm, nerr)
     if (nerr /= 0) print *, 'cedr_unittest returned', nerr
@@ -240,7 +240,7 @@ contains
     !   nsteps = nint(6*ne*(15.d0/qsplit))
     nsteps = nmax
     if (hybrid%par%masterproc .and. hybrid%masterthread) then
-       print *, 'COMPOSE> nsteps', nsteps
+       print '(a,i6,a,i5)', 'COMPOSE> nsteps ', nsteps, ' ne ', ne
     end if
     dt = twelve_days / nsteps
     call t_barrierf('compose_stt_step_start_barrier', hybrid%par%comm)

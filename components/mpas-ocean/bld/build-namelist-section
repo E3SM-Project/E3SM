@@ -221,6 +221,7 @@ add_default($nl, 'config_gotm_constant_bottom_drag_coeff');
 
 add_default($nl, 'config_use_variable_drag');
 add_default($nl, 'config_use_bulk_wind_stress');
+add_default($nl, 'config_bulk_wind_stress_interp_isotropic');
 add_default($nl, 'config_use_bulk_thickness_flux');
 add_default($nl, 'config_flux_attenuation_coefficient');
 add_default($nl, 'config_flux_attenuation_coefficient_runoff');
@@ -233,12 +234,27 @@ add_default($nl, 'config_use_sgr_opt_salt_prescribed');
 add_default($nl, 'config_sgr_temperature_prescribed');
 add_default($nl, 'config_sgr_salinity_prescribed');
 
+##################################
+# Namelist group: precip_scaling #
+##################################
+
+add_default($nl, 'config_use_precip_scaling');
+add_default($nl, 'config_precip_scaling_mode');
+add_default($nl, 'config_precip_scaling_initial_factor');
+add_default($nl, 'config_precip_scaling_constant_factor');
+add_default($nl, 'config_precip_scaling_history_years');
+add_default($nl, 'config_precip_scaling_write_to_logfile');
+
 ############################
 # Namelist group: coupling #
 ############################
 
 add_default($nl, 'config_remove_ais_river_runoff');
 add_default($nl, 'config_remove_ais_ice_runoff');
+add_default($nl, 'config_scale_dismf_by_removed_ice_runoff');
+add_default($nl, 'config_ais_ice_runoff_history_days');
+add_default($nl, 'config_n_glc_z_levels');
+add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
 
 ######################################
 # Namelist group: shortwaveRadiation #
@@ -290,13 +306,22 @@ add_default($nl, 'config_use_frazil_ice_formation');
 add_default($nl, 'config_frazil_in_open_ocean');
 add_default($nl, 'config_frazil_under_land_ice');
 add_default($nl, 'config_frazil_heat_of_fusion');
+add_default($nl, 'config_use_frazil_ice_porosity');
 add_default($nl, 'config_frazil_ice_density');
+add_default($nl, 'config_frazil_ice_porosity');
 add_default($nl, 'config_frazil_fractional_thickness_limit');
 add_default($nl, 'config_specific_heat_sea_water');
 add_default($nl, 'config_frazil_maximum_depth');
 add_default($nl, 'config_frazil_sea_ice_reference_salinity');
 add_default($nl, 'config_frazil_maximum_freezing_temperature');
 add_default($nl, 'config_frazil_use_surface_pressure');
+
+############################
+# Namelist group: land_ice #
+############################
+
+add_default($nl, 'config_land_ice_draft_mode');
+add_default($nl, 'config_land_ice_rho_ocean');
 
 ###################################
 # Namelist group: land_ice_fluxes #
@@ -331,6 +356,9 @@ add_default($nl, 'config_coef_3rd_order');
 add_default($nl, 'config_flux_limiter');
 add_default($nl, 'config_remap_limiter');
 add_default($nl, 'config_thickness_flux_type');
+add_default($nl, 'config_use_spatially_variable_upwind');
+add_default($nl, 'config_spatially_variable_upwind_hmin');
+add_default($nl, 'config_spatially_variable_upwind_hmax');
 
 ###############################
 # Namelist group: bottom_drag #
@@ -591,12 +619,34 @@ add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
 add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
+add_default($nl, 'config_use_ecosys_frazil_tendencies');
 add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level3');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level4');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level5');
+
+####################################################
+# Namelist group: tracer_forcing_freshwaterTracers #
+####################################################
+
+add_default($nl, 'config_use_freshwaterTracers');
+add_default($nl, 'config_use_freshwaterTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_freshwaterTracers_surface_restoring');
+add_default($nl, 'config_use_freshwaterTracers_interior_restoring');
+add_default($nl, 'config_use_freshwaterTracers_exponential_decay');
+add_default($nl, 'config_use_freshwaterTracers_idealAge_forcing');
+add_default($nl, 'config_use_freshwaterTracers_ttd_forcing');
+add_default($nl, 'config_use_freshwaterTracers_surface_value');
+add_default($nl, 'config_use_freshwaterTracers_rainFlux');
+add_default($nl, 'config_use_freshwaterTracers_snowFlux');
+add_default($nl, 'config_use_freshwaterTracers_iceRunoffFlux');
+add_default($nl, 'config_use_freshwaterTracers_riverRunoffFlux');
+add_default($nl, 'config_use_freshwaterTracers_subglacialRunoffFlux');
+add_default($nl, 'config_use_freshwaterTracers_seaIceFreshWaterFlux');
+add_default($nl, 'config_use_freshwaterTracers_icebergFreshWaterFlux');
+add_default($nl, 'config_use_freshwaterTracers_landIceFreshwaterFlux');
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #

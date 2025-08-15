@@ -1,0 +1,133 @@
+site_name: EAMxx
+
+nav:
+  - 'Home': 'index.md'
+  - 'User Guide':
+    - 'Overview': 'user/index.md'
+    - 'EAMxx case basics': 'user/eamxx_cases.md'
+    - 'Model Configuration': 'user/model_configuration.md'
+    - 'Nudging': 'user/nudging.md'
+    - 'Extra radiation calls': 'user/clean_clear_sky.md'
+    - 'COSP': 'user/cosp.md'
+    - 'Regionally Refined EAMxx': 'user/rrm_eamxx.md'
+    - 'Doubly Periodic EAMxx': 'user/dp_eamxx.md'
+    - 'Python support': 'user/python.md'
+    - 'IO Metadata': 'user/io_metadata.md'
+    - 'Multi-Instance and NBFB': 'user/multi-instance-mvk.md'
+    - 'EAMxx runtime parameters': 'user/eamxx_params.md'
+    - 'Diagnostics':
+      - 'Overview': 'user/diags/index.md'
+      - 'Field contraction': 'user/diags/field_contraction.md'
+      - 'Conditional sampling': 'user/diags/conditional_sampling.md'
+      - 'Binary arithmetics': 'user/diags/binary_ops.md'
+    - 'Presentations': 'user/presentations.md'
+    - 'IO Aliases': 'user/io_aliases.md'
+  - 'Developer Guide':
+    - 'Quick-start Guide': 'developer/dev_quickstart.md'
+    - 'Code Structure and Organization': 'developer/code_structure.md'
+    - 'Style Guide':
+      - 'Overview': 'developer/style/style_guide_overview.md'
+      - 'Code Formatting Standards': 'developer/style/format.md'
+      - 'Code Style Standards':
+        - 'Overview': 'developer/style/style.md'
+        - 'Types, Classes, Structures': 'developer/style/types.md'
+        - 'Functions and Methods': 'developer/style/functions.md'
+        - 'Variables': 'developer/style/variables.md'
+        - 'Templating': 'developer/style/templates.md'
+      - 'Resources':
+        - 'How-to Guide: clang-format': 'developer/style/resources/clang-format_HOWTO.md'
+    - 'Testing':
+      - 'Overview': 'developer/dev_testing/index.md'
+      - 'Testing for Development': 'developer/dev_testing/testing_for_development.md'
+      - 'Automated Standalone Testing': 'developer/dev_testing/test_all_eamxx.md'
+      - 'Full model (CIME)': 'developer/dev_testing/full_model_testing.md'
+      - 'CI and Nightly Testing': 'developer/dev_testing/ci_nightly.md'
+    - 'Important Tools and Objects':
+      - 'Kokkos and EKAT': 'developer/kokkos_ekat.md'
+      - 'Fields': 'developer/field.md'
+      - 'Grids and Remappers': 'developer/grid.md'
+      - 'Atmosphere Processes': 'developer/processes.md'
+      - 'Input/Output': 'developer/io.md'
+      - 'Third-party Libraries': 'developer/TPLs.md'
+  - 'Technical Guide':
+    - 'Overview': 'technical/index.md'
+    - 'AeroCom cloud top': 'technical/aerocom_cldtop.md'
+
+edit_uri: ""
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to dark mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    toggle:
+      icon: material/weather-night
+      name: Switch to light mode
+  features:
+    # Integrates (RHS) Table of Contents into the (LHS) Navigation
+    # NOTE: can't decide whether this is good or bad--gives some extra space
+    # to the main body but can look a little cluttered
+    # however, setting "toc_depth: 2" below improves matters
+    # - toc.integrate
+    # allows adding an index page to sections (e.g., "Overview")
+    - navigation.indexes
+    # prefetches page on link-hover
+    - navigation.instant
+    # back-to-top button
+    - navigation.top
+    # only render pages visible in the navigation
+    - navigation.prune
+
+markdown_extensions:
+  # FIXME: remove--currently using to flag TODOs
+  - pymdownx.highlight
+  # for mermaid.js diagrams
+  # FIXME: maybe lose in favor of a procedurally-generated static image?
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      toc_depth: 3
+  # provides collapsible blocks
+  - pymdownx.details
+  - admonition
+  - footnotes
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  # ============================================================================
+  # for gridded sections
+  - attr_list
+  - md_in_html
+  # ============================================================================
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra_javascript:
+  # - javascript/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+repo_url: https://github.com/E3SM-Project/scream
+
+plugins:
+  - search
+  - bibtex:
+      bib_dir: docs/refs
+      # this disables picking up any '@' character as a false-positive reference
+      # i.e., disables @ref-name (inline citation) in contrast to a
+      # standard-style reference that has the syntax [@ref-name]
+      enable_inline_citations: false

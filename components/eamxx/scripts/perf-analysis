@@ -5,7 +5,7 @@ Run different versions of an app and compare performance. It is
 expected that this will be run from micro-apps directory.
 """
 
-from utils import expect, check_minimum_python_version
+from utils import expect, check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, os, socket
@@ -38,7 +38,7 @@ OR
     > {0} ni:64 --test=ref:"src/physics/shoc/tests/shoc_run_and_cmp_cxx -r 10 -s 30 -i NI foo" -s ni:2:8192 --cd
 """.format(os.path.basename(args[0])),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("argmap", nargs="+", help="Argument map, NAME:STARTING_VAL. First arg is assumed to be the arg/s used in the core metric")

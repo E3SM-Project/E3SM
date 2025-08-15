@@ -78,11 +78,9 @@ module component_type_mod
      type(mct_aVect) , pointer       :: c2x_cc      => null()
      real(r8)        , pointer       :: drv2mdl(:)  => null() ! area correction factors
      real(r8)        , pointer       :: mdl2drv(:)  => null() ! area correction factors
-#ifdef HAVE_MOAB
      integer                         :: mbApCCid ! moab app id on component side 
      integer                         :: mbGridType ! 0 for PC, 1 for cell (ocean, ice)  
      integer                         :: mblsize    ! size of local arrays
-#endif 
      !
      ! Union of coupler/component pes - used by exchange routines
      !
@@ -421,6 +419,7 @@ contains
     
     use shr_mpi_mod,       only: shr_mpi_sum
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use shr_kind_mod    , only:  IN=>SHR_KIND_IN
     use seq_comm_mct , only : CPLID, seq_comm_iamroot
     use seq_comm_mct, only:   seq_comm_setptrs
     use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
@@ -431,20 +430,22 @@ contains
     type(component_type), intent(in) :: comp
     integer , intent(in) :: appId, ent_type
     type(mct_aVect) , intent(in), pointer       :: attrVect
+    type(mct_gsmap), pointer    :: gsmap
     character(*) , intent(in)       :: mct_field
     character(*) , intent(in)       :: tagname
+    integer(IN), pointer :: dof(:) 
 
     real(r8)      , intent(out)     :: difference
     logical , intent(in)            :: first_time
 
     real(r8)  :: differenceg ! global, reduced diff
-    type(mct_ggrid), pointer    :: dom
-    integer   :: kgg, mbSize, nloc, index_avfield
+    !type(mct_ggrid), pointer    :: dom
+    integer   :: kgg, mbSize, nloc, index_avfield, my_task
 
      ! moab
      integer                  :: tagtype, numco,  tagindex, ierr
      character(CXX)           :: tagname_mct
-     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+     !integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
      
      real(r8) , allocatable :: values(:), mct_values(:)
      integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
@@ -457,11 +458,15 @@ contains
      call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
      nloc = mct_avect_lsize(attrVect)
-     allocate(GlobalIds(nloc))
+     !allocate(GlobalIds(nloc))
      allocate(values(nloc))
-     dom => component_get_dom_cx(comp)
-     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
-     GlobalIds = dom%data%iAttr(kgg,:)
+     !dom => component_get_dom_cx(comp)
+     !kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
+     !GlobalIds = dom%data%iAttr(kgg,:)
+     gsmap  => component_get_gsmap_cx(comp) ! gsmap_x
+     call mpi_comm_rank(mpicom,my_task,ierr)
+         ! Determine global gridpoint number attribute, GlobGridNum, automatically in ggrid
+     call mct_gsMap_orderedPoints(gsmap, my_task, dof)
 
      index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
      values(:) = attrVect%rAttr(index_avfield,:) 
@@ -476,7 +481,7 @@ contains
         if (ierr > 0 )  &
             call shr_sys_abort(subname//'Error: fail to define new tag for mct')
      endif 
-     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname_mct, nloc , ent_type, values, GlobalIds )
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname_mct, nloc , ent_type, values, dof )
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to set new tags')
 
@@ -511,7 +516,8 @@ contains
         print * , subname, trim(comp%ntype), ' on cpl, difference on tag ', trim(tagname), ' = ', difference
         !call shr_sys_abort(subname//'differences between mct and moab values')
      endif
-     deallocate(GlobalIds)
+     !deallocate(GlobalIds)
+     deallocate (dof) 
      deallocate(values)
      deallocate(mct_values)
 

@@ -40,7 +40,7 @@ contains
     !
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use elm_varctl  , only : create_crop_landunit
+    use elm_varctl  , only : create_crop_landunit, use_polygonal_tundra
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -159,6 +159,13 @@ contains
 
        if (present(nveg)) nveg = nveg + npfts_per_lunit
 
+       ! polygonal tundra
+       if (use_polygonal_tundra) then
+         ilunits = ilunits + 3
+         icols = icols + 3
+         ipfts = ipfts + 3 * npfts_per_lunit
+         ! if (present(nveg)) nveg = nveg + 3 * npfts_per_lunit
+       endif
        ! -------------------------------------------------------------------------
        ! Set urban landunits
        ! -------------------------------------------------------------------------
@@ -334,7 +341,7 @@ contains
     !
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use elm_varctl  , only : create_crop_landunit
+    use elm_varctl  , only : create_crop_landunit, use_polygonal_tundra
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -422,6 +429,17 @@ contains
     icohorts = fates_maxElementsPerSite
 
     if (present(nveg)) nveg = nveg + npfts_per_lunit
+
+    ! -----------------------------------------------------------------------
+    ! polygonal tundra
+
+    ! polygonal tundra
+    if (use_polygonal_tundra) then
+      ilunits = ilunits + 3
+      icols = icols + 3
+      ipfts = ipfts + 3 * npfts_per_lunit
+      ! if (present(nveg)) nveg = nveg + 3 * npfts_per_lunit
+    endif
 
     ! -------------------------------------------------------------------------
     ! Set urban landunits

@@ -4,12 +4,10 @@ module dyn_grid_mod
   use shr_kind_mod,       only: r8 => shr_kind_r8
   use dimensions_mod,     only: nelem, nelemd, nelemdmax, np
   use edgetype_mod,       only: EdgeBuffer_t
+  use mpi
 
   implicit none
   private
-
-! We need MPI in here, so include it
-#include <mpif.h>
 
   public :: dyn_grid_init, get_my_dyn_data, cleanup_grid_init_data
 

@@ -35,13 +35,16 @@ if (DEFINED ENV{HDF5_ROOT})
   if (DEFINED ENV{HDF5_USE_STATIC_LIBRARIES})
     set(HDF5_USE_STATIC_LIBRARIES On)
   endif()
-  find_package(HDF5 REQUIRED COMPONENTS C HL)
+  find_package(HDF5 REQUIRED)
 endif()
 
 # Not all machines/PIO installations use ADIOS but, for now,
 # we can assume that an MPI case with ADIOS2_ROOT set is probably
 # using adios.
 if (NOT MPILIB STREQUAL "mpi-serial" AND DEFINED ENV{ADIOS2_ROOT})
+  if(DEFINED ENV{BLOSC2_ROOT})
+    set(ENV{Blosc2_DIR} "$ENV{BLOSC2_ROOT}")
+  endif()
   find_package(MPI REQUIRED COMPONENTS C)
   find_package(ADIOS2 REQUIRED COMPONENTS C)
   list(APPEND PIOLIBS adios2::adios2)
@@ -57,7 +60,7 @@ else()
 endif()
 
 if (DEFINED ENV{HDF5_ROOT})
-  list(APPEND PIOLIBS ${HDF5_HL_LIBRARIES} ${HDF5_LIBRARIES})
+  list(APPEND PIOLIBS hdf5)
 endif()
 
 # Create the interface library, and set target properties

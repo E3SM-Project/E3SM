@@ -1,7 +1,7 @@
-
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -14,9 +14,11 @@ void Functions<Real, DefaultDevice>
 {
 
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
-  
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
+
   Kokkos::parallel_for(
     "p3_check_values",
     policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -32,4 +34,3 @@ void Functions<Real, DefaultDevice>
 
 } // namespace p3
 } // namespace scream
-

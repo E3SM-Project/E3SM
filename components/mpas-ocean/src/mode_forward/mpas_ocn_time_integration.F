@@ -48,6 +48,19 @@ module ocn_time_integration
    !
    !--------------------------------------------------------------------
 
+    ! Enum for selecting different time integrators
+    integer, public :: timeIntegratorChoice
+
+    integer, public, parameter :: &
+       timeIntUnknown          = 0, &! unknown or undefined
+       timeIntSplitExplicit    = 1, &! split-explicit
+       timeIntUnsplitExplicit  = 2, &! unsplit-explicit
+       timeIntSemiImplicit     = 3, &! Semi-implicit
+       timeIntRK4              = 4, &! 4th-order Runge-Kutta
+       timeIntLTS              = 5, &! local time-stepping
+       timeIntFBLTS            = 6, &! forward-backward lts
+       timeIntSplitExplicitAB2 = 7   ! split-explicit AB2 baroclinic
+
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -63,18 +76,6 @@ module ocn_time_integration
    !
    !--------------------------------------------------------------------
 
-    ! Enum for selecting different time integrators
-    integer :: timeIntegratorChoice
-
-    integer, parameter :: &
-       timeIntUnknown          = 0, &! unknown or undefined
-       timeIntSplitExplicit    = 1, &! split-explicit
-       timeIntUnsplitExplicit  = 2, &! unsplit-explicit
-       timeIntSemiImplicit     = 3, &! Semi-implicit
-       timeIntRK4              = 4, &! 4th-order Runge-Kutta
-       timeIntLTS              = 5, &! local time-stepping
-       timeIntFBLTS            = 6, &! forward-backward lts
-       timeIntSplitExplicitAB2 = 7   ! split-explicit AB2 baroclinic
 
 !***********************************************************************
 

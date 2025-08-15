@@ -5,13 +5,13 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "share/util/scream_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
@@ -24,10 +24,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -43,7 +43,7 @@ void run(std::mt19937_64& engine)
 {
   using PC         = scream::physics::Constants<Real>;
   using KT         = ekat::KokkosTypes<DeviceT>;
-  using ESU        = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF        = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<Real>;
 
@@ -59,7 +59,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  auto policy = ESU::get_default_team_policy(ncols, num_levs);
+  auto policy = TPF::get_default_team_policy(ncols, num_levs);
 
   // Input (randomized) views
   view_1d
@@ -87,32 +87,32 @@ void run(std::mt19937_64& engine)
   register_diagnostics();
   ekat::ParameterList params;
 
-  REQUIRE_THROWS (diag_factory.create("WaterPath",comm,params)); // No 'Water Kind'
-  params.set<std::string>("Water Kind","Foo");
-  REQUIRE_THROWS (diag_factory.create("WaterPath",comm,params)); // Invalid 'Water Kind'
+  REQUIRE_THROWS (diag_factory.create("WaterPath",comm,params)); // No 'water_kind'
+  params.set<std::string>("water_kind","Foo");
+  REQUIRE_THROWS (diag_factory.create("WaterPath",comm,params)); // Invalid 'water_kind'
 
   // Vapor
-  params.set<std::string>("Water Kind","Vap");
+  params.set<std::string>("water_kind","Vap");
   auto diag_vap = diag_factory.create("WaterPath",comm,params);
   diag_vap->set_grids(gm);
   diags.emplace("vwp",diag_vap);
   // Liquid
-  params.set<std::string>("Water Kind","Liq");
+  params.set<std::string>("water_kind","Liq");
   auto diag_liq = diag_factory.create("WaterPath",comm,params);
   diag_liq->set_grids(gm);
   diags.emplace("lwp",diag_liq);
   // Ice
-  params.set<std::string>("Water Kind","Ice");
+  params.set<std::string>("water_kind","Ice");
   auto diag_ice = diag_factory.create("WaterPath",comm,params);
   diag_ice->set_grids(gm);
   diags.emplace("iwp",diag_ice);
   // Rime
-  params.set<std::string>("Water Kind","Rime");
+  params.set<std::string>("water_kind","Rime");
   auto diag_rime = diag_factory.create("WaterPath",comm,params);
   diag_rime->set_grids(gm);
   diags.emplace("mwp",diag_rime);
   // Rain
-  params.set<std::string>("Water Kind","Rain");
+  params.set<std::string>("water_kind","Rain");
   auto diag_rain = diag_factory.create("WaterPath",comm,params);
   diag_rain->set_grids(gm);
   diags.emplace("rwp",diag_rain);

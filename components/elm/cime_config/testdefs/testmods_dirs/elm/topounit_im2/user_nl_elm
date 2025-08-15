@@ -1,0 +1,2 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata/half_degree_merge_surfdata_0.5x0.5_simyr2000_c190418.with_aveDTB.20201222.nc'
+use_IM2_hillslope_hydrology = .true.

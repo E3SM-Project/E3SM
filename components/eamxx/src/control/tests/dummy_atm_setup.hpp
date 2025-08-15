@@ -19,7 +19,7 @@ inline void dummy_atm_init () {
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  gm_factory.register_product("mesh_free",&create_mesh_free_grids_manager);
 }
 
 inline void dummy_atm_cleanup () {

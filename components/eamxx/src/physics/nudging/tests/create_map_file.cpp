@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
 TEST_CASE("create_map_file")
 {

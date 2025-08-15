@@ -116,7 +116,7 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
     const Int k0 = nsublev*spli;
     const Int ti = cdr_over_super_levels ? q : spli*qsize + q;
     const bool nonneg = nonnegs[q];
-    Real Qm = 0, Qm_min = 0, Qm_max = 0, Qm_prev = 0, rhom = 0, volume = 0;
+    Real Qm = 0, Qm_min = 0, Qm_max = 0, Qm_prev = 0, volume = 0;
     Int ie_idx;
     if (caas_in_suplev)
       ie_idx = (cdr_over_super_levels ?
@@ -131,7 +131,6 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
       const auto lci = ie2lci[ie_idx];
       if ( ! caas_in_suplev) {
         Qm = 0; Qm_min = 0; Qm_max = 0; Qm_prev = 0;
-        rhom = 0;
         volume = 0;
       }
       if (k < nlev) {
@@ -139,7 +138,6 @@ void run_global (CDR<MT>& cdr, CDRT* cedr_cdr_p,
           const auto smp = spheremp1(g);
           volume += smp;
           const Real rhomij = dp3d_c1(np1,g,k) * smp;
-          rhom += rhomij;
           Qm += q_c1(q,g,k) * rhomij;
           auto& q_min_val = idx_qext(q_min,ie,q,g,k);
           if ( ! cedr::impl::OnGpu<typename MT::DES>::value && nonneg)

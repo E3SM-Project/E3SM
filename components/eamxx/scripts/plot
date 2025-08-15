@@ -4,7 +4,7 @@
 Plot results from perf_analysis
 """
 
-from utils import expect, check_minimum_python_version
+from utils import expect, check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 5)
 
 import matplotlib.pyplot as plt
@@ -34,7 +34,7 @@ OR
     > {0} <sha1>/weaver <sha2>/weaver -v commit:version
 """.format(os.path.basename(args[0])),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument("datafiles", nargs="+", help="Data file to plot")

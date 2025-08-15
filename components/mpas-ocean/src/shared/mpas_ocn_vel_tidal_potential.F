@@ -80,6 +80,8 @@ module ocn_vel_tidal_potential
       tidalConstituentAstronomical,   &!
       tidalConstituentNodalPhase       !
 
+   real (kind=RKIND), pointer :: forcingTimeIncrement
+
    real (kind=RKIND), dimension(:,:), pointer :: &
       latitudeFunction 
 
@@ -273,8 +275,8 @@ contains
       err = 0
       if (tidalPotentialOff) return
 
-      ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/tidalPotRamp)
-      t = daysSinceStartOfSim*86400.0_RKIND
+      t = daysSinceStartOfSim*86400.0_RKIND + forcingTimeIncrement
+      ramp = tanh((2.0_RKIND*t/86400.0_RKIND)/tidalPotRamp)
 
       do iCell = 1, nCellsAll
          tidalPotEta(iCell) = 0.0_RKIND
@@ -416,6 +418,9 @@ contains
          call mpas_pool_get_array(forcingPool, &
                             'tidalPotentialLatitudeFunction', &
                             latitudeFunction)
+         call mpas_pool_get_array(forcingPool, &
+                            'forcingTimeIncrement', &
+                            forcingTimeIncrement)
 
          call mpas_set_time(refTime, &
                dateTimeString=config_tidal_potential_reference_time)

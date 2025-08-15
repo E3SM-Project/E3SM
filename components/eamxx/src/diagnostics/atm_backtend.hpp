@@ -2,7 +2,7 @@
 #define EAMXX_ATM_BACKTEND_DIAG_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_time_stamp.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
 
 namespace scream {
 
@@ -15,8 +15,8 @@ class AtmBackTendDiag : public AtmosphereDiagnostic {
   // Constructors
   AtmBackTendDiag(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  // The name of the diagnostic
-  std::string name() const;
+  // The name of the diagnostic CLASS (not the computed field)
+  std::string name() const { return "AtmBackTendDiag"; }
 
   // Set the grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager);

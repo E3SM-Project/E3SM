@@ -22,6 +22,7 @@
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
 <config_advection_coef_3rd_order>0.25</config_advection_coef_3rd_order>
 <config_restore_thickness_after_advection>.false.</config_restore_thickness_after_advection>
+<config_smb_source>'coupler'</config_smb_source>
 <config_zero_sfcMassBalApplied_over_bare_land>.true.</config_zero_sfcMassBalApplied_over_bare_land>
 
 <!-- solidearth -->
@@ -62,8 +63,8 @@
 <config_damage_calving_method>'none'</config_damage_calving_method>
 <config_damagecalvingParameter>1.0e-4</config_damagecalvingParameter>
 <config_ismip6_retreat_k>-170.0</config_ismip6_retreat_k>
-<config_calving_error_threshold>0.1</config_calving_error_threshold>
-<config_distribute_unablatedVolumeDynCell>.false.</config_distribute_unablatedVolumeDynCell>
+<config_calving_error_threshold>1.0e36</config_calving_error_threshold>
+<config_distribute_unablatedVolumeDynCell>.true.</config_distribute_unablatedVolumeDynCell>
 <config_update_velocity_before_calving>.false.</config_update_velocity_before_calving>
 
 <!-- thermal_solver -->
@@ -80,7 +81,7 @@
 <config_max_water_fraction>1.0e-2</config_max_water_fraction>
 
 <!-- iceshelf_melt -->
-<config_basal_mass_bal_float>'file'</config_basal_mass_bal_float>
+<config_basal_mass_bal_float>'ismip6'</config_basal_mass_bal_float>
 <config_bmlt_float_flux>0.0</config_bmlt_float_flux>
 <config_bmlt_float_xlimit>0.0</config_bmlt_float_xlimit>
 <config_basal_mass_bal_seroussi_amplitude>0.0</config_basal_mass_bal_seroussi_amplitude>
@@ -98,14 +99,18 @@
 <config_temperature_profile_variability_period>1.0</config_temperature_profile_variability_period>
 <config_temperature_profile_variability_phase>0.0</config_temperature_profile_variability_phase>
 <config_temperature_profile_GL_depth_fraction>0.25</config_temperature_profile_GL_depth_fraction>
-<config_front_mass_bal_grounded>'none'</config_front_mass_bal_grounded>
-<config_use_3d_thermal_forcing_for_face_melt>.false.</config_use_3d_thermal_forcing_for_face_melt>
+<config_front_mass_bal_grounded>'ismip6'</config_front_mass_bal_grounded>
+<config_use_3d_thermal_forcing_for_face_melt>.true.</config_use_3d_thermal_forcing_for_face_melt>
 <config_beta_ocean_thermal_forcing>1.18</config_beta_ocean_thermal_forcing>
 <config_add_ocean_thermal_forcing>0.0</config_add_ocean_thermal_forcing>
 <config_alpha_subglacial_discharge>0.39</config_alpha_subglacial_discharge>
 <config_subglacial_discharge_coefficient>3.0e-4</config_subglacial_discharge_coefficient>
 <config_subglacial_discharge_intercept>0.15</config_subglacial_discharge_intercept>
 <config_uniform_face_melt_rate>0.0</config_uniform_face_melt_rate>
+<config_ocean_data_extrapolation>.true.</config_ocean_data_extrapolation>
+<config_ocean_data_extrap_ncells_extra>5</config_ocean_data_extrap_ncells_extra>
+<config_invalid_value_TF>1.0e36</config_invalid_value_TF>
+<config_weight_value_cell>0.9</config_weight_value_cell>
 
 <!-- physical_parameters -->
 <config_ice_density>910.0</config_ice_density>
@@ -150,6 +155,8 @@
 <config_year_digits>4</config_year_digits>
 <config_output_external_velocity_solver_data>.false.</config_output_external_velocity_solver_data>
 <config_write_albany_ascii_mesh>.false.</config_write_albany_ascii_mesh>
+<config_create_all_logs_in_e3sm>.false.</config_create_all_logs_in_e3sm>
+<config_nISMIP6OceanLayers>0</config_nISMIP6OceanLayers>
 
 <!-- decomposition -->
 <config_num_halos>3</config_num_halos>
@@ -205,7 +212,7 @@
 <config_AM_globalStats_write_on_startup>.true.</config_AM_globalStats_write_on_startup>
 
 <!-- AM_regionalStats -->
-<config_AM_regionalStats_enable>.false.</config_AM_regionalStats_enable>
+<config_AM_regionalStats_enable>.true.</config_AM_regionalStats_enable>
 <config_AM_regionalStats_compute_interval>'output_interval'</config_AM_regionalStats_compute_interval>
 <config_AM_regionalStats_stream_name>'regionalStatsOutput'</config_AM_regionalStats_stream_name>
 <config_AM_regionalStats_compute_on_startup>.true.</config_AM_regionalStats_compute_on_startup>

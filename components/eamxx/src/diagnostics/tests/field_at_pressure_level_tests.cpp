@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
-
 #include "diagnostics/field_at_pressure_level.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 
@@ -62,7 +62,7 @@ TEST_CASE("field_at_pressure_level_p2")
   auto gm   = create_gm(comm,ncols,nlevs);
 
   // Create a field manager for testing
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
   auto fm   = get_test_fm(grid);
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
@@ -168,7 +168,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   // Register fields with fm
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-  fm->registration_begins();
   fm->register_field(FR{fid1,Pack::n});
   fm->register_field(FR{fid2,Pack::n});
   fm->register_field(FR{fid3,Pack::n});
@@ -224,7 +223,8 @@ get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, st
     ekat::ParameterList params;
     params.set("field_name",field.name());
     params.set("grid_name",fm->get_grid()->name());
-    params.set("vertical_location",std::to_string(plevel) + "Pa");
+    params.set("pressure_value",std::to_string(plevel));
+    params.set("pressure_units",std::string("Pa"));
     auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
     diag->set_grids(gm);
     for (const auto& req : diag->get_required_field_requests()) {

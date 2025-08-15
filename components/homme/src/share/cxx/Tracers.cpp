@@ -32,7 +32,10 @@ void Tracers::init(const int num_elems, const int num_tracers)
   nt = num_tracers;
 
   qdp = decltype(qdp)("tracers mass", num_elems);
-  qtens_biharmonic = decltype(qtens_biharmonic)("qtens(_biharmonic)", num_elems);
+  // Also used in ComposeTransportImplEnhancedTrajectory for communication,
+  // where 4 slots are needed.
+  qtens_biharmonic = decltype(qtens_biharmonic)(
+    "qtens(_biharmonic)", num_elems, std::max(4, num_tracers));
   qlim = decltype(qlim)("qlim", num_elems);
 
   Q = decltype(Q)("tracers concentration", num_elems,num_tracers);

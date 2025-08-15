@@ -17,13 +17,14 @@ module initVerticalMod
   use elm_varpar     , only : nlevsoi, nlevsoifl, nlevurb, nlevslp 
   use elm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers, use_extrasnowlayers
-  use elm_varctl     , only : use_erosion
-  use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd 
+  use elm_varctl     , only : use_erosion, use_polygonal_tundra
+  use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
   use fileutils      , only : getfil
-  use LandunitType   , only : lun_pp                
-  use ColumnType     , only : col_pp                
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
+  use ColumnDataType , only : col_ws
   use SnowHydrologyMod, only : InitSnowLayers
   use ncdio_pio
   use topounit_varcon  , only : max_topounits
@@ -55,8 +56,9 @@ contains
     logical               :: readvar 
     integer               :: dimid             ! dimension id
     character(len=256)    :: locfn             ! local filename
-    real(r8) ,pointer     :: std (:)           ! read in - topo_std 
-    real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
+    real(r8) ,pointer     :: std (:)           ! read in - topo_std
+    real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope
+    real(r8) ,pointer     :: gradz(:)          ! read in - gradz (polygonal tundra only)
     real(r8) ,pointer     :: hslp_p10 (:,:,:)    ! read in - hillslope slope percentiles
     real(r8) ,pointer     :: dtb (:,:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
@@ -571,6 +573,20 @@ contains
          col_pp%topo_slope(c) = max(tslope(g), 0.2_r8)
       end do
       deallocate(tslope)
+
+      if (use_polygonal_tundra) then
+         allocate(gradz(bounds%begg:bounds%endg))
+         call ncd_io(ncid=ncid, varname='GRADZ', flag='read', data=gradz, dim1name=grlnd, readvar=readvar)
+         if (.not. readvar) then
+            call shr_sys_abort(' ERROR: polygonal tundra turned on, but GRADZ not on surfdata file'//&
+            errMsg(__FILE__, __LINE__))
+         end if
+         do c = begc,endc
+            g = col_pp%gridcell(c)
+            col_pp%meangradz(c) = gradz(g)
+         end do
+         deallocate(gradz)
+      end if
 
       allocate(std(bounds%begg:bounds%endg))
       call ncd_io(ncid=ncid, varname='STD_ELEV', flag='read', data=std, dim1name=grlnd, readvar=readvar)

@@ -241,11 +241,12 @@ contains
    use cloud_fraction,      only: cldfrc_readnl
    use cldfrc2m,            only: cldfrc2m_readnl
    use cldwat,              only: cldwat_readnl
-   use zm_conv,             only: zmconv_readnl
+   use zm_conv_intr,        only: zm_conv_readnl
    use hk_conv,             only: hkconv_readnl
    use uwshcu,              only: uwshcu_readnl
    use pkg_cld_sediment,    only: cld_sediment_readnl
    use gw_drag,             only: gw_drag_readnl
+   use od_common,           only: oro_drag_readnl
    use qbo,                 only: qbo_readnl
    use iondrag,             only: iondrag_readnl
    use phys_debug_util,     only: phys_debug_readnl
@@ -510,12 +511,13 @@ contains
    call subcol_readnl(nlfilename)
    call cldfrc_readnl(nlfilename)
    call cldfrc2m_readnl(nlfilename)
-   call zmconv_readnl(nlfilename)
+   call zm_conv_readnl(nlfilename)
    call cldwat_readnl(nlfilename)
    call hkconv_readnl(nlfilename)
    call uwshcu_readnl(nlfilename)
    call cld_sediment_readnl(nlfilename)
    call gw_drag_readnl(nlfilename)
+   call oro_drag_readnl(nlfilename)
    call qbo_readnl(nlfilename)
    call iondrag_readnl(nlfilename)
    call phys_debug_readnl(nlfilename)

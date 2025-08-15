@@ -4,7 +4,7 @@ driver_options:
   atmosphere_dag_verbosity_level: 5
   mass_column_conservation_error_tolerance: 1e-3
   energy_column_conservation_error_tolerance: 1e-4
-  column_conservation_checks_fail_handling_type: Warning
+  column_conservation_checks_fail_handling_type: warning
   property_check_data_fields: [phis]
 
 time_stepping:
@@ -13,7 +13,7 @@ time_stepping:
   number_of_steps: ${NUM_STEPS}
 
 initial_conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   pbl_height : 1.0
   phis : 1.0
@@ -25,6 +25,9 @@ initial_conditions:
   #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
 
   #variables required for mam4_aci
   dgnum: 1e-3
@@ -38,23 +41,24 @@ initial_conditions:
   dgnumwet: 0.41417721820867320E-007
   wetdens: 0.15100083211582764E+004
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [homme,physics]
-  schedule_type: Sequential
+  schedule_type: sequential
   homme:
-    Moisture: moist
+    moisture: moist
   physics:
     atm_procs_list: [mac_mic,mam4_optics,rrtmgp,mam4_drydep]
-    schedule_type: Sequential
-    Type: Group
+    schedule_type: sequential
+    type: group
     mac_mic:
-      atm_procs_list: [shoc,CldFraction,mam4_aci,p3]
-      schedule_type: Sequential
-      Type: Group
+      atm_procs_list: [shoc,cld_fraction,mam4_aci,p3]
+      schedule_type: sequential
+      type: group
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       mam4_aci:
         wsubmin: 0.001
         top_level_mam4xx: 6
+        enable_aero_vertical_mix: true
       p3:
         do_prescribed_ccn: false
         enable_column_conservation_checks: true
@@ -62,7 +66,7 @@ atmosphere_processes:
       shoc:
         enable_column_conservation_checks: true
         lambda_low: 0.001
-        lambda_high: 0.04
+        lambda_high: 0.08
         lambda_slope: 2.65
         lambda_thresh: 0.02
         thl2tune: 1.0
@@ -71,8 +75,9 @@ atmosphere_processes:
         w2tune: 1.0
         length_fac: 0.5
         c_diag_3rd_mom: 7.0
-        Ckh: 0.1
-        Ckm: 0.1
+        coeff_kh: 0.1
+        coeff_km: 0.1
+        shoc_1p5tke: false
 
     mam4_optics:
       mam4_mode1_physical_properties_file : ${SCREAM_DATA_DIR}/mam4xx/physprops/mam4_mode1_rrtmg_aeronetdust_c20240206.nc
@@ -96,14 +101,18 @@ atmosphere_processes:
       rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
       enable_column_conservation_checks: true
+    mam4_drydep:
+      # Fractional land use file
+      drydep_remap_file: ""
+      fractional_land_use_file: ${SCREAM_DATA_DIR}/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
 
 grids_manager:
-  Type: Homme
-  physics_grid_type: GLL
+  type: homme
+  physics_grid_type: gll
   dynamics_namelist_file_name: namelist.nl
   vertical_coordinate_filename: IC_FILE
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

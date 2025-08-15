@@ -2,7 +2,7 @@
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "share/io/scream_output_manager.hpp"
+#include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -11,15 +11,14 @@
 #include "share/field/field.hpp"
 #include "share/field/field_manager.hpp"
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/eamxx_types.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <iomanip>
 #include <memory>
@@ -42,7 +41,7 @@ public:
     using namespace ShortFieldTagsNames;
     using FL = FieldLayout;
 
-    const auto grid = gm->get_grid("Point Grid");
+    const auto grid = gm->get_grid("point_grid");
     const auto& grid_name = grid->name();
     m_num_cols  = grid->get_num_local_dofs(); // Number of columns on this rank
     m_num_levs  = grid->get_num_vertical_levels();  // Number of levels per column
@@ -81,7 +80,7 @@ protected:
   }
 
   void initialize_impl (const RunType /* run_type */ ) override {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(start_of_step_ts());
   }
 
   // Clean up
@@ -131,7 +130,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   //  - Uniform_int_distribution returns an int, and the randomize
   //    util checks that return type matches the Field data type.
   //    So wrap the int pdf in a lambda, that does the cast.
-  std::mt19937_64 engine(seed); 
+  std::mt19937_64 engine(seed);
   auto my_pdf = [&](std::mt19937_64& engine) -> Real {
     std::uniform_int_distribution<int> pdf (0,100);
     Real v = pdf(engine);
@@ -142,7 +141,7 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
   const int nlevs  = grid->get_num_vertical_levels();
 
   auto fm = std::make_shared<FieldManager>(grid);
-  
+
   const auto units = ekat::units::Units::nondimensional();
   FL fl ({COL,LEV}, {nlcols,nlevs});
 
@@ -169,7 +168,7 @@ void write (const int seed, const ekat::Comm& comm)
 {
   // Create grid
   auto gm = get_gm(comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Time advance parameters
   auto t0 = get_t0();
@@ -178,7 +177,7 @@ void write (const int seed, const ekat::Comm& comm)
   // Create some fields
   auto fm = get_fm(grid,t0,seed);
   std::vector<std::string> fnames;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     const auto& fn = it.second->name();
     fnames.push_back(fn);
   }
@@ -186,21 +185,21 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("MPI Ranks in Filename",true);
   om_pl.set("filename_prefix",std::string("io_diags"));
-  om_pl.set("Field Names",fnames);
-  om_pl.set("Averaging Type", std::string("INSTANT"));
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", std::string("instant"));
   auto& ctrl_pl = om_pl.sublist("output_control");
   ctrl_pl.set("frequency_units",std::string("nsteps"));
-  ctrl_pl.set("Frequency",1);
+  ctrl_pl.set("frequency",1);
   ctrl_pl.set("save_grid_data",false);
 
   // Create Output manager
   OutputManager om;
-  om.setup(comm,om_pl,fm,gm,t0,t0,false);
+  om.initialize(comm, om_pl, t0, false);
+  om.setup(fm,gm->get_grid_names());
 
   // Run output manager
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     auto& f = *it.second;
     Field one = f.clone("one");
     one.deep_copy(1.0);
@@ -221,7 +220,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   // Get gm
   auto gm = get_gm (comm);
-  auto grid = gm->get_grid("Point Grid");
+  auto grid = gm->get_grid("point_grid");
 
   // Get initial fields
   auto fm0 = get_fm(grid,t0,seed);
@@ -229,7 +228,7 @@ void read (const int seed, const ekat::Comm& comm)
 
   std::vector<std::string> fnames;
   std::string f_name;
-  for (auto it : *fm) {
+  for (auto it : fm->get_repo()) {
     const auto& fn = it.second->name();
     fnames.push_back(fn);
     if (fn!="MyDiag") {
@@ -251,8 +250,8 @@ void read (const int seed, const ekat::Comm& comm)
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("Filename",filename);
-  reader_pl.set("Field Names",fnames);
+  reader_pl.set("filename",filename);
+  reader_pl.set("field_names",fnames);
   AtmosphereInput reader(reader_pl,fm);
 
   Field one = f0.clone("one");

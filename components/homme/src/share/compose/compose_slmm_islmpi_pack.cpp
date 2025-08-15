@@ -1,46 +1,14 @@
 #include "compose_slmm_islmpi.hpp"
+#include "compose_slmm_islmpi_buf.hpp"
 
 namespace homme {
 namespace islmpi {
 
-template <typename Buffer> SLMM_KIF
-Int setbuf (Buffer& buf, const Int& os, const Int& i1, const Int& i2) {
-  Int* const b = reinterpret_cast<Int*>(&buf(os));
-  b[0] = i1;
-  b[1] = i2;
-  return nreal_per_2int;
-}
-
-template <typename Buffer> SLMM_KIF
-Int setbuf (Buffer& buf, const Int& os, const Int& i1, const short& i2, const short& i3) {
-  static_assert(sizeof(Int) >= 2*sizeof(short), "Need >= 2 shorts per Int");
-  Int* const b = reinterpret_cast<Int*>(&buf(os));
-  b[0] = i1;
-  short* const b2 = reinterpret_cast<short*>(b+1);
-  b2[0] = i2;
-  b2[1] = i3;
-  return nreal_per_2int;
-}
-
-template <typename Buffer> SLMM_KIF
-Int setbuf (Buffer& buf, const Int& os, const Int& i1, const Int& i2,
-            const bool final) {
-  if (final) setbuf(buf, os, i1, i2);
-  return nreal_per_2int;
-}
-
-template <typename Buffer> SLMM_KIF
-Int setbuf (Buffer& buf, const Int& os, const Int& i1, const short& i2, const short& i3,
-            const bool final) {
-  if (final) setbuf(buf, os, i1, i2, i3);
-  return nreal_per_2int;
-}
-
 #ifdef COMPOSE_PORT
 /* GPU metadata are arranged differently than described below. The scheme is the
    following:
-        (#x-in-rank         int
-         x-bulk-data-offset i 
+        (x-bulk-data-offset int
+         #x-in-rank         i
          (lid-on-rank       i     only packed if #x in lid > 0
           lev               short
           #x)               s
@@ -56,7 +24,7 @@ struct Accum {
 };
 
 template <typename MT>
-void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
+void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm, const bool trajectory) {
   ko::fence();
   deep_copy(cm.nx_in_rank_h, cm.nx_in_rank);
   const auto& sendbufs = cm.sendbuf;
@@ -68,6 +36,7 @@ void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
   const auto& blas = cm.bla;
   const auto nlev = cm.nlev;
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+  const Int ndim = trajectory ? cm.dep_points_ndim : 3;
   for (Int ri = 0; ri < nrmtrank; ++ri) {
     const Int lid_on_rank_n = cm.lid_on_rank_h(ri).n();
     const auto f = COMPOSE_LAMBDA (const int idx, Accum& a, const bool fin) {
@@ -97,10 +66,10 @@ void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
       if (nx > 0) {
         const auto dos = setbuf(sendbuf, a.mos, lid_on_rank(lidi), lev, nx, fin);
         a.mos += dos;
-        a.sendcount += dos + 3*nx;
+        a.sendcount += dos + ndim*nx;
         if (fin) t.xptr = a.xos;
-        a.xos += 3*nx;
-        a.qos += 2 + nx;
+        a.xos += ndim*nx;
+        a.qos += trajectory ? nx : 2 + nx;
       }
     };
     Accum a;
@@ -121,8 +90,8 @@ void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
 /* Pack the departure points (x). We use two passes. We also set up the q
    metadata. Two passes let us do some efficient tricks that are not available
    with one pass. Departure point and q messages are formatted as follows:
-    xs: (#x-in-rank         int                                     <-
-         x-bulk-data-offset i                                        |
+    xs: (x-bulk-data-offset int                                     <-
+         #x-in-rank         i                                        |
          (lid-on-rank       i     only packed if #x in lid > 0       |
           #x-in-lid         i     > 0                                |- meta data
           (lev              i     only packed if #x in (lid,lev) > 0 |
@@ -135,7 +104,7 @@ void pack_dep_points_sendbuf_pass1_scan (IslMpi<MT>& cm) {
           *#x) *#lev *#lid *#rank
  */
 template <typename MT>
-void pack_dep_points_sendbuf_pass1_noscan (IslMpi<MT>& cm) {
+void pack_dep_points_sendbuf_pass1_noscan (IslMpi<MT>& cm, const bool trajectory) {
 #ifdef COMPOSE_PORT
   ko::fence();
   deep_copy(cm.nx_in_rank_h, cm.nx_in_rank);
@@ -143,6 +112,7 @@ void pack_dep_points_sendbuf_pass1_noscan (IslMpi<MT>& cm) {
   deep_copy(cm.bla_h, cm.bla);
 #endif
   const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
+  const Int ndim = trajectory ? cm.dep_points_ndim : 3;
 #ifdef COMPOSE_HORIZ_OPENMP
 # pragma omp for
 #endif
@@ -179,10 +149,10 @@ void pack_dep_points_sendbuf_pass1_noscan (IslMpi<MT>& cm) {
         slmm_assert_high(nx > 0);
         const auto dos = setbuf(sendbuf, mos, lev, nx);
         mos += dos;
-        sendcount += dos + 3*nx;
+        sendcount += dos + ndim*nx;
         t.xptr = xos;
-        xos += 3*nx;
-        qos += 2 + nx;
+        xos += ndim*nx;
+        qos += trajectory ? nx : 2 + nx;
         nx_in_lid -= nx;
       }
       slmm_assert(nx_in_lid == 0);
@@ -210,17 +180,18 @@ void pack_dep_points_sendbuf_pass1_noscan (IslMpi<MT>& cm) {
 }
 
 template <typename MT>
-void pack_dep_points_sendbuf_pass1 (IslMpi<MT>& cm) {
+void pack_dep_points_sendbuf_pass1 (IslMpi<MT>& cm, const bool trajectory) {
 #if defined COMPOSE_PORT && ! defined COMPOSE_PACK_NOSCAN
   if (ko::OnGpu<typename MT::DES>::value)
-    pack_dep_points_sendbuf_pass1_scan(cm);
+    pack_dep_points_sendbuf_pass1_scan(cm, trajectory);
   else
 #endif
-    pack_dep_points_sendbuf_pass1_noscan(cm);
+    pack_dep_points_sendbuf_pass1_noscan(cm, trajectory);
 }
 
 template <typename MT>
-void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_points) {
+void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_points,
+                                    const bool trajectory) {
   const auto myrank = cm.p->rank();
 #ifdef COMPOSE_PORT
   const Int start = 0, end = cm.mylid_with_comm_h.n();
@@ -242,6 +213,7 @@ void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_poi
   }
   {
     ConstExceptGnu Int np2 = cm.np2, nlev = cm.nlev, qsize = cm.qsize;
+    ConstExceptGnu Int ndim = trajectory ? cm.dep_points_ndim : 3;
     const auto& ed_d = cm.ed_d;
     const auto& mylid_with_comm_d = cm.mylid_with_comm_d;
     const auto& sendbuf = cm.sendbuf;
@@ -279,17 +251,21 @@ void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_poi
         ++t.cnt;
 #endif
         qptr = t.qptr;
-        xptr = x_bulkdata_offset(ri) + t.xptr + 3*cnt;
+        xptr = x_bulkdata_offset(ri) + t.xptr + ndim*cnt;
       }
 #ifdef COMPOSE_HORIZ_OPENMP
       if (horiz_openmp) omp_unset_lock(lock);
 #endif
       slmm_kernel_assert_high(xptr > 0);
-      for (Int i = 0; i < 3; ++i)
+      for (Int i = 0; i < ndim; ++i)
         sb(xptr + i) = dep_points(tci,lev,k,i);
       auto& item = ed.rmt.atomic_inc_and_return_next();
-      item.q_extrema_ptr = qsize * qptr;
-      item.q_ptr = item.q_extrema_ptr + qsize*(2 + cnt);
+      if (trajectory) {
+        item.q_extrema_ptr = item.q_ptr = ndim*(qptr + cnt);
+      } else {
+        item.q_extrema_ptr = qsize * qptr;
+        item.q_ptr = item.q_extrema_ptr + qsize*(2 + cnt);
+      }
       item.lev = lev;
       item.k = k;
     };
@@ -300,9 +276,11 @@ void pack_dep_points_sendbuf_pass2 (IslMpi<MT>& cm, const DepPoints<MT>& dep_poi
   }
 }
 
-template void pack_dep_points_sendbuf_pass1(IslMpi<ko::MachineTraits>& cm);
-template void pack_dep_points_sendbuf_pass2(IslMpi<ko::MachineTraits>& cm,
-                                            const DepPoints<ko::MachineTraits>& dep_points);
+template void pack_dep_points_sendbuf_pass1(
+  IslMpi<ko::MachineTraits>& cm, const bool trajectory);
+template void pack_dep_points_sendbuf_pass2(
+  IslMpi<ko::MachineTraits>& cm, const DepPoints<ko::MachineTraits>& dep_points,
+  const bool trajectory);
 
 } // namespace islmpi
 } // namespace homme

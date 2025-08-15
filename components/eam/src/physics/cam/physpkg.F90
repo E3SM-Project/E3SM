@@ -32,8 +32,7 @@ module physpkg
 
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
-  use zm_conv,          only: do_zmconv_dcape_ull => trigdcape_ull, &
-                              do_zmconv_dcape_only => trig_dcape_only
+  use zm_conv,          only: zm_param
   use iop_data_mod,     only: single_column
   use flux_avg,         only: flux_avg_init
   use infnan,           only: posinf, assignment(=)
@@ -156,6 +155,7 @@ subroutine phys_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
     use co2_diagnostics,    only: co2_diags_register
+    use gw_drag,            only: gw_register
     use flux_avg,           only: flux_avg_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
@@ -315,6 +315,8 @@ subroutine phys_register
        ! co2 constituents
        call co2_register()
        call co2_diags_register()
+
+       call gw_register()
 
        ! register data model ozone with pbuf
        if (cam3_ozone_data_on) then
@@ -906,7 +908,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
 
-    call gw_init()
+    call gw_init(pbuf2d)
 
     call rayleigh_friction_init()
 
@@ -961,7 +963,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        if (.not. do_clubb_sgs .and. .not. do_shoc_sgs) call macrop_driver_init(pbuf2d)
        call microp_aero_init()
        call microp_driver_init(pbuf2d)
-       call conv_water_init
+       call conv_water_init(pbuf2d)
     end if
 
     ! initiate CLUBB within CAM
@@ -1321,7 +1323,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
@@ -1834,7 +1836,7 @@ end if ! l_tracer_aero
 
        ! If CLUBB is called, do not call vertical diffusion, but still
        ! calculate surface friction velocity (ustar) and Obukhov length
-       call clubb_surface ( state, cam_in, surfric, obklen)
+       call clubb_surface ( state, cam_in, pbuf, surfric, obklen)
 
        ! Diagnose tracer mixing ratio tendencies from surface fluxes, 
        ! then update the mixing ratios. (If cflx_cpl_opt==2, these are done in 
@@ -2018,7 +2020,7 @@ end if ! l_ac_energy_chk
 
     ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
     !            the calculation follows the same format as in diag_phys_tend_writeout
-    if (deep_scheme .eq. 'ZM' .and. (do_zmconv_dcape_ull .or. do_zmconv_dcape_only)) then
+    if ( deep_scheme.eq.'ZM' .and. zm_param%trig_dcape ) then
       ifld = pbuf_get_index('T_STAR')
       call pbuf_get_field(pbuf, ifld, t_star, (/1,1/),(/pcols,pver/))
       ifld = pbuf_get_index('Q_STAR')
@@ -3232,7 +3234,9 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   if(Nudge_Model) call nudging_timestep_init(phys_state)
 
   ! Update Transformed Eularian Mean (TEM) diagnostics
+  call t_startf('phys_grid_ctem_diags')
   call phys_grid_ctem_diags(phys_state)
+  call t_stopf('phys_grid_ctem_diags')
 
 end subroutine phys_timestep_init
 
@@ -3244,14 +3248,14 @@ subroutine add_fld_default_calls()
   implicit none
 
   !Add all existing ptend names for the addfld calls
-  character(len=20), parameter :: vlist(28) = (/     'topphysbc           '                       ,&
-       'chkenergyfix        ','dadadj              ','zm_convr            ','zm_conv_evap        ',&
-       'momtran             ','zm_conv_tend        ','UWSHCU              ','convect_shallow     ',&
-       'pcwdetrain_mac      ','macro_park          ','macrop              ','micro_mg            ',&
-       'cldwat_mic          ','aero_model_wetdep_ma','convtran2           ','cam_radheat         ',&
-       'chemistry           ','vdiff               ','rayleigh_friction   ','aero_model_drydep_ma',&
-       'Grav_wave_drag      ','convect_shallow_off ','clubb_ice1          ','clubb_det           ',&
-       'clubb_ice4          ','clubb_srf           ','micro_p3            ' /)
+  character(len=21), parameter :: vlist(28) = (/       'topphysbc            '                       ,&
+       'chkenergyfix         ','dadadj               ','zm_convr             ','zm_conv_evap         ',&
+       'zm_transport_momentum','zm_conv_tend         ','UWSHCU               ','convect_shallow      ',&
+       'pcwdetrain_mac       ','macro_park           ','macrop               ','micro_mg             ',&
+       'cldwat_mic           ','aero_model_wetdep_ma ','zm_transport_tracer_2','cam_radheat          ',&
+       'chemistry            ','vdiff                ','rayleigh_friction    ','aero_model_drydep_ma ',&
+       'Grav_wave_drag       ','convect_shallow_off  ','clubb_ice1           ','clubb_det            ',&
+       'clubb_ice4           ','clubb_srf            ','micro_p3             '/)
 
 
 

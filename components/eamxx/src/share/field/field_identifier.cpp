@@ -1,5 +1,6 @@
 #include "share/field/field_identifier.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+
+#include <ekat_string_utils.hpp>
 
 namespace scream
 {
@@ -41,9 +42,8 @@ alias (const std::string& name) const
 void FieldIdentifier::update_identifier () {
   // Create a verbose identifier string.
   m_identifier = m_name + "[" + m_grid_name + "] <" + e2str(m_data_type);
-  auto print_tag = [](FieldTag t) {return e2str(t); };
   if (m_layout.rank()>0) {
-    m_identifier += ":" + ekat::join(m_layout.tags(),print_tag,",");
+    m_identifier += ":" + ekat::join(m_layout.names(),",");
   }
   m_identifier += ">";
   m_identifier += "(" + ekat::join(m_layout.dims(),",") + ")";

@@ -2,9 +2,9 @@
 
 #include "share/grid/remap/refining_remapper_p2p.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -25,6 +25,8 @@ Field create_field (const std::string& name, const LayoutType lt, const Abstract
   const auto  ndims = 2;
   Field f;
   switch (lt) {
+    case LayoutType::Scalar1D:
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(true),u,gn));  break;
     case LayoutType::Scalar2D:
       f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
     case LayoutType::Vector2D:
@@ -64,6 +66,10 @@ Field all_gather_field (const Field& f, const ekat::Comm& comm) {
   constexpr auto COL = ShortFieldTagsNames::COL;
   const auto& fid = f.get_header().get_identifier();
   const auto& fl  = fid.get_layout();
+  if (not fl.has_tag(COL)) {
+    // Not partitioned
+    return f;
+  }
   int col_size = fl.clone().strip_dim(COL).size();
   auto tags = fl.tags();
   auto dims = fl.dims();
@@ -192,31 +198,33 @@ TEST_CASE ("refining_remapper") {
   {
     auto r = std::make_shared<RefiningRemapperP2PTester>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
-    r->registration_begins();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();
-    CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // bad data type (must be real)
+    r->register_field(bad_src,bad_tgt);
+    CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
   auto r = std::make_shared<RefiningRemapperP2PTester>(tgt_grid,filename);
   auto src_grid = r->get_src_grid();
 
   auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,engine);
+  auto s1d_src   = create_field("s1d_src",LayoutType::Scalar1D,*src_grid,engine);
   auto s2d_src   = create_field("s2d_src",LayoutType::Scalar2D,*src_grid,engine);
   auto v2d_src   = create_field("v2d_src",LayoutType::Vector2D,*src_grid,engine);
   auto s3d_src   = create_field("s3d_src",LayoutType::Scalar3D,*src_grid,engine);
   auto v3d_src   = create_field("v3d_src",LayoutType::Vector3D,*src_grid,engine);
 
   auto bundle_tgt = create_field("bundle3d_tgt",LayoutType::Vector3D,*tgt_grid);
+  auto s1d_tgt   = create_field("s1d_tgt",LayoutType::Scalar1D,*tgt_grid);
   auto s2d_tgt   = create_field("s2d_tgt",LayoutType::Scalar2D,*tgt_grid);
   auto v2d_tgt   = create_field("v2d_tgt",LayoutType::Vector2D,*tgt_grid);
   auto s3d_tgt   = create_field("s3d_tgt",LayoutType::Scalar3D,*tgt_grid);
   auto v3d_tgt   = create_field("v3d_tgt",LayoutType::Vector3D,*tgt_grid);
 
-  r->registration_begins();
+  r->register_field(s1d_src,s1d_tgt);
   r->register_field(s2d_src,s2d_tgt);
   r->register_field(v2d_src,v2d_tgt);
   r->register_field(s3d_src,s3d_tgt);
@@ -226,16 +234,18 @@ TEST_CASE ("refining_remapper") {
   r->registration_ends();
 
   // Run remap
-  CHECK_THROWS (r->remap(false)); // No backward remap
-  r->remap(true);
+  CHECK_THROWS (r->remap_bwd()); // No backward remap
+  r->remap_fwd();
 
   // Gather global copies (to make checks easier) and check src/tgt fields
+  auto gs1d_src = all_gather_field(s1d_src,comm);
   auto gs2d_src = all_gather_field(s2d_src,comm);
   auto gv2d_src = all_gather_field(v2d_src,comm);
   auto gs3d_src = all_gather_field(s3d_src,comm);
   auto gv3d_src = all_gather_field(v3d_src,comm);
   auto gbundle_src = all_gather_field(bundle_src,comm);
 
+  auto gs1d_tgt = all_gather_field(s1d_tgt,comm);
   auto gs2d_tgt = all_gather_field(s2d_tgt,comm);
   auto gv2d_tgt = all_gather_field(v2d_tgt,comm);
   auto gs3d_tgt = all_gather_field(s3d_tgt,comm);
@@ -243,6 +253,22 @@ TEST_CASE ("refining_remapper") {
   auto gbundle_tgt = all_gather_field(bundle_tgt,comm);
 
   Real avg;
+  // Scalar 1D
+  {
+    if (comm.am_i_root()) {
+      printf(" -> Checking 1d scalars .........\n");
+    }
+    bool ok = true;
+    gs1d_src.sync_to_host();
+    gs1d_tgt.sync_to_host();
+
+    CHECK (views_are_equal(gs1d_src,gs1d_tgt));
+    ok &= catch_capture.lastAssertionPassed();
+    if (comm.am_i_root()) {
+      printf(" -> Checking 1d scalars ......... %s\n",ok ? "PASS" : "FAIL");
+    }
+  }
+
   // Scalar 2D
   {
     if (comm.am_i_root()) {

@@ -1,13 +1,14 @@
 include (EkatSetCompilerFlags)
 
 set(SHARE_SRC
-  scream_config.cpp
-  scream_session.cpp
+  eamxx_config.cpp
+  eamxx_session.cpp
   atm_process/atmosphere_process.cpp
   atm_process/atmosphere_process_hash.cpp
   atm_process/atmosphere_process_group.cpp
   atm_process/atmosphere_process_dag.cpp
   atm_process/atmosphere_diagnostic.cpp
+  atm_process/IOPDataManager.cpp
   field/field_alloc_prop.cpp
   field/field_identifier.cpp
   field/field_header.cpp
@@ -16,6 +17,7 @@ set(SHARE_SRC
   field/field.cpp
   field/field_group.cpp
   field/field_manager.cpp
+  field/field_sync.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
   grid/grid_import_export.cpp
@@ -25,21 +27,94 @@ set(SHARE_SRC
   grid/remap/coarsening_remapper.cpp
   grid/remap/horiz_interp_remapper_base.cpp
   grid/remap/horiz_interp_remapper_data.cpp
+  grid/remap/iop_remapper.cpp
+  grid/remap/identity_remapper.cpp
   grid/remap/refining_remapper_p2p.cpp
   grid/remap/vertical_remapper.cpp
-  iop/intensive_observation_period.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
-  property_checks/mass_and_energy_column_conservation_check.cpp
+  property_checks/mass_and_energy_conservation_check.cpp
+  util/eamxx_data_interpolation.cpp
   util/eamxx_fv_phys_rrtmgp_active_gases_workaround.cpp
-  util/scream_time_stamp.cpp
-  util/scream_timing.cpp
-  util/scream_utils.cpp
   util/eamxx_time_interpolation.cpp
-  util/scream_bfbhash.cpp
-  util/eamxx_time_interpolation.cpp
+  util/eamxx_time_stamp.cpp
+  util/eamxx_timing.cpp
+  util/eamxx_utils.cpp
+  util/eamxx_bfbhash.cpp
+  util/eamxx_repro_sum_mod.F90
 )
+
+# Append ETI sources (I didn't do it above for clarity of reading)
+list (APPEND SHARE_SRC
+  field/eti/field_eti_deep_copy_double_host.cpp
+  field/eti/field_eti_deep_copy_float_host.cpp
+  field/eti/field_eti_deep_copy_int_host.cpp
+  field/eti/field_eti_get_strided_view_double_host.cpp
+  field/eti/field_eti_get_strided_view_float_host.cpp
+  field/eti/field_eti_get_strided_view_int_host.cpp
+  field/eti/field_eti_get_view_double_host.cpp
+  field/eti/field_eti_get_view_float_host.cpp
+  field/eti/field_eti_get_view_int_host.cpp
+  field/eti/field_eti_update_double_host.cpp
+  field/eti/field_eti_update_float_host.cpp
+  field/eti/field_eti_update_impl_double_host.cpp
+  field/eti/field_eti_update_impl_fill_double_host.cpp
+  field/eti/field_eti_update_impl_fill_float_host.cpp
+  field/eti/field_eti_update_impl_fill_int_host.cpp
+  field/eti/field_eti_update_impl_float_host.cpp
+  field/eti/field_eti_update_impl_int_host.cpp
+  field/eti/field_eti_update_int_host.cpp
+  field/eti/field_utils_eti_compute_mask_le_int.cpp
+  field/eti/field_utils_eti_compute_mask_le_float.cpp
+  field/eti/field_utils_eti_compute_mask_le_double.cpp
+  field/eti/field_utils_eti_compute_mask_ne_int.cpp
+  field/eti/field_utils_eti_compute_mask_ne_float.cpp
+  field/eti/field_utils_eti_compute_mask_ne_double.cpp
+  field/eti/field_eti_update_max_min_double_host.cpp
+  field/eti/field_eti_update_max_min_float_host.cpp
+  field/eti/field_eti_update_max_min_impl_double_host.cpp
+  field/eti/field_eti_update_max_min_impl_fill_double_host.cpp
+  field/eti/field_eti_update_max_min_impl_fill_float_host.cpp
+  field/eti/field_eti_update_max_min_impl_fill_int_host.cpp
+  field/eti/field_eti_update_max_min_impl_float_host.cpp
+  field/eti/field_eti_update_max_min_impl_int_host.cpp
+  field/eti/field_eti_update_max_min_int_host.cpp
+)
+
+if (EAMXX_ENABLE_GPU)
+  # The HostOrDevice::Device is different from HostOrDevice::Host,
+  # so we need to ETI also these fcns for HostOrDevice::Host
+  list (APPEND SHARE_SRC
+    field/eti/field_eti_deep_copy_double_device.cpp
+    field/eti/field_eti_deep_copy_float_device.cpp
+    field/eti/field_eti_deep_copy_int_device.cpp
+    field/eti/field_eti_get_strided_view_double_device.cpp
+    field/eti/field_eti_get_strided_view_float_device.cpp
+    field/eti/field_eti_get_strided_view_int_device.cpp
+    field/eti/field_eti_get_view_double_device.cpp
+    field/eti/field_eti_get_view_float_device.cpp
+    field/eti/field_eti_get_view_int_device.cpp
+    field/eti/field_eti_update_double_device.cpp
+    field/eti/field_eti_update_float_device.cpp
+    field/eti/field_eti_update_impl_double_device.cpp
+    field/eti/field_eti_update_impl_fill_double_device.cpp
+    field/eti/field_eti_update_impl_fill_float_device.cpp
+    field/eti/field_eti_update_impl_fill_int_device.cpp
+    field/eti/field_eti_update_impl_float_device.cpp
+    field/eti/field_eti_update_impl_int_device.cpp
+    field/eti/field_eti_update_int_device.cpp
+    field/eti/field_eti_update_max_min_double_device.cpp
+    field/eti/field_eti_update_max_min_float_device.cpp
+    field/eti/field_eti_update_max_min_impl_double_device.cpp
+    field/eti/field_eti_update_max_min_impl_fill_double_device.cpp
+    field/eti/field_eti_update_max_min_impl_fill_float_device.cpp
+    field/eti/field_eti_update_max_min_impl_fill_int_device.cpp
+    field/eti/field_eti_update_max_min_impl_float_device.cpp
+    field/eti/field_eti_update_max_min_impl_int_device.cpp
+    field/eti/field_eti_update_max_min_int_device.cpp
+  )
+endif()
 
 if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
   list (APPEND
@@ -49,15 +124,19 @@ if (EAMXX_ENABLE_EXPERIMENTAL_CODE)
 endif()
 
 add_library(scream_share ${SHARE_SRC})
-set_target_properties(scream_share PROPERTIES
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
-)
+set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+target_include_directories (scream_share PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/modules)
+
 target_include_directories(scream_share PUBLIC
   ${SCREAM_SRC_DIR}
   ${SCREAM_BIN_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
+
+# Used in the data interpolation
+target_link_libraries(scream_share PUBLIC stdc++fs)
+
+target_link_libraries(scream_share PUBLIC csm_share)
 
 if (GPTL_PATH)
   target_include_directories(scream_share PUBLIC ${GPTL_PATH})
@@ -65,18 +144,56 @@ else()
   target_include_directories(scream_share PUBLIC ${INSTALL_SHAREDPATH}/include)
 endif()
 
-target_link_libraries(scream_share PUBLIC ekat pioc)
+if (EAMXX_ENABLE_PYTHON)
+  if (NOT Python_EXECUTABLE)
+    message (FATAL_ERROR "You must set Python_EXECUTABLE to point to a valid python3 interpreter")
+  endif()
+
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import sys; assert sys.version_info >= (3,9), 'Python version must be >= 3.9'"
+    RESULT_VARIABLE python_version_check_result
+    ERROR_VARIABLE python_version_check_error
+  )
+  if (python_version_check_result)
+      message(FATAL_ERROR "Python version check failed: ${python_version_check_error}")
+  endif()
+
+  # Need pybind11
+  execute_process(
+    COMMAND "${Python_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
+    OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE pybind11_ROOT)
+
+  find_package(pybind11 REQUIRED HINTS ${pybind11_ROOT})
+
+  # Add py sources and link pybind11
+  target_sources (scream_share PUBLIC
+    eamxx_pysession.cpp)
+
+  target_link_libraries(scream_share PUBLIC pybind11::embed)
+  target_compile_definitions (scream_share PUBLIC EAMXX_HAS_PYTHON)
+endif()
+
+target_link_libraries(scream_share PUBLIC ekat::AllLibs pioc)
+
 target_compile_options(scream_share PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
 )
 
-# This used to be in `scream_config.h/scream_config.f`, but we did accidentally remove
+# This used to be in `eamxx_config.h/eamxx_config.f`, but we did accidentally remove
 # the includes at least twice. To avoid this from happening again, we add this crucial
 # macro as a compile definition of the scream_share, which is linked to all other
 # scream libraries.
 if (SCREAM_CIME_BUILD)
   target_compile_definitions (scream_share PUBLIC SCREAM_CIME_BUILD)
 endif()
+
+# When dealing with subtle bugs in read/write of unit tests baselines,
+# using ascii baselines can help inspect that the file indeed looks as expected
+option (EAMXX_ASCII_BASELINES "Whether physics units tests should assume ascii (instead of binary) format for baselines" OFF)
+if (EAMXX_ASCII_BASELINES)
+  target_compile_definitions (scream_share PUBLIC EAMXX_ASCII_BASELINES)
+endif()
+
 # We have some issues with RDC and repeated libraries in the link line.
 # It's a known issue, and nvcc_wrapper has a flag for handling this.
 if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
@@ -110,9 +227,10 @@ if (NOT SCREAM_LIB_ONLY)
   # Create test_support lib
   add_library(scream_test_support
     grid/mesh_free_grids_manager.cpp
-    util/scream_test_session.cpp
+    util/eamxx_test_session.cpp
   )
   target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
+  target_include_directories (scream_test_support PUBLIC ${EKAT_SOURCE_DIR}/extern/Catch2/single_include)
 
   add_subdirectory(tests)
 endif()

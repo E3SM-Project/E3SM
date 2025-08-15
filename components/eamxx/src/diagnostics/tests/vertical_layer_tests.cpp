@@ -13,10 +13,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -50,14 +50,10 @@ void run (const std::string& diag_name, const std::string& location)
   
   // Construct the Diagnostic
   ekat::ParameterList params;
-  std::string name = diag_name;
-  if (location=="midpoints") {
-    name += "_mid";
-  } else if (location=="interfaces") {
-    name += "_int";
-  }
-  params.set<std::string>("diag_name", name);
-  auto diag = diag_factory.create(name,comm,params);
+
+  params.set<std::string>("diag_name", diag_name);
+  params.set<std::string>("vert_location",location);
+  auto diag = diag_factory.create("VerticalLayer",comm,params);
   diag->set_grids(gm);
 
   const bool needs_phis = diag_name=="z" or diag_name=="geopotential";
@@ -138,10 +134,10 @@ void run (const std::string& diag_name, const std::string& location)
         // If interface, check value, otherwise perform int->mid averaging and check value
         auto int_val = prev_int_val + delta;
         if (location=="interfaces") {
-          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(int_val,1e-5));
+          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(int_val,Real(1e-5)));
         } else {
           auto mid_val = (int_val + prev_int_val) / 2;
-          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(mid_val,1e-5));
+          REQUIRE_THAT(d_h(icol,ilev), Catch::Matchers::WithinRel(mid_val,Real(1e-5)));
         }
         prev_int_val = int_val;
       }
@@ -180,7 +176,7 @@ TEST_CASE("vertical_layer_test", "vertical_layer_test]"){
     std::string msg = "    -> Testing diag=dz ";
     std::string dots (50-msg.size(),'.');
     root_print (msg + dots + "\n");
-    run<Device, N>("dz", "UNUSED");
+    run<Device, N>("dz", "midpoints");
     root_print (msg + dots + " PASS!\n");
   };
 

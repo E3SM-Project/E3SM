@@ -2,9 +2,9 @@
 
 #include "share/grid/remap/refining_remapper_rma.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_utils.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -38,7 +38,7 @@ public:
       const auto& fap = fh.get_alloc_properties();
       const auto col_alloc_size = fap.get_num_scalars() / fl.dim(COL);
       REQUIRE (m_col_size[i]==fl.clone().strip_dim(COL).size());
-      if (fh.get_parent().lock()) {
+      if (fh.get_parent()) {
         REQUIRE (m_col_stride[i]==col_alloc_size*fap.get_subview_info().dim_extent);
         REQUIRE (m_col_offset[i]==col_alloc_size*fap.get_subview_info().slice_idx);
       } else {
@@ -247,13 +247,13 @@ TEST_CASE ("refining_remapper") {
   {
     auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
     auto src_grid = r->get_src_grid();
-    r->registration_begins();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
     CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
     bad_src.allocate_view();
     bad_tgt.allocate_view();
-    CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // bad data type (must be real)
+    r->register_field(bad_src,bad_tgt);
+    CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
   auto r = std::make_shared<RefiningRemapperRMATester>(tgt_grid,filename);
@@ -271,7 +271,6 @@ TEST_CASE ("refining_remapper") {
   auto s3d_tgt   = create_field("s3d_tgt",LayoutType::Scalar3D,*tgt_grid);
   auto v3d_tgt   = create_field("v3d_tgt",LayoutType::Vector3D,*tgt_grid);
 
-  r->registration_begins();
   r->register_field(s2d_src,s2d_tgt);
   r->register_field(v2d_src,v2d_tgt);
   r->register_field(s3d_src,s3d_tgt);

@@ -1,19 +1,19 @@
 #include "catch2/catch.hpp"
-#include "p3_f90.hpp"
+#include "p3_data.hpp"
 #include "p3_main_wrap.hpp"
 #include "p3_ic_cases.hpp"
 
 namespace {
 
-TEST_CASE("FortranData", "p3") {
-  int val = scream::p3::test_FortranData();
+TEST_CASE("P3Data", "p3") {
+  int val = scream::p3::test_P3Data();
   REQUIRE(val == 0);
 }
 
-TEST_CASE("FortranDataIterator", "p3") {
+TEST_CASE("P3DataIterator", "p3") {
   using scream::p3::ic::Factory;
   const auto d = Factory::create(Factory::mixed);
-  scream::p3::FortranDataIterator fdi(d);
+  scream::p3::P3DataIterator fdi(d);
   REQUIRE(fdi.nfield() == 35);
   const auto& f = fdi.getfield(0);
   REQUIRE(f.dim == 2);
@@ -29,13 +29,8 @@ TEST_CASE("p3_init", "p3") {
   REQUIRE(nerr == 0);
 }
 
-TEST_CASE("p3_ic_f", "p3") {
-  int nerr = scream::p3::test_p3_ic(true);
-  REQUIRE(nerr == 0);
-}
-
 TEST_CASE("p3_ic_c", "p3") {
-  int nerr = scream::p3::test_p3_ic(false);
+  int nerr = scream::p3::test_p3_ic();
   REQUIRE(nerr == 0);
 }
 

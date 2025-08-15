@@ -1,0 +1,5 @@
+
+# Force us to use 1 node to eliminate network noise
+if [ `./xmlquery --value MACH` == frontier ]; then
+    ./xmlchange NTASKS=8
+fi

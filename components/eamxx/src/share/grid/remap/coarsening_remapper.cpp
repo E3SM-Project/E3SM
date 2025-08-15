@@ -5,8 +5,8 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/ekat_pack_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_pack_utils.hpp>
 
 #include <numeric>
 
@@ -27,7 +27,6 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     // Replicate the src grid geo data in the tgt grid. We use this remapper to do
     // the remapping (if needed), and clean it up afterwards.
     const auto& src_geo_data_names = src_grid->get_geometry_data_names();
-    registration_begins();
     for (const auto& name : src_geo_data_names) {
       // Since different remappers may share the same data (if the map file is the same)
       // the coarse grid may already have the geo data.
@@ -35,24 +34,12 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
         continue;
       }
       const auto& src_data = src_grid->get_geometry_data(name);
-      const auto& src_data_fid = src_data.get_header().get_identifier();
-      const auto& layout = src_data_fid.get_layout();
-      if (layout.tags()[0]!=COL) {
-        // Not a field to be coarsened (perhaps a vertical coordinate field).
-        // Simply copy it in the tgt grid, but we still need to assign the new grid name.
-        FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
-        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-        tgt_data.deep_copy(src_data);
-      } else {
-        // This field needs to be remapped
-        auto tgt_data_fid = create_tgt_fid(src_data_fid);
-        auto tgt_data = m_coarse_grid->create_geometry_data(tgt_data_fid);
-        register_field(src_data,tgt_data);
-      }
+      auto tgt_data = register_field_from_src(src_data);
+      m_coarse_grid->set_geometry_data(tgt_data);
     }
     registration_ends();
     if (get_num_fields()>0) {
-      remap(true);
+      remap_fwd();
 
       // The remap phase only alters the fields on device.
       // We need to sync them to host as well
@@ -78,75 +65,107 @@ CoarseningRemapper::
 }
 
 void CoarseningRemapper::
-do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
+registration_ends_impl ()
 {
-  // Assume no mask tracking for this field. Can correct below
-  m_field_idx_to_mask_idx[ifield] = -1;
-
-  if (m_track_mask) {
-    if (src.get_header().has_extra_data("mask_data")) {
-      // First, check that we also have the mask value, to be used if mask_data is too small
-      EKAT_REQUIRE_MSG (src.get_header().has_extra_data("mask_value"),
-          "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
-      const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
-
-      Field tgt_copy = tgt;
-
-      auto& tgt_hdr = tgt_copy.get_header();
-      if (tgt_hdr.has_extra_data("mask_value")) {
-        const auto& tgt_mask_val = tgt_hdr.get_extra_data<Real>("mask_value");
-
-        EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
-            "Error! Target field stores a mask data different from the src field.\n"
-            "  - src field name: " + src.name() + "\n"
-            "  - tgt field name: " + tgt.name() + "\n"
-            "  - src mask value: " << src_mask_val << "\n"
-            "  - tgt mask value: " << tgt_mask_val << "\n");
-      } else {
-        tgt_hdr.set_extra_data("mask_value",src_mask_val);
-      }
-
-      // Then, register the mask field, if not yet registered
-      const auto& src_mask = src.get_header().get_extra_data<Field>("mask_data");
-      const auto& src_mask_fid = src_mask.get_header().get_identifier();
-      // Make sure fields representing masks are not themselves meant to be masked.
-      EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
-          "Error! A mask field cannot be itself masked.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - mask field name: " + src_mask.name() + "\n");
-
-      const auto tgt_mask_fid = create_tgt_fid(src_mask_fid);
-      if (not has_src_field (src_mask_fid)) {
-        Field tgt_mask(tgt_mask_fid);
-        tgt_mask.get_header().get_alloc_properties().request_allocation(src_mask.get_header().get_alloc_properties().get_largest_pack_size());
-        tgt_mask.allocate_view();
-        register_field(src_mask,tgt_mask);
-      }
-
-      // Store position of the mask for this field
-      const int mask_idx = find_field(src_mask_fid,tgt_mask_fid);
-      m_field_idx_to_mask_idx[ifield] = mask_idx;
-
-      // Check that the mask field has the correct layout
-      const auto& f_lt = src.get_header().get_identifier().get_layout();
-      const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
-      using namespace ShortFieldTagsNames;
-      EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
-          "Error! Incompatible field and mask layouts.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - field layout: " + f_lt.to_string() + "\n"
-          "  - mask layout: " + m_lt.to_string() + "\n");
-      EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
-          "Error! Incompatible field and mask layouts.\n"
-          "  - field name: " + src.name() + "\n"
-          "  - field layout: " + f_lt.to_string() + "\n"
-          "  - mask layout: " + m_lt.to_string() + "\n");
-    }
+  if (not m_track_mask) {
+    // Just call base class and be done
+    HorizInterpRemapperBase::registration_ends_impl();
+    return;
   }
-  HorizInterpRemapperBase::do_bind_field(ifield,src,tgt);
+
+  // We store masks (src-tgt) here, and register them AFTER we parse all currently registered fields.
+  // That makes the for loop below easier, since we can take references without worrring that they
+  // would get invalidated. In fact, if you call register_field inside the loop, the src/tgt fields
+  // vectors will grow, which may cause reallocation and references invalidation
+  std::vector<std::pair<Field,Field>> masks;
+
+  auto get_mask_idx = [&](const FieldIdentifier& src_mask_fid) {
+
+    // Masks will be registered AFTER all fields, so the 1st mask will
+    // be right after the last registered "regular" field.
+    int idx = 0;
+    for (const auto& it : masks) {
+      if (it.first.get_header().get_identifier()==src_mask_fid) {
+        return idx;
+      }
+      ++idx;
+    }
+    return -1;
+  };
+
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& src = m_src_fields[i];
+          auto& tgt = m_tgt_fields[i];
+    if (not src.get_header().has_extra_data("mask_data"))
+      continue;
+
+    // First, check that we also have the mask value, to be used if mask_data is too small
+    EKAT_REQUIRE_MSG (src.get_header().has_extra_data("mask_value"),
+        "Error! Field " + src.name() + " stores a mask field but not a mask value.\n");
+
+    const auto& src_mask = src.get_header().get_extra_data<Field>("mask_data");
+    const auto& src_mask_val = src.get_header().get_extra_data<Real>("mask_value");
+
+    // Make sure fields representing masks are not themselves meant to be masked.
+    EKAT_REQUIRE_MSG(not src_mask.get_header().has_extra_data("mask_data"),
+        "Error! A mask field cannot be itself masked.\n"
+        "  - field name: " + src.name() + "\n"
+        "  - mask field name: " + src_mask.name() + "\n");
+
+    // Check that the mask field has the correct layout
+    const auto& f_lt = src.get_header().get_identifier().get_layout();
+    const auto& m_lt = src_mask.get_header().get_identifier().get_layout();
+    using namespace ShortFieldTagsNames;
+    EKAT_REQUIRE_MSG(f_lt.has_tag(COL) == m_lt.has_tag(COL),
+        "Error! Incompatible field and mask layouts.\n"
+        "  - field name: " + src.name() + "\n"
+        "  - field layout: " + f_lt.to_string() + "\n"
+        "  - mask layout: " + m_lt.to_string() + "\n");
+    EKAT_REQUIRE_MSG(f_lt.has_tag(LEV) == m_lt.has_tag(LEV),
+        "Error! Incompatible field and mask layouts.\n"
+        "  - field name: " + src.name() + "\n"
+        "  - field layout: " + f_lt.to_string() + "\n"
+        "  - mask layout: " + m_lt.to_string() + "\n");
+
+    // If not there, set mask value in the tgt field too
+    if (tgt.get_header().has_extra_data("mask_value")) {
+      const auto& tgt_mask_val = tgt.get_header().get_extra_data<Real>("mask_value");
+
+      EKAT_REQUIRE_MSG (tgt_mask_val==src_mask_val,
+          "Error! Target field stores a mask data different from the src field.\n"
+          "  - src field name: " + src.name() + "\n"
+          "  - tgt field name: " + tgt.name() + "\n"
+          "  - src mask value: " << src_mask_val << "\n"
+          "  - tgt mask value: " << tgt_mask_val << "\n");
+    } else {
+      tgt.get_header().set_extra_data("mask_value",src_mask_val);
+    }
+
+    // If it's the first time we find this mask, store it, so we can register later
+    const auto& src_mask_fid = src_mask.get_header().get_identifier();
+    int mask_idx = get_mask_idx(src_mask_fid);
+    if (mask_idx==-1) {
+      Field tgt_mask(create_tgt_fid(src_mask_fid));
+      auto src_pack_size = src_mask.get_header().get_alloc_properties().get_largest_pack_size();
+      tgt_mask.get_header().get_alloc_properties().request_allocation(src_pack_size);
+      tgt_mask.allocate_view();
+
+      masks.push_back(std::make_pair(src_mask,tgt_mask));
+      mask_idx = masks.size()-1;
+    }
+    tgt.get_header().set_extra_data("mask_data",masks[mask_idx].second);
+  }
+
+  // Add all masks to the fields to remap
+  for (const auto& it : masks) {
+    register_field(it.first,it.second);
+  }
+
+  // Now that ALL fields (including masks) are registered, we can setup internal data
+  HorizInterpRemapperBase::registration_ends_impl();
 }
 
-void CoarseningRemapper::do_remap_fwd ()
+void CoarseningRemapper::remap_fwd_impl ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
@@ -165,17 +184,22 @@ void CoarseningRemapper::do_remap_fwd ()
     return (ap.get_last_extent() % SCREAM_PACK_SIZE) == 0;
   };
 
-  // Loop over each field
+  // First, perform the local mat-vec. Recall that in these y=Ax products,
+  // x is the src field, and y is the overlapped tgt field.
   for (int i=0; i<m_num_fields; ++i) {
-    // First, perform the local mat-vec. Recall that in these y=Ax products,
-    // x is the src field, and y is the overlapped tgt field.
+    if (m_needs_remap[i]==0) {
+      // No need to do a mat-vec here. Just deep copy and move on
+      m_tgt_fields[i].deep_copy(m_src_fields[i]);
+      continue;
+    }
+
     const auto& f_src = m_src_fields[i];
     const auto& f_ov  = m_ov_fields[i];
 
-    const int mask_idx = m_field_idx_to_mask_idx[i];
-    if (mask_idx>0) {
+    const bool masked = m_track_mask and f_src.get_header().has_extra_data("mask_data");
+    if (masked) {
       // Pass the mask to the local_mat_vec routine
-      const auto& mask = m_src_fields[mask_idx];
+      const auto& mask = f_src.get_header().get_extra_data<Field>("mask_data");
 
       // If possible, dispatch kernel with SCREAM_PACK_SIZE
       if (can_pack_field(f_src) and can_pack_field(f_ov) and can_pack_field(mask)) {
@@ -211,10 +235,9 @@ void CoarseningRemapper::do_remap_fwd ()
   if (m_track_mask) {
     for (int i=0; i<m_num_fields; ++i) {
       const auto& f_tgt = m_tgt_fields[i];
-      const int mask_idx = m_field_idx_to_mask_idx[i];
-      if (mask_idx>0) {
+      if (f_tgt.get_header().has_extra_data("mask_data")) {
         // Then this field did use a mask
-        const auto& mask = m_tgt_fields[mask_idx];
+        const auto& mask = f_tgt.get_header().get_extra_data<Field>("mask_data");
         if (can_pack_field(f_tgt) and can_pack_field(mask)) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
@@ -231,7 +254,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
@@ -278,7 +301,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
         mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = PackInfo::num_packs(layout.dim(1));
-      auto policy = ESU::get_default_team_policy(ncols,dim1);
+      auto policy = TPF::get_default_team_policy(ncols,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
@@ -320,7 +343,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       }
       const int dim1 = layout.dim(1);
       const int dim2 = PackInfo::num_packs(layout.dim(2));
-      auto policy = ESU::get_default_team_policy(ncols,dim1*dim2);
+      auto policy = TPF::get_default_team_policy(ncols,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
@@ -369,7 +392,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       const int dim1 = layout.dim(1);
       const int dim2 = layout.dim(2);
       const int dim3 = PackInfo::num_packs(layout.dim(3));
-      auto policy = ESU::get_default_team_policy(ncols,dim1*dim2*dim3);
+      auto policy = TPF::get_default_team_policy(ncols,dim1*dim2*dim3);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
@@ -413,7 +436,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
   using Pack        = ekat::Pack<Real,PackSize>;
   using PackInfo    = ekat::PackInfo<PackSize>;
 
@@ -461,7 +484,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
         mask_2d = mask.get_view<const Pack**>();
       }
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
-      auto policy = ESU::get_default_team_policy(nrows,dim1);
+      auto policy = TPF::get_default_team_policy(nrows,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -497,7 +520,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       }
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
-      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);
+      auto policy = TPF::get_default_team_policy(nrows,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -536,7 +559,7 @@ local_mat_vec (const Field& x, const Field& y, const Field& mask) const
       const int dim1 = src_layout.dim(1);
       const int dim2 = src_layout.dim(2);
       const int dim3 = PackInfo::num_packs(src_layout.dim(3));
-      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2*dim3);
+      auto policy = TPF::get_default_team_policy(nrows,dim1*dim2*dim3);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto row = team.league_rank();
@@ -569,7 +592,7 @@ void CoarseningRemapper::pack_and_send ()
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   const int num_send_gids = m_ov_coarse_grid->get_num_local_dofs();
   const auto pid_lid_start = m_send_pid_lids_start;
@@ -577,6 +600,9 @@ void CoarseningRemapper::pack_and_send ()
   const auto buf = m_send_buffer;
 
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      continue; // Not a field to coarsen
+
     const auto& f  = m_ov_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
@@ -602,7 +628,7 @@ void CoarseningRemapper::pack_and_send ()
       {
         auto v = f.get_view<const Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_send_gids,dim1);
+        auto policy = TPF::get_default_team_policy(num_send_gids,dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -622,7 +648,7 @@ void CoarseningRemapper::pack_and_send ()
         auto v = f.get_view<const Real***>();
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
-        auto policy = ESU::get_default_team_policy(num_send_gids,dim1*dim2);
+        auto policy = TPF::get_default_team_policy(num_send_gids,dim1*dim2);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -645,7 +671,7 @@ void CoarseningRemapper::pack_and_send ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
-        auto policy = ESU::get_default_team_policy(num_send_gids,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_send_gids,dim1*dim2*dim3);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int i = team.league_rank();
@@ -703,7 +729,7 @@ void CoarseningRemapper::recv_and_unpack ()
 
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
-  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF         = ekat::TeamPolicyFactory<DefaultDevice::execution_space>;
 
   const int num_tgt_dofs = m_tgt_grid->get_num_local_dofs();
 
@@ -712,6 +738,9 @@ void CoarseningRemapper::recv_and_unpack ()
   const auto recv_lids_end = m_recv_lids_end;
   const auto recv_lids_pidpos = m_recv_lids_pidpos;
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    if (m_needs_remap[ifield]==0)
+      continue; // Not a field to coarsen
+
           auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
@@ -740,7 +769,7 @@ void CoarseningRemapper::recv_and_unpack ()
       {
         auto v = f.get_view<Real**>();
         const int dim1 = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim1);
+        auto policy = TPF::get_default_team_policy(num_tgt_dofs,dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -762,7 +791,7 @@ void CoarseningRemapper::recv_and_unpack ()
         auto v = f.get_view<Real***>();
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim2*dim1);
+        auto policy = TPF::get_default_team_policy(num_tgt_dofs,dim2*dim1);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -789,7 +818,7 @@ void CoarseningRemapper::recv_and_unpack ()
         const int dim1 = fl.dim(1);
         const int dim2 = fl.dim(2);
         const int dim3 = fl.dim(3);
-        auto policy = ESU::get_default_team_policy(num_tgt_dofs,dim1*dim2*dim3);
+        auto policy = TPF::get_default_team_policy(num_tgt_dofs,dim1*dim2*dim3);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
           const int lid = team.league_rank();
@@ -926,6 +955,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   std::vector<int> field_col_size (m_num_fields);
   int sum_fields_col_sizes = 0;
   for (int i=0; i<m_num_fields; ++i) {
+    if (m_needs_remap[i]==0)
+      continue;
+
     const auto& f  = m_src_fields[i];
     const auto& fl = f.get_header().get_identifier().get_layout();
     field_col_size[i] = fl.clone().strip_dim(COL).size();
@@ -972,6 +1004,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
     send_pid_offsets[pid] = pos;
     for (int i=0; i<m_num_fields; ++i) {
+      if (m_needs_remap[i]==0)
+        continue;
+
       send_f_pid_offsets_h(i,pid) = pos;
       pos += field_col_size[i]*pid2lids_send[pid].size();
     }
@@ -1070,6 +1105,9 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     recv_pid_offsets[pid] = pos;
     const int num_recv_gids = recv_pid_start[pid+1] - recv_pid_start[pid];
     for (int i=0; i<m_num_fields; ++i) {
+      if (m_needs_remap[i]==0)
+        continue;
+
       recv_f_pid_offsets_h(i,pid) = pos;
       pos += field_col_size[i]*num_recv_gids;
     }

@@ -2,13 +2,13 @@
 #define SCREAM_FIELD_TRACKING_HPP
 
 #include "share/field/field_group_info.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_time_stamp.hpp"
-#include "share/util/scream_family_tracking.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_family_tracking.hpp"
 
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include <ekat_string_utils.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <memory>   // For std::weak_ptr
 #include <string>
@@ -45,7 +45,7 @@ public:
   const atm_proc_set_type& get_customers () const { return m_customers; }
 
   // List of field groups that this field belongs to
-  const ekat::WeakPtrSet<const FieldGroupInfo>& get_groups_info () const { return m_groups; }
+  const std::set<ci_string>& get_groups_names () const { return m_groups; }
 
   // ----- Setters ----- //
 
@@ -53,8 +53,8 @@ public:
   void add_provider (const std::weak_ptr<AtmosphereProcess>& provider);
   void add_customer (const std::weak_ptr<AtmosphereProcess>& customer);
 
-  // Add the field to a given group
-  void add_to_group (const std::shared_ptr<const FieldGroupInfo>& group);
+  // Add group name to the list of groups we belong to
+  void add_group (const std::string& group_name);
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
   // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.
@@ -89,20 +89,9 @@ protected:
   // get all tracers, which need to be advected. However, dynamics has no idea (a priori)
   // of what are the tracers names or how many there are, and neither should it care.
   // FieldGroup's allow atm procs to request all fields that have been marked as 'tracers'.
-  // Here, we keep track of all the groups that this field belongs to.
-  ekat::WeakPtrSet<const FieldGroupInfo>    m_groups;
+  // Here, we keep track of the names of all the groups that this field belongs to.
+  std::set<ci_string> m_groups;
 };
-
-// Use this free function to exploit features of enable_shared_from_this,
-// as well as features from FamilyTracking.
-template<typename... Args>
-inline std::shared_ptr<FieldTracking>
-create_tracking(const Args&... args) {
-  auto ptr = std::make_shared<FieldTracking>(args...);
-  ptr->setSelfPointer(ptr);
-  return ptr;
-}
-
 
 } // namespace scream
 

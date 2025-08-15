@@ -134,7 +134,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api.36.1.0_14pft_c241003.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_api.40.0.0_14pft_c250512.nc</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
@@ -235,9 +235,22 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 <!-- r05 resolution -->
 
 <finidat hgrid="r05" maxpft="17" mask="SOwISC12to30E3r3" use_cn=".true." ic_ymd="18500101" more_vertlayers=".false."
-sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.ne30pg2_r05_SOwISC12to30E3r3.1850-01-01-00000.c20240923.nc
+sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.ne30pg2_r05_SOwISC12to30E3r3.1850-01-01-00000.c20250524.nc
 </finidat>
 
+<!-- r025 resolution -->
+
+<finidat hgrid="r025" maxpft="17" mask="RRSwISC6to18E3r5" use_cn=".true." ic_ymd="18500101" more_vertlayers=".false."
+sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata_map/elmi.CNPRDCTCBCTOP.r025_RRSwISC6to18E3r5.1850.c20250325.nc
+</finidat>
+
+<!-- CAx32v1.pg2 -->
+<fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_simyr2010_c220621.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr1850_c220712.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CAx32v1.pg2" sim_year="2015">
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr2015_c220914.nc</fsurdat>
 
 <!-- ne0np4_northamericax4v1.pg2 -->
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="1850" use_crop=".false." >
@@ -388,6 +401,8 @@ lnd/clm2/surfdata_map/surfdata_1x1_smallvilleIA_mp50_simyr2000_c230905.nc</fsurd
 lnd/clm2/surfdata_map/surfdata_5x5_amazon_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_brazil"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr2000_c130927.nc</fsurdat>
+<fsurdat hgrid="1x1_icycape"    sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_1x1pt_IcyCape_polygons_c240909.nc</fsurdat>
 <fsurdat hgrid="1x1_tropicAtl" sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr2000_c130927.nc</fsurdat>
 
@@ -426,6 +441,8 @@ lnd/clm2/surfdata_map/surfdata_antarcticax4v1pg2_simyr2010_c210131.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr1850_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_brazil"    sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr1850_c140610.nc</fsurdat>
+<fsurdat hgrid="1x1_icycape"    sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_1x1pt_IcyCape_polygons_c240909.nc</fsurdat>
 
 
 <fsurdat hgrid="ne30np4"      sim_year="1850" use_crop=".false." >
@@ -648,8 +665,7 @@ this mask will have smb calculated over the entire global land surface
 <!--  ***********  Resolution independent:   ***********  -->
 <fsnowoptics >lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 <fsnowaging  >lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc</fsnowaging>
-<use_snicar_ad>.true.</use_snicar_ad>
-<snow_shape>sphere</snow_shape>
+<snow_shape>hexagonal_plate</snow_shape>
 <snicar_atm_type>default</snicar_atm_type>
 <use_dust_snow_internal_mixing>.false.</use_dust_snow_internal_mixing>
 
@@ -1747,7 +1763,7 @@ this mask will have smb calculated over the entire global land surface
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.5x0.5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_0.5x0.5_nomask_aave_da_c190417.nc</map>
 <map frm_hgrid="0.01x0.01"    frm_lmask="nomask"  to_hgrid="0.5x0.5"   to_lmask="nomask"
->lnd/clm2/mappingdata/maps/0.5x0.5/map_0.01x0.01_nomask_to_0.5x0.5_nomask_aave_da_c240501.nc</map>
+>lnd/clm2/mappingdata/maps/0.5x0.5/map_0.01x0.01_nomask_to_0.5x0.5_nomask_aave_da_c250513.nc</map>
 
 <!-- mapping files for 0.5x0.5 END -->
 
@@ -2135,7 +2151,7 @@ this mask will have smb calculated over the entire global land surface
 <map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="r025"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.25x0.25/map_0.5x0.5_GSDTG2000_to_0.25x0.25_nomask_aave_da_c240123.nc</map>
 <map frm_hgrid="0.01x0.01"    frm_lmask="nomask"  to_hgrid="r025"   to_lmask="nomask"
->lnd/clm2/mappingdata/maps/0.25x0.25/map_0.01x0.01_nomask_to_0.25x0.25_nomask_aave_da_c240501.nc</map>
+>lnd/clm2/mappingdata/maps/0.25x0.25/map_0.01x0.01_nomask_to_0.25x0.25_nomask_aave_da_c250513.nc</map>
 <map frm_hgrid="0.1x0.1"    frm_lmask="nomask"  to_hgrid="r025"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.25x0.25/map_0.1x0.1_nomask_to_0.25x0.25_nomask_aave_da_c240308.nc</map>
 
@@ -2205,40 +2221,54 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 <!-- Defaults for FATES interface -->
 <!-- =========================================  -->
-<fates_spitfire_mode           use_fates=".true.">0</fates_spitfire_mode>
-<fates_harvest_mode            use_fates=".true.">no_harvest</fates_harvest_mode>
-<fates_history_dimlevel        use_fates=".true.">2,2</fates_history_dimlevel>
-<fates_inventory_ctrl_filename use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
-<fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
-<fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
-<use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
-<use_fates_tree_damage         use_fates=".true.">.false.</use_fates_tree_damage>
-<use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
-<use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
-<use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
-<use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
-<use_fates_lupft               use_fates=".true.">.false.</use_fates_lupft>
-<use_fates_potentialveg        use_fates=".true.">.false.</use_fates_potentialveg>
-<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_mass"  >.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true." use_fates_potentialveg=".true.">.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true."                                  >.false.</use_fates_luh>
-<use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
-<use_fates_nocomp              use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
-<use_fates_nocomp              use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_nocomp>
-<use_fates_nocomp              use_fates=".true."                      >.false.</use_fates_nocomp>
-<use_fates_fixed_biogeog       use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
-<use_fates_fixed_biogeog       use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_fixed_biogeog>
-<use_fates_fixed_biogeog       use_fates=".true."                      >.false.</use_fates_fixed_biogeog>
-<use_vertsoilc                 bgc_mode="fates"  >.true.</use_vertsoilc>
-<use_century_decomp            bgc_mode="fates"  >.true.</use_century_decomp>
-<use_lch4                      bgc_mode="fates"  >.false.</use_lch4>
+<fates_spitfire_mode            use_fates=".true.">0</fates_spitfire_mode>
+<fates_harvest_mode             use_fates=".true.">no_harvest</fates_harvest_mode>
+<fates_history_dimlevel         use_fates=".true.">2,2</fates_history_dimlevel>
+<fates_inventory_ctrl_filename  use_fates=".true."> "/dev/null" </fates_inventory_ctrl_filename>
+<fates_parteh_mode              use_fates=".true.">1</fates_parteh_mode>
+<fates_seeddisp_cadence         use_fates=".true.">0</fates_seeddisp_cadence>
+<use_fates_planthydro           use_fates=".true.">.false.</use_fates_planthydro>
+<use_fates_tree_damage          use_fates=".true.">.false.</use_fates_tree_damage>
+<use_fates_ed_st3               use_fates=".true.">.false.</use_fates_ed_st3>
+<use_fates_ed_prescribed_phys   use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
+<use_fates_cohort_age_tracking  use_fates=".true.">.false.</use_fates_cohort_age_tracking>
+<use_fates_sp                   use_fates=".true.">.false.</use_fates_sp>
+<use_fates_lupft                use_fates=".true.">.false.</use_fates_lupft>
+<use_fates_potentialveg         use_fates=".true.">.false.</use_fates_potentialveg>
+<use_fates_daylength_factor     use_fates=".true.">.true.</use_fates_daylength_factor>
+<fates_photosynth_acclimation   use_fates=".true.">nonacclimating</fates_photosynth_acclimation>
+<fates_stomatal_model           use_fates=".true.">ballberry1987</fates_stomatal_model>
+<fates_stomatal_assimilation    use_fates=".true.">net</fates_stomatal_assimilation>
+<fates_leafresp_model           use_fates=".true.">ryan1991</fates_leafresp_model>
+<fates_cstarvation_model        use_fates=".true.">linear</fates_cstarvation_model>
+<fates_regeneration_model       use_fates=".true.">default</fates_regeneration_model>
+<fates_hydro_solver             use_fates=".true.">1D_Taylor</fates_hydro_solver>
+<fates_radiation_model          use_fates=".true.">norman</fates_radiation_model>
+<fates_electron_transport_model use_fates=".true.">FvCB1980</fates_electron_transport_model>
+<use_fates_luh                  use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>
+<use_fates_luh                  use_fates=".true." fates_harvest_mode="luhdata_mass"  >.true.</use_fates_luh>
+<use_fates_luh                  use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_luh>
+<use_fates_luh                  use_fates=".true." use_fates_potentialveg=".true.">.true.</use_fates_luh>
+<use_fates_luh                  use_fates=".true."                                  >.false.</use_fates_luh>
+<use_fates_inventory_init       use_fates=".true.">.false.</use_fates_inventory_init>
+<use_fates_nocomp               use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
+<use_fates_nocomp               use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_nocomp>
+<use_fates_nocomp               use_fates=".true."                      >.false.</use_fates_nocomp>
+<use_fates_fixed_biogeog        use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
+<use_fates_fixed_biogeog        use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_fixed_biogeog>
+<use_fates_fixed_biogeog        use_fates=".true."                      >.false.</use_fates_fixed_biogeog>
+<use_vertsoilc                  bgc_mode="fates"  >.true.</use_vertsoilc>
+<use_century_decomp             bgc_mode="fates"  >.true.</use_century_decomp>
+<use_lch4                       bgc_mode="fates"  >.false.</use_lch4>
 
 <!-- flow of agricultural nitrogen (fan) model -->
 <use_fan use_cn=".true.">.false.</use_fan>
 <use_fan use_cn=".false.">.false.</use_fan>
 <use_fan use_fates=".true." >.false.</use_fan>
 <use_fan fan_mode='disable'>.false.</use_fan>
+
+<!-- NGEE Arctic Options -->
+<use_polygonal_tundra>.false.</use_polygonal_tundra>;
+<use_arctic_init>.false.</use_arctic_init>;
 
 </namelist_defaults>

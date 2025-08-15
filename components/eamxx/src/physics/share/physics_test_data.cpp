@@ -1,8 +1,6 @@
 #include "physics_test_data.hpp"
 
-#include "ekat/ekat_assert.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
+#include <ekat_assert.hpp>
 
 namespace scream {
 
@@ -25,5 +23,23 @@ PhysicsTestData& PhysicsTestData::assignment_impl(const PhysicsTestData& rhs)
 
   return *this;
 }
+
+void PhysicsTestData::read(std::ifstream& ifile)
+{
+  EKAT_REQUIRE_MSG (ifile.good(), "Cannot read from input file. Did you forget to open it?\n");
+  m_reals.read(ifile);
+  m_ints.read(ifile);
+  m_bools.read(ifile);
+}
+
+void PhysicsTestData::write(std::ofstream& ofile) const
+{
+  EKAT_REQUIRE_MSG (ofile.good(), "Cannot write to input file. Did you forget to open it?\n");
+
+  m_reals.write(ofile);
+  m_ints.write(ofile);
+  m_bools.write(ofile);
+}
+
 
 } // namespace scream

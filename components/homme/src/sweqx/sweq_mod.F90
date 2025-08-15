@@ -33,7 +33,7 @@ contains
     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
 #endif
     !-----------------
-    use global_norms_mod, only : test_global_integral, print_cfl
+    use global_norms_mod, only : test_global_integral, print_cfl, dss_hvtensor
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
@@ -108,7 +108,6 @@ contains
 
     real (kind=real_kind)       :: dt              ! "timestep dependent" timestep
 !   variables used to calculate CFL
-    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
     real (kind=real_kind) :: dt_dyn          ! dynamics timestep
     real (kind=real_kind) :: dt_tracers      ! tracer timestep
 
@@ -192,9 +191,8 @@ contains
     hybrid = hybrid_create(par,ithr,hthreads)
     simday=0
        call test_global_integral(elem,hybrid,nets,nete)
-
-       dtnu = 2.0d0*tstep*max(nu,nu_s)/hypervis_subcycle
-       call print_cfl(elem,hybrid,nets,nete,dtnu)
+       call dss_hvtensor(elem,hybrid,nets,nete)
+       call print_cfl(elem,hybrid,nets,nete)
 
        if (.not. MeshUseMeshFile) then
           ! orientation code assumes only one corner element neighbor
@@ -847,7 +845,7 @@ contains
 
 #endif
     !-----------------
-    use global_norms_mod, only : test_global_integral, print_cfl
+    use global_norms_mod, only : test_global_integral, print_cfl, dss_hvtensor
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
@@ -892,7 +890,6 @@ contains
 
     real (kind=real_kind)       :: dt,dt_rk        ! "timestep dependent" timestep
 !   variables used to calculate CFL
-    real (kind=real_kind) :: dtnu            ! timestep*viscosity parameter
     real (kind=real_kind) :: dt_dyn          ! dynamics timestep
     real (kind=real_kind) :: dt_tracers      ! tracer timestep
 
@@ -932,8 +929,8 @@ contains
     hybrid = hybrid_create(par,ithr,hthreads)
 
        call test_global_integral(elem,hybrid,nets,nete,mindx)
-       dtnu = (tstep/rk_stage_user)*max(nu,nu_s)/hypervis_subcycle
-       call print_cfl(elem,hybrid,nets,nete,dtnu)
+       call dss_hvtensor(elem,hybrid,nets,nete)
+       call print_cfl(elem,hybrid,nets,nete)
 
     ! Find time-step to gravity wave speed
     ! 2012: broken because mindx=0.  also, should be updated to use true eigenvalue,

@@ -6,7 +6,7 @@
 
 #SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 
-#modules, note no cuda, otherwise CUDA_BUILD=true
+#modules, note no cuda
 #module load cmake/3.6.1  gcc/6.4.0 netlib-lapack/3.6.1
 #module load netcdf/4.6.1 netcdf-fortran/4.4.4
 #module load hdf5/1.10.3

@@ -3,8 +3,7 @@
 #include "share/grid/point_grid.hpp"
 #include "share/io/scorpio_input.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-#include <ekat/ekat_pack_utils.hpp>
+#include <ekat_pack_utils.hpp>
 
 #include <numeric>
 
@@ -25,7 +24,7 @@ RefiningRemapperRMA::
   clean_up();
 }
 
-void RefiningRemapperRMA::do_remap_fwd ()
+void RefiningRemapperRMA::remap_fwd_impl ()
 {
   // Start RMA epoch on each field
   for (int i=0; i<m_num_fields; ++i) {

@@ -21,14 +21,14 @@ def generate_empty_yaml(filename,overwrite):
     4
     >>> data["filename_prefix"]
     'UNSET'
-    >>> data["Averaging Type"]
+    >>> data["averaging_type"]
     'INVALID'
-    >>> len(data["Fields"])
+    >>> len(data["fields"])
     0
     >>> oc = data["output_control"]
     >>> len(oc)
     2
-    >>> oc["Frequency"]
+    >>> oc["frequency"]
     -1
     >>> oc["frequency_units"]
     'never'
@@ -45,11 +45,11 @@ def generate_empty_yaml(filename,overwrite):
 
     data = {}
     data["filename_prefix"] = "UNSET"
-    data["Averaging Type"] = "INVALID"
-    data["Fields"] = {}
+    data["averaging_type"] = "INVALID"
+    data["fields"] = {}
     data["output_control"] = {}
     data["output_control"]["skip_t0_output"] = "false"
-    data["output_control"]["Frequency"] = -1
+    data["output_control"]["frequency"] = -1
     data["output_control"]["frequency_units"] = "never"
 
     with open(file,'w') as fd:
@@ -71,22 +71,22 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
     >>> data['filename_prefix']
     'foo'
-    >>> data['Averaging Type']
+    >>> data['averaging_type']
     'max'
-    >>> data['output_control']['Frequency']
+    >>> data['output_control']['frequency']
     10
     >>> data['output_control']['frequency_units']
     'ndays'
     >>> # Set fields options, and then check
     >>> edit_output_stream_impl(fname,fields=['a','b'],grid='my_grid',io_grid='other_grid')
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
-    >>> f = data['Fields']['my_grid']['Field Names']
+    >>> f = data['fields']['my_grid']['field_names']
     >>> f.sort()
     >>> f
     ['a', 'b']
-    >>> data['Fields']['my_grid']['IO Grid Name']
+    >>> data['fields']['my_grid']['io_grid_name']
     'other_grid'
-    >>> # No remap if online remap (IO Grid Name) is set
+    >>> # No remap if online remap (io_grid_name) is set
     >>> edit_output_stream_impl(fname,horiz_remap_file='blah')
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot use online remap and horiz/vert remap at the same time.
@@ -96,10 +96,10 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     >>> # Remove io grid and fields
     >>> edit_output_stream_impl(fname,reset=['fields','io-grid'])
     Traceback (most recent call last):
-    SystemExit: ERROR: Fields reset requested, but no grid name provided. Re-run with --grid GRID_NAME
+    SystemExit: ERROR: fields reset requested, but no grid name provided. Re-run with --grid GRID_NAME
     >>> edit_output_stream_impl(fname,reset=['fields','io-grid'],grid='my_grid')
     >>> data = yaml.load(open(fname,'r'),Loader=yaml.SafeLoader)
-    >>> 'my_grid' in data['Fields'].keys()
+    >>> 'my_grid' in data['fields'].keys()
     False
     >>> # Set remap options, and then check
     >>> edit_output_stream_impl(fname,horiz_remap_file='blah1',vertical_remap_file='blah2')
@@ -126,13 +126,13 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
     if reset is not None:
         for s in reset:
             if s=="avg-type":
-                data["Averaging Type"] = "INVALID"
+                data["averaging_type"] = "INVALID"
             elif s=="skip_t0_output":
                 data["skip_t0_output"] = "false"
             elif s=="preifx":
                 data["filename_prefix"] = "UNSET"
             elif s=="freq":
-                data["output_control"]["Frequency"] = -1
+                data["output_control"]["frequency"] = -1
             elif s=="freq_units":
                 data["output_control"]["frequency_units"] = "never"
             elif s=="horiz_remap_file":
@@ -141,29 +141,29 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 del data["vert_remap_file"]
             elif s=="fields":
                 expect (grid is not None,
-                        "Fields reset requested, but no grid name provided. Re-run with --grid GRID_NAME")
-                if grid in data["Fields"].keys():
-                    data["Fields"][grid]["Field Names"] = []
+                        "fields reset requested, but no grid name provided. Re-run with --grid GRID_NAME")
+                if grid in data["fields"].keys():
+                    data["fields"][grid]["field_names"] = []
 
                     # Remove this grid if there are no other options set
-                    if len(data["Fields"][grid])==1:
-                        del data["Fields"][grid]
+                    if len(data["fields"][grid])==1:
+                        del data["fields"][grid]
             elif s=="io-grid":
                 expect (grid is not None,
                         "IO grid reset requested, but no grid name provided. Re-run with --grid GRID_NAME")
-                if grid in data["Fields"].keys():
-                    del data["Fields"][grid]["IO Grid Name"]
+                if grid in data["fields"].keys():
+                    del data["fields"][grid]["io_grid_name"]
 
                     # Remove this grid if there's not other options set other than
                     # fields names, and field names is an empty list
-                    if len(data["Fields"][grid])==1 and len(data["Fields"][grid]["Field Names"])==0:
-                        del data["Fields"][grid]
+                    if len(data["fields"][grid])==1 and len(data["fields"][grid]["field_names"])==0:
+                        del data["fields"][grid]
 
     if prefix is not None:
         data["filename_prefix"] = prefix
 
     if avg_type is not None:
-        data["Averaging Type"] = avg_type
+        data["averaging_type"] = avg_type
 
     if skip_t0_output is not None:
         data["skip_t0_output"] = skip_t0_output
@@ -173,7 +173,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 f"Invalid value '{freq}' for --freq. Valid options are\n"
                  " - an integer\n"
                  " - HIST_N\n")
-        data["output_control"]["Frequency"] = int(freq) if freq.lstrip('-+').isnumeric() else f"${{{freq.upper()}}}"
+        data["output_control"]["frequency"] = int(freq) if freq.lstrip('-+').isnumeric() else f"${{{freq.upper()}}}"
 
     if freq_units is not None:
         explicit  = ['nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears']
@@ -181,7 +181,7 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
                 f"Invalid value '{freq_units}' for --freq-units. Valid options are (case insensitive)\n"
                  " - explicit values: 'nsteps','nsecs','nmins','nhours','ndays','nmonths','nyears'\n"
                  " - CIME variables : 'HIST_OPTION'\n")
-                
+
         data["output_control"]["frequency_units"] = freq_units if freq_units in explicit else f"${{{freq_units.upper()}}}"
 
     if horiz_remap_file is not None:
@@ -192,28 +192,28 @@ def edit_output_stream_impl(filename,prefix=None,generate=False,overwrite=False,
 
     if len(fields)>0 or io_grid is not None:
         expect (grid is not None,
-                "Fields list specified, but no grid name provided. Re-run with --grid GRID_NAME")
+                "fields list specified, but no grid name provided. Re-run with --grid GRID_NAME")
 
-        section = data["Fields"].setdefault(grid,{})
-        if "Field Names" not in section.keys():
-            section["Field Names"] = []
+        section = data["fields"].setdefault(grid,{})
+        if "field_names" not in section.keys():
+            section["field_names"] = []
 
-        fnames = section["Field Names"]
+        fnames = section["field_names"]
         fnames += fields
         fnames = list(set(fnames))
-        section["Field Names"] = fnames
+        section["field_names"] = fnames
 
         if io_grid is not None:
-            section["IO Grid Name"] = io_grid
+            section["io_grid_name"] = io_grid
             # If not already present, add an empty list of field names
-            section.setdefault("Field Names",[])
-        
-        data["Fields"][grid] = section
+            section.setdefault("field_names",[])
 
-    # We cannot do online remap (typically dyn->physGLL) if horiz or vert remap is used
+        data["fields"][grid] = section
+
+    # We cannot do online remap (typically dyn->physgll) if horiz or vert remap is used
     has_online_remap = False
-    for k,v in data["Fields"].items():
-        has_online_remap = has_online_remap or "IO Grid Name" in v.keys();
+    for k,v in data["fields"].items():
+        has_online_remap = has_online_remap or "io_grid_name" in v.keys();
     has_vert_remap   = "vertical_remap_file" in data.keys()
     has_horiz_remap  = "horiz_remap_file" in data.keys()
     expect (not has_online_remap or (not has_vert_remap and not has_horiz_remap),

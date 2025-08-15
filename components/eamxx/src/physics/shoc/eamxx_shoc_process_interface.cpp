@@ -1,10 +1,13 @@
-#include "ekat/ekat_assert.hpp"
 #include "physics/shoc/eamxx_shoc_process_interface.hpp"
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
-#include "scream_config.h" // for SCREAM_CIME_BUILD
+#include "eamxx_config.h" // for SCREAM_CIME_BUILD
+
+#include <ekat_assert.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_reduction_utils.hpp>
 
 namespace scream
 {
@@ -23,7 +26,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
@@ -61,7 +64,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   add_field<Updated>("surf_evap",       scalar2d    , kg/(m2*s), grid_name);
   add_field<Updated> ("T_mid",          scalar3d_mid, K,         grid_name, ps);
-  add_field<Updated> ("qv",             scalar3d_mid, kg/kg,     grid_name, "tracers", ps);
+  add_tracer<Updated>("qv", m_grid, kg/kg, ps);
 
   // If TMS is a process, add surface drag coefficient to required fields
   if (m_params.get<bool>("apply_tms", false)) {
@@ -75,12 +78,12 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",           scalar3d_mid, m2/s2,   grid_name, "tracers", ps);
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
   add_field<Updated>("sgs_buoy_flux", scalar3d_mid, K*(m/s), grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("qc",            scalar3d_mid, kg/kg,   grid_name, "tracers", ps);
   add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
+  add_tracer<Updated>("tke", m_grid, m2/s2, ps);
+  add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
 
   // Output variables
   add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
@@ -98,6 +101,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
     add_field<Computed>("brunt", scalar3d_mid, pow(s,-1), grid_name, ps);
     add_field<Computed>("shoc_mix", scalar3d_mid, m, grid_name, ps);
     add_field<Computed>("isotropy", scalar3d_mid, s, grid_name, ps);
+    add_field<Computed>("shoc_cond", scalar3d_mid, kg/kg/s, grid_name, ps);
+    add_field<Computed>("shoc_evap", scalar3d_mid, kg/kg/s, grid_name, ps);
 
     // Diagnostic output - interface grid
     add_field<Computed>("wthl_sec", scalar3d_int, K*(m/s), grid_name, ps);
@@ -111,7 +116,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   } // Extra SHOC output diagnostics
 
   // Tracer group
-  add_group<Updated>("tracers", grid_name, ps, Bundling::Required);
+  add_group<Updated>("turbulence_advected_tracers", grid_name, ps, MonolithicAlloc::Required);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -131,11 +136,11 @@ set_computed_group_impl (const FieldGroup& group)
 
   const auto& name = group.m_info->m_group_name;
 
-  EKAT_REQUIRE_MSG(name=="tracers",
+  EKAT_REQUIRE_MSG(name=="turbulence_advected_tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->m_bundled,
-      "Error! Shoc expects bundled fields for tracers.\n");
+  EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
+      "Error! Shoc expects a monolithic allocation for tracers.\n");
 
   // Calculate number of advected tracers
   m_num_tracers = group.m_info->size();
@@ -144,6 +149,8 @@ set_computed_group_impl (const FieldGroup& group)
 // =========================================================================================
 size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
@@ -156,7 +163,7 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
                                    Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
 
   // Number of Reals needed by the WorkspaceManager passed to shoc_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy       = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy);
@@ -167,6 +174,8 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 // =========================================================================================
 void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
@@ -198,7 +207,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 
   using spack_2d_view_t = decltype(m_buffer.z_mid);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
-    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
+    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt, &m_buffer.unused,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
 #ifdef SCREAM_SHOC_SMALL_KERNELS
@@ -232,7 +241,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy      = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
   const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 14+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
@@ -245,6 +254,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void SHOCMacrophysics::initialize_impl (const RunType run_type)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   // Gather runtime options
   runtime_options.lambda_low    = m_params.get<double>("lambda_low");
   runtime_options.lambda_high   = m_params.get<double>("lambda_high");
@@ -256,8 +267,10 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.w2tune        = m_params.get<double>("w2tune");
   runtime_options.length_fac    = m_params.get<double>("length_fac");
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
-  runtime_options.Ckh           = m_params.get<double>("Ckh");
-  runtime_options.Ckm           = m_params.get<double>("Ckm");
+  runtime_options.Ckh           = m_params.get<double>("coeff_kh");
+  runtime_options.Ckm           = m_params.get<double>("coeff_km");
+  runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+  runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -269,7 +282,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers            = get_group_out("tracers").m_bundle->get_view<Spack***>();
+  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Spack***>();
   const auto& qc                  = get_field_out("qc").get_view<Spack**>();
   const auto& qv                  = get_field_out("qv").get_view<Spack**>();
   const auto& tke                 = get_field_out("tke").get_view<Spack**>();
@@ -315,7 +328,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,z_surf,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -359,6 +372,13 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Ouput (diagnostic)
   history_output.shoc_mix  = m_buffer.shoc_mix;
   history_output.isotropy  = m_buffer.isotropy;
+  if (m_params.get<bool>("extra_shoc_diags", false)) {
+    history_output.shoc_cond = get_field_out("shoc_cond").get_view<Spack**>();
+    history_output.shoc_evap = get_field_out("shoc_evap").get_view<Spack**>();
+  } else {
+    history_output.shoc_cond = m_buffer.unused;
+    history_output.shoc_evap = m_buffer.unused;
+  }
   history_output.w_sec     = get_field_out("w_variance").get_view<Spack**>();
   history_output.thl_sec   = m_buffer.thl_sec;
   history_output.qw_sec    = m_buffer.qw_sec;
@@ -392,7 +412,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.dz_zi = m_buffer.dz_zi;
 #endif
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
@@ -425,7 +445,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto default_policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 14+(n_wind_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
@@ -449,7 +469,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto ncols = m_num_cols;
   view_1d cell_length("cell_length", ncols);
   if (m_grid->has_geometry_data("dx_short")) {
-    // We must be running with IntensiveObservationPeriod on, with a planar geometry
+    // In this case IOP is running with a planar geometry
     auto dx = m_grid->get_geometry_data("dx_short").get_view<const Real,Host>()();
     Kokkos::deep_copy(cell_length, dx*1000); // convert km -> m
   } else {
@@ -469,13 +489,15 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 // =========================================================================================
 void SHOCMacrophysics::run_impl (const double dt)
 {
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   EKAT_REQUIRE_MSG (dt<=300,
       "Error! SHOC is intended to run with a timestep no longer than 5 minutes.\n"
       "       Please, reduce timestep (perhaps increasing subcycling iterations).\n");
 
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
-  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto scan_policy    = TPF::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
+  const auto default_policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
 
   // Preprocessing of SHOC inputs. Kernel contains a parallel_scan,
   // so a special TeamPolicy is required.
@@ -483,6 +505,9 @@ void SHOCMacrophysics::run_impl (const double dt)
                        scan_policy,
                        shoc_preprocess);
   Kokkos::fence();
+
+  auto wtracer_sfc = shoc_preprocess.wtracer_sfc;
+  Kokkos::deep_copy(wtracer_sfc, 0);
 
   if (m_params.get<bool>("apply_tms", false)) {
     apply_turbulent_mountain_stress();
@@ -579,6 +604,9 @@ void SHOCMacrophysics::apply_turbulent_mountain_stress()
 void SHOCMacrophysics::check_flux_state_consistency(const double dt)
 {
   using PC = scream::physics::Constants<Real>;
+  using RU = ekat::ReductionUtils<KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
   const Real gravit = PC::gravit;
   const Real qmin   = 1e-12; // minimum permitted constituent concentration (kg/kg)
 
@@ -590,7 +618,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
   const auto nlev_packs      = ekat::npack<Spack>(nlevs);
   const auto last_pack_idx   = (nlevs-1)/Spack::n;
   const auto last_pack_entry = (nlevs-1)%Spack::n;
-  const auto policy          = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy          = TPF::get_default_team_policy(m_num_cols, nlev_packs);
   Kokkos::parallel_for("check_flux_state_consistency",
                        policy,
                        KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -611,7 +639,7 @@ void SHOCMacrophysics::check_flux_state_consistency(const double dt)
       auto tracer_mass = [&](const int k) {
         return qv_i(k)*pseudo_density_i(k);
       };
-      Real mm = ekat::ExeSpaceUtils<KT::ExeSpace>::view_reduction(team, 0, nlevs, tracer_mass);
+      Real mm = RU::view_reduction(team, 0, nlevs, tracer_mass);
 
       EKAT_KERNEL_ASSERT_MSG(mm >= cc, "Error! Total mass of column vapor should be greater than mass of surf_evap.\n");
 

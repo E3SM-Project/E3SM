@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value
 from atm_manip import atm_query_impl
-from utils import expect
+from utils import expect, GoodFormatter
 
 ###############################################################################
 def atm_query(variables,listall=False,full=False,value=False, \
@@ -55,7 +55,7 @@ OR
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument(

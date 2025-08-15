@@ -1,6 +1,6 @@
 #include "share/util/eamxx_time_interpolation.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
-#include "share/io/scream_io_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
+#include "share/io/eamxx_io_utils.hpp"
 
 namespace scream{
 namespace util {
@@ -12,12 +12,8 @@ TimeInterpolation::TimeInterpolation(
 )
 {
   // Given the grid initialize field managers to store interpolation data
-  m_fm_time0 = std::make_shared<FieldManager>(grid);
-  m_fm_time1 = std::make_shared<FieldManager>(grid);
-  m_fm_time0->registration_begins();
-  m_fm_time0->registration_ends();
-  m_fm_time1->registration_begins();
-  m_fm_time1->registration_ends();
+  m_fm_time0 = std::make_shared<FieldManager>(grid,RepoState::Closed);
+  m_fm_time1 = std::make_shared<FieldManager>(grid,RepoState::Closed);
 }
 /*-----------------------------------------------------------------------------------------------*/
 TimeInterpolation::TimeInterpolation(
@@ -164,8 +160,8 @@ void TimeInterpolation::initialize_data_from_files()
   auto triplet_curr = m_file_data_triplets[m_triplet_idx];
   // Initialize the AtmosphereInput object that will be used to gather data
   ekat::ParameterList input_params;
-  input_params.set("Field Names",m_field_names);
-  input_params.set("Filename",triplet_curr.filename);
+  input_params.set("field_names",m_field_names);
+  input_params.set("filename",triplet_curr.filename);
   m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
   m_file_data_atm_input->set_logger(m_logger);
   // Assign the mask value gathered from the FillValue found in the source file.
@@ -258,7 +254,7 @@ void TimeInterpolation::print()
   printf("Settings for time interpolator...\n");
   printf("Time 0 = %s\n",m_time0.to_string().c_str());
   printf("Time 1 = %s\n",m_time1.to_string().c_str());
-  printf("List of Fields in interpolator:\n");
+  printf("List of fields in interpolator:\n");
   for (auto name : m_field_names)
   {
     printf("     -   %16s\n",name.c_str());
@@ -351,8 +347,8 @@ void TimeInterpolation::read_data()
   if (not m_file_data_atm_input or triplet_curr.filename != m_file_data_atm_input->get_filename()) {
     // Then we need to close this input stream and open a new one
     ekat::ParameterList input_params;
-    input_params.set("Field Names",m_field_names);
-    input_params.set("Filename",triplet_curr.filename);
+    input_params.set("field_names",m_field_names);
+    input_params.set("filename",triplet_curr.filename);
     m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
     m_file_data_atm_input->set_logger(m_logger);
     // Also determine the FillValue, if used

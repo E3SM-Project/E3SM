@@ -1,14 +1,13 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/scream_universal_constants.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/grid/remap/refining_remapper_p2p.hpp"
-#include "share/grid/remap/do_nothing_remapper.hpp"
-#include "share/util/scream_utils.hpp"
-#include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/eamxx_utils.hpp"
+#include "share/io/eamxx_scorpio_interface.hpp"
 
-#include <ekat/util/ekat_lin_interp.hpp>
-#include <ekat/util/ekat_math_utils.hpp>
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_lin_interp.hpp>
+#include <ekat_math_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -47,7 +46,7 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
                        "Error! Inconsistent 'lev' dimension found in nudging data files.");
   }
   // use nudging weights
-  if (m_use_weights) 
+  if (m_use_weights)
     m_weights_file = m_params.get<std::string>("nudging_weights_file");
 
   // TODO: Add some warning messages here.
@@ -60,7 +59,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
 
-  m_grid = grids_manager->get_grid("Physics");
+  m_grid = grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -84,7 +83,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
     add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   }
   if (ekat::contains(m_fields_nudge,"qv")) {
-    add_field<Updated>("qv",    scalar3d_layout_mid, kg/kg, grid_name, "tracers", ps);
+    add_tracer<Updated>("qv", m_grid, kg/kg, ps);
   }
   if (ekat::contains(m_fields_nudge,"U") or ekat::contains(m_fields_nudge,"V")) {
     add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
@@ -107,7 +106,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   /* Check for consistency between nudging files, map file, and remapper */
 
   // Number of columns globally
-  auto num_cols_global = m_grid->get_num_global_dofs(); 
+  auto num_cols_global = m_grid->get_num_global_dofs();
 
   // Get the information from the first nudging data file
   int num_cols_src = scorpio::get_dimlen(m_datafiles[0],"ncol");
@@ -136,7 +135,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
                      << "model grid and/or the mapfile.");
     EKAT_REQUIRE_MSG(m_use_weights == false,
                      "Error! Nudging::set_grids - it seems that the user intends to use both nuding "
-                     << "from coarse data as well as weighted nudging simultaneously. This is not supported. " 
+                     << "from coarse data as well as weighted nudging simultaneously. This is not supported. "
                      << "If the user wants to use both at their own risk, the user should edit the source code "
                      << "by deleting this error message.");
     // If we get here, we are good to go!
@@ -237,7 +236,6 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
   const auto layout_tmp = grid_tmp->get_3d_scalar_layout(true);
   const auto layout_atm = m_grid->get_3d_scalar_layout(true);
-  m_horiz_remapper->registration_begins();
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     std::string name_tmp = name + "_tmp";
@@ -324,18 +322,13 @@ void Nudging::run_impl (const double dt)
   using KT            = KokkosTypes<DefaultDevice>;
   using RangePolicy   = typename KT::RangePolicy;
   using MemberType    = typename KT::MemberType;
-  using ESU           = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF           = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
   using PackT         = ekat::Pack<Real,1>;
   using view_1d       = KT::view_1d<PackT>;
   using view_2d       = KT::view_2d<PackT>;
 
-  // Have to add dt because first time iteration is at 0 seconds where you will
-  // not have any data from the field. The timestamp is only iterated at the
-  // end of the full step in scream.
-  auto ts = timestamp()+dt;
-
   // Perform time interpolation
-  m_time_interp.perform_time_interpolation(ts);
+  m_time_interp.perform_time_interpolation(end_of_step_ts());
 
   // If the input data contains "masked" values (sometimes also called "filled" values),
   // the horiz remapping would smear them around. To prevent that, we need to "cure"
@@ -351,7 +344,7 @@ void Nudging::run_impl (const double dt)
     const auto fl = f.get_header().get_identifier().get_layout();
     const auto v  = f.get_view<Real**>();
 
-    Real var_fill_value = constants::DefaultFillValue<Real>().value;
+    Real var_fill_value = constants::fill_value<Real>;
     // Query the helper field for the fill value, if not present use default
     if (f.get_header().has_extra_data("mask_value")) {
       var_fill_value = f.get_header().get_extra_data<Real>("mask_value");
@@ -393,7 +386,7 @@ void Nudging::run_impl (const double dt)
   }
 
   // Perform horizontal remap (if needed)
-  m_horiz_remapper->remap(true);
+  m_horiz_remapper->remap_fwd();
 
   // bypass copy_and_pad and vert_interp for skip_vert_interpolation:
   if (m_skip_vert_interpolation) {
@@ -444,7 +437,7 @@ void Nudging::run_impl (const double dt)
       });
     };
 
-    auto policy = ESU::get_default_team_policy(ncols,nlevs_src);
+    auto policy = TPF::get_default_team_policy(ncols,nlevs_src);
     Kokkos::parallel_for("", policy, copy_3d);
   };
 
@@ -483,7 +476,7 @@ void Nudging::run_impl (const double dt)
   using LI = ekat::LinInterp<Real,1>;
   const int nlevs_tgt = m_num_levs;
   LI vert_interp(ncols,nlevs_src+2,nlevs_tgt);
-  const auto policy_vinterp = ESU::get_default_team_policy(ncols, nlevs_tgt);
+  const auto policy_vinterp = TPF::get_default_team_policy(ncols, nlevs_tgt);
   auto p_tgt = get_field_in("p_mid").get_view<const PackT**>();
   Kokkos::parallel_for("nudging_vert_interp_setup_loop", policy_vinterp,
     KOKKOS_LAMBDA(const MemberType& team) {
@@ -559,7 +552,7 @@ Field Nudging::create_helper_field (const std::string& name,
   Field f(id);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
-  f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+  f.deep_copy(ekat::invalid<Real>());
 
   m_helper_fields[name] = f;
   return m_helper_fields[name];

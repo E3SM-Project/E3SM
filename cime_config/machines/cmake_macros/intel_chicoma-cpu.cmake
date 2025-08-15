@@ -1,7 +1,8 @@
 set(PIO_FILESYSTEM_HINTS "lustre")
 string(APPEND CONFIG_ARGS " --host=cray")
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -qmkl")
-
+string(REPLACE "-fp-model source" "-fp-model precise" CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS}")
+string(REPLACE "-fp-model source" "-fp-model precise" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")

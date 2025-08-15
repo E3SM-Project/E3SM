@@ -100,8 +100,8 @@ contains
     real(r8) :: dzsur(bounds%begc:bounds%endc)     ! 1/2 the top layer thickness (m)
     real(r8) :: eg                                 ! water vapor pressure at temperature T [pa]
     real(r8) :: htvp(bounds%begc:bounds%endc)      ! latent heat of vapor of water (or sublimation) [j/kg]
-    real(r8) :: obu(bounds%begp:bounds%endp)       ! monin-obukhov length (m)
-    real(r8) :: obuold(bounds%begp:bounds%endp)    ! monin-obukhov length of previous iteration
+    real(r8) :: obu(bounds%begp:bounds%endp)       ! Obukhov length scale (m)
+    real(r8) :: obuold(bounds%begp:bounds%endp)    ! Obukhov length scale of previous iteration
     real(r8) :: qsatg(bounds%begc:bounds%endc)     ! saturated humidity [kg/kg]
     real(r8) :: qsatgdT(bounds%begc:bounds%endc)   ! d(qsatg)/dT
     real(r8) :: qstar                              ! moisture scaling parameter
@@ -370,7 +370,7 @@ contains
          dthv     = dth(p)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(p)
          zldis(p) = forc_hgt_u_patch(p) - 0._r8
 
-         ! Initialize Monin-Obukhov length and wind speed
+         ! Initialize Obukhov length scale and wind speed
 
          call MoninObukIni(ur(p), thv(c), dthv, zldis(p), z0mg(p), um(p), obu(p))
       end do

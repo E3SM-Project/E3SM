@@ -5,7 +5,7 @@
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -26,6 +26,9 @@ void Functions<S,D>
   const bool& do_prescribed_CCN,
   const Scalar& dt,
   const Scalar& inv_dt,
+  const uview_1d<const Spack>& hetfrz_immersion_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_contact_nucleation_tend,
+  const uview_1d<const Spack>& hetfrz_deposition_nucleation_tend,
   const view_dnu_table& dnu,
   const view_ice_table& ice_table_vals,
   const view_collect_table& collect_table_vals,
@@ -89,10 +92,22 @@ void Functions<S,D>
   const uview_1d<Spack>& vap_liq_exchange,
   const uview_1d<Spack>& vap_ice_exchange,
   const uview_1d<Spack>& liq_ice_exchange,
+  const uview_1d<Spack>& qr2qv_evap,
+  const uview_1d<Spack>& qi2qv_sublim,
+  const uview_1d<Spack>& qc2qr_accret,
+  const uview_1d<Spack>& qc2qr_autoconv,
+  const uview_1d<Spack>& qv2qi_vapdep,
+  const uview_1d<Spack>& qc2qi_berg,
+  const uview_1d<Spack>& qc2qr_ice_shed,
+  const uview_1d<Spack>& qc2qi_collect,
+  const uview_1d<Spack>& qr2qi_collect,
+  const uview_1d<Spack>& qc2qi_hetero_freeze,
+  const uview_1d<Spack>& qr2qi_immers_freeze,
+  const uview_1d<Spack>& qi2qr_melt,
   const uview_1d<Spack>& pratot,
   const uview_1d<Spack>& prctot,
   bool& hydrometeorsPresent, const Int& nk,
-  const physics::P3_Constants<S> & p3constants)
+  const P3Runtime& runtime_options)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
@@ -103,6 +118,11 @@ void Functions<S,D>
   constexpr Scalar inv_cp       = C::INV_CP;
   constexpr Scalar latvap       = C::LatVap;
   constexpr Scalar latice       = C::LatIce;
+
+  const bool do_ice_production   = runtime_options.do_ice_production;
+  const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
+  const bool use_separate_ice_liq_frac = runtime_options.use_separate_ice_liq_frac;
+  const bool extra_p3_diags = runtime_options.extra_p3_diags;
 
   team.team_barrier();
   hydrometeorsPresent = false;
@@ -173,6 +193,9 @@ void Functions<S,D>
       kap     (0), // TODO(doc)
       eii     (0), // temperature dependent aggregation efficiency
 
+      //Hetreogeneous freezing
+      ncheti_cnt(0), qcheti_cnt(0), nicnt(0), qicnt(0), ninuc_cnt(0), qinuc_cnt(0),
+
       // quantities related to process rates/parameters, interpolated from lookup tables:
       // For a more in depth reference to where these came from consult the file
       // "create_p3_lookupTable_1.F90-v4.1".  All line numbers below reference this
@@ -215,7 +238,7 @@ void Functions<S,D>
                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
 
-      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), p3constants, not_skip_micro);
+      get_rain_dsd2(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), runtime_options, not_skip_micro);
       get_cdistr_logn0r(qr_incld(k), nr_incld(k), mu_r(k), lamr(k), cdistr(k), logn0r(k), not_skip_micro);
       nr(k).set(not_skip_micro, nr_incld(k) * cld_frac_r(k));
 
@@ -228,7 +251,7 @@ void Functions<S,D>
         ni_incld(k).set(qi_gt_small, max(ni_incld(k), nsmall));
         nr_incld(k).set(qi_gt_small, max(nr_incld(k), nsmall));
 
-        const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), p3constants, qi_gt_small);
+        const auto rhop = calc_bulk_rho_rime(qi_incld(k), qm_incld(k), bm_incld(k), runtime_options, qi_gt_small);
         qm(k).set(qi_gt_small, qm_incld(k)*cld_frac_i(k) );
         bm(k).set(qi_gt_small, bm_incld(k)*cld_frac_i(k) );
 
@@ -266,61 +289,87 @@ void Functions<S,D>
       // ice processes
       // ......................................................................
 
-      // collection of droplets
-      ice_cldliq_collection(
-        rho(k), T_atm(k), rhofaci(k), table_val_qc2qi_collect, qi_incld(k), qc_incld(k), ni_incld(k), nc_incld(k),
-        qc2qi_collect_tend, nc_collect_tend, qc2qr_ice_shed_tend, ncshdc, p3constants, not_skip_micro);
+      if(do_ice_production) {
+        // collection of droplets
+        ice_cldliq_collection(rho(k), T_atm(k), rhofaci(k),
+                              table_val_qc2qi_collect, qi_incld(k), qc_incld(k),
+                              ni_incld(k), nc_incld(k), qc2qi_collect_tend,
+                              nc_collect_tend, qc2qr_ice_shed_tend, ncshdc,
+                              runtime_options, not_skip_micro);
 
-      // collection of rain
-      ice_rain_collection(
-        rho(k), T_atm(k), rhofaci(k), logn0r(k), table_val_nr_collect, table_val_qr2qi_collect, qi_incld(k), ni_incld(k), qr_incld(k),
-        qr2qi_collect_tend, nr_collect_tend, p3constants, not_skip_micro);
+        // collection of rain
+        ice_rain_collection(rho(k), T_atm(k), rhofaci(k), logn0r(k),
+                            table_val_nr_collect, table_val_qr2qi_collect,
+                            qi_incld(k), ni_incld(k), qr_incld(k),
+                            qr2qi_collect_tend, nr_collect_tend,
+                            runtime_options, not_skip_micro);
 
-      // collection between ice categories
+        // collection between ice categories
 
-      // PMC nCat deleted lots of stuff here.
+        // PMC nCat deleted lots of stuff here.
 
-      // self-collection of ice
-      ice_self_collection(
-        rho(k), rhofaci(k), table_val_ni_self_collect, eii, qm_incld(k), qi_incld(k), ni_incld(k),
-        ni_selfcollect_tend, not_skip_micro);
+        // self-collection of ice
+        ice_self_collection(rho(k), rhofaci(k), table_val_ni_self_collect, eii,
+                            qm_incld(k), qi_incld(k), ni_incld(k),
+                            ni_selfcollect_tend, not_skip_micro);
+      }
 
       // melting
-      ice_melting(
-        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, sc, mu, kap, qv(k), qi_incld(k), ni_incld(k),
-        qi2qr_melt_tend, ni2nr_melt_tend, not_skip_micro);
+      ice_melting(rho(k), T_atm(k), pres(k), rhofaci(k),
+                  table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, sc,
+                  mu, kap, qv(k), qi_incld(k), ni_incld(k), qi2qr_melt_tend,
+                  ni2nr_melt_tend, not_skip_micro);
 
-      // calculate wet growth
-      ice_cldliq_wet_growth(
-        rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt,
-        dv, kap, mu, sc, qv(k), qc_incld(k), qi_incld(k), ni_incld(k), qr_incld(k),
-        wetgrowth, qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate, nr_ice_shed_tend, qc2qr_ice_shed_tend, not_skip_micro);
+      if(do_ice_production) {
+        // calculate wet growth
+        ice_cldliq_wet_growth(
+            rho(k), T_atm(k), pres(k), rhofaci(k), table_val_qi2qr_melting,
+            table_val_qi2qr_vent_melt, dv, kap, mu, sc, qv(k), qc_incld(k),
+            qi_incld(k), ni_incld(k), qr_incld(k), wetgrowth,
+            qr2qi_collect_tend, qc2qi_collect_tend, qc_growth_rate,
+            nr_ice_shed_tend, qc2qr_ice_shed_tend, not_skip_micro);
+      }
 
-      // calculate total inverse ice relaxation timescale combined for all ice categories
-      // note 'f1pr' values are normalized, so we need to multiply by N
+      // calculate total inverse ice relaxation timescale combined for all ice
+      // categories note 'f1pr' values are normalized, so we need to multiply
+      // by N
       ice_relaxation_timescale(
-        rho(k), T_atm(k), rhofaci(k), table_val_qi2qr_melting, table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k),
-        epsi, epsi_tot, not_skip_micro);
+          rho(k), T_atm(k), rhofaci(k), table_val_qi2qr_melting,
+          table_val_qi2qr_vent_melt, dv, mu, sc, qi_incld(k), ni_incld(k), epsi,
+          epsi_tot, not_skip_micro);
 
       // calculate rime density
-      calc_rime_density(
-        T_atm(k), rhofaci(k), table_val_qi_fallspd, acn(k), lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
-        vtrmi1, rho_qm_cloud, not_skip_micro);
+      calc_rime_density(T_atm(k), rhofaci(k), table_val_qi_fallspd, acn(k),
+                        lamc(k), mu_c(k), qc_incld(k), qc2qi_collect_tend,
+                        vtrmi1, rho_qm_cloud, not_skip_micro);
 
-      // contact and immersion freezing droplets
-      cldliq_immersion_freezing(
-        T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k), inv_qc_relvar(k),
-        qc2qi_hetero_freeze_tend, nc2ni_immers_freeze_tend, p3constants, not_skip_micro);
+      if(do_ice_production) {
+        // contact and immersion freezing droplets
+        if (use_hetfrz_classnuc){
+          ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
+                     hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 1,
+                     ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
+          ice_classical_nucleation(hetfrz_immersion_nucleation_tend(k), hetfrz_contact_nucleation_tend(k),
+                     hetfrz_deposition_nucleation_tend(k), rho(k), qc_incld(k), nc_incld(k), 2, 
+                     ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt);
+        }
+        else{
+          cldliq_immersion_freezing(
+              T_atm(k), lamc(k), mu_c(k), cdist1(k), qc_incld(k),
+              inv_qc_relvar(k), qc2qi_hetero_freeze_tend,
+              nc2ni_immers_freeze_tend, runtime_options, not_skip_micro);
+        }
 
-      // for future: get rid of log statements below for rain freezing
-      rain_immersion_freezing(
-        T_atm(k), lamr(k), mu_r(k), cdistr(k), qr_incld(k),
-        qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, p3constants, not_skip_micro);
-
-      //  rime splintering (Hallet-Mossop 1974)
-      // PMC comment: Morrison and Milbrandt 2015 part 1 and 2016 part 3 both say
-      // that Hallet-Mossop should be neglected if 1 category to compensate for
-      // artificial smearing out of ice DSD
+        // for future: get rid of log statements below for rain freezing
+        rain_immersion_freezing(T_atm(k), lamr(k), mu_r(k), cdistr(k),
+                                qr_incld(k), qr2qi_immers_freeze_tend,
+                                nr2ni_immers_freeze_tend, runtime_options,
+                                not_skip_micro);
+        //  rime splintering (Hallet-Mossop 1974)
+        // PMC comment: Morrison and Milbrandt 2015 part 1 and 2016 part 3 both
+        // say that Hallet-Mossop should be neglected if 1 category to
+        // compensate for artificial smearing out of ice DSD
+      }
 
       // ................................................
       //  condensation/evaporation/deposition/sublimation
@@ -336,21 +385,28 @@ void Functions<S,D>
 		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,
 		     qr2qv_evap_tend,nr_evap_tend, not_skip_micro);
 
-      ice_deposition_sublimation(
-	qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi, abi, qv(k), inv_dt,
-        qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend, not_skip_micro);
+      if(do_ice_production) {
+        ice_deposition_sublimation(
+            qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi,
+            abi, qv(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend,
+            ni_sublim_tend, qc2qi_berg_tend, not_skip_micro);
+      }
+
     }
 
     // deposition/condensation-freezing nucleation
-    ice_nucleation(
-      T_atm(k), inv_rho(k), ni(k), ni_activated(k), qv_supersat_i(k), inv_dt, predictNc, do_prescribed_CCN,
-      qv2qi_nucleat_tend, ni_nucleat_tend, p3constants, not_skip_all);
+    if(do_ice_production) {
+      ice_nucleation(T_atm(k), inv_rho(k), ni(k), ni_activated(k),
+                     qv_supersat_i(k), inv_dt, predictNc, do_prescribed_CCN,
+                     qv2qi_nucleat_tend, ni_nucleat_tend, runtime_options,
+                     not_skip_all);
+    }
 
     // cloud water autoconversion
     // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
     cloud_water_autoconversion(
       rho(k), qc_incld(k), nc_incld(k), inv_qc_relvar(k),
-      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, p3constants, not_skip_all);
+      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, runtime_options, not_skip_all);
 
     // self-collection of droplets
     droplet_self_collection(
@@ -360,13 +416,13 @@ void Functions<S,D>
     // accretion of cloud by rain
     cloud_rain_accretion(
       rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k), inv_qc_relvar(k),
-      qc2qr_accret_tend, nc_accret_tend, p3constants, not_skip_all);
+      qc2qr_accret_tend, nc_accret_tend, runtime_options, not_skip_all);
 
     // self-collection and breakup of rain
     // (breakup following modified Verlinde and Cotton scheme)
     rain_self_collection(
       rho(k), qr_incld(k), nr_incld(k),
-      nr_selfcollect_tend, p3constants, not_skip_all);
+      nr_selfcollect_tend, runtime_options, not_skip_all);
 
     // Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
     // cell-average quantities.
@@ -375,7 +431,8 @@ void Functions<S,D>
       nc_accret_tend, nc_selfcollect_tend, nc2nr_autoconv_tend, nr_selfcollect_tend, nr_evap_tend, ncautr, qi2qv_sublim_tend, nr_ice_shed_tend, qc2qi_hetero_freeze_tend,
       qr2qi_collect_tend, qc2qr_ice_shed_tend, qi2qr_melt_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, ni2nr_melt_tend, nc_collect_tend,
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
-      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, not_skip_all);
+      qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
+      ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, not_skip_all, runtime_options);
 
     //
     // conservation of water
@@ -386,10 +443,18 @@ void Functions<S,D>
     // check qv because it is typically much greater than zero so seldom goes negative (and if it does
     // catastrophic failure is appropriate)]
 
-    // cloud
-    cloud_water_conservation(
-      qc(k), dt,
-      qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, not_skip_all);
+    if (use_separate_ice_liq_frac) {
+      // cloud
+      cloud_water_conservation(
+        qc(k), dt,
+        qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt, use_hetfrz_classnuc, not_skip_all,
+        cld_frac_l(k), cld_frac_i(k), runtime_options);
+    } else {
+      // cloud
+      cloud_water_conservation(
+        qc(k), dt,
+        qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt, use_hetfrz_classnuc, not_skip_all);
+    }
 
     // rain
     rain_water_conservation(
@@ -400,18 +465,19 @@ void Functions<S,D>
     ice_water_conservation(
       qi(k), qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend,
       qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, dt,
-      qi2qv_sublim_tend, qi2qr_melt_tend, not_skip_all);
+      qinuc_cnt, qcheti_cnt, qicnt,
+      qi2qv_sublim_tend, qi2qr_melt_tend, use_hetfrz_classnuc, not_skip_all);
 
     nc_conservation(nc(k), nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend,
-                    nc_accret_tend, nc2nr_autoconv_tend, not_skip_all);
+                    nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt, use_hetfrz_classnuc, not_skip_all);
     nr_conservation(nr(k),ni2nr_melt_tend,nr_ice_shed_tend,ncshdc,nc2nr_autoconv_tend,dt,nmltratio,nr_collect_tend,
                     nr2ni_immers_freeze_tend,nr_selfcollect_tend,nr_evap_tend, not_skip_all);
-    ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend,dt,ni2nr_melt_tend,
-                    ni_sublim_tend,ni_selfcollect_tend, not_skip_all);
+    ni_conservation(ni(k),ni_nucleat_tend,nr2ni_immers_freeze_tend,nc2ni_immers_freeze_tend, ncheti_cnt, nicnt, ninuc_cnt, dt,ni2nr_melt_tend,
+                    ni_sublim_tend,ni_selfcollect_tend, use_hetfrz_classnuc, not_skip_all);
 
     // make sure procs don't inappropriately push qv beyond ice saturation
-    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,cld_frac_i(k),qv(k),qv_sat_i(k),
-			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, not_skip_all);
+    ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,qinuc_cnt,cld_frac_i(k),qv(k),qv_sat_i(k),
+			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, use_hetfrz_classnuc, not_skip_all);
     // make sure procs don't inappropriately push qv beyond liquid saturation
     prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt,
 				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
@@ -426,8 +492,8 @@ void Functions<S,D>
       qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,  qr2qi_immers_freeze_tend,
       nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend,
       qc2qi_berg_tend, inv_exner(k), predictNc, wetgrowth, dt, nmltratio,
-      rho_qm_cloud, th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
-      nc(k), qr(k), nr(k), not_skip_all);
+      rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt,  th_atm(k), qv(k), qi(k), ni(k), qm(k), bm(k), qc(k),
+      nc(k), qr(k), nr(k), use_hetfrz_classnuc, not_skip_all);
 
     //-- warm-phase only processes:
     update_prognostic_liquid(
@@ -436,13 +502,34 @@ void Functions<S,D>
       qr(k), nr(k), not_skip_all);
 
     // AaronDonahue - Add extra variables needed from microphysics by E3SM:
-    qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
+    if(use_hetfrz_classnuc){
+      qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend  + qinuc_cnt);
+    }
+    else{
+      qv2qi_depos_tend(k)         .set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
+    }
     precip_total_tend(k)           .set(not_skip_all, qc2qr_accret_tend + qc2qr_autoconv_tend + qc2qr_ice_shed_tend + qc2qi_collect_tend);
     nevapr(k)          .set(not_skip_all, qi2qv_sublim_tend + qr2qv_evap_tend);
     qr_evap_tend(k)       .set(not_skip_all, qr2qv_evap_tend);
     vap_ice_exchange(k).set(not_skip_all, qv2qi_vapdep_tend - qi2qv_sublim_tend + qv2qi_nucleat_tend);
     vap_liq_exchange(k).set(not_skip_all, -qr2qv_evap_tend);
     liq_ice_exchange(k).set(not_skip_all, qc2qi_hetero_freeze_tend + qr2qi_immers_freeze_tend - qi2qr_melt_tend + qc2qi_berg_tend + qc2qi_collect_tend + qr2qi_collect_tend);
+
+    // set tendencies if extra_p3_diags is true
+    if (extra_p3_diags) {
+      qr2qv_evap(k).set(not_skip_all, qr2qv_evap_tend);
+      qi2qv_sublim(k).set(not_skip_all, qi2qv_sublim_tend);
+      qc2qr_accret(k).set(not_skip_all, qc2qr_accret_tend);
+      qc2qr_autoconv(k).set(not_skip_all, qc2qr_autoconv_tend);
+      qv2qi_vapdep(k).set(not_skip_all, qv2qi_vapdep_tend);
+      qc2qi_berg(k).set(not_skip_all, qc2qi_berg_tend);
+      qc2qr_ice_shed(k).set(not_skip_all, qc2qr_ice_shed_tend);
+      qc2qi_collect(k).set(not_skip_all, qc2qi_collect_tend);
+      qr2qi_collect(k).set(not_skip_all, qr2qi_collect_tend);
+      qc2qi_hetero_freeze(k).set(not_skip_all, qc2qi_hetero_freeze_tend);
+      qr2qi_immers_freeze(k).set(not_skip_all, qr2qi_immers_freeze_tend);
+      qi2qr_melt(k).set(not_skip_all, qi2qr_melt_tend);
+    }
 
     // clipping for small hydrometeor values
     const auto qc_small    = qc(k) < qsmall    && not_skip_all;

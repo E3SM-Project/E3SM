@@ -16,6 +16,8 @@ This Technical Guide describes the physics of version 3 of the E3SM Atmospheric 
 
 - [RRTMG](rrtmg.md): Parameterization of radiation.
 
+- [ORODRAG](orodrag.md): Parameterization of orographic drag
+
 - [MAM](mam.md): Primary parameterization schemes used to represent aerosols.
 
 - [VBS](vbs.md): Parameterization of secondary organic aerosols.

@@ -2,14 +2,11 @@
 
 #include "shoc_unit_tests_common.hpp"
 #include "shoc_functions.hpp"
-#include "shoc_functions_f90.hpp"
+#include "shoc_test_data.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "share/scream_types.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/util/ekat_arch.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 
 #include <algorithm>
 #include <array>
@@ -22,9 +19,9 @@ namespace shoc {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
+struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_property()
+  void run_property()
   {
     static constexpr Int shcol    = 2;
     static constexpr Int nlev     = 1;
@@ -58,8 +55,11 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     // Turbulent kinetic energy [m2/s2]
     static constexpr Real tke_reg = 0.4;
 
+    // Default SHOC formulation, not 1.5 TKE closure assumptions
+    const bool shoc_1p5tke = false;
+
     // Initialize data structure for bridging to F90
-    EddyDiffusivitiesData SDS(shcol, nlev);
+    EddyDiffusivitiesData SDS(shcol, nlev, shoc_1p5tke);
 
     // Test that the inputs are reasonable.
     REQUIRE( (SDS.shcol == shcol && SDS.nlev == nlev) );
@@ -98,10 +98,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    eddy_diffusivities_f(SDS.nlev, SDS.shcol, SDS.pblh, SDS.zt_grid, SDS.tabs, SDS.shoc_mix,
-                         SDS.sterm_zt, SDS.isotropy, SDS.tke, SDS.tkh, SDS.tk);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    eddy_diffusivities(SDS);
 
     // Check to make sure the answers in the columns are different
     for(Int s = 0; s < shcol-1; ++s) {
@@ -168,10 +165,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    eddy_diffusivities_f(SDS.nlev, SDS.shcol, SDS.pblh, SDS.zt_grid, SDS.tabs, SDS.shoc_mix,
-                         SDS.sterm_zt, SDS.isotropy, SDS.tke, SDS.tkh, SDS.tk);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    eddy_diffusivities(SDS);
 
     // Check to make sure the answers in the columns are larger
     //   when the length scale and shear term are larger
@@ -241,10 +235,7 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
     }
 
     // Call the C++ implementation
-    SDS.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-    eddy_diffusivities_f(SDS.nlev, SDS.shcol, SDS.pblh, SDS.zt_grid, SDS.tabs, SDS.shoc_mix,
-                         SDS.sterm_zt, SDS.isotropy, SDS.tke, SDS.tkh, SDS.tk);
-    SDS.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+    eddy_diffusivities(SDS);
 
     // Check to make sure the diffusivities are smaller
     //  in the columns where isotropy and tke are smaller
@@ -260,60 +251,160 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff {
         }
       }
     }
+
+    // 1.5 TKE test
+    // Verify that eddy diffusivities behave as expected if 1.5 TKE is activated.
+    // For this test we simply recycle the inputs from the previous test, with exception
+    // of the turbulent length scale and TKE.
+
+    // SHOC Mixing length [m]
+    static constexpr Real shoc_mix_1p5_t1[shcol] = {100, 500};
+    // Turbulent kinetic energy [m2/s2]
+    static constexpr Real tke_1p5_t1[shcol] = {0.4, 0.4};
+
+    // Verify that input length scale is increasing with column
+    //  and TKE is the same for each column
+    for(Int s = 0; s < shcol-1; ++s) {
+      REQUIRE(shoc_mix_1p5_t1[s+1] > shoc_mix_1p5_t1[s]);
+      REQUIRE(tke_1p5_t1[s+1] == tke_1p5_t1[s]);
+    }
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      // Column only input
+      SDS.tabs[s] = tabs_ustab[s];
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.tke[offset] = tke_1p5_t1[s];
+        SDS.shoc_mix[offset] = shoc_mix_1p5_t1[s];
+      }
+    }
+
+    // Activate 1.5 TKE closure assumptions
+    SDS.shoc_1p5tke = true;
+
+    // Call the C++ implementation
+    eddy_diffusivities(SDS);
+
+    // Check to make sure the diffusivities are smaller
+    //  in the columns where length scale is smaller
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if (SDS.tke[offset] == SDS.tke[offsets] &
+            SDS.shoc_mix[offset] < SDS.shoc_mix[offsets]){
+          REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
+          REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
+        }
+      }
+    }
+
+    // Now we are going to do a similar but opposite test, change TKE
+    //  while keeping SHOC mix constant
+
+    // SHOC Mixing length [m]
+    static constexpr Real shoc_mix_1p5_t2[shcol] = {500, 500};
+    // Turbulent kinetic energy [m2/s2]
+    static constexpr Real tke_1p5_t2[shcol] = {0.1, 0.4};
+
+    // Verify that input length scale is increasing with column
+    //  and TKE is the same for each column
+    for(Int s = 0; s < shcol-1; ++s) {
+      REQUIRE(shoc_mix_1p5_t2[s+1] == shoc_mix_1p5_t2[s]);
+      REQUIRE(tke_1p5_t2[s+1] > tke_1p5_t2[s]);
+    }
+
+    // Fill in test data on zt_grid.
+    for(Int s = 0; s < shcol; ++s) {
+      // Column only input
+      SDS.tabs[s] = tabs_ustab[s];
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+
+        SDS.tke[offset] = tke_1p5_t2[s];
+        SDS.shoc_mix[offset] = shoc_mix_1p5_t2[s];
+      }
+    }
+
+    // Call the C++ implementation
+    eddy_diffusivities(SDS);
+
+    // Check to make sure the diffusivities are smaller
+    //  in the columns where TKE is smaller
+    for(Int s = 0; s < shcol-1; ++s) {
+      for(Int n = 0; n < nlev; ++n) {
+        const auto offset = n + s * nlev;
+        // Get value corresponding to next column
+        const auto offsets = n + (s+1) * nlev;
+        if (SDS.tke[offset] < SDS.tke[offsets] &
+            SDS.shoc_mix[offset] == SDS.shoc_mix[offsets]){
+          REQUIRE(SDS.tk[offset] < SDS.tk[offsets]);
+          REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
+        }
+      }
+    }
+
   }
 
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    EddyDiffusivitiesData f90_data[] = {
-      EddyDiffusivitiesData(10, 71),
-      EddyDiffusivitiesData(10, 12),
-      EddyDiffusivitiesData(7,  16),
-      EddyDiffusivitiesData(2, 7),
+    EddyDiffusivitiesData baseline_data[] = {
+      EddyDiffusivitiesData(10, 71, false),
+      EddyDiffusivitiesData(10, 12, false),
+      EddyDiffusivitiesData(7,  16, false),
+      EddyDiffusivitiesData(2, 7, false),
     };
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
     }
 
-    // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx. Needs to happen before reads so that
     // inout data is in original state
     EddyDiffusivitiesData cxx_data[] = {
-      EddyDiffusivitiesData(f90_data[0]),
-      EddyDiffusivitiesData(f90_data[1]),
-      EddyDiffusivitiesData(f90_data[2]),
-      EddyDiffusivitiesData(f90_data[3]),
+      EddyDiffusivitiesData(baseline_data[0]),
+      EddyDiffusivitiesData(baseline_data[1]),
+      EddyDiffusivitiesData(baseline_data[2]),
+      EddyDiffusivitiesData(baseline_data[3]),
     };
 
     // Assume all data is in C layout
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      // expects data in C layout
-      eddy_diffusivities(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (auto& d : baseline_data) {
+        d.read(Base::m_ifile);
+      }
     }
 
     // Get data from cxx
     for (auto& d : cxx_data) {
-      d.transpose<ekat::TransposeDirection::c2f>(); // _f expects data in fortran layout
-      eddy_diffusivities_f(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
-      d.transpose<ekat::TransposeDirection::f2c>(); // go back to C layout
+      eddy_diffusivities(d);
     }
 
     // Verify BFB results, all data should be in C layout
-    if (SCREAM_BFB_TESTING) {
-      static constexpr Int num_runs = sizeof(f90_data) / sizeof(EddyDiffusivitiesData);
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
+      static constexpr Int num_runs = sizeof(baseline_data) / sizeof(EddyDiffusivitiesData);
       for (Int i = 0; i < num_runs; ++i) {
-        EddyDiffusivitiesData& d_f90 = f90_data[i];
+        EddyDiffusivitiesData& d_baseline = baseline_data[i];
         EddyDiffusivitiesData& d_cxx = cxx_data[i];
-        for (Int k = 0; k < d_f90.total(d_f90.tkh); ++k) {
-          REQUIRE(d_f90.tkh[k] == d_cxx.tkh[k]);
-          REQUIRE(d_f90.tk[k] == d_cxx.tk[k]);
+        for (Int k = 0; k < d_baseline.total(d_baseline.tkh); ++k) {
+          REQUIRE(d_baseline.tkh[k] == d_cxx.tkh[k]);
+          REQUIRE(d_baseline.tk[k] == d_cxx.tk[k]);
         }
+      }
+    } // SCREAM_BFB_TESTING
+    else if (this->m_baseline_action == GENERATE) {
+      for (auto& d : cxx_data) {
+        d.write(Base::m_ofile);
       }
     }
   } // run_bfb
@@ -329,14 +420,14 @@ TEST_CASE("shoc_tke_eddy_diffusivities_property", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
-  TestStruct::run_property();
+  TestStruct().run_property();
 }
 
 TEST_CASE("shoc_tke_eddy_diffusivities_bfb", "shoc")
 {
   using TestStruct = scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestShocEddyDiff;
 
-  TestStruct::run_bfb();
+  TestStruct().run_bfb();
 }
 
 } // namespace

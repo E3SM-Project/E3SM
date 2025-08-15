@@ -149,7 +149,6 @@
       use wmscrpmd, only: grid_area
       use w3parall, only: init_get_isea
       use w3dispmd, only: wavnu1
-      use w3triamd, only: SETUGIOBP
 !/
       use w3initmd, only: w3init 
       use w3wavemd, only: w3wave
@@ -850,29 +849,6 @@ CONTAINS
 
       ! add call to gptl timer
 
-      ! send initial state to driver
-      do jsea=1, nseal
-         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = 0.0
-         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = 0.0
-
-         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = 0.0
-         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = 0.0
-
-         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = 0.0
-         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = 0.0
-
-         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = 0.0
-         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = 0.0
-
-         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = 0.0
-         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = 0.0
-
-         w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
-         w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
-      enddo
-
-      ! end redirection of share output to wav log
-
       if ( iaproc .eq. napout ) then
         call shr_sys_flush(ndso)
       endif
@@ -946,8 +922,6 @@ CONTAINS
         END DO
 
         DW(0) = 0.
-
-        CALL SETUGIOBP
 
         call mpi_barrier ( mpi_comm, ierr )
       
@@ -1200,50 +1174,54 @@ CONTAINS
          IY  = MAPSF(ISEA,2)
          if (MAPSTA(IY,IX) .eq. 1) then
 
-             w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
-             w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
-             w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
+             if (wav_ocn_coup .eq. 'twoway') then
+                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = HS(jsea)
+                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = FP0(jsea)
+                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = THP0(jsea)
 
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = USSP(jsea,1)
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = USSP(jsea,nk+1)
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = USSP(jsea,1)
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = USSP(jsea,nk+1)
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = USSP(jsea,2)
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = USSP(jsea,nk+2)
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = USSP(jsea,2)
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = USSP(jsea,nk+2)
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = USSP(jsea,3)
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = USSP(jsea,nk+3)
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = USSP(jsea,3)
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = USSP(jsea,nk+3)
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = USSP(jsea,4)
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = USSP(jsea,nk+4)
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = USSP(jsea,4)
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = USSP(jsea,nk+4)
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = USSP(jsea,5)
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = USSP(jsea,nk+5)
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = USSP(jsea,5)
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = USSP(jsea,nk+5)
-
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = USSP(jsea,6)
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = USSP(jsea,nk+6)
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = USSP(jsea,6)
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = USSP(jsea,nk+6)
+             endif
           else
-
-             w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0
+             if (wav_ocn_coup .eq. 'twoway') then
+                w2x_w%rattr(index_w2x_Sw_Hs,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_Fp,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_Dp,jsea) = 0.0
             
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_1,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_1,jsea) = 0.0
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_2,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_2,jsea) = 0.0
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_3,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_3,jsea) = 0.0
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_4,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_4,jsea) = 0.0
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_5,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_5,jsea) = 0.0
 
-             w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
-             w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_ustokes_wavenumber_6,jsea) = 0.0
+                w2x_w%rattr(index_w2x_Sw_vstokes_wavenumber_6,jsea) = 0.0
           endif
+        endif
       enddo
 
       !----------------------------------------------------------------------------

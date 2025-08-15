@@ -86,6 +86,18 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <compset>
+      <alias>F2010-EAMxx-MAM4xx</alias> <!-- Coupled land-atm compset (using EAMxx with MAM4xx aerosol package), 2010 initial conditions -->
+      <lname>2010_SCREAM%MAM4xx_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-EAMxx-MAM4xx-MPASSI</alias> <!-- Coupled land-atm compset (using EAMxx with MAM4xx aerosol package with MPASSI), 2010 initial conditions -->
+      <lname>2010_SCREAM%MAM4xx_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">

@@ -15,11 +15,13 @@ my @groups = qw(run_modes
                 wave_coupling
                 gotm
                 forcing
+                precip_scaling
                 coupling
                 shortwaveradiation
                 self_attraction_loading
                 tidal_potential_forcing
                 frazil_ice
+                land_ice
                 land_ice_fluxes
                 advection
                 bottom_drag
@@ -44,6 +46,7 @@ my @groups = qw(run_modes
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers
                 tracer_forcing_ecosystracers
+                tracer_forcing_freshwatertracers
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
                 tracer_forcing_idealagetracers

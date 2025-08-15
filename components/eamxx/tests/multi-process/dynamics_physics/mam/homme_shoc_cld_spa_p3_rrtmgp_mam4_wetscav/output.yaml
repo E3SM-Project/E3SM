@@ -1,11 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_mam4_wetscav_output
-Averaging Type: Instant
-Max Snapshots Per File: 1
-Fields:
-  Physics GLL:
-    Field Names:
+averaging_type: instant
+fields:
+  physics_gll:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -104,7 +103,7 @@ Fields:
       - aerdepwetis
       - aerdepwetcw
       - dgnumwet
-      - dgncur_a
+      - dgnum
       - wetdens
       - qaerwat
       - bc_c1
@@ -134,6 +133,6 @@ Fields:
       - soa_c3
 
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

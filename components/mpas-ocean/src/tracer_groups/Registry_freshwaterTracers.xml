@@ -1,0 +1,247 @@
+	<nml_record name="tracer_forcing_freshwaterTracers">
+		<nml_option name="config_use_freshwaterTracers" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_surface_bulk_forcing" type="logical" default_value=".true." units="unitless"
+			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'freshwaterTracers' category. True by default because the main function of this tracer group is tracking freshwater fluxes"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, surface restoring source is applied to tracers in 'freshwaterTracers' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
+			description="if true, interior restoring source is applied to tracers in 'freshwaterTracers' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
+			description="if true, exponential decay source is applied to tracers in 'freshwaterTracers' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, idealAge forcing source is applied to tracers in 'freshwaterTracers' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
+			description="if true, transit time distribution forcing source is applied to tracers in 'freshwaterTracers' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_surface_value" type="logical" default_value=".false." units="unitless"
+			description="if true, surface value is computed for 'freshwaterTracers' category"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_rainFlux" type="logical" default_value=".true." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_snowFlux" type="logical" default_value=".true." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_iceRunoffFlux" type="logical" default_value=".true." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_riverRunoffFlux" type="logical" default_value=".true." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_subglacialRunoffFlux" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_seaIceFreshWaterFlux" type="logical" default_value=".true." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_icebergFreshWaterFlux" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_freshwaterTracers_landIceFreshwaterFlux" type="logical" default_value=".false." units="unitless"
+			description="if true, the 'freshwaterTracers' category is enabled for the run"
+			possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+	<packages>
+		<package name="freshwaterTracersPKG" description="This package includes variables required to include freshwaterTracers."/>
+		<package name="freshwaterTracersBulkRestoringPKG" description="This package includes variables required to compute bulk restoring on the freshwaterTracers group."/>
+		<package name="freshwaterTracersSurfaceRestoringPKG" description="This package includes variables required to compute surface restoring on the freshwaterTracers group."/>
+		<package name="freshwaterTracersInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the freshwaterTracers group."/>
+		<package name="freshwaterTracersExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the freshwaterTracers group."/>
+		<package name="freshwaterTracersIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the freshwaterTracers group."/>
+		<package name="freshwaterTracersTTDPKG" description="This package includes variables required to compute transit-time distribution forcing on the freshwaterTracers group."/>
+	</packages>
+
+	<var_struct name="state" time_levs="2">
+		<var_struct name="tracers" time_levs="2">
+			<var_array name="freshwaterTracers" dimensions="nVertLevels nCells Time" type="real" packages="freshwaterTracersPKG" >
+				<var name="snowConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of snow by volume."
+				/>
+				<var name="rainConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of rain by volume."
+				/>
+				<var name="seaIceFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of sea ice-derived freshwater by volume."
+				/>
+				<var name="icebergFreshWaterConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of iceberg-derived freshwater by volume."
+				/>
+				<var name="iceRunoffConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of ice runoff-derived freshwater by volume."
+				/>
+				<var name="landIceFreshwaterConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of land ice-derived freshwater by volume."
+				/>
+				<var name="riverRunoffConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of river runoff-derived freshwater by volume."
+				/>
+				<var name="subglacialRunoffConcentration" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of subglacial runoff-derived freshwater by volume."
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="tend" time_levs="1">
+		<var_struct name="tracersTend" time_levs="1">
+			<var_array name="freshwaterTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="freshwaterTracersPKG">
+				<var name="snowTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of snow by volume."
+				/>
+				<var name="rainTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of rain by volume."
+				/>
+				<var name="seaIceFreshWaterTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of sea ice-derived freshwater by volume."
+				/>
+				<var name="icebergFreshWaterTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of iceberg-derived freshwater by volume."
+				/>
+				<var name="iceRunoffTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of ice runoff-derived freshwater by volume."
+				/>
+				<var name="landIceFreshwaterTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of land ice-derived freshwater by volume."
+				/>
+				<var name="riverRunoffTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of river runoff-derived freshwater by volume."
+				/>
+				<var name="subglacialRunoffTend" array_group="freshwaterGRP" units="fractional"
+				description="Concentration of subglacial runoff-derived freshwater by volume."
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>
+
+	<var_struct name="forcing" time_levs="1">
+		<var_struct name="tracersSurfaceFlux" time_levs="1">
+			<var_array name="freshwaterTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="freshwaterTracersPKG">
+				<var name="snowSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of snow by volume."
+				/>
+				<var name="rainSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of rain by volume."
+				/>
+				<var name="seaIceFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of sea ice-derived freshwater by volume."
+				/>
+				<var name="icebergFreshWaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of iceberg-derived freshwater by volume."
+				/>
+				<var name="iceRunoffSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of ice runoff-derived freshwater by volume."
+				/>
+				<var name="landIceFreshwaterSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of land ice-derived freshwater by volume."
+				/>
+				<var name="riverRunoffSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of river runoff-derived freshwater by volume."
+				/>
+				<var name="subglacialRunoffSurfaceFlux" array_group="freshwaterTracerFluxGRP" units="fractional"
+				description="Concentration of subglacial runoff-derived freshwater by volume."
+				/>
+			</var_array>
+			<var_array name="freshwaterTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="freshwaterTracersPKG">
+				<var name="snowSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of snow by volume."
+				/>
+				<var name="rainSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of rain by volume."
+				/>
+				<var name="seaIceFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of sea ice-derived freshwater by volume."
+				/>
+				<var name="icebergFreshWaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of iceberg-derived freshwater by volume."
+				/>
+				<var name="iceRunoffSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of ice runoff-derived freshwater by volume."
+				/>
+				<var name="landIceFreshwaterSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of land ice-derived freshwater by volume."
+				/>
+				<var name="riverRunoffSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of river runoff-derived freshwater by volume."
+				/>
+				<var name="subglacialRunoffSurfaceFluxRunoff" array_group="freshwaterTracersSurfaceFluxRunoffGRP" units="fractional"
+				description="Concentration of subglacial runoff-derived freshwater by volume."
+				/>
+			</var_array>
+			<var_array name="freshwaterTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="freshwaterTracersPKG">
+				<var name="snowSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of snow by volume."
+				/>
+				<var name="rainSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of rain by volume."
+				/>
+				<var name="seaIceFreshWaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of sea ice-derived freshwater by volume."
+				/>
+				<var name="icebergFreshWaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of iceberg-derived freshwater by volume."
+				/>
+				<var name="iceRunoffSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of ice runoff-derived freshwater by volume."
+				/>
+				<var name="landIceFreshwaterSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of land ice-derived freshwater by volume."
+				/>
+				<var name="riverRunoffSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of river runoff-derived freshwater by volume."
+				/>
+				<var name="subglacialRunoffSurfaceFluxSubglacialRunoff" array_group="freshwaterTracersSurfaceFluxSubglacialRunoffGRP" units="fractional"
+				description="Concentration of subglacial runoff-derived freshwater by volume."
+				/>
+			</var_array>
+			<var_array name="freshwaterTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="freshwaterTracersPKG">
+				<var name="snowSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of snow by volume."
+				/>
+				<var name="rainSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of rain by volume."
+				/>
+				<var name="seaIceFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of sea ice-derived freshwater by volume."
+				/>
+				<var name="icebergFreshWaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of iceberg-derived freshwater by volume."
+				/>
+				<var name="iceRunoffSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of ice runoff-derived freshwater by volume."
+				/>
+				<var name="landIceFreshwaterSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of land ice-derived freshwater by volume."
+				/>
+				<var name="riverRunoffSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of river runoff-derived freshwater by volume."
+				/>
+				<var name="subglacialRunoffSurfaceFluxRemoved" array_group="freshwaterTracersSurfaceFluxRemovedGRP" units="fractional"
+				description="Concentration of subglacial runoff-derived freshwater by volume."
+				/>
+			</var_array>
+		</var_struct>
+	</var_struct>

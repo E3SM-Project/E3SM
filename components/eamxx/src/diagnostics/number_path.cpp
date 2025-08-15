@@ -1,6 +1,6 @@
 #include "diagnostics/number_path.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 #include "physics/share/physics_constants.hpp"
 
@@ -9,11 +9,11 @@ namespace scream {
 NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
                                            const ekat::ParameterList &params)
     : AtmosphereDiagnostic(comm, params) {
-  EKAT_REQUIRE_MSG(params.isParameter("Number Kind"),
-                   "Error! NumberPathDiagnostic requires 'Number Kind' in its "
+  EKAT_REQUIRE_MSG(params.isParameter("number_kind"),
+                   "Error! NumberPathDiagnostic requires 'number_kind' in its "
                    "input parameters.\n");
 
-  m_kind = m_params.get<std::string>("Number Kind");
+  m_kind = m_params.get<std::string>("number_kind");
   if(m_kind == "Liq") {
     m_qname = "qc";
     m_nname = "nc";
@@ -33,15 +33,13 @@ NumberPathDiagnostic::NumberPathDiagnostic(const ekat::Comm &comm,
   }
 }
 
-std::string NumberPathDiagnostic::name() const { return m_kind + "NumberPath"; }
-
 void NumberPathDiagnostic::set_grids(
     const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   auto m2 = pow(m,2);
 
-  auto grid             = grids_manager->get_grid("Physics");
+  auto grid             = grids_manager->get_grid("physics");
   const auto &grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs();  // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
@@ -55,7 +53,7 @@ void NumberPathDiagnostic::set_grids(
   add_field<Required>(m_nname, scalar3d, 1 / kg, grid_name);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid(name(), scalar2d, kg/(kg*m2), grid_name);
+  FieldIdentifier fid(m_kind + name(), scalar2d, kg/(kg*m2), grid_name);
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 }
@@ -64,7 +62,7 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   using PC  = scream::physics::Constants<Real>;
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
 
   constexpr Real g = PC::gravit;
 
@@ -74,9 +72,9 @@ void NumberPathDiagnostic::compute_diagnostic_impl() {
   const auto rho = get_field_in("pseudo_density").get_view<const Real **>();
 
   const auto num_levs = m_num_levs;
-  const auto policy   = ESU::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy   = TPF::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for(
-      "Compute " + name(), policy, KOKKOS_LAMBDA(const MT &team) {
+      "Compute " + m_kind + name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
         auto q_icol    = ekat::subview(q, icol);
         auto n_icol    = ekat::subview(n, icol);

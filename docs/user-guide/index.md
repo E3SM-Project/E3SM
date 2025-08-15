@@ -1,6 +1,6 @@
 # User Guide
 
-E3SM is not just one climate model but a modeling system that allows
+E3SM is not just one earth system model but a modeling system that allows
 many different configurations of atmosphere, ocean, land and other
 components with both full model and data model options. Also, the configurations of model
 components can run at different resolutions.  Some configurations
@@ -85,7 +85,7 @@ Currently two grid sets are supported for the above compsets, including a nomina
 
 Inputdata for coupled compsets at component model levels are the same as for the standalone component configurations
 for a given forcing scenario (e.g., `1850` for the pre-industrial period,  `20TR` for the historical period, `2010`
-for present-day condition, and `SSPs` for Shared Socioeconomic Pathways of climate change scenarios).
+for present-day condition, and `SSPs` for Shared Socioeconomic Pathways).
 Between the coupled compsets, the differences are in the prescribed solar forcing, volcanic emissions,
 atmospheric forcing data, and land use and land cover. The required inputdata for the pre-industrial and the historical periods
 as well as the present-day condition are described in [the EAM User's Guide](https://e3sm-project.github.io/E3SM/EAM) and

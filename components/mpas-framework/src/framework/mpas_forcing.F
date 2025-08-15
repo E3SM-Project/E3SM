@@ -35,7 +35,8 @@ module mpas_forcing
        mpas_forcing_init_field_data, &
        mpas_forcing_get_forcing, &
        mpas_forcing_get_forcing_time, &
-       mpas_forcing_write_restart_times
+       mpas_forcing_write_restart_times, &
+       mpas_advance_forcing_clock
 
 contains
 
@@ -1193,7 +1194,7 @@ contains
        if (trim(forcingGroup % forcingGroupName) == trim(forcingGroupName)) then
 
           ! advance the forcing time
-          call advance_forcing_clock(forcingGroup, dt)
+          call mpas_advance_forcing_clock(forcingGroup, dt)
 
           ! cycle the forcing clock
           if (forcingGroup % forcingCycleUse) then
@@ -1230,7 +1231,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  advance_forcing_clock
+!  mpas_advance_forcing_clock
 !
 !> \brief set the forcing clock
 !> \author Adrian K. Turner, LANL
@@ -1241,7 +1242,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine advance_forcing_clock(&!{{{
+  subroutine mpas_advance_forcing_clock(&!{{{
        forcingGroup, &
        dt)
 
@@ -1256,9 +1257,10 @@ contains
 
     ! increment clock with timestep
     call mpas_set_timeInterval(timeStep, dt=dt)
+    !call mpas_log_write('time step from mpas_set_timeInterval: $i $i $i', intArgs=(/int(timeStep%ti%basetime%S), int(timeStep%ti%basetime%Sn), int(timeStep%ti%basetime%Sd) /))
     call mpas_advance_clock(forcingGroup % forcingClock, timeStep)
 
-  end subroutine advance_forcing_clock!}}}
+  end subroutine mpas_advance_forcing_clock!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1597,8 +1599,10 @@ contains
     call mpas_get_timeInterval(diff1, forcingStream % forcingTimes(1), dt=diffr1)
     call mpas_get_timeInterval(diff2, currentTime, dt=diffr2)
 
+    !call mpas_log_write('diffr2 $r, diffr, $r', realArgs=(/ diffr2, diffr /))
     interpolants(1) = diffr2 / diffr
     interpolants(2) = 1.0_RKIND - interpolants(1) !diffr1 / diffr
+    
 
   end subroutine get_interpolants_linear!}}}
 
@@ -1612,7 +1616,7 @@ contains
 !> \details
 !>  Given the current time and forcing times calculate the correct
 !>  interpolants with piecewise constant interpolation
-!
+
 !-----------------------------------------------------------------------
 
   subroutine get_interpolants_constant(interpolants, forcingStream, currentTime)!{{{

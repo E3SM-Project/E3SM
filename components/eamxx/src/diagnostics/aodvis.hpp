@@ -2,7 +2,7 @@
 #define EAMXX_AODVIS_DIAG
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_utils.hpp"
+#include "share/util/eamxx_utils.hpp"
 
 namespace scream {
 
@@ -15,12 +15,15 @@ class AODVis : public AtmosphereDiagnostic {
   // Constructors
   AODVis(const ekat::Comm &comm, const ekat::ParameterList &params);
 
-  // The name of the diagnostic
+  // The name of the diagnostic CLASS (not the computed field)
   std::string name() const override { return "AerosolOpticalDepth550nm"; }
 
   // Set the grid
   void set_grids(
       const std::shared_ptr<const GridsManager> grids_manager) override;
+
+  void initialize_impl(
+      const RunType /*run_type*/) override;
 
  protected:
 #ifdef KOKKOS_ENABLE_CUDA
@@ -33,6 +36,8 @@ class AODVis : public AtmosphereDiagnostic {
 
   int m_swbands = eamxx_swbands();
   int m_vis_bnd = eamxx_vis_swband_idx();
+
+  Real m_mask_val;
 };
 
 }  // namespace scream

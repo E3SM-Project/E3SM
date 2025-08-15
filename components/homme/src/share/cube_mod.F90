@@ -83,7 +83,9 @@ module cube_mod
   public  :: CubeElemCount
   public  :: CubeSetupEdgeIndex
   public  :: ref2sphere
-
+#ifdef MODEL_CESM
+  public  :: dmap_elementlocal
+#endif
 
   ! public interface to REFERECE element map
 #if HOMME_QUAD_PREC
@@ -514,8 +516,6 @@ contains
     endif
   end subroutine Dmap
 
-
-
   ! ========================================================
   ! Dmap:
   !
@@ -577,8 +577,6 @@ contains
     D(2,1) = tmpD(2,1)*Jp(1,1) + tmpD(2,2)*Jp(2,1)
     D(2,2) = tmpD(2,1)*Jp(1,2) + tmpD(2,2)*Jp(2,2)
   end subroutine dmap_equiangular
-
-
 
   ! ========================================================
   ! vmap:

@@ -1,4 +1,5 @@
 # framework
+list(APPEND CPPDEFS "-Dcoupled")
 list(APPEND COMMON_RAW_SOURCES
   framework/mpas_kind_types.F
   framework/mpas_framework.F

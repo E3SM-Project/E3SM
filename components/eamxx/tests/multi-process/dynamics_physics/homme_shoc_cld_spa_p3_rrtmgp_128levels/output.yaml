@@ -1,10 +1,10 @@
 %YAML 1.1
 ---
 filename_prefix: homme_shoc_cld_spa_p3_rrtmgp_128levels_output
-Averaging Type: Instant
-Fields:
-  Physics GLL:
-    Field Names:
+averaging_type: instant
+fields:
+  physics_gll:
+    field_names:
       # HOMME
       - ps
       - pseudo_density
@@ -79,6 +79,6 @@ Fields:
       - T_mid_at_lev_10
  
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

@@ -1085,7 +1085,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis20km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
+    <valid_values>mpas.aisgis20km,mpas.ais20km,mpas.ais8to30km,mpas.ais4to20km,mpas.gis20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2,null</valid_values>
     <default_value>mpas.gis20km</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -1373,6 +1373,14 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>atm2ocn flux mapping file</desc>
+  </entry>
+
+  <entry id="ATM2ICE_FMAPNAME_NONLINEAR">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>atm2ice flux mapping file</desc>
   </entry>
 
   <entry id="ATM2OCN_SMAPNAME">
@@ -2065,7 +2073,7 @@
   <entry id="VECT_MAP">
     <type>char</type>
     <valid_values>none,npfix,cart3d,cart3d_diag,cart3d_uvw,cart3d_uvw_diag</valid_values>
-    <default_value>none</default_value>
+    <default_value>cart3d</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>vector mapping option</desc>
@@ -2620,7 +2628,7 @@
 
   <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,adios,hdf5,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,netcdf4z,adios,adiosc,hdf5,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
@@ -3098,15 +3106,6 @@
    <group>job_submission</group>
    <file>env_batch.xml</file>
    <desc>whether the PROJECT value is required on this machine</desc>
- </entry>
-
- <entry id="COMPARE_TO_NUOPC">
-   <type>logical</type>
-   <valid_values>TRUE,FALSE</valid_values>
-   <default_value>FALSE</default_value>
-   <group>comparison_to_nuopc</group>
-   <file>env_build.xml</file>
-   <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
  </entry>
 
  <help>

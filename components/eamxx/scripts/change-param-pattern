@@ -2,7 +2,7 @@
 
 """
 A quick-and-dirty script for changing naming patterns of
-items in namelist_defaults_scream.xml.
+items in namelist_defaults_eamxx.xml.
 
 Run from root scream directory on mappy
 """
@@ -17,7 +17,7 @@ print(result)
 bad_pattern = "__"
 name_re = re.compile(r'([A-Za-z0-9]+__)([A-Za-z0-9]+__)?([A-Za-z0-9]+__)?([A-Za-z0-9]+__)?([A-Za-z0-9]+__)?([A-Za-z0-9]+)')
 
-raw_dbl_un = run_cmd_no_fail(f"git grep {bad_pattern} cime_config/namelist_defaults_scream.xml")
+raw_dbl_un = run_cmd_no_fail(f"git grep {bad_pattern} cime_config/namelist_defaults_eamxx.xml")
 bad_name_unders = []
 for m in name_re.finditer(raw_dbl_un):
     name = "".join([item for item in m.groups() if item is not None])

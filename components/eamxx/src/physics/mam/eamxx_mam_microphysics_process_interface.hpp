@@ -1,230 +1,176 @@
 #ifndef EAMXX_MAM_MICROPHYSICS_HPP
 #define EAMXX_MAM_MICROPHYSICS_HPP
 
+#include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/mam_coupling.hpp>
-#include <share/atm_process/atmosphere_process.hpp>
-#include <share/util/scream_common_physics_functions.hpp>
+#include <share/util/eamxx_common_physics_functions.hpp>
 
-#include "impl/mam4_amicphys.cpp" // mam4xx top-level microphysics function(s)
-
-#include <ekat/ekat_parameter_list.hpp>
-#include <ekat/ekat_workspace.hpp>
+#include "readfiles/tracer_reader_utils.hpp"
+// For calling MAM4 processes
 #include <mam4xx/mam4.hpp>
-
 #include <string>
 
-#ifndef KOKKOS_ENABLE_CUDA
-#define protected_except_cuda public
-#define private_except_cuda public
-#else
-#define protected_except_cuda protected
-#define private_except_cuda private
-#endif
-
-namespace scream
-{
+namespace scream {
 
 // The process responsible for handling MAM4 aerosol microphysics. The AD
 // stores exactly ONE instance of this class in its list of subcomponents.
-class MAMMicrophysics final : public scream::AtmosphereProcess {
+class MAMMicrophysics final : public MAMGenericInterface {
   using PF = scream::PhysicsFunctions<DefaultDevice>;
   using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // views for single- and multi-column data
-  using view_1d_int   = typename KT::template view_1d<int>;
   using view_1d       = typename KT::template view_1d<Real>;
   using view_2d       = typename KT::template view_2d<Real>;
+  using view_3d       = typename KT::template view_3d<Real>;
   using const_view_1d = typename KT::template view_1d<const Real>;
   using const_view_2d = typename KT::template view_2d<const Real>;
 
-  // unmanaged views (for buffer and workspace manager)
-  using uview_1d = Unmanaged<typename KT::template view_1d<Real>>;
-  using uview_2d = Unmanaged<typename KT::template view_2d<Real>>;
+  using view_1d_host = typename KT::view_1d<Real>::HostMirror;
 
-  // a quantity stored in a single vertical column with a single index
-  using ColumnView = mam4::ColumnView;
+  using view_int_2d = typename KT::template view_2d<int>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
 
-public:
-
+ public:
   // Constructor
-  MAMMicrophysics(const ekat::Comm& comm, const ekat::ParameterList& params);
-
-protected_except_cuda:
+  MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterList &params);
 
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
 
-  // process metadata
-  AtmosphereProcessType type() const override;
-  std::string name() const override;
-
-  // set aerosol microphysics configuration parameters (called by constructor)
-  void configure(const ekat::ParameterList& params);
+  // The name of the subcomponent
+  std::string name() const { return "mam_aero_microphysics"; }
 
   // grid
-  void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
+  void set_grids(
+      const std::shared_ptr<const GridsManager> grids_manager) override;
 
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
   void init_buffers(const ATMBufferManager &buffer_manager) override;
 
-  // process behavior
+  // Initialize variables
   void initialize_impl(const RunType run_type) override;
+
+  // Run the process by one time step
   void run_impl(const double dt) override;
-  void finalize_impl() override;
 
-  // performs some checks on the tracers group
-  void set_computed_group_impl(const FieldGroup& group) override;
+  // Finalize
+  void finalize_impl(){/*Do nothing*/};
 
-private_except_cuda:
+ private:
+  // Output extra mam4xx diagnostics.
+  bool extra_mam4_aero_microphys_diags_ = false;
 
-  // number of horizontal columns and vertical levels
-  int ncol_, nlev_;
+  // The orbital year, used for zenith angle calculations:
+  // If > 0, use constant orbital year for duration of simulation
+  // If < 0, use year from timestamp for orbital parameters
+  int m_orbital_year;
 
-  // configuration data (for the moment, we plan to be able to move this to
-  // the device, so we can't use C++ strings)
+  // Orbital parameters, used for zenith angle calculations.
+  // If >= 0, bypass computation based on orbital year and use fixed parameters
+  // If <  0, compute based on orbital year, specified above
+  // These variables are required to be double.
+  double m_orbital_eccen;  // Eccentricity
+  double m_orbital_obliq;  // Obliquity
+  double m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
+
   struct Config {
-    // photolysis parameters
-    struct {
-      char rsf_file[MAX_FILENAME_LEN];
-      char xs_long_file[MAX_FILENAME_LEN];
-    } photolysis;
-
     // stratospheric chemistry parameters
-    struct {
-      int o3_lbl; // number of layers with ozone decay from the surface
-      int o3_sfc; // set from namelist input linoz_sfc
-      int o3_tau; // set from namelist input linoz_tau
-      Real psc_T; // set from namelist input linoz_psc_T
-      char chlorine_loading_file[MAX_FILENAME_LEN];
-    } linoz;
+    mam4::microphysics::LinozConf linoz;
 
     // aqueous chemistry parameters
     mam4::mo_setsox::Config setsox;
 
     // aero microphysics configuration (see impl/mam4_amicphys.cpp)
-    impl::AmicPhysConfig amicphys;
-
-    // dry deposition parameters
-    struct {
-      char srf_file[MAX_FILENAME_LEN];
-    } drydep;
+    mam4::microphysics::AmicPhysConfig amicphys;
   };
   Config config_;
-
-  // Atmosphere processes often have a pre-processing step that constructs
-  // required variables from the set of fields stored in the field manager.
-  // This functor implements this step, which is called during run_impl.
-  struct Preprocess {
-    Preprocess() = default;
-
-    // on host: initializes preprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
-                    const mam_coupling::WetAtmosphere& wet_atm,
-                    const mam_coupling::AerosolState& wet_aero,
-                    const mam_coupling::DryAtmosphere& dry_atm,
-                    const mam_coupling::AerosolState& dry_aero) {
-      ncol_ = ncol;
-      nlev_ = nlev;
-      wet_atm_ = wet_atm;
-      wet_aero_ = wet_aero;
-      dry_atm_ = dry_atm;
-      dry_aero_ = dry_aero;
-    }
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
-      const int i = team.league_rank(); // column index
-
-      compute_vertical_layer_heights(team, dry_atm_, i);
-      team.team_barrier(); // allows kernels below to use layer heights
-      compute_updraft_velocities(team, wet_atm_, dry_atm_, i);
-      compute_dry_mixing_ratios(team, wet_atm_, dry_atm_, i);
-      compute_dry_mixing_ratios(team, wet_atm_, wet_aero_, dry_aero_, i);
-      team.team_barrier();
-    } // operator()
-
-    // number of horizontal columns and vertical levels
-    int ncol_, nlev_;
-
-    // local atmospheric and aerosol state data
-    mam_coupling::WetAtmosphere wet_atm_;
-    mam_coupling::DryAtmosphere dry_atm_;
-    mam_coupling::AerosolState  wet_aero_, dry_aero_;
-
-  }; // MAMMicrophysics::Preprocess
-
-  // Postprocessing functor
-  struct Postprocess {
-    Postprocess() = default;
-
-    // on host: initializes postprocess functor with necessary state data
-    void initialize(const int ncol, const int nlev,
-                    const mam_coupling::WetAtmosphere& wet_atm,
-                    const mam_coupling::AerosolState& wet_aero,
-                    const mam_coupling::DryAtmosphere& dry_atm,
-                    const mam_coupling::AerosolState& dry_aero) {
-      ncol_ = ncol;
-      nlev_ = nlev;
-      wet_atm_ = wet_atm;
-      wet_aero_ = wet_aero;
-      dry_atm_ = dry_atm;
-      dry_aero_ = dry_aero;
-    }
-
-    KOKKOS_INLINE_FUNCTION
-    void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
-      const int i = team.league_rank(); // column index
-      compute_wet_mixing_ratios(team, dry_atm_, dry_aero_, wet_aero_, i);
-      team.team_barrier();
-    } // operator()
-
-    // number of horizontal columns and vertical levels
-    int ncol_, nlev_;
-
-    // local atmospheric and aerosol state data
-    mam_coupling::WetAtmosphere wet_atm_;
-    mam_coupling::DryAtmosphere dry_atm_;
-    mam_coupling::AerosolState  wet_aero_, dry_aero_;
-  }; // MAMMicrophysics::Postprocess
-
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
-
-  // pre- and postprocessing scratch pads (for wet <-> dry conversions)
-  Preprocess preprocess_;
-  Postprocess postprocess_;
-
-  // atmospheric and aerosol state variables
-  mam_coupling::WetAtmosphere wet_atm_;
-  mam_coupling::DryAtmosphere dry_atm_;
-  mam_coupling::AerosolState  wet_aero_, dry_aero_;
 
   // photolysis rate table (column-independent)
   mam4::mo_photo::PhotoTableData photo_table_;
 
   // column areas, latitudes, longitudes
-  const_view_1d col_areas_, col_latitudes_, col_longitudes_;
+  const_view_1d col_latitudes_;
 
-  // time step number
-  int step_;
+  // surface albedo: shortwave, direct
+  const_view_1d d_sfc_alb_dir_vis_;
 
+  mam_coupling::TracerTimeState linoz_time_state_;
+  view_2d work_photo_table_;
+  std::vector<Real> chlorine_values_;
+  std::vector<int> chlorine_time_secs_;
+  view_3d photo_rates_;
+
+  // invariants members
+  mam_coupling::TracerTimeState trace_time_state_;
+  std::shared_ptr<AtmosphereInput> TracerDataReader_;
+  std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
+  mam_coupling::TracerData tracer_data_;
+  view_3d invariants_;
+  std::string oxid_file_name_;
+  view_2d cnst_offline_[4];
+
+  // linoz reader
+  std::shared_ptr<AtmosphereInput> LinozDataReader_;
+  std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
+  mam_coupling::TracerData linoz_data_;
+  std::string linoz_file_name_;
+
+  // Vertical emission uses 9 files, here I am using std::vector to stote
+  // instance of each file.
+  mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
+  std::vector<std::shared_ptr<AtmosphereInput>> ElevatedEmissionsDataReader_;
+  std::vector<std::shared_ptr<AbstractRemapper>> ElevatedEmissionsHorizInterp_;
+  std::vector<std::string> extfrc_lst_;
+  std::vector<mam_coupling::TracerData> elevated_emis_data_;
+  std::map<std::string, std::string> elevated_emis_file_name_;
+  std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
+  view_3d extfrc_;
+  mam_coupling::ForcingHelper forcings_[mam4::gas_chemistry::extcnt];
+
+  view_1d_host acos_cosine_zenith_host_;
+  view_1d acos_cosine_zenith_;
+
+  view_int_2d index_season_lai_;
+  // // dq/dt for convection [kg/kg/s]
+  view_1d cmfdqr_;
+  view_2d work_set_het_;
+  // aerosol state variables
+  mam_coupling::AerosolState wet_aero_, dry_aero_;
+  // wet mixing ratios (water species)
+  mam_coupling::WetAtmosphere wet_atm_;
+  // dry mixing ratios (water species)
+  mam_coupling::DryAtmosphere dry_atm_;
   // workspace manager for internal local variables
-  //ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
   mam_coupling::Buffer buffer_;
 
-  // physics grid for column information
-  std::shared_ptr<const AbstractGrid> grid_;
+  // Work arrays for return values from
+  // perform_atmospheric_chemistry_and_microphysics
+  view_2d dflx_;
+  view_2d dvel_;
+  int num_2d_scratch_ = 9;
+  int get_len_temporary_views();
+  void init_temporary_views();
+  int len_temporary_views_{0};
 
-  // sets defaults for "namelist parameters"
-  void set_defaults_();
+  void add_io_docstring_to_fields_with_mixed_units(const std::map<std::string, std::string> &flds) {
+    using str_atts_t = std::map<std::string,std::string>;
+    for (const auto &pair : flds) {
+      // Get the field, and add a docstring to its string attributes
+      // This is used to document that the field contains heterogeneous
+      // quantities, i.e., species have different units.
+      auto &f = get_field_out(pair.first);
+      auto &io_str_atts = f.get_header().get_extra_data<str_atts_t>("io: string attributes");
+      io_str_atts["doc"] = pair.second;
+    }
+  }
+};  // MAMMicrophysics
 
-}; // MAMMicrophysics
+}  // namespace scream
 
-} // namespace scream
-
-#endif // EAMXX_MAM_MICROPHYSICS_HPP
+#endif  // EAMXX_MAM_MICROPHYSICS_HPP

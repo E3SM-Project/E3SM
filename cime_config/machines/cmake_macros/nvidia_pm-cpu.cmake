@@ -8,6 +8,7 @@ string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g")
 if (compile_threaded)
   string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_OPENMP=Off") # work-around for nvidia as kokkos is not passing "-mp" for threaded build
 endif()
+
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")

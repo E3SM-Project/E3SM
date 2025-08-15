@@ -56,6 +56,7 @@
 <config_dt ocn_grid="FRISwISC01to60E3r1">'00:01:00'</config_dt>
 <config_dt ocn_grid="RRSwISC6to18E3r5">'00:05:00'</config_dt>
 <config_dt ocn_grid="SOwISC12to30E3r3">'00:10:00'</config_dt>
+<config_dt ocn_grid="SOwISC12to30E3r4">'00:10:00'</config_dt>
 <config_time_integrator>'split_explicit_ab2'</config_time_integrator>
 <config_number_of_time_levels>2</config_number_of_time_levels>
 
@@ -87,6 +88,7 @@
 <config_hmix_scaleWithMesh ocn_grid="FRISwISC01to60E3r1">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="RRSwISC6to18E3r5">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="SOwISC12to30E3r3">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="SOwISC12to30E3r4">.true.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_hmix_use_ref_cell_width>.false.</config_hmix_use_ref_cell_width>
 <config_hmix_ref_cell_width>30.0e3</config_hmix_ref_cell_width>
@@ -110,6 +112,7 @@
 <config_use_mom_del2 ocn_grid="FRISwISC01to60E3r1">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="RRSwISC6to18E3r5">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="SOwISC12to30E3r3">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="SOwISC12to30E3r4">.true.</config_use_mom_del2>
 <config_mom_del2>10.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
@@ -127,6 +130,7 @@
 <config_mom_del2 ocn_grid="FRISwISC01to60E3r1">38.5</config_mom_del2>
 <config_mom_del2 ocn_grid="RRSwISC6to18E3r5">100.0</config_mom_del2>
 <config_mom_del2 ocn_grid="SOwISC12to30E3r3">462.0</config_mom_del2>
+<config_mom_del2 ocn_grid="SOwISC12to30E3r4">462.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
@@ -159,6 +163,7 @@
 <config_mom_del4 ocn_grid="FRISwISC01to60E3r1">6.83e06</config_mom_del4>
 <config_mom_del4 ocn_grid="RRSwISC6to18E3r5">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="SOwISC12to30E3r3">1.18e10</config_mom_del4>
+<config_mom_del4 ocn_grid="SOwISC12to30E3r4">1.18e10</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_use_tracer_del4>.false.</config_use_tracer_del4>
 <config_tracer_del4>0.0</config_tracer_del4>
@@ -197,6 +202,7 @@
 <config_Redi_horizontal_taper ocn_grid="FRISwISC02to60E3r1">'RossbyRadius'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_taper ocn_grid="FRISwISC01to60E3r1">'RossbyRadius'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_taper ocn_grid="SOwISC12to30E3r3">'RossbyRadius'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_taper ocn_grid="SOwISC12to30E3r4">'RossbyRadius'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
 <config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
 <config_Redi_horizontal_ramp_max>30e3</config_Redi_horizontal_ramp_max>
@@ -229,6 +235,7 @@
 <config_GM_closure ocn_grid="FRISwISC02to60E3r1">'N2_dependent'</config_GM_closure>
 <config_GM_closure ocn_grid="FRISwISC01to60E3r1">'N2_dependent'</config_GM_closure>
 <config_GM_closure ocn_grid="SOwISC12to30E3r3">'N2_dependent'</config_GM_closure>
+<config_GM_closure ocn_grid="SOwISC12to30E3r4">'N2_dependent'</config_GM_closure>
 <config_GM_constant_kappa>900.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
@@ -244,6 +251,7 @@
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="FRISwISC02to60E3r1">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="FRISwISC01to60E3r1">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="SOwISC12to30E3r3">600.0</config_GM_constant_kappa>
+<config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="SOwISC12to30E3r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_bclModeSpeed>0.3</config_GM_constant_bclModeSpeed>
 <config_GM_minBclModeSpeed_method>'constant'</config_GM_minBclModeSpeed_method>
 <config_GM_spatially_variable_min_kappa>300.0</config_GM_spatially_variable_min_kappa>
@@ -258,6 +266,7 @@
 <config_GM_spatially_variable_baroclinic_mode ocn_grid="FRISwISC02to60E3r1">1.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_spatially_variable_baroclinic_mode ocn_grid="FRISwISC01to60E3r1">1.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_spatially_variable_baroclinic_mode ocn_grid="SOwISC12to30E3r3">1.0</config_GM_spatially_variable_baroclinic_mode>
+<config_GM_spatially_variable_baroclinic_mode ocn_grid="SOwISC12to30E3r4">1.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_Visbeck_alpha>0.13</config_GM_Visbeck_alpha>
 <config_GM_Visbeck_max_depth>1000.0</config_GM_Visbeck_max_depth>
 <config_GM_EG_riMin>200.0</config_GM_EG_riMin>
@@ -274,6 +283,7 @@
 <config_GM_horizontal_taper ocn_grid="FRISwISC02to60E3r1">'RossbyRadius'</config_GM_horizontal_taper>
 <config_GM_horizontal_taper ocn_grid="FRISwISC01to60E3r1">'RossbyRadius'</config_GM_horizontal_taper>
 <config_GM_horizontal_taper ocn_grid="SOwISC12to30E3r3">'RossbyRadius'</config_GM_horizontal_taper>
+<config_GM_horizontal_taper ocn_grid="SOwISC12to30E3r4">'RossbyRadius'</config_GM_horizontal_taper>
 <config_GM_horizontal_ramp_min>20e3</config_GM_horizontal_ramp_min>
 <config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>
 <config_GM_horizontal_ramp_max>30e3</config_GM_horizontal_ramp_max>
@@ -349,6 +359,7 @@
 <!-- forcing -->
 <config_use_variable_drag>.false.</config_use_variable_drag>
 <config_use_bulk_wind_stress>.true.</config_use_bulk_wind_stress>
+<config_bulk_wind_stress_interp_isotropic>.true.</config_bulk_wind_stress_interp_isotropic>
 <config_use_bulk_thickness_flux>.true.</config_use_bulk_thickness_flux>
 <config_flux_attenuation_coefficient>0.001</config_flux_attenuation_coefficient>
 <config_flux_attenuation_coefficient_runoff>10.0</config_flux_attenuation_coefficient_runoff>
@@ -361,9 +372,21 @@
 <config_sgr_temperature_prescribed>0.0</config_sgr_temperature_prescribed>
 <config_sgr_salinity_prescribed>0.0</config_sgr_salinity_prescribed>
 
+<!-- precip_scaling -->
+<config_use_precip_scaling>.false.</config_use_precip_scaling>
+<config_precip_scaling_mode>'off'</config_precip_scaling_mode>
+<config_precip_scaling_initial_factor>1.0</config_precip_scaling_initial_factor>
+<config_precip_scaling_constant_factor>1.0</config_precip_scaling_constant_factor>
+<config_precip_scaling_history_years>1</config_precip_scaling_history_years>
+<config_precip_scaling_write_to_logfile>.false.</config_precip_scaling_write_to_logfile>
+
 <!-- coupling -->
 <config_remove_ais_river_runoff>.false.</config_remove_ais_river_runoff>
 <config_remove_ais_ice_runoff>.false.</config_remove_ais_ice_runoff>
+<config_scale_dismf_by_removed_ice_runoff>.false.</config_scale_dismf_by_removed_ice_runoff>
+<config_ais_ice_runoff_history_days>731</config_ais_ice_runoff_history_days>
+<config_n_glc_z_levels>0</config_n_glc_z_levels>
+<config_glc_thermal_forcing_coupling_mode>'off'</config_glc_thermal_forcing_coupling_mode>
 
 <!-- shortwaveRadiation -->
 <config_sw_absorption_type>'jerlov'</config_sw_absorption_type>
@@ -401,15 +424,31 @@
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>
-<config_frazil_under_land_ice>.true.</config_frazil_under_land_ice>
+<config_frazil_under_land_ice>.false.</config_frazil_under_land_ice>
 <config_frazil_heat_of_fusion>3.337e5</config_frazil_heat_of_fusion>
+<config_use_frazil_ice_porosity>.false.</config_use_frazil_ice_porosity>
 <config_frazil_ice_density>1000.0</config_frazil_ice_density>
+<config_frazil_ice_porosity>1.0</config_frazil_ice_porosity>
 <config_frazil_fractional_thickness_limit>0.1</config_frazil_fractional_thickness_limit>
 <config_specific_heat_sea_water>3.996e3</config_specific_heat_sea_water>
 <config_frazil_maximum_depth>100.0</config_frazil_maximum_depth>
 <config_frazil_sea_ice_reference_salinity>4.0</config_frazil_sea_ice_reference_salinity>
 <config_frazil_maximum_freezing_temperature>0.0</config_frazil_maximum_freezing_temperature>
 <config_frazil_use_surface_pressure>.false.</config_frazil_use_surface_pressure>
+
+<!-- land_ice -->
+<config_land_ice_draft_mode>'pressure-dependent'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="oQU240wLI">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="ECwISC30to60E1r2">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="SOwISC12to60E2r4">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="ECwISC30to60E2r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="IcoswISC30E3r5">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC08to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC04to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC02to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="FRISwISC01to60E3r1">'data'</config_land_ice_draft_mode>
+<config_land_ice_draft_mode ocn_grid="RRSwISC6to18E3r5">'data'</config_land_ice_draft_mode>
+<config_land_ice_rho_ocean>1028</config_land_ice_rho_ocean>
 
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
@@ -427,6 +466,7 @@
 <config_land_ice_flux_mode ocn_grid="FRISwISC01to60E3r1">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="RRSwISC6to18E3r5">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="SOwISC12to30E3r3">'pressure_only'</config_land_ice_flux_mode>
+<config_land_ice_flux_mode ocn_grid="SOwISC12to30E3r4">'pressure_only'</config_land_ice_flux_mode>
 <config_land_ice_flux_formulation>'Jenkins'</config_land_ice_flux_formulation>
 <config_land_ice_flux_useHollandJenkinsAdvDiff>.false.</config_land_ice_flux_useHollandJenkinsAdvDiff>
 <config_land_ice_flux_attenuation_coefficient>10.0</config_land_ice_flux_attenuation_coefficient>
@@ -447,6 +487,7 @@
 <config_land_ice_flux_explicit_topDragCoeff ocn_grid="FRISwISC01to60E3r1">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
 <config_land_ice_flux_explicit_topDragCoeff ocn_grid="RRSwISC6to18E3r5">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
 <config_land_ice_flux_explicit_topDragCoeff ocn_grid="SOwISC12to30E3r3">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
+<config_land_ice_flux_explicit_topDragCoeff ocn_grid="SOwISC12to30E3r4">4.48e-3</config_land_ice_flux_explicit_topDragCoeff>
 <config_land_ice_flux_ISOMIP_gammaT>1e-4</config_land_ice_flux_ISOMIP_gammaT>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient>0.011</config_land_ice_flux_jenkins_heat_transfer_coefficient>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="oEC60to30v3wLI">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
@@ -461,6 +502,7 @@
 <config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="FRISwISC01to60E3r1">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="RRSwISC6to18E3r5">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
 <config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="SOwISC12to30E3r3">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
+<config_land_ice_flux_jenkins_heat_transfer_coefficient ocn_grid="SOwISC12to30E3r4">0.00295</config_land_ice_flux_jenkins_heat_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient>3.1e-4</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="oEC60to30v3wLI">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="ECwISC30to60E1r2">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
@@ -474,6 +516,7 @@
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="FRISwISC01to60E3r1">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="RRSwISC6to18E3r5">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="SOwISC12to30E3r3">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
+<config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="SOwISC12to30E3r4">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 <config_land_ice_flux_tidal_Jourdain_alpha>1.0</config_land_ice_flux_tidal_Jourdain_alpha>
 <config_land_ice_flux_tidal_Jourdain_A0>0.0</config_land_ice_flux_tidal_Jourdain_A0>
 <config_land_ice_flux_tidal_Jourdain_U0>5e-2</config_land_ice_flux_tidal_Jourdain_U0>
@@ -488,6 +531,9 @@
 <config_flux_limiter>'monotonic'</config_flux_limiter>
 <config_remap_limiter>'monotonic'</config_remap_limiter>
 <config_thickness_flux_type>'centered'</config_thickness_flux_type>
+<config_use_spatially_variable_upwind>.false.</config_use_spatially_variable_upwind>
+<config_spatially_variable_upwind_hmin>5.0</config_spatially_variable_upwind_hmin>
+<config_spatially_variable_upwind_hmax>10.0</config_spatially_variable_upwind_hmax>
 
 <!-- bottom_drag -->
 <config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
@@ -507,6 +553,7 @@
 <config_implicit_top_drag_coeff ocn_grid="FRISwISC01to60E3r1">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="RRSwISC6to18E3r5">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="SOwISC12to30E3r3">4.48e-3</config_implicit_top_drag_coeff>
+<config_implicit_top_drag_coeff ocn_grid="SOwISC12to30E3r4">4.48e-3</config_implicit_top_drag_coeff>
 <config_loglaw_bottom_roughness>1.0e-3</config_loglaw_bottom_roughness>
 <config_loglaw_layer_depth_max>10.0</config_loglaw_layer_depth_max>
 <config_loglaw_bottom_drag_min>2.5e-3</config_loglaw_bottom_drag_min>
@@ -595,6 +642,7 @@
 <config_btr_dt ocn_grid="FRISwISC01to60E3r1">'0000_00:00:01.25'</config_btr_dt>
 <config_btr_dt ocn_grid="RRSwISC6to18E3r5">'0000_00:00:05'</config_btr_dt>
 <config_btr_dt ocn_grid="SOwISC12to30E3r3">'0000_00:00:15'</config_btr_dt>
+<config_btr_dt ocn_grid="SOwISC12to30E3r4">'0000_00:00:15'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
@@ -630,6 +678,7 @@
 <!-- debug -->
 <config_check_zlevel_consistency>.false.</config_check_zlevel_consistency>
 <config_check_ssh_consistency>.true.</config_check_ssh_consistency>
+<config_check_ssh_consistency ocn_grid="oQU240wLI">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="oEC60to30v3wLI">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="ECwISC30to60E1r2">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="oRRS30to10v3wLI">.false.</config_check_ssh_consistency>
@@ -643,6 +692,7 @@
 <config_check_ssh_consistency ocn_grid="FRISwISC01to60E3r1">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="RRSwISC6to18E3r5">.false.</config_check_ssh_consistency>
 <config_check_ssh_consistency ocn_grid="SOwISC12to30E3r3">.false.</config_check_ssh_consistency>
+<config_check_ssh_consistency ocn_grid="SOwISC12to30E3r4">.false.</config_check_ssh_consistency>
 <config_filter_btr_mode>.false.</config_filter_btr_mode>
 <config_prescribe_velocity>.false.</config_prescribe_velocity>
 <config_prescribe_thickness>.false.</config_prescribe_thickness>
@@ -734,12 +784,31 @@
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
 <config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
+<config_use_ecosys_frazil_tendencies>.false.</config_use_ecosys_frazil_tendencies>
 <config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
 <config_ecosysTracers_diagnostic_fields_level3>.false.</config_ecosysTracers_diagnostic_fields_level3>
 <config_ecosysTracers_diagnostic_fields_level4>.false.</config_ecosysTracers_diagnostic_fields_level4>
 <config_ecosysTracers_diagnostic_fields_level5>.false.</config_ecosysTracers_diagnostic_fields_level5>
+
+<!-- tracer_forcing_freshwaterTracers -->
+<config_use_freshwaterTracers>.false.</config_use_freshwaterTracers>
+<config_use_freshwaterTracers_surface_bulk_forcing>.true.</config_use_freshwaterTracers_surface_bulk_forcing>
+<config_use_freshwaterTracers_surface_restoring>.false.</config_use_freshwaterTracers_surface_restoring>
+<config_use_freshwaterTracers_interior_restoring>.false.</config_use_freshwaterTracers_interior_restoring>
+<config_use_freshwaterTracers_exponential_decay>.false.</config_use_freshwaterTracers_exponential_decay>
+<config_use_freshwaterTracers_idealAge_forcing>.false.</config_use_freshwaterTracers_idealAge_forcing>
+<config_use_freshwaterTracers_ttd_forcing>.false.</config_use_freshwaterTracers_ttd_forcing>
+<config_use_freshwaterTracers_surface_value>.false.</config_use_freshwaterTracers_surface_value>
+<config_use_freshwaterTracers_rainFlux>.true.</config_use_freshwaterTracers_rainFlux>
+<config_use_freshwaterTracers_snowFlux>.true.</config_use_freshwaterTracers_snowFlux>
+<config_use_freshwaterTracers_iceRunoffFlux>.true.</config_use_freshwaterTracers_iceRunoffFlux>
+<config_use_freshwaterTracers_riverRunoffFlux>.true.</config_use_freshwaterTracers_riverRunoffFlux>
+<config_use_freshwaterTracers_subglacialRunoffFlux>.false.</config_use_freshwaterTracers_subglacialRunoffFlux>
+<config_use_freshwaterTracers_seaIceFreshWaterFlux>.true.</config_use_freshwaterTracers_seaIceFreshWaterFlux>
+<config_use_freshwaterTracers_icebergFreshWaterFlux>.false.</config_use_freshwaterTracers_icebergFreshWaterFlux>
+<config_use_freshwaterTracers_landIceFreshwaterFlux>.false.</config_use_freshwaterTracers_landIceFreshwaterFlux>
 
 <!-- tracer_forcing_DMSTracers -->
 <config_use_DMSTracers>.false.</config_use_DMSTracers>
@@ -1137,6 +1206,8 @@
 
 <!-- AM_eddyProductVariables -->
 <config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable ocn_grid="SOwISC12to30E3r3">.true.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable ocn_grid="SOwISC12to30E3r4">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_enable ocn_grid="RRSwISC6to18E3r5">.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_compute_interval>'0000-00-00_01:00:00'</config_AM_eddyProductVariables_compute_interval>
 <config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
@@ -1171,6 +1242,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="FRISwISC01to60E3r1">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="RRSwISC6to18E3r5">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="SOwISC12to30E3r3">.true.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="SOwISC12to30E3r4">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
 <config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>
@@ -1250,10 +1322,16 @@
 
 <!-- AM_conservationCheck -->
 <config_AM_conservationCheck_enable>.false.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_enable ocn_grid="SOwISC12to30E3r3">.true.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_enable ocn_grid="SOwISC12to30E3r4">.true.</config_AM_conservationCheck_enable>
 <config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
 <config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
 <config_AM_conservationCheck_compute_on_startup>.false.</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_compute_on_startup ocn_grid="SOwISC12to30E3r3">.true.</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_compute_on_startup ocn_grid="SOwISC12to30E3r4">.true.</config_AM_conservationCheck_compute_on_startup>
 <config_AM_conservationCheck_write_on_startup>.false.</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_write_on_startup ocn_grid="SOwISC12to30E3r3">.true.</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_write_on_startup ocn_grid="SOwISC12to30E3r4">.true.</config_AM_conservationCheck_write_on_startup>
 <config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
 <config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# Ensure cacts package is installed and up to date
+pip install --user --upgrade cacts
+
+# Run cacts
+cacts "$@"

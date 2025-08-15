@@ -15,66 +15,10 @@ namespace p3 {
 
 template <typename S, typename D>
 void Functions<S,D>
-::init_kokkos_ice_lookup_tables(view_ice_table& ice_table_vals, view_collect_table& collect_table_vals) {
-
-  using DeviceIcetable = typename view_ice_table::non_const_type;
-  using DeviceColtable = typename view_collect_table::non_const_type;
-
-  const auto ice_table_vals_d     = DeviceIcetable("ice_table_vals");
-  const auto collect_table_vals_d = DeviceColtable("collect_table_vals");
-
-  const auto ice_table_vals_h    = Kokkos::create_mirror_view(ice_table_vals_d);
-  const auto collect_table_vals_h = Kokkos::create_mirror_view(collect_table_vals_d);
-
-  //
-  // read in ice microphysics table into host views
-  //
-
-  std::string filename = std::string(P3C::p3_lookup_base) + std::string(P3C::p3_version);
-
-  std::ifstream in(filename);
-
-  // read header
-  std::string version, version_val;
-  in >> version >> version_val;
-  EKAT_REQUIRE_MSG(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
-  EKAT_REQUIRE_MSG(version_val == P3C::p3_version, "Bad " << filename << ", expected version " << P3C::p3_version << ", but got " << version_val);
-
-  // read tables
-  double dum_s; int dum_i; // dum_s needs to be double to stream correctly
-  for (int jj = 0; jj < P3C::densize; ++jj) {
-    for (int ii = 0; ii < P3C::rimsize; ++ii) {
-      for (int i = 0; i < P3C::isize; ++i) {
-        in >> dum_i >> dum_i;
-        int j_idx = 0;
-        for (int j = 0; j < 15; ++j) {
-          in >> dum_s;
-          if (j > 1 && j != 10) {
-            ice_table_vals_h(jj, ii, i, j_idx++) = dum_s;
-          }
-        }
-      }
-
-      for (int i = 0; i < P3C::isize; ++i) {
-        for (int j = 0; j < P3C::rcollsize; ++j) {
-          in >> dum_i >> dum_i;
-          int k_idx = 0;
-          for (int k = 0; k < 6; ++k) {
-            in >> dum_s;
-            if (k == 3 || k == 4) {
-              collect_table_vals_h(jj, ii, i, j, k_idx++) = std::log10(dum_s);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // deep copy to device
-  Kokkos::deep_copy(ice_table_vals_d, ice_table_vals_h);
-  Kokkos::deep_copy(collect_table_vals_d, collect_table_vals_h);
-  ice_table_vals    = ice_table_vals_d;
-  collect_table_vals = collect_table_vals_d;
+::get_global_ice_lookup_tables(view_ice_table& ice_table_vals, view_collect_table& collect_table_vals) {
+  auto tables = p3_init();
+  ice_table_vals = tables.ice_table_vals;
+  collect_table_vals = tables.collect_table_vals;
 }
 
 template <typename S, typename D>

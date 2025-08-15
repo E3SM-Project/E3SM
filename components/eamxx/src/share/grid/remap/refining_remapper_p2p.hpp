@@ -3,9 +3,9 @@
 
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/horiz_interp_remapper_base.hpp"
-#include "scream_config.h"
+#include "eamxx_config.h"
 
-#include "ekat/ekat_pack.hpp"
+#include <ekat_pack.hpp>
 
 #include <mpi.h>
 
@@ -57,9 +57,7 @@ public:
 
 protected:
 
-  void do_remap_fwd () override;
-
-protected:
+  void remap_fwd_impl () override;
 
   void setup_mpi_data_structures () override;
 

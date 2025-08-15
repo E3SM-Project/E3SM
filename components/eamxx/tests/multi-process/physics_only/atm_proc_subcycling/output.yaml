@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_p3_${POSTFIX}
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   - T_mid
   - qv
   - qc
@@ -33,6 +33,6 @@ Field Names:
   - nc_nuceat_tend
  
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

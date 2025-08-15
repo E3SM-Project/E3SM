@@ -13,75 +13,16 @@
 #include "Dimensions.hpp"
 #include "utilities/MathUtils.hpp"
 
-#ifdef KOKKOS_ENABLE_CUDA
-# include <cuda.h>
-#endif
-
-#ifdef KOKKOS_ENABLE_HIP
-#include <hip/hip_runtime.h>
-#endif
-
-#ifdef KOKKOS_ENABLE_SYCL
-#include <CL/sycl.hpp>
-#endif
-
 namespace Homme {
 
 // Since we're initializing from inside a Fortran code and don't have access to
-// char** args to pass to Kokkos::initialize, we need to do some work on our
-// own. As a side benefit, we'll end up running on GPU platforms optimally
-// without having to specify --kokkos-ndevices on the command line.
+// char** args to pass to Kokkos::initialize, we need to create and set the kokkos
+// initialization settings manually.
 void initialize_kokkos () {
-  // This is in fact const char*, but Kokkos::initialize requires char*.
-  std::vector<char*> args;
-
-  //   This is the only way to get the round-robin rank assignment Kokkos
-  // provides, as that algorithm is hardcoded in Kokkos::initialize(int& narg,
-  // char* arg[]). Once the behavior is exposed in the InitArguments version of
-  // initialize, we can remove this string code.
-  //   If for some reason we're running on a GPU platform, have Cuda enabled,
-  // but are using a different execution space, this initialization is still
-  // OK. The rank gets a GPU assigned and simply will ignore it.
-#ifdef KOKKOS_ENABLE_CUDA
-  int nd;
-  const auto ret = cudaGetDeviceCount(&nd);
-  if (ret != cudaSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_HIP)
-  int nd;
-  const auto ret = hipGetDeviceCount(&nd);
-  if (ret != hipSuccess) {
-    // It isn't a big deal if we can't get the device count.
-    nd = 1;
-  }
-#elif defined(KOKKOS_ENABLE_SYCL)
-
-//https://developer.codeplay.com/products/computecpp/ce/2.11.0/guides/sycl-for-cuda-developers/migrating-from-cuda-to-sycl
-
-//to make it build
-  int nd = 1;
-
-#endif
-
-
-#ifdef HOMMEXX_ENABLE_GPU  
-  std::stringstream ss;
-  ss << "--kokkos-num-devices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
-#endif
-
-
-  const char* silence = "--kokkos-disable-warnings";
-  args.push_back(const_cast<char*>(silence));
-
-  int narg = args.size();
-  Kokkos::initialize(narg, args.data());
+  auto const settings = Kokkos::InitializationSettings()
+    .set_map_device_id_by("mpi_rank")
+    .set_disable_warnings(true);
+  Kokkos::initialize(settings);
 }
 
 ThreadPreferences::ThreadPreferences ()
@@ -199,7 +140,11 @@ team_num_threads_vectors (const int num_parallel_iterations,
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
-  const int num_warps_device = Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
+  // No such thing sometime after Kokkos version 4.2:
+  //    Kokkos::Impl::cuda_internal_maximum_concurrent_block_count();
+  // This number is not super important as long as it's large. 3456 is the A100
+  // spec, so we'll use that.
+  const int num_warps_device = 3456;
   const int num_threads_warp = Kokkos::Impl::CudaTraits::WarpSize;
 #elif defined(KOKKOS_ENABLE_HIP)
   // Use 64 wavefronts per CU and 120 CUs.
@@ -214,7 +159,7 @@ team_num_threads_vectors (const int num_parallel_iterations,
 #endif
 
   min_num_warps = std::min(min_num_warps, max_num_warps);
-  
+
   return Parallel::team_num_threads_vectors_for_gpu(
     num_warps_device, num_threads_warp,
     min_num_warps, max_num_warps,

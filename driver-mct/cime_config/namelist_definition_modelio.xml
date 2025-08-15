@@ -133,10 +133,10 @@
     <type>char*64</type>
     <category>pio</category>
     <group>pio_inparm</group>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,netcdf4z,default</valid_values>
     <desc>
       io type in pio used generically, component based value takes precedent.
-      valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, default
+      valid values: netcdf, pnetcdf, netcdf4p, netcdf4c, netcdf4z, default
     </desc>
     <values>
     <value component="cpl">$CPL_PIO_TYPENAME</value>

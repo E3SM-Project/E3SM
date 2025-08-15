@@ -24,7 +24,7 @@ TEST_CASE("create_nudging_data") {
 
   // Create a grids manager
   const auto gm = create_gm(comm,ngcols,nlevs);
-  const auto grid = gm->get_grid("Point Grid");
+  const auto grid = gm->get_grid("point_grid");
 
   // Create a field manager, and init fields (since OM's need t0 values)
   const auto fm1 = create_fm(grid);

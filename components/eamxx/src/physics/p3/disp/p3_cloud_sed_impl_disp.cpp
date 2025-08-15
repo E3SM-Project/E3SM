@@ -1,6 +1,7 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -34,8 +35,10 @@ void Functions<Real,DefaultDevice>
     const uview_1d<bool>& hydrometeorsPresent)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(
     "p3_cloud_sedimentation",
@@ -48,7 +51,7 @@ void Functions<Real,DefaultDevice>
     }
 
     cloud_sedimentation(
-      ekat::subview(qc_incld, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(cld_frac_l, i), 
+      ekat::subview(qc_incld, i), ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(cld_frac_l, i),
       ekat::subview(acn, i), ekat::subview(inv_dz, i), dnu, team, workspace,
       nk, ktop, kbot, kdir, dt, inv_dt, do_predict_nc,
       ekat::subview(qc, i), ekat::subview(nc, i), ekat::subview(nc_incld, i), ekat::subview(mu_c, i), ekat::subview(lamc, i), ekat::subview(qc_tend, i),
@@ -60,4 +63,3 @@ void Functions<Real,DefaultDevice>
 
 } // namespace p3
 } // namespace scream
-

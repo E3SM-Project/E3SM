@@ -88,7 +88,7 @@ FieldAllocProp FieldAllocProp::subview(const int idim,
   EKAT_REQUIRE_MSG(index_beg < index_end,
                    "Error! Slice indices are invalid (non-increasing).\n");
   EKAT_REQUIRE_MSG(
-      index_beg >= 0 && index_end < m_layout.dim(idim),
+      index_beg >= 0 && index_end-1 < m_layout.dim(idim),
       "Error! Slice index range along the idim dimension is out of bounds.\n");
 
   // Set new layout basic stuff

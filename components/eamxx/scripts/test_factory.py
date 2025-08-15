@@ -1,4 +1,4 @@
-# This module contains classes that describe a test type for test-all-scream
+# This module contains classes that describe a test type for test-all-eamxx
 # Each test type (here represented by a TestProperty object) can have different
 # flags, build type, profiling, cmake options, etc.
 # The function "test_factory" can be used to get a list of test types from
@@ -12,16 +12,16 @@ class TestProperty(object):
 ###############################################################################
 
     """
-    Parent class of predefined test types for SCREAM standalone. test-all-scream
+    Parent class of predefined test types for SCREAM standalone. test-all-eamxx
     offers a number of customization points, but you may need to just use
-    cmake if you need maximal customization. You can run test-all-scream --dry-run
+    cmake if you need maximal customization. You can run test-all-eamxx --dry-run
     to get the corresponding cmake command which can then be used as a starting
     point for making your own cmake command.
     """
 
     def __init__(self, longname, description, cmake_args,
                  uses_baselines=True, on_by_default=True, default_test_len=None):
-        # What the user uses to select tests via test-all-scream CLI.
+        # What the user uses to select tests via test-all-eamxx CLI.
         # Should also match the class name when converted to caps
         self.shortname      = type(self).__name__.lower()
 
@@ -115,7 +115,7 @@ class FPE(TestProperty):
             [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_DEFAULT_BFB", "True"),
              ("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
             uses_baselines=False,
-            on_by_default=(tas is not None and not tas.on_cuda())
+            on_by_default=(tas is not None and not tas._machine.uses_gpu())
         )
 
 ###############################################################################
@@ -153,15 +153,18 @@ class VALG(TestProperty):
         TestProperty.__init__(
             self,
             "valgrind",
-            "debug with valgrind",
-            [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_VALGRIND", "True")],
+            "Release build where tests run through valgrind",
+            [("CMAKE_BUILD_TYPE", "RelWithDebInfo"),
+             ("EKAT_ENABLE_VALGRIND", "True"),
+             ("SCREAM_PACK_SIZE", "1"),
+             ("SCREAM_TEST_MAX_THREADS", "2")],
             uses_baselines=False,
             on_by_default=False,
             default_test_len="short"
         )
         if tas is not None:
             # If a stored suppression file exists for this machine, use it
-            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine()}.supp"
+            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine().name}.supp"
             if persistent_supp_file.exists():
                 self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
 

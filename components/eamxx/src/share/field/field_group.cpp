@@ -18,32 +18,32 @@ FieldGroup (const FieldGroupInfo& info)
 FieldGroup
 FieldGroup::get_const () const {
   FieldGroup gr(*m_info);
-  if (m_info->m_bundled) {
-    gr.m_bundle = std::make_shared<Field>(m_bundle->get_const());
+  if (m_info->m_monolithic_allocation) {
+    gr.m_monolithic_field = std::make_shared<Field>(m_monolithic_field->get_const());
   }
-  for (const auto& it : m_fields) {
-    gr.m_fields[it.first] = std::make_shared<Field>(it.second->get_const());
+  for (const auto& it : m_individual_fields) {
+    gr.m_individual_fields[it.first] = std::make_shared<Field>(it.second->get_const());
   }
   return gr;
 }
 
 const std::string& FieldGroup::grid_name () const {
-  EKAT_REQUIRE_MSG(m_fields.size()>0 || m_bundle,
+  EKAT_REQUIRE_MSG(m_individual_fields.size()>0 || m_monolithic_field,
       "Error! Cannot establish the group grid name until fields have been added.\n");
 
-  if (m_bundle) {
-    const auto& id = m_bundle->get_header().get_identifier();
+  if (m_monolithic_field) {
+    const auto& id = m_monolithic_field->get_header().get_identifier();
     return id.get_grid_name();
   } else {
-    const auto& id = m_fields.begin()->second->get_header().get_identifier();
+    const auto& id = m_individual_fields.begin()->second->get_header().get_identifier();
     return id.get_grid_name();
   }
 }
 
 void FieldGroup::copy_fields (const FieldGroup& src) {
-  m_bundle = src.m_bundle;
-  for (auto it : src.m_fields) {
-    m_fields[it.first] = it.second;
+  m_monolithic_field = src.m_monolithic_field;
+  for (auto it : src.m_individual_fields) {
+    m_individual_fields[it.first] = it.second;
   }
 }
 

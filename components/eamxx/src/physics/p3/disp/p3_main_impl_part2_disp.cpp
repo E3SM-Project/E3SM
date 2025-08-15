@@ -1,6 +1,7 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -10,7 +11,7 @@ namespace p3 {
  * this file, #include p3_functions.hpp instead.
  */
 
-#ifdef SCREAM_SYSTEM_WORKAROUND_P3_PART2
+#ifdef CLANGOPT_WORKAROUND
 #pragma clang optimize off
 #endif
 template <>
@@ -23,6 +24,9 @@ void Functions<Real,DefaultDevice>
   const bool& do_prescribed_CCN,
   const Scalar& dt,
   const Scalar& inv_dt,
+  const uview_2d<const Spack>& hetfrz_immersion_nucleation_tend,
+  const uview_2d<const Spack>& hetfrz_contact_nucleation_tend,
+  const uview_2d<const Spack>& hetfrz_deposition_nucleation_tend,
   const view_dnu_table& dnu_table_vals,
   const view_ice_table& ice_table_vals,
   const view_collect_table& collect_table_vals,
@@ -86,15 +90,29 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& vap_liq_exchange,
   const uview_2d<Spack>& vap_ice_exchange,
   const uview_2d<Spack>& liq_ice_exchange,
+  const uview_2d<Spack>& qr2qv_evap,
+  const uview_2d<Spack>& qi2qv_sublim,
+  const uview_2d<Spack>& qc2qr_accret,
+  const uview_2d<Spack>& qc2qr_autoconv,
+  const uview_2d<Spack>& qv2qi_vapdep,
+  const uview_2d<Spack>& qc2qi_berg,
+  const uview_2d<Spack>& qc2qr_ice_shed,
+  const uview_2d<Spack>& qc2qi_collect,
+  const uview_2d<Spack>& qr2qi_collect,
+  const uview_2d<Spack>& qc2qi_hetero_freeze,
+  const uview_2d<Spack>& qr2qi_immers_freeze,
+  const uview_2d<Spack>& qi2qr_melt,
   const uview_2d<Spack>& pratot,
   const uview_2d<Spack>& prctot,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
-  const physics::P3_Constants<Real> & p3constants)
+  const P3Runtime& runtime_options)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
 
 
   // p3_cloud_sedimentation loop
@@ -111,6 +129,8 @@ void Functions<Real,DefaultDevice>
     // main k-loop (for processes):
     p3_main_part2(
       team, nk_pack, max_total_ni, predictNc, do_prescribed_CCN, dt, inv_dt,
+      ekat::subview(hetfrz_immersion_nucleation_tend, i),
+      ekat::subview(hetfrz_contact_nucleation_tend, i),ekat::subview(hetfrz_deposition_nucleation_tend, i),
       dnu_table_vals, ice_table_vals, collect_table_vals, revap_table_vals,
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i), ekat::subview(inv_exner, i),
       ekat::subview(exner, i), ekat::subview(inv_cld_frac_l, i), ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i),
@@ -125,12 +145,16 @@ void Functions<Real,DefaultDevice>
       ekat::subview(cdist1, i), ekat::subview(cdistr, i), ekat::subview(mu_r, i), ekat::subview(lamr, i), ekat::subview(logn0r, i),
       ekat::subview(qv2qi_depos_tend, i), ekat::subview(precip_total_tend, i),
       ekat::subview(nevapr, i), ekat::subview(qr_evap_tend, i), ekat::subview(vap_liq_exchange, i), ekat::subview(vap_ice_exchange, i), ekat::subview(liq_ice_exchange, i),
-      ekat::subview(pratot, i), ekat::subview(prctot, i), hydrometeorsPresent(i), nk, p3constants);
+      ekat::subview(qr2qv_evap, i), ekat::subview(qi2qv_sublim, i), ekat::subview(qc2qr_accret, i), ekat::subview(qc2qr_autoconv, i),
+      ekat::subview(qv2qi_vapdep, i), ekat::subview(qc2qi_berg, i), ekat::subview(qc2qr_ice_shed, i), ekat::subview(qc2qi_collect, i),
+      ekat::subview(qr2qi_collect, i), ekat::subview(qc2qi_hetero_freeze, i), ekat::subview(qr2qi_immers_freeze, i),
+      ekat::subview(qi2qr_melt, i),
+      ekat::subview(pratot, i), ekat::subview(prctot, i), hydrometeorsPresent(i), nk, runtime_options);
 
     if (!hydrometeorsPresent(i)) return;
   });
 }
-#ifdef SCREAM_SYSTEM_WORKAROUND_P3_PART2
+#ifdef CLANGOPT_WORKAROUND
 #pragma clang optimize on
 #endif
 } // namespace p3

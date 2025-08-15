@@ -9,4 +9,4 @@ SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/thetah-sl-test11conv-r1
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES 
-  dcmip2012_test1_1_conv1.nc)
+  dcmip2012_test1_3a_conv1.nc)

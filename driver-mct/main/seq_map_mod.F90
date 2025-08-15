@@ -873,7 +873,7 @@ contains
     integer(IN)            :: lsize_i,lsize_o
     real(r8)               :: normval
     character(CX)          :: lrList,appnd
-    logical                :: lnorm, use_nonlinear_map
+    logical                :: lnorm, use_nonlinear_map, a2s_cons
     character(*),parameter :: subName = '(seq_map_avNormArr) '
     character(len=*),parameter :: ffld = 'norm8wt'  ! want something unique
     !-----------------------------------------------------
@@ -893,6 +893,9 @@ contains
     if (present(norm)) then
        lnorm = norm
     endif
+
+    a2s_cons = use_nonlinear_map .and. allocated(mapper%frac_s)
+    if (a2s_cons) lnorm = .false. ! see seq_nlmap_mod.F90
 
     if (present(norm_i)) then
        if (.not.lnorm) call shr_sys_abort(subname//' ERROR norm_i and norm = false')
@@ -944,7 +947,7 @@ contains
     else
        ! MCT based SMM
        if (use_nonlinear_map) then
-          call seq_nlmap_avNormArr(mapper, avp_i, avp_o, norm)
+          call seq_nlmap_avNormArr(mapper, avp_i, avp_o, lnorm, a2s_cons)
        else
           call mct_sMat_avMult(avp_i, mapper%sMatp, avp_o, VECTOR=mct_usevector)
        end if

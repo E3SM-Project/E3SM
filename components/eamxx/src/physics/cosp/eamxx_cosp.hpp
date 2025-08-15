@@ -2,8 +2,9 @@
 #define SCREAM_COSP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
+
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -20,10 +21,6 @@ class Cosp : public AtmosphereProcess
 {
 
 public:
-  using PF  = scream::PhysicsFunctions<HostDevice>;
-  using KT  = KokkosTypes<DefaultDevice>;
-  using KTH = KokkosTypes<HostDevice>;
-
   // Constructors
   Cosp (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -75,6 +72,9 @@ protected:
 
   std::shared_ptr<const AbstractGrid> m_grid;
 
+  // TODO: use atm buffer instead
+  Field m_z_mid;
+  Field m_z_int;
 }; // class Cosp
 
 } // namespace scream

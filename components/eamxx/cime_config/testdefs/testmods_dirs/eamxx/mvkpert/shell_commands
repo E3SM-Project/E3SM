@@ -1,0 +1,104 @@
+#!/bin/bash
+
+cime_root=$(./xmlquery --value CIMEROOT)
+input_data_dir=$(./xmlquery --value DIN_LOC_ROOT)
+atmchange=$cime_root/../components/eamxx/scripts/atmchange
+case_name=$(./xmlquery --value CASE)
+
+# Change run length
+./xmlchange RUN_STARTDATE="1994-10-01"
+
+# Turn on budget reporting
+./xmlchange BUDGETS=TRUE
+
+# For big data
+./xmlchange PIO_NETCDF_FORMAT="64bit_data"
+./xmlchange PIO_TYPENAME=pnetcdf #adios #,PIO_TYPENAME_ATM=adios
+./xmlchange PIO_REARRANGER=1  # use PIO_REARRANGER=3, for ADIOS; PIO_REARRANGER=1 for pnetcdf
+
+# Turn on cosp and set frequency
+$atmchange -b physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
+$atmchange -b physics::cosp::cosp_frequency_units="hours"
+$atmchange -b physics::cosp::cosp_frequency=1
+
+# Need to explicitly turn on computing tendencies
+$atmchange -b physics::mac_aero_mic::shoc::compute_tendencies=T_mid,qv
+$atmchange -b physics::mac_aero_mic::p3::compute_tendencies=T_mid,qv
+$atmchange -b physics::rrtmgp::compute_tendencies=T_mid
+$atmchange -b homme::compute_tendencies=T_mid,qv
+
+# Set temperature cut off in dycore threshold to 180K
+$atmchange -b vtheta_thresh=180
+
+# Change lambda_high
+$atmchange -b lambda_high=0.08
+
+# use GHG levels more appropriate for sim
+# Average from 19940101 - 20150101
+$atmchange -b co2vmr=377.2e-6
+$atmchange -b ch4vmr=1786.6e-9
+$atmchange -b n2ovmr=318.6e-9
+$atmchange -b orbital_year=-9999
+# use CO2 the same in land model
+./xmlchange CCSM_CO2_PPMV=377.2
+
+# determine grid and set remap files
+atm_grid=$(./xmlquery --value ATM_GRID)
+if [[ "${atm_grid}" = "ne30np4.pg2" ]]; then
+    hmapfile="${input_data_dir}/atm/scream/maps/map_ne30pg2_to_ne4pg2_20231201.nc"
+    armmapfile="${input_data_dir}/atm/scream/maps/map_ne30pg2_to_DecadalSites_c20240130.nc"
+    # Run with bugfixed SPA file
+    $atmchange -b spa_data_file="${input_data_dir}/atm/scream/init/spa_v3.LR.F2010.2011-2025.c_20240405.nc"
+elif [[ "${atm_grid}" = "ne4np4.pg2" ]]; then
+    hmapfile="${input_data_dir}/atm/scream/maps/map_ne4pg2_to_ne2pg2_c20240902.nc"
+    echo "Note: arm remap only works for ne30pg2 atm grids for now"
+    armmapfile="not-supported-yet"
+    # Keep default SPA file
+    # ... (do nothing)
+else
+    echo "Note: horiz/arm remaps only work for ne30pg2 and ne4pg2 atm grids for now"
+    hmapfile="not-supported-yet"
+    armmapfile="not-supported-yet"
+fi
+
+# set the output yaml files
+output_yaml_files=$(find ${cime_root}/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mvkpert/yaml_outs/ -maxdepth 1 -type f)
+for file in ${output_yaml_files[@]}; do
+    # if the word "coarse" is in the file name, do nothing
+    if [[ "${file}" == *"_coarse.yaml" && "${hmapfile}" == "not-supported-yet" ]]; then
+        continue
+    elif [[ "${file}" == *"_arm.yaml" && "${armmapfile}" == "not-supported-yet" ]]; then
+        continue
+    else
+        # TODO: add remap file replacement for different grids
+        cp -v ${file} ./
+        if [ "${file}" == "${output_yaml_files[0]}" ]; then
+            # First file, reset output list
+            $atmchange -b output_yaml_files="./$(basename ${file})"
+        else
+            # Append to output list
+            $atmchange -b output_yaml_files+="./$(basename ${file})"
+        fi
+        # Replace remap files
+        sed -i "s|horiz_remap_file:.*_to_ne30.*|horiz_remap_file: ${hmapfile}|" ./$(basename ${file})
+        sed -i "s|horiz_remap_file:.*_to_DecadalSites.*|horiz_remap_file: ${armmapfile}|" ./$(basename ${file})
+    fi
+    # replace all filename prefixes so that st_archive works...
+    sed -i "s|eamxx_output.decadal|${case_name}.scream|" ./$(basename ${file})
+done
+
+
+# Perturb the initial conditions
+$atmchange -b initial_conditions::perturbed_fields='T_mid'
+
+# TODO:
+# the only thing remaining is to set the SST data, but for some reason, this is proving difficult
+# because it is not super important, leave it commented out for now, until a better solution can be found
+# ... also, not sure if the below are specific to a given ocn/sea-ice grid?
+
+# # Point to new SST forcing
+# ./xmlchange --file env_run.xml --id SSTICE_DATA_FILENAME --val "${input_data_dir}/atm/cam/sst/sst_ostia_3600x7200_19940930_20151231_c20240125.nc"
+# ./xmlchange --file env_run.xml --id SSTICE_GRID_FILENAME --val "${input_data_dir}/ocn/docn7/domain.ocn.3600x7200.230522.nc"
+# ./xmlchange --file env_run.xml --id SSTICE_YEAR_ALIGN --val 1994
+# ./xmlchange --file env_run.xml --id SSTICE_YEAR_START --val 1994
+# ./xmlchange --file env_run.xml --id SSTICE_YEAR_END --val 2015

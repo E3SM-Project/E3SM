@@ -70,7 +70,6 @@ SLMM_KF ko::EnableIfOnGpu<MT> throw_on_sci_error (
 template <typename MT>
 void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
                          const DepPoints<MT>& dep_points) {
-  const auto& plane = cm.advecter->get_plane();
 #ifdef COMPOSE_PORT
   const auto myrank = cm.p->rank();
   const Int np2 = cm.np2, nlev = cm.nlev;
@@ -107,9 +106,9 @@ void analyze_dep_points (IslMpi<MT>& cm, const Int& nets, const Int& nete,
       else {
         const auto ri = ed.nbrs(sci).rank_idx;
         const auto lidi = ed.nbrs(sci).lid_on_rank_idx;
-        ko::atomic_increment(static_cast<volatile Int*>(&nx_in_lid(ri,lidi)));
-        ko::atomic_increment(static_cast<volatile Int*>(&bla(ri,lidi,lev).xptr));
-        ko::atomic_increment(static_cast<volatile Int*>(&nx_in_rank(ri)));
+        ko::atomic_inc(static_cast<volatile Int*>(&nx_in_lid(ri,lidi)));
+        ko::atomic_inc(static_cast<volatile Int*>(&bla(ri,lidi,lev).xptr));
+        ko::atomic_inc(static_cast<volatile Int*>(&nx_in_rank(ri)));
       }
     };
     ko::fence();

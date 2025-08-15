@@ -15,7 +15,8 @@
 #include "control/atmosphere_surface_coupling_importer.hpp"
 
 // EKAT headers
-#include "ekat/kokkos/ekat_kokkos_types.hpp"
+#include <ekat_kokkos_types.hpp>
+#include <ekat_yaml.hpp>
 
 TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   using namespace scream;
@@ -47,19 +48,20 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   AtmosphereDriver ad;
 
   // Init, run, and finalize
-  // NOTE: Kokkos is finalize in ekat_catch_main.cpp, and YAKL is finalized
+  // NOTE: Kokkos is finalize in ekat_catch_main.cpp, and Kokkos is finalized
   //       during RRTMGPRatiation::finalize_impl, after RRTMGP has deallocated
   //       all its arrays.
   ad.set_comm(atm_comm);
   ad.set_params(ad_params);
   ad.init_scorpio ();
   ad.init_time_stamps (t0, t0);
+  ad.create_output_managers ();
   ad.create_atm_processes ();
   ad.create_grids ();
   ad.create_fields ();
 
   // Setup surface coupler import to be NaNs for fields IOP should overwrite
-  const int ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
+  const int ncols = ad.get_grids_manager()->get_grid("physics")->get_num_local_dofs();
   static constexpr int num_imports = 4;
   char import_names[num_imports][32];
   std::strcpy(import_names[0], "surf_radiative_T");

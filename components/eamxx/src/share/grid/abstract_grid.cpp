@@ -2,7 +2,7 @@
 
 #include "share/field/field_utils.hpp"
 
-#include <ekat/ekat_assert.hpp>
+#include <ekat_assert.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -81,7 +81,7 @@ get_vertical_layout (const bool midpoints,
 {
   using namespace ShortFieldTagsNames;
   auto l = get_vertical_layout(midpoints);
-  l.append_dim(CMP,vector_dim,vec_dim_name);
+  l.prepend_dim(CMP,vector_dim,vec_dim_name);
   return l;
 }
 
@@ -113,6 +113,67 @@ AbstractGrid::get_3d_tensor_layout (const bool midpoints, const std::vector<int>
   using namespace ShortFieldTagsNames;
   std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
   return get_3d_tensor_layout(midpoints,cmp_dims,names);
+}
+
+FieldLayout
+AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
+{
+  using namespace ShortFieldTagsNames;
+
+  FieldLayout ret_layout = FieldLayout::invalid();
+
+  const bool midpoints   = template_layout.has_tag(LEV);
+  const auto names       = template_layout.names();
+  const auto vec_cmp     = template_layout.is_vector_layout() ?
+                           template_layout.get_vector_component_idx() : -1;
+  const auto vec_dim     = template_layout.is_vector_layout() ?
+                           template_layout.get_vector_dim() : -1;
+  const auto tensor_dims = template_layout.is_tensor_layout() ?
+                           template_layout.get_tensor_dims() : std::vector<int>{};
+  std::vector<std::string> tdims_names;
+  if (template_layout.is_tensor_layout()) {
+    for (auto idx : template_layout.get_tensor_components_ids()) {
+      tdims_names.push_back(names[idx]);
+    }
+  }
+
+  switch (template_layout.type()) {
+    case LayoutType::Scalar0D:
+    case LayoutType::Vector0D:
+    case LayoutType::Tensor0D:
+      // 0d layouts are the same on all grids
+      ret_layout = template_layout;
+      break;
+    case LayoutType::Scalar1D:
+      ret_layout = get_vertical_layout(midpoints);
+      break;
+    case LayoutType::Vector1D:
+      ret_layout = get_vertical_layout(midpoints, vec_dim, names[vec_cmp]);
+      break;
+    case LayoutType::Scalar2D:
+      ret_layout = get_2d_scalar_layout();
+      break;
+    case LayoutType::Vector2D:
+      ret_layout = get_2d_vector_layout(vec_dim, names[vec_cmp]);
+      break;
+    case LayoutType::Tensor2D:
+      ret_layout = get_2d_tensor_layout(tensor_dims, tdims_names);
+      break;
+    case LayoutType::Scalar3D:
+      ret_layout = get_3d_scalar_layout(midpoints);
+      break;
+    case LayoutType::Vector3D:
+      ret_layout = get_3d_vector_layout(midpoints, vec_dim, names[vec_cmp]);
+      break;
+    case LayoutType::Tensor3D:
+      ret_layout = get_3d_tensor_layout(midpoints, tensor_dims, tdims_names);
+      break;
+    default:
+      EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
+      break;
+  }
+
+  return ret_layout;
 }
 
 bool AbstractGrid::is_unique () const {
@@ -175,6 +236,8 @@ bool AbstractGrid::is_unique () const {
     return unique_gids==1;
   };
 
+
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   if (not m_is_unique_computed) {
     m_is_unique = compute_is_unique();
     m_is_unique_computed = true;
@@ -194,9 +257,10 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Tensor0D:
       // 0d quantities are always ok
       return true;
-    case LayoutType::Scalar1D: [[fallthrough]];
-    case LayoutType::Vector1D:
+    case LayoutType::Scalar1D:
       return layout.congruent(get_vertical_layout(midpoints));
+    case LayoutType::Vector1D:
+        return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:
@@ -218,6 +282,7 @@ is_valid_layout (const FieldLayout& layout) const
 auto AbstractGrid::
 get_global_min_dof_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_min_dof_gid==std::numeric_limits<gid_type>::max()) {
     m_global_min_dof_gid = field_min<gid_type>(m_dofs_gids,&get_comm());
@@ -228,6 +293,7 @@ get_global_min_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_dof_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_max_dof_gid==-std::numeric_limits<gid_type>::max()) {
     m_global_max_dof_gid = field_max<gid_type>(m_dofs_gids,&get_comm());
@@ -238,6 +304,7 @@ get_global_max_dof_gid () const ->gid_type
 auto AbstractGrid::
 get_global_min_partitioned_dim_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_min_partitioned_dim_gid==std::numeric_limits<gid_type>::max()) {
     m_global_min_partitioned_dim_gid = field_min<gid_type>(m_partitioned_dim_gids,&get_comm());
@@ -248,6 +315,7 @@ get_global_min_partitioned_dim_gid () const ->gid_type
 auto AbstractGrid::
 get_global_max_partitioned_dim_gid () const ->gid_type
 {
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
   // Lazy calculation
   if (m_global_max_partitioned_dim_gid==-std::numeric_limits<gid_type>::max()) {
     m_global_max_partitioned_dim_gid = field_max<gid_type>(m_partitioned_dim_gids,&get_comm());
@@ -294,7 +362,7 @@ AbstractGrid::get_geometry_data (const std::string& name) const {
 }
 
 Field
-AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
+AbstractGrid::create_geometry_data (const FieldIdentifier& fid, const int pack_size)
 {
   const auto& name = fid.name();
 
@@ -307,6 +375,7 @@ AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
 
   // Create field and the read only copy as well
   auto& f = m_geo_fields[name] = Field(fid);
+  f.get_header().get_alloc_properties().request_allocation(pack_size);
   f.allocate_view();
   return f;
 }
@@ -549,14 +618,18 @@ void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 }
 
 auto AbstractGrid::get_gid2lid_map () const
- -> std::map<gid_type,int>
+ -> const std::map<gid_type,int>&
 {
-  std::map<gid_type,int> m;
-  auto gids_h = get_dofs_gids().get_view<const gid_type*,Host>();
-  for (int i=0; i<get_num_local_dofs(); ++i) {
-    m[gids_h[i]] = i;
+  std::lock_guard<std::mutex> lock(m_mutex); // Lock the mutex
+
+  int cur_sz = m_gid2lid.size();
+  if (cur_sz<get_num_local_dofs()) {
+    auto gids_h = get_dofs_gids().get_view<const gid_type*, Host>();
+    for (int i = 0; i < get_num_local_dofs(); ++i) {
+        m_gid2lid[gids_h[i]] = i; // Modify the mutable member
+    }
   }
-  return m;
+  return m_gid2lid; // Return the map
 }
 
 void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)

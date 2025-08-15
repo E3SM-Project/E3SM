@@ -10,7 +10,7 @@
  (other dims omitted for brevity).
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
@@ -24,7 +24,7 @@ def parse_command_line(args, description):
         usage=" {0} -f <file> -v <variables_names> -t <tendencies_names>"
               .format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     # The name of the nc files where to grab data from

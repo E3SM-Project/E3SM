@@ -2,7 +2,7 @@ module physics_share_f2c
   use iso_c_binding
   implicit none
 
-#include "scream_config.f"
+#include "eamxx_config.f"
 #ifdef SCREAM_DOUBLE_PRECISION
 # define c_real c_double
 #else
@@ -101,7 +101,7 @@ interface
     ! return
     real(kind=c_real)            :: scream_expm1
   end function scream_expm1
-  
+
   function scream_tanh(input) bind(C)
     use iso_c_binding
 
@@ -111,6 +111,16 @@ interface
     ! return
     real(kind=c_real)            :: scream_tanh
   end function scream_tanh
+
+  function scream_cos(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: scream_cos
+  end function scream_cos
 
   function scream_erf(input) bind(C)
     use iso_c_binding

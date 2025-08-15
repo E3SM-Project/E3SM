@@ -1,14 +1,19 @@
 #ifndef SCREAM_PHYSICS_TEST_DATA_HPP
 #define SCREAM_PHYSICS_TEST_DATA_HPP
 
-#include "share/scream_types.hpp"
+#include "physics_test_read_write_helpers.hpp"
 
-#include "ekat/util/ekat_math_utils.hpp"
-#include "ekat/ekat_assert.hpp"
+#include "share/eamxx_types.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+
+#include <ekat_math_utils.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_test_utils.hpp>
 
 #include <random>
 #include <vector>
 #include <utility>
+#include <fstream>
 
 /*
 PhysicsTestData is meant to offer the client something they can inherit to provide
@@ -68,34 +73,82 @@ struct SHOCGridData : public PhysicsTestData {
 #define PTD_DATA_COPY_CTOR(name, num_args) \
   name(const name& rhs) : name(PTD_ONES(num_args)) { *this = rhs; }
 
-#define  PTD_ASS0(                                ) ((void) (0))
-#define  PTD_ASS1(a                               )                                           a = rhs.a
-#define  PTD_ASS2(a, b                            )  PTD_ASS1(a)                            ; b = rhs.b
-#define  PTD_ASS3(a, b, c                         )  PTD_ASS2(a, b)                         ; c = rhs.c
-#define  PTD_ASS4(a, b, c, d                      )  PTD_ASS3(a, b, c)                      ; d = rhs.d
-#define  PTD_ASS5(a, b, c, d, e                   )  PTD_ASS4(a, b, c, d)                   ; e = rhs.e
-#define  PTD_ASS6(a, b, c, d, e, f                )  PTD_ASS5(a, b, c, d, e)                ; f = rhs.f
-#define  PTD_ASS7(a, b, c, d, e, f, g             )  PTD_ASS6(a, b, c, d, e, f)             ; g = rhs.g
-#define  PTD_ASS8(a, b, c, d, e, f, g, h          )  PTD_ASS7(a, b, c, d, e, f, g)          ; h = rhs.h
-#define  PTD_ASS9(a, b, c, d, e, f, g, h, i       )  PTD_ASS8(a, b, c, d, e, f, g, h)       ; i = rhs.i
-#define PTD_ASS10(a, b, c, d, e, f, g, h, i, j    )  PTD_ASS9(a, b, c, d, e, f, g, h, i)    ; j = rhs.j
-#define PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k                            ) PTD_ASS10(a, b, c, d, e, f, g, h, i, j)                            ; k = rhs.k
-#define PTD_ASS12(a, b, c, d, e, f, g, h, i, j, k, l                         ) PTD_ASS11(a, b, c, d, e, f, g, h, i, j, k)                         ; l = rhs.l
-#define PTD_ASS13(a, b, c, d, e, f, g, h, i, j, k, l, m                      ) PTD_ASS12(a, b, c, d, e, f, g, h, i, j, k, l)                      ; m = rhs.m
-#define PTD_ASS14(a, b, c, d, e, f, g, h, i, j, k, l, m, n                   ) PTD_ASS13(a, b, c, d, e, f, g, h, i, j, k, l, m)                   ; n = rhs.n
-#define PTD_ASS15(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o                ) PTD_ASS14(a, b, c, d, e, f, g, h, i, j, k, l, m, n)                ; o = rhs.o
-#define PTD_ASS16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p             ) PTD_ASS15(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o)             ; p = rhs.p
-#define PTD_ASS17(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q          ) PTD_ASS16(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p)          ; q = rhs.q
-#define PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r       ) PTD_ASS17(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q)       ; r = rhs.r
-#define PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s    ) PTD_ASS18(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r)    ; s = rhs.s
-#define PTD_ASS20(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t ) PTD_ASS19(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s) ; t = rhs.t
+#define PTD_DATA_COPY_CTOR_INIT(name, num_args)                         \
+  name(const name& rhs) : name(PTD_ONES(num_args), rhs.init) { *this = rhs; }
+
+#define  PTD_ASS0()           ((void) (0))
+#define  PTD_ASS1(first)      first = rhs.first; PTD_ASS0()
+#define  PTD_ASS2(first, ...) first = rhs.first; PTD_ASS1(__VA_ARGS__)
+#define  PTD_ASS3(first, ...) first = rhs.first; PTD_ASS2(__VA_ARGS__)
+#define  PTD_ASS4(first, ...) first = rhs.first; PTD_ASS3(__VA_ARGS__)
+#define  PTD_ASS5(first, ...) first = rhs.first; PTD_ASS4(__VA_ARGS__)
+#define  PTD_ASS6(first, ...) first = rhs.first; PTD_ASS5(__VA_ARGS__)
+#define  PTD_ASS7(first, ...) first = rhs.first; PTD_ASS6(__VA_ARGS__)
+#define  PTD_ASS8(first, ...) first = rhs.first; PTD_ASS7(__VA_ARGS__)
+#define  PTD_ASS9(first, ...) first = rhs.first; PTD_ASS8(__VA_ARGS__)
+#define PTD_ASS10(first, ...) first = rhs.first; PTD_ASS9(__VA_ARGS__)
+#define PTD_ASS11(first, ...) first = rhs.first; PTD_ASS10(__VA_ARGS__)
+#define PTD_ASS12(first, ...) first = rhs.first; PTD_ASS11(__VA_ARGS__)
+#define PTD_ASS13(first, ...) first = rhs.first; PTD_ASS12(__VA_ARGS__)
+#define PTD_ASS14(first, ...) first = rhs.first; PTD_ASS13(__VA_ARGS__)
+#define PTD_ASS15(first, ...) first = rhs.first; PTD_ASS14(__VA_ARGS__)
+#define PTD_ASS16(first, ...) first = rhs.first; PTD_ASS15(__VA_ARGS__)
+#define PTD_ASS17(first, ...) first = rhs.first; PTD_ASS16(__VA_ARGS__)
+#define PTD_ASS18(first, ...) first = rhs.first; PTD_ASS17(__VA_ARGS__)
+#define PTD_ASS19(first, ...) first = rhs.first; PTD_ASS18(__VA_ARGS__)
+#define PTD_ASS20(first, ...) first = rhs.first; PTD_ASS19(__VA_ARGS__)
 
 #define PTD_ASSIGN_OP(name, num_scalars, ...)                                  \
   name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); return *this; }
 
+#define PTD_ASSIGN_OP_INIT(name, num_scalars, ...)                      \
+  name& operator=(const name& rhs) { PTD_ASS##num_scalars(__VA_ARGS__); assignment_impl(rhs); init = rhs.init; return *this; }
+
+#define PTD_RW_SCALARS(num_scalars, ...)                                \
+  void read_scalars (std::ifstream& ifile) {                            \
+    EKAT_REQUIRE_MSG (ifile.good(),                                     \
+        "Cannot read from input file. Did you forget to open it?\n");   \
+    ::scream::impl::read_scalars(ifile,__VA_ARGS__);                    \
+  }                                                                     \
+  void write_scalars (std::ofstream& ofile) {                           \
+    EKAT_REQUIRE_MSG (ofile.good(),                                     \
+        "Cannot write to output file. Did you forget to open it?\n");   \
+    ::scream::impl::write_scalars(ofile,__VA_ARGS__);                   \
+  }
+
+#define PTD_RW_SCALARS_ONLY(num_scalars, ...)                           \
+  void read(std::ifstream& ifile) {                                     \
+    EKAT_REQUIRE_MSG (ifile.good(),                                     \
+        "Cannot read from input file. Did you forget to open it?\n");   \
+    ::scream::impl::read_scalars(ifile,__VA_ARGS__);                    \
+  }                                                                     \
+  void write(std::ofstream& ofile) {                                    \
+    EKAT_REQUIRE_MSG (ofile.good(),                                     \
+        "Cannot write to output file. Did you forget to open it?\n");   \
+    ::scream::impl::write_scalars(ofile,__VA_ARGS__);                   \
+  }
+
+#define PTD_RW() \
+  void read(std::ifstream& ifile) {           \
+    read_scalars(ifile);                      \
+    PhysicsTestData::read(ifile);             \
+  }                                           \
+  void write(std::ofstream& ofile) {          \
+    write_scalars(ofile);                     \
+    PhysicsTestData::write(ofile);            \
+  }
+
 #define PTD_STD_DEF(name, num_scalars, ...) \
   PTD_DATA_COPY_CTOR(name, num_scalars);     \
-  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__)
+  PTD_ASSIGN_OP(name, num_scalars, __VA_ARGS__) \
+  PTD_RW() \
+  PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
+
+#define PTD_STD_DEF_INIT(name, num_scalars, ...) \
+  PTD_DATA_COPY_CTOR_INIT(name, num_scalars);     \
+  PTD_ASSIGN_OP_INIT(name, num_scalars, __VA_ARGS__) \
+  PTD_RW() \
+  PTD_RW_SCALARS(num_scalars, __VA_ARGS__)
 
 namespace scream {
 
@@ -241,6 +294,16 @@ class PhysicsTestData
       m_data = new_data;
     }
 
+    void read(std::ifstream& ifile)
+    {
+      impl::read_scalars(ifile,m_data);
+    }
+
+    void write(std::ofstream& ofile) const
+    {
+      impl::write_scalars(ofile,m_data);
+    }
+
     std::vector<std::vector<Int> > m_dims_list;    // list of dims, one per unique set of dims
     std::vector<std::vector<T**> > m_members_list; // list of member pointers, same outer index space as m_dims_list
     std::vector<T>                 m_data;         // the member data in a flat vector
@@ -320,21 +383,41 @@ class PhysicsTestData
     }
   }
 
-  // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
-  // format of all data from one language to another
   template <ekat::TransposeDirection::Enum D>
-  void transpose()
+  void shift_int_scalar(int& scalar)
+  {
+    const int shift = (D == ekat::TransposeDirection::c2f ? 1 : -1);
+    scalar += shift;
+
+    // Since f90 allows for negative index ranges (-foo:foo), we may
+    // have to remove this check.
+    EKAT_ASSERT_MSG(scalar >= 0, "Bad index: " << scalar);
+  }
+
+  // Since we are also preparing index data, this function is doing more than transposing. It's shifting the
+  // format of all data from one language to another.
+  //
+  // There is currently no way for this struct to know which integer scalars need
+  // to be shifted, so any subclass that has those will need to define their own
+  // transition method which will call this one and then adjust their int scalars
+  // that represent indices.
+  template <ekat::TransposeDirection::Enum D>
+  void transition()
   {
     m_reals.transpose<D>();
     m_ints.transpose<D>();
     m_bools.transpose<D>();
 
-    // Shift the indices. We might not be able to make the assumption that int data represented indices
+    // Shift the indices. We might not be able to make the assumption that int data represented indices.
+    // NOTE! This will not shift scalar integers. It is up the children structs to do that
     for (size_t i = 0; i < m_ints.m_data.size(); ++i) {
-      m_ints.m_data[i] += (D == ekat::TransposeDirection::c2f ? 1 : -1);
-      EKAT_ASSERT_MSG(m_ints.m_data[i] >= 0, "Bad index: " << m_ints.m_data[i]);
+      shift_int_scalar<D>(m_ints.m_data[i]);
     }
   }
+
+  void read(std::ifstream& ifile);
+
+  void write(std::ofstream& ofile) const;
 
  protected:
 
@@ -349,6 +432,81 @@ class PhysicsTestData
   PTDImpl<Real> m_reals; // manage real data with this member
   PTDImpl<Int>  m_ints;  // manage int data with this member
   PTDImpl<char> m_bools; // manage bool data with this member, use chars internally to dodge vector<bool> specialization
+};
+
+enum BASELINE_ACTION {
+  NONE,
+  COMPARE,
+  GENERATE
+};
+
+/**
+ * In $phys_unit_tests_common.hpp, the UnitWrap struct should have an inner struct "Base"
+ * that inherits from the struct below. This will ensure common BFB baseline unit tests
+ * are set up in a consistent manner.
+ */
+struct UnitBase
+{
+
+  std::string     m_baseline_path;
+  std::string     m_test_name;
+  BASELINE_ACTION m_baseline_action;
+  std::ifstream   m_ifile;
+  std::ofstream   m_ofile;
+
+  UnitBase() :
+    m_baseline_path(""),
+    m_test_name(Catch::getResultCapture().getCurrentTestName()),
+    m_baseline_action(NONE)
+  {
+    auto& ts = ekat::TestSession::get();
+    if (ts.flags["c"]) {
+      m_baseline_action = COMPARE;
+    }
+    else if (ts.flags["g"]) {
+      m_baseline_action = GENERATE;
+    }
+    else if (ts.flags["n"]) {
+      m_baseline_action = NONE;
+    }
+    m_baseline_path = ts.params["b"];
+
+    EKAT_REQUIRE_MSG( !(m_baseline_action != NONE && m_baseline_path == ""),
+                      "Unit test flags problem: baseline actions were requested but no baseline path was provided");
+
+    std::string baseline_name = m_baseline_path + "/" + m_test_name;
+
+    if (m_baseline_action == COMPARE) {
+      m_ifile.open(baseline_name,std::ios::binary);
+      EKAT_REQUIRE_MSG(m_ifile.good(), "Missing baselines: " + baseline_name + "\n");
+    }
+    else if (m_baseline_action == GENERATE) {
+      m_ofile.open(baseline_name,std::ios::binary);
+      EKAT_REQUIRE_MSG(m_ofile.good(), "Coult not open baseline file for write: " + baseline_name + "\n");
+    }
+  }
+
+  ~UnitBase() = default;
+
+  std::mt19937_64 get_engine()
+  {
+    if (m_baseline_action != COMPARE) {
+      // We can use any seed
+      int seed;
+      auto engine = setup_random_test(nullptr, &seed);
+      if (m_baseline_action == GENERATE) {
+        // Write the seed
+        impl::write_scalars(m_ofile,seed);
+      }
+      return engine;
+    }
+    else {
+      // Read the seed
+      int seed;
+      impl::read_scalars(m_ifile,seed);
+      return setup_random_test(seed);
+    }
+  }
 };
 
 }  // namespace scream

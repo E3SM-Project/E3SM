@@ -99,6 +99,7 @@
     <values>
       <value>$CIMEROOT/CIME/data/config/config_tests.xml</value>
       <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/config_tests.xml</value>
+      <value component="scream">$COMP_ROOT_DIR_ATM/cime_config/config_tests.xml</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
@@ -285,6 +286,7 @@
       <value component="allactive">$SRCROOT/cime_config/allactive/config_pesall.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_pes.xml</value>
       <value component="eam"      >$SRCROOT/components/eam/cime_config/config_pes.xml</value>
+      <value component="scream"   >$SRCROOT/components/eamxx/cime_config/config_pes.xml</value>
       <value component="elm"      >$SRCROOT/components/elm/cime_config/config_pes.xml</value>
       <value component="cice"     >$SRCROOT/components/cice/cime_config/config_pes.xml</value>
       <value component="mpaso"    >$SRCROOT/components/mpas-ocean/cime_config/config_pes.xml</value>
@@ -323,6 +325,7 @@
     <values>
       <value component="any">$CIMEROOT/CIME/SystemTests</value>
       <value component="mpaso">$COMP_ROOT_DIR_OCN/cime_config/SystemTests</value>
+      <value component="scream">$COMP_ROOT_DIR_ATM/cime_config/SystemTests</value>
     </values>
     <group>test</group>
     <file>env_test.xml</file>
@@ -422,7 +425,7 @@
   <entry id="CONFIG_CPL_FILE_MODEL_SPECIFIC">
     <type>char</type>
     <values>
-      <value>$SRCROOT/driver-$COMP_INTERFACE/cime_config/config_component_$MODEL.xml</value>
+      <value>$SRCROOT/driver-$COMP_INTERFACE/cime_config/config_component_e3sm.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

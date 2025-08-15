@@ -5,7 +5,7 @@ Populates a netcdf file adding requested variables, either importing them
 from another file, or by computing them as function of other existing ones.
 """
 
-from utils import check_minimum_python_version
+from utils import check_minimum_python_version, GoodFormatter
 check_minimum_python_version(3, 4)
 
 import argparse, sys, pathlib
@@ -44,14 +44,14 @@ OR
 
         > ./{0} -f my_file.nc -ifile f2.nc -ivars rho T -cvars p=rho*T^1.5 -rvars rho T
 
-    \033[1;32m# Appends to existing netcdf file, regridding T from file f2.nc, using map file map.nc 
+    \033[1;32m# Appends to existing netcdf file, regridding T from file f2.nc, using map file map.nc
       and deleting rho,T from the output file. Uses nco's ncremap.
 
         > ./{0} -f my_file.nc -ifile f2.nc -ivars T -mfile map.nc
 
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     # The name of the nc file to populate, plus auxiliary files

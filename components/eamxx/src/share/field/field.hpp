@@ -2,11 +2,11 @@
 #define SCREAM_FIELD_HPP
 
 #include "share/field/field_header.hpp"
-#include "share/util/scream_combine_ops.hpp"
-#include "share/scream_types.hpp"
+#include "share/util/eamxx_combine_ops.hpp"
+#include "share/eamxx_types.hpp"
 
-#include "ekat/std_meta/ekat_std_type_traits.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_std_type_traits.hpp>
+#include <ekat_subview_utils.hpp>
 
 #include <memory>   // For std::shared_ptr
 #include <string>
@@ -16,8 +16,12 @@ namespace scream
 
 // Enum used when quering Field for a view on a specific mem space
 enum HostOrDevice {
-  Device = 0,
-  Host
+  Host = 0,
+#ifdef EAMXX_ENABLE_GPU
+  Device = 1
+#else
+  Device = Host
+#endif
 };
 
 // ======================== FIELD ======================== //
@@ -68,12 +72,12 @@ private:
     view_dev_t<DT,MT>   d_view;
     view_host_t<DT,MT>  h_view;
 
-    template<HostOrDevice HD>
-    const if_t<HD==Device,view_dev_t<DT,MT>>& get_view() const {
+    template<typename Device>
+    const if_t<std::is_same_v<Device,device_t>,view_dev_t<DT,MT>>& get_view() const {
       return d_view;
     }
-    template<HostOrDevice HD>
-    const if_t<HD==Host,view_host_t<DT,MT>>& get_view() const {
+    template<typename Device>
+    const if_t<not std::is_same_v<Device,device_t>,view_host_t<DT,MT>>& get_view() const {
       return h_view;
     }
   };
@@ -118,6 +122,8 @@ public:
   // It is created with a pristine header (no providers/customers)
   Field clone () const;
   Field clone (const std::string& name) const;
+  Field clone (const std::string& name, const std::string& grid_name) const;
+
   Field alias (const std::string& name) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
@@ -163,9 +169,13 @@ public:
     using nonconst_ST = typename std::remove_const<ST>::type;
     EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
                        or std::is_same<nonconst_ST,char>::value),
-        "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
+        "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
+        " - field name: " + name() + "\n"
+        " - field data type: " + e2str(data_type()) + "\n"
+        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
     EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<ST>::value,
-        "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n");
+        "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
+        " - field name: " + name() + "\n");
 
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
@@ -184,7 +194,10 @@ public:
     EKAT_REQUIRE_MSG ((std::is_same<nonconst_ST,char>::value or std::is_same<nonconst_ST,void>::value or
                        (field_valid_data_types().has_t<nonconst_ST>() and
                         get_data_type<nonconst_ST>()==m_header->get_identifier().data_type())),
-          "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
+        "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
+        " - field name: " + name() + "\n"
+        " - field data type: " + e2str(data_type()) + "\n"
+        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
 
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
@@ -200,29 +213,51 @@ public:
   void sync_to_dev (const bool fence = true) const;
 
   // Set the field to a constant value (on host or device)
-  template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value) const;
+  // Note: as done below in 'update', the default for ST is only to allow
+  //       giving a default for HD. In practice, ST will ALWAYS be
+  //       deduced from the type of 'value'
+  template<HostOrDevice HD = Device, typename ST = void>
+  void deep_copy (const ST value);
 
-  // Copy the data from one field to this field
+  // Like the above one, but only sets the value where the mask is active
+  // NOTE: mask field must have data type IntType, and hold the extra data
+  // "true_value", to specify where the mask is active
+  template<HostOrDevice HD = Device, typename ST = void>
+  void deep_copy (const ST value, const Field& mask);
+
+  // Copy the data from one field to this field (recycle update method)
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& src) const;
+  void deep_copy (const Field& src) { update<CombineMode::Replace,HD>(src,1,0); }
 
-  // Updates this field y as y=alpha*x+beta*y
+  // Updates this field y as y=combine(x,y,alpha,beta)
+  // See share/util/eamxx_combine_ops.hpp for more details on CombineMode options
   // NOTE: ST=void is just so we can give a default to HD,
   //       but ST will *always* be deduced from input arguments.
   // NOTE: the type ST  must be such that no narrowing happens when
   //       casting the values to whatever the data type of this field is.
   //       E.g., if data_type()=IntType, you can't pass double's.
-  template<HostOrDevice HD = Device, typename ST = void>
+  template<CombineMode CM = CombineMode::Update, HostOrDevice HD = Device, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
-  // Special case of update with alpha=0
+  // Special case of update for particular choices of the combine mode
   template<HostOrDevice HD = Device, typename ST = void>
-  void scale (const ST beta);
+  void scale (const ST beta) { update<CombineMode::Update,HD>(*this,ST(0),beta); }
 
   // Scale a field y as y=y*x where x is also a field
   template<HostOrDevice HD = Device>
-  void scale (const Field& x);
+  void scale (const Field& x) { update<CombineMode::Multiply,HD>(x,1,1); }
+
+  // Scale a field y as y=y/x where x is also a field
+  template<HostOrDevice HD = Device>
+  void scale_inv (const Field& x) { update<CombineMode::Divide,HD>(x,1,1); }
+
+  // Replace *this with max(*this, x)
+  template<HostOrDevice HD = Device>
+  void max (const Field& x) { update<CombineMode::Max,HD>(x,1,1); }
+
+  // Replace *this with min(*this, x)
+  template<HostOrDevice HD = Device>
+  void min (const Field& x) { update<CombineMode::Min,HD>(x,1,1); }
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -245,6 +280,7 @@ public:
   Field subfield (const std::string& sf_name, const int idim,
                   const int index, const bool dynamic = false) const;
   Field subfield (const int idim, const int k, const bool dynamic = false) const;
+  Field subfield (const FieldTag tag, const int k, const bool dynamic = false) const;
   // extracts a subfield composed of multiple slices in a continuous range of indices
   // e.g., (in matlab syntax) subf = f.subfield(:, 1:3, :)
   // but NOT subf = f.subfield(:, [1, 3, 4], :)
@@ -263,18 +299,12 @@ public:
   // Checks whether the underlying view has been already allocated.
   bool is_allocated () const { return m_data.d_view.data()!=nullptr; }
 
-  // Whether this field is equivalent to the rhs. To be equivalent is
-  // less strict than to have all the members equal. In particular,
-  // this method returns true if and only if:
-  //  - this==&rhs OR all the following apply
-  //    - both views are allocated (if not, allocating one won't be reflected on the other)
-  //    - both fields have the same header
-  //    - both fields have the same views
-  // We need to SFINAE on RhsRT, cause this==&rhs only works if the
-  // two are the same. And we do want to check this==&rhs for the
-  // same type, since if we didn't, f.equivalent(f) would return false
-  // if f is not allocated...
-  bool equivalent (const Field& rhs) const;
+  // Whether this field is an alias to the same field as rhs.
+  // To return true, one of the following must hold
+  //  - this==&rhs
+  //  - the fields are NOT subfield, and point to the same data
+  //  - the fields are subfield of fields aliasing each other, with same subfield info
+  bool is_aliasing (const Field& rhs) const;
 
   // ---- Setters and non-const methods ---- //
 
@@ -316,14 +346,14 @@ protected:
   template<typename ST, HostOrDevice From, HostOrDevice To>
   void sync_views_impl () const;
 
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const ST value) const;
+  template<HostOrDevice HD, bool use_mask, typename ST>
+  void deep_copy_impl (const ST value, const Field& mask);
 
-  template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& src) const;
-
-  template<CombineMode CM, HostOrDevice HD, typename ST>
-  void update_impl (const Field& x, const ST alpha, const ST beta, const ST fill_val);
+  // The update method calls this, with ST matching this field data type.
+  // Note: use_fill is used to determine *at compile time* whether to use
+  // the combine<CM> utility or combine_and_fill<CM>
+  template<CombineMode CM, HostOrDevice HD, bool use_fill, typename ST, typename STX>
+  void update_impl (const Field& x, const ST alpha, const ST beta);
 
 protected:
 
@@ -331,7 +361,11 @@ protected:
   const get_view_type<char*,HD>&
   get_view_impl () const {
     EKAT_REQUIRE_MSG (is_allocated (), "Error! View was not yet allocated.\n");
-    return m_data.get_view<HD>();
+    if constexpr (HD==Host) {
+      return m_data.get_view<host_device_t>();
+    } else {
+      return m_data.get_view<device_t>();
+    }
   }
 
   // These SFINAE impl of get_subview are needed since subview_1 does not
@@ -349,6 +383,7 @@ protected:
   get_subview_1 (const get_view_type<data_nd_t<T,N>,HD>&, const int) const {
     EKAT_ERROR_MSG ("Error! Cannot subview a rank2 view along the second "
                     "dimension without losing LayoutRight.\n");
+    return get_view_type<data_nd_t<T,N-1>,HD>();
   }
 
   template<HostOrDevice HD,typename T,int N>
@@ -387,6 +422,86 @@ inline bool operator== (const Field& lhs, const Field& rhs) {
   return lhs.get_header().get_identifier() == rhs.get_header().get_identifier();
 }
 
+// Inform the compiler that we will instantiate some template methods in some translation unit (TU).
+// This prevents the decl in field_impl.hpp from being compiled for every TU.
+// NOTE: field_impl.hpp is still included, so you can call other specializations (e.g., update for CM=Max)
+//       and the compiler will implicitly instantiate. However, these are the most common use cases,
+//       so it helps to do ETI for those.
+// NOTE: for update, we only specialize for CM being Update, Multiply, and Divide,
+#define EAMXX_FIELD_ETI_DECL_UPDATE(S,T) \
+extern template void Field::update<CombineMode::Update, S, T>(const Field&, const T, const T);              \
+extern template void Field::update<CombineMode::Multiply, S, T>(const Field&, const T, const T);            \
+extern template void Field::update<CombineMode::Divide, S, T>(const Field&, const T, const T)
+
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(S,T) \
+extern template void Field::update<CombineMode::Max, S, T>(const Field&, const T, const T);            \
+extern template void Field::update<CombineMode::Min, S, T>(const Field&, const T, const T)
+
+#define EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(S,T1,T2) \
+extern template void Field::update_impl<CombineMode::Update,  S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Multiply,S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Divide,  S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Update,  S, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Multiply,S, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Divide,  S, false, T1, T2>(const Field&, const T1, const T1)
+
+#define EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(S,T1,T2) \
+extern template void Field::update_impl<CombineMode::Max, S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Min, S, true, T1, T2>(const Field&, const T1, const T1);  \
+extern template void Field::update_impl<CombineMode::Max, S, false, T1, T2>(const Field&, const T1, const T1); \
+extern template void Field::update_impl<CombineMode::Min, S, false, T1, T2>(const Field&, const T1, const T1)
+
+#define EAMXX_FIELD_ETI_DECL_DEEP_COPY(S,T) \
+extern template void Field::deep_copy_impl<S,true,T>(const T, const Field&); \
+extern template void Field::deep_copy_impl<S,false,T>(const T, const Field&)
+
+#define EAMXX_FIELD_ETI_DECL_GET_VIEW(S,T) \
+extern template Field::get_view_type<T,S> Field::get_view<T,S> () const; \
+extern template Field::get_view_type<T*,S> Field::get_view<T*,S> () const; \
+extern template Field::get_view_type<T**,S> Field::get_view<T**,S> () const; \
+extern template Field::get_view_type<T***,S> Field::get_view<T***,S> () const; \
+extern template Field::get_view_type<T****,S> Field::get_view<T****,S> () const; \
+extern template Field::get_view_type<T*****,S> Field::get_view<T*****,S> () const; \
+extern template Field::get_view_type<T******,S> Field::get_view<T******,S> () const; \
+extern template Field::get_strided_view_type<T,S> Field::get_strided_view<T,S> () const; \
+extern template Field::get_strided_view_type<T*,S> Field::get_strided_view<T*,S> () const; \
+extern template Field::get_strided_view_type<T**,S> Field::get_strided_view<T**,S> () const; \
+extern template Field::get_strided_view_type<T***,S> Field::get_strided_view<T***,S> () const; \
+extern template Field::get_strided_view_type<T****,S> Field::get_strided_view<T****,S> () const; \
+extern template Field::get_strided_view_type<T*****,S> Field::get_strided_view<T*****,S> () const; \
+extern template Field::get_strided_view_type<T******,S> Field::get_strided_view<T******,S> () const
+
+#define EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(T) \
+EAMXX_FIELD_ETI_DECL_UPDATE(Device,T);          \
+EAMXX_FIELD_ETI_DECL_UPDATE(Host,T);            \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Device,T);  \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN(Host,T);    \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(Device,T);       \
+EAMXX_FIELD_ETI_DECL_DEEP_COPY(Host,T);         \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,T);        \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,T);          \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Device,const T);  \
+EAMXX_FIELD_ETI_DECL_GET_VIEW(Host,const T)
+
+#define EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(T1,T2) \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Device,T1,T2);           \
+EAMXX_FIELD_ETI_DECL_UPDATE_IMPL(Host,T1,T2);             \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Device,T1,T2);   \
+EAMXX_FIELD_ETI_DECL_UPDATE_MAX_MIN_IMPL(Host,T1,T2)
+
+// TODO: should we ETI other scalar types too? E.g. Pack<Real,SCREAM_PACK_SIZE??
+//       Real is by far the most common, so it'd be nice to just to that. But
+//       all the update/update_impl methods use get_view for all 3 types, so just ETI all of them
+EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(double);
+EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(float);
+EAMXX_FIELD_ETI_DECL_FOR_ONE_TYPE(int);
+
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(double,double);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(double,float);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(double,int);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(float,float);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(float,int);
+EAMXX_FIELD_ETI_DECL_FOR_TWO_TYPES(int,int);
 } // namespace scream
 
 // Include template methods implementation

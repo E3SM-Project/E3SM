@@ -8,23 +8,24 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [mac_mic,rrtmgp]
-  schedule_type: Sequential
+  schedule_type: sequential
   mac_mic:
-    atm_procs_list: [shoc,CldFraction,mam4_aci,p3]
-    Type: Group
-    schedule_type: Sequential
+    atm_procs_list: [shoc,cld_fraction,mam4_aci,p3]
+    type: group
+    schedule_type: sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     mam4_aci:
       wsubmin: 0.001
       top_level_mam4xx: 6
+      enable_aero_vertical_mix: true
     p3:
       max_total_ni: 740.0e3
       do_prescribed_ccn: false
     shoc:
       lambda_low: 0.001
-      lambda_high: 0.04
+      lambda_high: 0.08
       lambda_slope: 2.65
       lambda_thresh: 0.02
       thl2tune: 1.0
@@ -33,8 +34,9 @@ atmosphere_processes:
       w2tune: 1.0
       length_fac: 0.5
       c_diag_3rd_mom: 7.0
-      Ckh: 0.1
-      Ckm: 0.1
+      coeff_kh: 0.1
+      coeff_km: 0.1
+      shoc_1p5tke: false
   rrtmgp:
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
@@ -46,18 +48,18 @@ atmosphere_processes:
     rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
 grids_manager:
-  Type: Mesh Free
+  type: mesh_free
   geo_data_source: IC_FILE
-  grids_names: [Physics GLL]
-  Physics GLL:
-    aliases: [Physics]
+  grids_names: [physics_gll]
+  physics_gll:
+    aliases: [physics]
     type: point_grid
     number_of_global_columns:   218
     number_of_vertical_levels:   72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
-  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
   #variables required for shoc
@@ -67,7 +69,10 @@ initial_conditions:
   #variables required for p3
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
-  
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+
   #variables required for rrtmgp
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0
@@ -78,6 +83,6 @@ initial_conditions:
   dgnum: 1e-3
 
 # The parameters for I/O control
-Scorpio:
+scorpio:
   output_yaml_files: ["output.yaml"]
 ...

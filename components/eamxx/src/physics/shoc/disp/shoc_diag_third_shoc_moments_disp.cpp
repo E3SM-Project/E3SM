@@ -1,6 +1,7 @@
 #include "shoc_functions.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace shoc {
@@ -12,6 +13,7 @@ void Functions<Real,DefaultDevice>
   const Int&                  nlev,
   const Int&                  nlevi,
   const Scalar&               c_diag_3rd_mom,
+  const bool&                 shoc_1p5tke,
   const view_2d<const Spack>& w_sec,
   const view_2d<const Spack>& thl_sec,
   const view_2d<const Spack>& wthl_sec,
@@ -27,9 +29,10 @@ void Functions<Real,DefaultDevice>
   const view_2d<Spack>&       w3)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
 
   const auto nlev_packs = ekat::npack<Spack>(nlev);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
+  const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
@@ -38,6 +41,7 @@ void Functions<Real,DefaultDevice>
     diag_third_shoc_moments(
       team, nlev, nlevi,
       c_diag_3rd_mom,
+      shoc_1p5tke,
       ekat::subview(w_sec, i),
       ekat::subview(thl_sec, i),
       ekat::subview(wthl_sec, i),

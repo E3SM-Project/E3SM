@@ -28,7 +28,7 @@ module histFileMod
   use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
   use FatesInterfaceTypesMod , only : nlevdamage_fates => nlevdamage
   use FatesInterfaceTypesMod , only : nlevcoage
-  use FatesLitterMod         , only : nfsc_fates       => nfsc
+  use FatesFuelClassesMod    , only : nfc_fates       => num_fuel_classes
   use FatesConstantsMod      , only : n_landuse_cats
   use FatesLitterMod         , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
@@ -1746,8 +1746,8 @@ contains
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, nmonth
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nlevtrc_full, nvegwcs
     use elm_varpar      , only : nlevsoi
-    use landunit_varcon , only : max_lunit
-    use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
+    use landunit_varcon , only : max_lunit, max_non_poly_lunit
+    use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile, use_polygonal_tundra
     use elm_varctl      , only : version, hostname, username, conventions, source
     use domainMod       , only : ldomain
     use fileutils       , only : get_filename
@@ -1905,7 +1905,11 @@ contains
     call ncd_defdim(lnfid, 'numrad' , numrad , dimid)
     call ncd_defdim(lnfid, 'month'  , nmonth,  dimid)
     call ncd_defdim(lnfid, 'levsno' , nlevsno , dimid)
-    call ncd_defdim(lnfid, 'ltype', max_lunit, dimid)
+    if (use_polygonal_tundra) then
+      call ncd_defdim(lnfid, 'ltype', max_lunit, dimid)
+    else
+      call ncd_defdim(lnfid, 'ltype', max_non_poly_lunit, dimid)
+    end if
     call ncd_defdim(lnfid, 'nvegwcs',nvegwcs, dimid)
     call htape_add_ltype_metadata(lnfid)
     call ncd_defdim(lnfid, 'natpft', natpft_size, dimid)
@@ -1933,7 +1937,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levcacls',nlevcoage, dimid)
        call ncd_defdim(lnfid, 'fates_levpft', numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levage', nlevage_fates, dimid)
-       call ncd_defdim(lnfid, 'fates_levfuel', nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levfuel', nfc_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcwdsc', ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levscpf', nlevsclass_fates*numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcapf',  nlevcoage*numpft_fates, dimid)
@@ -1951,7 +1955,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levelpft', nelements_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
-       call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfc_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levlanduse', n_landuse_cats, dimid)
        call ncd_defdim(lnfid, 'fates_levlulu', n_landuse_cats * n_landuse_cats, dimid)
     end if
@@ -1983,7 +1987,8 @@ contains
     ! Add global metadata defining landunit types
     !
     ! !USES:
-    use landunit_varcon, only : max_lunit, landunit_names, landunit_name_length
+    use landunit_varcon, only : max_lunit, max_non_poly_lunit, landunit_names, landunit_name_length
+    use elm_varctl,      only : use_polygonal_tundra
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: lnfid ! local file id
@@ -1996,10 +2001,17 @@ contains
     character(len=*), parameter :: subname = 'htape_add_ltype_metadata'
     !-----------------------------------------------------------------------
     
-    do ltype = 1, max_lunit
-       attname = att_prefix // landunit_names(ltype)
-       call ncd_putatt(lnfid, ncd_global, attname, ltype)
-    end do
+    if (use_polygonal_tundra) then
+      do ltype = 1, max_lunit
+        attname = att_prefix // landunit_names(ltype)
+        call ncd_putatt(lnfid, ncd_global, attname, ltype)
+      end do
+    else
+      do ltype = 1, max_non_poly_lunit
+        attname = att_prefix // landunit_names(ltype)
+        call ncd_putatt(lnfid, ncd_global, attname, ltype)
+      end do
+    end if
 
   end subroutine htape_add_ltype_metadata
 
@@ -4695,7 +4707,8 @@ contains
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil, nmonth, nvegwcs
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
     use elm_varpar      , only : nlevsoi
-    use landunit_varcon , only : max_lunit
+    use landunit_varcon , only : max_lunit, max_non_poly_lunit
+    use elm_varctl      , only : use_polygonal_tundra
     !
     ! !ARGUMENTS:
     character(len=*), intent(in) :: fname                      ! field name
@@ -4784,7 +4797,11 @@ contains
     case ('levtrc')
        num2d = nlevtrc_soil       
     case('ltype')
-       num2d = max_lunit
+       if (use_polygonal_tundra) then
+         num2d = max_lunit
+       else
+         num2d = max_non_poly_lunit
+       end if
     case('natpft')
        num2d = natpft_size
     case ('fates_levelem')
@@ -4796,7 +4813,7 @@ contains
     case ('fates_levelage')
        num2d = nelements_fates*nlevage_fates
     case ('fates_levagefuel')
-       num2d = nlevage_fates*nfsc_fates
+       num2d = nlevage_fates*nfc_fates
     case('cft')
        if (cft_size > 0) then
           num2d = cft_size
@@ -4842,7 +4859,7 @@ contains
     case ('fates_levage')
        num2d = nlevage_fates
     case ('fates_levfuel')
-       num2d = nfsc_fates
+       num2d = nfc_fates
     case ('fates_levcwdsc')
        num2d = ncwd_fates
     case ('fates_levscpf')

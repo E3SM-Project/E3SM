@@ -22,8 +22,8 @@
 	branch = scorpio_classic
 [submodule "cosp2"]
 	path = components/eam/src/physics/cosp2/external
-	url = git@github.com:bartgol/COSPv2.0.git
-	branch = bartgol/fix-cosp_optical_inputs
+	url = git@github.com:e3sm-project/COSPv2.0.git
+	branch = e3sm-master
 [submodule "cime"]
 	path = cime
 	url = git@github.com:ESMCI/cime.git

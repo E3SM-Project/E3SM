@@ -3,7 +3,7 @@
 """
 Namelist creator for E3SM's SCREAM component
 
-This script takes the namelist_defaults_scream.xml file from the repo
+This script takes the namelist_defaults_eamxx.xml file from the repo
 and produces the processed $case/namelist_scream.xml. From the
 processed file, raw input files are produced which should not be
 modified by users.  The user is allowed to modify

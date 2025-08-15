@@ -70,6 +70,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: RiTopOfCell
    real (kind=RKIND), dimension(:,:), pointer :: RiTopOfEdge
 
+   real (kind=RKIND), dimension(:), pointer :: upwindFactor
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
@@ -87,6 +88,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
    real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientSubglacialRunoff
 
+   real (kind=RKIND), dimension(:), pointer :: landIceDraftForSsh
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: velocityTidalRMS
 
@@ -290,6 +292,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'sshCellWetDry', &
                    sshCellWetDry)
       end if
+      if (config_use_spatially_variable_upwind) then
+         call mpas_pool_get_array(diagnosticsPool, 'upwindFactor', &
+                   upwindFactor)
+      end if
 
       if (config_use_GM.or.config_use_Redi) then
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', &
@@ -355,6 +361,7 @@ contains
       ! Retrieve pointers for configurations where land_ice_flux_mode is enabled
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
+         call mpas_pool_get_array(diagnosticsPool, 'landIceDraftForSsh', landIceDraftForSsh)
          call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
          call mpas_pool_get_dimension(diagnosticsPool, &
                    'index_landIceBoundaryLayerTemperature', indexBLTPtr)
@@ -751,6 +758,7 @@ contains
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity,         &
+         !$acc                   landIceDraftForSsh,              &
          !$acc                   velocityTidalRMS)
       end if
       if (config_use_topographic_wave_drag) then
@@ -811,6 +819,7 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
+         !$acc                   upwindFactor,                    &
          !$acc                   layerThickEdgeDrag,              &
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
@@ -1010,6 +1019,7 @@ contains
          !$acc                   topDragMag,                      &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
+         !$acc                   landIceDraftForSsh,              &
          !$acc                   landIceFrictionVelocity,         &
          !$acc                   velocityTidalRMS)
       end if
@@ -1072,6 +1082,7 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
+         !$acc                   upwindFactor,                    &
          !$acc                   layerThickEdgeDrag,              &
          !$acc                   layerThickEdgeFlux,              &
          !$acc                   layerThickEdgeMean,              &
@@ -1239,6 +1250,7 @@ contains
                  landIceBoundaryLayerTracers,     &
                  landIceTracerTransferVelocities, &
                  landIceFrictionVelocity,         &
+                 landIceDraftForSsh,              &
                  velocityTidalRMS)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
@@ -1280,6 +1292,7 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
+                 upwindFactor,                    &
                  layerThickEdgeDrag,              &
                  layerThickEdgeFlux,              &
                  layerThickEdgeMean,              &

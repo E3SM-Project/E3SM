@@ -221,9 +221,10 @@ Normally this is ONLY used when running CESM with the active glacier model.
 </entry>
 
 <entry id="glc_grid" type="char*10" category="elm_physics"
-        group="elm_inparm" valid_values="mpas.gis20km,mpas.gis1to10km,mpas.gis1to10kmR2" >
+        group="elm_inparm" valid_values="mpas.gis20km,mpas.gis4to40km,mpas.gis1to10km,mpas.gis1to10kmR2" >
 Glacier model grid
     mpas.gis20km  = Greenland at 20km resolution
+    mpas.gis4to40km = Greenland at 4-to-40km variable resolution
     mpas.gis1to10km = Greenland at 1-to-10km variable resolution (v1, kept for backwards compatibility)
     mpas.gis1to10kmR2 = Greenland at 1-to-10km variable resolution (v2, improved init. cond., fewer total grid cells)
 </entry>
@@ -314,7 +315,7 @@ Allowed values are:
  5 : use gross domestic production and population datasets to simulate anthropogenic fire supression
 </entry>
 
-<entry id="fates_harvest_mode" type="char*18" category="physics"
+<entry id="fates_harvest_mode" type="char*256" category="physics"
         group="elm_inparm"
         valid_values="no_harvest,event_code,landuse_timeseries,luhdata_area,luhdata_mass" >
 Set FATES harvesting mode by setting fates_harvest_mode
@@ -357,6 +358,62 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 <entry id="use_fates_sp" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).
+</entry>
+
+<entry id="fates_radiation_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="norman,twostream" value="norman">
+Set the FATES radiation model
+</entry>
+
+<entry id="fates_electron_transport_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="FvCB1980,JohnsonBerry2021" value="FvCB1980">
+Set the FATES electron transport model
+</entry>
+
+<entry id="fates_hydro_solver" type="char*256" category="physics"
+        group="elm_inparm" valid_values="1D_Taylor,2D_Picard,2D_Newton" value="1D_Taylor">
+Set the FATES hydro solver method
+</entry>
+
+<entry id="fates_regeneration_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="default,trs,trs_no_seed_dyn" value="default">
+Set the FATES seed regeneration model
+Valid values:
+  default: default scheme
+  trs: Tree Recruitment Scheme (Hanbury-Brown et al., 2022)
+  trs_no_seed_dyn: Tree Recruitment Scheme (Hanbury-Brown et al., 2022) without seed dynamics
+</entry>
+
+<entry id="fates_cstarvation_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="linear,exponential" value="linear">
+Set the FATES carbon starvation model
+</entry>
+
+<entry id="fates_leafresp_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="ryan1991,atkin2017" value="ryan1991">
+Set the FATES leaf maintenance respiration model
+</entry>
+
+<entry id="fates_stomatal_assimilation" type="char*256" category="physics"
+        group="elm_inparm" valid_values="net,gross" value="net">
+Set net or gross asslimiation for the FATES stomatal model
+</entry>
+
+<entry id="fates_stomatal_model" type="char*256" category="physics"
+        group="elm_inparm" valid_values="ballberry1987,medlyn2011" value="ballberry1987">
+Set the FATES stomatal conductance model
+</entry>
+
+<entry id="fates_photosynth_acclimation" type="char*256" category="physics"
+       group="elm_inparm" valid_values="nonacclimating,kumarathunge2019" value="nonacclimating">
+Set the FATES photosynthesis temperature acclimation model.
+(Only relevant if FATES is on)
+</entry>
+
+<entry id="use_fates_daylength_factor" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".true.">
+If TRUE, enable FATES to utilize the day length factor from the host land model.
+(Only relevant if FATES is on)
 </entry>
 
 <entry id="use_fates_planthydro" type="logical" category="physics"
@@ -1450,7 +1507,7 @@ Land mask description for mksurfdata input files
 
 <entry id="hgrid" type="char*10" category="mksurfdata"
        group="default_settings"
-       valid_values="0.1x0.1,0.5x0.5,10x10min,5x5min,360x720cru,0.9x1.25,19basin,1km-merge-10min">
+       valid_values="0.1x0.1,0.5x0.5,10x10min,5x5min,360x720cru,0.9x1.25,19basin,1km-merge-10min,0.01x0.01">
 Horizontal grid resolutions for mksurfdata input files
 </entry>
 
@@ -1483,7 +1540,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne120np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne512np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_icycape,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne120np4.pg2,ne240np4,ne256np4,ne256np4.pg2,ne512np4.pg2,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_CAx32v1.pg2,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2,r025,0.01x0.01">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry>
@@ -1497,7 +1554,7 @@ Representative concentration pathway for future scenarios [radiative forcing at 
 
 <entry id="mask" type="char*20" category="default_settings"
        group="default_settings"
-       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5,SOwISC12to30E3r3">
+       valid_values="USGS,gx3v7,gx1v6,navy,test,tx0.1v2,tx1v1,T62,TL319,cruncep,oEC60to30v3,oEC60to30v3wLI,ECwISC30to60E1r2,EC30to60E2r2,WC14to60E2r3,WCAtl12to45E2r4,SOwISC12to60E2r4,ECwISC30to60E2r1,oRRS18to6,oRRS18to6v3,oRRS15to5,oARRM60to10,oARRM60to6,ARRM10to60E2r1,oQU480,oQU240,oQU240wLI,oQU120,oRRS30to10v3,oRRS30to10v3wLI,360x720cru,NLDASww3a,NLDAS,tx0.1v2,ICOS10,IcoswISC30E3r5,IcosXISC30E3r7,RRSwISC6to18E3r5,SOwISC12to30E3r3,SOwISC12to30E3r4">
 Land mask description
 </entry>
 
@@ -1960,6 +2017,15 @@ Specifies the method for decomposing CLM grids across processors.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options related to within-gridcell hillslope hydrologic connectivity                                     -->
+<!-- ========================================================================================  -->
+<entry id="use_IM2_hillslope_hydrology" type="logical" category="default_settings"
+       group="elm_inparm" valid_values=".true.,.false" value=".false." >
+If TRUE use within-gridcell hillslope hydrologic connectivity based on drainage terms at the 
+topounit level. Based on the IM2 implementation from NGEE Arctic project.
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface                                  -->
 <!-- ========================================================================================  -->
 
@@ -2167,6 +2233,16 @@ default: 0
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- NGEE Arctic Options                                                                       -->
+<!-- ========================================================================================  -->
+
+<entry id="use_arctic_init" type="logical" category="default_settings"
+	group="elm_inparm" value=".false.">
+Cold-start initialization conditions in tundra start saturated and frozen.
+<default>Default: .false.</default>
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options for soil erosion model                                                   -->
 <!-- ========================================================================================  -->
 
@@ -2226,6 +2302,16 @@ Toggle to turn on the internal mixing of dust-snow.
 The number of steps after which a MPI_Barrier is called. By default, a MPI_Barrier will
 not be called.
 <default>Default: 0</default>
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- NGEE Arctic Options                                                                       -->
+<!-- ========================================================================================  -->
+
+<entry id="use_polygonal_tundra" type="logical" category="default_settings"
+	group="elm_inparm" value=".false.">
+Use polygonal tundra parameterizations for ice wedge polygon microtopography and inindation fraction
+<default>Default: .false.</default>
 </entry>
 
 </namelist_definition>

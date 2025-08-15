@@ -23,14 +23,14 @@ namespace scream {
  * The same FieldGroupInfo can be recycled for several FieldGroup's, each living
  * on a different grid.
  *
- * Notice that, if the allocation was bundled, the big bundle is allocated
+ * Notice that, if the group has a monolithic allocation, the monolithic field is allocated
  * with layout given by grid->get_Xd_vector_layout(), where grid is the
  * grid object where the fields are defined on, and X=2 or 3.
  * Each field is then subviewed at entry k (different for each field)
- * along dimension I (same for all field) of the big bundle field.
+ * along dimension I (same for all field) of the monolithic field.
  *
  * E.g., say we have 3d scalar fields F1,F2,F3,F4 belonging to group MyGroup,
- * which is then allocated as a bundled field F. F will have layout
+ * which is then allocated as a monolithic field F. F will have layout
  * given by grid->get_3d_vector_layout(). Say this layout is (COL,CMP,LEV).
  * Each field is subviewed along m_subview_dim=1, at entry 0,1,2,3 respectively.
  * Note: as of 02/2021 m_subview_dim is *always* 1, but we store this bit
@@ -57,11 +57,11 @@ struct FieldGroup {
   const std::string& grid_name () const;
 
   // The fields in this group
-  std::map<ci_string,std::shared_ptr<Field>> m_fields;
+  std::map<ci_string,std::shared_ptr<Field>> m_individual_fields;
 
-  // If m_info->m_bundled is true, this is the field that all fields
-  // in m_fields are a subview of.
-  std::shared_ptr<Field> m_bundle;
+  // If m_info->m_monolithic_alloc is true, this is the field
+  // that all fields in m_individual_fields are a subview of.
+  std::shared_ptr<Field> m_monolithic_field;
 
   // The info of this group.
   std::shared_ptr<FieldGroupInfo>  m_info;

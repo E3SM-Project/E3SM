@@ -1,15 +1,13 @@
 ---
-BasedOnStyle:      Google
-IndentWidth:       2
-SpaceBeforeParens: Never
-UseTab:            Never
-TabWidth:          2
-ColumnLimit:       80
----
-Language:                    Cpp
-PointerAlignment:            Right
-DerivePointerAlignment:      false
+BasedOnStyle: LLVM
+ColumnLimit: 100
 AlignConsecutiveAssignments: true
-AlignOperands:               true
-AlignTrailingComments:       true
-AlignEscapedNewlines:        true
+AlignConsecutiveBitFields: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: true
+AlignTrailingComments: true
+---
+# # you can obtain the defaults for the LLVM style by running
+# #   clang-format --style=llvm --dump-config > [outfile]
+# # the option definitions are found here:
+# #   https://clang.llvm.org/docs/ClangFormatStyleOptions.html

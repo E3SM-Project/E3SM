@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: p3_standalone_output
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   - T_mid
   - T_mid_at_2m_above_surface
   - T_prev_micro_step
@@ -28,6 +28,6 @@ Field Names:
   - p3_T_mid_tend
   - p3_qc_tend
 output_control:
-  Frequency: 1
+  frequency: 1
   frequency_units: nsteps
 ...

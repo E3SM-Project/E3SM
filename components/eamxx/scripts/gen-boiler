@@ -11,7 +11,7 @@ To test this tool, run:
 % python3 -m doctest gen_boiler.py
 """
 
-from utils import expect, check_minimum_python_version
+from utils import expect, check_minimum_python_version, GoodFormatter
 from git_utils import get_git_toplevel_dir
 
 check_minimum_python_version(3, 5)
@@ -42,7 +42,7 @@ OR
     > {0} foo_bar --piece=f90_f2c_bind --piece=f90_c2f_bind -o --physics=p3
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.RawTextHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     default_repo = get_git_toplevel_dir()

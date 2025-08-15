@@ -4,7 +4,7 @@ This Technical Guide describes the governing equations, physics, and numerical d
 
 ## Guides, Design Documents, and documentation
 
-MPAS-Ocean may be run as either a stand-alone model, or within the E3SM coupled climate model.
+MPAS-Ocean may be run as either a stand-alone model, or within the E3SM coupled earth system model.
 The MPAS-Ocean code for both stand-alone and coupled is housed in the repository [https://github.com/E3SM-Project/E3SM](https://github.com/E3SM-Project/E3SM) within the directory `components/mpas-ocean`. The stand-alone executable may be built within that directory using the make command with the required libraries, as described in Chapter 1 of the [User's Guide](https://zenodo.org/records/11098080).
 
 The [MPAS-Ocean User's Guide](https://zenodo.org/records/11098080) provides a description of the MPAS Framework in Part I, the Governing equations for MPAS-Ocean in Chapter 8, and describes the physics behind each term and parameterization in chapter 11.

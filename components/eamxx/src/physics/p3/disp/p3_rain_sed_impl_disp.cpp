@@ -1,6 +1,7 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -28,11 +29,13 @@ void Functions<Real,DefaultDevice>
   const uview_1d<Scalar>& precip_liq_surf,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
-  const physics::P3_Constants<Real> & p3constants)
+  const P3Runtime& runtime_options)
 {
   using ExeSpace = typename KT::ExeSpace;
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
   const Int nk_pack = ekat::npack<Spack>(nk);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_rain_sedimentation loop
   Kokkos::parallel_for("p3_rain_sed_disp",
     policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -45,12 +48,12 @@ void Functions<Real,DefaultDevice>
 
     // Rain sedimentation:  (adaptive substepping)
     rain_sedimentation(
-      ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(rhofacr, i), ekat::subview(cld_frac_r, i), 
-      ekat::subview(inv_dz, i), ekat::subview(qr_incld, i), 
-      team, workspace, vn_table_vals, vm_table_vals, nk, ktop, kbot, kdir, dt, inv_dt, 
-      ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(nr_incld, i), ekat::subview(mu_r, i), 
-      ekat::subview(lamr, i), ekat::subview(precip_liq_flux, i), 
-      ekat::subview(qr_tend, i), ekat::subview(nr_tend, i), precip_liq_surf(i), p3constants);
+      ekat::subview(rho, i), ekat::subview(inv_rho, i), ekat::subview(rhofacr, i), ekat::subview(cld_frac_r, i),
+      ekat::subview(inv_dz, i), ekat::subview(qr_incld, i),
+      team, workspace, vn_table_vals, vm_table_vals, nk, ktop, kbot, kdir, dt, inv_dt,
+      ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(nr_incld, i), ekat::subview(mu_r, i),
+      ekat::subview(lamr, i), ekat::subview(precip_liq_flux, i),
+      ekat::subview(qr_tend, i), ekat::subview(nr_tend, i), precip_liq_surf(i), runtime_options);
   });
 
 }

@@ -674,11 +674,15 @@ contains
        iotype = pio_iotype_pnetcdf
     else if ( typename .eq. 'NETCDF4P') then
        iotype = pio_iotype_netcdf4p
+    else if ( typename .eq. 'NETCDF4Z') then
+       iotype = pio_iotype_netcdf4p_nczarr
     else if ( typename .eq. 'NETCDF4C') then
        iotype = pio_iotype_netcdf4c
 #ifndef PIO1
     else if ( typename .eq. 'ADIOS') then
        iotype = pio_iotype_adios
+    else if ( typename .eq. 'ADIOSC') then
+       iotype = pio_iotype_adiosc
     else if ( typename .eq. 'HDF5') then
        iotype = pio_iotype_hdf5
 #endif

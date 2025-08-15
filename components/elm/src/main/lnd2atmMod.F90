@@ -224,6 +224,7 @@ contains
       qflx_qrgwl            => col_wf%qflx_qrgwl                   , &
       qflx_rofliq_qgwl_grc  => lnd2atm_vars%qflx_rofliq_qgwl_grc   , &
       qflx_snwcp_ice        => col_wf%qflx_snwcp_ice,  &
+      qflx_ice_runoff_xs    => col_wf%qflx_ice_runoff_xs,  &
       qflx_rofice_grc       => lnd2atm_vars%qflx_rofice_grc     ,  &
       endwb                 => col_ws%endwb , &
       tws                   => grc_ws%tws   , &
@@ -418,7 +419,8 @@ contains
          qflx_qrgwl          (bounds%begc:bounds%endc)         , &
          qflx_rofliq_qgwl_grc(bounds%begg:bounds%endg)    , &
          c2l_scale_type= urbanf, l2g_scale_type=unity )
-
+    
+    qflx_snwcp_ice(bounds%begc:bounds%endc) = qflx_snwcp_ice(bounds%begc:bounds%endc) + qflx_ice_runoff_xs(bounds%begc:bounds%endc) 
     call c2g( bounds, &
          qflx_snwcp_ice (bounds%begc:bounds%endc)     ,  &
          qflx_rofice_grc(bounds%begg:bounds%endg)     ,  &

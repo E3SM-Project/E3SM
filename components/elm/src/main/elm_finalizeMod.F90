@@ -4,6 +4,8 @@ module elm_finalizeMod
   ! Performs land model cleanup
   !
   !
+  use SoilLittVertTranspMod, only : cleanupLitterTransportList
+
   implicit none
   save
   public   ! By default everything is public
@@ -27,7 +29,7 @@ contains
 #include <petsc/finclude/petsc.h>
 #endif
     ! !USES:
-    use elm_varctl             , only : use_vsfm
+    use elm_varctl             , only : use_vsfm, use_cn
 #ifdef USE_PETSC_LIB
     use petscsys
 #endif
@@ -43,6 +45,9 @@ contains
        call PetscFinalize(ierr)
     endif
 #endif
+    if (use_cn) then
+       call cleanupLitterTransportList()
+    endif
 
   end subroutine final
 

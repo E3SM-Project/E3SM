@@ -27,10 +27,6 @@ SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
 
-#CUDA_BUILD is set in SetCompilersFlags, after findPackage(Cuda)
-#i haven't extend it to hip, set it here instead
-SET(HIP_BUILD TRUE CACHE BOOL "")
-
 #uncomment this if using internal kokkos build
 #SET(Kokkos_ENABLE_SERIAL ON CACHE BOOL "")
 ####SET(CMAKE_CXX_STANDARD "14" CACHE STRING "")

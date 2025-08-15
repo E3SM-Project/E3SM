@@ -29,6 +29,8 @@
     <values match='last'>
       <value compset="_SCREAM">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10</value>
       <value compset="_SCREAM" grid="ne256.*|ne512.*|ne1024.*">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
+      <value compset="_SCREAM%MAM4xx">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 41</value>
+      <value compset="_SCREAM%MAM4xx" grid="ne256.*|ne512.*|ne1024.*">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 41</value>
       <value compset="_EAMXX">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10</value>
       <value compset="_EAMXX" grid="ne256.*|ne512.*|ne1024.*">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
     </values>

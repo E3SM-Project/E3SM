@@ -4350,7 +4350,6 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
               dt_left, prt_accum, inv_dz, inv_rho, rho, num_arrays, vs, fluxes, qnr, dt_sub)
 
          do k = k_qxbot,k_qxtop,kdir
-            precip_ice_flux(k+1) = precip_ice_flux(k+1) + flux_qit(k)*dt_sub ! shanyp
             sflx(k+1) = sflx(k+1) + flux_qit(k)*dt_sub
          enddo     
 
@@ -4363,7 +4362,6 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
          bm_incld(:) = bm(:)/cld_frac_i(:)
 
       enddo substep_sedi_i
-      precip_ice_flux(:)=precip_ice_flux(:)*inv_dt
       sflx(:)=sflx(:)*inv_dt
       precip_ice_surf = precip_ice_surf + prt_accum*inv_rho_h2o*inv_dt
 

@@ -195,9 +195,6 @@ IF(${BUILD_HOMME_PREQX})
   IF(${BUILD_HOMME_PREQX_ACC})
     ADD_SUBDIRECTORY(baroCam-acc)
   ENDIF()
-  IF(${HOMME_ENABLE_COMPOSE})
-    ADD_SUBDIRECTORY(stt)
-  ENDIF()
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
@@ -222,6 +219,8 @@ IF(${BUILD_HOMME_THETA})
 #  ADD_SUBDIRECTORY(theta-l-nlev200-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev256-native)
 #  ADD_SUBDIRECTORY(theta-l-nlev300-native)
+  # Special test for -DHOMME_WITHOUT_PIOLIBRARY.
+  ADD_SUBDIRECTORY(stt)
 ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})

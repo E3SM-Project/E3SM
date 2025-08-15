@@ -22,7 +22,7 @@ module seq_flux_mct
   use seq_infodata_mod
 
   use component_type_mod
-  
+
   use iso_c_binding
 
   implicit none
@@ -41,7 +41,8 @@ module seq_flux_mct
 
   public seq_flux_atmocn_mct
   public seq_flux_atmocn_moab
-  
+  public seq_flux_atmocn_moab_sw_only
+
   public seq_flux_atmocnexch_mct
 
   !--------------------------------------------------------------------------
@@ -85,6 +86,7 @@ module seq_flux_mct
   real(r8), allocatable ::  tref (:)  ! diagnostic:  2m ref T
   real(r8), allocatable ::  qref (:)  ! diagnostic:  2m ref Q
   real(r8), allocatable :: duu10n(:)  ! diagnostic: 10m wind speed squared
+  real(r8), allocatable :: u10res(:)  ! diagnostic: 10m "resolved" (no gustiness) wind speed (m/s)
 
   real(r8), allocatable :: fswpen (:) ! fraction of sw penetrating ocn surface layer
   real(r8), allocatable :: ocnsal (:) ! ocean salinity
@@ -130,11 +132,11 @@ module seq_flux_mct
   real(r8)  :: seq_flux_mct_albdir = -1.0_r8  ! albedo, direct
   real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
 
-  ! moab 
+  ! moab
   real(r8),  allocatable :: tagValues(:) ! used for copying tag values from frac to frad
   real(r8),  allocatable :: tagValues2(:) ! used for copying tag values for albedos
   integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
-  
+
   ! Coupler field indices
 
   integer :: index_a2x_Sa_z
@@ -143,6 +145,7 @@ module seq_flux_mct
   integer :: index_a2x_Sa_wsresp
   integer :: index_a2x_Sa_tau_est
   integer :: index_a2x_Sa_ugust
+  integer :: index_a2x_Sa_topo
   integer :: index_a2x_Sa_tbot
   integer :: index_a2x_Sa_ptem
   integer :: index_a2x_Sa_shum
@@ -190,6 +193,7 @@ module seq_flux_mct
   integer :: index_xao_So_ssq
   integer :: index_xao_So_duu10n
   integer :: index_xao_So_u10
+  integer :: index_xao_So_u10withgusts
   integer :: index_xao_So_fswpen
   integer :: index_xao_So_warm_diurn
   integer :: index_xao_So_salt_diurn
@@ -362,6 +366,9 @@ contains
     allocate(duu10n(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate duu10n',ier)
     duu10n = 0.0_r8
+    allocate(u10res(nloc),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate u10res',ier)
+    u10res = 0.0_r8
 
     !--- flux_diurnal cycle flux fields ---
     allocate(uGust(nloc),stat=ier)
@@ -763,6 +770,8 @@ contains
     if(ier/=0) call mct_die(subName,'allocate qref',ier)
     allocate(duu10n(nloc_a2o),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate duu10n',ier)
+    allocate(u10res(nloc_a2o),stat=ier)
+    if(ier/=0) call mct_die(subName,'allocate u10res',ier)
 
     ! set emask
 
@@ -802,7 +811,7 @@ contains
     ! Local variables
     !
     type(mct_gGrid), pointer :: dom_o
-    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map 
+    type(mct_gsMap)        , pointer       :: gsMap               ! model global seg map
     logical             :: flux_albav           ! flux avg option
     integer(in)         :: n                  ! indices
     real(r8)            :: rlat                 ! gridcell latitude in radians
@@ -839,7 +848,7 @@ contains
     integer my_task  ! again, just for global ids
     logical,save        :: first_call = .true.
     integer, save       :: lSize
-    
+
 #ifdef MOABDEBUG
     character*100 outfile, wopts, lnum
 #endif
@@ -883,9 +892,9 @@ contains
           lats(n) = dom_o%data%rAttr(klat,n)
           lons(n) = dom_o%data%rAttr(klon,n)
        enddo
-      
+
        if (mboxid .ge. 0) then
-          ! allocate a local small array to copy a tag from another 
+          ! allocate a local small array to copy a tag from another
           ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
           arrSize = nvise(1) * 2 !  we have ifrac and ofrac to copy to ifrad, ofrad
           allocate(tagValues(arrSize) )
@@ -1080,7 +1089,7 @@ contains
        outfile = 'OcnCplAlbedo_'//trim(lnum)//'.h5m'//C_NULL_CHAR
        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
        ierr = iMOAB_WriteMesh(mboxid, outfile, wopts)
- 
+
        if (ierr .ne. 0) then
           write(logunit,*) subname,' error in writing ocean inst (for flux comp) '
           call shr_sys_abort(subname//' ERROR in writing ocean inst (for flux comp)  ')
@@ -1283,6 +1292,7 @@ contains
             cskin, cskin_night, tod, dt,          &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
             cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for flux_diurnal
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
@@ -1291,6 +1301,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             duu10n,ustar, re  , ssq , missval = 0.0_r8, &
             wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
 
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
@@ -1300,7 +1311,7 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq , missval = 0.0_r8, &
+            duu10n, u10res, ustar, re  , ssq , missval = 0.0_r8, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust)
     endif
 
@@ -1359,7 +1370,7 @@ contains
        xaop_oe%rAttr(index_ssq   ,io) = xaop_oe%rAttr(index_ssq   ,io) + ssq(n) * wt   ! s.hum. saturation at Ts
        xaop_oe%rAttr(index_lwup  ,io) = xaop_oe%rAttr(index_lwup  ,io) + lwup(n)* wt
        xaop_oe%rAttr(index_duu10n,io) = xaop_oe%rAttr(index_duu10n,io) + duu10n(n)*wt
-       xaop_oe%rAttr(index_u10   ,io) = xaop_oe%rAttr(index_u10   ,io) + sqrt(duu10n(n))*wt
+       xaop_oe%rAttr(index_u10   ,io) = xaop_oe%rAttr(index_u10   ,io) + u10res(n)*wt
        xaop_oe%rAttr(index_sumwt ,io) = xaop_oe%rAttr(index_sumwt ,io) + wt
     enddo
 
@@ -1393,7 +1404,7 @@ contains
        xaop_ae%rAttr(index_ssq   ,ia) = xaop_ae%rAttr(index_ssq   ,ia) + ssq(n) * wt   ! s.hum. saturation at Ts
        xaop_ae%rAttr(index_lwup  ,ia) = xaop_ae%rAttr(index_lwup  ,ia) + lwup(n)* wt
        xaop_ae%rAttr(index_duu10n,ia) = xaop_ae%rAttr(index_duu10n,ia) + duu10n(n)*wt
-       xaop_ae%rAttr(index_u10   ,ia) = xaop_ae%rAttr(index_u10   ,ia) + sqrt(duu10n(n))*wt
+       xaop_ae%rAttr(index_u10   ,ia) = xaop_ae%rAttr(index_u10   ,ia) + u10res(n)*wt
        xaop_ae%rAttr(index_sumwt ,ia) = xaop_ae%rAttr(index_sumwt ,ia) + wt
     enddo
 
@@ -1509,6 +1520,7 @@ contains
        index_xao_So_re     = mct_aVect_indexRA(xao,'So_re')
        index_xao_So_ssq    = mct_aVect_indexRA(xao,'So_ssq')
        index_xao_So_u10    = mct_aVect_indexRA(xao,'So_u10')
+       index_xao_So_u10withgusts = mct_aVect_indexRA(xao,'So_u10withgusts')
        index_xao_So_duu10n = mct_aVect_indexRA(xao,'So_duu10n')
        index_xao_Faox_taux = mct_aVect_indexRA(xao,'Faox_taux')
        index_xao_Faox_tauy = mct_aVect_indexRA(xao,'Faox_tauy')
@@ -1552,6 +1564,7 @@ contains
        if (atm_gustiness) then
           index_a2x_Sa_ugust = mct_aVect_indexRA(a2x,'Sa_ugust')
        end if
+       index_a2x_Sa_topo   = mct_aVect_indexRA(a2x,'Sa_topo')
        index_a2x_Sa_tbot   = mct_aVect_indexRA(a2x,'Sa_tbot')
        index_a2x_Sa_pslv   = mct_aVect_indexRA(a2x,'Sa_pslv')
        index_a2x_Sa_ptem   = mct_aVect_indexRA(a2x,'Sa_ptem')
@@ -1745,6 +1758,7 @@ contains
                                 !consistent with mrgx2a fraction
                                 !duu10n,ustar, re  , ssq, missval = 0.0_r8 )
             cold_start=cold_start, wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for flux_diurnal
     else if (ocn_surface_flux_scheme.eq.2) then
        call shr_flux_atmOcn_UA(nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, pslv, &
@@ -1752,6 +1766,7 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             duu10n,ustar, re  , ssq, wsresp=wsresp, tau_est=tau_est)
+       u10res = sqrt(duu10n) ! atm-supplied gustiness not implemented for UA
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
@@ -1760,7 +1775,7 @@ contains
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             ocn_surface_flux_scheme, &
-            duu10n,ustar, re  , ssq, &
+            duu10n, u10res, ustar, re  , ssq, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm)
        !missval should not be needed if flux calc
        !consistent with mrgx2a fraction
@@ -1784,7 +1799,8 @@ contains
           xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts
           xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
           xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
-          xao%rAttr(index_xao_So_u10   ,n) = sqrt(duu10n(n))
+          xao%rAttr(index_xao_So_u10   ,n) = u10res(n)
+          xao%rAttr(index_xao_So_u10withgusts,n) = sqrt(duu10n(n))
           xao%rAttr(index_xao_So_warm_diurn       ,n) = warm(n)
           xao%rAttr(index_xao_So_salt_diurn       ,n) = salt(n)
           xao%rAttr(index_xao_So_speed_diurn      ,n) = speed(n)
@@ -1808,7 +1824,7 @@ contains
        end if
     enddo
 
-    ! transpose xao to xao_omct, to 
+    ! transpose xao to xao_omct, to
   end subroutine seq_flux_atmocn_mct
 
   subroutine seq_flux_atmocn_moab(comp, xao)
@@ -1836,7 +1852,7 @@ contains
      else
         call mct_die(subName,'call for either ocean or atm',1)
      endif
-     ! transpose into moab double array, then set with global id 
+     ! transpose into moab double array, then set with global id
      nloc = mct_avect_lsize(xao)
      listSize = mct_aVect_nRAttr(xao)
 
@@ -1847,7 +1863,7 @@ contains
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells
-     ! global ids are retrieved by albedo first call; it is a local module variable 
+     ! global ids are retrieved by albedo first call; it is a local module variable
      ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
      if (ierr .ne. 0) then
        write(logunit,*) subname,' error in setting atm-ocn fluxes  '
@@ -1860,7 +1876,7 @@ contains
       outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(appId, outfile, wopts)
- 
+
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in writing mesh '
          call shr_sys_abort(subname//' ERROR in writing mesh ')
@@ -1876,16 +1892,91 @@ contains
         endif
         outfile = 'o_flux_mct_'//trim(lnum)//'.h5m'//C_NULL_CHAR
         ierr = iMOAB_WriteMesh(appId, outfile, wopts)
- 
+
         if (ierr .ne. 0) then
             write(logunit,*) subname,' error in writing mesh '
             call shr_sys_abort(subname//' ERROR in writing mesh ')
         endif
      endif
 #endif
-     
+
 
   end subroutine seq_flux_atmocn_moab
+  !===============================================================================
+
+  subroutine seq_flux_atmocn_moab_sw_only(comp, xao)
+     type(component_type), intent(inout) :: comp
+     type(mct_aVect)       , intent(inout)      :: xao
+
+     real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
+     real(r8) , allocatable :: swdn_values(:) ! shortwave downward values
+     real(r8) , allocatable :: swup_values(:) ! shortwave upward values
+     integer  appId ! moab app id
+     integer n
+     integer nloc
+     integer :: index_swdn, index_swup
+
+     ! moab
+     integer                  :: ent_type, ierr, arrSize
+     character(CXX)           :: tagname
+
+     character(*),parameter   :: subName =   '(seq_flux_atmocn_moab_sw_only) '
+
+     if (comp%oneletterid == 'a' ) then
+        appId = mbaxid ! atm on coupler
+        local_xao_mct => prep_aoflux_get_xao_amct()
+     else if (comp%oneletterid == 'o') then
+        appId = mbofxid  ! atm phys
+        local_xao_mct => prep_aoflux_get_xao_omct()
+     else
+        call mct_die(subName,'call for either ocean or atm',1)
+     endif
+
+     ! Get indices for swdn and swup fields
+     index_swdn = mct_aVect_indexRA(xao,'Faox_swdn')
+     index_swup = mct_aVect_indexRA(xao,'Faox_swup')
+
+     ! Get local size
+     nloc = mct_avect_lsize(xao)
+
+     ! Allocate arrays for swdn and swup values
+     allocate(swdn_values(nloc))
+     allocate(swup_values(nloc))
+
+     ! Update local_xao_mct with the new swdn and swup values
+     do n = 1, nloc
+        local_xao_mct(n, index_swdn) = xao%rAttr(index_swdn, n)
+        local_xao_mct(n, index_swup) = xao%rAttr(index_swup, n)
+     enddo
+
+     do n = 1, nloc
+        swdn_values(n) = local_xao_mct(n, index_swdn)
+        swup_values(n) = local_xao_mct(n, index_swup)
+     enddo
+
+     ! Set swdn values in MOAB
+     tagname = 'Faox_swdn'//C_NULL_CHAR
+     arrSize = nloc
+     ent_type = 1 ! cells
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, swdn_values, GlobalIds )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting Faox_swdn  '
+       call shr_sys_abort(subname//' ERROR in setting Faox_swdn')
+     endif
+
+     ! Set swup values in MOAB
+     tagname = 'Faox_swup'//C_NULL_CHAR
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, swup_values, GlobalIds )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting Faox_swup  '
+       call shr_sys_abort(subname//' ERROR in setting Faox_swup')
+     endif
+
+     ! Clean up
+     deallocate(swdn_values)
+     deallocate(swup_values)
+
+  end subroutine seq_flux_atmocn_moab_sw_only
   !===============================================================================
 
 end module seq_flux_mct

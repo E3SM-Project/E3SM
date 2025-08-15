@@ -1,13 +1,10 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_arch.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-
+#include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
 
 #include <thread>
 #include <array>
@@ -21,14 +18,14 @@ namespace unit_test {
  * Unit-tests for p3_functions.
  */
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3Conservation
+struct UnitWrap::UnitTest<D>::TestP3Conservation : public UnitWrap::UnitTest<D>::Base
 {
 
-  static void cloud_water_conservation_tests_device() {
+  void cloud_water_conservation_tests_device() {
 
     using KTH = KokkosTypes<HostDevice>;
 
-    CloudWaterConservationData cwdc[1] = {{sp(1e-5), sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0)}};
+    CloudWaterConservationData cwdc[1] = {{sp(1e-5), sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0), sp(1.0), sp(1.0), false, true}};
 
     // Sync to device
     KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", 1);
@@ -49,8 +46,12 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       Spack qc2qi_berg_tend(cwdc_device(0).qc2qi_berg_tend);
       Spack qi2qv_sublim_tend(cwdc_device(0).qi2qv_sublim_tend);
       Spack qv2qi_vapdep_tend(cwdc_device(0).qv2qi_vapdep_tend);
-
-      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend);
+      Spack qcheti_cnt(cwdc_device(0).qcheti_cnt);
+      Spack qicnt(cwdc_device(0).qicnt);
+      const bool use_hetfrz_classnuc = false;
+      const Smask context(Smask(true));
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend,
+	  qcheti_cnt, qicnt, use_hetfrz_classnuc, context);
 
       cwdc_device(0).qc = qc[0];
       cwdc_device(0).qc2qr_autoconv_tend = qc2qr_autoconv_tend[0];
@@ -61,6 +62,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       cwdc_device(0).qc2qi_berg_tend = qc2qi_berg_tend[0];
       cwdc_device(0).qi2qv_sublim_tend = qi2qv_sublim_tend[0];
       cwdc_device(0).qv2qi_vapdep_tend = qv2qi_vapdep_tend[0];
+      cwdc_device(0).qcheti_cnt = qcheti_cnt[0];
+      cwdc_device(0).qicnt = qicnt[0];
     });
 
     // Sync back to host
@@ -78,7 +81,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(cwdc_host[0].qc2qr_autoconv_tend * cwdc[0].dt <= cwdc_host[0].qc);
   }
 
-  static void rain_water_conservation_tests_device() {
+  void rain_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
 
     RainWaterConservationData rwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0 }};
@@ -131,10 +134,9 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE( rwdc_host(0).qr2qv_evap_tend * rwdc_host(0).dt  <= rwdc_host(0).qr);
   }
 
-  static void ice_water_conservation_tests_device(){
+  void ice_water_conservation_tests_device() {
     using KTH = KokkosTypes<HostDevice>;
-
-    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0}};
+    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, false, true}};
 
     // Sync to device
     KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", 1);
@@ -156,8 +158,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       Spack qc2qi_berg_tend(iwdc_device(0).qc2qi_berg_tend);
       Spack qi2qv_sublim_tend(iwdc_device(0).qi2qv_sublim_tend);
       Spack qi2qr_melt_tend(iwdc_device(0).qi2qr_melt_tend);
+      Spack qinuc_cnt(iwdc_device(0).qinuc_cnt);
+      Spack qcheti_cnt(iwdc_device(0).qcheti_cnt);
+      Spack qicnt(iwdc_device(0).qicnt);
+      const bool use_hetfrz_classnuc = false;
+      const Smask context(Smask(true));
 
-      Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, qc2qi_berg_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend);
+      Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qinuc_cnt, qcheti_cnt, qicnt, qi2qv_sublim_tend, qi2qr_melt_tend,
+	  use_hetfrz_classnuc, context);
 
       iwdc_device(0).qi = qi[0];
       iwdc_device(0).qv2qi_vapdep_tend = qv2qi_vapdep_tend[0];
@@ -169,11 +177,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       iwdc_device(0).qc2qi_berg_tend = qc2qi_berg_tend[0];
       iwdc_device(0).qi2qv_sublim_tend = qi2qv_sublim_tend[0];
       iwdc_device(0).qi2qr_melt_tend = qi2qr_melt_tend[0];
+      iwdc_device(0).qinuc_cnt = qinuc_cnt[0];
+      iwdc_device(0).qcheti_cnt = qcheti_cnt[0];
+      iwdc_device(0).qicnt = qicnt[0];
     });
 
   }
 
-  static void run()
+  void run()
   {
     cloud_water_conservation_tests_device();
 
@@ -182,7 +193,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     ice_water_conservation_tests_device();
   }
 
-  static void cloud_water_conservation_unit_bfb_tests(){
+  void cloud_water_conservation_unit_bfb_tests() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -192,26 +203,26 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     static_assert(max_pack_size % Spack::n == 0, "Unit testing infrastructure does not support this pack size (does not evenly divide 16)");
 
     CloudWaterConservationData cwdc[max_pack_size] = {
-      //qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+      //qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt, use_hetfrz_classnuc, context
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true},
 
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true},
 
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true},
 
-      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
-      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7}
+      {9.9999999999999995e-7, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {6.4285714285714288e-5, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326e-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7, 0.0, 0.0, false, true},
+      {0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
+      {7.1428571428571434e-5, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7, 0.0, 0.0, false, true}
     };
 
     // Sync to device
@@ -222,9 +233,11 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     std::copy(&cwdc[0], &cwdc[0] + max_pack_size, cwdc_host.data());
     Kokkos::deep_copy(cwdc_device, cwdc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      cloud_water_conservation(cwdc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        cwdc[i].read(Base::m_ifile);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -232,7 +245,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qc, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend;
+      Spack qc, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qcheti_cnt, qicnt;
+      Smask context;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qc[s]     = cwdc_device(vs).qc;
         qc2qr_autoconv_tend[s]  = cwdc_device(vs).qc2qr_autoconv_tend;
@@ -243,9 +257,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         qc2qi_berg_tend[s] = cwdc_device(vs).qc2qi_berg_tend;
         qi2qv_sublim_tend[s]  = cwdc_device(vs).qi2qv_sublim_tend;
         qv2qi_vapdep_tend[s]  = cwdc_device(vs).qv2qi_vapdep_tend;
+        qcheti_cnt[s]         = cwdc_device(vs).qcheti_cnt;
+        qicnt[s]              = cwdc_device(vs).qicnt;
+        context.set(s,          cwdc_device(vs).context);
       }
+      const bool use_hetfrz_classnuc = false;
 
-      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend);
+      Functions::cloud_water_conservation(qc, cwdc_device(0).dt, qc2qr_autoconv_tend, qc2qr_accret_tend, qc2qi_collect_tend, qc2qi_hetero_freeze_tend, qc2qr_ice_shed_tend, qc2qi_berg_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend,
+	  qcheti_cnt, qicnt, use_hetfrz_classnuc, context);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         cwdc_device(vs).qc     = qc[s];
@@ -256,6 +275,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         cwdc_device(vs).qc2qi_berg_tend = qc2qi_berg_tend[s];
         cwdc_device(vs).qi2qv_sublim_tend  = qi2qv_sublim_tend[s];
         cwdc_device(vs).qv2qi_vapdep_tend  = qv2qi_vapdep_tend[s];
+        cwdc_device(vs).qcheti_cnt = qcheti_cnt[0];
+        cwdc_device(vs).qicnt = qicnt[0];
       }
 
     });
@@ -263,7 +284,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(cwdc[s].qc     == cwdc_host(s).qc);
         REQUIRE(cwdc[s].qc2qr_autoconv_tend  == cwdc_host(s).qc2qr_autoconv_tend);
@@ -273,35 +294,42 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         REQUIRE(cwdc[s].qc2qi_berg_tend == cwdc_host(s).qc2qi_berg_tend);
         REQUIRE(cwdc[s].qi2qv_sublim_tend  == cwdc_host(s).qi2qv_sublim_tend);
         REQUIRE(cwdc[s].qv2qi_vapdep_tend  == cwdc_host(s).qv2qi_vapdep_tend);
+        REQUIRE(cwdc[s].qcheti_cnt  == cwdc_host(s).qcheti_cnt);
+        REQUIRE(cwdc[s].qicnt  == cwdc_host(s).qicnt);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cwdc_host(s).write(Base::m_ofile);
       }
     }
   }
 
-  static void ice_water_conservation_unit_bfb_tests()
+  void ice_water_conservation_unit_bfb_tests()
   {
     using KTH = KokkosTypes<HostDevice>;
 
     IceWaterConservationData iwdc[max_pack_size] = {
-      // qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+      // qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend, qinuc_cnt, qcheti_cnt, qicnt, use_hetfrz_classnuc, context
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
 
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
 
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true},
 
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
-      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
-      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0}
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4, 0.0, 0.0, 0.0, false, true},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0, 0.0, 0.0, 0.0, false, true},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3, 0.0, 0.0, 0.0, false, true},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, true}
     };
 
     // Sync to device
@@ -312,9 +340,11 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     std::copy(&iwdc[0], &iwdc[0] + max_pack_size, iwdc_host.data());
     Kokkos::deep_copy(iwdc_device, iwdc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_water_conservation(iwdc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        iwdc[i].read(Base::m_ifile);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -322,7 +352,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack qi,qv2qi_vapdep_tend,qv2qi_nucleat_tend,qc2qi_berg_tend,qr2qi_collect_tend,qc2qi_collect_tend,qr2qi_immers_freeze_tend,qc2qi_hetero_freeze_tend,qi2qv_sublim_tend,qi2qr_melt_tend;
+      Spack qi,qv2qi_vapdep_tend,qv2qi_nucleat_tend,qc2qi_berg_tend,qr2qi_collect_tend,qc2qi_collect_tend,qr2qi_immers_freeze_tend,qc2qi_hetero_freeze_tend,qi2qv_sublim_tend,qi2qr_melt_tend,qinuc_cnt,qcheti_cnt,qicnt;
+      Smask context;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qi[s]  = iwdc_device(vs).qi;
         qv2qi_vapdep_tend[s]  = iwdc_device(vs).qv2qi_vapdep_tend;
@@ -334,9 +365,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         qc2qi_hetero_freeze_tend[s] = iwdc_device(vs).qc2qi_hetero_freeze_tend;
         qi2qv_sublim_tend[s] = iwdc_device(vs).qi2qv_sublim_tend;
         qi2qr_melt_tend[s] = iwdc_device(vs).qi2qr_melt_tend;
+        qinuc_cnt[s] = iwdc_device(vs).qinuc_cnt;
+        qcheti_cnt[s] = iwdc_device(vs).qcheti_cnt;
+        qicnt[s] = iwdc_device(vs).qicnt;
+        context.set(s, iwdc_device(vs).context);
       }
-
-      Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qi2qv_sublim_tend, qi2qr_melt_tend);
+      const bool use_hetfrz_classnuc = false;
+      Functions::ice_water_conservation(qi, qv2qi_vapdep_tend, qv2qi_nucleat_tend, qc2qi_berg_tend, qr2qi_collect_tend, qc2qi_collect_tend, qr2qi_immers_freeze_tend, qc2qi_hetero_freeze_tend, iwdc_device(0).dt, qinuc_cnt, qcheti_cnt, qicnt, qi2qv_sublim_tend, qi2qr_melt_tend,
+	  use_hetfrz_classnuc, context);
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         iwdc_device(vs).qi = qi[s];
@@ -356,7 +392,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(iwdc_host, iwdc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(iwdc[s].qi == iwdc_host(s).qi);
         REQUIRE(iwdc[s].qv2qi_vapdep_tend == iwdc_host(s).qv2qi_vapdep_tend );
@@ -370,9 +406,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         REQUIRE(iwdc[s].qi2qr_melt_tend == iwdc_host(s).qi2qr_melt_tend);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        iwdc_host(s).write(Base::m_ofile);
+      }
+    }
   }
 
-  static void rain_water_conservation_unit_bfb_tests(){
+  void rain_water_conservation_unit_bfb_tests() {
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -407,9 +448,11 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     std::copy(&rwdc[0], &rwdc[0] + max_pack_size, rwdc_host.data());
     Kokkos::deep_copy(rwdc_device, rwdc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      rain_water_conservation(rwdc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        rwdc[i].read(Base::m_ifile);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -448,7 +491,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(rwdc_host, rwdc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(rwdc[s].qr     == rwdc_host(s).qr);
         REQUIRE(rwdc[s].qc2qr_autoconv_tend  == rwdc_host(s).qc2qr_autoconv_tend);
@@ -460,9 +503,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
         REQUIRE(rwdc[s].qr2qi_immers_freeze_tend == rwdc_host(s).qr2qi_immers_freeze_tend);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        rwdc_host(s).write(Base::m_ofile);
+      }
+    }
   }
 
-  static void run_bfb() {
+  void run_bfb() {
     cloud_water_conservation_unit_bfb_tests();
 
     rain_water_conservation_unit_bfb_tests();
@@ -473,9 +521,9 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 };
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce : public UnitWrap::UnitTest<D>::Base
 {
-  static void update_prognostic_ice_unit_bfb_tests() {
+  void update_prognostic_ice_unit_bfb_tests() {
 
     constexpr Scalar nmltratio     = C::nmltratio;
     constexpr Scalar dt            = 1.8000E+03;
@@ -483,104 +531,104 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     constexpr Scalar latvap        = C::LatVap;
     constexpr Scalar latice        = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     P3UpdatePrognosticIceData pupidc[max_pack_size] = {
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
        0.0000E+00, 1.9209E-10, 1.0686E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       6.4286E-05, 1.0000E-02},
+       4.5312E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02, false, true},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02},
+       3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02},
+       2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
        0.0000E+00, 4.5891E-10, 1.0853E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       8.5714E-05, 1.0000E-02},
+       2.4570E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02, false, true},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
        0.0000E+00, 1.9209E-10, 1.0686E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       6.4286E-05, 1.0000E-02},
+       4.5312E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02, false, true},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02},
+       3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02},
+       2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
        0.0000E+00, 4.5891E-10, 1.0853E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       8.5714E-05, 1.0000E-02},
+       2.4570E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02, false, true},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
        0.0000E+00, 1.9209E-10, 1.0686E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       6.4286E-05, 1.0000E-02},
+       4.5312E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02, false, true},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02},
+       3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02},
+       2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
        0.0000E+00, 4.5891E-10, 1.0853E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       8.5714E-05, 1.0000E-02},
+       2.4570E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02, false, true},
 
       {4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
        3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
        0.0000E+00, 1.9209E-10, 1.0686E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       6.4286E-05, 1.0000E-02},
+       4.5312E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       6.4286E-05, 1.0000E-02, false, true},
 
       {2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
        1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
        0.0000E+00, 2.8615E-10, 1.0741E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.1429E-05, 1.0000E-02},
+       3.4890E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.1429E-05, 1.0000E-02, false, true},
 
       {8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
        5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
        0.0000E+00, 3.7631E-10, 1.0796E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       7.8571E-05, 1.0000E-02},
+       2.8656E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       7.8571E-05, 1.0000E-02, false, true},
 
       {3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
        2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
        0.0000E+00, 4.5891E-10, 1.0853E+00, latvap+latice, latice, do_predict_nc,    true,         dt, nmltratio,
-       2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
-       8.5714E-05, 1.0000E-02},
+       2.4570E+02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
+       8.5714E-05, 1.0000E-02, false, true},
     };
 
     // Sync to device
@@ -591,9 +639,11 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     std::copy(&pupidc[0], &pupidc[0] + max_pack_size, pupidc_host.data());
     Kokkos::deep_copy(pupidc_device, pupidc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      update_prognostic_ice(pupidc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        pupidc[i].read(Base::m_ifile);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -604,14 +654,13 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
       Spack qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend, ncshdc, qr2qi_collect_tend, nr_collect_tend,
             qr2qi_immers_freeze_tend, nr2ni_immers_freeze_tend, nr_ice_shed_tend, qi2qr_melt_tend, ni2nr_melt_tend, qi2qv_sublim_tend, qv2qi_vapdep_tend, qv2qi_nucleat_tend,
             ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, qc2qi_berg_tend, inv_exner,
-            rho_qm_cloud, th_atm, qv, qc, nc, qr, nr, qi, ni, qm, bm;
+            rho_qm_cloud, ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt, th_atm, qv, qc, nc, qr, nr, qi, ni, qm, bm;
       Scalar dt;
-      bool do_predict_nc;
-      Smask log_wetgrowth;
+      Smask log_wetgrowth, context;
 
       // variables with single values assigned outside of the for loop
       dt            = pupidc_device(0).dt;
-      do_predict_nc = pupidc_device(0).do_predict_nc;
+      const bool do_predict_nc = pupidc_device(0).do_predict_nc;
 
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         qc2qi_hetero_freeze_tend[s] = pupidc_device(vs).qc2qi_hetero_freeze_tend;
@@ -637,6 +686,13 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
         inv_exner[s]  = pupidc_device(vs).inv_exner;
 
         rho_qm_cloud[s] = pupidc_device(vs).rho_qm_cloud;
+        ncheti_cnt[s] = pupidc_device(vs).ncheti_cnt;
+        nicnt[s] = pupidc_device(vs).nicnt;
+        ninuc_cnt[s] = pupidc_device(vs).ninuc_cnt;
+        qcheti_cnt[s] = pupidc_device(vs).qcheti_cnt;
+        qicnt[s] = pupidc_device(vs).qicnt;
+        qinuc_cnt[s] = pupidc_device(vs).qinuc_cnt;
+        context.set(s, pupidc_device(vs).context);
         th_atm[s]    = pupidc_device(vs).th_atm;
         qv[s]    = pupidc_device(vs).qv;
         qc[s]    = pupidc_device(vs).qc;
@@ -650,14 +706,14 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
 
         log_wetgrowth.set(s, pupidc_device(vs).log_wetgrowth);
       }
-
+      const bool use_hetfrz_classnuc = false;
       Functions::update_prognostic_ice(qc2qi_hetero_freeze_tend, qc2qi_collect_tend, qc2qr_ice_shed_tend, nc_collect_tend, nc2ni_immers_freeze_tend,ncshdc,
                                        qr2qi_collect_tend,   nr_collect_tend,  qr2qi_immers_freeze_tend,  nr2ni_immers_freeze_tend,  nr_ice_shed_tend,
                                        qi2qr_melt_tend,  ni2nr_melt_tend,  qi2qv_sublim_tend,  qv2qi_vapdep_tend,  qv2qi_nucleat_tend,  ni_nucleat_tend,
                                        ni_selfcollect_tend,  ni_sublim_tend,  qc2qi_berg_tend,  inv_exner,
                                        do_predict_nc, log_wetgrowth,  dt,  pupidc_device(0).nmltratio,
-                                       rho_qm_cloud, th_atm, qv, qi, ni, qm,
-                                       bm, qc, nc, qr, nr);
+                                       rho_qm_cloud,  ncheti_cnt, nicnt, ninuc_cnt, qcheti_cnt, qicnt, qinuc_cnt, th_atm, qv, qi, ni, qm,
+                                       bm, qc, nc, qr, nr, use_hetfrz_classnuc, context);
 
       // Copy results back into views
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -679,7 +735,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
     Kokkos::deep_copy(pupidc_host, pupidc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(pupidc[s].th_atm    == pupidc_host(s).th_atm);
         REQUIRE(pupidc[s].qc        == pupidc_host(s).qc);
@@ -693,22 +749,27 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
         REQUIRE(pupidc[s].bm        == pupidc_host(s).bm );
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        pupidc_host(s).write(Base::m_ofile);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     update_prognostic_ice_unit_bfb_tests();
   }
 
 }; //TestP3UpdatePrognosticIce
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
+struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables : public UnitWrap::UnitTest<D>::Base
 {
-  static void get_time_space_phys_variables_unit_bfb_tests(){
+  void get_time_space_phys_variables_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
     constexpr Scalar latice = C::LatIce;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     GetTimeSpacePhysVarsData gtspvd[max_pack_size] = {
       //        T_atm,       pres,        rho,       latent_heat_vapor,       latent_heat_sublim,        qv_sat_l,        qv_sat_i
       {2.9792E+02, 9.8711E+04, 1.1532E+00, latvap, latvap+latice, 2.0321E-02, 2.0321E-02},
@@ -737,9 +798,11 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     std::copy(&gtspvd[0], &gtspvd[0] + max_pack_size, gtspvd_host.data());
     Kokkos::deep_copy(gtspvd_device, gtspvd_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      get_time_space_phys_variables(gtspvd[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        gtspvd[i].read(Base::m_ifile);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -794,7 +857,7 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
     Kokkos::deep_copy(gtspvd_host, gtspvd_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(gtspvd[s].mu     == gtspvd_host(s).mu);
         REQUIRE(gtspvd[s].dv     == gtspvd_host(s).dv);
@@ -807,20 +870,25 @@ struct UnitWrap::UnitTest<D>::TestGetTimeSpacePhysVariables
         REQUIRE(gtspvd[s].eii    == gtspvd_host(s).eii);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        gtspvd_host(s).write(Base::m_ofile);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     get_time_space_phys_variables_unit_bfb_tests();
   }
 }; //TestGetTimeSpacePhysVariables
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
+struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq : public UnitWrap::UnitTest<D>::Base
 {
-  static void  update_prognostic_liquid_unit_bfb_tests(){
+  void update_prognostic_liquid_unit_bfb_tests() {
     constexpr Scalar latvap = C::LatVap;
 
-    //fortran generated data is input to the following
+    //baseline generated data is input to the following
     P3UpdatePrognosticLiqData pupldc[max_pack_size] = {
 
       {1.0631E-12, 1.0631E+00, 1.5833E-12, 1.5833E+00, 2.4190E-02, 0.0000E+00, 0.0000E+00, 0.0000E+00, 4.2517E+00,
@@ -896,9 +964,11 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     std::copy(&pupldc[0], &pupldc[0] + max_pack_size, pupldc_host.data());
     Kokkos::deep_copy(pupldc_device, pupldc_host);
 
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      update_prognostic_liquid(pupldc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        pupldc[i].read(Base::m_ifile);
+      }
     }
 
     // Run the lookup from a kernel and copy results back to host
@@ -971,7 +1041,7 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
     Kokkos::deep_copy(pupldc_host, pupldc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(pupldc[s].th_atm == pupldc_host(s).th_atm);
         REQUIRE(pupldc[s].qv     == pupldc_host(s).qv);
@@ -981,18 +1051,23 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
         REQUIRE(pupldc[s].nr     == pupldc_host(s).nr);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        pupldc_host(s).write(Base::m_ofile);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     update_prognostic_liquid_unit_bfb_tests();
   }
 
 }; //TestP3UpdatePrognosticLiq
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
+struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap::UnitTest<D>::Base
 {
-  static void impose_max_total_ni_bfb_test(){
+  void impose_max_total_ni_bfb_test() {
     constexpr Scalar max_total_ni = 740.0e3;
 
     ImposeMaxTotalNiData dc[max_pack_size]= {
@@ -1026,9 +1101,11 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     std::copy(&dc[0], &dc[0] + max_pack_size, dc_host.data());
     Kokkos::deep_copy(dc_device, dc_host);
 
-    //Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      impose_max_total_ni(dc[i]);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        dc[i].read(Base::m_ifile);
+      }
     }
 
     //Run function from a kernal and copy results back to the host
@@ -1054,15 +1131,20 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
     Kokkos::deep_copy(dc_host, dc_device);
 
     // Validate results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int s = 0; s < max_pack_size; ++s) {
         REQUIRE(dc[s].ni_local   == dc_host(s).ni_local);
         REQUIRE(dc[s].inv_rho_local == dc_host(s).inv_rho_local);
       }
     }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        dc_host(s).write(Base::m_ofile);
+      }
+    }
   }
 
-  static void run_bfb(){
+  void run_bfb() {
     impose_max_total_ni_bfb_test();
   }
 
@@ -1075,24 +1157,39 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 namespace {
 
 TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation;
+
+  T t;
+  t.run();
+  t.run_bfb();
 }
 
 TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq;
+
+  T t;
+  t.run_bfb();
 }
 
 TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi::run_bfb();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi;
+
+  T t;
+  t.run_bfb();
 }
 
 } // namespace

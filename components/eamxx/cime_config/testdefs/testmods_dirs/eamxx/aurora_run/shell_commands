@@ -1,0 +1,2 @@
+$CIMEROOT/../components/eamxx/scripts/atmchange tstep_type=9 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange theta_hydrostatic_mode=False -b

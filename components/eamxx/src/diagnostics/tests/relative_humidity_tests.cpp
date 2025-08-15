@@ -7,13 +7,13 @@
 #include "physics/share/physics_constants.hpp"
 #include "physics/share/physics_functions.hpp" 
 
-#include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
+#include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/field/field_utils.hpp"
 
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_pack.hpp>
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_view_utils.hpp>
 
 #include <iomanip>
 
@@ -26,10 +26,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -50,6 +50,7 @@ void run(std::mt19937_64& engine)
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<Pack>;
   using rview_1d   = typename KT::template view_1d<Real>;
+  using TPF        = ekat::TeamPolicyFactory<ExecSpace>;
 
   const     int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
@@ -63,7 +64,7 @@ void run(std::mt19937_64& engine)
   auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
+  auto policy = TPF::get_default_team_policy(ncols, num_mid_packs);
 
   // Input (randomized) views, device
   view_1d temperature("temperature",num_mid_packs),
@@ -155,8 +156,7 @@ void run(std::mt19937_64& engine)
 
     // Run diagnostic and compare with manual calculation
     Field rh_f = T_mid_f.clone();
-    rh_f.deep_copy<double,Host>(0.0);
-    rh_f.sync_to_dev();
+    rh_f.deep_copy(0);
     const auto& rh_v = rh_f.get_view<Pack**>();
     using physics = scream::physics::Functions<Real, DefaultDevice>;
     using Smask = ekat::Mask<Pack::n>;

@@ -102,7 +102,6 @@ module interpolate_mod
   public :: interpolate_2d
   public :: interpolate_create
 
-
   interface interpolate_scalar
      module procedure interpolate_scalar2d
      module procedure interpolate_scalar3d
@@ -138,6 +137,9 @@ module interpolate_mod
   integer :: auto_grid = 0        ! 0 = interpolation grid set by namelist
                                   ! 1 = grid set via mesh resolution
 
+#ifdef MODEL_CESM
+  public :: interp_p, itype
+#endif
 
 contains
 
@@ -1354,8 +1356,6 @@ subroutine interpolate_ce(cart,fld_cube,npts,fld, fillvalue)
 
 end subroutine interpolate_ce
 
-
-
   ! =======================================
   ! interpolate_scalar
   !
@@ -1465,8 +1465,6 @@ end subroutine interpolate_ce
        endif
     endif
   end subroutine interpolate_scalar3d
-
-
 
   ! =======================================
   ! interpolate_vector
@@ -1606,8 +1604,6 @@ end subroutine interpolate_ce
     deallocate(fld_cart_interp)
 
   end subroutine interpolate_vector3d
-
-
 
 #ifndef CAM
   function var_is_vector_uvar(name)

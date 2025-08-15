@@ -17,13 +17,13 @@ typename Functions<S,D>::Spack
 Functions<S,D>
 ::calc_bulk_rho_rime(
   const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim,
-  const physics::P3_Constants<S> & p3constants,
+  const P3Runtime& runtime_options,
   const Smask& context)
 {
   constexpr Scalar bsmall       = C::BSMALL;
   constexpr Scalar qsmall       = C::QSMALL;
-  const Scalar p3_rho_rime_min = p3constants.p3_rho_rime_min;
-  const Scalar p3_rho_rime_max = p3constants.p3_rho_rime_max;
+  const Scalar min_rime_rho     = runtime_options.min_rime_rho;
+  const Scalar max_rime_rho     = runtime_options.max_rime_rho;
 
   Spack rho_rime(0);
 
@@ -33,12 +33,12 @@ Functions<S,D>
     rho_rime.set(bi_rim_gt_small, qi_rim / bi_rim);
   }
 
-  Smask rho_rime_lt_min = rho_rime < p3_rho_rime_min;
-  Smask rho_rime_gt_max = rho_rime > p3_rho_rime_max;
+  Smask rho_rime_lt_min = rho_rime < min_rime_rho;
+  Smask rho_rime_gt_max = rho_rime > max_rime_rho;
 
   // impose limits on rho_rime;  adjust bi_rim if needed
-  rho_rime.set(bi_rim_gt_small && rho_rime_lt_min, p3_rho_rime_min);
-  rho_rime.set(bi_rim_gt_small && rho_rime_gt_max, p3_rho_rime_max);
+  rho_rime.set(bi_rim_gt_small && rho_rime_lt_min, min_rime_rho);
+  rho_rime.set(bi_rim_gt_small && rho_rime_gt_max, max_rime_rho);
   Smask adjust = bi_rim_gt_small && (rho_rime_gt_max || rho_rime_lt_min);
   if (adjust.any()) {
     bi_rim.set(adjust, qi_rim / rho_rime);
@@ -87,7 +87,7 @@ void Functions<S,D>
   const uview_1d<Spack>& ni_tend,
   const view_ice_table& ice_table_vals,
   Scalar& precip_ice_surf,
-  const physics::P3_Constants<S> & p3constants)
+  const P3Runtime& runtime_options)
 {
   // Get temporary workspaces needed for the ice-sed calculation
   uview_1d<Spack> V_qit, V_nit, flux_nit, flux_bir, flux_qir, flux_qit;
@@ -105,7 +105,7 @@ void Functions<S,D>
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar nsmall = C::NSMALL;
 
-  const Scalar p3_ice_sed_knob = p3constants.p3_ice_sed_knob;
+  const Scalar ice_sedimentation_factor = runtime_options.ice_sedimentation_factor;
 
   bool log_qxpresent;
   const Int k_qxtop = find_top(team, sqi, qsmall, kbot, ktop, kdir, log_qxpresent);
@@ -145,7 +145,7 @@ void Functions<S,D>
           // impose lower limits to prevent log(<0)
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), nsmall));
 
-          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), p3constants, qi_gt_small);
+          const auto rhop = calc_bulk_rho_rime(qi_incld(pk), qm_incld(pk), bm_incld(pk), runtime_options, qi_gt_small);
           qm(pk).set(qi_gt_small, qm_incld(pk)*cld_frac_i(pk) );
           bm(pk).set(qi_gt_small, bm_incld(pk)*cld_frac_i(pk) );
 
@@ -163,8 +163,8 @@ void Functions<S,D>
           ni_incld(pk).set(qi_gt_small, max(ni_incld(pk), table_val_ni_lammin * ni_incld(pk)));
           ni(pk).set(qi_gt_small, ni_incld(pk) * cld_frac_i(pk));
 
-          V_qit(pk).set(qi_gt_small, p3_ice_sed_knob * table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
-          V_nit(pk).set(qi_gt_small, p3_ice_sed_knob * table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
+          V_qit(pk).set(qi_gt_small, ice_sedimentation_factor * table_val_qi_fallspd * rhofaci(pk)); // mass-weighted   fall speed (with density factor)
+          V_nit(pk).set(qi_gt_small, ice_sedimentation_factor * table_val_ni_fallspd * rhofaci(pk)); // number-weighted fall speed (with density factor)
         }
         const auto Co_max_local = max(qi_gt_small, 0,
                                       V_qit(pk) * dt_left * inv_dz(pk));

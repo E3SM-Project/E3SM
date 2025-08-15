@@ -1,369 +1,200 @@
 module  zm_microphysics
-
-!---------------------------------------------------------------------------------
-! Purpose:
-!   CAM Interface for cumulus microphysics
-! 
-! Author: Xialiang Song and Guang Zhang, June 2010  
-!---------------------------------------------------------------------------------
-
-use shr_kind_mod,      only: r8=>shr_kind_r8
-use spmd_utils,        only: masterproc    
-use ppgrid,            only: pcols, pver, pverp
-use physconst,         only: gravit, rair, tmelt, cpair, rh2o, r_universal, mwh2o, rhoh2o
-use physconst,         only: latvap, latice
-use activate_drop_mam, only: actdrop_mam_calc
-use ndrop_bam,         only: ndrop_bam_run
-use nucleate_ice_conv, only: nucleati_conv
+   !----------------------------------------------------------------------------
+   !
+   ! Purpose: Methods for convective microphysics
+   !
+   ! Author: Xialiang Song and Guang Zhang, June 2010
+   !----------------------------------------------------------------------------
+   use shr_kind_mod,           only: r8=>shr_kind_r8
+   use spmd_utils,             only: masterproc
+   use ppgrid,                 only: pcols, pver, pverp
+   use physconst,              only: gravit, rair, tmelt, cpair, rh2o, r_universal, mwh2o, rhoh2o
+   use physconst,              only: latvap, latice
+   use activate_drop_mam,      only: actdrop_mam_calc
+   use ndrop_bam,              only: ndrop_bam_run
+   use nucleate_ice_conv,      only: nucleati_conv
+   use shr_spfn_mod,           only: gamma => shr_spfn_gamma
+   use wv_saturation,          only: svp_water, svp_ice
+   use cam_logfile,            only: iulog
+   use cam_abortutils,         only: endrun
+   use zm_microphysics_state,  only: zm_microp_st
+   use zm_aero_type,           only: zm_aero_t
 #ifndef HAVE_ERF_INTRINSICS
-use shr_spfn_mod,      only: erf => shr_spfn_erf
+   use shr_spfn_mod,           only: erf => shr_spfn_erf
 #endif
-use shr_spfn_mod, only: gamma => shr_spfn_gamma
-use wv_saturation,  only: svp_water, svp_ice
-use cam_logfile,       only: iulog
-use cam_abortutils,    only: endrun
-implicit none
-private
-save
 
-public :: &
-   zm_mphyi, &
-   zm_mphy,  &
-   zm_aero_t,  &
-   zm_microp_st
+   implicit none
+   private
+   save
 
-! Private module data
+   public :: zm_microphysics_register
+   public :: zm_mphyi
+   public :: zm_mphy
 
-! constants remaped
-real(r8) :: g      ! gravity
-real(r8) :: mw     ! molecular weight of water
-real(r8) :: r      ! Dry air Gas constant
-real(r8) :: rv     ! water vapor gas contstant
-real(r8) :: rr     ! universal gas constant
-real(r8) :: cpp    ! specific heat of dry air
-real(r8) :: rhow   ! density of liquid water
-real(r8) :: xlf    ! latent heat of freezing
+   ! pbuf indices
+   integer, public :: dnlfzm_idx = -1 ! detrained convective cloud water num concen
+   integer, public :: dnifzm_idx = -1 ! detrained convective cloud ice num concen
+   integer, public :: dnsfzm_idx = -1 ! detrained convective snow num concen
+   integer, public :: dsfzm_idx  = -1 ! detrained convective snow mixing ratio
+   integer, public :: wuc_idx    = -1 ! vertical velocity in deep convection
 
-!from 'microconstants'
-real(r8) :: rhosn  ! bulk density snow
-real(r8) :: rhoi   ! bulk density ice
-real(r8) :: rhog   ! bulk density graupel
+   ! constants
+   real(r8), parameter :: pi = 3.14159265358979323846_r8
 
-real(r8) :: ac,bc,as,bs,ai,bi,ar,br,ag,bg  !fall speed parameters 
-real(r8) :: ci,di    !ice mass-diameter relation parameters
-real(r8) :: cs,ds    !snow mass-diameter relation parameters
-real(r8) :: cr,dr    !drop mass-diameter relation parameters
-real(r8) :: cg,dg    !graupel mass-diameter relation parameters
-real(r8) :: Eii      !collection efficiency aggregation of ice
-real(r8) :: Ecc      !collection efficiency
-real(r8) :: Ecr      !collection efficiency cloud droplets/rain
-real(r8) :: ecg      ! collection efficiency, ice-droplet collisions
-real(r8) :: DCS      !autoconversion size threshold
-real(r8) :: bimm,aimm !immersion freezing
-real(r8) :: rhosu     !typical 850mn air density
-real(r8) :: mi0       ! new crystal mass
-real(r8) :: mg0       ! mass of embryo graupel
-real(r8) :: rin       ! radius of contact nuclei
-real(r8) :: pi        ! pi
-real(r8) :: mmult
+   real(r8) :: xlf    ! latent heat of freezing
 
-! for Bergeron process (Rotstayn et al.2000)
-real(r8) :: Ka_b       ! thermal conductivity of air(J/m/s/K)
-real(r8) :: Ls_b       ! latent heat of sublimation of water(J/kg)
-real(r8) :: Rv_b       ! specigic gas constant for water vapour(J/kg/K)
-real(r8) :: alfa_b     ! parameter for ice crystal habit
-real(r8) :: rhoi13     ! rhoi**(1/3)
-real(r8) :: c23        ! 2/3  
+   ! parameters below from Reisner et al. (1998)
+   real(r8), parameter :: rhow  = 1000._r8 ! density of liquid water [kg/m3]
+   real(r8), parameter :: rhoi  =  500._r8 ! bulk density ice        [kg/m3]
+   real(r8), parameter :: rhog  =  400._r8 ! bulk density graupel    [kg/m3]
+   real(r8), parameter :: rhosn =  100._r8 ! bulk density snow       [kg/m3]
 
-real(r8) ::  cons14,cons16,cons17,cons18,cons19,cons24,cons25, cons31, cons32, cons41
+   ! fall speed parameters, V = aD^b [m/s]
+   real(r8), parameter :: ac = 3.e7_r8       ! droplets
+   real(r8), parameter :: bc = 2._r8         ! droplets
+   real(r8), parameter :: as = 11.72_r8      ! snow
+   real(r8), parameter :: bs = 0.41_r8       ! snow
+   real(r8), parameter :: ai = 700._r8       ! cloud ice
+   real(r8), parameter :: bi = 1._r8         ! cloud ice
+   real(r8), parameter :: ar = 841.99667_r8  ! rain
+   real(r8), parameter :: br = 0.8_r8        ! rain
+   real(r8), parameter :: ag = 19.3_r8       ! graupel (if dense precipitating ice is graupel)
+   real(r8), parameter :: bg = 0.37_r8       ! graupel (if dense precipitating ice is graupel)
 
-real(r8) :: droplet_mass_25um
+   real(r8)            :: ci,di           ! ice mass-diameter relation parameters
+   real(r8)            :: cs,ds           ! snow mass-diameter relation parameters
+   real(r8)            :: cr,dr           ! drop mass-diameter relation parameters
+   real(r8)            :: cg,dg           ! graupel mass-diameter relation parameters
+   real(r8), parameter :: Eii = 0.1_r8    ! collection efficiency aggregation of ice
+   real(r8)            :: Ecc             ! collection efficiency
+   real(r8), parameter :: Ecr = 1.0_r8    ! collection efficiency cloud droplets/rain
+   real(r8), parameter :: ecg = 0.7_r8    ! collection efficiency, ice-droplet collisions
+   real(r8)            :: DCS             ! autoconversion size threshold
+   real(r8), parameter :: bimm = 100._r8  ! immersion freezing parameter (Bigg, 1953)
+   real(r8), parameter :: aimm = 0.66_r8  ! immersion freezing parameter (Bigg, 1953)
+   real(r8)            :: rhosu           ! typical 850mn air density
+   real(r8)            :: mi0             ! new crystal mass
+   real(r8), parameter :: mg0 = 1.6E-10   ! mass of embryo graupel
+   real(r8), parameter :: rin = 0.1e-6_r8 ! radius of contact nuclei
 
-! contact freezing due to dust
-! dust number mean radius (m), Zender et al JGR 2003 assuming number mode radius of 0.6 micron, sigma=2
-real(r8), parameter :: rn_dst1 = 0.258e-6_r8
-real(r8), parameter :: rn_dst2 = 0.717e-6_r8
-real(r8), parameter :: rn_dst3 = 1.576e-6_r8
-real(r8), parameter :: rn_dst4 = 3.026e-6_r8
+   ! for Bergeron process (Rotstayn et al.2000)
+   real(r8), parameter :: Ka_b = 2.4e-2_r8  ! thermal conductivity of air              [J/m/s/K]
+   real(r8), parameter :: Ls_b = 2.834e6_r8 ! latent heat of sublimation of water      [J/kg]
+   real(r8), parameter :: Rv_b = 461._r8    ! specigic gas constant for water vapour   [J/kg/K]
+   real(r8)            :: alfa_b            ! parameter for ice crystal habit
+   real(r8)            :: rhoi13            ! rhoi**(1/3)
+   real(r8)            :: c23               ! 2/3
 
-! smallest mixing ratio considered in microphysics
-real(r8), parameter :: qsmall = 1.e-18_r8
+   real(r8) :: mmult
 
+   real(r8) :: cons14,cons16,cons17,cons18,cons19,cons24,cons25, cons31, cons32, cons41
 
-type, public :: ptr2d
-   real(r8), pointer :: val(:,:)
-end type ptr2d
+   real(r8) :: droplet_mass_25um
 
-! Aerosols
-type :: zm_aero_t
+   ! contact freezing due to dust
+   ! dust number mean radius (m), Zender et al JGR 2003 assuming number mode radius of 0.6 micron, sigma=2
+   real(r8), parameter :: rn_dst1    = 0.258e-6_r8
+   real(r8), parameter :: rn_dst2    = 0.717e-6_r8
+   real(r8), parameter :: rn_dst3    = 1.576e-6_r8
+   real(r8), parameter :: rn_dst4    = 3.026e-6_r8
+   real(r8), parameter :: qsmall     = 1.e-18_r8 ! smallest mixing ratio considered in microphysics
+   real(r8), parameter :: dcon       = 25.e-6_r8
+   real(r8), parameter :: mucon      = 5.3_r8
+   real(r8), parameter :: lambdadpcu = (mucon + 1._r8)/dcon
 
-   ! Aerosol treatment
-   character(len=5) :: scheme  ! either 'bulk' or 'modal'
-
-   ! Bulk aerosols
-   integer :: nbulk    =  0 ! number of bulk aerosols affecting climate
-   integer :: idxsul   = -1 ! index in aerosol list for sulfate
-   integer :: idxdst1  = -1 ! index in aerosol list for dust1
-   integer :: idxdst2  = -1 ! index in aerosol list for dust2
-   integer :: idxdst3  = -1 ! index in aerosol list for dust3
-   integer :: idxdst4  = -1 ! index in aerosol list for dust4
-   integer :: idxbcphi = -1 ! index in aerosol list for Soot (BCPHI)
-
-   real(r8),    allocatable :: num_to_mass_aer(:)  ! conversion of mmr to number conc for bulk aerosols
-   type(ptr2d), allocatable :: mmr_bulk(:)         ! array of pointers to bulk aerosol mmr
-   real(r8),    allocatable :: mmrg_bulk(:,:,:)    ! gathered bulk aerosol mmr
-
-   ! Modal aerosols
-   integer                  :: nmodes = 0      ! number of modes
-   integer,     allocatable :: nspec(:)        ! number of species in each mode
-   type(ptr2d), allocatable :: num_a(:)        ! number mixing ratio of modes (interstitial phase)
-   type(ptr2d), allocatable :: mmr_a(:,:)      ! species mmr in each mode (interstitial phase)
-   real(r8),    allocatable :: numg_a(:,:,:)   ! gathered number mixing ratio of modes (interstitial phase)
-   real(r8),    allocatable :: mmrg_a(:,:,:,:) ! gathered species mmr in each mode (interstitial phase)
-   real(r8),    allocatable :: voltonumblo(:)  ! volume to number conversion (lower bound) for each mode
-   real(r8),    allocatable :: voltonumbhi(:)  ! volume to number conversion (upper bound) for each mode
-   real(r8),    allocatable :: specdens(:,:)   ! density of modal species
-   real(r8),    allocatable :: spechygro(:,:)  ! hygroscopicity of modal species
-
-   integer :: mode_accum_idx  = -1  ! index of accumulation mode
-   integer :: mode_aitken_idx = -1  ! index of aitken mode
-   integer :: mode_coarse_idx = -1  ! index of coarse mode
-   integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
-   integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
-
-   type(ptr2d), allocatable :: dgnum(:)        ! mode dry radius
-   real(r8),    allocatable :: dgnumg(:,:,:)   ! gathered mode dry radius
-
-   real(r8) :: sigmag_aitken
-
-end type zm_aero_t
-
-type :: zm_microp_st
-
-   real(r8),    allocatable :: wu(:,:)        ! vertical velocity
-
-   real(r8),    allocatable :: qliq(:,:)      ! convective cloud liquid water.
-   real(r8),    allocatable :: qice(:,:)      ! convective cloud ice.
-   real(r8),    allocatable :: qrain(:,:)     ! convective rain water.
-   real(r8),    allocatable :: qsnow(:,:)     ! convective snow.
-   real(r8),    allocatable :: qgraupel(:,:)  ! convective graupel.
-   real(r8),    allocatable :: qnl(:,:)       ! convective cloud liquid water num concen.
-   real(r8),    allocatable :: qni(:,:)       ! convective cloud ice num concen.
-   real(r8),    allocatable :: qnr(:,:)       ! convective rain water num concen.
-   real(r8),    allocatable :: qns(:,:)       ! convective snow num concen.
-   real(r8),    allocatable :: qng(:,:)       ! convective graupel num concen.
-
-   real(r8),    allocatable :: autolm(:,:)    !mass tendency due to autoconversion of droplets to rain
-   real(r8),    allocatable :: accrlm(:,:)    !mass tendency due to accretion of droplets by rain
-   real(r8),    allocatable :: bergnm(:,:)    !mass tendency due to Bergeron process
-   real(r8),    allocatable :: fhtimm(:,:)    !mass tendency due to immersion freezing
-   real(r8),    allocatable :: fhtctm(:,:)    !mass tendency due to contact freezing
-   real(r8),    allocatable :: fhmlm (:,:)    !mass tendency due to homogeneous freezing
-   real(r8),    allocatable :: hmpim (:,:)    !mass tendency due to HM process
-   real(r8),    allocatable :: accslm(:,:)    !mass tendency due to accretion of droplets by snow
-   real(r8),    allocatable :: dlfm  (:,:)    !mass tendency due to detrainment of droplet
-   real(r8),    allocatable :: autoln(:,:)    !num tendency due to autoconversion of droplets to rain
-   real(r8),    allocatable :: accrln(:,:)    !num tendency due to accretion of droplets by rain
-   real(r8),    allocatable :: bergnn(:,:)    !num tendency due to Bergeron process
-   real(r8),    allocatable :: fhtimn(:,:)    !num tendency due to immersion freezing
-   real(r8),    allocatable :: fhtctn(:,:)    !num tendency due to contact freezing
-   real(r8),    allocatable :: fhmln (:,:)    !num tendency due to homogeneous freezing
-   real(r8),    allocatable :: accsln(:,:)    !num tendency due to accretion of droplets by snow
-   real(r8),    allocatable :: activn(:,:)    !num tendency due to droplets activation
-   real(r8),    allocatable :: dlfn  (:,:)    !num tendency due to detrainment of droplet
-   real(r8),    allocatable :: autoim(:,:)    !mass tendency due to autoconversion of cloud ice to snow
-   real(r8),    allocatable :: accsim(:,:)    !mass tendency due to accretion of cloud ice by snow
-   real(r8),    allocatable :: difm  (:,:)    !mass tendency due to detrainment of cloud ice
-   real(r8),    allocatable :: nuclin(:,:)    !num tendency due to ice nucleation
-   real(r8),    allocatable :: autoin(:,:)    !num tendency due to autoconversion of cloud ice to snow
-   real(r8),    allocatable :: accsin(:,:)    !num tendency due to accretion of cloud ice by snow
-   real(r8),    allocatable :: hmpin (:,:)    !num tendency due to HM process
-   real(r8),    allocatable :: difn  (:,:)    !num tendency due to detrainment of cloud ice
-   real(r8),    allocatable :: cmel  (:,:)    !mass tendency due to condensation
-   real(r8),    allocatable :: cmei  (:,:)    !mass tendency due to deposition
-   real(r8),    allocatable :: trspcm(:,:)    !LWC tendency due to convective transport
-   real(r8),    allocatable :: trspcn(:,:)    !droplet num tendency due to convective transport
-   real(r8),    allocatable :: trspim(:,:)    !IWC tendency due to convective transport
-   real(r8),    allocatable :: trspin(:,:)    !ice crystal num tendency due to convective transport
-   real(r8),    allocatable :: accgrm(:,:)    ! mass tendency due to collection of rain by graupel
-   real(r8),    allocatable :: accglm(:,:)    ! mass tendency due to collection of droplets by graupel
-   real(r8),    allocatable :: accgslm(:,:)   ! mass tendency of graupel due to collection of droplets by snow
-   real(r8),    allocatable :: accgsrm(:,:)   ! mass tendency of graupel due to collection of rain by snow
-   real(r8),    allocatable :: accgirm(:,:)   ! mass tendency of graupel due to collection of rain by ice
-   real(r8),    allocatable :: accgrim(:,:)   ! mass tendency of graupel due to collection of ice by rain
-   real(r8),    allocatable :: accgrsm(:,:)   ! mass tendency due to collection of snow by rain
-   real(r8),    allocatable :: accgsln(:,:)   ! num tendency of graupel due to collection of droplets by snow
-   real(r8),    allocatable :: accgsrn(:,:)   ! num tendency of graupel due to collection of rain by snow
-   real(r8),    allocatable :: accgirn(:,:)   ! num tendency of graupel due to collection of rain by ice
-   real(r8),    allocatable :: accsrim(:,:)   ! mass tendency of snow due to collection of ice by rain
-   real(r8),    allocatable :: acciglm(:,:)   ! mass tendency of ice mult(splintering) due to acc droplets by graupel
-   real(r8),    allocatable :: accigrm(:,:)   ! mass tendency of ice mult(splintering) due to acc rain by graupel
-   real(r8),    allocatable :: accsirm(:,:)   ! mass tendency of snow due to collection of rain by ice
-   real(r8),    allocatable :: accigln(:,:)   ! num tendency of ice mult(splintering) due to acc droplets by graupel
-   real(r8),    allocatable :: accigrn(:,:)   ! num tendency of ice mult(splintering) due to acc rain by graupel
-   real(r8),    allocatable :: accsirn(:,:)   ! num tendency of snow due to collection of rain by ice
-   real(r8),    allocatable :: accgln(:,:)    ! num tendency due to collection of droplets by graupel
-   real(r8),    allocatable :: accgrn(:,:)    ! num tendency due to collection of rain by graupel
-   real(r8),    allocatable :: accilm(:,:)    ! mass tendency of cloud ice due to collection of droplet by cloud ice
-   real(r8),    allocatable :: acciln(:,:)    ! number conc tendency of cloud ice due to collection of droplet by cloud ice
-   real(r8),    allocatable :: fallrm(:,:)    ! mass tendency of rain fallout
-   real(r8),    allocatable :: fallsm(:,:)    ! mass tendency of snow fallout
-   real(r8),    allocatable :: fallgm(:,:)    ! mass tendency of graupel fallout
-   real(r8),    allocatable :: fallrn(:,:)    ! num tendency of rain fallout
-   real(r8),    allocatable :: fallsn(:,:)    ! num tendency of snow fallout
-   real(r8),    allocatable :: fallgn(:,:)    ! num tendency of graupel fallout
-   real(r8),    allocatable :: fhmrm (:,:)    ! mass tendency due to homogeneous freezing of rain
-
-end type zm_microp_st
-
-
-real(r8), parameter :: dcon  = 25.e-6_r8
-real(r8), parameter :: mucon = 5.3_r8
-real(r8), parameter :: lambdadpcu = (mucon + 1._r8)/dcon
-
-!===============================================================================
+!===================================================================================================
 contains
-!===============================================================================
+!===================================================================================================
 
-subroutine zm_mphyi
+subroutine zm_microphysics_register()
+   !----------------------------------------------------------------------------
+   ! Purpose: register pbuf variables for convective microphysics
+   !----------------------------------------------------------------------------
+   use physics_buffer, only : pbuf_add_field, dtype_r8
+   !----------------------------------------------------------------------------
+   
+   ! detrained convective cloud water num concen.
+   call pbuf_add_field('DNLFZM', 'physpkg', dtype_r8, (/pcols,pver/), dnlfzm_idx)
+   
+   ! detrained convective cloud ice num concen.
+   call pbuf_add_field('DNIFZM', 'physpkg', dtype_r8, (/pcols,pver/), dnifzm_idx)
+   
+   ! detrained convective snow num concen.
+   call pbuf_add_field('DNSFZM', 'physpkg', dtype_r8, (/pcols,pver/), dnsfzm_idx)
+   
+   ! detrained convective snow mixing ratio.
+   call pbuf_add_field('DSFZM',  'physpkg', dtype_r8, (/pcols,pver/), dsfzm_idx)
 
-!----------------------------------------------------------------------- 
-! 
-! Purpose:
-! initialize constants for the cumulus microphysics
-! called from zm_conv_init() in zm_conv_intr.F90
-!
-! Author: Xialiang Song, June 2010
-! 
-!-----------------------------------------------------------------------
+   ! vertical velocity (m/s)
+   call pbuf_add_field('WUC','global',dtype_r8,(/pcols,pver/), wuc_idx)
 
-!NOTE:
-! latent heats should probably be fixed with temperature 
-! for energy conservation with the rest of the model
-! (this looks like a +/- 3 or 4% effect, but will mess up energy balance)
+end subroutine zm_microphysics_register
 
-   xlf = latice          ! latent heat freezing
+!===================================================================================================
 
-! from microconstants
+subroutine zm_mphyi()
+   !----------------------------------------------------------------------------
+   ! Purpose: initialize variables for convective microphysics
+   ! Author: Xialiang Song, June 2010
+   !----------------------------------------------------------------------------
 
-! parameters below from Reisner et al. (1998)
-! density parameters (kg/m3)
+   ! NOTE: latent heats should probably be fixed with temperature 
+   ! for energy conservation with the rest of the model
+   ! (this looks like a +/- 3 or 4% effect, but will mess up energy balance)
 
-      rhosn = 100._r8    ! bulk density snow
-      rhoi = 500._r8     ! bulk density ice
-      rhow = 1000._r8    ! bulk density liquid
+   ! latent heat freezing
+   xlf = latice
 
-      rhog = 400._r8     ! bulk density graupel(if dense precipitating ice is graupel)
-!      rhog = 900._r8     ! bulk density graupel(if dense precipitating ice is hail)
+   ! particle mass-diameter relationship - assume spherical particles for cloud ice/snow
+   ! m = cD^d
 
-! fall speed parameters, V = aD^b
-! V is in m/s
+   ! cloud ice mass-diameter relationship
+   ci = rhoi*pi/6._r8
+   di = 3._r8
 
-! droplets
-	ac = 3.e7_r8
-	bc = 2._r8
+   ! snow mass-diameter relationship
+   cs = rhosn*pi/6._r8
+   ds = 3._r8
 
-! snow
-	as = 11.72_r8
-	bs = 0.41_r8
+   ! drop mass-diameter relationship
+   cr = rhow*pi/6._r8
+   dr = 3._r8
 
-! cloud ice
-	ai = 700._r8
-	bi = 1._r8
+   ! graupel mass-diameter relationship
 
-! rain
-	ar = 841.99667_r8
-	br = 0.8_r8
+   cg = rhog*pi/6._r8
+   dg = 3._r8
 
-!graupel(if dense precipitating ice is graupel)
+   ! typical air density at 850 mb
+   rhosu = 85000._r8/(rair * tmelt)
 
-        ag = 19.3_r8
-        bg = 0.37_r8
+   ! for Bergeron process (Rotstayn et al.2000)
+   alfa_b = 1._r8/3._r8 
+   rhoi13 = rhoi**alfa_b
+   c23    = 2._r8/3._r8
 
-!if dense precipitating ice is hail (matsun and huggins 1980)
-!        ag = 114.5
-!        bg = 0.5
+   ! mass of new crystal due to aerosol freezing and growth (kg)
+   mi0 = 4._r8/3._r8*pi*rhoi*(10.e-6_r8)*(10.e-6_r8)*(10.e-6_r8)
+   
+   mmult = 4._r8/3._r8*pi*rhoi*(5.e-6_r8)**3
 
-  
-! particle mass-diameter relationship
-! currently we assume spherical particles for cloud ice/snow
-! m = cD^d
+   cons14 = gamma(bg+3._r8)*pi/4._r8*ecg
+   cons16 = gamma(bi+3._r8)*pi/4._r8*ecg
+   cons17 = 4._r8*2._r8*3._r8*rhosu*pi*ecg*ecg*gamma(2._r8*bs+2._r8)/(8._r8*(rhog-rhosn))
+   cons18 = rhosn*rhosn
+   cons19 = rhow*rhow
+   cons24 = pi/4._r8*ecr*gamma(br+3._r8)
+   cons25 = pi*pi/24._r8*rhow*ecr*gamma(br+6._r8)
 
-        pi = 3.14159265358979323846_r8
+   cons31 = pi*pi*ecr*rhosn
+   cons32 = pi/2._r8*ecr
+   cons41 = pi*pi*ecr*rhow  
 
-! cloud ice mass-diameter relationship
+   droplet_mass_25um = 4._r8/3._r8*pi*rhow*(25.e-6_r8)**3
 
-	ci = rhoi*pi/6._r8
-	di = 3._r8
-
-! snow mass-diameter relationship
-
-	cs = rhosn*pi/6._r8
-	ds = 3._r8
-
-! drop mass-diameter relationship
-
-	cr = rhow*pi/6._r8
-	dr = 3._r8
-
-! graupel mass-diameter relationship
-
-        cg = rhog*pi/6._r8
-        dg = 3._r8
-
-! collection efficiency, aggregation of cloud ice and snow
-
-	Eii = 0.1_r8
-
-! collection efficiency, accretion of cloud water by rain
-
-	Ecr = 1.0_r8
-
-        ecg = 0.7_r8
-
-! immersion freezing parameters, bigg 1953
-
-	bimm = 100._r8
-	aimm = 0.66_r8
-
-! typical air density at 850 mb
-
-	rhosu = 85000._r8/(rair * tmelt)
-
-! for Bergeron process (Rotstayn et al.2000)
-        Ka_b = 2.4e-2_r8     ! thermal conductivity of air(J/m/s/K)
-        Ls_b = 2.834e6_r8    ! latent heat of sublimation of water(J/kg)
-        Rv_b = 461._r8     ! specigic gas constant for water vapour(J/kg/K)
-        alfa_b = 1._r8/3._r8 
-        rhoi13 = rhoi**alfa_b
-        c23 = 2._r8/3._r8
-
-! mass of new crystal due to aerosol freezing and growth (kg)
-
-	mi0 = 4._r8/3._r8*pi*rhoi*(10.e-6_r8)*(10.e-6_r8)*(10.e-6_r8)
-
-        mg0 = 1.6E-10
-! radius of contact nuclei aerosol (m)
-
-        rin = 0.1e-6_r8
-        mmult = 4._r8/3._r8*pi*rhoi*(5.e-6_r8)**3
-
-        cons14=gamma(bg+3._r8)*pi/4._r8*ecg
-        cons16=gamma(bi+3._r8)*pi/4._r8*ecg
-        cons17=4._r8*2._r8*3._r8*rhosu*pi*ecg*ecg*gamma(2._r8*bs+2._r8)/(8._r8*(rhog-rhosn))
-        cons18=rhosn*rhosn
-        cons19=rhow*rhow
-        cons24=pi/4._r8*ecr*gamma(br+3._r8)
-        cons25=pi*pi/24._r8*rhow*ecr*gamma(br+6._r8)
-         
-        cons31=pi*pi*ecr*rhosn
-        cons32=pi/2._r8*ecr
-        cons41=pi*pi*ecr*rhow  
-
-        droplet_mass_25um = 4._r8/3._r8*pi*rhow*(25.e-6_r8)**3
 end subroutine zm_mphyi
 
-!===============================================================================
+!===================================================================================================
 
 subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,   qe,        &
                    eps0,  jb,   jt,   jlcl, msg,   il2g,  grav,  cp,   rd,   aero, gamhat,    &
@@ -684,6 +515,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8) :: flux_fullact            ! flux of activated aerosol fraction assuming 100% activation (cm/s)
   real(r8) :: dmc
   real(r8) :: ssmc
+  real(r8) :: so4mc
+  real(r8) :: mommc
+  real(r8) :: bcmc
+  real(r8) :: pommc
+  real(r8) :: soamc
+  real(r8) :: wght
   real(r8) :: dgnum_aitken
 
 ! bulk aerosol variables
@@ -2205,9 +2042,32 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     dmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_idx)      &
                                   +aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_idx))
                     ssmc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_idx)      &
-                                  +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx))  
+                                  +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx)) 
+                    so4mc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_so4_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_so4_idx,aero%mode_coarse_idx)) 
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+                    mommc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_mom_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_mom_idx,aero%mode_coarse_idx))
+#endif 
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+                    bcmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_bc_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_bc_idx,aero%mode_coarse_idx))
+                    pommc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_pom_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_pom_idx,aero%mode_coarse_idx))
+                    soamc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_soa_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_soa_idx,aero%mode_coarse_idx))
+#endif
                     if (dmc > 0._r8) then
-                        dst_num = dmc/(ssmc + dmc) *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         & 
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+                       wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
+                       wght = dmc/(ssmc + dmc + so4mc + mommc)
+#elif (defined RAIN_EVAP_TO_COARSE_AERO)
+                       wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
+#else
+                       wght = dmc/(ssmc + dmc + so4mc)
+#endif
+                       dst_num = wght *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         &
                                   + aero%numg_a(i,k,aero%mode_coarse_idx))*0.5_r8*rho(i,k)*1.0e-6_r8
                     else 
                        dst_num = 0.0_r8
@@ -2406,13 +2266,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     !  use size '3' for dust coarse mode...
                     !  scale by dust fraction in coarse mode
 
-                    dmc  = 0.5_r8*(aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_idx)     &
-                                  +aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_idx))
-                    ssmc = 0.5_r8*(aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx)     &
-                                  +aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_idx)) 
                     if (dmc > 0.0_r8) then
-                        nacon3 = dmc/(ssmc + dmc) * (aero%numg_a(i,k,aero%mode_coarse_idx)     &
-                                 + aero%numg_a(i,k-1,aero%mode_coarse_idx))*0.5_r8*rho(i,k)
+                        nacon3 = dst_num*tcnt*1.0e6_r8
                     end if
 
                  else if (aero%scheme == 'bulk') then
@@ -3353,6 +3208,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
 end subroutine zm_mphy
 
-!##############################################################################
+!===================================================================================================
 
 end module zm_microphysics

@@ -25,22 +25,24 @@ module compose_mod
      end subroutine cedr_unittest
 
      subroutine cedr_init_impl(comm, cdr_alg, use_sgi, gid_data, rank_data, &
-          ncell, nlclcell, nlev, qsize, independent_time_steps, hard_zero, &
+          ncell, nlclcell, nlev, np, qsize, independent_time_steps, hard_zero, &
           gid_data_sz, rank_data_sz) bind(c)
        use iso_c_binding, only: c_int, c_bool
-       integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev, &
+       integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev, np, &
             qsize, gid_data_sz, rank_data_sz
        logical(kind=c_bool), value, intent(in) :: use_sgi, independent_time_steps, hard_zero
        integer(kind=c_int), intent(in) :: gid_data(gid_data_sz), rank_data(rank_data_sz)
      end subroutine cedr_init_impl
 
      subroutine slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
-          nelem, nelemd, cubed_sphere_map, geometry, lid2gid, lid2facenum, nbr_id_rank, nirptr, &
-          sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, nbr_id_rank_sz, nirptr_sz) bind(c)
+          nelem, nelemd, cubed_sphere_map, geometry, lid2gid, lid2facenum, &
+          nbr_id_rank, nirptr, sl_halo, sl_traj_3d, sl_traj_nsubstep, sl_nearest_point_lev, &
+          lid2gid_sz, lid2facenum_sz, nbr_id_rank_sz, nirptr_sz) bind(c)
        use iso_c_binding, only: c_int
-       integer(kind=c_int), value, intent(in) :: comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelem, nelemd, cubed_sphere_map, geometry, sl_nearest_point_lev, lid2gid_sz, &
-            lid2facenum_sz, nbr_id_rank_sz, nirptr_sz
+       integer(kind=c_int), value, intent(in) :: comm, transport_alg, np, nlev, qsize, &
+            qsize_d, nelem, nelemd, cubed_sphere_map, geometry, sl_halo, sl_traj_3d, &
+            sl_traj_nsubstep, sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, &
+            nbr_id_rank_sz, nirptr_sz
        integer(kind=c_int), intent(in) :: lid2gid(lid2gid_sz), lid2facenum(lid2facenum_sz), &
             nbr_id_rank(nbr_id_rank_sz), nirptr(nirptr_sz)
      end subroutine slmm_init_impl
@@ -186,7 +188,28 @@ module compose_mod
        type(cartesian3D_t), intent(in) :: sphere_cart_coord
      end subroutine slmm_check_ref2sphere
 
-     subroutine slmm_csl_set_elem_data(ie, metdet, qdp, n0_qdp, dp, q, nelem_in_patch, h2d, d2h) bind(c)
+     subroutine slmm_set_hvcoord(etai_beg, etai_end, etam) bind(c)
+       use iso_c_binding, only: c_double
+       use dimensions_mod, only : nlev
+       real(kind=c_double), value, intent(in) :: etai_beg, etai_end
+       real(kind=c_double), intent(in) :: etam(nlev)
+     end subroutine slmm_set_hvcoord
+
+     subroutine slmm_calc_v_departure(nets, nete, step, dtsub, dep_points, &
+          dep_points_ndim, vnode, vdep, info) bind(c)
+       use iso_c_binding, only: c_int, c_double
+       use dimensions_mod, only : np, nlev, nelemd, qsize
+       use coordinate_systems_mod, only : cartesian3D_t
+       integer(kind=c_int), value, intent(in) :: nets, nete, step, dep_points_ndim
+       real(kind=c_double), value, intent(in) :: dtsub
+       real(kind=c_double), intent(inout) :: dep_points(dep_points_ndim,np,np,nlev,nelemd)
+       real(kind=c_double), intent(in) :: vnode(dep_points_ndim,np,np,nlev,nelemd)
+       real(kind=c_double), intent(out) :: vdep(dep_points_ndim,np,np,nlev,nelemd)
+       integer(kind=c_int), intent(out) :: info
+     end subroutine slmm_calc_v_departure
+
+     subroutine slmm_csl_set_elem_data(ie, metdet, qdp, n0_qdp, dp, q, nelem_in_patch, &
+          h2d, d2h) bind(c)
        use iso_c_binding, only: c_int, c_double, c_bool
        use dimensions_mod, only : nlev, np, qsize
        real(kind=c_double), intent(in) :: metdet(np,np), qdp(np,np,nlev,qsize,2), &
@@ -195,17 +218,17 @@ module compose_mod
        logical(kind=c_bool), value, intent(in) :: h2d, d2h
      end subroutine slmm_csl_set_elem_data
 
-     subroutine slmm_csl(nets, nete, dep_points, minq, maxq, info) bind(c)
+     subroutine slmm_csl(nets, nete, dep_points, dep_points_ndim, minq, maxq, info) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : np, nlev, nelemd, qsize
        use coordinate_systems_mod, only : cartesian3D_t
-       integer(kind=c_int), value, intent(in) :: nets, nete
+       integer(kind=c_int), value, intent(in) :: nets, nete, dep_points_ndim
        ! dep_points is const in principle, but if lev <=
        ! semi_lagrange_nearest_point_lev, a departure point may be altered if
        ! the winds take it outside of the comm halo.
-       type(cartesian3D_t), intent(inout) :: dep_points(np,np,nlev,nelemd)
+       real(kind=c_double), intent(inout) :: dep_points(dep_points_ndim,np,np,nlev,nelemd)
        real(kind=c_double), intent(in) :: &
-            minq(np,np,nlev,qsize,nets:nete), maxq(np,np,nlev,qsize,nets:nete)
+            minq(np,np,nlev,qsize,nelemd), maxq(np,np,nlev,qsize,nelemd)
        integer(kind=c_int), intent(out) :: info
      end subroutine slmm_csl
 
@@ -238,6 +261,7 @@ contains
     use element_mod, only: element_t
     use gridgraph_mod, only: GridVertex_t
     use control_mod, only: semi_lagrange_cdr_alg, transport_alg, cubed_sphere_map, &
+         semi_lagrange_halo, semi_lagrange_trajectory_nsubstep, &
          semi_lagrange_nearest_point_lev, dt_remap_factor, dt_tracer_factor, geometry
     use physical_constants, only: Sx, Sy, Lx, Ly
     use scalable_grid_init_mod, only: sgi_is_initialized, sgi_get_rank2sfc, &
@@ -254,7 +278,7 @@ contains
          ! These are for non-scalable grid initialization, still used for RRM.
          sc2gci(:), sc2rank(:)        ! space curve index -> (GID, rank)
     integer :: lid2gid(nelemd), lid2facenum(nelemd)
-    integer :: i, j, k, sfc, gid, igv, sc, geometry_type
+    integer :: i, j, k, sfc, gid, igv, sc, geometry_type, sl_traj_3d
     ! To map SFC index to IDs and ranks
     logical(kind=c_bool) :: use_sgi, owned, independent_time_steps, hard_zero
     integer, allocatable :: owned_ids(:)
@@ -273,6 +297,16 @@ contains
     hard_zero = .true.
 
     independent_time_steps = dt_remap_factor < dt_tracer_factor
+    
+    if (semi_lagrange_halo < 1) then
+       ! For test problems, the relationship between dt_tracer_factor and halo
+       ! may not be clear. But for real problems, the advective CFL implies that
+       ! a parcel can cross a cell in three time steps. Since this is closely
+       ! related to the dynamics' tstep, dt_tracer_factor is meaningful,
+       ! implying:
+       semi_lagrange_halo = (dt_tracer_factor + 2) / 3
+       if (semi_lagrange_halo < 1) semi_lagrange_halo = 1
+    end if
 
     geometry_type = 0 ! sphere
     if (trim(geometry) == "plane") then
@@ -316,12 +350,12 @@ contains
     if (use_sgi) then
        if (.not. allocated(owned_ids)) allocate(owned_ids(1))
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, qsize, &
+            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, np, qsize, &
             independent_time_steps, hard_zero, size(owned_ids), size(rank2sfc))
     else
        if (.not. allocated(sc2gci)) allocate(sc2gci(1), sc2rank(1))
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, qsize, &
+            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, np, qsize, &
             independent_time_steps, hard_zero, size(sc2gci), size(sc2rank))
     end if
     if (allocated(sc2gci)) deallocate(sc2gci, sc2rank)
@@ -360,9 +394,12 @@ contains
           end do
        end do
        nirptr(nelemd+1) = k - 1
+       sl_traj_3d = 0
+       if (independent_time_steps) sl_traj_3d = 1
        call slmm_init_impl(par%comm, transport_alg, np, nlev, qsize, qsize_d, &
             nelem, nelemd, cubed_sphere_map, geometry_type, lid2gid, lid2facenum, &
-            nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev, &
+            nbr_id_rank, nirptr, semi_lagrange_halo, sl_traj_3d, &
+            semi_lagrange_trajectory_nsubstep, semi_lagrange_nearest_point_lev, &
             size(lid2gid), size(lid2facenum), size(nbr_id_rank), size(nirptr))
        if (geometry_type == 1) call slmm_init_plane(Sx, Sy, Lx, Ly)
        deallocate(nbr_id_rank, nirptr)

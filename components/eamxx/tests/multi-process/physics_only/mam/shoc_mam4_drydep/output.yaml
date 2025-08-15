@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 filename_prefix: shoc_mam4_drydep_output
-Averaging Type: Instant
-Field Names:
+averaging_type: instant
+field_names:
   # SHOC
   - cldfrac_liq
   - eddy_diff_mom
@@ -64,6 +64,6 @@ Field Names:
   - deposition_flux_of_cloud_borne_aerosols
   - deposition_flux_of_interstitial_aerosols
 output_control:
-  Frequency: ${NUM_STEPS}
+  frequency: ${NUM_STEPS}
   frequency_units: nsteps
 ...

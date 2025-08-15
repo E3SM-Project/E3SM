@@ -21,6 +21,13 @@ set (SHOC_MAX_DT 300)
 math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
 
 # Ensure test input files are present in the data dir
+set (TEST_INPUT_FILES
+  scream/mam4xx/drydep/ne2np4/atmsrf_ne2np4_c20241017.nc
+)
+foreach (file IN ITEMS ${TEST_INPUT_FILES})
+  GetInputFile(${file})
+endforeach()
+
 GetInputFile(scream/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev})
 GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 

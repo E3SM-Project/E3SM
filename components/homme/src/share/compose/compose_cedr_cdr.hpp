@@ -8,7 +8,8 @@
 namespace homme {
 
 struct Alg {
-  enum Enum { qlt, qlt_super_level, qlt_super_level_local_caas, caas, caas_super_level };
+  enum Enum { qlt, qlt_super_level, qlt_super_level_local_caas, caas,
+              caas_super_level };
   static Enum convert (int cdr_alg) {
     switch (cdr_alg) {
     case 2:  return qlt;
@@ -26,6 +27,9 @@ struct Alg {
   }
   static bool is_caas (Enum e) {
     return e == caas || e == caas_super_level;
+  }
+  static bool is_point (Enum e) {
+    return false;
   }
   static bool is_suplev (Enum e) {
     return (e == qlt_super_level || e == caas_super_level ||
@@ -55,7 +59,7 @@ struct CDR {
   enum { nsublev_per_suplev = 8 };
   
   const Alg::Enum alg;
-  const Int ncell, nlclcell, nlev, qsize, nsublev, nsuplev;
+  const Int ncell, nlclcell, nlev, np, qsize, nsublev, nsuplev;
   const bool threed, cdr_over_super_levels, caas_in_suplev, hard_zero;
   const cedr::mpi::Parallel::Ptr p;
   cedr::tree::Node::Ptr tree; // Don't need this except for unit testing.
@@ -67,9 +71,10 @@ struct CDR {
   BoolsH nonneg_h;
   bool run; // for debugging, it can be useful not to run the CEDR.
 
-  CDR(Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int qsize_, bool use_sgi,
-      bool independent_time_steps, const bool hard_zero_, const Int* gid_data,
-      const Int* rank_data, const cedr::mpi::Parallel::Ptr& p_, Int fcomm);
+  CDR(Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, Int np_, Int qsize_,
+      bool use_sgi, bool independent_time_steps, const bool hard_zero_,
+      const Int* gid_data, const Int* rank_data, const cedr::mpi::Parallel::Ptr& p_,
+      Int fcomm);
 
   CDR(const CDR&) = delete;
   CDR& operator=(const CDR&) = delete;

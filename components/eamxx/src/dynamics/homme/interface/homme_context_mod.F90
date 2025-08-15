@@ -168,37 +168,37 @@ contains
   function is_parallel_inited_f90 () result(inited) bind(c)
     logical (kind=c_bool) :: inited
 
-    inited = is_parallel_inited
+    inited = LOGICAL(is_parallel_inited,kind=c_bool)
   end function is_parallel_inited_f90
 
   function is_params_inited_f90 () result(inited) bind(c)
     logical (kind=c_bool) :: inited
 
-    inited = is_params_inited
+    inited = LOGICAL(is_params_inited,kind=c_bool)
   end function is_params_inited_f90
 
   function is_geometry_inited_f90 () result(inited) bind(c)
     logical (kind=c_bool) :: inited
 
-    inited = is_geometry_inited
+    inited = LOGICAL(is_geometry_inited,kind=c_bool)
   end function is_geometry_inited_f90
 
   function is_data_structures_inited_f90 () result(inited) bind(c)
     logical (kind=c_bool) :: inited
 
-    inited = is_data_structures_inited
+    inited = LOGICAL(is_data_structures_inited,kind=c_bool)
   end function is_data_structures_inited_f90
 
   function is_model_inited_f90 () result(inited) bind(c)
     logical (kind=c_bool) :: inited
 
-    inited = is_model_inited
+    inited = LOGICAL(is_model_inited,kind=c_bool)
   end function is_model_inited_f90
 
   function is_hommexx_functors_inited_f90 () result(inited) bind(c)
     logical (kind=c_bool) :: inited
 
-    inited = is_hommexx_functors_inited
+    inited = LOGICAL(is_hommexx_functors_inited,kind=c_bool)
   end function is_hommexx_functors_inited_f90
 
 end module homme_context_mod

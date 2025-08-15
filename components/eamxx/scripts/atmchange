@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from eamxx_buildnml_impl import check_value, is_array_type
 from eamxx_buildnml import create_raw_xml_file
 from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes, parse_change
-from utils import run_cmd_no_fail, expect
+from utils import run_cmd_no_fail, expect, GoodFormatter
 
 # Add path to cime
 _CIMEROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..","..","..","cime")
@@ -110,7 +110,7 @@ OR
     > {0} foo=hi bar+=there
 """.format(pathlib.Path(args[0]).name),
         description=description,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        formatter_class=GoodFormatter
     )
 
     parser.add_argument(

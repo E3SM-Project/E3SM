@@ -158,8 +158,8 @@ attributes to express the dependency.
  
 <!-- UOST -->
  
-<uostfilelocal>obstructions_local.glo_unst.in</uostfilelocal>
-<uostfileshadow>obstructions_shadow.glo_unst.in</uostfileshadow>
+<uostfilelocal>obstructions_local.rtd.in</uostfilelocal>
+<uostfileshadow>obstructions_shadow.rtd.in</uostfileshadow>
 <uostfactorlocal>1.00</uostfactorlocal>
 <uostfactorshadow>1.00</uostfactorshadow>
  

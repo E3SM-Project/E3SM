@@ -8,13 +8,13 @@ time_stepping:
   run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
   number_of_steps: ${NUM_STEPS}
 
-atmosphere_processes:
+eamxx:
   atm_procs_list: [zm]
 
 grids_manager:
-  Type: Mesh Free
-  grids_names: [Physics]
-  Physics:
+  type: mesh_free
+  grids_names: [physics]
+  physics:
     type: point_grid
     number_of_global_columns:   32
     number_of_vertical_levels:  128

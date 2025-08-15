@@ -49,7 +49,7 @@
     <category>cime_driver_inst</category>
     <group>cime_driver_inst</group>
     <desc>
-      Number of CESM driver instances.  Only used if MULTI_DRIVER is TRUE.
+      Number of cpl7 driver instances.  Only used if MULTI_DRIVER is TRUE.
     </desc>
     <values>
       <value>1</value>
@@ -149,6 +149,18 @@
     </values>
   </entry>
 
+  <entry id="flds_tf">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true. thermal forcing fields will be passed from the ocean to the coupler.
+    </desc>
+    <values>
+      <value>$FLDS_TF</value>
+    </values>
+  </entry>
+
   <entry  id="flds_wiso" modify_via_xml="FLDS_WISO">
     <type>logical</type>
     <category>seq_flds</category>
@@ -186,10 +198,22 @@
     <category>seq_flds</category>
     <group>seq_cplflds_inparm</group>
     <desc>
-      Number of cism elevation classes. Set by the xml variable GLC_NEC in env_run.xml
+      Number of GLC elevation classes. Set by the xml variable GLC_NEC in env_run.xml
     </desc>
     <values>
       <value>$GLC_NEC</value>
+    </values>
+  </entry>
+
+  <entry  id="glc_nzoc" modify_via_xml="GLC_NZOC">
+    <type>integer</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      Number of GLC z-ocean classes. Set by the xml variable GLC_NZOC in env_run.xml
+    </desc>
+    <values>
+      <value>$GLC_NZOC</value>
     </values>
   </entry>
 
@@ -227,7 +251,6 @@
     </desc>
     <values>
       <value>.false.</value>
-      <value cime_model='cesm'>.true.</value>
     </values>
   </entry>
 
@@ -291,6 +314,17 @@
     </values>
   </entry>
 
+  <entry id="wav_ocn_coup">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>One- or Two-way coupling between Wave and Ocn.</desc>
+    <values>
+      <value>none</value>
+      <value WAV_OCN_COUP="oneway">oneway</value>
+      <value WAV_OCN_COUP="twoway">twoway</value>
+    </values>
+  </entry>
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -328,10 +362,9 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>e3sm,cesm</valid_values>
+    <valid_values>e3sm</valid_values>
     <desc>cime model</desc>
     <values>
-      <value cime_model='cesm'>cesm</value>
       <value cime_model='e3sm'>e3sm</value>
     </values>
   </entry>
@@ -532,7 +565,6 @@
     </desc>
     <values>
       <value>fixed_year</value>
-      <value iyear='HIST' cime_model='cesm'>variable_year</value>
     </values>
   </entry>
 
@@ -545,9 +577,6 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -560,9 +589,6 @@
     </desc>
     <values>
       <value>1990</value>
-      <value iyear="1850" cime_model="cesm">1850</value>
-      <value iyear="2000" cime_model="cesm">2000</value>
-      <value iyear='HIST' cime_model='cesm'>1850</value>
     </values>
   </entry>
 
@@ -785,10 +811,7 @@
       if true use  Mahrt and Sun 1995,MWR modification to surface flux calculation
     </desc>
     <values>
-      <value cime_model='e3sm'>.false.</value>
-      <value cime_model='cesm'>.true.</value>
-      <value cime_model='cesm' atm_grid="T62">.false.</value>
-      <value cime_model='cesm' atm_grid="TL319">.false.</value>
+      <value>.false.</value>
     </values>
   </entry>
 
@@ -831,9 +854,7 @@
     <values>
       <!-- the value for f09 grids is maintained as 0.0 for compatibility with cmip6 experiments
            the 1% convergence criteria improves performance of the atm ocn flux calculation in shr_flux_mod.F90 -->
-      <value cime_model='cesm'>0.01</value>
-      <value cime_model='cesm' atm_grid="0.9x1.25">0.0</value>
-      <value cime_model='e3sm'>0.0</value>
+      <value>0.0</value>
     </values>
   </entry>
 
@@ -847,8 +868,7 @@
       depends on the setting of atm_flux_method.
     </desc>
     <values>
-      <value cime_model='cesm'>5</value>
-      <value cime_model='e3sm'>-1</value>
+      <value>-1</value>
     </values>
   </entry>
 
@@ -1045,7 +1065,7 @@
     <type>char</type>
     <category>expdef</category>
     <group>seq_infodata_inparm</group>
-    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2,NUOPC,NUOPC_TIGHT</valid_values>
+    <valid_values>CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
     <desc>
       Set the coupler sequencing.
     </desc>
@@ -1734,6 +1754,22 @@
     </values>
   </entry>
 
+  <entry id="nlmaps_atm2srf_conserve">
+    <type>logical</type>
+    <category>nlmaps</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      Use various source and destination grid area fractions in the
+      atmosphere-to-surface nonlinear maps so that an atmosphere-to-surface flux
+      integrates to the same value on the atmosphere grid and on the land +
+      ocean + ice grids.
+      default: .false.
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <entry id="nlmaps_exclude_fields">
     <type>char(20)</type>
     <category>nlmaps</category>
@@ -1741,7 +1777,8 @@
     <desc>
       List of fields that are to be excluded from the set that are nonlinearly
       mapped. For these excluded fields, the low-order linear map is used,
-      instead. Modify user_nl_cpl to edit this.
+      instead. Modify user_nl_cpl to edit this. This option is ignored if
+      nlmaps_atm2srf_conserve is .true.
       default: 'Faxa_rainc', 'Faxa_rainl', 'Faxa_snowc', 'Faxa_snowl'
     </desc>
     <values>
@@ -4531,20 +4568,20 @@
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmapname"    modify_via_xml="OCN2GLC_FMAPNAME">
+  <entry id="ocn2glc_shelf_fmapname"    modify_via_xml="OCN2GLC_SHELF_FMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc flux mapping file for fluxes
+      ocn to glc shelf mapping file for fluxes
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPNAME</value>
+      <value>$OCN2GLC_SHELF_FMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_fmaptype"    modify_via_xml="OCN2GLC_FMAPTYPE">
+  <entry id="ocn2glc_shelf_fmaptype"    modify_via_xml="OCN2GLC_SHELF_FMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4556,25 +4593,25 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_FMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_FMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smapname"    modify_via_xml="OCN2GLC_SMAPNAME">
+  <entry id="ocn2glc_shelf_smapname"    modify_via_xml="OCN2GLC_SHELF_SMAPNAME">
     <type>char</type>
     <category>mapping</category>
     <input_pathname>abs</input_pathname>
     <group>seq_maps</group>
     <desc>
-      ocn to glc state mapping file for states
+      ocn to glc shelf mapping file for states
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPNAME</value>
+      <value>$OCN2GLC_SHELF_SMAPNAME</value>
     </values>
   </entry>
 
-  <entry id="ocn2glc_smaptype"    modify_via_xml="OCN2GLC_SMAPTYPE">
+  <entry id="ocn2glc_shelf_smaptype"    modify_via_xml="OCN2GLC_SHELF_SMAPTYPE">
     <type>char</type>
     <category>mapping</category>
     <group>seq_maps</group>
@@ -4586,7 +4623,37 @@
       grid.
     </desc>
     <values>
-      <value>$OCN2GLC_SMAPTYPE</value>
+      <value>$OCN2GLC_SHELF_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smapname"    modify_via_xml="OCN2GLC_TF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to glc state mapping file for thermal forcing state fields
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2glc_tf_smaptype"    modify_via_xml="OCN2GLC_TF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2GLC_TF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>
@@ -4993,8 +5060,7 @@
       components that need to look at the same data.
     </desc>
     <values>
-      <value cime_model='cesm'>Buildconf/camconf/drv_flds_in,Buildconf/clmconf/drv_flds_in</value>
-      <value cime_model='e3sm'>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
+      <value>Buildconf/eamconf/drv_flds_in,Buildconf/elmconf/drv_flds_in</value>
     </values>
   </entry>
 

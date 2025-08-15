@@ -283,7 +283,6 @@ contains
            meltPondDepthCategory
 
       logical, pointer :: &
-           config_use_cesm_meltponds, &
            config_use_level_meltponds, &
            config_use_topo_meltponds
 
@@ -322,42 +321,10 @@ contains
 
          call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
 
-         call MPAS_pool_get_config(block % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
          call MPAS_pool_get_config(block % configs, "config_use_level_meltponds", config_use_level_meltponds)
          call MPAS_pool_get_config(block % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
 
-         if (config_use_cesm_meltponds) then
-            ! cesm ponds
-
-            ! meltPondArea - apond
-            if (meltPondArea % isActive) then
-               do iCell = 1, nCellsSolve
-                  meltPondArea % array(iCell) = pondAreaCell(iCell)
-               enddo ! iCell
-            endif ! is active
-
-            ! meltPondAreaFinalArea - apond_ai
-            if (meltPondAreaFinalArea % isActive) then
-               do iCell = 1, nCellsSolve
-                  meltPondAreaFinalArea % array(iCell) = pondAreaCell(iCell) * iceAreaCell(iCell)
-               enddo ! iCell
-            endif ! is active
-
-            ! meltPondDepth - hpond
-            if (meltPondDepth % isActive) then
-               do iCell = 1, nCellsSolve
-                  meltPondDepth % array(iCell) = pondAreaCell(iCell) * pondDepthCell(iCell)
-               enddo ! iCell
-            endif ! is active
-
-            ! meltPondDepthFinalArea - hpond_ai
-            if (meltPondDepthFinalArea % isActive) then
-               do iCell = 1, nCellsSolve
-                  meltPondDepthFinalArea % array(iCell) = pondAreaCell(iCell) * pondDepthCell(iCell) * iceAreaCell(iCell)
-               enddo ! iCell
-            endif ! is active
-
-         else if (config_use_level_meltponds) then
+         if (config_use_level_meltponds) then
             ! level melt ponds
 
             ! meltPondArea - apond

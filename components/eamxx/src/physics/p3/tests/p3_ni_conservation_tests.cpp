@@ -1,44 +1,43 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-#include "share/util/scream_setup_random_test.hpp"
-
+#include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
 
 namespace scream {
 namespace p3 {
 namespace unit_test {
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestNiConservation {
+struct UnitWrap::UnitTest<D>::TestNiConservation : public UnitWrap::UnitTest<D>::Base {
 
-  static void run_bfb()
+  void run_bfb()
   {
-    auto engine = setup_random_test();
+    auto engine = Base::get_engine();
 
-    NiConservationData f90_data[max_pack_size];
+    NiConservationData baseline_data[max_pack_size];
 
     // Generate random input data
-    // Alternatively, you can use the f90_data construtors/initializer lists to hardcode data
-    for (auto& d : f90_data) {
+    // Alternatively, you can use the baseline_data construtors/initializer lists to hardcode data
+    for (auto& d : baseline_data) {
       d.randomize(engine);
-      d.dt = f90_data[0].dt; // hold dt fixed, it is not packed data
+      d.dt = baseline_data[0].dt; // hold dt fixed, it is not packed data
     }
 
-    // Create copies of data for use by cxx and sync it to device. Needs to happen before fortran calls so that
+    // Create copies of data for use by cxx and sync it to device. Needs to happen before reads so that
     // inout data is in original state
     view_1d<NiConservationData> cxx_device("cxx_device", max_pack_size);
     const auto cxx_host = Kokkos::create_mirror_view(cxx_device);
-    std::copy(&f90_data[0], &f90_data[0] + max_pack_size, cxx_host.data());
+    std::copy(&baseline_data[0], &baseline_data[0] + max_pack_size, cxx_host.data());
     Kokkos::deep_copy(cxx_device, cxx_host);
 
-    // Get data from fortran
-    for (auto& d : f90_data) {
-      ni_conservation(d);
+    // Read baseline data
+    if (this->m_baseline_action == COMPARE) {
+      for (Int i = 0; i < max_pack_size; ++i) {
+        baseline_data[i].read(Base::m_ifile);
+      }
     }
 
     // Get data from cxx. Run ni_conservation from a kernel and copy results back to host
@@ -46,18 +45,25 @@ struct UnitWrap::UnitTest<D>::TestNiConservation {
       const Int offset = i * Spack::n;
 
       // Init pack inputs
-      Spack nc2ni_immers_freeze_tend, ni, ni2nr_melt_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, nr2ni_immers_freeze_tend;
+      Spack nc2ni_immers_freeze_tend, ni, ni2nr_melt_tend, ni_nucleat_tend, ni_selfcollect_tend, ni_sublim_tend, nr2ni_immers_freeze_tend,
+        ncheti_cnt, nicnt, ninuc_cnt;
+      Smask context;
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
         nc2ni_immers_freeze_tend[s] = cxx_device(vs).nc2ni_immers_freeze_tend;
-        ni[s] = cxx_device(vs).ni;
-        ni2nr_melt_tend[s] = cxx_device(vs).ni2nr_melt_tend;
-        ni_nucleat_tend[s] = cxx_device(vs).ni_nucleat_tend;
-        ni_selfcollect_tend[s] = cxx_device(vs).ni_selfcollect_tend;
-        ni_sublim_tend[s] = cxx_device(vs).ni_sublim_tend;
+        ni[s]                       = cxx_device(vs).ni;
+        ni2nr_melt_tend[s]          = cxx_device(vs).ni2nr_melt_tend;
+        ni_nucleat_tend[s]          = cxx_device(vs).ni_nucleat_tend;
+        ni_selfcollect_tend[s]      = cxx_device(vs).ni_selfcollect_tend;
+        ni_sublim_tend[s]           = cxx_device(vs).ni_sublim_tend;
         nr2ni_immers_freeze_tend[s] = cxx_device(vs).nr2ni_immers_freeze_tend;
+        ncheti_cnt[s]               = cxx_device(vs).ncheti_cnt;
+	nicnt[s]                    = cxx_device(vs).nicnt;
+	ninuc_cnt[s]                = cxx_device(vs).ninuc_cnt;
+	context.set(s,                cxx_device(vs).context);
       }
-
-      Functions::ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, cxx_device(offset).dt, ni2nr_melt_tend, ni_sublim_tend, ni_selfcollect_tend);
+      const bool use_hetfrz_classnuc = cxx_device(offset).use_hetfrz_classnuc;
+      Functions::ni_conservation(ni, ni_nucleat_tend, nr2ni_immers_freeze_tend, nc2ni_immers_freeze_tend, ncheti_cnt, nicnt, ninuc_cnt, cxx_device(offset).dt, ni2nr_melt_tend, ni_sublim_tend, 
+	ni_selfcollect_tend, use_hetfrz_classnuc, context);
 
       // Copy spacks back into cxx_device view
       for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
@@ -71,17 +77,21 @@ struct UnitWrap::UnitTest<D>::TestNiConservation {
     Kokkos::deep_copy(cxx_host, cxx_device);
 
     // Verify BFB results
-    if (SCREAM_BFB_TESTING) {
+    if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < max_pack_size; ++i) {
-        NiConservationData& d_f90 = f90_data[i];
+        NiConservationData& d_baseline = baseline_data[i];
         NiConservationData& d_cxx = cxx_host[i];
-        REQUIRE(d_f90.ni2nr_melt_tend == d_cxx.ni2nr_melt_tend);
-        REQUIRE(d_f90.ni_sublim_tend == d_cxx.ni_sublim_tend);
-        REQUIRE(d_f90.ni_selfcollect_tend == d_cxx.ni_selfcollect_tend);
+        REQUIRE(d_baseline.ni2nr_melt_tend == d_cxx.ni2nr_melt_tend);
+        REQUIRE(d_baseline.ni_sublim_tend == d_cxx.ni_sublim_tend);
+        REQUIRE(d_baseline.ni_selfcollect_tend == d_cxx.ni_selfcollect_tend);
+      }
+    }
+    else if (this->m_baseline_action == GENERATE) {
+      for (Int s = 0; s < max_pack_size; ++s) {
+        cxx_host(s).write(Base::m_ofile);
       }
     }
   } // run_bfb
-
 };
 
 } // namespace unit_test
@@ -92,9 +102,10 @@ namespace {
 
 TEST_CASE("ni_conservation_bfb", "[p3]")
 {
-  using TestStruct = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestNiConservation;
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestNiConservation;
 
-  TestStruct::run_bfb();
+  T t;
+  t.run_bfb();
 }
 
 } // empty namespace

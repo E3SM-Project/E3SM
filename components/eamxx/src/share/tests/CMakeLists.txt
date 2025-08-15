@@ -5,6 +5,9 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Test utils
   CreateUnitTest(utils "utils_tests.cpp")
 
+  # Test combine operations
+  CreateUnitTest(combine_ops "combine_ops.cpp")
+
   # Test column ops
   CreateUnitTest(column_ops "column_ops.cpp")
 
@@ -29,6 +32,10 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(grid_imp_exp "grid_import_export_tests.cpp"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test iop remap
+  CreateUnitTest(iop_remapper "iop_remapper_tests.cpp"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
   # Test coarsening remap
   CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp"
     LIBS scream_io
@@ -51,10 +58,16 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS scream_io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
-  # Test vertical remap
-  CreateUnitTest(time_interpolation "eamxx_time_interpolation_tests.cpp"
+  # Generate data for data interpolation test
+  CreateUnitTest(data_interpolation_setup "data_interpolation_setup.cpp"
     LIBS scream_io
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+    FIXTURES_SETUP data_interpolation_setup)
+
+  # Test data interpolation
+  CreateUnitTest(data_interpolation "data_interpolation_tests.cpp"
+    LIBS scream_io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
 
   # Test common physics functions
   CreateUnitTest(common_physics "common_physics_functions_tests.cpp")
@@ -63,4 +76,8 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/atm_process_tests_named_procs.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/atm_process_tests_named_procs.yaml COPYONLY)
   CreateUnitTest(atm_proc "atm_process_tests.cpp")
+
+  if (EAMXX_ENABLE_PYTHON)
+    CreateUnitTest(pyfield "pyfield.cpp")
+  endif()
 endif()

@@ -1,16 +1,17 @@
 #ifndef SCREAM_ABSTRACT_GRID_HPP
 #define SCREAM_ABSTRACT_GRID_HPP
 
-#include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
 #include "share/grid/grid_utils.hpp"
 #include "share/field/field_layout.hpp"
 #include "share/field/field.hpp"
 
-#include "ekat/mpi//ekat_comm.hpp"
+#include <ekat_std_enable_shared_from_this.hpp>
+#include <ekat_comm.hpp>
 
 #include <map>
 #include <list>
 #include <memory>
+#include <mutex>
 
 namespace scream
 {
@@ -37,7 +38,7 @@ namespace scream
  * like spatial dimension or "physical" rank.
  */
 
-class AbstractGrid : public ekat::enable_shared_from_this<AbstractGrid>
+class AbstractGrid : public std::enable_shared_from_this<AbstractGrid>
 {
 public:
   // TODO: use int64_t? int? template class on gid_type?
@@ -91,9 +92,11 @@ public:
   FieldLayout get_2d_vector_layout (const int vector_dim) const;
   FieldLayout get_2d_tensor_layout (const std::vector<int>& cmp_dims) const;
 
-  FieldLayout get_3d_vector_layout (const bool midpoints) const;
   FieldLayout get_3d_vector_layout (const bool midpoints, const int vector_dim) const;
   FieldLayout get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const;
+
+  // Use the input template to create an equivalent layout on this grid
+  FieldLayout equivalent_layout (const FieldLayout& template_layout) const;
 
   int get_num_vertical_levels () const { return m_num_vert_levs; }
 
@@ -137,11 +140,12 @@ public:
   Field get_geometry_data (const std::string& name) const;
 
   // Create geometry data, throws if already existing. Returns writable field
-  Field create_geometry_data (const FieldIdentifier& fid);
+  Field create_geometry_data (const FieldIdentifier& fid, const int pack_size = 1);
   Field create_geometry_data (const std::string& name, const FieldLayout& layout,
                               const ekat::units::Units& units = ekat::units::Units::invalid(),
-                              const DataType data_type = DataType::RealType) {
-    return create_geometry_data(FieldIdentifier(name,layout,units,this->name(),data_type));
+                              const DataType data_type = DataType::RealType,
+                              const int pack_size = 1) {
+    return create_geometry_data(FieldIdentifier(name,layout,units,this->name(),data_type),pack_size);
   }
 
   // Sets pre-existing field as geometry data.
@@ -201,11 +205,11 @@ public:
   // with the same name, IO can use this as a suffix to diambiguate the fields in
   // the IO file, by appending each grid's suffix to the fields names.
   // NOTE: we'd need setter/getter for this, so we might as well make it public
-  std::string m_short_name = "";
+  std::string m_disambiguation_suffix = "";
 
   int get_unique_grid_id () const { return m_unique_grid_id; }
 
-  std::map<gid_type,int> get_gid2lid_map () const;
+  const std::map<gid_type,int>& get_gid2lid_map () const;
 
 protected:
 
@@ -251,6 +255,12 @@ protected:
   Field     m_lid_to_idx;
 
   mutable std::map<std::string,Field>  m_geo_fields;
+
+  // Mutable, for lazy calculation
+  mutable std::map<gid_type,int> m_gid2lid;
+
+  // For thread safety in modifying mutable items (just in case someone ever runs this code in threaded regions)
+  mutable std::mutex m_mutex;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;

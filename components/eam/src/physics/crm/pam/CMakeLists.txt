@@ -11,9 +11,8 @@ set(PAM_DRIVER_SRC
 add_library(pam_driver 
   ${PAM_DRIVER_SRC})
 
-set(SCREAM_LIBS_ONLY TRUE)
+set(SCREAM_LIB_ONLY TRUE)
 set(SCREAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
-add_library(eamxx_physics INTERFACE ${SCREAM_HOME}/components/eamxx/src/physics/)
 
 if (${USE_CUDA})
   # PAM will be CUDA-linked with device symbols resolved at library creation
@@ -70,7 +69,6 @@ endif()
 
 
 if (PAM_SCREAM_USE_CXX)
-  set(EKAT_ENABLE_YAML_PARSER OFF CACHE BOOL "" FORCE)
   add_subdirectory(external/physics/scream_cxx_p3_shoc)
   add_subdirectory(external/physics/scream_cxx_interfaces)
   # add these here to allow driver to intialize P3
@@ -127,7 +125,7 @@ target_compile_options(pam_driver PUBLIC
 )
 
 if (PAM_SCREAM_USE_CXX)
-  target_link_libraries(pam_driver pam_core physics dynamics pam_scream_cxx_interfaces ekat p3 shoc physics_share scream_share eamxx_physics)
+  target_link_libraries(pam_driver pam_core physics dynamics pam_scream_cxx_interfaces ekat::AllLibs p3 shoc physics_share scream_share)
 else()
   target_link_libraries(pam_driver pam_core physics dynamics )
 endif()

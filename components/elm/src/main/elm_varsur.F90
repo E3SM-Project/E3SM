@@ -22,7 +22,13 @@ module elm_varsur
   ! for natural veg landunit, weight of each pft on the landunit (adds to 1.0 on the
   ! landunit for all all grid cells, even! those without any natural pft)
   ! (second dimension goes natpft_lb:natpft_ub)
-  real(r8), pointer :: wt_nat_patch(:,:,:)   
+  real(r8), pointer :: wt_nat_patch(:,:,:)
+
+  ! for polygonal tundra special case of natural veg landunit, weight of polygon type
+  ! with respect to the natural vegetation landunit (NOT the grid cell). these do
+  ! not need to sum to 1 to preserve possibility of polygonal tundra and non-polygonal
+  ! ground on the same grid cell, on the vegetated landunit.
+  real(r8), pointer :: wt_polygon(:,:,:) ! dims: clump, topounit, polygon type
 
   ! for crop landunit, weight of each cft on the landunit (adds to 1.0 on the
   ! landunit for all all grid cells, even  those without any crop)

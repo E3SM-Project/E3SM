@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "share/scream_types.hpp"
-#include "ekat/ekat_pack.hpp"
-#include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "p3_functions.hpp"
-#include "p3_functions_f90.hpp"
-
+#include "p3_test_data.hpp"
 #include "p3_unit_tests_common.hpp"
+
+#include "share/eamxx_types.hpp"
+
+#include <ekat_team_policy_utils.hpp>
 
 #include <thread>
 #include <array>
@@ -22,13 +22,15 @@ namespace unit_test {
 //
 
 template <typename D>
-struct UnitWrap::UnitTest<D>::TestFind {
+struct UnitWrap::UnitTest<D>::TestFind : public UnitWrap::UnitTest<D>::Base {
 
-static void run()
+void run()
 {
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+
   const int max_threads =
 #ifdef KOKKOS_ENABLE_OPENMP
-    Kokkos::OpenMP::concurrency()
+    Kokkos::OpenMP().concurrency()
 #else
     1
 #endif
@@ -58,7 +60,7 @@ static void run()
   Kokkos::deep_copy(qr_not_present, mirror_qrnp);
 
   for (int team_size : {1, max_threads}) {
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_team_policy_force_team_size(1, team_size);
+    const auto policy = TPF::get_team_policy_force_team_size(1, team_size);
 
     int errs_for_this_ts = 0;
     Kokkos::parallel_reduce("unittest_find_top_bottom",
@@ -112,7 +114,10 @@ namespace {
 
 TEST_CASE("p3_find", "[p3_functions]")
 {
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind::run();
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestFind;
+
+  T t;
+  t.run();
 }
 
 } // namespace

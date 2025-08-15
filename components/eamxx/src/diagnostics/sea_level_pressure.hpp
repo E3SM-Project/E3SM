@@ -2,8 +2,6 @@
 #define EAMXX_SEA_LEVEL_PRESSURE_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
-#include "share/util/scream_common_physics_functions.hpp"
-#include "ekat/kokkos/ekat_subview_utils.hpp"
 
 namespace scream
 {
@@ -15,17 +13,11 @@ namespace scream
 class SeaLevelPressureDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using PF            = scream::PhysicsFunctions<DefaultDevice>;
-
-  using KT            = KokkosTypes<DefaultDevice>;
-  using MemberType    = typename KT::MemberType;
-  using view_1d       = typename KT::template view_1d<Pack>;
 
   // Constructors
   SeaLevelPressureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
-  // The name of the diagnostic
+  // The name of the diagnostic CLASS (not the computed field)
   std::string name () const { return "SeaLevelPressure"; }
 
   // Set the grid

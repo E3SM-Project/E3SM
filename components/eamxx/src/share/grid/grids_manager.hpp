@@ -5,11 +5,11 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/grid/remap/identity_remapper.hpp"
 
-#include "ekat/util/ekat_factory.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
+#include <ekat_factory.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <map>
 #include <set>
@@ -54,16 +54,21 @@ public:
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
+  std::set<std::string> get_grid_names () const;
+  std::string print_available_grids () const;
+
+  // Return number of grids in the GridsManager
+  int size() const { return m_grids.size(); }
+
 protected:
 
-  void add_grid (nonconstgrid_ptr_type grid);
+  void add_nonconst_grid (nonconstgrid_ptr_type grid);
+  void add_grid (grid_ptr_type grid);
   void alias_grid (const std::string& grid_name, const std::string& grid_alias);
 
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const = 0;
-
-  std::string print_available_grids () const;
 
 private:
 
@@ -72,7 +77,7 @@ private:
 };
 
 // A short name for the factory for grid managers
-using GridsManagerFactory 
+using GridsManagerFactory
     = ekat::Factory<GridsManager,
                     ekat::CaseInsensitiveString,
                     std::shared_ptr<GridsManager>,

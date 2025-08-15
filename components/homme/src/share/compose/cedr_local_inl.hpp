@@ -130,10 +130,8 @@ Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
     }
 
   Real objs[2];
-  Real alpha_mid = 0;
   for (Int j = 0; j < 2; ++j) {
     const Real alpha = alphas[ais[j]];
-    alpha_mid += alpha;
     Real obj = 0;
     for (Int i = 0; i < 2; ++i) {
       x[i] = x_base[i] + alpha*x_dir[i];

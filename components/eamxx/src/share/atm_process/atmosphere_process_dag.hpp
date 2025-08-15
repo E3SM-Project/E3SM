@@ -1,10 +1,11 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_DAG_HPP
 
-#include <memory>
-#include <string>
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_group.hpp"
+
+#include <memory>
+#include <string>
 
 namespace scream {
 
@@ -15,6 +16,11 @@ public:
   static constexpr int VERB_MAX = 4;
 
   void create_dag (const group_type& atm_procs);
+
+  using grid_field_map = std::map<std::string,std::vector<std::string>>;
+  void process_initial_conditions(const grid_field_map &ic_inited);
+
+  void init_atm_proc_nodes(const group_type& atm_procs);
 
   void add_surface_coupling (const std::set<FieldIdentifier>& imports,
                              const std::set<FieldIdentifier>& exports);
@@ -66,6 +72,7 @@ protected:
   // Map a node id to a set of unmet field dependencies
   std::map<int,std::set<int>>     m_unmet_deps;
   bool                            m_has_unmet_deps;
+  bool                            m_IC_processed;
 
   // The nodes in the atm DAG
   std::vector<Node>               m_nodes;

@@ -1,9 +1,9 @@
-
 #include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 
-#include "ekat/kokkos/ekat_subview_utils.hpp"
+#include <ekat_subview_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream {
 namespace p3 {
@@ -55,10 +55,12 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Spack>& diag_eff_radius_qr,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
-  const physics::P3_Constants<Real> & p3constants)
+  const P3Runtime& runtime_options)
 {
   using ExeSpace = typename KT::ExeSpace;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk_pack);
+  using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
+
+  const auto policy = TPF::get_default_team_policy(nj, nk_pack);
   // p3_cloud_sedimentation loop
   Kokkos::parallel_for(
     "p3_main_part3_disp",
@@ -81,7 +83,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(mu_c, i), ekat::subview(nu, i), ekat::subview(lamc, i), ekat::subview(mu_r, i), ekat::subview(lamr, i),
       ekat::subview(vap_liq_exchange, i), ekat::subview(ze_rain, i), ekat::subview(ze_ice, i), ekat::subview(diag_vm_qi, i), ekat::subview(diag_eff_radius_qi, i),
       ekat::subview(diag_diam_qi, i), ekat::subview(rho_qi, i), ekat::subview(diag_equiv_reflectivity, i), ekat::subview(diag_eff_radius_qc, i),
-      ekat::subview(diag_eff_radius_qr, i), p3constants);
+      ekat::subview(diag_eff_radius_qr, i), runtime_options);
 
   });
 }

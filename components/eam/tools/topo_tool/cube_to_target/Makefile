@@ -6,7 +6,9 @@ RM = rm
 .SUFFIXES: .F90 .o
 
 # Set the compiler
-FC := gfortran
+ifeq ($(FC),$(null))
+    FC = gfortran
+endif
 
 # Set NetCDF library and include directories
 LIB_NETCDF := $(shell nf-config --prefix)/lib
@@ -18,6 +20,7 @@ LDFLAGS += -L$(LIB_NETCDF) -lnetcdf -lnetcdff
 
 ifeq ($(FC),gfortran)
     FFLAGS += -fallow-argument-mismatch
+    FFLAGS += -ffree-line-length-none
 endif
 
 # Determine platform 
@@ -34,7 +37,7 @@ UNAMEM := $(findstring CRAY,$(shell uname -m))
 # Default rules and macros
 #------------------------------------------------------------------------
 
-OBJS := reconstruct.o remap.o cube_to_target.o shr_kind_mod.o
+OBJS := reconstruct.o remap.o cube_to_target.o shr_kind_mod.o orographic_shape_methods.o
 
 $(EXEDIR)/$(EXENAME): $(OBJS)
 	$(FC) -o $@ $(OBJS) $(LDFLAGS)
@@ -42,6 +45,6 @@ $(EXEDIR)/$(EXENAME): $(OBJS)
 clean:
 	$(RM) -f $(OBJS)  *.mod $(EXEDIR)/$(EXENAME)
 
-cube_to_target.o: shr_kind_mod.o remap.o reconstruct.o
+cube_to_target.o: shr_kind_mod.o remap.o reconstruct.o orographic_shape_methods.o
 remap.o: 
 reconstruct.o: remap.o

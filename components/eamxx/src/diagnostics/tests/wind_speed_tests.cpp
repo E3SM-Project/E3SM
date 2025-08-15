@@ -2,7 +2,7 @@
 
 #include "diagnostics/register_diagnostics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/util/scream_setup_random_test.hpp"
+#include "share/util/eamxx_setup_random_test.hpp"
 #include "share/field/field_utils.hpp"
 
 namespace scream {
@@ -14,10 +14,10 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   using vos_t = std::vector<std::string>;
   ekat::ParameterList gm_params;
-  gm_params.set("grids_names",vos_t{"Point Grid"});
-  auto& pl = gm_params.sublist("Point Grid");
+  gm_params.set("grids_names",vos_t{"point_grid"});
+  auto& pl = gm_params.sublist("point_grid");
   pl.set<std::string>("type","point_grid");
-  pl.set("aliases",vos_t{"Physics"});
+  pl.set("aliases",vos_t{"physics"});
   pl.set<int>("number_of_global_columns", num_global_cols);
   pl.set<int>("number_of_vertical_levels", nlevs);
 
@@ -42,7 +42,7 @@ TEST_CASE("wind_speed")
   constexpr int nlevs = 33;
   const int ngcols = 2*comm.size();;
   auto gm = create_gm(comm,ngcols,nlevs);
-  auto grid = gm->get_grid("Physics");
+  auto grid = gm->get_grid("physics");
 
   // Input (randomized) velocity
   auto vector3d = grid->get_3d_vector_layout(true,2);
@@ -62,6 +62,11 @@ TEST_CASE("wind_speed")
   register_diagnostics();
 
   constexpr int ntests = 5;
+#ifdef NDEBUG
+  constexpr int ulp_tol = 1;
+#else
+  constexpr int ulp_tol = 0;
+#endif
   for (int itest=0; itest<ntests; ++itest) {
     // Randomize wind
     randomize(uv,engine,pdf);
@@ -87,7 +92,7 @@ TEST_CASE("wind_speed")
       for (int ilev=0; ilev<nlevs; ++ilev) {
         const auto u = uv_h (icol,0,ilev);
         const auto v = uv_h (icol,1,ilev);
-        REQUIRE (ws_h(icol,ilev) == std::sqrt(u*u+v*v));
+        REQUIRE_THAT (ws_h(icol,ilev), Catch::Matchers::WithinULP(std::sqrt(u*u+v*v),ulp_tol));
       }
     }
   }

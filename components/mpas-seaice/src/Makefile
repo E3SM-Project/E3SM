@@ -1,9 +1,9 @@
 .SUFFIXES: .F .o
-.PHONY: column_package icepack model_forward analysis_members shared
+.PHONY: icepack model_forward analysis_members shared
 
 all: core_seaice
 
-core_seaice: icepack column_package shared analysis_members model_forward
+core_seaice: icepack shared analysis_members model_forward
 	ar -ru libdycore.a `find . -type f -name "*.o"`
 
 gen_includes:
@@ -21,19 +21,16 @@ post_build:
 	cp default_inputs/* $(ROOT_DIR)/default_inputs/.
 	( cd $(ROOT_DIR)/default_inputs; for FILE in `ls -1`; do if [ ! -e ../$$FILE ]; then cp $$FILE ../.; fi; done )
 
-column_package:
-	(cd column; $(MAKE))
-
 icepack:
 	$(MAKE) -f ../../Makefile.icepack --directory=icepack/columnphysics
 
-shared: column_package icepack
+shared: icepack
 	(cd shared; $(MAKE))
 
-analysis_members: column_package icepack shared
+analysis_members: icepack shared
 	(cd analysis_members; $(MAKE))
 
-model_forward: column_package icepack shared analysis_members
+model_forward: icepack shared analysis_members
 	(cd model_forward; $(MAKE))
 
 clean:
