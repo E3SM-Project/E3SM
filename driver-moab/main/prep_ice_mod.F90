@@ -205,7 +205,6 @@ contains
           end if
           call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i', no_match) ! force a new map always
 
-#ifdef HAVE_MOAB
           if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
             if (iamroot_CPLID) then
                write(logunit,*) ' '
@@ -247,7 +246,6 @@ contains
             mapper_SFo2i%intx_context = ice(1)%cplcompid
             mapper_SFo2i%mbname = 'mapper_SFo2i'
          endif
-#endif
        endif
 
        if (glc_c2_ice) then
@@ -286,7 +284,6 @@ contains
           call seq_map_init_rcfile(mapper_Rr2i, rof(1), ice(1), &
                'seq_maps.rc','rof2ice_rmapname:','rof2ice_rmaptype:',samegrid_ro, &
                'mapper_Rr2i initialization', esmf_map_flag)
-#ifdef HAVE_MOAB
           if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
             ! now take care of the mapper
             if (iamroot_CPLID) then
@@ -319,7 +316,6 @@ contains
             mapper_Rr2i%weight_identifier = wgtIdSr2i
             mapper_Rr2i%mbname = 'mapper_Rr2i'
           end if ! if ((mbrxid .ge. 0) .and.  (mbixid .ge. 0)) then
-#endif
        endif
        call shr_sys_flush(logunit)
 

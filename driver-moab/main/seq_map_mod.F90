@@ -363,7 +363,6 @@ contains
     character(len=*),intent(in),optional :: avwtsfld_s
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
-#ifdef HAVE_MOAB
     logical  :: valid_moab_context
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
     character(len=CXX) :: fldlist_moab
@@ -375,7 +374,6 @@ contains
     real(kind=r8) , allocatable  :: targtags(:,:), targtags_ini(:,:)
     real(kind=r8)  :: factor
     integer  :: filter_type ! used for caas projection
-#endif
     !
     ! Local Variables
     !
@@ -421,7 +419,6 @@ contains
        call shr_sys_abort(subname//' ERROR: avwtsfld present')
     endif
 
-#ifdef HAVE_MOAB
        ! check whether the application ID is defined on the current process
        if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
          valid_moab_context = .FALSE.
@@ -463,7 +460,6 @@ contains
          endif
 #endif
        endif ! valid_moab_context
-#endif
 
     if (mapper%copy_only) then
        !-------------------------------------------
@@ -511,7 +507,6 @@ contains
 
     if (mapper%copy_only .or. mapper%rearrange_only) then
 
-#ifdef HAVE_MOAB
        if ( valid_moab_context ) then
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
@@ -541,11 +536,9 @@ contains
          endif
        endif ! if (valid_moab_context)
 
-#endif
 
       else
 
-#ifdef HAVE_MOAB
        if ( valid_moab_context ) then
        ! NORMALIZATION
          if (mbnorm .or. mbpresent) then
@@ -731,7 +724,6 @@ contains
          endif ! end normalization
 
        endif
-#endif
 
       endif ! end of mapping type if else
 
@@ -952,7 +944,6 @@ contains
     character(len=*),parameter :: subname = "(seq_map_clean_moab) "
     !-----------------------------------------------------
 
-#ifdef HAVE_MOAB
     ! Deallocate MOAB coordinate arrays if allocated
     if (associated(mapper%slon_s_moab)) then
        deallocate(mapper%slon_s_moab)
@@ -988,7 +979,6 @@ contains
     endif
 
     mapper%cart3d_init_moab = trim(seq_map_stroff)
-#endif
 
   end subroutine seq_map_clean_moab
 

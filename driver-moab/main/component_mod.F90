@@ -49,9 +49,7 @@ module component_mod
   public :: component_init_cx
   public :: component_init_aream
   public :: component_init_areacor
-#ifdef HAVE_MOAB
   public :: component_init_areacor_moab
-#endif
   public :: component_run                 ! mct and esmf versions
   public :: component_final               ! mct and esmf versions
   public :: component_exch
@@ -264,9 +262,7 @@ contains
           ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
              call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
-#endif
           end if
 
           ! call the component's specific init phase
@@ -283,9 +279,7 @@ contains
           ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
              call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
-#endif
           end if
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -463,7 +457,6 @@ contains
     use prep_ice_mod,       only : prep_ice_get_mapper_SFo2i
     use prep_glc_mod,       only : prep_glc_get_mapper_Sl2g
     use component_type_mod, only : atm, lnd, ice, ocn, rof, glc
-#ifdef HAVE_MOAB
     use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
                        iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
 
@@ -474,7 +467,6 @@ contains
     use seq_comm_mct,     only: mblxid ! iMOAB id for lnd migrated mesh to coupler pes
     use seq_comm_mct,     only: mbaxid ! iMOAB id for atm migrated mesh to coupler pes
     use seq_comm_mct,     only: mbrxid ! iMOAB id for rof migrated mesh to coupler pes
-#endif
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -498,12 +490,10 @@ contains
     logical                  :: glc_present ! glc present flag
     integer                  :: ka,km
     character(*), parameter :: subname = '(component_init_aream)'
-#ifdef HAVE_MOAB
     integer                 :: tagtype, nloc, ent_type, tagindex, ierr
     character*100  tagname
     real(R8), allocatable, target :: data1(:)
     integer ,    allocatable :: gids(:) ! used for setting values associated with ids
-#endif
     !---------------------------------------------------------------
 
     ! Note that the following is assumed to hold - all gsmaps_cx for a given
@@ -529,7 +519,6 @@ contains
           km = mct_aVect_indexRa(dom_s%data, "aream" )
           dom_s%data%rAttr(km,:) = dom_s%data%rAttr(ka,:)
 
-#ifdef HAVE_MOAB
         ! TODO should actually compute aream from mesh model
         ! we do a lot of unnecessary gymnastics, and very inefficient, because we have a 
         ! different distribution compared to mct source grid atm
@@ -551,7 +540,6 @@ contains
          deallocate(gids)
          deallocate(data1)
          ! project now aream on ocean (from atm)
-#endif
          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
           
        else
@@ -1002,9 +990,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
              if (comp_prognostic .and. firstloop .and. present(seq_flds_x2c_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
                call factor_moab_comp(comp(eci), 'drv2mdl', seq_flds_x2c_fluxes)
-#endif
              end if
 
              call t_set_prefixf(comp(1)%oneletterid//":")
@@ -1018,9 +1004,7 @@ subroutine component_init_areacor_moab (comp, mbccid, mbcxid, seq_flds_c2x_fluxe
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
                 call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
-#ifdef HAVE_MOAB
                call factor_moab_comp(comp(eci), 'mdl2drv', seq_flds_c2x_fluxes)
-#endif
              endif
 
              if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
