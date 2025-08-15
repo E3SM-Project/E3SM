@@ -755,6 +755,31 @@ register_variables(const std::string& filename,
       if (alias_name != field_name) {
         scorpio::set_attribute(filename, alias_name, "eamxx_name", field_name);
       }
+
+      // If output represents an statistic over a time range add a "cell methods"
+      // attribute.
+      switch (m_avg_type) {
+        case OutputAvgType::Instant:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: point");
+          break;  // Don't add the attribute
+        case OutputAvgType::Max:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: maximum");
+          break;
+        case OutputAvgType::Min:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: minimum");
+          break;
+        case OutputAvgType::Average:
+          scorpio::set_attribute(filename, alias_name, "cell_methods", "time: mean");
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected/unsupported averaging type.\n");
+      }
+
+      // If output contains the column dimension add a "coordinates" attribute.
+      if (fid.get_layout().has_tag(COL)) {
+        scorpio::set_attribute(filename, alias_name, "coordinates", "lat lon");
+      }
+
     }
   }
 
