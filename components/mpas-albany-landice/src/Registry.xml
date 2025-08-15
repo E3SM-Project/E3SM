@@ -496,8 +496,8 @@
 				  description="Depth above which to iceberg meltwater is important. If config_TF_iceberg_melt is set to 'true' or 'mask', water above this depth will be altered to follow the submarine meltwater mixing line. Default value is taken from Hager et al. (2024)."
 				  possible_values="Any negative real value"
 		/>
-		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="2" units="unitless"
-			    description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
+		<nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="3" units="unitless"
+                        description="number of extra cells for over-extrapolation into grounded ice. Note: value must >=3 when used with facemelting." possible_values="any non-negative value"
       />
       <nml_option name="config_invalid_value_TF" type="real" default_value="1.0e36" units="unitless"
              description="value assigned to indicate invalid thermal forcing value when config_ocean_data_extrapolation is set to true"
@@ -1309,6 +1309,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="floatingBasalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="Applied basal mass balance on floating regions"
+                />
+                <var name="connectedOceanMask" type="integer" dimensions="nCells Time" units=""
+                        description="grid cells below sea level and without grounded ice connected to open ocean (i.e., open ocean plus ice shelves ignoring floating ice over subglacial lakes).  0=no, 1=yes"
                 />
                 <var name="calvingMask" type="integer" dimensions="nCells Time" units="" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"

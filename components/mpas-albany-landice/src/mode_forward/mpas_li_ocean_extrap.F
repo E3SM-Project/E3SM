@@ -127,7 +127,7 @@ contains
       if ( config_ocean_data_extrapolation ) then
 
          ! call the extrapolation scheme
-         call mpas_log_write('ocean data will be extrapolated into the MALI ice draft')
+         call mpas_log_write('Beginning ocean data extrapolation')
          block => domain % blocklist
 
         ! initialize the ocean data and mask fields
@@ -534,6 +534,7 @@ contains
          deallocate(alteredCells)
          call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
          
+         call mpas_log_write('Ocean data extrapolation complete')
       endif
    !--------------------------------------------------------------------
 
