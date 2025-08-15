@@ -109,6 +109,7 @@ endforeach()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_eamxx.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_rdycore.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
 # Set up CMAKE_MODULE_PATH so any component can use E3SM
@@ -131,6 +132,8 @@ build_eamxx()
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
 build_mpas_models()
+
+build_rdycore()
 
 # Set global cmake settings
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
