@@ -43,6 +43,12 @@ namespace Pacer {
     /// Unsets prefix for all subsequent timers
     bool unsetPrefix();
     
+    /// Adds the current enclosing timer name to the prefix for all subsequent timers
+    bool addParentPrefix();
+
+    /// Removes the current enclosing timer name from the prefix for all subsequent timers
+    bool removeParentPrefix();
+    
     /// Sets timing level for all subsequent timers
     void setTimingLevel(int Level);
     

@@ -54,6 +54,22 @@ int main(int argc, char **argv){
 
       Pacer::stop("should_not_appear_2", 0);
     Pacer::enableTiming();
+    
+    Pacer::start("parent", 1);
+    Pacer::addParentPrefix();
+    
+    Pacer::start("child1", 1);
+    Pacer::stop("child1", 1);
+    
+    Pacer::start("child2", 0);
+      Pacer::addParentPrefix();
+      Pacer::start("grandchild1", 1);
+      Pacer::stop("grandchild1", 1);
+      Pacer::removeParentPrefix();
+    Pacer::stop("child2", 0);
+
+    Pacer::removeParentPrefix();
+    Pacer::stop("parent", 1);
 
     Pacer::unsetPrefix();
 

@@ -48,6 +48,10 @@ static int MyRank;
 // Vector-based stack of open timers
 static std::vector<std::string> OpenTimers;
 
+// GPTL doesn't seem to provide a function to obtain the current prefix
+// so we track it ourselves
+static std::string CurrentPrefix = "";
+
 /// Pacer Mode: standalone or within CIME
 static PacerModeType PacerMode;
 
@@ -175,6 +179,8 @@ bool setPrefix(const std::string &Prefix)
 
     PACER_CHECK_ERROR(GPTLprefix_set(Prefix.c_str()));
 
+    CurrentPrefix = Prefix;
+
     return true;
 }
 
@@ -185,6 +191,38 @@ bool unsetPrefix()
 
     PACER_CHECK_ERROR(GPTLprefix_unset());
 
+    CurrentPrefix = "";
+
+    return true;
+}
+
+/// Adds the current enclosing timer name to the prefix for all subsequent timers
+bool addParentPrefix()
+{
+    PACER_CHECK_INIT();
+
+    const std::string NewPrefix = CurrentPrefix + OpenTimers.back() + ":";
+    
+    PACER_CHECK_ERROR(GPTLprefix_set(NewPrefix.c_str()));
+    
+    CurrentPrefix = NewPrefix;
+
+    return true;
+}
+
+/// Removed the current enclosing timer name to the prefix for all subsequent timers
+bool removeParentPrefix()
+{
+    PACER_CHECK_INIT();
+    
+    std::string NewPrefix = CurrentPrefix;
+    const int NCharsToErase = OpenTimers.back().length() + 1;
+    NewPrefix.erase(NewPrefix.length() - NCharsToErase);
+    
+    PACER_CHECK_ERROR(GPTLprefix_set(NewPrefix.c_str()));
+    
+    CurrentPrefix = NewPrefix;
+    
     return true;
 }
 
