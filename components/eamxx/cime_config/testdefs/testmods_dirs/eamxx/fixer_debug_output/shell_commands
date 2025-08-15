@@ -1,0 +1,2 @@
+$CIMEROOT/../components/eamxx/scripts/atmchange homme::enable_energy_fixer_debug_info=true -b
+./xmlchange POSTRUN_SCRIPT="$CIMEROOT/../components/eamxx/scripts/check-fixer-output"

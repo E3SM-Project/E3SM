@@ -1,7 +1,7 @@
 #ifndef SCREAM_FIELD_IMPL_DETAILS_HPP
 #define SCREAM_FIELD_IMPL_DETAILS_HPP
 
-#include <ekat/kokkos/ekat_kokkos_types.hpp>
+#include <ekat_kokkos_types.hpp>
 
 #include <vector>
 
@@ -114,7 +114,7 @@ struct CombineViewsHelper {
 template<CombineMode CM, bool use_fill, typename LhsView, typename RhsView, typename ST>
 void
 cvh (LhsView lhs, RhsView rhs,
-     ST alpha, ST beta, typename LhsView::traits::value_type fill_val,
+     ST alpha, ST beta, typename RhsView::traits::value_type fill_val,
      const std::vector<int>& dims)
 {
   CombineViewsHelper <CM, use_fill, LhsView, RhsView,  ST> helper;

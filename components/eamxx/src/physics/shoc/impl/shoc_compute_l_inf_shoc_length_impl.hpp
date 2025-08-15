@@ -3,6 +3,8 @@
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
+#include <ekat_reduction_utils.hpp>
+
 namespace scream {
 namespace shoc {
 
@@ -17,18 +19,18 @@ void Functions<S,D>
   const uview_1d<const Spack>& tke,
   Scalar&                      l_inf)
 {
-  using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using RU = ekat::ReductionUtils<typename KT::ExeSpace>;
 
   // Compute numerator
-  Scalar numer = ExeSpaceUtils::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+  Scalar numer = RU::view_reduction(team,0,nlev,
+                     [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*zt_grid(k)*dz_zt(k);
   });
   team.team_barrier(); // see comment in shoc_energy_integrals_impl.hpp
 
   // Compute denominator
-  Scalar denom = ExeSpaceUtils::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+  Scalar denom = RU::view_reduction(team,0,nlev,
+                     [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*dz_zt(k);
   });
   team.team_barrier();

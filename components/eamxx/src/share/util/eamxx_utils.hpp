@@ -3,9 +3,9 @@
 
 #include "share/eamxx_types.hpp"
 
-#include <ekat/ekat_assert.hpp>
-#include <ekat/kokkos/ekat_kokkos_types.hpp>
-#include <ekat/mpi/ekat_comm.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_kokkos_types.hpp>
+#include <ekat_comm.hpp>
 
 #include <iterator>
 #include <list>
@@ -14,6 +14,12 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
+// macros for common powers. Using these should result in
+// fast code and bfb results with fortran.
+#define bfb_square(val) ((val)*(val))
+#define bfb_cube(val)   ((val)*(val)*(val))
+#define bfb_quad(val)   (bfb_square(bfb_square(val)))
 
 namespace scream {
 
@@ -442,6 +448,10 @@ struct DefaultMetadata {
     file.close();
   }
 };
+
+extern "C"
+void eamxx_repro_sum(const Real* send, Real* recv,
+                       Int nlocal, Int nfld, Int fcomm);
 
 } // namespace scream
 

@@ -26,8 +26,8 @@
 #  define bfb_exp(val) exp(val)
 #  define bfb_expm1(val) (exp(val) - 1)
 #  define bfb_tanh(val) tanh(val)
+#  define bfb_cos(val) cos(val)
 #  define bfb_sqrt(val) sqrt(val)
-#  define bfb_tanh(val) tanh(val)
 #  define bfb_erf(val) erf(val)
 #else
 #  define bfb_pow(base, exp) scream_pow(base, exp)
@@ -39,6 +39,7 @@
 #  define bfb_exp(val) scream_exp(val)
 #  define bfb_expm1(val) scream_expm1(val)
 #  define bfb_tanh(val) scream_tanh(val)
+#  define bfb_cos(val) scream_cos(val)
 #  define bfb_erf(val) scream_erf(val)
 #endif
 

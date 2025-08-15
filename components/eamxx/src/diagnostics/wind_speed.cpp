@@ -1,7 +1,5 @@
 #include "diagnostics/wind_speed.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-
 namespace scream
 {
 

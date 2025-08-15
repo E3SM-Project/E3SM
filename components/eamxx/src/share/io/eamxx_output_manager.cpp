@@ -5,9 +5,9 @@
 #include "share/util/eamxx_timing.hpp"
 #include "share/eamxx_config.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
+#include <ekat_parameter_list.hpp>
+#include <ekat_comm.hpp>
+#include <ekat_string_utils.hpp>
 
 #include <fstream>
 #include <memory>
@@ -121,7 +121,6 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       m_output_streams.push_back(output);
     }
   }
-
 
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
@@ -250,9 +249,22 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           "  - new fp precision: " << fp_precision << "\n");
 
       // Check if the prev run wrote any output file (it may have not, if the restart was written
-      // before the 1st output step). If there is a file, check if there's still room in it.
+      // before the 1st output step). If there is a file, we will check if there's still room in it.
       const auto& last_output_filename = scorpio::get_attribute<std::string>(rhist_file,"GLOBAL","last_output_filename");
-      m_resume_output_file = last_output_filename!="" and not restart_pl.get("force_new_file",true);
+      const bool force_new_file = restart_pl.get("force_new_file",true);
+      if (last_output_filename!="" and force_new_file) {
+        auto st = m_output_file_specs.storage.type;
+        // Forcing a new file is dangeour for storage type != NumSnaps, as the filename is likely to clash.
+        // It is however ok if the user changed storage type, as the new filename will NOT clash with the old
+        EKAT_REQUIRE_MSG (st==NumSnaps or e2str(st)!=old_storage_type,
+            "Error! Forcing a new file upon restart is dangerous for file max storage != num_snapshots.\n"
+            "That's because the new file may have the same name as the old one, ending up replacing it.\n"
+            "To circumvent this error, set 'force_new_file: false' in the output yaml file.\n"
+            " - last output file: " + last_output_filename + "\n"
+            " - storage type    : " + e2str(m_output_file_specs.storage.type) + "\n");
+      }
+
+      m_resume_output_file = last_output_filename!="" and not force_new_file;
       if (m_resume_output_file) {
         m_output_file_specs.storage.num_snapshots_in_file = scorpio::get_attribute<int>(rhist_file,"GLOBAL","last_output_file_num_snaps");
 
@@ -296,7 +308,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 }
 
 void OutputManager::
-add_global (const std::string& name, const ekat::any& global) {
+add_global (const std::string& name, const std::shared_ptr<std::any>& global) {
   EKAT_REQUIRE_MSG (m_globals.find(name)==m_globals.end(),
       "Error! Global attribute was already set in this output manager.\n"
       "  - global att name: " + name + "\n");
@@ -312,24 +324,24 @@ void OutputManager::init_timestep (const util::TimeStamp& start_of_step, const R
     return;
   }
 
-  const bool is_first_step = m_output_control.dt==0 and dt>0;
+  // Make sure dt is in the control structure
+  if (m_output_control.dt==0 and dt>0) {
+    m_output_control.set_dt(dt);
 
-  // Make sure dt is in the control
-  m_output_control.set_dt(dt);
-
-  if (m_run_type==RunType::Initial and is_first_step and m_avg_type==OutputAvgType::Instant and
-      m_output_file_specs.storage.type!=NumSnaps and m_output_control.frequency_units=="nsteps") {
-    // This is the 1st step of the whole run, and a very sneaky corner case. Bear with me.
-    // When we call run, we also compute next_write_ts. Then, we use next_write_ts to see if the
-    // next output step will fit in the currently open file, and, if not, close it right away.
-    // For a storage type!=NumSnaps, we need to have a valid timestamp for next_write_ts, which
-    // for freq=nsteps requires to know dt. But at t=case_t0, we did NOT have dt, which means we
-    // computed next_write_ts=last_write_ts (in terms of date:time, the num_steps is correct).
-    // This means that at that time we deemed that the next_write_ts definitely fit in the same
-    // file as last_write_ts (date/time are the same!), which may or may not be true for non NumSnaps
-    // storage. To fix this, we recompute next_write_ts here, and close the file if it doesn't.
+    // In case of unit tests, there is a very peculiar corner case that forces us to check if we
+    // need to close the file, and it is storage.type!=NumSteps, Instant output (with t0 output ON),
+    // freq_units=nsteps, and a "large" timestep. E.g., consider storage.type=Daily, Instant output
+    // (with t0 output ON), dt=2 days, freq_units=nsteps, and run_t0=Jan 1st. At t=t0, we open a
+    // new file (jan01), and write the t=t0 snapshot. At the end of the run method, we also check
+    // if we can go ahead and close the file, by a) computing next_write_ts, and b) checking if
+    // the next snapshot fits in the file. However, since freq_units=nsteps, we need dt>0 to be able
+    // to compute the correct next_write_ts, and we don't have dt until the 1st step of the time
+    // loop. Hence, if control.dt==0 (meaning it's the first time we execute init_timestep),
+    // we need to recompute next_write_ts, and also check if the next snap will fit in the file.
+    // Again, this is ONLY a corner case that happens in unit tests, as dt<<1day in any meaningful run.
     m_output_control.compute_next_write_ts();
-    close_or_flush_if_needed (m_output_file_specs,m_output_control);
+    if (m_output_file_specs.is_open)
+      close_or_flush_if_needed (m_output_file_specs,m_output_control);
   }
 
   // Note: we need to "init" the timestep if we are going to do something this step, which means we either
@@ -407,24 +419,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   // Create and setup output/checkpoint file(s), if necessary
   start_timer(timer_root+"::get_new_file");
   auto setup_output_file = [&](IOControl& control, IOFileSpecs& filespecs) {
-    // Check if the new snapshot fits, if not, close the file
-    // NOTE: if output is average/max/min AND we save one file per month/year,
-    //       we don't want to check if *this* timestamp fits in the file, since
-    //       it may be in the next month/year even though most of the time averaging
-    //       window is in the right year. E.g., if the avg is over the whole month,
-    //       you would end up saving Jan average in the Feb file, since the end
-    //       of the window is Feb 1st 00:00:00. So instead, we use the *start*
-    //       of the avg window. If the avg is such that it spans 2 months (e.g.,
-    //       a 7-day avg), then where we put the avg is arbitrary, so our choice
-    //       is still fine.
-    util::TimeStamp snapshot_start;
-    if (m_avg_type==OutputAvgType::Instant or filespecs.storage.type==NumSnaps) {
-      snapshot_start = timestamp;
-    } else {
-      snapshot_start = m_case_t0;
-      snapshot_start += m_time_bnds[0];
-    }
-
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       filespecs.filename = compute_filename (filespecs,timestamp);
@@ -540,27 +534,27 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       // Write all stored globals
       for (const auto& it : m_globals) {
         const auto& name = it.first;
-        const auto& any = it.second;
-        if (any.isType<int>()) {
-          set_attribute(filespecs.filename,"GLOBAL",name,ekat::any_cast<int>(any));
-        } else if (any.isType<std::int64_t>()) {
-          set_attribute(filespecs.filename,"GLOBAL",name,ekat::any_cast<std::int64_t>(any));
-        } else if (any.isType<float>()) {
-          set_attribute(filespecs.filename,"GLOBAL",name,ekat::any_cast<float>(any));
-        } else if (any.isType<double>()) {
-          set_attribute(filespecs.filename,"GLOBAL",name,ekat::any_cast<double>(any));
-        } else if (any.isType<std::string>()) {
-          set_attribute(filespecs.filename,"GLOBAL",name,ekat::any_cast<std::string>(any));
+        const auto& any = *it.second;
+        if (any.type()==typeid(int)) {
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const int&>(any));
+        } else if (any.type()==typeid(std::int64_t)) {
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const std::int64_t&>(any));
+        } else if (any.type()==typeid(float)) {
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const float&>(any));
+        } else if (any.type()==typeid(double)) {
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const double&>(any));
+        } else if (any.type()==typeid(std::string)) {
+          set_attribute(filespecs.filename,"GLOBAL",name,std::any_cast<const std::string&>(any));
         } else {
           EKAT_ERROR_MSG (
               "Error! Invalid concrete type for IO global.\n"
               " - global name: " + it.first + "\n"
-              " - type id    : " + any.content().type().name() + "\n");
+              " - type id    : " + std::string(any.type().name()) + "\n");
         }
       }
 
       // We're adding one snapshot to the file
-      filespecs.storage.update_storage(timestamp);
+      ++filespecs.storage.num_snapshots_in_file;
 
       // NOTE: for checkpoint files, unless we write restart data, we did not update time,
       //       which means we cannot write any variable (the check var.num_records==time.length
@@ -882,6 +876,9 @@ setup_file (      IOFileSpecs& filespecs,
   }
 
   filespecs.is_open = true;
+  if (filespecs.storage.type!=NumSnaps) {
+    filespecs.storage.set_time_idx(control.next_write_ts);
+  }
 
   m_resume_output_file = false;
 }
@@ -904,8 +901,8 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
 
   set_str_att("case",p.get<std::string>("caseid","NONE"));
   set_str_att("source","E3SM Atmosphere Model (EAMxx)");
-  set_str_att("eamxx_version",EAMXX_VERSION);
-  set_str_att("git_version",p.get<std::string>("git_version",EAMXX_GIT_VERSION));
+  set_str_att("eamxx_version",eamxx_version());
+  set_str_att("git_version",p.get<std::string>("git_version",eamxx_git_version()));
   set_str_att("hostname",p.get<std::string>("hostname","UNKNOWN"));
   set_str_att("username",p.get<std::string>("username","UNKNOWN"));
   set_str_att("atm_initial_conditions_file",p.get<std::string>("initial_conditions_file","NONE"));
@@ -917,11 +914,35 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
   set_str_att("Conventions","CF-1.8");
   set_str_att("product",e2str(file_specs.ftype));
 }
+
 void OutputManager::
 close_or_flush_if_needed (      IOFileSpecs& file_specs,
                           const IOControl&   control) const
 {
-  if (not file_specs.storage.snapshot_fits(control.next_write_ts)) {
+  // We check if the file is full (meaning that the next write will not fit),
+  // or if the file needs to be flushed (based on file_specs flush freq)
+
+  // NOTES:
+  //  - If output is average/max/min AND we save one file per month/year,
+  //    we don't want to check if the next write timestamp fits in the file, since
+  //    it may be in the next day/month/year even though most of the time averaging
+  //    window is in the right day/month/year. E.g., if the avg is over a month,
+  //    you would end up saving Jan average in the Feb file, since the next write
+  //    timestamp (the end of the window) is Feb 1st 00:00:00. So instead, we use
+  //    the *start* of the avg window. If the avg is such that it spans 2 months (e.g.,
+  //    a 7-day avg), then where we put the avg is arbitrary, so our choice
+  //    is still fine.
+  //  - If you consdier INST output as "average" over [next_write_ts, next_write_ts],
+  //    we can think of next_write_ts as the start of INST averaging window.
+  //  - For storage_type=NumSnaps, which timestamp we pick doesn't matter
+  const util::TimeStamp* window_start_ts;
+  if (m_avg_type==OutputAvgType::Instant) {
+    window_start_ts = &control.next_write_ts;
+  } else {
+    window_start_ts = &control.last_write_ts;
+  }
+
+  if (not file_specs.storage.snapshot_fits(*window_start_ts)) {
     scorpio::release_file(file_specs.filename);
     file_specs.close();
   } else if (file_specs.file_needs_flush()) {
@@ -961,6 +982,9 @@ push_to_logger()
       m_atm_logger->info("             File Capacity: " + (ms>0 ? std::to_string(ms) + "snapshots" : "UNLIMITED"));
       break;
     }
+    case Daily:
+      m_atm_logger->info("             File Capacity: one day per file");
+      break;
     case Monthly:
       m_atm_logger->info("             File Capacity: one month per file");
       break;

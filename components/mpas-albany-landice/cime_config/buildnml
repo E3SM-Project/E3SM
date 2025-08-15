@@ -61,6 +61,7 @@ def buildnml(case, caseroot, compname):
     decomp_prefix = ''
     datamode_date = ''
     region_mask_date = ''
+    tf_params_date = ''
 
     if glc_grid == 'mpas.aisgis20km':
         grid_date += '20190326'
@@ -79,12 +80,14 @@ def buildnml(case, caseroot, compname):
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
         region_mask_date += '20231222'
+        tf_params_date += '20250724'
     elif glc_grid == 'mpas.ais4to20km':
         grid_date += '20250625'
         grid_prefix += 'ais_4to20km'
         decomp_date += '240507'
         decomp_prefix += 'mpasli.graph.info.'
         region_mask_date += '20230105'
+        tf_params_date += '20250724'
     elif glc_grid == 'mpas.gis20km':
         grid_date += '20210824'
         grid_prefix += 'gis_20km_r01'
@@ -130,6 +133,20 @@ def buildnml(case, caseroot, compname):
         region_mask_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_region_mask.{region_mask_date}.nc"
 
     #------------------------
+    # Set TF param file if needed
+    # It is only activated if TF-based ocean coupling is on AND
+    # a param. file has been set up for MALI mesh being used.
+    # Note: in the future, we will likely need to make the params file
+    # a function of also the OCN mesh and compset being used, as they will
+    # require different deltaT bias-correction fields.
+    # It is unclear at this point what level of complexity is required,
+    # so nothing is implemented yet.
+    #------------------------
+    tf_params_file = ''
+    if ocn_glc_ismf_coupling == 'tf' and tf_params_date != '':
+        tf_params_file = f"{din_loc_root}/glc/mpasli/{glc_grid}/{grid_prefix}_tf_params.{tf_params_date}.nc"
+
+    #------------------------
     # Set the datamode file if needed
     #------------------------
     if mali_prognostic_mode == 'DATA':
@@ -144,6 +161,9 @@ def buildnml(case, caseroot, compname):
 
         if region_mask_date != '':
             input_list.write(f"region_mask = {region_mask_file}\n")
+
+        if tf_params_file != '':
+            input_list.write(f"tf_params = {tf_params_file}\n")
 
         if mali_prognostic_mode == 'DATA':
             input_list.write(f"datamode = {datamode_file}\n")
@@ -246,11 +266,16 @@ def buildnml(case, caseroot, compname):
         lines.append('                      input_interval="initial_only"')
         lines.append('                      output_interval="00-00-00_00:00:01"/>')
         lines.append('')
-        lines.append('    <!--')
-        lines.append('    output is the main history output stream. You can add auxiliary streams to')
-        lines.append('    this stream to include more fields.')
-        lines.append('    -->')
-        lines.append('')
+        if tf_params_file != '':
+            lines.append('    <stream name="tfParamsInput"')
+            lines.append('            type="input"')
+            lines.append('            filename_template="{}"'.format(tf_params_file))
+            lines.append('            input_interval="initial_only">')
+            lines.append('        <var name="ismip6shelfMelt_basin"/>')
+            lines.append('        <var name="ismip6shelfMelt_gamma0"/>')
+            lines.append('        <var name="ismip6shelfMelt_deltaT"/>')
+            lines.append('    </stream>')
+            lines.append('')
         if region_mask_date != '':
             lines.append('    <stream name="regionsInput"')
             lines.append('            type="input"')
@@ -259,28 +284,29 @@ def buildnml(case, caseroot, compname):
             lines.append('        <var name="regionCellMasks"/>')
             lines.append('    </stream>')
             lines.append('')
+        lines.append('    <!--')
+        lines.append('    output is the main history output stream. You can add auxiliary streams to')
+        lines.append('    this stream to include more fields.')
+        lines.append('    -->')
+        lines.append('')
         lines.append('    <stream name="output"')
         lines.append('            type="output"')
         lines.append('            filename_template="{}.mali.hist.$Y-$M-$D_$S.nc"'.format(casename))
         lines.append('            filename_interval="0001-00-00_00:00:00"')
         lines.append('            clobber_mode="truncate"')
-        lines.append('            output_interval="0000-00-01_00:00:00">')
+        lines.append('            output_interval="0000-00-10_00:00:00">')
         lines.append('')
-        lines.append('    <stream name="basicmesh"/>')
         lines.append('    <var name="xtime"/>')
         lines.append('    <var name="thickness"/>')
         lines.append('    <var name="lowerSurface"/>')
         lines.append('    <var name="cellMask"/>')
         lines.append('    <var name="surfaceSpeed"/>')
         lines.append('    <var name="sfcMassBalApplied"/>')
-        lines.append('    <var name="bareIceAblationApplied"/>')
         lines.append('    <var name="avgBareIceAblationApplied"/>')
         lines.append('    <var name="avgFloatingBMBFlux"/>')
-        lines.append('    <var name="groundedBasalMassBalApplied"/>')
         lines.append('    <var name="avgCalvingFlux"/>')
         lines.append('    <var name="avgFaceMeltFlux"/>')
         lines.append('    <var name="restoreThickness"/>')
-        lines.append('    <var name="dHdt"/>')
         lines.append('    <var name="ismip6shelfMelt_TFdraft"/>')
         lines.append('    <var name="ismip6_2dThermalForcing"/>')
         lines.append('    <var name="deltat"/>')
@@ -288,8 +314,6 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="simulationStartTime"/>')
         lines.append('    <var name="allowableDtACFL"/>')
         lines.append('    <var name="allowableDtDCFL"/>')
-        lines.append('    <var name="basalTemperature"/>')
-        lines.append('    <var name="surfaceTemperature"/>')
         lines.append('')
         lines.append('</stream>')
         lines.append('')

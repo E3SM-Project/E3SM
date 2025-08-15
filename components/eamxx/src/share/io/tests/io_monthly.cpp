@@ -14,11 +14,10 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/eamxx_types.hpp"
 
-#include "ekat/util/ekat_units.hpp"
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_assert.hpp"
-#include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/util/ekat_test_utils.hpp"
+#include <ekat_units.hpp>
+#include <ekat_parameter_list.hpp>
+#include <ekat_assert.hpp>
+#include <ekat_comm.hpp>
 
 #include <iomanip>
 #include <memory>
@@ -138,9 +137,10 @@ void write (const int seed, const ekat::Comm& comm)
   const int nsteps = 11;
   auto t = t0;
   for (int n=0; n<nsteps; ++n) {
-    om.init_timestep(t,dt);
     // Update time
     t += dt;
+
+    om.init_timestep(t,dt);
 
     // Add 1 to all fields entries
     for (const auto& name : fnames) {

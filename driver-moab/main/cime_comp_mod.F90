@@ -138,6 +138,7 @@ module cime_comp_mod
   use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   use seq_flux_mct, only: seq_flux_atmocn_moab ! will set the ao fluxes on atm or ocn coupler mesh
+  use seq_flux_mct, only: seq_flux_atmocn_moab_sw_only
 
   ! domain fraction routines
   use seq_frac_mct, only : seq_frac_init, seq_frac_set
@@ -205,6 +206,8 @@ module cime_comp_mod
 
   ! --- control variables ---
   use seq_flds_mod,  only   : rof_heat
+
+  use shr_moab_mod
 
 #ifdef MOABDEBUGMCT
   ! --- expose grid with MOAB
@@ -701,6 +704,8 @@ module cime_comp_mod
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
 #endif
+  real(r8) , pointer :: a2x_ox_tag_vals(:,:) ! a2x-ox tags
+  integer ::   a2x_ox_size
   !===============================================================================
 contains
   !===============================================================================
@@ -1443,6 +1448,8 @@ contains
 #ifdef MOABDEBUGMCT
     integer :: dummy_iMOAB
 #endif
+    integer :: nfields, numpts
+    type(mct_list) :: temp_list
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -2046,8 +2053,10 @@ contains
     ! e.g. for atmosphere, init l2x_ax, o2x_ax, i2x_ax
     ! MAP Initialize map for each transformation. States and Fluxes, all sources.
     !      Includes reading weights from file
+    !
     ! MOAB: register coupler apps between components: e.g. OCN_ATM_COU
     ! MOAB: compute intersection intx for each pair of grids on coupler and weights
+    ! MOAB: or read maps and read the appropriate aream
     ! MOAB: augment seq_map_type object with MOAB attributes to enable seq_map_map to do MOAB-based projections
     !----------------------------------------------------------
 
@@ -2148,7 +2157,6 @@ contains
     !| Initialize area corrections based on aream (read in map_init) and area
     !| Area correct component initialization output fields
     !| SEND (Rearrange) initial component AVs from component to coupler pes
-    ! MOABTODO:  add calls to send initial data.
     !----------------------------------------------------------
 
     areafact_samegrid = .false.
@@ -2557,6 +2565,18 @@ contains
     call t_stopf  ('CPL:init_readrestart')
 
     !----------------------------------------------------------
+    !| allocate arrays to hold data
+    !----------------------------------------------------------
+    if (ocn_present .and. iamin_CPLID) then
+      numpts =  mbGetnCells(mboxid)
+      call mct_list_init(temp_list, seq_flds_a2x_fields)
+      nfields=mct_list_nitem (temp_list)
+      call mct_list_clean(temp_list)
+      allocate(a2x_ox_tag_vals(numpts,nfields))
+      a2x_ox_size = nfields*numpts
+    endif
+
+    !----------------------------------------------------------
     !| Map initial r2x_rx and g2x_gx to _ox, _ix and _lx
     !----------------------------------------------------------
 
@@ -2610,8 +2630,7 @@ contains
           call t_startf('CPL:seq_hist_write-init')
           call seq_hist_write(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-               fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
+               samegrid_al,samegrid_lr, trim(cpl_inst_tag))
           call t_stopf('CPL:seq_hist_write-init')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2674,6 +2693,9 @@ contains
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
     use seq_pauseresume_mod, only: seq_resume_store_comp, seq_resume_get_files
     use seq_pauseresume_mod, only: seq_resume_free
+    use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
+    use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields, seq_flds_l2x_fields, &
+     seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
 
     ! gptl timer lookup variables
     integer, parameter    :: hashcnt=7
@@ -2692,7 +2714,7 @@ contains
     integer               :: cur_step_no ! step number
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
-102 format( A, i10.8, i8, A, 8L3 )
+102 format( A, i10.8, i8, A, 10L3 )
 103 format( 5A )
 104 format( A, i10.8, i8)
 105 format( A, i10.8, i8, A, f10.2, A, f10.2, A, A, i5, A, A)
@@ -3012,8 +3034,8 @@ contains
        if (iamroot_CPLID) then
           if (loglevel > 1) then
              write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
-                  ' aliogrw run alarms = ',  atmrun_alarm, lndrun_alarm, &
-                  icerun_alarm, ocnrun_alarm, glcrun_alarm, &
+                  ' aliongrwei run alarms = ',  atmrun_alarm, lndrun_alarm, &
+                  icerun_alarm, ocnrun_alarm, ocnnext_alarm, glcrun_alarm, &
                   rofrun_alarm, wavrun_alarm, esprun_alarm, iacrun_alarm
              write(logunit,102) ' Alarm_state: model date = ',ymd,tod, &
                   ' 1.2.3.6.12.24 run alarms = ',  t1hr_alarm, t2hr_alarm, &
@@ -3033,22 +3055,39 @@ contains
 
        !----------------------------------------------------------
        !| MAP ATM to OCN
-       !  Set a2x_ox as a module variable in prep_ocn_mod
+       !   Map a2x fields to ocean mesh
        !  This will be used later in the ice prep and in the
        !  atm/ocn flux calculation
+       !  BUT for some sequencing options, have to wait to modify ocean mesh values
        !----------------------------------------------------------
        if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
           call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
+          ! save current values of a2x fields on ocean mesh
+          call mbGetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_tag_vals,a2x_ox_size)
+
+          ! do all a2o mappings which updates mboxid
           call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+
           ! move the proj of atm to ice right after calc of a2x_ox
+          ! make a2x_ix using a2x_ox so its just a rearrange
           if (atm_c2_ice .and. ice_prognostic ) then
-            ! This is special to avoid remapping atm to ocn
+            ! This is special to avoid remapping atm to ice
             ! Note it is constrained that different prep modules cannot  use or call each other
             a2x_ox => prep_ocn_get_a2x_ox() ! array
             call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
+          endif
+
+          ! Now that a2x_ix is set, put a2x_ox back for these options
+          ! RASM_OPTION1 will continue to use new values of a2x_ox
+          ! others should not
+          if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
+              trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+              trim(cpl_seq_option) == 'NUOPC'           .or. &
+              trim(cpl_seq_option) == 'NUOPC_TIGHT' ) then
+                call mbSetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_tag_vals,a2x_ox_size)
           endif
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -3076,6 +3115,35 @@ contains
               trim(cpl_seq_option) == 'RASM_OPTION1') then
              call cime_run_ocn_setup_send()
           end if
+       endif
+
+       !----------------------------------------------------------
+       !| MAP ATM to OCN
+       !  update mboxid with latest atm data
+       !  This will be used later in the ice prep and in the
+       !  atm/ocn flux calculation
+       !----------------------------------------------------------
+       if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
+           trim(cpl_seq_option) == 'CESM1_MOD_TIGHT' .or. &
+           trim(cpl_seq_option) == 'NUOPC'           .or. &
+           trim(cpl_seq_option) == 'NUOPC_TIGHT' ) then
+       if (iamin_CPLID .and. (atm_c2_ocn .or. atm_c2_ice)) then
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPRE1_BARRIER')
+          call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
+          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
+          ! move the proj of atm to ice right after calc of a2x_ox
+          if (atm_c2_ice .and. ice_prognostic ) then
+            ! This is special to avoid remapping atm to ocn
+            ! Note it is constrained that different prep modules cannot  use or call each other
+            a2x_ox => prep_ocn_get_a2x_ox() ! array
+            call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
+          endif
+
+          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+          call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+       endif
        endif
 
        !----------------------------------------------------------
@@ -4032,6 +4100,7 @@ contains
        xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
        a2x_ox => prep_ocn_get_a2x_ox()
        call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+       call seq_flux_atmocn_moab_sw_only(ocn(eoi), xao_ox(exi))
     enddo
     call t_drvstopf  ('CPL:atmocnp_ocnalb', hashint=hashint(5))
 
@@ -4695,7 +4764,7 @@ contains
 
        call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
 #ifdef HAVE_MOAB
-       call prep_rof_accum_avg_moab()
+       call prep_rof_accum_avg_moab(ocn_c2_rof)
 #endif
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
@@ -5141,8 +5210,7 @@ contains
           call t_startf('CPL:seq_hist_write')
           call seq_hist_write(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, &
-               fractions_ax, fractions_lx, fractions_ix, fractions_ox,     &
-               fractions_rx, fractions_gx, fractions_wx, fractions_zx, trim(cpl_inst_tag))
+               samegrid_al,samegrid_lr, trim(cpl_inst_tag))
           call t_stopf('CPL:seq_hist_write')
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)

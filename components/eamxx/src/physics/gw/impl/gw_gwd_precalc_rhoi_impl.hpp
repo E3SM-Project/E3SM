@@ -18,7 +18,6 @@ void Functions<S,D>::gwd_precalc_rhoi(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const Spack& dt,
 const uview_1d<const Int>& tend_level,
 const uview_1d<const Spack>& pmid,

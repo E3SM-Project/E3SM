@@ -6,7 +6,7 @@
 #include "share/util/eamxx_array_utils.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 
-#include <ekat/ekat_type_traits.hpp>
+#include <ekat_type_traits.hpp>
 
 namespace scream
 {
@@ -337,21 +337,21 @@ deep_copy (const ST value) {
     case DataType::IntType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,false,int>(value,*this); // 2nd arg unused
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,false,float>(value,*this); // 2nd arg unused
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,false,double>(value,*this); // 2nd arg unused
       break;
@@ -372,21 +372,21 @@ deep_copy (const ST value, const Field& mask)
     case DataType::IntType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,int>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,true,int>(value,mask);
       break;
     case DataType::FloatType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,float>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,true,float>(value,mask);
       break;
     case DataType::DoubleType:
       EKAT_REQUIRE_MSG( (std::is_convertible<ST,double>::value),
           "Error! Input value type is not convertible to field data type.\n"
-          "   - Input value type: " + ekat::ScalarTraits<ST>::name() + "\n"
+          "   - Input value type: " + std::string(typeid(ST).name()) + "\n"
           "   - Field data type : " + e2str(my_data_type) + "\n");
       deep_copy_impl<HD,true,double>(value,mask);
       break;
@@ -559,9 +559,8 @@ update (const Field& x, const ST alpha, const ST beta)
       " - x layout: " + x_l.to_string() + "\n"
       " - y layout: " + y_l.to_string() + "\n");
 
-  // Determine if there is a FillValue that requires extra treatment.
-  bool use_fill = get_header().has_extra_data("mask_value") or
-                  x.get_header().has_extra_data("mask_value");
+  // Determine if the RHS has fill value entries that require extra treatment
+  bool use_fill = x.get_header().has_extra_data("mask_value");
 
   if (dt==DataType::IntType) {
     if (use_fill) {
@@ -609,18 +608,13 @@ update_impl (const Field& x, const ST alpha, const ST beta)
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
 
-  ST fill_val = 0;
+  XST fill_val = 0;
   if constexpr (use_fill) {
-    if (get_header().has_extra_data("mask_value")) {
-      fill_val = get_header().get_extra_data<ST>("mask_value");
-    } else if (x.get_header().has_extra_data("mask_value")) {
-      fill_val = static_cast<ST>(x.get_header().get_extra_data<XST>("mask_value"));
-    } else {
-      EKAT_ERROR_MSG ("Error! Field::update_impl called with use_fill,\n"
-                      "       but neither *this nor x has mask_value extra data.\n"
-                      " - *this name: " + name() + "\n"
-                      " - x name: " + x.name() + "\n");
-    }
+    EKAT_REQUIRE_MSG (x.get_header().has_extra_data("mask_value"),
+        "Error! Field::update_impl called with use_fill, but x does not have mask_value extra data.\n"
+        " - *this name: " + name() + "\n"
+        " - x name: " + x.name() + "\n");
+    fill_val = x.get_header().get_extra_data<XST>("mask_value");
   }
 
   // Must handle the case where one of the two views is strided (or both)

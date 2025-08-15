@@ -16,6 +16,9 @@
 
 namespace scream {
 
+std::string eamxx_version ();
+std::string eamxx_git_version ();
+
 std::string eamxx_config_string();
 
 // Utils to set/get whether leap year is used or not

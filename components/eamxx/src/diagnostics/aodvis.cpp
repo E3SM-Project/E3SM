@@ -1,8 +1,9 @@
 #include "diagnostics/aodvis.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
-
 #include "share/util/eamxx_universal_constants.hpp"
+
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_reduction_utils.hpp>
 
 namespace scream {
 
@@ -47,7 +48,7 @@ void AODVis::initialize_impl(const RunType /*run_type*/) {
   auto nondim = ekat::units::Units::nondimensional();
   const auto &grid_name =
       m_diagnostic_output.get_header().get_identifier().get_grid_name();
-  const auto var_fill_value = constants::DefaultFillValue<Real>().value;
+  const auto var_fill_value = constants::fill_value<Real>;
 
   m_mask_val = m_params.get<double>("mask_value", var_fill_value);
 
@@ -64,7 +65,8 @@ void AODVis::initialize_impl(const RunType /*run_type*/) {
 void AODVis::compute_diagnostic_impl() {
   using KT  = KokkosTypes<DefaultDevice>;
   using MT  = typename KT::MemberType;
-  using ESU = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using TPF = ekat::TeamPolicyFactory<typename KT::ExeSpace>;
+  using RU  = ekat::ReductionUtils<typename KT::ExeSpace>;
 
   const auto aod     = m_diagnostic_output.get_view<Real *>();
   const auto mask    = m_diagnostic_output.get_header()
@@ -77,7 +79,7 @@ void AODVis::compute_diagnostic_impl() {
 
   const auto num_levs = m_nlevs;
   const auto var_fill_value = m_mask_val;
-  const auto policy   = ESU::get_default_team_policy(m_ncols, m_nlevs);
+  const auto policy   = TPF::get_default_team_policy(m_ncols, m_nlevs);
   Kokkos::parallel_for(
       "Compute " + m_diagnostic_output.name(), policy, KOKKOS_LAMBDA(const MT &team) {
         const int icol = team.league_rank();
@@ -86,7 +88,7 @@ void AODVis::compute_diagnostic_impl() {
           Kokkos::single(Kokkos::PerTeam(team), [&] { mask(icol) = 0; });
         } else {
           auto tau_icol = ekat::subview(tau_vis, icol);
-          aod(icol)     = ESU::view_reduction(team, 0, num_levs, tau_icol);
+          aod(icol)     = RU::view_reduction(team, 0, num_levs, tau_icol);
           Kokkos::single(Kokkos::PerTeam(team), [&] { mask(icol) = 1; });
         }
       });

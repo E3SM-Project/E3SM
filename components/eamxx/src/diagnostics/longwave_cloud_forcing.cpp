@@ -1,6 +1,6 @@
 #include "diagnostics/longwave_cloud_forcing.hpp"
 
-#include <ekat/kokkos/ekat_kokkos_utils.hpp>
+#include <ekat_team_policy_utils.hpp>
 
 namespace scream
 {
@@ -43,10 +43,10 @@ void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grids
 void LongwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
   using KT         = KokkosTypes<DefaultDevice>;
-  using ESU        = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using TPF        = ekat::TeamPolicyFactory<KT::ExeSpace>;
   using MemberType = typename KT::MemberType;
 
-  const auto default_policy = ESU::get_default_team_policy(m_num_cols,1);
+  const auto default_policy = TPF::get_default_team_policy(m_num_cols,1);
 
   const auto& LWCF              = m_diagnostic_output.get_view<Real*>();
   const auto& LW_flux_up        = get_field_in("LW_flux_up").get_view<const Real**>();

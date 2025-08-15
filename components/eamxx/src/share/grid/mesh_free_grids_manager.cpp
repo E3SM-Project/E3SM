@@ -8,7 +8,7 @@
 
 #include "physics/share/physics_constants.hpp"
 
-#include "ekat/std_meta/ekat_std_utils.hpp"
+#include <ekat_std_utils.hpp>
 
 #include <memory>
 #include <numeric>
@@ -68,7 +68,6 @@ build_se_grid (const std::string& name, ekat::ParameterList& params)
   // Create the grid
   std::shared_ptr<SEGrid> se_grid;
   se_grid = std::make_shared<SEGrid>(name,num_local_elems,num_gp,num_vertical_levels,m_comm);
-  se_grid->setSelfPointer(se_grid);
 
   // Set up the degrees of freedom.
   auto dof_gids  = se_grid->get_dofs_gids();
@@ -159,12 +158,13 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     auto lev  = grid->create_geometry_data("lev" ,  layout_mid, units);
     auto ilev = grid->create_geometry_data("ilev" , layout_int, units);
 
-    lat.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    lon.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    hyam.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    hybm.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    lev.deep_copy(ekat::ScalarTraits<Real>::invalid());
-    ilev.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    const auto invalid = ekat::invalid<Real>();
+    lat.deep_copy(invalid);;
+    lon.deep_copy(invalid);
+    hyam.deep_copy(invalid);
+    hybm.deep_copy(invalid);
+    lev.deep_copy(invalid);
+    ilev.deep_copy(invalid);
     lat.sync_to_dev();
     lon.sync_to_dev();
     hyam.sync_to_dev();

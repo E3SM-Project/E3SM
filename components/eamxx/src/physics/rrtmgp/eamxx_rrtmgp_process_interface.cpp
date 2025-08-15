@@ -10,7 +10,8 @@
 #include "share/util/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
 
-#include "ekat/ekat_assert.hpp"
+#include <ekat_team_policy_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
 
@@ -19,6 +20,7 @@ namespace scream {
 using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = KT::ExeSpace;
 using MemberType = KT::MemberType;
+using TPF = ekat::TeamPolicyFactory<ExeSpace>;
 
 namespace {
 
@@ -79,9 +81,6 @@ RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   }
 
   m_ngas = m_gas_names.size();
-
-  // Determine rad timestep, specified as number of atm steps
-  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 }
 
 void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
@@ -201,6 +200,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_up", scalar3d_int, W/m2, grid_name);
   add_field<Computed>("LW_clnsky_flux_dn", scalar3d_int, W/m2, grid_name);
+  add_field<Computed>("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d, nondim, grid_name);
   add_field<Computed>("cldmed"        , scalar2d, nondim, grid_name);
@@ -221,11 +221,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("eff_radius_qc_at_cldtop", scalar2d, micron, grid_name);
   add_field<Computed>("eff_radius_qi_at_cldtop", scalar2d, micron, grid_name);
 
-  // This field is needed for restart
-  Field rad_heating_pdel (FieldIdentifier("rad_heating_pdel", scalar3d_mid, Pa*K/s, grid_name));
-  rad_heating_pdel.allocate_view();
-  add_internal_field(rad_heating_pdel);
-
   // Translation of variables from EAM
   // --------------------------------------------------------------
   // EAM name | EAMXX name       | Description
@@ -237,19 +232,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-
-  // We need to ensure that these fields are added to the RESTART group,
-  // since the cpl will need them at every step, and rrtmgp may not run
-  // the 1st step after restart (depending on rad freq).
-  // NOTE: technically, we know rad freq, so we *could* avoid adding them
-  //       to the rest file if rad_freq=1. But a) that is not common at high
-  //       res anyways, and b) that could prevent changing rad_freq upon restart
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name, "RESTART");
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name, "RESTART");
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d, W/m2, grid_name);
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d, W/m2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
@@ -466,8 +454,11 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
-void RRTMGPRadiation::initialize_impl(const RunType run_type) {
+void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   using PC = scream::physics::Constants<Real>;
+
+  // Determine rad timestep, specified as number of atm steps
+  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 
   // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
@@ -542,13 +533,6 @@ void RRTMGPRadiation::initialize_impl(const RunType run_type) {
     auto co_vmr = get_field_out("co_volume_mix_ratio").get_view<Real**>();
     Kokkos::deep_copy(co_vmr, m_params.get<double>("covmr", 1.0e-7));
   }
-
-  // Ensure rad_heating_pdel is recognized as initialized by the driver
-  auto& rad_heating = get_internal_field("rad_heating_pdel");
-  rad_heating.get_header().get_tracking().update_time_stamp(start_of_step_ts());
-
-  m_force_run_on_next_step = run_type==RunType::Initial or
-    m_params.get("force_run_after_restart",false);
 }
 
 // =========================================================================================
@@ -614,7 +598,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_lw_clrsky_flux_dn = get_field_out("LW_clrsky_flux_dn").get_view<Real**>();
   auto d_lw_clnsky_flux_up = get_field_out("LW_clnsky_flux_up").get_view<Real**>();
   auto d_lw_clnsky_flux_dn = get_field_out("LW_clnsky_flux_dn").get_view<Real**>();
-  auto d_rad_heating_pdel = get_internal_field("rad_heating_pdel").get_view<Real**>();
+  auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
   auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
@@ -655,8 +639,8 @@ void RRTMGPRadiation::run_impl (const double dt) {
   const auto do_aerosol_rad = m_do_aerosol_rad;
 
   // Are we going to update fluxes and heating this step?
-  auto ts = end_of_step_ts();
-  auto update_rad = m_force_run_on_next_step or scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
+  auto ts = start_of_step_ts();
+  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   if (update_rad) {
     // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
@@ -714,7 +698,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       if (name == "h2o") {
         // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
         // Convert to vmr
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int icol = team.league_rank();
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
@@ -730,7 +714,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         );
         // Back out volume mixing ratios
         const auto air_mol_weight = PC::MWdry;
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
@@ -843,7 +827,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         }
         Kokkos::deep_copy(mu0_k,h_mu0);
 
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         TIMED_KERNEL(
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
@@ -969,7 +953,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       auto lwp_k = m_buffer.lwp_k;
       auto iwp_k = m_buffer.iwp_k;
       if (not do_subcol_sampling) {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
@@ -983,7 +967,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
           });
         });
       } else {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
@@ -1000,7 +984,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
       interface_t::mixing_ratio_to_cloud_mass(qi_k, cldfrac_tot_k, p_del_k, iwp_k);
       // Convert to g/m2 (needed by RRTMGP)
       {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+      const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
@@ -1057,7 +1041,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
         lw_flux_up_k, lw_flux_dn_k, p_del_k, lw_heating_k
       );
       {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int idx = team.league_rank();
           const int icol = idx+beg;
@@ -1133,7 +1117,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
                           );
 
       // Copy output data back to FieldManager
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+      const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
       TIMED_KERNEL(
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
@@ -1190,7 +1174,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
   // across timesteps to conserve energy.
   const int ncols = m_ncol;
   const int nlays = m_nlay;
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
+  const auto policy = TPF::get_default_team_policy(ncols, nlays);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlays), [&] (const int& k) {
@@ -1214,7 +1198,7 @@ void RRTMGPRadiation::run_impl (const double dt) {
 
     const int ncols = m_ncol;
     const int nlays = m_nlay;
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
+    const auto policy = TPF::get_default_team_policy(ncols, nlays);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
 
@@ -1231,7 +1215,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
     });
   }
 
-  m_force_run_on_next_step = false;
 }
 // =========================================================================================
 

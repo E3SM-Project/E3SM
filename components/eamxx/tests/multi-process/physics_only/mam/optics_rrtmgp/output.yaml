@@ -2,7 +2,6 @@
 ---
 filename_prefix: mam_optics_rrtmgp_output
 averaging_type: instant
-max_snapshots_per_file: 1
 field_names:
    # MAM_OPTICS 
   - aero_g_sw

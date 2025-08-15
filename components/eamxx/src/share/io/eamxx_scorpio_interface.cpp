@@ -3,11 +3,13 @@
 
 #include "eamxx_config.h"
 
-#include <ekat/ekat_assert.hpp>
-#include <ekat/util/ekat_string_utils.hpp>
+#include <ekat_std_utils.hpp>
+#include <ekat_string_utils.hpp>
+#include <ekat_assert.hpp>
 
 #include <pio.h>
 
+#include <set>
 #include <numeric>
 
 namespace scream {
@@ -159,6 +161,7 @@ int nctype () {
   } else {
     EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type.\n");
   }
+  return PIO_NAT;
 }
 
 template<typename T>

@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
-
 #include "diagnostics/field_at_pressure_level.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_setup_random_test.hpp"
+
+#include <ekat_pack.hpp>
 
 namespace scream {
 

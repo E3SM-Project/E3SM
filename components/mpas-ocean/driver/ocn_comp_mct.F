@@ -70,6 +70,7 @@ module ocn_comp_mct
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
    use ocn_scaled_dismf
+   use ocn_scaled_sfwf
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -103,6 +104,11 @@ module ocn_comp_mct
   integer :: mpicom_moab
 #endif
 
+  ! Module variable to save accumulatedFrazilIceMass values before they are reset
+  real (kind=RKIND), allocatable, private :: saved_accumulatedFrazilIceMass(:)
+  integer, private :: saved_frazil_allocated_size = 0
+  logical, private :: saved_frazil_initialized = .false.
+
 
   integer, private ::   &
       my_task
@@ -120,6 +126,8 @@ module ocn_comp_mct
    type (domain_type), pointer:: domain
    integer :: itimestep, &  ! time step number for MPAS
               ocn_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
+
+   real (kind=RKIND) :: precFactor 
 
 !=======================================================================
 
@@ -234,6 +242,12 @@ contains
     real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
     real (kind=RKIND), pointer :: &
        runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
+
+    ! freshwater balance adjustment 
+    logical, pointer :: config_use_precip_scaling
+    character (len=StrKIND), pointer :: config_precip_scaling_mode
+    real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+    real(kind=RKIND), pointer :: scalingFactor
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
@@ -833,6 +847,25 @@ contains
 
        ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
+
+       ! Initialize the precipitation scaling scheme 
+       call ocn_scaled_sfwf_init(domain)
+       ! Ensure a valid first guess at the initial time 
+       call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+       if (config_use_precip_scaling) then
+          call mpas_pool_get_config(domain % configs, 'config_precip_scaling_mode', config_precip_scaling_mode)
+          ! independent of space so should be no need to loop over blocks
+          block_ptr => domain % blocklist
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+          if (trim(config_precip_scaling_mode) == 'time-dependent') then 
+            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_initial_factor', scalingFactor)
+          else if (trim(config_precip_scaling_mode) == 'constant') then
+            call mpas_pool_get_config(domain % configs, 'config_precip_scaling_constant_factor', scalingFactor) 
+          end if
+          ! Broadcast the scalar to the field
+          SFWFScalingFactor = scalingFactor
+       end if
     end if
 
 !-----------------------------------------------------------------------
@@ -881,6 +914,10 @@ contains
 
       ! initialize scaled data ice-shelf melt fluxes based on remove ice runoff
        call ocn_init_scaled_dismf(domain)
+
+      ! initialize scaled data freshwater fluxes based on water balance relationship 
+       call ocn_scaled_sfwf_init(domain)
+
     end if
 
     call t_stopf ('mpaso_mct_init')
@@ -914,6 +951,16 @@ contains
     ! these are used for ocn-glc thermal forcing coupling
     call init_glc_z_levels(domain, ierr_local)
     ierr = ior(ierr, ierr_local)
+
+    !configuration for freshwater conservation
+    call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+    if (config_use_precip_scaling) then 
+      ! independent of space so should be no need to loop over blocks
+      block_ptr => domain % blocklist
+      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+      call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+      call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
+    end if 
 
 !-----------------------------------------------------------------------
 !
@@ -988,6 +1035,10 @@ contains
 ! !INTERFACE:
   subroutine ocn_run_mct( EClock, cdata_o, x2o_o, o2x_o)!{{{
 
+#ifdef HAVE_MOAB
+   use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+#endif
+
 !
 ! !DESCRIPTION:
 ! Run MPASO for one coupling interval
@@ -1038,6 +1089,10 @@ contains
       real (kind=RKIND), pointer :: &
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
 
+      ! freshwater balance adjustment 
+      logical, pointer :: config_use_precip_scaling
+      real (kind=RKIND), pointer :: SFWFScalingFactor ! scaling factor on freshwater fluxes 
+
 #ifdef HAVE_MOAB
 #ifdef MOABCOMP
     real(r8)                 :: difference
@@ -1046,8 +1101,13 @@ contains
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr, tagname
 #endif
+
+#ifdef MOABDEBUG
+    integer :: cur_ocn_stepno
+    character*100 outfile, wopts, lnum
 #endif
 
+#endif
       iam = domain % dminfo % my_proc_id
 
       debugOn = .false.
@@ -1080,7 +1140,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ocn
-    modelStr='ocn run'
+    modelStr='ocn run import'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
@@ -1286,6 +1346,9 @@ contains
             call mpas_log_write('   Validating ocean state')
          endif
 
+        ! update scalling factors for freshwater fluxes 
+        call ocn_update_scaling_factor(domain, timeLevel=1)
+
          call ocn_validate_state(domain, timeLevel=1)
          if (debugOn) call mpas_log_write('   Completed validating ocean state')
 
@@ -1342,6 +1405,30 @@ contains
       if (debugOn) call mpas_log_write('Finished exporting ocean state')
 #ifdef HAVE_MOAB
       call ocn_export_moab(EClock)
+
+#ifdef MOABCOMP
+    ! loop over all fields in seq_flds_o2x_fields
+    call mct_list_init(temp_list ,seq_flds_o2x_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ocn
+    modelStr='ocn run export'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, o2x_o, mct_field,  MPOID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
+
+#ifdef MOABDEBUG
+      call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
+      write(lnum,"(I0.2)")cur_ocn_stepno
+      outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
+#endif
+
 #endif
       call check_clocks_sync(domain % clock, Eclock, ierr)
 
@@ -1354,6 +1441,16 @@ contains
          call MPAS_pool_get_array(forcingPool, "runningMeanRemovedIceRunoff", &
                                   runningMeanRemovedIceRunoff)
          call seq_infodata_PutData(infodata, rmean_rmv_ice_runoff=runningMeanRemovedIceRunoff)
+      end if
+
+      !configuration for freshwater conservation
+      call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+      if (config_use_precip_scaling) then
+         ! independent of space so should be no need to loop over blocks
+         block_ptr => domain % blocklist
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_array(forcingPool, "SFWFScalingFactor", SFWFScalingFactor)
+         call seq_infodata_PutData(infodata, precip_fact=SFWFScalingFactor)
       end if
 
       ! Reset I/O logs
@@ -1440,6 +1537,12 @@ contains
     ! deallocate moab fields array
      deallocate (o2x_om)
 #endif
+    ! deallocate saved frazil ice mass array
+    if (allocated(saved_accumulatedFrazilIceMass)) then
+       deallocate(saved_accumulatedFrazilIceMass)
+       saved_frazil_initialized = .false.
+       saved_frazil_allocated_size = 0
+    end if
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
@@ -1980,7 +2083,11 @@ contains
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
                                      MacroMoleculesSeaIceCoupling,      &
-                                     CFCAuxiliary
+                                     CFCAuxiliary, &
+                                     conservationCheckEnergyAMPool, &
+                                     conservationCheckMassAMPool, &
+                                     conservationCheckSaltAMPool, &
+                                     conservationCheckCarbonAMPool
 
    integer, pointer :: nCellsSolve
 
@@ -2092,6 +2199,9 @@ contains
 
    real (kind=RKIND) :: riverFactor
 
+   ! freshwater balance adjustment 
+   logical, pointer :: config_use_precip_scaling
+
 !-----------------------------------------------------------------------
 !
 !  zero out padded cells
@@ -2122,6 +2232,14 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_river_runoff', config_remove_ais_river_runoff)
    call mpas_pool_get_config(domain % configs, 'config_remove_ais_ice_runoff', config_remove_ais_ice_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
+
+   precFactor = 1.0_RKIND  ! Default to no scaling
+   !configuration for freshwater balance constrains
+   call mpas_pool_get_config(domain % configs, 'config_use_precip_scaling', config_use_precip_scaling)
+   if (config_use_precip_scaling) then
+      !extract scaling factors 
+      call seq_infodata_GetData(infodata, precip_fact=precFactor)
+   end if
 
    n = 0
    removedRiverRunoffFluxThisProc = 0.0_RKIND
@@ -2379,7 +2497,7 @@ contains
         end if
 
         if ( rainFluxField % isActive ) then
-           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
+           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n) * precFactor
         end if
         if ( atmosphericPressureField % isActive ) then
            atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pslv,   n)
@@ -2948,6 +3066,7 @@ contains
 
    logical :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
 
+   integer :: total_cells_needed
 
    ! get configure options
    call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
@@ -2968,6 +3087,28 @@ contains
 
    ! Determine if ocn to glc thermal forcing coupling is on
    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
+
+   ! This code needed to support MOAB coupler and its export call.
+   ! will be removed when couplers are separated.
+   ! First pass: calculate total cells needed for saved_accumulatedFrazilIceMass allocation
+   total_cells_needed = 0
+   block_ptr => domain % blocklist
+   do while(associated(block_ptr))
+     call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+     call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+     total_cells_needed = total_cells_needed + nCellsSolve
+     block_ptr => block_ptr % next
+   end do
+
+   ! Allocate saved_accumulatedFrazilIceMass if needed
+   if (frazilIceActive .and. total_cells_needed > 0) then
+      if (.not. allocated(saved_accumulatedFrazilIceMass) .or. saved_frazil_allocated_size < total_cells_needed) then
+         if (allocated(saved_accumulatedFrazilIceMass)) deallocate(saved_accumulatedFrazilIceMass)
+         allocate(saved_accumulatedFrazilIceMass(total_cells_needed))
+         saved_frazil_allocated_size = total_cells_needed
+         saved_frazil_initialized = .true.
+      end if
+   end if
 
    n = 0
    block_ptr => domain % blocklist
@@ -3085,6 +3226,11 @@ contains
        endif
 
        if ( frazilIceActive ) then
+          ! Save accumulatedFrazilIceMass value before it is used and reset
+          if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
+             saved_accumulatedFrazilIceMass(n) = accumulatedFrazilIceMass(i)
+          end if
+
           ! negative when frazil ice can be melted
           keepFrazil = .true.
           if ( associated(landIceMask) ) then
@@ -3955,7 +4101,7 @@ contains
            icebergHeatFlux(i) = x2o_om(n, index_x2o_Fioi_bergh)
         end if
         if ( snowFluxField % isActive ) then
-           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow)
+           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow) * precFactor
         end if
         if ( seaIceFreshWaterFluxField % isActive ) then
            seaIceFreshWaterFlux(i) = x2o_om(n, index_x2o_Fioi_meltw)
@@ -4656,7 +4802,7 @@ contains
 !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
 !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
 
-! replace 'o2x_o % rAttr(' with 'o2x_om(n, ' and ', n)' with ')' 
+! replace 'o2x_o % rAttr(' with 'o2x_om(n, ' and ', n)' with ')'
      do i = 1, nCellsSolve
        n = n + 1
 
@@ -4685,6 +4831,7 @@ contains
        endif
 
        if ( frazilIceActive ) then
+          ! Use saved accumulatedFrazilIceMass values instead of current (already reset) values
           ! negative when frazil ice can be melted
           keepFrazil = .true.
           if ( associated(landIceMask) ) then
@@ -4696,9 +4843,10 @@ contains
           if ( keepFrazil ) then
 
              ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
-             if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
+             if ( saved_frazil_initialized .and. n <= saved_frazil_allocated_size .and. &
+                  saved_accumulatedFrazilIceMass(n) > 0.0_RKIND ) then
 
-              seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion
+              seaIceEnergy(i) = saved_accumulatedFrazilIceMass(n) * config_frazil_heat_of_fusion
 
              ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
              ! top layer of the ocean
@@ -4713,23 +4861,33 @@ contains
              end if
 
              o2x_om(n, index_o2x_Fioo_q)  = seaIceEnergy(i) / ocn_cpl_dt
-             o2x_om(n, index_o2x_Fioo_frazil) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+             if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
+                o2x_om(n, index_o2x_Fioo_frazil) = saved_accumulatedFrazilIceMass(n) / ocn_cpl_dt
+             else
+                o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
+             end if
 
           else
 
              o2x_om(n, index_o2x_Fioo_q)  = 0.0_RKIND
              o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
-                o2x_om(n, index_o2x_Foxo_q_li) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
-                o2x_om(n, index_o2x_Foxo_frazil_li) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+                if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
+                   o2x_om(n, index_o2x_Foxo_q_li) = saved_accumulatedFrazilIceMass(n) * config_frazil_heat_of_fusion / ocn_cpl_dt
+                   o2x_om(n, index_o2x_Foxo_frazil_li) = saved_accumulatedFrazilIceMass(n) / ocn_cpl_dt
+                else
+                   o2x_om(n, index_o2x_Foxo_q_li) = 0.0_RKIND
+                   o2x_om(n, index_o2x_Foxo_frazil_li) = 0.0_RKIND
+                end if
              endif
 
           end if
 
           ! Reset SeaIce Energy and Accumulated Frazil Ice
-          seaIceEnergy(i) = 0.0_RKIND
-          accumulatedFrazilIceMass(i) = 0.0_RKIND
-          frazilSurfacePressure(i) = 0.0_RKIND
+          ! already done in export_mct
+          !seaIceEnergy(i) = 0.0_RKIND
+          !accumulatedFrazilIceMass(i) = 0.0_RKIND
+          !frazilSurfacePressure(i) = 0.0_RKIND
        end if
 
        ! BGC fields
@@ -4808,12 +4966,6 @@ contains
    !-----------------------------------------------------------------------
    !EOC
       call seq_timemgr_EClockGetData( EClock, stepno=cur_ocn_stepno )
-#ifdef MOABDEBUG
-      write(lnum,"(I0.2)")cur_ocn_stepno
-      outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
-#endif
 
 !-----------------------------------------------------------------------
 !EOC

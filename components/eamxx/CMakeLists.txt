@@ -237,9 +237,6 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." OFF)
 option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory usage." OFF)
 
-# Whether to disable warnings from tpls.
-set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
-
 # Dycore settings
 set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")
 if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
@@ -462,6 +459,8 @@ endif()
 #               Configure all tpls and subfolders                  #
 ####################################################################
 
+set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
+
 if (DEFINED ENV{SCREAM_FAKE_ONLY})
   # We don't really need to build ekat, but we do need to configure the test-launcher
 
@@ -486,8 +485,6 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
     set (TEST_LAUNCHER_ON_GPU False)
   endif()
 
-  set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
-
   if (EKAT_ENABLE_MPI)
     find_package(MPI REQUIRED COMPONENTS C)
 
@@ -511,16 +508,36 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
                  ${CMAKE_BINARY_DIR}/bin/test-launcher)
 
   if (EKAT_ENABLE_VALGRIND)
-    add_subdirectory(${EKAT_SOURCE_DIR}/valgrind_support
-                     ${CMAKE_BINARY_DIR}/externals/ekat/valgrind_support)
+    # We need to add the whole ekat, since ekat::CatchMain depends on ekat::Core
+    # But don't worry, by default, all ekat's optional packages are DISABLED
+    add_subdirectory(${EKAT_SOURCE_DIR}
+                     ${CMAKE_BINARY_DIR}/externals/ekat)
   endif()
 
 else()
-  include(EkatBuildEkat)
-  BuildEkat(PREFIX "SCREAM"
-    ENABLE_TESTS OFF
-    ENABLE_FPE   ON
-    ENABLE_FPE_DEFAULT_MASK OFF)
+  # Enable all EKAT packages
+  set(EKAT_ENABLE_ALL_PACKAGES ON)
+  set(EKAT_DISABLE_TPL_WARNINGS ON)
+
+  # Disable tests by default (user can override via -D EKAT_ENABLE_TESTS=ON)
+  set (EKAT_ENABLE_TESTS OFF)
+
+  # Ensure testing options are consistent with EAMxx settings (threads, ranks, packs, etc)
+  set (EKAT_TEST_MAX_THREADS ${SCREAM_TEST_MAX_THREADS} CACHE STRING "Max number of threads for tests")
+  set (EKAT_TEST_THREAD_INC ${SCREAM_TEST_THREAD_INC} CACHE STRING "Thread count increment for threaded tests")
+  set (EKAT_TEST_MAX_RANKS ${SCREAM_TEST_MAX_RANKS} CACHE STRING "Max number of ranks for tests")
+  set (EKAT_TEST_PACK_SIZE ${SCREAM_PACK_SIZE} CACHE STRING
+    " The number of scalars in a pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
+
+  if (SCREAM_DOUBLE_PRECISION)
+    set (EKAT_TEST_SINGLE_PRECISION OFF)
+    set (EKAT_TEST_DOUBLE_PRECISION ON)
+  else()
+    set (EKAT_TEST_SINGLE_PRECISION ON)
+    set (EKAT_TEST_DOUBLE_PRECISION OFF)
+  endif()
+
+  add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
 # Set compiler-specific flags
@@ -574,11 +591,9 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
                  ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
                  F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
 
-  # Generate eamxx_config.h and eamxx_config.f
-  include (EkatUtils)
-  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_config.h.in
-                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.h
-                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_config.f)
+  # Generate eamxx_version.h
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/eamxx_version.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/eamxx_version.h)
 else()
   # This is a "fake" build of scream, to stress test the testing scripts.
   # We only need to build something in our tests folder

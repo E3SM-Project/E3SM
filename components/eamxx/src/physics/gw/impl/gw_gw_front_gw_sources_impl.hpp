@@ -18,7 +18,6 @@ void Functions<S,D>::gw_front_gw_sources(
 const Int& pver,
 const Int& pgwv,
 const Int& ncol,
-const Int& ngwv,
 const Int& kbot,
 const uview_1d<const Spack>& frontgf,
 // Outputs

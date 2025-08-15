@@ -4,7 +4,7 @@
 #include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
-#include <ekat/ekat_parse_yaml_file.hpp>
+#include <ekat_yaml.hpp>
 
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
@@ -27,7 +27,7 @@ TEST_CASE("ml_correction-stand-alone", "") {
   const auto  nsteps = ts.get<int>("number_of_steps");
   const auto  t0_str = ts.get<std::string>("run_t0");
   const auto  t0     = util::str_to_time_stamp(t0_str);
-  const auto  ml     = ad_params.sublist("atmosphere_processes").sublist("MLCorrection");
+  const auto  ml     = ad_params.sublist("eamxx").sublist("MLCorrection");
   const auto  ML_model_tq_path = ml.get<std::string>("ml_model_path_tq");
   const auto  ML_model_uv_path = ml.get<std::string>("ml_model_path_uv");
 
