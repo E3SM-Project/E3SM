@@ -562,33 +562,166 @@ contains
               write(logunit,*) subname,' error in registering ATM-ROF mesh intersection context'
               call shr_sys_abort(subname//' ERROR in registering ATM-ROF mesh intersection context')
             endif
+            tagname = trim(seq_flds_a2x_fields_to_rof)//':norm8wt'//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields_to_rof on ROF cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields_to_rof on ROF cpl')
+            endif
+            ! now take care of the mapper
+            if ( mapper_Fa2r%src_mbid .gt. -1 ) then
+               if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Fa2r%mbname) &
+                           //' mapper_Fa2r'
+               endif
+            endif
+            mapper_Fa2r%src_mbid = mbaxid
+            mapper_Fa2r%tgt_mbid = mbrxid
+            mapper_Fa2r%intx_mbid = mbintxar
+            mapper_Fa2r%src_context = atm(1)%cplcompid
+            mapper_Fa2r%intx_context = idintx
+            mapper_Fa2r%weight_identifier = wgtIdFa2r
+            mapper_Fa2r%mbname = 'mapper_Fa2r'
+            ! because we will project fields from atm to rof grid, we need to define
+            ! rof a2x fields to rof grid on coupler side
+
+            
 
             ! if we are not loading maps from disk, compute the intersection mesh between
             ! ATM and ROF meshes
-            if (compute_maps_online_a2r) then
-               ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mbrxid, mbintxar )
+            if (samegrid_ar) then
+               type1 = 3
+               type2 = 3
+               ierr = iMOAB_ComputeCommGraph( mbaxid, mbrxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          atm(1)%cplcompid, rof(1)%cplcompid)
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing ATM-ROF mesh intersection'
-                  call shr_sys_abort(subname//' ERROR in computing ATM-ROF mesh intersection')
+                  write(logunit,*) subname,' error in computing ATM-ROF comm graph'
+                  call shr_sys_abort(subname//' ERROR in computing ATM-ROF comm graph')
                endif
-               if (iamroot_CPLID) then
-                  write(logunit,*) 'iMOAB mesh intersection between ATM and ROF with id:', idintx
-               end if
-#ifdef MOABDEBUG
-               wopts = C_NULL_CHAR
-               call shr_mpi_commrank( mpicom_CPLID, rank )
-               if (rank .lt. 3) then
-                  write(lnum,"(I0.2)")rank !
-                  outfile = 'intx_ar_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-                  ierr = iMOAB_WriteMesh(mbintxar, outfile, wopts) ! write local intx file
+               mapper_Fa2r%intx_context = rof(1)%cplcompid
+            else
+               if (compute_maps_online_a2r) then
+                  ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mbrxid, mbintxar )
                   if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in writing ATM-ROF intersection mesh file '
-                     call shr_sys_abort(subname//' ERROR in writing ATM-ROF intersection mesh file ')
+                     write(logunit,*) subname,' error in computing ATM-ROF mesh intersection'
+                     call shr_sys_abort(subname//' ERROR in computing ATM-ROF mesh intersection')
                   endif
-               endif
+                  if (iamroot_CPLID) then
+                     write(logunit,*) 'iMOAB mesh intersection between ATM and ROF with id:', idintx
+                  end if
+#ifdef MOABDEBUG
+                  wopts = C_NULL_CHAR
+                  call shr_mpi_commrank( mpicom_CPLID, rank )
+                  if (rank .lt. 3) then
+                     write(lnum,"(I0.2)")rank !
+                     outfile = 'intx_ar_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                     ierr = iMOAB_WriteMesh(mbintxar, outfile, wopts) ! write local intx file
+                     if (ierr .ne. 0) then
+                        write(logunit,*) subname,' error in writing ATM-ROF intersection mesh file '
+                        call shr_sys_abort(subname//' ERROR in writing ATM-ROF intersection mesh file ')
+                     endif
+                  endif
 #endif
-               ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
-               ! atm for the intersection of ATM-ROF context (coverage)
+                  volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
+                  if (atm_pg_active) then
+                     dm1 = "fv"//C_NULL_CHAR
+                     dofnameS="GLOBAL_ID"//C_NULL_CHAR
+                     orderS = 1 !  fv-fv
+                  else ! this part does not work, anyway
+                     dm1 = "cgll"//C_NULL_CHAR
+                     dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
+                     orderS = 4 ! np !  it should be 4
+                  endif
+                  dm2 = "fv"//C_NULL_CHAR
+                  dofnameT="GLOBAL_ID"//C_NULL_CHAR
+                  orderT = 1  !  not much arguing
+                  fNoBubble = 1
+                  monotonicity = 0 !
+                  noConserve = 0
+                  validate = 0 ! less verbose
+                  fInverseDistanceMap = 0
+                  if (iamroot_CPLID) then
+                     write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxar=', mbintxar, ' wgtIdef=', wgtIdFa2r, &
+                        'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                   noConserve, validate, &
+                                                   trim(dofnameS), trim(dofnameT)
+                  endif
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxar, wgtIdFa2r, &
+                                                   trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
+                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                   noConserve, validate, &
+                                                   trim(dofnameS), trim(dofnameT) )
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in computing ATM-ROF weights '
+                     call shr_sys_abort(subname//' ERROR in computing ATM-ROF weights ')
+                  endif
+
+               else
+                  type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
+                  arearead = 0 ! no need for areas
+                  call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
+                        'seq_maps.rc', 'atm2rof_fmapname:', 'atm2rof_fmaptype:',samegrid_ar, &
+                        arearead, wgtIdFa2r, 'mapper_Fa2r MOAB initialization', esmf_map_flag)
+               end if
+            endif ! samegrid_ar
+          endif ! if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0))
+! endif HAVE_MOAB
+#endif
+
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sa2r'
+          end if
+          call seq_map_init_rcfile(mapper_Sa2r, atm(1), rof(1), &
+               'seq_maps.rc','atm2rof_smapname:','atm2rof_smaptype:',samegrid_ar, &
+               string='mapper_Sa2r initialization', esmf_map=esmf_map_flag, no_match=no_match )
+#ifdef HAVE_MOAB
+          if ((mbaxid .ge. 0) .and.  (mbrxid .ge. 0) ) then
+            ! now take care of the mapper, use the same one as before
+            if (iamroot_CPLID) then
+               write(logunit,*) ' '
+               write(logunit,F00) 'Initializing MOAB mapper_Sa2r'
+            end if
+            if ( mapper_Sa2r%src_mbid .gt. -1 ) then
+                if (iamroot_CPLID) then
+                     write(logunit,F00) 'overwriting '//trim(mapper_Sa2r%mbname) &
+                             //' mapper_Sa2r'
+                endif
+            endif
+            mapper_Sa2r%src_mbid = mbaxid
+            mapper_Sa2r%tgt_mbid = mbrxid
+            mapper_Sa2r%intx_mbid = mbintxar
+            mapper_Sa2r%src_context = atm(1)%cplcompid
+            mapper_Sa2r%intx_context = idintx
+            mapper_Sa2r%weight_identifier = wgtIdSa2r
+            mapper_Sa2r%mbname = 'mapper_Sa2r'
+
+            if (samegrid_ar) then
+               ! graph was already computed earlier 
+               mapper_Sa2r%intx_context = rof(1)%cplcompid
+            else
+               ! If loading map from disk, then load the scalar map as well
+               if (.not. compute_maps_online_a2r) then
+                  type1 = 3 ! this is type of grid
+                  arearead = 0 ! no need for areas
+                  call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
+                        'seq_maps.rc', 'atm2rof_smapname:', 'atm2rof_smaptype:', samegrid_ar, &
+                        arearead, wgtIdSa2r, 'mapper_Sa2r MOAB initialization', esmf_map_flag )
+
+                  ! this creates a par comm graph between mblxid and mbintxlr, with ids lnd(1)%cplcompid
+                  ierr = iMOAB_MigrateMapMesh (mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, &
+                        mpigrp_CPLID, type1, atm(1)%cplcompid, idintx)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in migrating ATM mesh based on ATM-ROF map'
+                     call shr_sys_abort(subname//' ERROR in migrating ATM mesh based on ATM-ROF map')
+                  endif
+               end if
+               
+                              ! we also need to compute the comm graph for the second hop, from the atm on coupler to the
+                     ! atm for the intersection of ATM-ROF context (coverage)
                call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)
                if (atm_pg_active) then
                   type1 = 3; !  FV for both rof and atm; FV-CGLL does not work anyway
@@ -725,7 +858,7 @@ contains
 
        call shr_sys_flush(logunit)
 
-    end if
+    end if  ! rof_present .and. atm_present
 
     if (rof_present .and. ocn_present) then
 

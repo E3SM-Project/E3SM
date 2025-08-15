@@ -281,19 +281,15 @@ contains
 
             ! Since we are projecting fields from OCN to ATM-PHY grid, we need to define
             ! OCN o2x fields to ATM-PHY grid (or ATM-DYN (spectral) ) on coupler side
-            if (atm_pg_active) then
-               tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
-               tagtype = 1 ! dense
-               numco = 1 !
-               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
-                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
-               endif
-            else ! spectral case, fix later TODO
-               !numco = np*np !
-               numco = 16
-            endif !
+            tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 !
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
+            endif
+           
 
             if (.not. samegrid_ao) then ! most cases
 
@@ -541,17 +537,13 @@ contains
 
 ! because we will project fields from ocean to atm phys grid, we need to define
       ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
-      if (atm_pg_active) then
-         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-         tagtype = 1 ! dense
-         numco = 1 !
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
-            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
-         endif
-      else ! spectral case, TODO
-         tagtype = 1 ! dense
+      tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+      tagtype = 1 ! dense
+      numco = 1 !
+      ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
+         call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
       endif
 
       if (ice_c2_atm) then
@@ -707,80 +699,76 @@ contains
 
          ! now take care of the mapper for MOAB.  Need to always do if ice_present
          if (iamroot_CPLID) then
-              write(logunit,*) ' '
-              write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing MOAB mapper_Fi2a'
+         endif
+
+         if (.not. compute_maps_online_i2a  .and.  .not. samegrid_ao ) then
+         !!!!!!!!!!!!!!!!!!!!!!!
+         !  read  Fi2a map
+         !!!!!!!!!!!!!!!!!!!!!!!
+            type1 = 3 ! this is type of grid
+            arearead = 0 ! no need for areas
+            call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
+                  'seq_maps.rc', 'ice2atm_fmapname:', 'ice2atm_fmaptype:', samegrid_ao, &
+                  arearead, wgtIdFi2a, 'mapper_Fi2a MOAB init', esmf_map_flag )
+
+            ! need to call migrate map mesh, which will compute the right covering mesh
+            context_id = idintx ! intx id
+            ierr = iMOAB_MigrateMapMesh( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
+                                       mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
+               call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
             endif
 
-            if (.not. compute_maps_online_i2a  .and.  .not. samegrid_ao ) then
-            !!!!!!!!!!!!!!!!!!!!!!!
-            !  read  Fi2a map
-            !!!!!!!!!!!!!!!!!!!!!!!
-               type1 = 3 ! this is type of grid
-               arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
-                     'seq_maps.rc', 'ice2atm_fmapname:', 'ice2atm_fmaptype:', samegrid_ao, &
-                     arearead, wgtIdFi2a, 'mapper_Fi2a MOAB init', esmf_map_flag )
-
-               ! need to call migrate map mesh, which will compute the right covering mesh
-               context_id = idintx ! intx id
-               ierr = iMOAB_MigrateMapMesh( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, &
-                                          mpigrp_CPLID, type1, ice(1)%cplcompid, context_id)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in migrating ocn mesh for map ocn c2 atm '
-                  call shr_sys_abort(subname//' ERROR in migrating ocn mesh for map ocn c2 atm  ')
-               endif
-
-               ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
-               ! seaice for the intx seaice-atm context (coverage)
-               type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
-               type2 = 3;
-               ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          ice(1)%cplcompid, idintx)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
-               endif
-            !!!!!!!!!!!!!!!!!!!!!!!
-            !  compute  Fi2a map
-            !!!!!!!!!!!!!!!!!!!!!!!
-            else
-               wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
-            end if
-
-            mapper_Fi2a%src_mbid = mbixid
-            mapper_Fi2a%tgt_mbid = mbaxid
-            mapper_Fi2a%intx_mbid = mbintxia
-            mapper_Fi2a%src_context = ice(1)%cplcompid
-            mapper_Fi2a%intx_context = idintx
-            mapper_Fi2a%weight_identifier = wgtIdFi2a
-            mapper_Fi2a%mbname = 'mapper_Fi2a'
-            if ( samegrid_ao ) then ! this case can appear in cice case
-               type1 = 3; !  fv for ice and atm;
-               type2 = 3;
-               ierr = iMOAB_ComputeCommGraph( mbixid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                          ice(1)%cplcompid, atm(1)%cplcompid )
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing comm graph for ice-atm'
-                  call shr_sys_abort(subname//' ERROR in computing comm graph for ice-atm')
-               endif
-               mapper_Fi2a%intx_context = atm(1)%cplcompid
+            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+            ! seaice for the intx seaice-atm context (coverage)
+            type1 = 3; !  fv for ice and atm; fv-cgll does not work anyway
+            type2 = 3;
+            ierr = iMOAB_ComputeCommGraph( mbixid, mbintxia, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                       ice(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
             endif
+         !!!!!!!!!!!!!!!!!!!!!!!
+         !  compute  Fi2a map
+         !!!!!!!!!!!!!!!!!!!!!!!
+         else
+            wgtIdFi2a = wgtIdSi2a ! we use the same weights as for Si2a
+         end if
+
+         mapper_Fi2a%src_mbid = mbixid
+         mapper_Fi2a%tgt_mbid = mbaxid
+         mapper_Fi2a%intx_mbid = mbintxia
+         mapper_Fi2a%src_context = ice(1)%cplcompid
+         mapper_Fi2a%intx_context = idintx
+         mapper_Fi2a%weight_identifier = wgtIdFi2a
+         mapper_Fi2a%mbname = 'mapper_Fi2a'
+         if ( samegrid_ao ) then ! this case can appear in cice case
+            type1 = 3; !  fv for ice and atm;
+            type2 = 3;
+            ierr = iMOAB_ComputeCommGraph( mbixid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                       ice(1)%cplcompid, atm(1)%cplcompid )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for ice-atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for ice-atm')
+            endif
+            mapper_Fi2a%intx_context = atm(1)%cplcompid
+         endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
 
       if (mbaxid > 0) then
           ! we still need to define seq_flds_l2x_fields on atm cpl mesh
-         if (atm_pg_active) then
-            tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
-            tagtype = 1 ! dense
-            numco = 1 !
-            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
-               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
-            endif
-         else ! spectral case, TODO
-            tagtype = 1 ! dense
+         tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 !
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_l2x_fields'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_l2x_fields')
          endif
       endif
 
