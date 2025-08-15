@@ -9,10 +9,14 @@ This class inherits from SystemTestsCommon.
 import os
 import glob
 import json
+import site
 import shutil
+import subprocess
+import sys
 import logging
 
 from shutil import copytree
+from importlib import import_module
 
 import CIME.test_status
 import CIME.utils
@@ -21,13 +25,195 @@ from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.XML.machines import Machines
 
+# TODO: all the ensure_pip is a HACK
+# TODO: not sure if eamxx codebase will play nicely with conda env on gpu machines
+# TODO: the whole thing is a bit convoluted and whackily designed
+# TODO: so just do more whacky stuff here to get around the mess
+# HACK: BEGIN
+def run_cmd(cmd, input_str=None, from_dir=None, verbose=None, dry_run=False,
+            arg_stdout=subprocess.PIPE, arg_stderr=subprocess.PIPE, env=None, combine_output=False):
+###############################################################################
+    """
+    Wrapper around subprocess to make it much more convenient to run shell commands
+
+    >>> run_cmd('ls file_i_hope_doesnt_exist')[0] != 0
+    True
+    """
+    arg_stderr = subprocess.STDOUT if combine_output else arg_stderr
+    from_dir = str(from_dir) if from_dir else from_dir
+
+    if verbose:
+        print("RUN: {}\nFROM: {}".format(cmd, os.getcwd() if from_dir is None else from_dir))
+
+    if dry_run:
+        return 0, "", ""
+
+    if input_str is not None:
+        stdin = subprocess.PIPE
+        input_str = input_str.encode('utf-8')
+    else:
+        stdin = None
+
+    proc = subprocess.Popen(cmd,
+                            shell=True,
+                            stdout=arg_stdout,
+                            stderr=arg_stderr,
+                            stdin=stdin,
+                            cwd=from_dir,
+                            env=env)
+
+    output, errput = proc.communicate(input_str)
+    if output is not None:
+        try:
+            output = output.decode('utf-8', errors='ignore')
+            output = output.strip()
+        except AttributeError:
+            pass
+    if errput is not None:
+        try:
+            errput = errput.decode('utf-8', errors='ignore')
+            errput = errput.strip()
+        except AttributeError:
+            pass
+
+    stat = proc.wait()
+
+    return stat, output, errput
+
+###############################################################################
+def ensure_pip():
+###############################################################################
+    """
+    Ensures that pip is available. Notice that we cannot use the _ensure_pylib_impl
+    function below, since it would cause circular dependencies. This one has to
+    be done by hand.
+    """
+    try:
+        import pip # pylint: disable=unused-import
+
+    except ModuleNotFoundError:
+        # Use ensurepip for installing pip
+        import ensurepip
+        ensurepip.bootstrap(user=True)
+
+        # needed to "rehash" available libs
+        site.main() # pylint: disable=no-member
+
+        import pip # pylint: disable=unused-import
+
+###############################################################################
+def pip_install_lib(pip_libname):
+###############################################################################
+    """
+    Ask pip to install a version of a package which is >= min_version
+    """
+    # Installs will use pip, so we need to ensure it is available
+    ensure_pip()
+
+    # Note: --trusted-host may not work for ancient versions of python
+    #       --upgrade makes sure we get the latest version, even if one is already installed
+    stat, _, err = run_cmd("{} -m pip install --upgrade {} --trusted-host files.pythonhosted.org --user".format(sys.executable, pip_libname))
+    expect(stat == 0, "Failed to install {}, cannot continue:\n{}".format(pip_libname, err))
+
+    # needed to "rehash" available libs
+    site.main() # pylint: disable=no-member
+
+###############################################################################
+def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
+###############################################################################
+    """
+    Similar to assert except doesn't generate an ugly stacktrace. Useful for
+    checking user error, not programming error.
+
+    >>> expect(True, "error1")
+    >>> expect(False, "error2")
+    Traceback (most recent call last):
+        ...
+    SystemExit: ERROR: error2
+    """
+    if not condition:
+        msg = error_prefix + " " + error_msg
+        raise exc_type(msg)
+
+###############################################################################
+def package_version_ok(pkg, min_version=None):
+###############################################################################
+    """
+    Checks that the loaded package's version is >= that the minimum required one.
+    If no minimum version is passed, then return True
+    """
+    if min_version is not None:
+        try:
+            from pkg_resources import parse_version
+
+            return parse_version(pkg.__version__) >= parse_version(min_version)
+        except ImportError:
+            # Newer versions of python cannot use pkg_resources
+            _ensure_pylib_impl("packaging")
+            from packaging.version import parse
+
+            return parse(pkg.__version__) >= parse(min_version)
+
+    else:
+        return True
+
+
+###############################################################################
+def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
+###############################################################################
+    """
+    Internal method, clients should not call this directly; please use of the
+    public ensure_XXX methods. If one does not exist, we will need to evaluate
+    if we want to add a new outside dependency.
+    """
+
+    install = False
+    try:
+        pkg = import_module(libname)
+
+        if not package_version_ok(pkg,min_version):
+            print("Detected version for package {} is too old: detected {}, required >= {}. Will attempt to upgrade the package locally".format(libname, pkg.__version__,min_version))
+            install = True
+
+    except ImportError:
+        print("Detected missing package {}. Will attempt to install locally".format(libname))
+        pip_libname = pip_libname if pip_libname else libname
+
+        install = True
+
+    if install:
+        pip_install_lib(pip_libname)
+        pkg = import_module(libname)
+
+    expect(package_version_ok(pkg,min_version),
+           "Error! Could not find version {} for package {}.".format(min_version,libname))
+
+
+_ensure_pylib_impl("packaging")
+_ensure_pylib_impl("setuptools")
+_ensure_pylib_impl("six")
+_ensure_pylib_impl("numpy")
+_ensure_pylib_impl("scipy")
+_ensure_pylib_impl("pandas", min_version="2.1.0") # note: needs py 3.9+
+_ensure_pylib_impl("livvkit", min_version="3.0.1")
+_ensure_pylib_impl("netCDF4")
+_ensure_pylib_impl("matplotlib")
+_ensure_pylib_impl("pybtex", min_version="0.24.0")
+_ensure_pylib_impl("statsmodels", min_version="0.14.0")
+
+_ensure_pylib_impl("evv4esm")
+
+# HACK: END
 
 import evv4esm  # pylint: disable=import-error
 from evv4esm.__main__ import main as evv  # pylint: disable=import-error
 
 evv_lib_dir = os.path.abspath(os.path.dirname(evv4esm.__file__))
 logger = logging.getLogger(__name__)
-NINST = 2
+# TODO: adjust this as we tune things
+# TODO: let's start with 3 for now, this will be the number of instances
+# TODO: note that PE layout X (say in _PX) will be multiplied by this number
+NINST = 3
 
 
 def duplicate_yaml_files(yaml_file, num_copies):
