@@ -92,16 +92,13 @@ def buildlib(bldroot, installpath, case):
     # (generated from cmake_macros), but we want to otherwise
     # let kokkos control flags
     macro_vals = extract_from_macros(case, "kokkos", extra_vars=("KOKKOS_OPTIONS",))
-    cxx, kokkos_options_raw = macro_vals[2], macro_vals[-1]
+    cxx, kokkos_options_raw = macro_vals[5], macro_vals[-1]
 
     kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
 
     # We will take care of setting CMAKE_CXX_COMPILER unless user has explictly
     # set one in their KOKKOS_OPTIONS.
     if "DCMAKE_CXX_COMPILER" not in kokkos_options:
-        if "Kokkos_ENABLE_CUDA" in kokkos_options:
-            cxx = os.path.join(kokkos_dir, "bin/nvcc_wrapper")
-
         if "/" in cxx:
             cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx)
         else:
