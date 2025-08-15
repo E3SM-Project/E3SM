@@ -58,8 +58,7 @@ def main ():
 
     dtype=torch.float32
 
-    batch_size = 1
-    col = torch.ones((batch_size,nlevs))
+    col = torch.ones((1,nlevs))
     #  col = TensorPlaceholder([-1, -1], dtype)
 
 

@@ -65,33 +65,6 @@ if (EAMXX_ENABLE_PYTHON)
     LABELS cld_fraction physics
     FIXTURES_SETUP cldfrac_pyml)
 
-  # # Find LAPIS executables
-  # find_program(LAPIS_OPT NAMES lapis-opt HINTS ${LAPIS_PATH} PATH_SUFFIXES bin)
-  # find_program(LAPIS_TRANSLATE NAMES lapis-translate HINTS ${LAPIS_PATH} PATH_SUFFIXES bin)
-  # if (LAPIS_OPT STREQUAL "NOTFOUND")
-  #   message (FATAL_ERROR "Could not find 'lapis-opt'. Please, provide a valid LAPIS_PATH")
-  # elseif (LAPIS_TRANSLATE STREQUAL "NOTFOUND")
-  #   message (FATAL_ERROR "Could not find 'lapis-translate'. Please, provide a valid LAPIS_PATH")
-  # endif()
-
-  # set (cldfrac_mlir ${CMAKE_CURRENT_SOURCE_DIR}/cldfrac.mlir})
-  # set (LAPIS_OPT_ARGS "lapis-opt --sparse-compiler-kokkos=parallelization-strategy=any-storage-any-loop")
-
-  # execute_process (
-  #   COMMAND ${LAPIS_OPT} ${LAPIS_OPT} ${cldfrac_mlir}
-  #   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-  #   RESULT_VARIABLE result
-  # )
-
-  # # Check if the script executed successfully
-  # if(NOT result EQUAL 0)
-  #   message(FATAL_ERROR "Failed to run '${LAPIS_OPT} ${LAPIS_OPT_ARGS} ${cldfrac_mlir}'")
-  # endif()
-
-  # Build LAPIS-generated cpp file
-  add_library(cldfrac_ml_lapis cldfrac_ml_lapis.cpp)
-  target_link_libraries (cldfrac_ml_lapis PUBLIC Kokkos)
-
   # Create test that runs lapis-generated emulator
   set (USE_LAPIS_EMULATOR true)
   unset (PY_MODULE_NAME)
@@ -103,7 +76,7 @@ if (EAMXX_ENABLE_PYTHON)
 
   CreateADUnitTest(cld_fraction_standalone_cppml
     EXE_ARGS "--args -ifile=input_cppml.yaml"
-    LIBS cld_fraction cldfrac_ml_lapis
+    LIBS cld_fraction
     LABELS cld_fraction physics
     FIXTURES_SETUP cldfrac_cpp)
 
