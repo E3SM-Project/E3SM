@@ -78,11 +78,9 @@ module component_type_mod
      type(mct_aVect) , pointer       :: c2x_cc      => null()
      real(r8)        , pointer       :: drv2mdl(:)  => null() ! area correction factors
      real(r8)        , pointer       :: mdl2drv(:)  => null() ! area correction factors
-#ifdef HAVE_MOAB
      integer                         :: mbApCCid ! moab app id on component side 
      integer                         :: mbGridType ! 0 for PC, 1 for cell (ocean, ice)  
      integer                         :: mblsize    ! size of local arrays
-#endif 
      !
      ! Union of coupler/component pes - used by exchange routines
      !
