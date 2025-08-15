@@ -829,6 +829,7 @@ contains
 
       ! Set MPAS Log module instance
       mpas_log_info => domain % logInfo
+      call mpas_log_write("")
       call mpas_log_write("=== Beginning glc_run_mct ===")
 
       err = 0
