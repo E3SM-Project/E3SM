@@ -508,8 +508,10 @@ if (DEFINED ENV{SCREAM_FAKE_ONLY})
                  ${CMAKE_BINARY_DIR}/bin/test-launcher)
 
   if (EKAT_ENABLE_VALGRIND)
-    add_subdirectory(${EKAT_SOURCE_DIR}/valgrind_support
-                     ${CMAKE_BINARY_DIR}/externals/ekat/valgrind_support)
+    # We need to add the whole ekat, since ekat::CatchMain depends on ekat::Core
+    # But don't worry, by default, all ekat's optional packages are DISABLED
+    add_subdirectory(${EKAT_SOURCE_DIR}
+                     ${CMAKE_BINARY_DIR}/externals/ekat)
   endif()
 
 else()
