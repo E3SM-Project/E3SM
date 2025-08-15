@@ -681,8 +681,9 @@ contains
                endif
               endif
             endif
-
-
+            if (samegrid_ao) then
+               mapper_Si2a%intx_context = atm(1)%cplcompid
+            endif
          endif ! if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
 
       endif ! if (ice_present) for mapper_Si2a
