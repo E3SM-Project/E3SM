@@ -137,17 +137,9 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
-#ifdef USE_OLD_VERTICAL_FILE_READ
-  mam_coupling::TracerTimeState elevated_emiss_time_state_[mam4::gas_chemistry::extcnt];
-  std::vector<std::shared_ptr<AtmosphereInput>> ElevatedEmissionsDataReader_;
-  std::vector<std::shared_ptr<AbstractRemapper>> ElevatedEmissionsHorizInterp_;
-  std::vector<mam_coupling::TracerData> elevated_emis_data_;
-  std::map<std::string, std::string> elevated_emis_file_name_;
-#else
   // data interpolation object for elevated emissions
   std::vector<std::shared_ptr<DataInterpolation>> data_interp_elevated_emissions_;
   void set_elevated_emissions_reader();
-#endif
   std::vector<std::string> extfrc_lst_;
 
   view_3d extfrc_;
