@@ -17,22 +17,34 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
   surf_evap: 0.0
   surf_sens_flux: 0.0
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
   hetfrz_immersion_nucleation_tend: 0.1
   hetfrz_contact_nucleation_tend: 0.1
   hetfrz_deposition_nucleation_tend: 0.1
-  pbl_height : 1.0
   phis : 1.0
+  pbl_height: 1.0
+  #These should come from the input file
+  dgnum: [1.246662106183775E-007, 4.081134799487888E-008, 1.103139143795796E-006, 1.000000011686097E-007]
+  dgnumwet: [2.367209731605067E-007, 6.780643470563889E-008, 3.028011448344027E-006, 1.000000096285154E-007]
+  wetdens: [1038.67760516297, 1046.20002003441, 1031.74623165457, 1086.79731859184]
+  nevapr: 0.0
+  precip_total_tend: 0.0
+  surf_radiative_T: 288.0
+  ps: 105000.0
+  horiz_winds: [-0.24988988196194634E+000, -0.23959782871450760E+000]
+  precip_liq_surf_mass: 0.1
+  precip_ice_surf_mass: 0.1
+  snow_depth_land: 0.01
+  fraction_landuse: 0.0
+  SW_flux_dn: 500.0
+  constituent_fluxes: 0.0
   z_mam4_int : 0.0
-
-eamxx:
+atmosphere_processes:
   atm_procs_list: [homme,physics]
   schedule_type: sequential
   homme:
     moisture: moist
   physics:
-    atm_procs_list: [mac_mic,mam4_optics,rrtmgp]
+    atm_procs_list: [mac_mic,mam4_optics,rrtmgp, mam4_aero_microphys]
     schedule_type: sequential
     type: group
     mac_mic:
@@ -82,6 +94,36 @@ eamxx:
       rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
       rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
       enable_column_conservation_checks: true
+
+    mam4_aero_microphys:
+      mam4_do_cond: true
+      mam4_do_newnuc: true
+      mam4_do_coag: true
+      mam4_do_rename: true
+      mam4_o3_tau: 172800.0
+      mam4_o3_sfc: 3.0E-008
+      mam4_o3_lbl: 4
+      mam4_psc_T : 193.0
+      mam4_linoz_ymd : 20100101
+      mam4_linoz_file_name : ${SCREAM_DATA_DIR}/mam4xx/linoz/ne2np4/linoz2010_2010JPL_CMIP6_10deg_58km_ne2np4_c20250815.nc
+      mam4_oxid_file_name : ${SCREAM_DATA_DIR}/mam4xx/invariants/ne2np4/oxid_1.9x2.5_L26_2015_ne2np4_c20250813.nc
+      mam4_oxid_ymd : 20150101
+      mam4_linoz_chlorine_file : ${SCREAM_DATA_DIR}/mam4xx/linoz/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc
+      mam4_chlorine_loading_ymd : 20100101
+      mam4_rsf_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc
+      mam4_xs_long_file : ${SCREAM_DATA_DIR}/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc
+      elevated_emiss_ymd : 20100101
+      mam4_so2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_so4_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_so4_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_pom_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_pom_a4_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_bc_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_bc_a4_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_num_a1_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a1_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_num_a2_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a2_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_num_a4_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_num_a4_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_soag_elevated_emiss_file_name : ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_soag_elev_ne2np4_2010_clim_c20250627.nc
+      mam4_season_wes_file : ${SCREAM_DATA_DIR}/mam4xx/drydep/season_wes.nc
+      create_fields_interval_checks: true
 
 grids_manager:
   type: homme
