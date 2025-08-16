@@ -109,31 +109,13 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // names of linoz field
   std::vector<std::string> var_names_linoz_;
 
-#ifdef USE_OLD_LINOZ_FILE_READ
-  // invariants members
-  mam_coupling::TracerTimeState trace_time_state_;
-  std::shared_ptr<AtmosphereInput> TracerDataReader_;
-  std::shared_ptr<AbstractRemapper> TracerHorizInterp_;
-  mam_coupling::TracerData tracer_data_;
-  std::string oxid_file_name_;
-  view_2d cnst_offline_[4];
-#else
   // data interpolation object for oxi invariants
   std::shared_ptr<DataInterpolation>    data_interp_oxid_;
   void set_oxid_reader();
   // data interpolation object for linoz fields
   std::shared_ptr<DataInterpolation>    data_interp_linoz_;
   void set_linoz_reader();
-#endif
   view_3d invariants_;
-  // linoz reader
-#ifdef USE_OLD_LINOZ_FILE_READ
-  mam_coupling::TracerTimeState linoz_time_state_;
-  std::shared_ptr<AtmosphereInput> LinozDataReader_;
-  std::shared_ptr<AbstractRemapper> LinozHorizInterp_;
-  mam_coupling::TracerData linoz_data_;
-  std::string linoz_file_name_;
-#endif
   // Vertical emission uses 9 files, here I am using std::vector to stote
   // instance of each file.
   std::map<std::string, std::vector<std::string>> elevated_emis_var_names_;
