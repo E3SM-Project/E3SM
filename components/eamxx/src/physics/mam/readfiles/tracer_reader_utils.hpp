@@ -8,7 +8,6 @@
 
 namespace scream::mam_coupling {
 
-using namespace ShortFieldTagsNames;
 // We have a similar version in MAM4xx.
 // This version was created because the data view cannot be modified
 // inside the parallel_for.
