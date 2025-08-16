@@ -469,12 +469,11 @@ void MAMMicrophysics::set_elevated_emissions_reader()
   const auto z_iface = get_field_out("z_mam4_int");
   const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
-  int elevated_emiss_cyclical_ymd = m_params.get<int>("elevated_emiss_ymd");
   for(const auto &pair : elevated_emis_var_names_) {
     const auto& var_name=pair.first;
     std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
     const auto file_name  = m_params.get<std::string>(item_name);
-    //util::TimeStamp ref_ts_vertical = mam_coupling::convert_date(elevated_emiss_cyclical_ymd);
+    // Beg of any year, since we use yearly periodic timeline
     util::TimeStamp ref_ts_vertical (1,1,1,0,0,0);
     std::vector<Field> vertical_fields;
     for(const auto &field_name :pair.second) {
@@ -624,12 +623,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
         chlorine_time_secs_);
   }
   init_temporary_views();
-  // FIXME : why are we only using nlev_ instead of ncol_xnlev?
   cmfdqr_ = view_1d("cmfdqr_", nlev_);
-  // Load the first month into extfrc_lst_end.
-  // Note: At the first time step, the data will be moved into extfrc_lst_beg,
-  //       and extfrc_lst_end will be reloaded from file with the new month.
-  const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
   set_oxid_reader();
   if (config_.linoz.compute) {
     set_linoz_reader();
