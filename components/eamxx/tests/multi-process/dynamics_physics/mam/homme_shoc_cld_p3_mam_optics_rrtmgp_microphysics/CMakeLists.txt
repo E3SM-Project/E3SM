@@ -79,8 +79,8 @@ set (TEST_INPUT_FILES
   scream/mam4xx/physprops/ocpho_rrtmg_c20240206.nc
   scream/mam4xx/physprops/bcpho_rrtmg_c20240206.nc
   scream/mam4xx/physprops/poly_rrtmg_c20240206.nc
-  scream/mam4xx/linoz/ne2np4/linoz1850-2015_2010JPL_CMIP6_10deg_58km_ne2np4_c20240724.nc
-  scream/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_1850-2015_c20240827.nc
+  scream/mam4xx/linoz/ne2np4/linoz2010_2010JPL_CMIP6_10deg_58km_ne2np4_c20250815.nc
+  scream/mam4xx/invariants/ne2np4/oxid_ne2np4_L26_2015_c20250813.nc
   scream/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so2_elev_ne2np4_2010_clim_c20250627.nc
   scream/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a1_elev_ne2np4_2010_clim_c20250627.nc
   scream/mam4xx/emissions/ne2np4/elevated/cmip6_mam4_so4_a2_elev_ne2np4_2010_clim_c20250627.nc
