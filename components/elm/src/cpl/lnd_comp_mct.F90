@@ -545,9 +545,6 @@ contains
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
     
 #ifdef HAVE_MOAB
-! calling MOAB's import last means this is what the model will use.
-    call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
-
 #ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
@@ -562,8 +559,10 @@ contains
       call seq_comm_compare_mb_mct(modelStr, mpicom_lnd_moab, x2l_l, mct_field,  mlnid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
-
 #endif
+! calling MOAB's import last means this is what the model will use.
+! also, call after comparisons are made, so we can see the eventual differences
+    call lnd_import_moab( EClock, bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 
     call t_stopf ('lc_lnd_import')

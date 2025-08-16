@@ -404,10 +404,11 @@ contains
     nsend = mct_avect_nRattr(i2x_i)
     totalmbls = mblsize * nsend ! size of the double array
     allocate (i2x_im(lsize, nsend) )
-
+    i2x_im = 0.
     nrecv = mct_avect_nRattr(x2i_i) ! number of fields retrived from MOAB tags, based on names from seq_flds_x2l_fields
     totalmblsimp = mblsize * nrecv ! size of the double array to fill with data from MOAB
     allocate (x2i_im(lsize, nrecv) )
+    x2i_im = 0.
     if (my_task == master_task) then
       write(nu_diag,*) SubName, ' mblsize= ',mblsize,' nsend, nrecv for moab:', nsend, nrecv
     end if
@@ -589,8 +590,6 @@ contains
     else
        call ice_import( x2i_i%rattr )
 #ifdef HAVE_MOAB
-       call ice_import_moab( x2i_im, EClock, totalmblsimp )
-
 #ifdef MOABCOMP
        ! loop over all fields in seq_flds_x2l_fields
        call mct_list_init(temp_list ,seq_flds_x2i_fields)
@@ -607,7 +606,10 @@ contains
        call mct_list_clean(temp_list)
    
 #endif
-#endif
+       call ice_import_moab( x2i_im, EClock, totalmblsimp )
+#endif 
+       
+
     endif
     call ice_timer_stop(timer_cplrecv)
     call t_stopf ('cice_run_import')

@@ -690,6 +690,14 @@ contains
 #endif
       !-----------------------------------------------------
   
+      ! retrieve data from moab tags
+      tagname=trim(seq_flds_x2i_fields)//C_NULL_CHAR
+      ent_type = 0 ! vertices 
+      ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblsimp , ent_type, x2i_im(1,1) )
+      if (ierr > 0 )  then
+         call shr_sys_abort( subname//' Error: fail to get seq_flds_x2i_fields for ice moab instance on component ') 
+      endif
+
       ! Note that the precipitation fluxes received  from the coupler
       ! are in units of kg/s/m^2 which is what CICE requires.
       ! Note also that the read in below includes only values needed
@@ -700,8 +708,7 @@ contains
       ! 34 ppt
   
       ! Use aflds to gather the halo updates of multiple fields
-      ! Need to separate the scalar from the vector halo updates
-  
+      ! Need to separate the scalar from the vector halo updates  
       allocate(aflds(nx_block,ny_block,nflds,nblocks))
       aflds = c0
   
@@ -988,12 +995,6 @@ contains
       endif
         
 #endif
-      tagname=trim(seq_flds_x2i_fields)//C_NULL_CHAR
-      ent_type = 0 ! vertices 
-      ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblsimp , ent_type, x2i_im(1,1) )
-      if (ierr > 0 )  then
-         call shr_sys_abort( subname//' Error: fail to get seq_flds_x2i_fields for ice moab instance on component ') 
-      endif
    end subroutine ice_import_moab
 #endif
 
