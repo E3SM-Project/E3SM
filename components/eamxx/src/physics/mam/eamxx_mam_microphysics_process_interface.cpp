@@ -259,60 +259,6 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   // NOTE: order matches mam4xx:
   // names of variables in oxid file.
   var_names_oxi_={"O3", "OH", "NO3", "HO2"};
-#ifdef USE_OLD_LINOZ_FILE_READ
-  if (config_.linoz.compute) {
-
-    std::cout << "Using former reader..." << "\n";
-    linoz_file_name_ = m_params.get<std::string>("mam4_linoz_file_name");
-    const std::string linoz_map_file =
-        m_params.get<std::string>("aero_microphys_remap_file", "");
-    // in format YYYYMMDD
-    const int linoz_cyclical_ymd = m_params.get<int>("mam4_linoz_ymd");
-    scream::mam_coupling::setup_tracer_data(linoz_data_, linoz_file_name_, linoz_cyclical_ymd);
-    LinozHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
-        grid_, linoz_file_name_, linoz_map_file, var_names_linoz_, linoz_data_);
-    LinozDataReader_ = scream::mam_coupling::create_tracer_data_reader(
-        LinozHorizInterp_, linoz_file_name_);
-
-    // linoz reader
-    const auto io_grid_linoz = LinozHorizInterp_->get_tgt_grid();
-    const int num_cols_io_linoz =
-        io_grid_linoz->get_num_local_dofs(); // Number of columns on this rank
-    const int num_levs_io_linoz =
-        io_grid_linoz
-            ->get_num_vertical_levels();  // Number of levels per column
-    const int nvars = int(var_names_linoz_.size());
-    linoz_data_.init(num_cols_io_linoz, num_levs_io_linoz, nvars);
-    linoz_data_.allocate_temporary_views();
-  }  // LINOZ reader
-  {
-    oxid_file_name_ = m_params.get<std::string>("mam4_oxid_file_name");
-    const std::string oxid_map_file =
-        m_params.get<std::string>("aero_microphys_remap_file", "");
-
-    // in format YYYYMMDD
-    const int oxid_ymd = m_params.get<int>("mam4_oxid_ymd");
-    scream::mam_coupling::setup_tracer_data(tracer_data_, oxid_file_name_, oxid_ymd);
-    TracerHorizInterp_ = scream::mam_coupling::create_horiz_remapper(
-        grid_, oxid_file_name_, oxid_map_file, var_names_oxi_, tracer_data_);
-    TracerDataReader_ = scream::mam_coupling::create_tracer_data_reader(
-        TracerHorizInterp_, oxid_file_name_);
-
-    const int nvars    = int(var_names_oxi_.size());
-    const auto io_grid = TracerHorizInterp_->get_tgt_grid();
-    const int num_cols_io =
-        io_grid->get_num_local_dofs();  // Number of columns on this rank
-    const int num_levs_io =
-        io_grid->get_num_vertical_levels();  // Number of levels per column
-    tracer_data_.init(num_cols_io, num_levs_io, nvars);
-    tracer_data_.allocate_temporary_views();
-
-    for (int ivar = 0; ivar < nvars; ++ivar) {
-      cnst_offline_[ivar] = view_2d("cnst_offline_", ncol_, nlev_);
-    }
-  } // oxid file reader
-
-#else
   if (config_.linoz.compute) {
     // The DataInterpolation class uses Field. We save these fields in FM.
     for(const auto &field_name : var_names_linoz_) {
@@ -322,7 +268,7 @@ MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manag
   for(const auto &field_name : var_names_oxi_) {
       add_field<Computed>(field_name, scalar3d_mid, nondim, grid_name);
   }
-#endif
+
   // list of species for elevated emissiones.
   extfrc_lst_ = {"so2",    "so4_a1", "so4_a2", "pom_a4", "bc_a4",
                    "num_a1", "num_a2", "num_a4", "soag"};
@@ -440,7 +386,6 @@ void MAMMicrophysics::init_temporary_views() {
                        std::to_string(workspace_provided) +
                        ") should be equal. \n");
 }
-#ifndef USE_OLD_LINOZ_FILE_READ
 // set DataInterpolation object for oxid reader.
 void MAMMicrophysics::set_oxid_reader()
 {
@@ -517,7 +462,6 @@ void MAMMicrophysics::set_linoz_reader(){
   data_interp_linoz_->create_vert_remapper (remap_data_linoz);
   data_interp_linoz_->init_data_interval (start_of_step_ts());
 }
-#endif
 
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_elevated_emissions_reader()
@@ -686,19 +630,10 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
   // Note: At the first time step, the data will be moved into extfrc_lst_beg,
   //       and extfrc_lst_end will be reloaded from file with the new month.
   const int curr_month = start_of_step_ts().get_month() - 1;  // 0-based
-#ifdef USE_OLD_LINOZ_FILE_READ
-  if (config_.linoz.compute) {
-    scream::mam_coupling::update_tracer_data_from_file(
-      LinozDataReader_, curr_month+linoz_data_.offset_time_index_, *LinozHorizInterp_, linoz_data_);
-  }
-  scream::mam_coupling::update_tracer_data_from_file(
-      TracerDataReader_, curr_month, *TracerHorizInterp_, tracer_data_);
-#else
   set_oxid_reader();
   if (config_.linoz.compute) {
     set_linoz_reader();
   }
-#endif
 
   {
     set_elevated_emissions_reader();
@@ -843,20 +778,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   // Cariolle parameter for PSC loss of ozone [1/s]
   view_2d linoz_cariolle_pscs;
 
-#ifdef USE_OLD_LINOZ_FILE_READ
-
-  linoz_o3_clim = buffer_.scratch[0];  // ozone (climatology) [vmr]
-  linoz_o3col_clim = buffer_.scratch[1];  // column o3 above box (climatology) [Dobson Units
-    //                          // (DU)]
-  linoz_t_clim = buffer_.scratch[2];  // temperature (climatology) [K]
-  linoz_PmL_clim = buffer_.scratch[3];  // P minus L (climatology) [vmr/s]
-  linoz_dPmL_dO3 = buffer_.scratch[4];  // sensitivity of P minus L to O3 [1/s]
-  linoz_dPmL_dT = buffer_.scratch[5];  // sensitivity of P minus L to T3 [K]
-  linoz_dPmL_dO3col = buffer_.scratch[6];  // sensitivity of P minus L to
-    //                                               // overhead O3 column [vmr/DU]
-  linoz_cariolle_pscs = buffer_.scratch[7];  // Cariolle parameter for PSC loss of ozone [1/s]
-
-#else
   data_interp_oxid_->run(end_of_step_ts());
 
   if (config_.linoz.compute) {
@@ -876,7 +797,6 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto oxid_NO3 = get_field_out("NO3").get_view<Real **>();
   const auto oxid_HO2 = get_field_out("HO2").get_view<Real **>();
 
-#endif
   // it's a bit wasteful to store this for all columns, but simpler from an
   // allocation perspective
   auto o3_col_dens = buffer_.scratch[8];
@@ -889,40 +809,6 @@ void MAMMicrophysics::run_impl(const double dt) {
       ts, chlorine_values_, chlorine_time_secs_);
     config_.linoz.chlorine_loading=chlorine_loading;
   }
-
-#ifdef USE_OLD_LINOZ_FILE_READ
-  const auto &cnst_offline = cnst_offline_;
-  // Update the TracerTimeState to reflect the current time
-  trace_time_state_.t_now = ts.frac_of_year_in_days();
-  scream::mam_coupling::advance_tracer_data(
-      TracerDataReader_,                 // in
-      *TracerHorizInterp_,               // out
-      ts,                                // in
-      trace_time_state_, tracer_data_,   // out
-      dry_atm_.p_mid, dry_atm_.z_iface,  // in
-      cnst_offline_);                    // out
-  Kokkos::fence();
-
-  if (config_.linoz.compute) {
-    view_2d linoz_output[8];
-    linoz_output[0] = linoz_o3_clim;
-    linoz_output[1] = linoz_o3col_clim;
-    linoz_output[2] = linoz_t_clim;
-    linoz_output[3] = linoz_PmL_clim;
-    linoz_output[4] = linoz_dPmL_dO3;
-    linoz_output[5] = linoz_dPmL_dT;
-    linoz_output[6] = linoz_dPmL_dO3col;
-    linoz_output[7] = linoz_cariolle_pscs;
-    scream::mam_coupling::advance_tracer_data(
-      LinozDataReader_,                  // in
-      *LinozHorizInterp_,                // out
-      ts,                                // in
-      linoz_time_state_, linoz_data_,    // out
-      dry_atm_.p_mid, dry_atm_.z_iface,  // in
-      linoz_output);                     // out
-    Kokkos::fence();
-  }
-#endif
 
   for (size_t i = 0; i < elevated_emis_var_names_.size(); ++i) {
     data_interp_elevated_emissions_[i]->run(end_of_step_ts());
@@ -1070,16 +956,11 @@ void MAMMicrophysics::run_impl(const double dt) {
         const auto extfrc_icol = ekat::subview(extfrc, icol);
 
         view_1d cnst_offline_icol[mam4::mo_setinv::num_tracer_cnst];
- #ifdef USE_OLD_LINOZ_FILE_READ
-        for(int i = 0; i < mam4::mo_setinv::num_tracer_cnst; ++i) {
-          cnst_offline_icol[i] = ekat::subview(cnst_offline[i], icol);
-        }
- #else
-       cnst_offline_icol[0] = ekat::subview(oxid_O3, icol);;
-       cnst_offline_icol[1] = ekat::subview(oxid_OH, icol);;
-       cnst_offline_icol[2] = ekat::subview(oxid_NO3, icol);;
-       cnst_offline_icol[3] = ekat::subview(oxid_HO2, icol);;
- #endif
+        cnst_offline_icol[0] = ekat::subview(oxid_O3, icol);;
+        cnst_offline_icol[1] = ekat::subview(oxid_OH, icol);;
+        cnst_offline_icol[2] = ekat::subview(oxid_NO3, icol);;
+        cnst_offline_icol[3] = ekat::subview(oxid_HO2, icol);;
+
         // calculate o3 column densities (first component of col_dens in Fortran
         // code)
         auto o3_col_dens_i = ekat::subview(o3_col_dens, icol);
