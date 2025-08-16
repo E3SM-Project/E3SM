@@ -304,17 +304,6 @@ contains
                     endif
                   endif
 #endif
-                 ! we also need to compute the comm graph for the second hop, from the rof on coupler to the
-                 ! rof for the intx rof-lnd context (coverage)
-
-                  type1 = 3 ! land is FV now on coupler side
-                  type2 = 3;
-                  ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                              rof(1)%cplcompid, idintx)
-                  if (ierr .ne. 0) then
-                    write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
-                    call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
-                  endif
               endif ! (compute_maps_online_r2l)
 
               ! now take care of the mapper
@@ -379,6 +368,17 @@ contains
                      call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 lnd')
                   endif
               endif ! compute or read mape
+              ! we also need to compute the comm graph for the second hop, from the rof on coupler to the
+                 ! rof for the intx rof-lnd context (coverage)
+
+              type1 = 3 ! land is FV now on coupler side
+              type2 = 3;
+              ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          rof(1)%cplcompid, idintx)
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
+                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
+              endif
 
             endif ! samegrid_lr or not
 
