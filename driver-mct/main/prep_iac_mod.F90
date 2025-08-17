@@ -181,9 +181,7 @@ contains
           write(logunit,*) ' '
           write(logunit,F00) 'Initializing mapper_Sa2z'
        end if
-
-       write(logunit, *) 'TRS prep_iac_mod esmf_map_flag', esmf_map_flag
-
+       
        call seq_map_init_rcfile(mapper_Sa2z, atm(1), iac(1), &
           'seq_maps.rc','atm2iac_smapname:','atm2iac_smaptype:',samegrid_az, &
            string='mapper_Sa2z initialization',esmf_map=esmf_map_flag)
