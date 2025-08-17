@@ -30,12 +30,6 @@ module elm_varsur
   ! ground on the same grid cell, on the vegetated landunit.
   real(r8), pointer :: wt_polygon(:,:,:) ! dims: clump, topounit, polygon type
 
-  ! for polygonal tundra special case of natural veg landunit, weight of polygon type
-  ! with respect to the natural vegetation landunit (NOT the grid cell). these do
-  ! not need to sum to 1 to preserve possibility of polygonal tundra and non-polygonal
-  ! ground on the same grid cell, on the vegetated landunit.
-  real(r8), pointer :: wt_polygon(:,:,:) ! dims: clump, topounit, polygon type
-
   ! for crop landunit, weight of each cft on the landunit (adds to 1.0 on the
   ! landunit for all all grid cells, even  those without any crop)
   ! (second dimension goes cft_lb:cft_ub)
