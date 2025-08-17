@@ -161,10 +161,10 @@ contains
     if (iac_active) then
        if (do_harvest .or. do_transient_crops .or. do_transient_pfts .or. &
            flanduse_timeseries /= '') then
-          call endrun(msg='ERROR in dynamic_subgrid namelist: when EHC is active &
-                           do_harvest, do_transient_pfts, do_transient_crops &
-                           must be .false., and flanduse_timeseries must not &
-                           be set (i.e., an empty string)'//errMsg(sourcefile, __LINE__))
+          call endrun(msg='ERROR in dynamic_subgrid namelist: when EHC is active ' // &
+                           'do_harvest, do_transient_pfts, do_transient_crops ' // &
+                           'must be .false., and flanduse_timeseries must not ' // &
+                           'be set (i.e., an empty string)' //errMsg(sourcefile, __LINE__))
        endif
     endif
 
