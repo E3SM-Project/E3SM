@@ -48,9 +48,9 @@ env:
   # Generate only if user requested via workflow_dispatch
   generate: ${{ github.event_name == 'workflow_dispatch' && inputs.bless }}
   # Correct case folder suffix for this test (includes sha and compare/generate suffix), used to find files to upload as artifacts
-  folder_suffix: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '.G.' || '.C.' }}${{ github.sha}}
+  compgen_suffix: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '.G.' || '.C.' }}
   # Compare/generate flags for create_test
-  flags: -t ${{ github.sha }} ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
+  flags: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
 
 jobs:
   cpu-gcc:
@@ -103,21 +103,25 @@ jobs:
             echo "Unsupported Linux distribution"
             exit 1
           fi
+      - name: Set test id
+        run: |
+          TESTID=${{ github.sha }}-$(date -u +"%y%m%d-%H%M%S")
+          echo "testid=$TESTID" >> $GITHUB_ENV
       - name: Run test
         id: run-tests
         run: |
-          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --output-root /projects/e3sm/scrach/${{ matrix.test.full_name }} --wait
+          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} -t ${{ env.testid }} --wait
       - name: Upload log files
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: logs.${{ matrix.test.short_name }}
           path: |
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}/${{ matrix.test.full_name }}${{ env.folder_suffix }}/TestStatus
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}/${{ matrix.test.full_name }}${{ env.folder_suffix }}/TestStatus.log
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}/${{ matrix.test.full_name }}${{ env.folder_suffix }}/bld/**/*.bldlog.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}/${{ matrix.test.full_name }}${{ env.folder_suffix }}/run/**/*.log.*
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}/${{ matrix.test.full_name }}${{ env.folder_suffix }}/run/**/*.cprnc.out
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}/TestStatus
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}/TestStatus.log
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}/bld/**/*.bldlog.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}/run/**/*.log.*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}/run/**/*.cprnc.out
           retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
@@ -127,11 +131,11 @@ jobs:
         with:
           name: outputs.${{ matrix.test.short_name }}
           path: |
-            /projects/e3sm/scratch/${{ matrix.test.full_name }}/${{ matrix.test.full_name }}${{ env.folder_suffix }}/run/**/*.nc*
+            /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}/run/**/*.nc*
           retention-days: 14
         env:
           NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
       - name: Clean up
         if: ${{ always() }}
         run: |
-          rm -rf /projects/e3sm/scratch/${{ matrix.test.full_name }}*
+          rm -rf /projects/e3sm/scratch/${{ matrix.test.full_name }}${{ env.compgen_suffix }}${{ env.testid }}
