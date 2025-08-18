@@ -82,10 +82,11 @@ end subroutine cldfrc_fice
 !===================================================================================================
 
 ! This mimics the functionality of physics_ptend_init()
-subroutine zm_tend_init( ncol, pver, tend_s, tend_q, tend_u, tend_v )
+subroutine zm_tend_init( ncol, pcols, pver, tend_s, tend_q, tend_u, tend_v )
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                         intent(in   ) :: ncol    ! number of local columns
+  integer,                         intent(in   ) :: pcols   ! max number of columns for variable dimensions
   integer,                         intent(in   ) :: pver    ! number of local columns
   real(r8), dimension(pcols,pver), intent(inout) :: tend_s  ! tendency of dry static energy
   real(r8), dimension(pcols,pver), intent(inout) :: tend_q  ! tendency of water vapor
@@ -111,13 +112,14 @@ end subroutine
 ! This combines functionality of:
 ! - physics_update()      [see physics_update_mod.F90]
 ! - physics_update_main() [see physics_types.F90]
-subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
+subroutine zm_physics_update( ncol, pcols, dt, state_phis, state_zm, state_zi, &
                               state_p_mid, state_p_int, state_p_del, &
                               state_t, state_qv, ptend_s, ptend_q)
   use zm_eamxx_bridge_physconst, only: cpair
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                         intent(in   ) :: ncol            ! number of local columns
+  integer,                         intent(in   ) :: pcols           ! max number of columns for variable dimensions
   real(r8),                        intent(in   ) :: dt              ! time step
   real(r8), dimension(pcols),      intent(in   ) :: state_phis      ! input state surface geopotential height
   real(r8), dimension(pcols,pver), intent(inout) :: state_zm        ! input state altitude at mid-levels
@@ -133,21 +135,17 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
-  real(r8), dimension(pcols,pver) :: rpdel
   !-----------------------------------------------------------------------------
   do i = 1,ncol
     do k = 1, pver
       ! update water vapor
       state_qv(i,k) = state_qv(i,k) + ptend_q(i,k) * dt
-      ! update temperature
-      ! we first assume that dS is really dEn, En=enthalpy=c_p*T, then  dT = dEn/c_p, so, state%t += ds/c_p.
+      ! update temperature - assume that dS is really dEn, En=enthalpy=c_p*T, then  dT = dEn/c_p, so, state%t += ds/c_p.
       state_t(i,k) = state_t(i,k) + ptend_s(i,k)/cpair * dt
-      ! calculate stuff we need for geopotential_t()
-      rpdel(i,k) = 1./state_p_del(i,k)
     end do
   end do
     
-  call zm_geopotential_t( ncol, state_p_int, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
+  call zm_geopotential_t( ncol, pcols, state_p_int, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
 
   ! skip DSE update for EAMxx
   ! do i = 1,ncol
@@ -162,15 +160,15 @@ end subroutine zm_physics_update
 !===================================================================================================
 
 ! copied and modified from geopotential.F90
-subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
+subroutine zm_geopotential_t( ncol, pcols, pint, pmid, pdel, t, q, zi, zm )
   use zm_eamxx_bridge_physconst, only: zvir, rair, gravit
   !----------------------------------------------------------------------- 
-  ! Purpose: 
-  ! Compute the geopotential height (above the surface) at the midpoints and 
-  ! interfaces using the input temperatures and pressures.
+  ! Purpose: Compute the geopotential height (above the surface) at the
+  ! midpoints and interfaces using the input temperatures and pressures
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                         intent(in   ) :: ncol    ! Number of columns
+  integer,                         intent(in   ) :: pcols
   real(r8), dimension(pcols,pverp),intent(in   ) :: pint    ! Interface pressures
   real(r8), dimension(pcols,pver), intent(in   ) :: pmid    ! Midpoint pressures
   real(r8), dimension(pcols,pver), intent(in   ) :: pdel    ! layer thickness
@@ -212,21 +210,11 @@ end subroutine zm_geopotential_t
 
 ! copied from components/eam/src/control/interpolate_data.F90
 subroutine vertinterp(ncol, ncold, nlev, pmid, pout, arrin, arrout)
-
     !-----------------------------------------------------------------------
-    !
-    ! Purpose:
-    ! Vertically interpolate input array to output pressure level
+    ! Purpose: Vertically interpolate input array to output pressure level
     ! Copy values at boundaries.
-    !
-    ! Method:
-    !
-    ! Author:
-    !
     !-----------------------------------------------------------------------
-
     implicit none
-
     !------------------------------Arguments--------------------------------
     integer , intent(in)  :: ncol              ! column dimension
     integer , intent(in)  :: ncold             ! declared column dimension
@@ -235,8 +223,6 @@ subroutine vertinterp(ncol, ncold, nlev, pmid, pout, arrin, arrout)
     real(r8), intent(in)  :: pout              ! output pressure level
     real(r8), intent(in)  :: arrin(ncold,nlev) ! input  array
     real(r8), intent(out) :: arrout(ncold)     ! output array (interpolated)
-    !--------------------------------------------------------------------------
-
     !---------------------------Local variables-----------------------------
     integer i,k               ! indices
     integer kupper(ncold)     ! Level indices for interpolation
