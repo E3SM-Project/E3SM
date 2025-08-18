@@ -71,6 +71,12 @@ int main(int argc, char **argv){
     Pacer::removeParentPrefix();
     Pacer::stop("parent", 1);
 
+    Pacer::timingBarrier("barrier_should_not_appear_1", 0, MPI_COMM_WORLD);
+    Pacer::enableTimingBarriers();
+    Pacer::timingBarrier("barrier_should_not_appear_2", 2, MPI_COMM_WORLD);
+    Pacer::timingBarrier("timing_barrier", 0, MPI_COMM_WORLD);
+
+
     Pacer::unsetPrefix();
 
     // illustrating situation where attempt to stop timer before starting

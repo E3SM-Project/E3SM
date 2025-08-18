@@ -55,8 +55,11 @@ static std::string CurrentPrefix = "";
 /// Pacer Mode: standalone or within CIME
 static PacerModeType PacerMode;
 
-// Global timing level
+/// Global timing level
 static int TimingLevel = 0;
+
+/// Flag to determine if timing barriers are enabled
+static bool TimingBarriersEnabled = false;
 
 /// Check if Pacer is initialized
 /// Returns true if initialized
@@ -243,6 +246,27 @@ bool enableTiming()
     PACER_CHECK_ERROR(GPTLenable());
     
     return true;
+}
+
+void enableTimingBarriers()
+{
+    TimingBarriersEnabled = true;
+}
+
+void disableTimingBarriers()
+{
+    TimingBarriersEnabled = false;
+}
+
+bool timingBarrier(const std::string &TimerName, int Level, MPI_Comm Comm)
+{
+    bool Ok = true;
+    if (TimingBarriersEnabled && Level <= TimingLevel) {
+      Ok = Ok && start(TimerName, Level);
+      MPI_Barrier(Comm);
+      Ok = Ok && stop(TimerName, Level);
+    }
+    return Ok;
 }
 
 /// Prints timing statistics and global summary files

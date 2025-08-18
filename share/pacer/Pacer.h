@@ -49,6 +49,9 @@ namespace Pacer {
     /// Removes the current enclosing timer name from the prefix for all subsequent timers
     bool removeParentPrefix();
     
+    /// Call and time MPI barrier if timing barriers are turned on
+    bool timingBarrier(const std::string &TimerName, int Level, MPI_Comm comm);
+    
     /// Sets timing level for all subsequent timers
     void setTimingLevel(int Level);
     
@@ -57,6 +60,12 @@ namespace Pacer {
 
     /// Enables timing
     bool enableTiming();
+   
+    /// Enables timing barriers
+    void enableTimingBarriers();
+
+    /// Disables timing barriers
+    void disableTimingBarriers();
 
     /// Prints timing statistics and global summary files
     /// Output Files: TimerFilePrefix.timing.<MyRank>
