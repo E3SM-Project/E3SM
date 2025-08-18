@@ -72,6 +72,7 @@ integer :: irad_always = 0 ! Specifies length of time in timesteps (positive)
                            ! run continuously from the start of an
                            ! initial or restart run
 logical :: spectralflux  = .false. ! calculate fluxes (up and down) per band.
+logical :: rad_asym_splt  = .false.
 
 logical :: use_rad_dt_cosz  = .false. ! if true, uses the radiation dt for all cosz calculations !BSINGH - Added for solar insolation calc.
 
@@ -120,7 +121,7 @@ subroutine radiation_readnl(nlfile, dtime_in)
    ! Variables defined in namelist
    namelist /radiation_nl/ iradsw, iradlw, irad_always, &
                            use_rad_dt_cosz, spectralflux, &
-                           do_spa_optics
+                           do_spa_optics, rad_asym_splt
 
    ! Read the namelist, only if called from master process
    ! TODO: better documentation and cleaner logic here?
@@ -146,6 +147,7 @@ subroutine radiation_readnl(nlfile, dtime_in)
    call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(do_spa_optics, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(rad_asym_splt, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
 
    ! Make sure nobody tries to use SPA optics with RRTMG
@@ -918,8 +920,9 @@ end function radiation_nextsw_cday
     real(r8) cllow(pcols)                      !       "     low  cloud cover
     real(r8) clmed(pcols)                      !       "     mid  cloud cover
     real(r8) clhgh(pcols)                      !       "     hgh  cloud cover
-    real(r8) :: ftem(pcols,pver)              ! Temporary workspace for outfld variables
-
+    real(r8) :: ftem(pcols,pver)               ! Temporary workspace for outfld variables
+    real(r8) :: vis_frc                        ! Fraction of surface insolation blueward of 0.7microns 
+                                               ! in rrtmg_sw split band 
     ! combined cloud radiative parameters are "in cloud" not "in cell"
     real(r8) :: c_cld_tau    (nbndsw,pcols,pver) ! cloud extinction optical depth
     real(r8) :: c_cld_tau_w  (nbndsw,pcols,pver) ! cloud single scattering albedo * tau
@@ -1091,8 +1094,18 @@ end function radiation_nextsw_cday
       call pbuf_get_field(pbuf, sd_idx, sd)
       call pbuf_get_field(pbuf, lu_idx, lu)
       call pbuf_get_field(pbuf, ld_idx, ld)
-    end if
- 
+   end if
+
+   !JPT 20250702: "rad_asym_splt" namelist switch partitions the flux within the RRMTG_SW split band
+   ! (Band 9, overlapping the 0.7micron) between the VIS/NIR coupling channels. The default (false)
+   ! splits flux in this band evenly between the VIS and NIR bands. Tolento et al. (2025) suggest
+   ! a ratio of 55.5/44.5 would be more appropriate, which results in cooling over cryospheric surfaces
+    if (rad_asym_splt) then 
+       vis_frc = 0.555_r8
+    else
+       vis_frc = 0.5_r8
+    endif
+    
     if (do_aerocom_ind3) then
       cld_tau_idx = pbuf_get_index('cld_tau')
     end if
@@ -1292,7 +1305,7 @@ end function radiation_nextsw_cday
                        state%pmid,   cldfprime,                                                &
                        aer_tau,      aer_tau_w,    aer_tau_w_g,  aer_tau_w_f,                  &
                        eccf,         coszrs,       solin,        sfac,                         &
-                       cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif,                 &
+                       cam_in%asdir, cam_in%asdif, cam_in%aldir, cam_in%aldif, vis_frc,         &
                        qrs,          qrsc,         fsnt,         fsntc,        fsntoa, fsutoa, &
                        fsntoac,      fsnirt,       fsnrtc,       fsnirtsq,     fsns,           &
                        fsnsc,        fsdsc,        fsds,         cam_out%sols, cam_out%soll,   &
@@ -1302,7 +1315,6 @@ end function radiation_nextsw_cday
                        E_cld_tau=c_cld_tau, E_cld_tau_w=c_cld_tau_w, E_cld_tau_w_g=c_cld_tau_w_g, E_cld_tau_w_f=c_cld_tau_w_f, &
                        old_convert = .false.)
                   call t_stopf ('rad_rrtmg_sw')
-
                   !  Output net fluxes at 200 mb
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcns, fsn200c)
                   call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fns, fsn200)
