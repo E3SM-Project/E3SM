@@ -91,8 +91,12 @@ def buildlib(bldroot, installpath, case):
     # We want to get the compiler and kokkos_options from Macros.make
     # (generated from cmake_macros), but we want to otherwise
     # let kokkos control flags
+    mpilib = case.get_value("MPILIB")
     macro_vals = extract_from_macros(case, "kokkos", extra_vars=("KOKKOS_OPTIONS",))
-    cxx, kokkos_options_raw = macro_vals[5], macro_vals[-1]
+    cc, cxx, kokkos_options_raw = macro_vals[4], macro_vals[5], macro_vals[-1]
+    if mpilib == "mpi-serial":
+        # Use serial compilers
+        cc, cxx = macro_vals[1], macro_vals[2]
 
     kokkos_options = kokkos_options_raw.split(":=")[-1].strip()
 
@@ -106,13 +110,22 @@ def buildlib(bldroot, installpath, case):
             expect(cxx_path is not None, "{} is not in PATH?".format(cxx))
             cxx = "-DCMAKE_CXX_COMPILER={}".format(cxx_path)
 
+    if "/" in cc:
+        cc = "-DCMAKE_C_COMPILER={}".format(cc)
+    else:
+        cc_path = shutil.which(cc)
+        expect(cc_path is not None, "{} is not in PATH?".format(cc))
+        cc = "-DCMAKE_C_COMPILER={}".format(cc_path)
+
     gmake_cmd = case.get_value("GMAKE")
     gmake_j = case.get_value("GMAKE_J")
 
     # Just enable all ekat packages?
     ekat_cmake_options = "-DEKAT_ENABLE_ALL_PACKAGES=On -DEKAT_ENABLE_TESTS=Off"
+    if mpilib == "mpi-serial":
+        ekat_cmake_options += " -DEKAT_ENABLE_MPI=Off"
 
-    gen_makefile_cmd = f"cmake {kokkos_options} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
+    gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
 
     # When later we use find_package to get kokkos in CMake, the folder
     # install_sharedpath/kokkos (which is bldroot here) gets picked over
