@@ -15,6 +15,11 @@
 
 #ifdef PACER_HAVE_KOKKOS
 #include <Kokkos_Core.hpp>
+
+#if defined(PACER_ADD_RANGES) && defined(KOKKOS_ENABLE_CUDA)
+#include <nvtx3/nvToolsExt.h>
+#endif
+
 #endif
 
 #define PACER_CHECK_INIT() {\
@@ -147,6 +152,12 @@ bool start(const std::string &TimerName, int Level)
     if (AutoFenceEnabled) {
        Kokkos::fence();
     }
+
+    // If CUDA is enabled start an NVTX range
+#if defined(PACER_ADD_RANGES) && defined(KOKKOS_ENABLE_CUDA)
+    nvtxRangePush(TimerName.c_str());
+#endif
+
 #endif
 
     PACER_CHECK_INIT();
@@ -175,6 +186,12 @@ bool stop(const std::string &TimerName, int Level)
     if (it != OpenTimers.end() ) {
 
 #ifdef PACER_HAVE_KOKKOS
+
+        // If CUDA is enabled end the NVTX range
+#if defined(PACER_ADD_RANGES) && defined(KOKKOS_ENABLE_CUDA)
+        nvtxRangePop();
+#endif
+
         if (AutoFenceEnabled) {
            Kokkos::fence();
         }
