@@ -13,6 +13,10 @@
 #include <algorithm>
 #include <iostream>
 
+#ifdef PACER_HAVE_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
+
 #define PACER_CHECK_INIT() {\
     if (!IsInitialized) { \
         std::cerr << "[ERROR] Pacer: Not initialized." << std::endl; \
@@ -60,6 +64,9 @@ static int TimingLevel = 0;
 
 /// Flag to determine if timing barriers are enabled
 static bool TimingBarriersEnabled = false;
+
+// Flag to determine if automatic Kokkos fences are enabled
+static bool AutoFenceEnabled = false;
 
 /// Check if Pacer is initialized
 /// Returns true if initialized
@@ -136,6 +143,12 @@ bool start(const std::string &TimerName, int Level)
        return true;
     }
 
+#ifdef PACER_HAVE_KOKKOS
+    if (AutoFenceEnabled) {
+       Kokkos::fence();
+    }
+#endif
+
     PACER_CHECK_INIT();
 
     PACER_CHECK_ERROR(GPTLstart(TimerName.c_str()));
@@ -160,6 +173,13 @@ bool stop(const std::string &TimerName, int Level)
     auto it = std::find(OpenTimers.begin(), OpenTimers.end(), TimerName);
 
     if (it != OpenTimers.end() ) {
+
+#ifdef PACER_HAVE_KOKKOS
+        if (AutoFenceEnabled) {
+           Kokkos::fence();
+        }
+#endif
+
         PACER_CHECK_ERROR(GPTLstop(TimerName.c_str()));
 
         // Pop this timer from the stack
@@ -258,10 +278,21 @@ void disableTimingBarriers()
     TimingBarriersEnabled = false;
 }
 
+void enableAutoFence()
+{
+    AutoFenceEnabled = true;
+}
+
+void disableAutoFence()
+{
+    AutoFenceEnabled = false;
+}
+
 bool timingBarrier(const std::string &TimerName, int Level, MPI_Comm Comm)
 {
     bool Ok = true;
     if (TimingBarriersEnabled && Level <= TimingLevel) {
+
       Ok = Ok && start(TimerName, Level);
       MPI_Barrier(Comm);
       Ok = Ok && stop(TimerName, Level);

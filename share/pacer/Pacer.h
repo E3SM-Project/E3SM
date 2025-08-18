@@ -60,6 +60,12 @@ namespace Pacer {
 
     /// Enables timing
     bool enableTiming();
+
+    /// Enables automatic Kokkos fences
+    void enableAutoFence();
+
+    /// Disables automatic Kokkos fences
+    void disableAutoFence();
    
     /// Enables timing barriers
     void enableTimingBarriers();
