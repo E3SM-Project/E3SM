@@ -66,8 +66,7 @@ set_grids (const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("cldfrac_tot",          scalar3d_mid, nondim, grid_name, pack_size);
   add_field<Required>("pbl_height",           scalar2d    , m,      grid_name);
   add_field<Required>("landfrac",             scalar2d    , nondim, grid_name);
-
-  // add_field<Required>("thl_sec",              scalar3d_int, K2,     grid_name, pack_size); // thetal variance for PBL temperature perturbation
+  add_field<Required>("thl_sec",              scalar3d_int, K2,     grid_name, pack_size); // thetal variance for PBL temperature perturbation
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
@@ -117,6 +116,7 @@ void zm_deep_convection::run_impl (const double dt)
   const auto team_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_ncol, nlevm_packs);
 
   auto ts_start = start_of_step_ts();
+  bool is_first_step = (ts_start.get_num_steps()==0);
 
   //----------------------------------------------------------------------------
   // get constants
@@ -140,8 +140,7 @@ void zm_deep_convection::run_impl (const double dt)
   const auto& cldfrac  = get_field_in("cldfrac_tot")                  .get_view<const Spack**, Host>();
   const auto& pblh     = get_field_in("pbl_height")                   .get_view<const Real*>();
   const auto& landfrac = get_field_in("landfrac")                     .get_view<const Real*>();
-
-  // const auto& thl_sec  = get_field_in("thl_sec")                      .get_view<const Spack**, Host>();
+  const auto& thl_sec  = get_field_in("thl_sec")                      .get_view<const Spack**, Host>();
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
@@ -150,7 +149,7 @@ void zm_deep_convection::run_impl (const double dt)
   // prepare input struct
 
   zm_input.dtime          = dt;
-  zm_input.is_first_step  = (ts_start.get_num_steps()==0);
+  zm_input.is_first_step  = is_first_step;
   zm_input.phis           = phis;
   zm_input.p_mid          = p_mid;
   zm_input.p_int          = p_int;
@@ -191,53 +190,39 @@ void zm_deep_convection::run_impl (const double dt)
   });
 
   //----------------------------------------------------------------------------
-  // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
-
-  Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
-    zm_input.tpert(i) = 1.0;
-  });
-
-  //----------------------------------------------------------------------------
   // // calculate temperature perturbation from SHOC thetal varance for ZM parcel/CAPE
 
-  // Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
-    // const auto thl_sec_i = ekat::subview(thl_sec, i);
-    // const auto z_mid_i   = ekat::subview(zm_input.z_mid, i);
-    // const auto p_mid_i   = ekat::subview(zm_input.p_mid, i);
-    // // identify interface index for top of PBL
-    // int pblh_k_ind;
-    // for (int k=0; k<m_nlev; ++k) {
-    //   auto z_mid_tmp = z_mid(i,k/Spack::n)[k%Spack::n];
-    //   auto z_int_tmp = z_int(i,k/Spack::n)[k%Spack::n];
-    //   if ( z_int_tmp>pblh(i) && state1%zi(i,k+1)<=pblh(i) ) {
-    //     pblh_k_ind = k;
-    //   }
-    // }
-    // auto p_mid_pbl = p_mid(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
-    // auto exner_pbl = PF::exner_function(p_mid_pbl);
-    // auto qc_pbl      = qc(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
-    // auto thl_sec_pbl = thl_sec(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
-    // auto thl_std_pbl = sqrt( thl_sec_pbl ) ; // std deviation of thetal;
-    // zm_input.tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
-    // zm_input.tpert(i) = min(2.0,zm_input.tpert(i)); // apply limiter 
-    // 
-  // });
+  Kokkos::parallel_for("zm_calculate_tpert",m_ncol, KOKKOS_LAMBDA (int i) {
+    if (is_first_step) {
+      zm_input.tpert(i) = 0.0;
+    } else {
+      // identify interface index for top of PBL
+      int pblh_k_ind = -1;
+      for (int k=0; k<m_nlev; ++k) {
+        // auto z_mid_tmp = zm_input.z_mid(i,k/Spack::n)[k%Spack::n];
+        auto z_int_tmp_k   = zm_input.z_int(i,k/Spack::n)[k%Spack::n];
+        auto z_int_tmp_kp1 = zm_input.z_int(i,k/Spack::n)[k%Spack::n];
+        if ( z_int_tmp_k>pblh(i) && z_int_tmp_kp1<=pblh(i) ) {
+          pblh_k_ind = k;
+        }
+      }
+      // deal with case where PBL top is not found
+      if (pblh_k_ind==-1) {
+        zm_input.tpert(i) = 0.0;
+      } else {
+        // calculate std deviation of temperature from theta-l variance
+        auto p_mid_pbl    = p_mid(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+        auto exner_pbl    = PF::exner_function(p_mid_pbl);
+        // auto exner_pbl    = PF::exner_function( p_mid(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n] );
+        auto qc_pbl       = qc(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+        auto thl_sec_pbl  = thl_sec(i,pblh_k_ind/Spack::n)[pblh_k_ind%Spack::n];
+        auto thl_std_pbl  = sqrt( thl_sec_pbl ); // std deviation of thetal;
+        zm_input.tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
+        zm_input.tpert(i) = std::min(2.0,zm_input.tpert(i)); // apply limiter
+      }
+    }
+  });
 
-  //----------------------------------------------------------------------------
-  ////// from fortran/EAM CLUBB
-  // do i = 1,ncol
-      // do k=1,pver
-      //    if (state1%zi(i,k)>pblh(i).and.state1%zi(i,k+1)<=pblh(i)) then
-      //       ktopi(i) = k
-      //       exit
-      //    end if
-      // end do
-  //   tmp_exner = max( state1%exner(i,ktopi(i)), 1.e-3_r8 )
-  //   tmp_qc = state1%q(i,ktopi(i),ixcldliq)
-  //   tmp_thl_std = sqrt( thlp2(i,ktopi(i)) ) ! std deviation of thetal 
-  //   tpert(i) = ( tmp_thl_std + (latvap/cpair)*tmp_qc ) / tmp_exner
-  //   tpert(i) = min(2._r8,tpert(i))
-  // end do
   //----------------------------------------------------------------------------
   // run the ZM scheme
 
