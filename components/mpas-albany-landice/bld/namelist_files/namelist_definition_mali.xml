@@ -885,7 +885,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ocean_data_extrap_ncells_extra" type="integer"
 	category="iceshelf_melt" group="iceshelf_melt">
-number of extra cells for over-extrapolation into grounded ice
+number of extra cells for over-extrapolation into grounded ice. Note: value must >=3 when used with facemelting.
 
 Valid values: any non-negative value
 Default: Defined in namelist_defaults.xml
